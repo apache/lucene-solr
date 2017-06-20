@@ -16,8 +16,11 @@
  */
 package org.apache.solr.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
+import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -26,12 +29,6 @@ import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -58,13 +55,15 @@ import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 
 public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
   private final CoreContainer cores;
-  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "5000"));
+  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "10000"));
   private final String myNodeName;
   private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
@@ -194,11 +193,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   PublicKey getRemotePublicKey(String nodename) {
+    if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     try {
       String uri = url + PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient().execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
+      HttpResponse rsp = cores.getUpdateShardHandler().getHttpClient()
+          .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
       byte[] bytes = EntityUtils.toByteArray(rsp.getEntity());
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
@@ -235,6 +236,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       public String getDescription() {
         return "Return the public key of this server";
       }
+
+      @Override
+      public Category getCategory() {
+        return Category.ADMIN;
+      }
+
     };
   }
 

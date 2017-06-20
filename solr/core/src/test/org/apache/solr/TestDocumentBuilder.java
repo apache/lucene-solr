@@ -41,7 +41,6 @@ public class TestDocumentBuilder extends LuceneTestCase {
     list.add(33);
     list.add(20);
     doc.addField("field5", list);
-    doc.setDocumentBoost(5f);
     
     SolrInputDocument clone = doc.deepCopy();
     

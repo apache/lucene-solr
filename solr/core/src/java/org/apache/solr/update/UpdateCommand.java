@@ -34,6 +34,7 @@ public abstract class UpdateCommand implements Cloneable {
   public static int PEER_SYNC    = 0x00000004; // update command is a missing update being provided by a peer.
   public static int IGNORE_AUTOCOMMIT = 0x00000008; // this update should not count toward triggering of autocommits.
   public static int CLEAR_CACHES = 0x00000010; // clear caches associated with the update log.  used when applying reordered DBQ updates when doing an add.
+  public static int IGNORE_INDEXWRITER = 0x00000020;
 
   public UpdateCommand(SolrQueryRequest req) {
     this.req = req;

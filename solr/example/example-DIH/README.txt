@@ -16,7 +16,7 @@
 Solr DataImportHandler example configuration
 --------------------------------------------
 
-To run this example, use the "-e" option of the bin/solr script:
+To run this multi-core example, use the "-e" option of the bin/solr script:
 
 > bin/solr -e dih
 
@@ -28,9 +28,9 @@ When Solr is started connect to:
 
   http://localhost:8983/solr/db/dataimport?command=full-import
 
-* To import data from an RSS feed, connect to:
+* To import data from an ATOM feed, connect to:
 
-  http://localhost:8983/solr/rss/dataimport?command=full-import
+  http://localhost:8983/solr/atom/dataimport?command=full-import
 
 * To import data from your IMAP server:
 
@@ -45,6 +45,5 @@ When Solr is started connect to:
 
   http://localhost:8983/solr/tika/dataimport?command=full-import
 
-See also README.txt in the solr subdirectory, and check
-http://wiki.apache.org/solr/DataImportHandler for detailed
-usage guide and tutorial.
+Check also the Solr Reference Guide for detailed usage guide:
+https://cwiki.apache.org/confluence/display/solr/Uploading+Structured+Data+Store+Data+with+the+Data+Import+Handler

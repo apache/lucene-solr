@@ -55,6 +55,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 
 // TODO:
 //   - old parallel indices are only pruned on commit/close; can we do it on refresh?
@@ -236,8 +237,16 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             firstExc = t;
           }
         }
+        
         // throw the first exception
-        IOUtils.reThrow(firstExc);
+        if (firstExc != null) {
+          throw IOUtils.rethrowAlways(firstExc);
+        }
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null;
       }
     }
 
@@ -324,7 +333,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
     }
 
-    private class ParallelReaderClosed implements LeafReader.ReaderClosedListener {
+    private class ParallelReaderClosed implements IndexReader.ClosedListener {
       private final SegmentIDAndGen segIDGen;
       private final Directory dir;
 
@@ -334,7 +343,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      public void onClose(IndexReader ignored) {
+      public void onClose(IndexReader.CacheKey ignored) {
         try {
           // TODO: make this sync finer, i.e. just the segment + schemaGen
           synchronized(ReindexingReader.this) {
@@ -409,7 +418,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), IOContext.DEFAULT);
+            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
 
             //checkParallelReader(leaf, parLeafReader, schemaGen);
 
@@ -421,7 +430,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
               // the pruning may remove our directory:
               closedSegments.remove(segIDGen);
 
-              parLeafReader.addReaderClosedListener(new ParallelReaderClosed(segIDGen, dir));
+              parLeafReader.getReaderCacheHelper().addClosedListener(new ParallelReaderClosed(segIDGen, dir));
 
             } else {
               // Used only for merged segment warming:
@@ -543,10 +552,11 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             }
           }
 
-          // If any error occured, throw it.
-          IOUtils.reThrow(th);
+          if (th != null) {
+            throw IOUtils.rethrowAlways(th);
+          }
         }
-    
+
         @Override
         public void setMergeInfo(SegmentCommitInfo info) {
           // Record that this merged segment is current as of this schemaGen:

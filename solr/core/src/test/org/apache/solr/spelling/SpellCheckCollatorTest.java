@@ -44,6 +44,11 @@ import org.junit.Test;
 @Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
+  
+  //if adding documents to this test, adjust me.
+  private static final int MAX_DOC_ID=16;
+  private static final int MIN_DOC_ID_WITH_EVERYOTHER=0;
+  private static final int MAX_DOC_ID_WITH_EVERYOTHER=15;
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
@@ -559,11 +564,13 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     // (we have to be kind of flexible with our definition of "decent"
     // since we're dealing with a fairly small index here)
     for (int val = 5; val <= 20; val++) {
+      int max = MAX_DOC_ID * val / (val + MIN_DOC_ID_WITH_EVERYOTHER + 1);
+      int min = MAX_DOC_ID * val / (val + MAX_DOC_ID_WITH_EVERYOTHER + 1);
       assertQ(req(reusedParams,
                   CommonParams.Q, "teststop:everother",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
               , xpathPrefix + "str[@name='collationQuery']='teststop:everyother'"
-              , xpathPrefix + "int[@name='hits' and 6 <= . and . <= 10]"        
+              , xpathPrefix + "int[@name='hits' and " + min + " <= . and . <= " + max + "]"
               );
     }
 

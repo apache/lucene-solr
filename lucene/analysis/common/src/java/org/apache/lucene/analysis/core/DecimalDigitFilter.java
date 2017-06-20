@@ -52,7 +52,7 @@ public final class DecimalDigitFilter extends TokenFilter {
           buffer[i] = (char) ('0' + Character.getNumericValue(ch));
           // if the original was supplementary, shrink the string
           if (ch > 0xFFFF) {
-            length = StemmerUtil.delete(buffer, ++i, length);
+            length = StemmerUtil.delete(buffer, i+1, length);
             termAtt.setLength(length);
           }
         }

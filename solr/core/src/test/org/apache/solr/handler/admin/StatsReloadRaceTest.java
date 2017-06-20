@@ -17,7 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -50,11 +50,13 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
   @Test
   public void testParallelReloadAndStats() throws Exception {
 
-    for (int i = 0; i < atLeast(2); i++) {
+    Random random = random();
+    
+    for (int i = 0; i < atLeast(random, 2); i++) {
 
       int asyncId = taskNum.incrementAndGet();
 
-      SolrQueryResponse rsp = new SolrQueryResponse();
+     
       h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
           CommonParams.QT, "/admin/cores",
           CoreAdminParams.ACTION,
@@ -64,36 +66,81 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
       boolean isCompleted;
       do {
-        String stats = h.query(req(
-            CommonParams.QT, "/admin/mbeans",
-            "stats", "true"));
-
-        NamedList<NamedList<Object>> actualStats = SolrInfoMBeanHandler.fromXML(stats).get("CORE");
-        
-        for (Map.Entry<String, NamedList<Object>> tuple : actualStats) {
-          if (tuple.getKey().contains("earcher")) { // catches "searcher" and "Searcher@345345 blah"
-            NamedList<Object> searcherStats = tuple.getValue();
-            @SuppressWarnings("unchecked")
-            NamedList<Object> statsList = (NamedList<Object>)searcherStats.get("stats");
-            assertEquals("expect to have exactly one indexVersion at "+statsList, 1, statsList.getAll("indexVersion").size());
-            assertTrue(statsList.get("indexVersion") instanceof Long); 
-          }
+        if (random.nextBoolean()) {
+          requestMetrics(true);
+        } else {
+          requestCoreStatus();
         }
 
-        h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
-            CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
-            CoreAdminParams.REQUESTID, "" + asyncId), rsp);
-        
-        @SuppressWarnings("unchecked")
-        List<Object> statusLog = rsp.getValues().getAll(CoreAdminAction.STATUS.name());
-
-        assertFalse("expect status check w/o error, got:" + statusLog,
-                                  statusLog.contains(CoreAdminHandler.FAILED));
-
-        isCompleted = statusLog.contains(CoreAdminHandler.COMPLETED);
+        isCompleted = checkReloadComlpetion(asyncId);
       } while (!isCompleted);
+      requestMetrics(false);
     }
+  }
+
+  private void requestCoreStatus() throws Exception {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
+        CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.STATUS.toString(),
+        "core", DEFAULT_TEST_CORENAME), rsp);
+    assertNull(""+rsp.getException(),rsp.getException());
+
+  }
+
+  private boolean checkReloadComlpetion(int asyncId) {
+    boolean isCompleted;
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
+        CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
+        CoreAdminParams.REQUESTID, "" + asyncId), rsp);
+    
+    @SuppressWarnings("unchecked")
+    List<Object> statusLog = rsp.getValues().getAll(CoreAdminAction.STATUS.name());
+
+    assertFalse("expect status check w/o error, got:" + statusLog,
+                              statusLog.contains(CoreAdminHandler.FAILED));
+
+    isCompleted = statusLog.contains(CoreAdminHandler.COMPLETED);
+    return isCompleted;
+  }
+
+  private void requestMetrics(boolean softFail) throws Exception {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    String registry = "solr.core." + h.coreName;
+    String key = "SEARCHER.searcher.indexVersion";
+    boolean found = false;
+    int count = 10;
+    while (!found && count-- > 0) {
+      h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
+          req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
+
+      NamedList values = rsp.getValues();
+      // this is not guaranteed to exist right away after core reload - there's a
+      // small window between core load and before searcher metrics are registered
+      // so we may have to check a few times, and then fail softly if reload is not complete yet
+      NamedList metrics = (NamedList)values.get("metrics");
+      if (metrics == null) {
+        if (softFail) {
+          return;
+        } else {
+          fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
+        }
+      }
+      metrics = (NamedList)metrics.get(registry);
+      if (metrics.get(key) != null) {
+        found = true;
+        assertTrue(metrics.get(key) instanceof Long);
+        break;
+      } else {
+        Thread.sleep(500);
+      }
+    }
+    if (softFail && !found) {
+      return;
+    }
+    assertTrue("Key " + key + " not found in registry " + registry, found);
   }
 
 }

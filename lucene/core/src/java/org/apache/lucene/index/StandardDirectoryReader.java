@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -59,7 +61,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
         boolean success = false;
         try {
           for (int i = sis.size()-1; i >= 0; i--) {
-            readers[i] = new SegmentReader(sis.info(i), IOContext.READ);
+            readers[i] = new SegmentReader(sis.info(i), sis.getIndexCreatedVersionMajor(), IOContext.READ);
           }
 
           // This may throw CorruptIndexException if there are too many docs, so
@@ -179,7 +181,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
         if (oldReader == null || commitInfo.info.getUseCompoundFile() != oldReader.getSegmentInfo().info.getUseCompoundFile()) {
 
           // this is a new reader; in case we hit an exception we can decRef it safely
-          newReader = new SegmentReader(commitInfo, IOContext.READ);
+          newReader = new SegmentReader(commitInfo, infos.getIndexCreatedVersionMajor(), IOContext.READ);
           newReaders[i] = newReader;
         } else {
           if (oldReader.isNRT) {
@@ -389,7 +391,9 @@ public final class StandardDirectoryReader extends DirectoryReader {
     }
 
     // throw the first exception
-    IOUtils.reThrow(firstExc);
+    if (firstExc != null) {
+      throw IOUtils.rethrowAlways(firstExc);
+    }
   }
 
   @Override
@@ -468,5 +472,49 @@ public final class StandardDirectoryReader extends DirectoryReader {
     StandardDirectoryReader getReader() {
       return reader;
     }
+  }
+
+  private final Set<ClosedListener> readerClosedListeners = new CopyOnWriteArraySet<>();
+
+  private final CacheHelper cacheHelper = new CacheHelper() {
+    private final CacheKey cacheKey = new CacheKey();
+
+    @Override
+    public CacheKey getKey() {
+      return cacheKey;
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      ensureOpen();
+      readerClosedListeners.add(listener);
+    }
+
+  };
+
+  @Override
+  void notifyReaderClosedListeners(Throwable th) throws IOException {
+    synchronized(readerClosedListeners) {
+      for(ClosedListener listener : readerClosedListeners) {
+        try {
+          listener.onClose(cacheHelper.getKey());
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          } else {
+            th.addSuppressed(t);
+          }
+        }
+      }
+      
+      if (th != null) {
+        throw IOUtils.rethrowAlways(th);
+      }
+    }
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return cacheHelper;
   }
 }

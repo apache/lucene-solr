@@ -154,7 +154,7 @@ class ReqExclScorer extends Scorer {
         }
       };
     } else {
-      // reqTwoPhaseIterator is MORE costly than exclTwoPhaseIterator, check it first
+      // reqTwoPhaseIterator is MORE costly than exclTwoPhaseIterator, check it last
       return new TwoPhaseIterator(reqApproximation) {
 
         @Override

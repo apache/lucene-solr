@@ -337,13 +337,15 @@ public class FileFloatSource extends ValueSource {
       FileFloatSource.resetCache();
       log.debug("readerCache has been reset.");
 
-      UpdateRequestProcessor processor =
-        req.getCore().getUpdateProcessingChain(null).createProcessor(req, rsp);
-      try{
+      UpdateRequestProcessor processor = req.getCore().getUpdateProcessingChain(null).createProcessor(req, rsp);
+      try {
         RequestHandlerUtils.handleCommit(req, processor, req.getParams(), true);
-      }
-      finally{
-        processor.finish();
+      } finally {
+        try {
+          processor.finish();
+        } finally {
+          processor.close();
+        }
       }
     }
 

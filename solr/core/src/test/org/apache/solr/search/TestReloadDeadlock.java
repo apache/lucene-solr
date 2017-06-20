@@ -41,7 +41,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 // DistributedUpdateProcessor.versionAdd(DistributedUpdateProcessor.java:1016)
 // and the like in a "real" failure. If we have false=fails we should probably bump this timeout.
 // See SOLR-7836
-@TimeoutSuite(millis = 5 * TimeUnits.MINUTE)
+@TimeoutSuite(millis = 7 * TimeUnits.MINUTE)
 @Nightly
 public class TestReloadDeadlock extends TestRTGBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -197,7 +197,7 @@ public class TestReloadDeadlock extends TestRTGBase {
   private void addDoc(int id, long nextVal, long version) throws Exception {
     ifVerbose("adding id", id, "val=", nextVal, "version", version);
 
-    Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal),
+    Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal),
         "_version_", Long.toString(version)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
     if (returnedVersion != null) {
       assertEquals(version, returnedVersion.longValue());

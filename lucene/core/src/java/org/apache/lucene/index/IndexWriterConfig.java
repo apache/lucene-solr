@@ -18,7 +18,9 @@ package org.apache.lucene.index;
 
 
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -464,15 +466,17 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
                                                                                      SortField.Type.FLOAT);
 
   /**
-   * Set the {@link Sort} order to use when merging segments.  Note that newly flushed segments will remain unsorted.
+   * Set the {@link Sort} order to use when merging segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
     for(SortField sortField : sort.getSort()) {
-      if (ALLOWED_INDEX_SORT_TYPES.contains(sortField.getType()) == false) {
+      final SortField.Type sortType = Sorter.getSortFieldType(sortField);
+      if (ALLOWED_INDEX_SORT_TYPES.contains(sortType) == false) {
         throw new IllegalArgumentException("invalid SortField type: must be one of " + ALLOWED_INDEX_SORT_TYPES + " but got: " + sortField);
       }
     }
     this.indexSort = sort;
+    this.indexSortFields = Arrays.stream(sort.getSort()).map(SortField::getField).collect(Collectors.toSet());
     return this;
   }
 

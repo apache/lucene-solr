@@ -25,6 +25,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntLongHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
+import com.carrotsearch.hppc.cursors.IntLongCursor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
@@ -64,17 +70,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.uninverting.UninvertingReader;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntHashMap;
-import com.carrotsearch.hppc.IntLongHashMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
-import com.carrotsearch.hppc.cursors.IntLongCursor;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
 
@@ -184,7 +183,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * returns a new GroupHeadSelector based on the specified local params
      */
     public static GroupHeadSelector build(final SolrParams localParams) {
-      final String sortString = StringUtils.defaultIfBlank(localParams.get("sort"), null);
+      final String sortString = StringUtils.defaultIfBlank(localParams.get(SORT), null);
       final String max = StringUtils.defaultIfBlank(localParams.get("max"), null);
       final String min = StringUtils.defaultIfBlank(localParams.get("min"), null);
 
@@ -388,12 +387,23 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.field = field;
     }
 
-    public SortedDocValues getSortedDocValues(String field) {
-      return null;
+    // NOTE: delegating the caches is wrong here as we are altering the content
+    // of the reader, this should ONLY be used under an uninvertingreader which
+    // will restore doc values back using uninversion, otherwise all sorts of
+    // crazy things could happen.
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
     }
 
-    public Object getCoreCacheKey() {
-      return in.getCoreCacheKey();
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
+
+    public SortedDocValues getSortedDocValues(String field) {
+      return null;
     }
 
     public FieldInfos getFieldInfos() {
@@ -951,21 +961,33 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if (funcQuery != null) {
         this.collapseStrategy =  new OrdValueSourceStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, funcQuery, searcher, collapseValues);
       } else {
-        if(fieldType instanceof TrieIntField) {
-          this.collapseStrategy = new OrdIntStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else if(fieldType instanceof TrieFloatField) {
-          this.collapseStrategy = new OrdFloatStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else if(fieldType instanceof TrieLongField) {
-          this.collapseStrategy =  new OrdLongStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
-        } else {
-          throw new IOException("min/max must be either TrieInt, TrieLong, TrieFloat.");
+        NumberType numType = fieldType.getNumberType();
+        if (null == numType) {
+          throw new IOException("min/max must be either Int/Long/Float based field types");
+        }
+        switch (numType) {
+          case INTEGER: {
+            this.collapseStrategy = new OrdIntStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
+            break;
+          }
+          case FLOAT: {
+            this.collapseStrategy = new OrdFloatStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
+            break;
+          }
+          case LONG: {
+            this.collapseStrategy =  new OrdLongStrategy(maxDoc, nullPolicy, new int[valueCount], groupHeadSelector, this.needsScores, boostDocs, collapseValues);
+            break;
+          }
+          default: {
+            throw new IOException("min/max must be either Int/Long/Float field types");
+          }
         }
       }
     }
 
     @Override public boolean needsScores() { return needsScores || super.needsScores(); }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
     }
 
@@ -1135,19 +1157,27 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else if (funcQuery != null) {
         this.collapseStrategy =  new IntValueSourceStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap, funcQuery, searcher);
       } else {
-        if(fieldType instanceof TrieIntField) {
-          this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
-        } else if(fieldType instanceof TrieFloatField) {
-          this.collapseStrategy = new IntFloatStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
-        } else {
-          throw new IOException("min/max must be TrieInt or TrieFloat when collapsing on numeric fields .");
+        NumberType numType = fieldType.getNumberType();
+        assert null != numType; // shouldn't make it here for non-numeric types
+        switch (numType) {
+          case INTEGER: {
+            this.collapseStrategy = new IntIntStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
+            break;
+          }
+          case FLOAT: {
+            this.collapseStrategy = new IntFloatStrategy(maxDoc, size, collapseField, nullValue, nullPolicy, groupHeadSelector, this.needsScores, boostDocsMap);
+            break;
+          }
+          default: {
+            throw new IOException("min/max must be Int or Float field types when collapsing on numeric fields");
+          }
         }
       }
     }
 
     @Override public boolean needsScores() { return needsScores || super.needsScores(); }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.collapseStrategy.setScorer(scorer);
     }
 
@@ -1247,6 +1277,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   private static class CollectorFactory {
+    /** @see #isNumericCollapsible */
+    private final static EnumSet<NumberType> NUMERIC_COLLAPSIBLE_TYPES = EnumSet.of(NumberType.INTEGER,
+                                                                                    NumberType.FLOAT);
+    private boolean isNumericCollapsible(FieldType collapseFieldType) {
+      return NUMERIC_COLLAPSIBLE_TYPES.contains(collapseFieldType.getNumberType());
+    }
 
     public DelegatingCollector getCollector(String collapseField,
                                             GroupHeadSelector groupHeadSelector,
@@ -1324,19 +1360,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
           return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs);
 
-        } else if (collapseFieldType instanceof TrieIntField ||
-                   collapseFieldType instanceof TrieFloatField) {
+        } else if (isNumericCollapsible(collapseFieldType)) {
 
           int nullValue = 0;
 
-          if(collapseFieldType instanceof TrieFloatField) {
-            if(defaultValue != null) {
+          // must be non-null at this point
+          if (collapseFieldType.getNumberType().equals(NumberType.FLOAT)) {
+            if (defaultValue != null) {
               nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
             } else {
               nullValue = Float.floatToIntBits(0.0f);
             }
           } else {
-            if(defaultValue != null) {
+            if (defaultValue != null) {
               nullValue = Integer.parseInt(defaultValue);
             }
           }
@@ -1363,19 +1399,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             funcQuery,
                                             searcher);
 
-        } else if((collapseFieldType instanceof TrieIntField ||
-                   collapseFieldType instanceof TrieFloatField)) {
+        } else if (isNumericCollapsible(collapseFieldType)) {
 
           int nullValue = 0;
 
-          if(collapseFieldType instanceof TrieFloatField) {
-            if(defaultValue != null) {
+          // must be non-null at this point
+          if (collapseFieldType.getNumberType().equals(NumberType.FLOAT)) {
+            if (defaultValue != null) {
               nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
             } else {
               nullValue = Float.floatToIntBits(0.0f);
             }
           } else {
-            if(defaultValue != null) {
+            if (defaultValue != null) {
               nullValue = Integer.parseInt(defaultValue);
             }
           }
@@ -1523,7 +1559,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return collapsedSet;
     }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
@@ -1952,7 +1988,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setScorer(Scorer s) {
+    public void setScorer(Scorer s) throws IOException {
       super.setScorer(s);
       this.compareState.setScorer(s);
     }
@@ -2100,7 +2136,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return collapsedSet;
     }
 
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
@@ -2522,7 +2558,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setScorer(Scorer s) {
+    public void setScorer(Scorer s) throws IOException {
       super.setScorer(s);
       this.compareState.setScorer(s);
     }
@@ -2652,7 +2688,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used, 
      * and an initial number of expected groups (will grow as needed).
      */
-    public SortFieldsCompare(SortField[] sorts, int initNumGroups) throws IOException {
+    public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
       this.sorts = sorts;
       numClauses = sorts.length;
       fieldComparators = new FieldComparator[numClauses];
@@ -2673,7 +2709,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         leafFieldComparators[clause] = fieldComparators[clause].getLeafComparator(context);
       }
     }
-    public void setScorer(Scorer s) {
+    public void setScorer(Scorer s) throws IOException {
       for (int clause = 0; clause < numClauses; clause++) {
         leafFieldComparators[clause].setScorer(s);
       }

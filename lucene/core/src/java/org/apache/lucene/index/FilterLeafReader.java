@@ -19,10 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Objects;
 
-import org.apache.lucene.search.QueryCache;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -38,12 +35,8 @@ import org.apache.lucene.util.BytesRef;
  * <p><b>NOTE</b>: If you override {@link #getLiveDocs()}, you will likely need
  * to override {@link #numDocs()} as well and vice-versa.
  * <p><b>NOTE</b>: If this {@link FilterLeafReader} does not change the
- * content the contained reader, you could consider overriding
- * {@link #getCoreCacheKey()} so that
- * {@link QueryCache} impls share the same entries for this atomic reader
- * and the wrapped one. {@link #getCombinedCoreAndDeletesKey()} could be
- * overridden as well if the {@link #getLiveDocs() live docs} are not changed
- * either.
+ * content the contained reader, you could consider delegating calls to
+ * {@link #getCoreCacheHelper()} and {@link #getReaderCacheHelper()}.
  */
 public abstract class FilterLeafReader extends LeafReader {
 
@@ -307,69 +300,6 @@ public abstract class FilterLeafReader extends LeafReader {
     in.registerParentReader(this);
   }
 
-  /**
-   * A CoreClosedListener wrapper that adjusts the core cache key that
-   * the wrapper is called with. This is useful if the core cache key
-   * of a reader is different from the key of the wrapped reader.
-   */
-  private static class CoreClosedListenerWrapper implements CoreClosedListener {
-
-    public static CoreClosedListener wrap(CoreClosedListener listener, Object thisCoreKey, Object inCoreKey) {
-      if (thisCoreKey == inCoreKey) {
-        // this reader has the same core cache key as its parent, nothing to do
-        return listener;
-      } else {
-        // we don't have the same cache key as the wrapped reader, we need to wrap
-        // the listener to call it with the correct cache key
-        return new CoreClosedListenerWrapper(listener, thisCoreKey, inCoreKey);
-      }
-    }
-
-    private final CoreClosedListener in;
-    private final Object thisCoreKey;
-    private final Object inCoreKey;
-
-    private CoreClosedListenerWrapper(CoreClosedListener in, Object thisCoreKey, Object inCoreKey) {
-      this.in = in;
-      this.thisCoreKey = thisCoreKey;
-      this.inCoreKey = inCoreKey;
-    }
-
-    @Override
-    public void onClose(Object ownerCoreCacheKey) throws IOException {
-      assert inCoreKey == ownerCoreCacheKey;
-      in.onClose(thisCoreKey);
-    }
-
-    // NOTE: equals/hashcore are important for removeCoreClosedListener to work
-    // correctly
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj == null || obj.getClass() != CoreClosedListenerWrapper.class) {
-        return false;
-      }
-      CoreClosedListenerWrapper that = (CoreClosedListenerWrapper) obj;
-      return in.equals(that.in) && thisCoreKey == that.thisCoreKey;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(getClass(), in, thisCoreKey);
-    }
-
-  }
-
-  @Override
-  public void addCoreClosedListener(final CoreClosedListener listener) {
-    in.addCoreClosedListener(CoreClosedListenerWrapper.wrap(listener, getCoreCacheKey(), in.getCoreCacheKey()));
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    in.removeCoreClosedListener(CoreClosedListenerWrapper.wrap(listener, getCoreCacheKey(), in.getCoreCacheKey()));
-  }
-
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
@@ -382,8 +312,8 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
+  public PointValues getPointValues(String field) throws IOException {
+    return in.getPointValues(field);
   }
 
   @Override
@@ -415,11 +345,11 @@ public abstract class FilterLeafReader extends LeafReader {
   protected void doClose() throws IOException {
     in.close();
   }
-  
+
   @Override
-  public Fields fields() throws IOException {
+  public Terms terms(String field) throws IOException {
     ensureOpen();
-    return in.fields();
+    return in.terms(field);
   }
 
   @Override
@@ -467,9 +397,9 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
-  public Sort getIndexSort() {
+  public LeafMetaData getMetaData() {
     ensureOpen();
-    return in.getIndexSort();
+    return in.getMetaData();
   }
 
   @Override

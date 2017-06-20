@@ -42,14 +42,14 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 import org.junit.Ignore;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestPackedInts extends LuceneTestCase {
 
   public void testByteCount() {
     final int iters = atLeast(3);
     for (int i = 0; i < iters; ++i) {
-      final int valueCount = RandomInts.randomIntBetween(random(), 1, Integer.MAX_VALUE);
+      final int valueCount = RandomNumbers.randomIntBetween(random(), 1, Integer.MAX_VALUE);
       for (PackedInts.Format format : PackedInts.Format.values()) {
         for (int bpv = 1; bpv <= 64; ++bpv) {
           final long byteCount = format.byteCount(PackedInts.VERSION_CURRENT, valueCount, bpv);
@@ -206,7 +206,7 @@ public class TestPackedInts extends LuceneTestCase {
 
   public void testEndPointer() throws IOException {
     final Directory dir = newDirectory();
-    final int valueCount = RandomInts.randomIntBetween(random(), 1, 1000);
+    final int valueCount = RandomNumbers.randomIntBetween(random(), 1, 1000);
     final IndexOutput out = dir.createOutput("tests.bin", newIOContext(random()));
     for (int i = 0; i < valueCount; ++i) {
       out.writeLong(0);
@@ -224,7 +224,7 @@ public class TestPackedInts extends LuceneTestCase {
 
           // test iterator
           in.seek(0L);
-          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(in, format, version, valueCount, bpv, RandomInts.randomIntBetween(random(), 1, 1<<16));
+          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(in, format, version, valueCount, bpv, RandomNumbers.randomIntBetween(random(), 1, 1<<16));
           for (int i = 0; i < valueCount; ++i) {
             it.next();
           }
@@ -981,9 +981,9 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedLongValues() {
-    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, TEST_NIGHTLY ? 1000000 : 100000)];
+    final long[] arr = new long[RandomNumbers.randomIntBetween(random(), 1, TEST_NIGHTLY ? 1000000 : 100000)];
     float[] ratioOptions = new float[]{PackedInts.DEFAULT, PackedInts.COMPACT, PackedInts.FAST};
-    for (int bpv : new int[]{0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 62)}) {
+    for (int bpv : new int[]{0, 1, 63, 64, RandomNumbers.randomIntBetween(random(), 2, 62)}) {
       for (DataType dataType : Arrays.asList(DataType.DELTA_PACKED)) {
         final int pageSize = 1 << TestUtil.nextInt(random(), 6, 20);
         float acceptableOverheadRatio = ratioOptions[TestUtil.nextInt(random(), 0, ratioOptions.length - 1)];
@@ -1063,7 +1063,7 @@ public class TestPackedInts extends LuceneTestCase {
     final int[] bitsPerValues = new int[longs.length];
     final boolean[] skip = new boolean[longs.length];
     for (int i = 0; i < longs.length; ++i) {
-      final int bpv = RandomInts.randomIntBetween(random(), 1, 64);
+      final int bpv = RandomNumbers.randomIntBetween(random(), 1, 64);
       bitsPerValues[i] = random().nextBoolean() ? bpv : TestUtil.nextInt(random(), bpv, 64);
       if (bpv == 64) {
         longs[i] = random().nextLong();

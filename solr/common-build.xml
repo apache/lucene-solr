@@ -42,6 +42,7 @@
   <property name="server.dir" location="${common-solr.dir}/server" />
   <property name="example" location="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${dest}/docs"/>
+  <property name="javadoc-online.dir" location="${dest}/docs-online"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
   <property name="changes.target.dir" location="${dest}/docs/changes"/>
@@ -150,14 +151,11 @@
   </macrodef>
 
   <!-- 
-    We don't want to run HDFS tests on Windows, because they require Cygwin.
-    We don't want to run HDFS tests on Java 9 Jigsaw, because Hadoop/HDFS is completely broken with Java's module system.
+    We don't want to run HDFS tests on Windows by default, because they require Cygwin.
+    Cygwin users can explicitly set -Dtests.disableHdfs=false to enable Hdfs related testing.
   -->
   <condition property="tests.disableHdfs" value="true">
-    <or>
-      <os family="windows"/>
-      <available classname="java.lang.reflect.Module"/>
-    </or>
+    <os family="windows"/>
   </condition>
 
   <target name="validate" depends="compile-tools">
@@ -339,7 +337,7 @@
     <groovy><![CDATA[
       String url, version = properties['version'];
       String useLocalJavadocUrl = properties['useLocalJavadocUrl'];
-      if (version.contains('-SNAPSHOT') || Boolean.parseBoolean(useLocalJavadocUrl)) {
+      if (version != properties['version.base'] || Boolean.parseBoolean(useLocalJavadocUrl)) {
         url = new File(properties['common.dir'], 'build' + File.separator + 'docs').toURI().toASCIIString();
         if (!(url =~ /\/$/)) url += '/';
       } else {
@@ -348,6 +346,21 @@
       }
       task.log('Using the following URL to refer to Lucene Javadocs: ' + url);
       properties['lucene.javadoc.url'] = url;
+    ]]></groovy>
+  </target>
+
+  <target name="define-solr-javadoc-url" depends="resolve-groovy" unless="solr.javadoc.url">
+    <groovy><![CDATA[
+      String url, version = properties['version'];
+      if (version != properties['version.base']) {
+        url = '';
+        task.log('Disabled Solr Javadocs online URL for packaging (custom build / SNAPSHOT version).');
+      } else {
+        version = version.replace('.', '_');
+        url = 'http://lucene.apache.org/solr/' + version + '/';
+        task.log('Using the following URL to refer to Solr Javadocs: ' + url);
+      }
+      properties['solr.javadoc.url'] = url;
     ]]></groovy>
   </target>
 

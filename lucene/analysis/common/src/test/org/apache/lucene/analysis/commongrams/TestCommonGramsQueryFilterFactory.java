@@ -92,4 +92,14 @@ public class TestCommonGramsQueryFilterFactory extends BaseTokenStreamFactoryTes
     });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
+
+  public void testCompleteGraph() throws Exception {
+    CommonGramsQueryFilterFactory factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery");
+    CharArraySet words = factory.getCommonWords();
+    assertTrue("words is null and it shouldn't be", words != null);
+    assertTrue(words.contains("the"));
+    Tokenizer tokenizer = whitespaceMockTokenizer("testing the factory works");
+    TokenStream stream = factory.create(tokenizer);
+    assertGraphStrings(stream, "testing_the the_factory factory works");
+  }
 }

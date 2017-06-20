@@ -19,6 +19,7 @@ package org.apache.lucene.spatial3d.geom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.BitSet;
+import java.util.Collections;
 
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -965,6 +966,68 @@ shape:
       actualBounds1.getMinimumZ(), actualBounds1.getMaximumZ());
 
     assertTrue(solid.isWithin(point));
+  }
+
+  @Test
+  public void testConcavePolygon() {
+    ArrayList<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).shapes.get(0);
+    GeoPolygon polygonConcave = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points);
+    assertEquals(polygon,polygonConcave);
+  }
+
+  @Test
+  public void testConcavePolygonWithHole() {
+    ArrayList<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, -1.1, -1.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 1.0, -1.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 1.1, -1.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 1.0, -1.4));
+    ArrayList<GeoPoint> hole_points = new ArrayList<>();
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
+
+    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).shapes.get(0);
+    GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
+    assertEquals(polygon,polygon2);
+  }
+
+  @Test
+  public void testConvexPolygon() {
+    ArrayList<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0, 0));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, 0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0));
+    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).shapes.get(0);
+    GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points);
+    assertEquals(polygon,polygon2);
+  }
+
+  @Test
+  public void testConvexPolygonWithHole() {
+    ArrayList<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.SPHERE, -1, -1));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -1, 1));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 1, 1));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 1, -1));
+    ArrayList<GeoPoint> hole_points = new ArrayList<>();
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
+
+    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).shapes.get(0);
+    GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
+    assertEquals(polygon,polygon2);
   }
   
 }

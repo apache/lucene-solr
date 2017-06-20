@@ -19,6 +19,7 @@ package org.apache.solr.uninverting;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.lucene.document.BinaryDocValuesField; // javadocs
 import org.apache.lucene.document.NumericDocValuesField; // javadocs
@@ -37,6 +38,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
@@ -85,7 +87,7 @@ public class UninvertingReader extends FilterLeafReader {
      */
     DOUBLE_POINT,
     /** 
-     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyIntField})
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.solr.legacy.LegacyIntField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -94,7 +96,7 @@ public class UninvertingReader extends FilterLeafReader {
     @Deprecated
     LEGACY_INTEGER,
     /** 
-     * Single-valued Long, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyLongField})
+     * Single-valued Long, (e.g. indexed with {@link org.apache.solr.legacy.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -103,7 +105,7 @@ public class UninvertingReader extends FilterLeafReader {
     @Deprecated
     LEGACY_LONG,
     /** 
-     * Single-valued Float, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyFloatField})
+     * Single-valued Float, (e.g. indexed with {@link org.apache.solr.legacy.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -112,7 +114,7 @@ public class UninvertingReader extends FilterLeafReader {
     @Deprecated
     LEGACY_FLOAT,
     /** 
-     * Single-valued Double, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyDoubleField})
+     * Single-valued Double, (e.g. indexed with {@link org.apache.solr.legacy.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
@@ -142,60 +144,79 @@ public class UninvertingReader extends FilterLeafReader {
      */
     SORTED_SET_BINARY,
     /** 
-     * Multi-valued Integer, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyIntField})
+     * Multi-valued Integer, (e.g. indexed with {@link org.apache.solr.legacy.LegacyIntField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_INTEGER,
     /** 
-     * Multi-valued Float, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyFloatField})
+     * Multi-valued Float, (e.g. indexed with {@link org.apache.solr.legacy.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_FLOAT,
     /** 
-     * Multi-valued Long, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyLongField})
+     * Multi-valued Long, (e.g. indexed with {@link org.apache.solr.legacy.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_LONG,
     /** 
-     * Multi-valued Double, (e.g. indexed with {@link org.apache.lucene.legacy.LegacyDoubleField})
+     * Multi-valued Double, (e.g. indexed with {@link org.apache.solr.legacy.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link SortedSetDocValuesField}.
      */
     SORTED_SET_DOUBLE
+
   }
   
   /**
+   * 
    * Wraps a provided DirectoryReader. Note that for convenience, the returned reader
    * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
    * and so on. 
+   * 
+   * @param in input directory reader
+   * @param perSegmentMapper function to map a segment reader to a mapping of fields to their uninversion type
+   * @return a wrapped directory reader
    */
+  public static DirectoryReader wrap(DirectoryReader in, final Function<LeafReader, Map<String,Type>> perSegmentMapper) throws IOException {
+    return new UninvertingDirectoryReader(in, perSegmentMapper);
+  }
+  
   public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
-    return new UninvertingDirectoryReader(in, mapping);
+    return UninvertingReader.wrap(in, (r) -> mapping);
   }
   
   static class UninvertingDirectoryReader extends FilterDirectoryReader {
-    final Map<String,Type> mapping;
+    final Function<LeafReader, Map<String,Type>> mapper;
     
-    public UninvertingDirectoryReader(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
+    public UninvertingDirectoryReader(DirectoryReader in, final Function<LeafReader, Map<String,Type>> mapper) throws IOException {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
-          return new UninvertingReader(reader, mapping);
+          return new UninvertingReader(reader, mapper.apply(reader));
         }
       });
-      this.mapping = mapping;
+      this.mapper = mapper;
     }
 
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
-      return new UninvertingDirectoryReader(in, mapping);
+      return new UninvertingDirectoryReader(in, mapper);
+    }
+
+    // NOTE: delegating the cache helpers is wrong since this wrapper alters the
+    // content of the reader, it is only fine to do that because Solr ALWAYS
+    // consumes index readers through this wrapper
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
   }
   
@@ -205,7 +226,7 @@ public class UninvertingReader extends FilterLeafReader {
   /** 
    * Create a new UninvertingReader with the specified mapping 
    * <p>
-   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Map)}
+   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Function)}
    * instead.
    *  
    * @lucene.internal
@@ -355,14 +376,18 @@ public class UninvertingReader extends FilterLeafReader {
     return mapping.get(field);
   }
 
+  // NOTE: delegating the cache helpers is wrong since this wrapper alters the
+  // content of the reader, it is only fine to do that because Solr ALWAYS
+  // consumes index readers through this wrapper
+
   @Override
-  public Object getCoreCacheKey() {
-    return in.getCoreCacheKey();
+  public CacheHelper getCoreCacheHelper() {
+    return in.getCoreCacheHelper();
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return in.getCombinedCoreAndDeletesKey();
+  public CacheHelper getReaderCacheHelper() {
+    return in.getReaderCacheHelper();
   }
 
   @Override
@@ -374,16 +399,34 @@ public class UninvertingReader extends FilterLeafReader {
    * Return information about the backing cache
    * @lucene.internal 
    */
-  public static String[] getUninvertedStats() {
+  public static FieldCacheStats getUninvertedStats() {
     CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+    long totalBytesUsed = 0;
     String[] info = new String[entries.length];
     for (int i = 0; i < entries.length; i++) {
       info[i] = entries[i].toString();
+      totalBytesUsed += entries[i].getValue().ramBytesUsed();
     }
-    return info;
+    String totalSize = RamUsageEstimator.humanReadableUnits(totalBytesUsed);
+    return new FieldCacheStats(totalSize, info);
   }
 
   public static int getUninvertedStatsSize() {
     return FieldCache.DEFAULT.getCacheEntries().length;
+  }
+
+  /**
+   * Return information about the backing cache
+   * @lucene.internal
+   */
+  public static class FieldCacheStats {
+    public String totalSize;
+    public String[] info;
+
+    public FieldCacheStats(String totalSize, String[] info) {
+      this.totalSize = totalSize;
+      this.info = info;
+    }
+
   }
 }

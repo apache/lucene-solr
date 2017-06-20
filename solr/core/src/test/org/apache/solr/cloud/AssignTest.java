@@ -87,4 +87,10 @@ public class AssignTest extends SolrTestCaseJ4 {
     assertEquals("core_node2", nodeName);
   }
   
+  @Test
+  public void testBuildCoreName() {
+    assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildCoreName("collection1", "shard1", Replica.Type.NRT, 1));
+    assertEquals("Core name pattern changed", "collection1_shard2_replica_p2", Assign.buildCoreName("collection1", "shard2", Replica.Type.PULL,2));
+  }
+  
 }

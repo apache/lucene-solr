@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,6 +49,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
  * TODO!
@@ -173,7 +174,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
       Map<Object,SolrDocumentList> tempResults = new LinkedHashMap<>();
       
-      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, 5);
+      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, MoreLikeThisParams.DEFAULT_DOC_COUNT);
       String keyName = rb.req.getSchema().getUniqueKeyField().getName();
       
       for (ShardRequest sreq : rb.finished) {
@@ -221,7 +222,17 @@ public class MoreLikeThisComponent extends SearchComponent {
     }
     super.finishStage(rb);
   }
-  
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false)) return;
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) == 0
+        && (sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) == 0) {
+      sreq.params.set(COMPONENT_NAME, "false");
+    }
+  }
+
   /**
    * Returns NamedList based on the order of
    * resultIds.shardDoc.positionInResponse
@@ -329,7 +340,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     String id = rb.req.getSchema().getUniqueKeyField()
     .getName();
     s.params.set(CommonParams.FL, "score," + id);
-    s.params.set("sort", "score desc");
+    s.params.set(SORT, "score desc");
     // MLT Query is submitted as normal query to shards.
     s.params.set(CommonParams.Q, q);
     
@@ -402,16 +413,16 @@ public class MoreLikeThisComponent extends SearchComponent {
   }
   
   // ///////////////////////////////////////////
-  // / SolrInfoMBean
+  // / SolrInfoBean
   // //////////////////////////////////////////
   
   @Override
   public String getDescription() {
     return "More Like This";
   }
-  
+
   @Override
-  public URL[] getDocs() {
-    return null;
+  public Category getCategory() {
+    return Category.QUERY;
   }
 }

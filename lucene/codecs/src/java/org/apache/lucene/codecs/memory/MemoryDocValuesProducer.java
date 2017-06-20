@@ -42,7 +42,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
@@ -371,7 +370,12 @@ class MemoryDocValuesProducer extends DocValuesProducer {
           ramBytesUsed.addAndGet(reader.ramBytesUsed());
           numericInfo.put(field.name, Accountables.namedAccountable("block compressed", reader));
         }
-        return reader;
+        return new LegacyNumericDocValues() {
+          @Override
+          public long get(int docID) {
+            return reader.get(docID);
+          }
+        };
       case GCD_COMPRESSED:
         final long min = data.readLong();
         final long mult = data.readLong();
@@ -568,51 +572,26 @@ class MemoryDocValuesProducer extends DocValuesProducer {
         }
         addr = res;
       }
-      if (values instanceof LongValues) {
-        // probably not the greatest codec choice for this situation, but we support it
-        final LongValues longValues = (LongValues) values;
-        return new LegacySortedNumericDocValuesWrapper(new LegacySortedNumericDocValues() {
-          long startOffset;
-          long endOffset;
-          
-          @Override
-          public void setDocument(int doc) {
-            startOffset = (int) addr.get(doc);
-            endOffset = (int) addr.get(doc+1L);
-          }
+      return new LegacySortedNumericDocValuesWrapper(new LegacySortedNumericDocValues() {
+        int startOffset;
+        int endOffset;
+      
+        @Override
+        public void setDocument(int doc) {
+          startOffset = (int) addr.get(doc);
+          endOffset = (int) addr.get(doc+1);
+        }
 
-          @Override
-          public long valueAt(int index) {
-            return longValues.get(startOffset + index);
-          }
+        @Override
+        public long valueAt(int index) {
+          return values.get(startOffset + index);
+        }
 
-          @Override
-          public int count() {
-            return (int) (endOffset - startOffset);
-          }
-          }, maxDoc);
-      } else {
-        return new LegacySortedNumericDocValuesWrapper(new LegacySortedNumericDocValues() {
-          int startOffset;
-          int endOffset;
-        
-          @Override
-          public void setDocument(int doc) {
-            startOffset = (int) addr.get(doc);
-            endOffset = (int) addr.get(doc+1);
-          }
-
-          @Override
-          public long valueAt(int index) {
-            return values.get(startOffset + index);
-          }
-
-          @Override
-          public int count() {
-            return (endOffset - startOffset);
-          }
-          }, maxDoc);
-      }
+        @Override
+        public int count() {
+          return (endOffset - startOffset);
+        }
+        }, maxDoc);
     }
   }
   

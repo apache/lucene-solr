@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -54,7 +54,10 @@ import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * Represents a Latitude/Longitude as a 2 dimensional point.  Latitude is <b>always</b> specified first.
+ *
+ * @deprecated use {@link LatLonPointSpatialField} instead
  */
+@Deprecated
 public class LatLonType extends AbstractSubTypeFieldType implements SpatialQueryable {
   protected static final int LAT = 0;
   protected static final int LON = 1;
@@ -67,7 +70,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     String externalVal = value.toString();
     //we could have 3 fields (two for the lat & lon, one for storage)
     List<IndexableField> f = new ArrayList<>(3);
@@ -75,18 +78,24 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
       Point point = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
       //latitude
       SchemaField subLatSF = subField(field, LAT, schema);
-      f.add(subLatSF.createField(String.valueOf(point.getY()), subLatSF.indexed() && !subLatSF.omitNorms() ? boost : 1f));
+      f.addAll(subLatSF.createFields(String.valueOf(point.getY())));
       //longitude
       SchemaField subLonSF = subField(field, LON, schema);
-      f.add(subLonSF.createField(String.valueOf(point.getX()), subLonSF.indexed() && !subLonSF.omitNorms() ? boost : 1f));
+      f.addAll(subLonSF.createFields(String.valueOf(point.getX())));
     }
 
     if (field.stored()) {
-      FieldType customType = new FieldType();
-      customType.setStored(true);
-      f.add(createField(field.getName(), externalVal, customType, 1f));
+      f.add(createField(field.getName(), externalVal, StoredField.TYPE));
     }
     return f;
+  }
+  
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues supported only when enabled at the fieldType 
+    if (!hasProperty(DOC_VALUES)) {
+      throw new UnsupportedOperationException("LatLonType can't have docValues=true in the field definition, use docValues=true in the fieldType definition, or in subFieldType/subFieldSuffix");
+    }
   }
 
 
@@ -247,7 +256,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 

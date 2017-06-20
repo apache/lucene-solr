@@ -25,14 +25,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.lucene70.Lucene70DocValuesProducer.SparseNumericDocValues;
-import org.apache.lucene.codecs.lucene70.Lucene70DocValuesProducer.SparseNumericDocValuesRandomAccessWrapper;
 import org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -70,7 +70,6 @@ import org.apache.lucene.store.RAMInputStream;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -107,7 +106,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(atLeast(300), 1, 32766);
+      doTestSortedVsStoredFields(atLeast(300), 1d, 1, 32766);
     }
   }
   
@@ -115,7 +114,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthManyVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1, 500);
+      doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1d, 1, 500);
     }
   }
   
@@ -123,7 +122,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testTermsEnumFixedWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), 10, 10);
+      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), () -> TestUtil.randomSimpleString(random(), 10, 10));
     }
   }
   
@@ -131,7 +130,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testTermsEnumVariableWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), 1, 500);
+      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), () -> TestUtil.randomSimpleString(random(), 1, 500));
     }
   }
   
@@ -139,7 +138,21 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testTermsEnumRandomMany() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 8121), 1, 500);
+      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 8121), () -> TestUtil.randomSimpleString(random(), 1, 500));
+    }
+  }
+
+  public void testTermsEnumLongSharedPrefixes() throws Exception {
+    int numIterations = atLeast(1);
+    for (int i = 0; i < numIterations; i++) {
+      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), () -> {
+        char[] chars = new char[random().nextInt(500)];
+        Arrays.fill(chars, 'a');
+        if (chars.length > 0) {
+          chars[random().nextInt(chars.length)] = 'b';
+        }
+        return new String(chars);
+      });
     }
   }
 
@@ -269,7 +282,7 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
   // TODO: try to refactor this and some termsenum tests into the base class.
   // to do this we need to fix the test class to get a DVF not a Codec so we can setup
   // the postings format correctly.
-  private void doTestTermsEnumRandom(int numDocs, int minLength, int maxLength) throws Exception {
+  private void doTestTermsEnumRandom(int numDocs, Supplier<String> valuesProducer) throws Exception {
     Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergeScheduler(new SerialMergeScheduler());
@@ -294,12 +307,11 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
       doc.add(idField);
-      final int length = TestUtil.nextInt(random(), minLength, maxLength);
       int numValues = random().nextInt(17);
       // create a random list of strings
       List<String> values = new ArrayList<>();
       for (int v = 0; v < numValues; v++) {
-        values.add(TestUtil.randomSimpleString(random(), minLength, length));
+        values.add(valuesProducer.get());
       }
       
       // add in any order to the indexed field
@@ -429,92 +441,6 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  public void testSparseLongValues() throws IOException {
-    final int iters = atLeast(5);
-    for (int iter = 0; iter < iters; ++iter) {
-      final int numDocs = TestUtil.nextInt(random(), 0, 100);
-      final int[] docIds = new int[numDocs];
-      final long[] values = new long[numDocs];
-      final int maxDoc;
-      if (numDocs == 0) {
-        maxDoc = 1 + random().nextInt(10);
-      } else {
-        docIds[0] = random().nextInt(10);
-        for (int i = 1; i < docIds.length; ++i) {
-          docIds[i] = docIds[i - 1] + 1 + random().nextInt(100);
-        }
-        maxDoc = docIds[numDocs - 1] + 1 + random().nextInt(10);
-      }
-      for (int i = 0; i < values.length; ++i) {
-        values[i] = random().nextLong();
-      }
-      final long missingValue = random().nextLong();
-      final LongValues docIdsValues = new LongValues() {
-        @Override
-        public long get(long index) {
-          return docIds[Math.toIntExact(index)];
-        }
-      };
-      final LongValues valuesValues = new LongValues() {
-        @Override
-        public long get(long index) {
-          return values[Math.toIntExact(index)];
-        }
-      };
-      final SparseNumericDocValues sparseValues = new SparseNumericDocValues(numDocs, docIdsValues, valuesValues);
-
-      // sequential access
-      assertEquals(-1, sparseValues.docID());
-      for (int i = 0; i < docIds.length; ++i) {
-        assertEquals(docIds[i], sparseValues.nextDoc());
-      }
-      assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.nextDoc());
-
-      // advance
-      for (int i = 0; i < 2000; ++i) {
-        final int target = TestUtil.nextInt(random(), 0, maxDoc);
-        int index = Arrays.binarySearch(docIds, target);
-        if (index < 0) {
-          index = -1 - index;
-        }
-        sparseValues.reset();
-        if (index > 0) {
-          assertEquals(docIds[index - 1], sparseValues.advance(Math.toIntExact(docIds[index - 1])));
-        }
-        if (index == docIds.length) {
-          assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.advance(target));
-        } else {
-          assertEquals(docIds[index], sparseValues.advance(target));
-        }
-      }
-
-      final SparseNumericDocValuesRandomAccessWrapper raWrapper = new SparseNumericDocValuesRandomAccessWrapper(sparseValues, missingValue);
-
-      // random-access
-      for (int i = 0; i < 2000; ++i) {
-        final int docId = TestUtil.nextInt(random(), 0, maxDoc - 1);
-        final int idx = Arrays.binarySearch(docIds, docId);
-        final long value = raWrapper.get(docId);
-        if (idx >= 0) {
-          assertEquals(values[idx], value);
-        } else {
-          assertEquals(missingValue, value);
-        }
-      }
-
-      // sequential access
-      for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
-        final int idx = Arrays.binarySearch(docIds, docId);
-        final long value = raWrapper.get(docId);
-        if (idx >= 0) {
-          assertEquals(values[idx], value);
-        } else {
-          assertEquals(missingValue, value);
-        }
-      }
-    }
-  }
-
   @Slow
   public void testSortedSetAroundBlockSize() throws IOException {
     final int frontier = 1 << Lucene70DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
@@ -609,5 +535,155 @@ public class TestLucene70DocValuesFormat extends BaseCompressingDocValuesFormatT
       r.close();
       dir.close();
     }
+  }
+
+  @Slow
+  public void testSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
+    doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 1, 3));
+  }
+
+  @Slow
+  public void testSparseSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
+    doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 0, 2));
+  }
+
+  @Slow
+  public void testNumericBlocksOfVariousBitsPerValue() throws Exception {
+    doTestSparseNumericBlocksOfVariousBitsPerValue(1);
+  }
+
+  @Slow
+  public void testSparseNumericBlocksOfVariousBitsPerValue() throws Exception {
+    doTestSparseNumericBlocksOfVariousBitsPerValue(random().nextDouble());
+  }
+
+  private static LongSupplier blocksOfVariousBPV() {
+    final long mul = TestUtil.nextInt(random(), 1, 100);
+    final long min = random().nextInt();
+    return new LongSupplier() {
+      int i = Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE;
+      int maxDelta;
+      @Override
+      public long getAsLong() {
+        if (i == Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE) {
+          maxDelta = 1 << random().nextInt(5);
+          i = 0;
+        }
+        i++;
+        return min + mul * random().nextInt(maxDelta);
+      }
+    };
+  }
+
+  private void doTestSortedNumericBlocksOfVariousBitsPerValue(LongSupplier counts) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMaxBufferedDocs(atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE));
+    conf.setRAMBufferSizeMB(-1);
+    conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    final int numDocs = atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
+    final LongSupplier values = blocksOfVariousBPV();
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      
+      int valueCount = (int) counts.getAsLong();
+      long valueArray[] = new long[valueCount];
+      for (int j = 0; j < valueCount; j++) {
+        long value = values.getAsLong();
+        valueArray[j] = value;
+        doc.add(new SortedNumericDocValuesField("dv", value));
+      }
+      Arrays.sort(valueArray);
+      for (int j = 0; j < valueCount; j++) {
+        doc.add(new StoredField("stored", Long.toString(valueArray[j])));
+      }
+      writer.addDocument(doc);
+      if (random().nextInt(31) == 0) {
+        writer.commit();
+      }
+    }
+    writer.forceMerge(1);
+
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    TestUtil.checkReader(ir);
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
+      SortedNumericDocValues docValues = DocValues.getSortedNumeric(r, "dv");
+      for (int i = 0; i < r.maxDoc(); i++) {
+        if (i > docValues.docID()) {
+          docValues.nextDoc();
+        }
+        String expected[] = r.document(i).getValues("stored");
+        if (i < docValues.docID()) {
+          assertEquals(0, expected.length);
+        } else {
+          String actual[] = new String[docValues.docValueCount()];
+          for (int j = 0; j < actual.length; j++) {
+            actual[j] = Long.toString(docValues.nextValue());
+          }
+          assertArrayEquals(expected, actual);
+        }
+      }
+    }
+    ir.close();
+    dir.close();
+  }
+
+  private void doTestSparseNumericBlocksOfVariousBitsPerValue(double density) throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    conf.setMaxBufferedDocs(atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE));
+    conf.setRAMBufferSizeMB(-1);
+    conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    Document doc = new Document();
+    Field storedField = newStringField("stored", "", Field.Store.YES);
+    Field dvField = new NumericDocValuesField("dv", 0);
+    doc.add(storedField);
+    doc.add(dvField);
+
+    final int numDocs = atLeast(Lucene70DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
+    final LongSupplier longs = blocksOfVariousBPV();
+    for (int i = 0; i < numDocs; i++) {
+      if (random().nextDouble() > density) {
+        writer.addDocument(new Document());
+        continue;
+      }
+      long value = longs.getAsLong();
+      storedField.setStringValue(Long.toString(value));
+      dvField.setLongValue(value);
+      writer.addDocument(doc);
+    }
+
+    writer.forceMerge(1);
+
+    writer.close();
+    
+    // compare
+    DirectoryReader ir = DirectoryReader.open(dir);
+    TestUtil.checkReader(ir);
+    for (LeafReaderContext context : ir.leaves()) {
+      LeafReader r = context.reader();
+      NumericDocValues docValues = DocValues.getNumeric(r, "dv");
+      docValues.nextDoc();
+      for (int i = 0; i < r.maxDoc(); i++) {
+        String storedValue = r.document(i).get("stored");
+        if (storedValue == null) {
+          assertTrue(docValues.docID() > i);
+        } else {
+          assertEquals(i, docValues.docID());
+          assertEquals(Long.parseLong(storedValue), docValues.longValue());
+          docValues.nextDoc();
+        }
+      }
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
+    }
+    ir.close();
+    dir.close();
   }
 }

@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -130,6 +131,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     try {
       processor.finish();
     } finally {
+      IOUtils.closeQuietly(processor);
       req.close();
     }
   }
@@ -149,12 +151,11 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputFields
    */
-  final SolrInputField field(String name, float boost, Object... values) {
+  final SolrInputField field(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
-      f.addValue(v, 1.0F);
+      f.addValue(v);
     }
-    f.setBoost(boost);
     return f;
   }
 
@@ -162,6 +163,6 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
    * Convenience method for building up SolrInputFields with default boost
    */
   final SolrInputField f(String name, Object... values) {
-    return field(name, 1.0F, values);
+    return field(name, values);
   }
 }

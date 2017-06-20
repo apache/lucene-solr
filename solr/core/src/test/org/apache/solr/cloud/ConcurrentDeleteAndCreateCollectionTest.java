@@ -16,8 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,13 +28,18 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Nightly
 public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private MiniSolrCloudCluster solrCluster;
   
@@ -52,13 +58,12 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   }
   
   public void testConcurrentCreateAndDeleteDoesNotFail() {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;
-    final Thread[] threads = new Thread[10];
+    final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[10];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
-      uploadConfig(configDir, collectionName);
+      uploadConfig(configset("configset-2"), collectionName);
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
       threads[i] = new CreateDeleteSearchCollectionThread("create-delete-search-" + i, collectionName, collectionName, 
@@ -73,15 +78,14 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   
   public void testConcurrentCreateAndDeleteOverTheSameConfig() {
     final String configName = "testconfig";
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    uploadConfig(configDir, configName); // upload config once, to be used by all collections
+    uploadConfig(configset("configset-2"), configName); // upload config once, to be used by all collections
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;
-    final Thread[] threads = new Thread[2];
+    final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[2];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
+      final SolrClient solrClient = getHttpSolrClient(baseUrl);
       threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName,
                                                     timeToRunSec, solrClient, failure);
     }
@@ -90,26 +94,20 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     joinAll(threads);
 
     assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
-
-    try {
-      solrClient.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
   
-  private void uploadConfig(File configDir, String configName) {
+  private void uploadConfig(Path configDir, String configName) {
     try {
-      solrCluster.uploadConfigDir(configDir, configName);
+      solrCluster.uploadConfigSet(configDir, configName);
     } catch (IOException | KeeperException | InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
   
-  private void joinAll(final Thread[] threads) {
-    for (Thread t : threads) {
+  private void joinAll(final CreateDeleteCollectionThread[] threads) {
+    for (CreateDeleteCollectionThread t : threads) {
       try {
-        t.join();
+        t.joinAndClose();
       } catch (InterruptedException e) {
         Thread.interrupted();
         throw new RuntimeException(e);
@@ -154,6 +152,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     }
     
     protected void addFailure(Exception e) {
+      log.error("Add Failure", e);
       synchronized (failure) {
         if (failure.get() != null) {
           failure.get().addSuppressed(e);
@@ -165,11 +164,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     private void createCollection() {
       try {
-        final CollectionAdminResponse response = new CollectionAdminRequest.Create()
-                .setCollectionName(collectionName)
-                .setNumShards(1)
-                .setReplicationFactor(1)
-                .setConfigName(configName).process(solrClient);
+        final CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName,configName,1,1)
+                .process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to create collection " + collectionName));
         }
@@ -181,15 +177,22 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     private void deleteCollection() {
       try {
-        final CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete()
-                .setCollectionName(collectionName);
-        
+        final CollectionAdminRequest.Delete deleteCollectionRequest
+          = CollectionAdminRequest.deleteCollection(collectionName);
         final CollectionAdminResponse response = deleteCollectionRequest.process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to delete collection " + collectionName));
         }
       } catch (Exception e) {
         addFailure(e);
+      }
+    }
+    
+    public void joinAndClose() throws InterruptedException {
+      try {
+        super.join(60000);
+      } finally {
+        IOUtils.closeQuietly(solrClient);
       }
     }
   }

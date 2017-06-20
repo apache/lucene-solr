@@ -49,51 +49,51 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
     assertQ(req("fl", "*,score", "q", "*:*"),
             "//*[@numFound='4']",
             "//float[@name='score']='1.0'",
-            "//result/doc[1]/int[@name='id'][.='1']",
-            "//result/doc[2]/int[@name='id'][.='2']",
-            "//result/doc[3]/int[@name='id'][.='3']",
-            "//result/doc[4]/int[@name='id'][.='4']"
+            "//result/doc[1]/str[@name='id'][.='1']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='3']",
+            "//result/doc[4]/str[@name='id'][.='4']"
     );
     assertQ(req("fl", "*,score", "q", "*:*", "sort", "score desc"),
             "//*[@numFound='4']",
             "//float[@name='score']='1.0'",
-            "//result/doc[1]/int[@name='id'][.='1']",
-            "//result/doc[2]/int[@name='id'][.='2']",
-            "//result/doc[3]/int[@name='id'][.='3']",
-            "//result/doc[4]/int[@name='id'][.='4']"
+            "//result/doc[1]/str[@name='id'][.='1']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='3']",
+            "//result/doc[4]/str[@name='id'][.='4']"
     );
     assertQ(req("fl", "id,score", "q", "f_t:ipod", "sort", "score desc"),
             "//*[@numFound='4']",
-            "//result/doc[1]/int[@name='id'][.='1']",
-            "//result/doc[2]/int[@name='id'][.='4']",
-            "//result/doc[3]/int[@name='id'][.='2']",
-            "//result/doc[4]/int[@name='id'][.='3']"
+            "//result/doc[1]/str[@name='id'][.='1']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='3']",
+            "//result/doc[4]/str[@name='id'][.='4']"
     );
 
 
     assertQ(req("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) desc"),
             "//*[@numFound='4']",
             "//float[@name='score']='1.0'",
-            "//result/doc[1]/int[@name='id'][.='4']",
-            "//result/doc[2]/int[@name='id'][.='3']",
-            "//result/doc[3]/int[@name='id'][.='2']",
-            "//result/doc[4]/int[@name='id'][.='1']"
+            "//result/doc[1]/str[@name='id'][.='4']",
+            "//result/doc[2]/str[@name='id'][.='3']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[4]/str[@name='id'][.='1']"
     );
     assertQ(req("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) asc"),
             "//*[@numFound='4']",
             "//float[@name='score']='1.0'",
-            "//result/doc[1]/int[@name='id'][.='1']",
-            "//result/doc[2]/int[@name='id'][.='2']",
-            "//result/doc[3]/int[@name='id'][.='3']",
-            "//result/doc[4]/int[@name='id'][.='4']"
+            "//result/doc[1]/str[@name='id'][.='1']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='3']",
+            "//result/doc[4]/str[@name='id'][.='4']"
     );
     //the function is equal, w_td1 separates
     assertQ(req("q", "*:*", "fl", "id", "sort", "sum(z_td1, y_td1) asc, w_td1 asc"),
             "//*[@numFound='4']",
-            "//result/doc[1]/int[@name='id'][.='2']",
-            "//result/doc[2]/int[@name='id'][.='1']",
-            "//result/doc[3]/int[@name='id'][.='4']",
-            "//result/doc[4]/int[@name='id'][.='3']"
+            "//result/doc[1]/str[@name='id'][.='2']",
+            "//result/doc[2]/str[@name='id'][.='1']",
+            "//result/doc[3]/str[@name='id'][.='4']",
+            "//result/doc[4]/str[@name='id'][.='3']"
     );
   }
   
@@ -108,24 +108,24 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
 
     assertQ(req("q", "links_mfacet:B", "fl", "id", "sort", "id asc"),
             "//*[@numFound='2']",
-            "//result/doc[1]/int[@name='id'][.='3']",
-            "//result/doc[2]/int[@name='id'][.='4']"
+            "//result/doc[1]/str[@name='id'][.='3']",
+            "//result/doc[2]/str[@name='id'][.='4']"
     );
     
     assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) desc"),
             "//*[@numFound='4']",
-            "//result/doc[1]/int[@name='id'][.='1']",
-            "//result/doc[2]/int[@name='id'][.='2']",
-            "//result/doc[3]/int[@name='id'][.='3']",
-            "//result/doc[4]/int[@name='id'][.='4']"
+            "//result/doc[1]/str[@name='id'][.='1']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='3']",
+            "//result/doc[4]/str[@name='id'][.='4']"
     );
 
     assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) asc"),
             "//*[@numFound='4']",
-            "//result/doc[1]/int[@name='id'][.='4']",
-            "//result/doc[2]/int[@name='id'][.='3']",
-            "//result/doc[3]/int[@name='id'][.='2']",
-            "//result/doc[4]/int[@name='id'][.='1']"
+            "//result/doc[1]/str[@name='id'][.='4']",
+            "//result/doc[2]/str[@name='id'][.='3']",
+            "//result/doc[3]/str[@name='id'][.='2']",
+            "//result/doc[4]/str[@name='id'][.='1']"
     );
   }
   

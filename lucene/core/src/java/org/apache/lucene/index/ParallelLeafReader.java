@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Version;
 
 /** An {@link LeafReader} which reads multiple, parallel indexes.  Each index
  * added must have the same number of documents, but typically each contains
@@ -49,17 +51,17 @@ import org.apache.lucene.util.Bits;
  */
 public class ParallelLeafReader extends LeafReader {
   private final FieldInfos fieldInfos;
-  private final ParallelFields fields = new ParallelFields();
   private final LeafReader[] parallelReaders, storedFieldsReaders;
   private final Set<LeafReader> completeReaderSet =
     Collections.newSetFromMap(new IdentityHashMap<LeafReader,Boolean>());
   private final boolean closeSubReaders;
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
-  private final Sort indexSort;
-  private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
+  private final LeafMetaData metaData;
   private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
-  
+  private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();//TODO needn't sort?
+  private final Map<String,LeafReader> termsFieldToReader = new HashMap<>();
+
   /** Create a ParallelLeafReader based on the provided
    *  readers; auto-closes the given readers on {@link #close()}. */
   public ParallelLeafReader(LeafReader... readers) throws IOException {
@@ -104,14 +106,23 @@ public class ParallelLeafReader extends LeafReader {
     FieldInfos.Builder builder = new FieldInfos.Builder();
 
     Sort indexSort = null;
+    int createdVersionMajor = -1;
 
     // build FieldInfos and fieldToReader map:
     for (final LeafReader reader : this.parallelReaders) {
-      Sort leafIndexSort = reader.getIndexSort();
+      LeafMetaData leafMetaData = reader.getMetaData();
+      
+      Sort leafIndexSort = leafMetaData.getSort();
       if (indexSort == null) {
         indexSort = leafIndexSort;
       } else if (leafIndexSort != null && indexSort.equals(leafIndexSort) == false) {
         throw new IllegalArgumentException("cannot combine LeafReaders that have different index sorts: saw both sort=" + indexSort + " and " + leafIndexSort);
+      }
+
+      if (createdVersionMajor == -1) {
+        createdVersionMajor = leafMetaData.getCreatedVersionMajor();
+      } else if (createdVersionMajor != leafMetaData.getCreatedVersionMajor()) {
+        throw new IllegalArgumentException("cannot combine LeafReaders that have different creation versions: saw both version=" + createdVersionMajor + " and " + leafMetaData.getCreatedVersionMajor());
       }
 
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
@@ -120,25 +131,36 @@ public class ParallelLeafReader extends LeafReader {
         if (!fieldToReader.containsKey(fieldInfo.name)) {
           builder.add(fieldInfo);
           fieldToReader.put(fieldInfo.name, reader);
+          // only add these if the reader responsible for that field name is the current:
+          // TODO consider populating 1st leaf with vectors even if the field name has been seen on a previous leaf
           if (fieldInfo.hasVectors()) {
             tvFieldToReader.put(fieldInfo.name, reader);
+          }
+          // TODO consider populating 1st leaf with terms even if the field name has been seen on a previous leaf
+          if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+            termsFieldToReader.put(fieldInfo.name, reader);
           }
         }
       }
     }
-    fieldInfos = builder.finish();
-    this.indexSort = indexSort;
-    
-    // build Fields instance
+    if (createdVersionMajor == -1) {
+      // empty reader
+      createdVersionMajor = Version.LATEST.major;
+    }
+
+    Version minVersion = Version.LATEST;
     for (final LeafReader reader : this.parallelReaders) {
-      final Fields readerFields = reader.fields();
-      for (String field : readerFields) {
-        // only add if the reader responsible for that field name is the current:
-        if (fieldToReader.get(field) == reader) {
-          this.fields.addField(field, readerFields.terms(field));
-        }
+      Version leafVersion = reader.getMetaData().getMinVersion();
+      if (leafVersion == null) {
+        minVersion = null;
+        break;
+      } else if (minVersion.onOrAfter(leafVersion)) {
+        minVersion = leafVersion;
       }
     }
+
+    fieldInfos = builder.finish();
+    this.metaData = new LeafMetaData(createdVersionMajor, minVersion, indexSort);
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
     for (LeafReader reader : completeReaderSet) {
@@ -159,18 +181,8 @@ public class ParallelLeafReader extends LeafReader {
     return buffer.append(')').toString();
   }
 
-  @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    addCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    removeCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
   // Single instance of this, per ParallelReader instance
-  private final class ParallelFields extends Fields {
+  private static final class ParallelFields extends Fields {
     final Map<String,Terms> fields = new TreeMap<>();
     
     ParallelFields() {
@@ -214,13 +226,14 @@ public class ParallelLeafReader extends LeafReader {
     ensureOpen();
     return hasDeletions ? parallelReaders[0].getLiveDocs() : null;
   }
-  
+
   @Override
-  public Fields fields() {
+  public Terms terms(String field) throws IOException {
     ensureOpen();
-    return fields;
+    LeafReader leafReader = termsFieldToReader.get(field);
+    return leafReader == null ? null : leafReader.terms(field);
   }
-  
+
   @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
@@ -241,6 +254,32 @@ public class ParallelLeafReader extends LeafReader {
     }
   }
   
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    // ParallelReader instances can be short-lived, which would make caching trappy
+    // so we do not cache on them, unless they wrap a single reader in which
+    // case we delegate
+    if (parallelReaders.length == 1
+        && storedFieldsReaders.length == 1
+        && parallelReaders[0] == storedFieldsReaders[0]) {
+      return parallelReaders[0].getCoreCacheHelper();
+    }
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    // ParallelReader instances can be short-lived, which would make caching trappy
+    // so we do not cache on them, unless they wrap a single reader in which
+    // case we delegate
+    if (parallelReaders.length == 1
+        && storedFieldsReaders.length == 1
+        && parallelReaders[0] == storedFieldsReaders[0]) {
+      return parallelReaders[0].getReaderCacheHelper();
+    }
+    return null;
+  }
+
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     ensureOpen();
@@ -321,99 +360,10 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return new PointValues() {
-      @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return;
-        }
-        dimValues.intersect(fieldName, visitor);
-      }
-
-      @Override
-      public byte[] getMinPackedValue(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return null;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return null;
-        }
-        return dimValues.getMinPackedValue(fieldName);
-      }
-
-      @Override
-      public byte[] getMaxPackedValue(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return null;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return null;
-        }
-        return dimValues.getMaxPackedValue(fieldName);
-      }
-
-      @Override
-      public int getNumDimensions(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.getNumDimensions(fieldName);
-      }
-
-      @Override
-      public int getBytesPerDimension(String fieldName) throws IOException {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.getBytesPerDimension(fieldName);
-      }
-
-      @Override
-      public long size(String fieldName) {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.size(fieldName);
-      }
-
-      @Override
-      public int getDocCount(String fieldName) {
-        LeafReader reader = fieldToReader.get(fieldName);
-        if (reader == null) {
-          return 0;
-        }
-        PointValues dimValues = reader.getPointValues();
-        if (dimValues == null) {
-          return 0;
-        }
-        return dimValues.getDocCount(fieldName);
-      }
-    };
+  public PointValues getPointValues(String fieldName) throws IOException {
+    ensureOpen();
+    LeafReader reader = fieldToReader.get(fieldName);
+    return reader == null ? null : reader.getPointValues(fieldName);
   }
 
   @Override
@@ -431,8 +381,8 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return indexSort;
+  public LeafMetaData getMetaData() {
+    return metaData;
   }
 
 }

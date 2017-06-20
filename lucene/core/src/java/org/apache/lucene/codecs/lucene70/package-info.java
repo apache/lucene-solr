@@ -185,6 +185,12 @@
  * {@link org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat Live documents}. 
  * An optional file indicating which documents are live.
  * </li>
+ * <li>
+ * {@link org.apache.lucene.codecs.lucene60.Lucene60PointsFormat Point values}.
+ * Optional pair of files, recording dimensionally indexed fields, to enable fast
+ * numeric range filtering and large numeric values like BigInteger and BigDecimal (1D)
+ * and geographic shape intersection (2D, 3D).
+ * </li>
  * </ul>
  * <p>Details on each of these are provided in their linked pages.</p>
  * </div>
@@ -300,7 +306,12 @@
  * <tr>
  * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat Live Documents}</td>
  * <td>.liv</td>
- * <td>Info about what files are live</td>
+ * <td>Info about what documents are live</td>
+ * </tr>
+ * <tr>
+ * <td>{@link org.apache.lucene.codecs.lucene60.Lucene60PointsFormat Point values}</td>
+ * <td>.dii, .dim</td>
+ * <td>Holds indexed points, if any</td>
  * </tr>
  * </table>
  * </div>
@@ -374,6 +385,8 @@
  * that is suitable for faceting/sorting/analytics.
  * <li>In version 5.4, DocValues have been improved to store more information on disk:
  * addresses for binary fields and ord indexes for multi-valued fields.
+ * <li>In version 6.0, Points were added, for multi-dimensional range/distance search.
+ * <li>In version 6.2, new Segment info format that reads/writes the index sort, to support index sorting.
  * <li>In version 7.0, DocValues have been improved to better support sparse doc values
  * thanks to an iterator API.
  * </li>

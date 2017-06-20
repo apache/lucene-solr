@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 @Nightly
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10107")
 public class CdcrReplicationDistributedZkTest extends BaseCdcrDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

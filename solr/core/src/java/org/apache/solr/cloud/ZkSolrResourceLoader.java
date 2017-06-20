@@ -81,7 +81,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   @Override
   public InputStream openResource(String resource) throws IOException {
     InputStream is;
-    String file = configSetZkPath + "/" + resource;
+    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
     int maxTries = 10;
     Exception exception = null;
     while (maxTries -- > 0) {
@@ -109,7 +109,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new IOException("Error opening " + file, e);
-      } catch (KeeperException e) {
+      } catch (Exception e) {
         throw new IOException("Error opening " + file, e);
       }
     }

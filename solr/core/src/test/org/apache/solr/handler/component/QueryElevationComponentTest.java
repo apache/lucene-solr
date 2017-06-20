@@ -96,9 +96,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
           , "//*[@numFound='3']"
-          , "//result/doc[1]/float[@name='id'][.='7.0']"
-          , "//result/doc[2]/float[@name='id'][.='8.0']"
-          , "//result/doc[3]/float[@name='id'][.='9.0']",
+          , "//result/doc[1]/str[@name='id'][.='7']"
+          , "//result/doc[2]/str[@name='id'][.='9']"
+          , "//result/doc[3]/str[@name='id'][.='8']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
           "//result/doc[3]/bool[@name='[elevated]'][.='false']"
@@ -144,19 +144,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
 
-              , groups +"/lst[1]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[1]//doc[1]/str[@name='id'][.='6']"
               , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[1]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[1]//doc[2]/str[@name='id'][.='66']"
               , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[2]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[2]//doc[1]/str[@name='id'][.='7']"
               , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[2]//doc[2]/str[@name='id'][.='77']"
               , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[3]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[3]//doc[1]/str[@name='id'][.='2']"
               , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[3]//doc[2]/str[@name='id'][.='22']"
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
@@ -171,19 +171,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
 
-              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/str[@name='id'][.='7']"
               , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/str[@name='id'][.='77']"
               , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[2]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[1]/str[@name='id'][.='6']"
               , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[2]/str[@name='id'][.='66']"
               , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[3]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[3]//doc[1]/str[@name='id'][.='2']"
               , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[3]//doc[2]/str[@name='id'][.='22']"
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
@@ -199,19 +199,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
 
-              , groups +"/lst[1]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[1]//doc[1]/str[@name='id'][.='2']"
               , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[1]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[1]//doc[2]/str[@name='id'][.='22']"
               , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[2]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[1]/str[@name='id'][.='6']"
               , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[2]/str[@name='id'][.='66']"
               , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[3]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[3]//doc[1]/str[@name='id'][.='7']"
               , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[3]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[3]//doc[2]/str[@name='id'][.='77']"
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
@@ -228,19 +228,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
 
-              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/str[@name='id'][.='7']"
               , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/str[@name='id'][.='77']"
               , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[2]//doc[1]/float[@name='id'][.='2.0']"
+              , groups +"/lst[2]//doc[1]/str[@name='id'][.='2']"
               , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/float[@name='id'][.='22.0']"
+              , groups +"/lst[2]//doc[2]/str[@name='id'][.='22']"
               , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[3]//doc[1]/float[@name='id'][.='6.0']"
+              , groups +"/lst[3]//doc[1]/str[@name='id'][.='6']"
               , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/float[@name='id'][.='66.0']"
+              , groups +"/lst[3]//doc[2]/str[@name='id'][.='66']"
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
@@ -258,19 +258,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
 
-              , groups +"/lst[1]//doc[1]/float[@name='id'][.='22.0']"
+              , groups +"/lst[1]//doc[1]/str[@name='id'][.='22']"
               , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[1]//doc[2]/float[@name='id'][.='2.0']"
+              , groups +"/lst[1]//doc[2]/str[@name='id'][.='2']"
               , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[2]//doc[1]/float[@name='id'][.='66.0']"
+              , groups +"/lst[2]//doc[1]/str[@name='id'][.='66']"
               , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/float[@name='id'][.='6.0']"
+              , groups +"/lst[2]//doc[2]/str[@name='id'][.='6']"
               , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[3]//doc[1]/float[@name='id'][.='77.0']"
+              , groups +"/lst[3]//doc[1]/str[@name='id'][.='77']"
               , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/float[@name='id'][.='7.0']"
+              , groups +"/lst[3]//doc[2]/str[@name='id'][.='7']"
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='true']"
               );
 
@@ -289,19 +289,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
               , "//*[@name='ngroups'][.='3']"
               , "//*[@name='matches'][.='6']"
 
-              , groups +"/lst[1]//doc[1]/float[@name='id'][.='7.0']"
+              , groups +"/lst[1]//doc[1]/str[@name='id'][.='7']"
               , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[1]//doc[2]/float[@name='id'][.='77.0']"
+              , groups +"/lst[1]//doc[2]/str[@name='id'][.='77']"
               , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[2]//doc[1]/float[@name='id'][.='22.0']"
+              , groups +"/lst[2]//doc[1]/str[@name='id'][.='22']"
               , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/float[@name='id'][.='2.0']"
+              , groups +"/lst[2]//doc[2]/str[@name='id'][.='2']"
               , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
 
-              , groups +"/lst[3]//doc[1]/float[@name='id'][.='66.0']"
+              , groups +"/lst[3]//doc[1]/str[@name='id'][.='66']"
               , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/float[@name='id'][.='6.0']"
+              , groups +"/lst[3]//doc[2]/str[@name='id'][.='6']"
               , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
               );
 
@@ -331,9 +331,9 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
               ,"//*[@numFound='3']"
-              ,"//result/doc[1]/int[@name='id'][.='7']"
-              ,"//result/doc[2]/int[@name='id'][.='8']"
-              ,"//result/doc[3]/int[@name='id'][.='9']",
+              ,"//result/doc[1]/str[@name='id'][.='7']"
+              ,"//result/doc[2]/str[@name='id'][.='8']"
+              ,"//result/doc[3]/str[@name='id'][.='9']",
               "//result/doc[1]/bool[@name='[elevated]'][.='true']",
               "//result/doc[2]/bool[@name='[elevated]'][.='false']",
               "//result/doc[3]/bool[@name='[elevated]'][.='false']"
@@ -750,19 +750,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
           , "//*[@numFound='1']"
-          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/str[@name='id'][.='7']"
           , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
       );
       assertQ("", req(CommonParams.Q, "{!q.op=AND}AAAA", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
           , "//*[@numFound='1']"
-          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/str[@name='id'][.='7']"
           , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
       );
       assertQ("", req(CommonParams.Q, "{!q.op=AND v='AAAA'}", CommonParams.QT, "/elevate",
           CommonParams.FL, "id, score, [elevated]")
           , "//*[@numFound='1']"
-          , "//result/doc[1]/float[@name='id'][.='7.0']"
+          , "//result/doc[1]/str[@name='id'][.='7']"
           , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
       );
     } finally {

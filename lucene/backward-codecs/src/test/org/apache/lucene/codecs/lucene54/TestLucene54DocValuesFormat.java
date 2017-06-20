@@ -106,7 +106,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(atLeast(300), 1, 32766);
+      doTestSortedVsStoredFields(atLeast(300), 1d, 1, 32766);
     }
   }
   
@@ -114,7 +114,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
   public void testSortedVariableLengthManyVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1, 500);
+      doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1d, 1, 500);
     }
   }
   
@@ -201,6 +201,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
 
     final IndexReader indexReader = writer.getReader();
+    TestUtil.checkReader(indexReader);
     writer.close();
 
     for (LeafReaderContext context : indexReader.leaves()) {
@@ -486,6 +487,33 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
           assertEquals(docIds[index], sparseValues.advance(target));
         }
       }
+
+      // advanceExact
+      for (int i = 0; i < 2000; ++i) {
+        sparseValues.reset();
+        if (random().nextBoolean() && docIds.length > 0) {
+          sparseValues.advance(docIds[TestUtil.nextInt(random(), 0, docIds.length - 1)]);
+        }
+
+        final int target = TestUtil.nextInt(random(), Math.max(0, sparseValues.docID()), maxDoc - 1);
+        final boolean exists = sparseValues.advanceExact(target);
+        
+        final int index = Arrays.binarySearch(docIds, target);
+        assertEquals(index >= 0, exists);
+        assertEquals(target, sparseValues.docID());
+
+        final boolean exists2 = sparseValues.advanceExact(target);
+        assertEquals(index >= 0, exists2);
+        assertEquals(target, sparseValues.docID());
+
+        final int nextIndex = index >= 0 ? index + 1 : -1 - index;
+        if (nextIndex >= docIds.length) {
+          assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.nextDoc());
+        } else {
+          assertEquals(docIds[nextIndex], sparseValues.nextDoc());
+        }
+      }
+      
 
       final SparseNumericDocValuesRandomAccessWrapper raWrapper = new SparseNumericDocValuesRandomAccessWrapper(sparseValues, missingValue);
 

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -41,12 +42,14 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -62,7 +65,9 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -79,24 +84,6 @@ import org.slf4j.MDC;
 
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
- *
- * There are two ways to use an HttpSolrClient:
- *
- * 1) Pass a URL to the constructor that points directly at a particular core
- * <pre>
- *   SolrClient client = new HttpSolrClient("http://my-solr-server:8983/solr/core1");
- *   QueryResponse resp = client.query(new SolrQuery("*:*"));
- * </pre>
- * In this case, you can query the given core directly, but you cannot query any other
- * cores or issue CoreAdmin requests with this client.
- *
- * 2) Pass the base URL of the node to the constructor
- * <pre>
- *   SolrClient client = new HttpSolrClient("http://my-solr-server:8983/solr");
- *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
- * </pre>
- * In this case, you must pass the name of the required core for all queries and updates,
- * but you may use the same client for all cores, and for CoreAdmin requests.
  */
 public class HttpSolrClient extends SolrClient {
 
@@ -110,6 +97,8 @@ public class HttpSolrClient extends SolrClient {
   public static final String AGENT = "Solr[" + HttpSolrClient.class.getName() + "] 1.0";
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
   
   /**
    * The URL of the Solr server.
@@ -152,40 +141,7 @@ public class HttpSolrClient extends SolrClient {
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
   
-  /**
-   * @param baseURL
-   *          The URL of the Solr server. For example, "
-   *          <code>http://localhost:8983/solr/</code>" if you are using the
-   *          standard distribution Solr webapp on your local machine.
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL) {
-    this(baseURL, null, new BinaryResponseParser());
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client) {
-    this(baseURL, client, new BinaryResponseParser());
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser) {
-    this(baseURL, client, parser, false);
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.  This will soon be a 'protected'
-   * method, and will only be available for use in implementing subclasses.
-   */
-  @Deprecated
-  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
+  protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
     this.baseUrl = baseURL;
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
@@ -209,7 +165,23 @@ public class HttpSolrClient extends SolrClient {
     
     this.parser = parser;
   }
-  
+
+  /**
+   * The consturctor.
+   *
+   * @param baseURL The base url to communicate with the Solr server
+   * @param client Http client instance to use for communication
+   * @param parser Response parser instance to use to decode response from Solr server
+   * @param allowCompression Should compression be allowed ?
+   * @param invariantParams The parameters which should be included with every request.
+   */
+  protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression,
+      ModifiableSolrParams invariantParams) {
+    this(baseURL, client, parser, allowCompression);
+
+    this.invariantParams = invariantParams;
+  }
+
   public Set<String> getQueryParams() {
     return queryParams;
   }
@@ -256,7 +228,11 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
-    return executeMethod(method, processor);
+    return executeMethod(method, processor, isV2ApiRequest(request));
+  }
+
+  private boolean isV2ApiRequest(final SolrRequest request) {
+    return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
   private void setBasicAuthHeader(SolrRequest request, HttpRequestBase method) throws UnsupportedEncodingException {
@@ -296,7 +272,7 @@ public class HttpSolrClient extends SolrClient {
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = pool.submit(() -> executeMethod(method, processor));
+      mrr.future = pool.submit(() -> executeMethod(method, processor, isV2ApiRequest(request)));
  
     } finally {
       pool.shutdown();
@@ -324,8 +300,10 @@ public class HttpSolrClient extends SolrClient {
     return queryModParams;
   }
 
-  protected HttpRequestBase createMethod(final SolrRequest request, String collection) throws IOException, SolrServerException {
-
+  protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
+    if (request instanceof V2RequestSupport) {
+      request = ((V2RequestSupport) request).getV2Request();
+    }
     SolrParams params = request.getParams();
     Collection<ContentStream> streams = requestWriter.getContentStreams(request);
     String path = requestWriter.getPath(request);
@@ -353,12 +331,24 @@ public class HttpSolrClient extends SolrClient {
     if (collection != null)
       basePath += "/" + collection;
 
+    if (request instanceof V2Request) {
+      if (System.getProperty("solr.v2RealPath") == null) {
+        basePath = baseUrl.replace("/solr", "/v2");
+      } else {
+        basePath = baseUrl + "/____v2";
+      }
+    }
+
     if (SolrRequest.METHOD.GET == request.getMethod()) {
       if (streams != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
       return new HttpGet(basePath + path + wparams.toQueryString());
+    }
+
+    if (SolrRequest.METHOD.DELETE == request.getMethod()) {
+      return new HttpDelete(basePath + path + wparams.toQueryString());
     }
 
     if (SolrRequest.METHOD.POST == request.getMethod() || SolrRequest.METHOD.PUT == request.getMethod()) {
@@ -487,7 +477,7 @@ public class HttpSolrClient extends SolrClient {
 
   }
   
-  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
+  protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
@@ -508,7 +498,9 @@ public class HttpSolrClient extends SolrClient {
     boolean shouldClose = true;
     try {
       // Execute the method.
-      final HttpResponse response = httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
+      final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
+
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
@@ -547,6 +539,7 @@ public class HttpSolrClient extends SolrClient {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
+        rsp.add("closeableResponse", response);
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;
@@ -582,7 +575,7 @@ public class HttpSolrClient extends SolrClient {
       } catch (Exception e) {
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
-      if (httpStatus != HttpStatus.SC_OK) {
+      if (httpStatus != HttpStatus.SC_OK && !isV2Api) {
         NamedList<String> metadata = null;
         String reason = null;
         try {
@@ -642,6 +635,27 @@ public class HttpSolrClient extends SolrClient {
     return baseUrl;
   }
   
+  /**
+   * Change the base-url used when sending requests to Solr.
+   * 
+   * Two different paths can be specified as a part of this URL:
+   * 
+   * 1) A path pointing directly at a particular core
+   * <pre>
+   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr/core1");
+   *   QueryResponse resp = httpSolrClient.query(new SolrQuery("*:*"));
+   * </pre>
+   * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+   * core explicitly.  However, the client can only send requests to that core.
+   * 
+   * 2) The path of the root Solr path ("/solr")
+   * <pre>
+   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr");
+   *   QueryResponse resp = httpSolrClient.query("core1", new SolrQuery("*:*"));
+   * </pre>
+   * In this case the client is more flexible and can be used to send requests to any cores.  The cost of this is that
+   * the core must be specified on each request.
+   */
   public void setBaseURL(String baseURL) {
     this.baseUrl = baseURL;
   }
@@ -752,12 +766,33 @@ public class HttpSolrClient extends SolrClient {
     private HttpClient httpClient;
     private ResponseParser responseParser;
     private boolean compression;
-    private String delegationToken;
+    private ModifiableSolrParams invariantParams = new ModifiableSolrParams();
 
     public Builder() {
       this.responseParser = new BinaryResponseParser();
     }
 
+    /**
+     * Specify the base-url for the created client to use when sending requests to Solr.
+     * 
+     * Two different paths can be specified as a part of this URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core is specified on all requests.
+     */
     public Builder withBaseSolrUrl(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
       return this;
@@ -766,15 +801,31 @@ public class HttpSolrClient extends SolrClient {
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
-     * By default, compression is not enabled in created HttpSolrClient objects.
+     * Two different paths can be specified as a part of this URL:
      * 
-     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created clients.
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core be specified on all requests.
+     * 
+     * By default, compression is not enabled on created HttpSolrClient objects.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
       this.responseParser = new BinaryResponseParser();
     }
-    
+
     /**
      * Provides a {@link HttpClient} for the builder to use when creating clients.
      */
@@ -782,7 +833,7 @@ public class HttpSolrClient extends SolrClient {
       this.httpClient = httpClient;
       return this;
     }
-    
+
     /**
      * Provides a {@link ResponseParser} for created clients to use when handling requests.
      */
@@ -790,7 +841,7 @@ public class HttpSolrClient extends SolrClient {
       this.responseParser = responseParser;
       return this;
     }
-    
+
     /**
      * Chooses whether created {@link HttpSolrClient}s use compression by default.
      */
@@ -803,18 +854,26 @@ public class HttpSolrClient extends SolrClient {
      * Use a delegation token for authenticating via the KerberosPlugin
      */
     public Builder withKerberosDelegationToken(String delegationToken) {
-      this.delegationToken = delegationToken;
+      if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) != null) {
+        throw new IllegalStateException(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM + " is already defined!");
+      }
+      this.invariantParams.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, delegationToken);
       return this;
     }
 
-    @Deprecated
-    /**
-     * @deprecated use {@link withKerberosDelegationToken(String)} instead
-     */
-    public Builder withDelegationToken(String delegationToken) {
-      this.delegationToken = delegationToken;
+    public Builder withInvariantParams(ModifiableSolrParams params) {
+      Objects.requireNonNull(params, "params must be non null!");
+
+      for (String name : params.getParameterNames()) {
+        if (this.invariantParams.get(name) != null) {
+          throw new IllegalStateException("parameter " + name + " is redefined.");
+        }
+      }
+
+      this.invariantParams.add(params);
       return this;
     }
+
     /**
      * Create a {@link HttpSolrClient} based on provided configuration.
      */
@@ -822,10 +881,11 @@ public class HttpSolrClient extends SolrClient {
       if (baseSolrUrl == null) {
         throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
-      if (delegationToken == null) {
-        return new HttpSolrClient(baseSolrUrl, httpClient, responseParser, compression);
+
+      if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
+        return new HttpSolrClient(baseSolrUrl, httpClient, responseParser, compression, invariantParams);
       } else {
-        return new DelegationTokenHttpSolrClient(baseSolrUrl, httpClient, responseParser, compression, delegationToken);
+        return new DelegationTokenHttpSolrClient(baseSolrUrl, httpClient, responseParser, compression, invariantParams);
       }
     }
   }

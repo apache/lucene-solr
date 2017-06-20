@@ -17,25 +17,32 @@
 package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.stats.Snapshot;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +51,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean, NestedRequestHandler {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, SolrMetricProducer, NestedRequestHandler,ApiSupport {
 
   protected NamedList initArgs = null;
   protected SolrParams defaults;
@@ -53,17 +60,22 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected boolean httpCaching = true;
 
   // Statistics
-  private final LongAdder numRequests = new LongAdder();
-  private final LongAdder numServerErrors = new LongAdder();
-  private final LongAdder numClientErrors = new LongAdder();
-  private final LongAdder numTimeouts = new LongAdder();
-  private final Timer requestTimes = new Timer();
+  private Meter numErrors = new Meter();
+  private Meter numServerErrors = new Meter();
+  private Meter numClientErrors = new Meter();
+  private Meter numTimeouts = new Meter();
+  private Counter requests = new Counter();
+  private Timer requestTimes = new Timer();
+  private Counter totalTime = new Counter();
 
   private final long handlerStart;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
+
+  private Set<String> metricNames = new HashSet<>();
+  private MetricRegistry registry;
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -127,6 +139,19 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    registry = manager.registry(registryName);
+    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
+    numServerErrors = manager.meter(this, registryName, "serverErrors", getCategory().toString(), scope);
+    numClientErrors = manager.meter(this, registryName, "clientErrors", getCategory().toString(), scope);
+    numTimeouts = manager.meter(this, registryName, "timeouts", getCategory().toString(), scope);
+    requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
+    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
+    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+  }
+
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
     Object o = args.get(key);
     if (o != null && o instanceof NamedList) {
@@ -143,8 +168,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests.increment();
-    TimerContext timer = requestTimes.time();
+    requests.inc();
+    Timer.Context timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
       SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
@@ -157,7 +182,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         Object partialResults = header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
         boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
         if( timedOut ) {
-          numTimeouts.increment();
+          numTimeouts.mark();
           rsp.setHttpCaching(false);
         }
       }
@@ -183,15 +208,16 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       if (incrementErrors) {
         SolrException.log(log, e);
 
+        numErrors.mark();
         if (isServerError) {
-          numServerErrors.increment();
+          numServerErrors.mark();
         } else {
-          numClientErrors.increment();
+          numClientErrors.mark();
         }
       }
-    }
-    finally {
-      timer.stop();
+    } finally {
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
     }
   }
 
@@ -204,24 +230,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public abstract String getDescription();
-  @Override
-  public String getSource() { return null; }
-  
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-  
+
   @Override
   public Category getCategory() {
-    return Category.QUERYHANDLER;
+    return Category.QUERY;
   }
 
   @Override
-  public URL[] getDocs() {
-    return null;  // this can be overridden, but not required
+  public Set<String> getMetricNames() {
+    return metricNames;
   }
 
+  @Override
+  public MetricRegistry getMetricRegistry() {
+    return registry;
+  }
 
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
@@ -264,30 +287,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return  pluginInfo;
   }
 
-
   @Override
-  public NamedList<Object> getStatistics() {
-    NamedList<Object> lst = new SimpleOrderedMap<>();
-    Snapshot snapshot = requestTimes.getSnapshot();
-    lst.add("handlerStart",handlerStart);
-    lst.add("requests", numRequests.longValue());
-    lst.add("errors", numServerErrors.longValue() + numClientErrors.longValue());
-    lst.add("serverErrors", numServerErrors.longValue());
-    lst.add("clientErrors", numClientErrors.longValue());
-    lst.add("timeouts", numTimeouts.longValue());
-    lst.add("totalTime", requestTimes.getSum());
-    lst.add("avgRequestsPerSecond", requestTimes.getMeanRate());
-    lst.add("5minRateReqsPerSecond", requestTimes.getFiveMinuteRate());
-    lst.add("15minRateReqsPerSecond", requestTimes.getFifteenMinuteRate());
-    lst.add("avgTimePerRequest", requestTimes.getMean());
-    lst.add("medianRequestTime", snapshot.getMedian());
-    lst.add("75thPcRequestTime", snapshot.get75thPercentile());
-    lst.add("95thPcRequestTime", snapshot.get95thPercentile());
-    lst.add("99thPcRequestTime", snapshot.get99thPercentile());
-    lst.add("999thPcRequestTime", snapshot.get999thPercentile());
-    return lst;
+  public Collection<Api> getApis() {
+    return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
-  
 }
 
 

@@ -17,12 +17,19 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,20 +51,70 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 /**
  * Connects to a datasource using a registered JDBC driver and execute a query. The results of
  * that query will be returned as tuples. An EOF tuple will indicate that all have been read.
  * 
- * Supported Datatypes
- * JDBC Type     | Tuple Type
- * --------------|---------------
- * String        | String
- * Short         | Long
- * Integer       | Long
- * Long          | Long
- * Float         | Double
- * Double        | Double
- * Boolean       | Boolean
+ * Supported Datatypes for most types vary by JDBC driver based on the specific 
+ * java type as reported by {@link java.sql.ResultSetMetaData#getColumnClassName(int)}. 
+ * The exception are {@link Types#DATE}, {@link Types#TIME} or {@link Types#TIMESTAMP}
+ * which are determined by the JDBC type.
+ * 
+ * <table rules="all" frame="box" cellpadding="3" summary="Supported Java Types">
+ * <tr>
+ *   <th>Java or JDBC Type</th>
+ *   <th>Tuple Type</th>
+ *   <th>Notes</th>
+ * </tr>
+ * <tr>
+ *   <td>Boolean</td>
+ *   <td>Boolean</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>String</td>
+ *   <td>String</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>Short, Integer, Long</td>
+ *   <td>Long</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>Float, Double</td>
+ *   <td>Double</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>{@link Clob} and subclasses</td>
+ *   <td>String</td>
+ *   <td>Clobs up to length 2<sup>31</sup>-1 are supported.</td>
+ * </tr>
+ * <tr>
+ *   <td>Other subclasses of {@link Number}</td>
+ *   <td>Long, Double</td>
+ *   <td>Tuple Type based on {@link BigDecimal#scale()}.</td>
+ * </tr>
+ * <tr>
+ *   <td>JDBC {@link Types#DATE}</td>
+ *   <td>String</td>
+ *   <td>yyyy-MM-dd, calls {@link Date#toString}</td>
+ * </tr>
+ * <tr>
+ *   <td>JDBC {@link Types#TIME}</td>
+ *   <td>String</td>
+ *   <td>hh:mm:ss, calls {@link Time#toString}</td>
+ * </tr>
+ * <tr>
+ *   <td>JDBC {@link Types#TIMESTAMP}</td>
+ *   <td>String</td>
+ *   <td>See {@link DateTimeFormatter#ISO_INSTANT}</td>
+ * </tr>
+ * </table>
+ * 
  **/
 
 public class JDBCStream extends TupleStream implements Expressible {
@@ -67,7 +124,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   // These are java types that we can directly support as an Object instance. Other supported
   // types will require some level of conversion (short -> long, etc...)
   // We'll use a static constructor to load this set.
-  private static HashSet<String> directSupportedTypes = new HashSet<String>();
+  private static final HashSet<String> directSupportedTypes = new HashSet<>();
   static {
       directSupportedTypes.add(String.class.getName()); 
       directSupportedTypes.add(Double.class.getName()); 
@@ -85,9 +142,10 @@ public class JDBCStream extends TupleStream implements Expressible {
   private Connection connection;
   private Properties connectionProperties;
   private Statement statement;
-  private ResultSet resultSet;
   private ResultSetValueSelector[] valueSelectors;
+  protected ResultSet resultSet;
   protected transient StreamContext streamContext;
+  protected String sep = Character.toString((char)31);
 
   public JDBCStream(String connectionUrl, String sqlQuery, StreamComparator definedSort) throws IOException {
     this(connectionUrl, sqlQuery, definedSort, null, null);
@@ -102,18 +160,18 @@ public class JDBCStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter connectionUrlExpression = factory.getNamedOperand(expression, "connection");
     StreamExpressionNamedParameter sqlQueryExpression = factory.getNamedOperand(expression, "sql");
-    StreamExpressionNamedParameter definedSortExpression = factory.getNamedOperand(expression, "sort");
+    StreamExpressionNamedParameter definedSortExpression = factory.getNamedOperand(expression, SORT);
     StreamExpressionNamedParameter driverClassNameExpression = factory.getNamedOperand(expression, "driver");
     
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
     if(expression.getParameters().size() != namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found", expression));
     }
            
     // All named params we don't care about will be passed to the driver on connection
     Properties connectionProperties = new Properties();
     for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("driver") && !namedParam.getName().equals("connection") && !namedParam.getName().equals("sql") && !namedParam.getName().equals("sort")){
+      if(!namedParam.getName().equals("driver") && !namedParam.getName().equals("connection") && !namedParam.getName().equals("sql") && !namedParam.getName().equals(SORT)){
         connectionProperties.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
@@ -124,7 +182,7 @@ public class JDBCStream extends TupleStream implements Expressible {
       connectionUrl = ((StreamExpressionValue)connectionUrlExpression.getParameter()).getValue();
     }
     if(null == connectionUrl){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - connection not found"));
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - connection not found", connectionUrlExpression));
     }
     
     // sql, required
@@ -133,16 +191,16 @@ public class JDBCStream extends TupleStream implements Expressible {
       sqlQuery = ((StreamExpressionValue)sqlQueryExpression.getParameter()).getValue();
     }
     if(null == sqlQuery){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - sql not found"));
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - sql not found", sqlQueryExpression));
     }
     
     // definedSort, required
     StreamComparator definedSort = null;
-    if(null != sqlQueryExpression && sqlQueryExpression.getParameter() instanceof StreamExpressionValue){
+    if(null != definedSortExpression && definedSortExpression.getParameter() instanceof StreamExpressionValue){
       definedSort = factory.constructComparator(((StreamExpressionValue)definedSortExpression.getParameter()).getValue(), FieldComparator.class);
     }
     if(null == definedSort){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - sort not found"));
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - sort not found", definedSortExpression));
     }
     
     // driverClass, optional
@@ -155,7 +213,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     init(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClass);
   }
     
-  private void init(String connectionUrl, String sqlQuery, StreamComparator definedSort, Properties connectionProperties, String driverClassName) throws IOException {
+  private void init(String connectionUrl, String sqlQuery, StreamComparator definedSort, Properties connectionProperties, String driverClassName) {
     this.connectionUrl = connectionUrl;
     this.sqlQuery = sqlQuery;
     this.definedSort = definedSort;
@@ -188,7 +246,9 @@ public class JDBCStream extends TupleStream implements Expressible {
         throw new SQLException("DriverManager.getDriver(url) returned null");
       }
     } catch(SQLException e){
-      throw new IOException(String.format(Locale.ROOT, "Failed to determine JDBC driver from connection url '%s'. Usually this means the driver is not loaded - you can have JDBCStream try to load it by providing the 'driverClassName' value", connectionUrl), e);
+      throw new IOException(String.format(Locale.ROOT,
+          "Failed to determine JDBC driver from connection url '%s'. Usually this means the driver is not loaded - " +
+              "you can have JDBCStream try to load it by providing the 'driverClassName' value", connectionUrl), e);
     }
     
     try {
@@ -200,87 +260,221 @@ public class JDBCStream extends TupleStream implements Expressible {
     try{
       statement = connection.createStatement();
     } catch (SQLException e) {
-      throw new IOException(String.format(Locale.ROOT, "Failed to create a statement from JDBC connection '%s'", connectionUrl), e);
+      throw new IOException(String.format(Locale.ROOT, "Failed to create a statement from JDBC connection '%s'",
+          connectionUrl), e);
     }
     
     try{
       resultSet = statement.executeQuery(sqlQuery);
     } catch (SQLException e) {
-      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'", sqlQuery, connectionUrl), e);
+      throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.\n"
+          + e.getMessage(), sqlQuery, connectionUrl), e);
     }
     
     try{
       // using the metadata, build selectors for each column
       valueSelectors = constructValueSelectors(resultSet.getMetaData());
     } catch (SQLException e) {
-      throw new IOException(String.format(Locale.ROOT, "Failed to generate value selectors for sqlQuery '%s' against JDBC connection '%s'", sqlQuery, connectionUrl), e);
+      throw new IOException(String.format(Locale.ROOT,
+          "Failed to generate value selectors for sqlQuery '%s' against JDBC connection '%s'", sqlQuery, connectionUrl), e);
     }
   }
 
   private ResultSetValueSelector[] constructValueSelectors(ResultSetMetaData metadata) throws SQLException{
-    ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[metadata.getColumnCount()];
-    
-    for(int columnIdx = 0; columnIdx < metadata.getColumnCount(); ++columnIdx){
-      
-      final int columnNumber = columnIdx + 1; // cause it starts at 1        
-      final String columnName = metadata.getColumnName(columnNumber);
-      String className = metadata.getColumnClassName(columnNumber);
-      String typeName = metadata.getColumnTypeName(columnNumber);
-            
-      if(directSupportedTypes.contains(className)){
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Object obj = resultSet.getObject(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj;
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
+    ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[metadata.getColumnCount()];    
+    for (int columnIdx = 0; columnIdx < metadata.getColumnCount(); ++columnIdx) {      
+      ResultSetValueSelector valueSelector = determineValueSelector(columnIdx, metadata);
+      if(valueSelector==null) {
+        int columnNumber = columnIdx + 1;
+        String columnName = metadata.getColumnLabel(columnNumber);
+        String className = metadata.getColumnClassName(columnNumber);
+        String typeName = metadata.getColumnTypeName(columnNumber);
+        throw new SQLException(String.format(Locale.ROOT,
+            "Unable to determine the valueSelector for column '%s' (col #%d) of java class '%s' and type '%s'",
+            columnName, columnNumber, className, typeName));
       }
-      else if(Short.class.getName() == className){
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Short obj = resultSet.getShort(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj.longValue();
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      }
-      else if(Integer.class.getName() == className){
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Integer obj = resultSet.getInt(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj.longValue();
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      }
-      else if(Float.class.getName() == className){
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Float obj = resultSet.getFloat(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj.doubleValue();
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      }
-      else{
-        throw new SQLException(String.format(Locale.ROOT, "Unable to determine the valueSelector for column '%s' (col #%d) of java class '%s' and type '%s'", columnName, columnNumber, className, typeName));
-      }
-    }
-    
+      valueSelectors[columnIdx] = valueSelector;
+    }        
     return valueSelectors;
+  }
+  
+  protected ResultSetValueSelector determineValueSelector(int columnIdx, ResultSetMetaData metadata) throws SQLException {
+    final int columnNumber = columnIdx + 1; // cause it starts at 1
+    // Use getColumnLabel instead of getColumnName to make sure fields renamed with AS as picked up properly
+    final String columnName = metadata.getColumnLabel(columnNumber);
+    final int jdbcType = metadata.getColumnType(columnNumber);      
+    final String className = metadata.getColumnClassName(columnNumber);
+    ResultSetValueSelector valueSelector = null;
+    
+    // Directly supported types can be just directly returned - no conversion really necessary
+    if(directSupportedTypes.contains(className)){
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Object obj = resultSet.getObject(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          if(obj instanceof String) {
+            String s = (String)obj;
+            if(s.indexOf(sep) > -1) {
+              s = s.substring(1);
+              return s.split(sep);
+            }
+          }
+
+          return obj;
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } 
+    // We're checking the Java class names because there are lots of SQL types across
+    // lots of database drivers that can be mapped to standard Java types. Basically, 
+    // this makes it easier and we don't have to worry about esoteric type names in the 
+    // JDBC family of types
+    else if(Short.class.getName().equals(className)) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Short obj = resultSet.getShort(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          return obj.longValue();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if(Integer.class.getName().equals(className)) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Integer obj = resultSet.getInt(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          return obj.longValue();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if(Float.class.getName().equals(className)) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Float obj = resultSet.getFloat(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          return obj.doubleValue();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } 
+    // Here we are switching to check against the SQL type because date/times are
+    // notorious for not being consistent. We don't know if the driver is mapping
+    // to a java.time.* type or some old-school type. 
+    else if (jdbcType == Types.DATE) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Date sqlDate = resultSet.getDate(columnNumber);
+          return resultSet.wasNull() ? null : sqlDate.toString();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if (jdbcType == Types.TIME ) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Time sqlTime = resultSet.getTime(columnNumber);
+          return resultSet.wasNull() ? null : sqlTime.toString();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if (jdbcType == Types.TIMESTAMP) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Timestamp sqlTimestamp = resultSet.getTimestamp(columnNumber);
+          return resultSet.wasNull() ? null : sqlTimestamp.toInstant().toString();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } 
+    // Now we're going to start seeing if things are assignable from the returned type
+    // to a more general type - this allows us to cover cases where something we weren't 
+    // explicitly expecting, but can handle, is being returned.
+    else {
+      Class<?> clazz;
+      try {
+        clazz = Class.forName(className, false, getClass().getClassLoader());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      final int scale = metadata.getScale(columnNumber);
+      if (Number.class.isAssignableFrom(clazz)) {
+        if (scale > 0) {
+          valueSelector = new ResultSetValueSelector() {
+            @Override
+            public Object selectValue(ResultSet resultSet) throws SQLException {
+              BigDecimal bd = resultSet.getBigDecimal(columnNumber);
+              return resultSet.wasNull() ? null : bd.doubleValue();                
+            }
+            @Override
+            public String getColumnName() {
+              return columnName;
+            }
+          };            
+        } else {
+          valueSelector = new ResultSetValueSelector() {
+            @Override
+            public Object selectValue(ResultSet resultSet) throws SQLException {
+              BigDecimal bd = resultSet.getBigDecimal(columnNumber);
+              return resultSet.wasNull() ? null : bd.longValue();
+            }
+            @Override
+            public String getColumnName() {
+              return columnName;
+            }
+          };            
+        }          
+      } else if (Clob.class.isAssignableFrom(clazz)) {
+        valueSelector = new ResultSetValueSelector() {
+          @Override
+          public Object selectValue(ResultSet resultSet) throws SQLException {
+            Clob c = resultSet.getClob(columnNumber);
+            if (resultSet.wasNull()) {
+              return null;
+            }
+            long length = c.length();
+            int lengthInt = (int) length;
+            if (length != lengthInt) {
+              throw new SQLException(String.format(Locale.ROOT,
+                  "Encountered a clob of length #%l in column '%s' (col #%d).  Max supported length is #%i.",
+                  length, columnName, columnNumber, Integer.MAX_VALUE));
+            }
+            return c.getSubString(1, lengthInt);
+          }
+          @Override
+          public String getColumnName() {
+            return columnName;
+          }
+        };
+      } 
+    }
+    return valueSelector;
   }
   
   /**
@@ -305,7 +499,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     
     try{
-      Map<Object,Object> fields = new HashMap<Object,Object>();
+      Map<Object,Object> fields = new HashMap<>();
       if(resultSet.next()){
         // we have a record
         for(ResultSetValueSelector selector : valueSelectors){
@@ -338,7 +532,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("sql", sqlQuery));
     
     // sort
-    expression.addParameter(new StreamExpressionNamedParameter("sort", definedSort.toExpression(factory)));
+    expression.addParameter(new StreamExpressionNamedParameter(SORT, definedSort.toExpression(factory)));
     
     // driver class
     if(null != driverClassName){
@@ -391,7 +585,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   
   @Override
   public List<TupleStream> children() {
-    return new ArrayList<TupleStream>();
+    return new ArrayList<>();
   }
 
   @Override
@@ -401,9 +595,10 @@ public class JDBCStream extends TupleStream implements Expressible {
     // it's already in the sqlQuery but there's no way we can reliably determine the sort from the query.
     return definedSort;
   }
+  
+  public interface ResultSetValueSelector {
+    String getColumnName();
+    Object selectValue(ResultSet resultSet) throws SQLException;
+  }
 }
 
-interface ResultSetValueSelector {
-  public String getColumnName();
-  public Object selectValue(ResultSet resultSet) throws SQLException;
-}

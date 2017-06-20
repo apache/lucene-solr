@@ -38,7 +38,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
@@ -86,7 +86,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    * @param indexReader     the reader on the index to be used for classification
    * @param analyzer       an {@link Analyzer} used to analyze unseen text
    * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
-   *                       (defaults to {@link org.apache.lucene.search.similarities.ClassicSimilarity})
+   *                       (defaults to {@link org.apache.lucene.search.similarities.BM25Similarity})
    * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
    * @param k              the no. of docs to select in the MLT results to find the nearest neighbor
@@ -106,7 +106,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     if (similarity != null) {
       this.indexSearcher.setSimilarity(similarity);
     } else {
-      this.indexSearcher.setSimilarity(new ClassicSimilarity());
+      this.indexSearcher.setSimilarity(new BM25Similarity());
     }
     if (minDocsFreq > 0) {
       mlt.setMinDocFreq(minDocsFreq);
@@ -124,7 +124,13 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
    */
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
-    TopDocs knnResults = knnSearch(text);
+    return classifyFromTopDocs(knnSearch(text));
+  }
+
+  /**
+   * TODO
+   */
+  protected ClassificationResult<BytesRef> classifyFromTopDocs(TopDocs knnResults) throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     ClassificationResult<BytesRef> assignedClass = null;
     double maxscore = -Double.MAX_VALUE;
@@ -195,9 +201,10 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.getMaxScore();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      IndexableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
-      if (storableField != null) {
-        BytesRef cl = new BytesRef(storableField.stringValue());
+      IndexableField[] storableFields = indexSearcher.doc(scoreDoc.doc).getFields(classFieldName);
+      for (IndexableField singleStorableField : storableFields) {
+        if (singleStorableField != null) {
+          BytesRef cl = new BytesRef(singleStorableField.stringValue());
         //update count
         Integer count = classCounts.get(cl);
         if (count != null) {
@@ -212,6 +219,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
           classBoosts.put(cl, totalBoost + singleBoost);
         } else {
           classBoosts.put(cl, singleBoost);
+        }
         }
       }
     }

@@ -94,7 +94,8 @@ public class DatasetSplitter {
         }
       }
       if (classValues == null) {
-        throw new IllegalStateException("field \"" + classFieldName + "\" must have sorted (set) doc values");
+        // approximate with no. of terms
+        noOfClasses += leave.reader().terms(classFieldName).size();
       }
       noOfClasses += valueCount;
     }
@@ -120,7 +121,7 @@ public class DatasetSplitter {
       int b = 0;
 
       // iterate over existing documents
-      for (GroupDocs group : topGroups.groups) {
+      for (GroupDocs<Object> group : topGroups.groups) {
         int totalHits = group.totalHits;
         double testSize = totalHits * testRatio;
         int tc = 0;

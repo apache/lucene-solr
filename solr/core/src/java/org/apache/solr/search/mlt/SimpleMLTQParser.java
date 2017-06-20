@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search.mlt;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -69,36 +69,20 @@ public class SimpleMLTQParser extends QParser {
       ScoreDoc[] scoreDocs = td.scoreDocs;
       MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
       
-      if(localParams.getInt("mintf") != null)
-        mlt.setMinTermFreq(localParams.getInt("mintf"));
+      mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
+      mlt.setMinDocFreq(localParams.getInt("mindf", MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
+      mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
+      mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
+      mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
+      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
+      mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
+      Boolean boost = localParams.getBool("boost", false);
+      mlt.setBoost(boost);
+
+      String[] fieldNames;
       
-      if(localParams.getInt("mindf") != null)
-      mlt.setMinDocFreq(localParams.getInt("mindf"));
-      
-      if(localParams.get("minwl") != null)
-        mlt.setMinWordLen(localParams.getInt("minwl"));
-
-      if(localParams.get("maxwl") != null)
-        mlt.setMaxWordLen(localParams.getInt("maxwl"));
-
-      if(localParams.get("maxqt") != null)
-        mlt.setMaxQueryTerms(localParams.getInt("maxqt"));
-
-      if(localParams.get("maxntp") != null)
-        mlt.setMaxNumTokensParsed(localParams.getInt("maxntp"));
-
-      if(localParams.get("maxdf") != null) {
-        mlt.setMaxDocFreq(localParams.getInt("maxdf"));
-      }
-
-      if(localParams.get("boost") != null) {
-        mlt.setBoost(localParams.getBool("boost"));
-        boostFields = SolrPluginUtils.parseFieldBoosts(qf);
-      }
-      
-      ArrayList<String> fields = new ArrayList<>();
-
       if (qf != null) {
+        ArrayList<String> fields = new ArrayList<>();
         for (String fieldName : qf) {
           if (!StringUtils.isEmpty(fieldName))  {
             String[] strings = splitList.split(fieldName);
@@ -109,26 +93,31 @@ public class SimpleMLTQParser extends QParser {
             }
           }
         }
+        // Parse field names and boosts from the fields
+        boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
+        fieldNames = boostFields.keySet().toArray(new String[0]);
       } else {
-        Map<String, SchemaField> fieldNames = req.getSearcher().getSchema().getFields();
-        for (String fieldName : fieldNames.keySet()) {
-          if (fieldNames.get(fieldName).indexed() && fieldNames.get(fieldName).stored())
-            if (fieldNames.get(fieldName).getType().getNumericType() == null)
+        Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
+        ArrayList<String> fields = new ArrayList();
+        for (String fieldName : fieldDefinitions.keySet()) {
+          if (fieldDefinitions.get(fieldName).indexed() && fieldDefinitions.get(fieldName).stored())
+            if (fieldDefinitions.get(fieldName).getType().getNumberType() == null)
               fields.add(fieldName);
         }
+        fieldNames = fields.toArray(new String[0]);
       }
-      if( fields.size() < 1 ) {
+      if (fieldNames.length < 1) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "MoreLikeThis requires at least one similarity field: qf" );
       }
 
-      mlt.setFieldNames(fields.toArray(new String[fields.size()]));
+      mlt.setFieldNames(fieldNames);
       mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
       Query rawMLTQuery = mlt.like(scoreDocs[0].doc);
       BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
 
-      if (boostFields.size() > 0) {
+      if (boost && boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 
@@ -161,7 +150,7 @@ public class SimpleMLTQParser extends QParser {
   }
 
   private Query createIdQuery(String defaultField, String uniqueValue) {
-    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumericType() != null
+    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumberType() != null
         ? createNumericTerm(defaultField, uniqueValue)
         : new Term(defaultField, uniqueValue));
   }

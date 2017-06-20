@@ -37,6 +37,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
@@ -50,7 +51,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.*;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
@@ -82,7 +86,9 @@ enum CoreAdminOperation implements CoreAdminOp {
       instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
     }
 
-    coreContainer.create(coreName, instancePath, coreParams);
+    boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+
+    coreContainer.create(coreName, instancePath, coreParams, newCollection);
 
     it.rsp.add("core", coreName);
   }),
@@ -99,11 +105,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   }),
   RELOAD_OP(RELOAD, it -> {
     SolrParams params = it.req.getParams();
-    String cname = params.get(CoreAdminParams.CORE);
-
-    if (cname == null || !it.handler.coreContainer.getCoreNames().contains(cname)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Core with core name [" + cname + "] does not exist.");
-    }
+    String cname = params.required().get(CoreAdminParams.CORE);
 
     try {
       it.handler.coreContainer.reload(cname);
@@ -137,21 +139,17 @@ enum CoreAdminOperation implements CoreAdminOp {
 
   REQUESTRECOVERY_OP(REQUESTRECOVERY, it -> {
     final SolrParams params = it.req.getParams();
-    log().info("It has been requested that we recover: core=" + params.get(CoreAdminParams.CORE));
-    new Thread(() -> {
-      String cname = params.get(CoreAdminParams.CORE);
-      if (cname == null) {
-        cname = "";
+    final String cname = params.get(CoreAdminParams.CORE, "");
+    log().info("It has been requested that we recover: core=" + cname);
+    
+    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
+      if (core != null) {
+        // This can take a while, but doRecovery is already async so don't worry about it here
+        core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
-      try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-        if (core != null) {
-          core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
-        } else {
-          SolrException.log(log(), "Could not find core to call recovery:" + cname);
-        }
-      }
-    }).start();
-
+    }
   }),
   REQUESTSYNCSHARD_OP(REQUESTSYNCSHARD, new RequestSyncShardOp()),
 
@@ -268,12 +266,12 @@ enum CoreAdminOperation implements CoreAdminOp {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
         if ( metadata.isPresent() ) {
           NamedList<String> props = new NamedList<>();
-          props.add("generation", String.valueOf(metadata.get().getGenerationNumber()));
-          props.add("indexDirPath", metadata.get().getIndexDirPath());
+          props.add(SolrSnapshotManager.GENERATION_NUM, String.valueOf(metadata.get().getGenerationNumber()));
+          props.add(SolrSnapshotManager.INDEX_DIR_PATH, metadata.get().getIndexDirPath());
           result.add(name, props);
         }
       }
-      it.rsp.add("snapshots", result);
+      it.rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, result);
     }
   });
 
@@ -305,44 +303,56 @@ enum CoreAdminOperation implements CoreAdminOp {
   static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
-    if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
-      // It would be a real mistake to load the cores just to get the status
-      CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
-      if (desc != null) {
-        info.add(NAME, desc.getName());
-        info.add("instanceDir", desc.getInstanceDir());
-        // None of the following are guaranteed to be present in a not-yet-loaded core.
-        String tmp = desc.getDataDir();
-        if (StringUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
-        tmp = desc.getConfigName();
-        if (StringUtils.isNotBlank(tmp)) info.add("config", tmp);
-        tmp = desc.getSchemaName();
-        if (StringUtils.isNotBlank(tmp)) info.add("schema", tmp);
-        info.add("isLoaded", "false");
-      }
+    if (cores.isCoreLoading(cname)) {
+      info.add(NAME, cname);
+      info.add("isLoaded", "false");
+      info.add("isLoading", "true");
     } else {
-      try (SolrCore core = cores.getCore(cname)) {
-        if (core != null) {
-          info.add(NAME, core.getName());
-          info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
-          info.add("dataDir", normalizePath(core.getDataDir()));
-          info.add("config", core.getConfigResource());
-          info.add("schema", core.getSchemaResource());
-          info.add("startTime", core.getStartTimeStamp());
-          info.add("uptime", core.getUptimeMs());
-          if (cores.isZooKeeperAware()) {
-            info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
-          }
-          if (isIndexInfoNeeded) {
-            RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-            try {
-              SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-              long size = getIndexSize(core);
-              indexInfo.add("sizeInBytes", size);
-              indexInfo.add("size", NumberUtils.readableSize(size));
-              info.add("index", indexInfo);
-            } finally {
-              searcher.decref();
+      if (!cores.isLoaded(cname)) { // Lazily-loaded core, fill in what we can.
+        // It would be a real mistake to load the cores just to get the status
+        CoreDescriptor desc = cores.getUnloadedCoreDescriptor(cname);
+        if (desc != null) {
+          info.add(NAME, desc.getName());
+          info.add("instanceDir", desc.getInstanceDir());
+          // None of the following are guaranteed to be present in a not-yet-loaded core.
+          String tmp = desc.getDataDir();
+          if (StringUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
+          tmp = desc.getConfigName();
+          if (StringUtils.isNotBlank(tmp)) info.add("config", tmp);
+          tmp = desc.getSchemaName();
+          if (StringUtils.isNotBlank(tmp)) info.add("schema", tmp);
+          info.add("isLoaded", "false");
+        }
+      } else {
+        try (SolrCore core = cores.getCore(cname)) {
+          if (core != null) {
+            info.add(NAME, core.getName());
+            info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
+            info.add("dataDir", normalizePath(core.getDataDir()));
+            info.add("config", core.getConfigResource());
+            info.add("schema", core.getSchemaResource());
+            info.add("startTime", core.getStartTimeStamp());
+            info.add("uptime", core.getUptimeMs());
+            if (cores.isZooKeeperAware()) {
+              info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
+              info.add("configVersion", core.getSolrConfig().getZnodeVersion());
+              SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+              cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+              cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
+              cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+              info.add("cloud", cloudInfo);
+            }
+            if (isIndexInfoNeeded) {
+              RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+              try {
+                SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
+                long size = getIndexSize(core);
+                indexInfo.add("sizeInBytes", size);
+                indexInfo.add("size", NumberUtils.readableSize(size));
+                info.add("index", indexInfo);
+              } finally {
+                searcher.decref();
+              }
             }
           }
         }

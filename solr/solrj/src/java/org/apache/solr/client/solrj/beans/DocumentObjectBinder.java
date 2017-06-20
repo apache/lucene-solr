@@ -86,13 +86,13 @@ public class DocumentObjectBinder {
         Map<String, Object> mapValue = (Map<String, Object>) field.get(obj);
 
         for (Map.Entry<String, Object> e : mapValue.entrySet()) {
-          doc.setField(e.getKey(), e.getValue(), 1.0f);
+          doc.setField(e.getKey(), e.getValue());
         }
       } else {
         if (field.child != null) {
           addChild(obj, field, doc);
         } else {
-          doc.setField(field.name, field.get(obj), 1.0f);
+          doc.setField(field.name, field.get(obj));
         }
       }
     }

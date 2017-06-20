@@ -102,7 +102,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[10];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
@@ -117,10 +117,31 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
+    queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=false mintf=0 mindf=0}30"));
+    solrDocuments = queryResponse.getResults();
+    expectedIds = new int[]{31, 18, 23, 13, 14, 20, 22, 32, 19, 21};
+    actualIds = new int[solrDocuments.size()];
+    i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+    System.out.println("DEBUG ACTUAL IDS 1: " + Arrays.toString(actualIds));
+    assertArrayEquals(expectedIds, actualIds);
+
+    queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u^10,lowerfilt1_u^1000 boost=true mintf=0 mindf=0}30"));
+    solrDocuments = queryResponse.getResults();
+    expectedIds = new int[]{29, 31, 32, 18, 23, 13, 14, 20, 22, 19};
+    actualIds = new int[solrDocuments.size()];
+    i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+    System.out.println("DEBUG ACTUAL IDS 2: " + Arrays.toString(actualIds));
+    assertArrayEquals(expectedIds, actualIds);
   }
 
   @Test
@@ -133,7 +154,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
@@ -163,7 +184,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int[] actualIds = new int[solrDocuments.size()];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
     }
 
     assertArrayEquals(expectedIds, actualIds);
@@ -215,12 +236,12 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
     int i = 0;
     StringBuilder sb = new StringBuilder();
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] =  Integer.parseInt(String.valueOf(solrDocument.getFieldValue("id")));
       sb.append(actualIds[i-1]).append(", ");
     }
     assertArrayEquals(expectedIds, actualIds);
   }
-  
+
   public void testInvalidSourceDocument() throws IOException {
     SolrException e = expectThrows(SolrException.class, () -> {
       cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999"));

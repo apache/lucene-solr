@@ -150,6 +150,12 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return ords[docID] != -1;
+    }
+
+    @Override
     public int ordValue() {
       assert ords[docID] != -1;
       return ords[docID];
@@ -254,6 +260,12 @@ public class TestBlockJoinSelector extends LuceneTestCase {
         docID = target - 1;
         return nextDoc();
       }
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return docsWithValue.get(docID);
     }
 
     @Override

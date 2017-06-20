@@ -19,17 +19,19 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -74,7 +76,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrConfigHandler.setWt(req, JSON);
+    RequestHandlerUtils.setWt(req, JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     if ("POST".equals(httpMethod)) {
       if (isImmutableConfigSet) {
@@ -86,15 +88,12 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
         return;
       }
 
-      for (ContentStream stream : req.getContentStreams()) {
-        try {
-          List errs = new SchemaManager(req).performOperations(stream.getReader());
-          if (!errs.isEmpty()) rsp.add("errors", errs);
-        } catch (IOException e) {
-          rsp.add("errors", Collections.singletonList("Error reading input String " + e.getMessage()));
-          rsp.setException(e);
-        }
-        break;
+      try {
+        List errs = new SchemaManager(req).performOperations();
+        if (!errs.isEmpty()) rsp.add("errors", errs);
+      } catch (IOException e) {
+        rsp.add("errors", Collections.singletonList("Error reading input String " + e.getMessage()));
+        rsp.setException(e);
       }
     } else {
       handleGET(req, rsp);
@@ -138,21 +137,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           rsp.add(IndexSchema.NAME, schemaName);
           break;
         }
-        case "/schema/defaultsearchfield": {
-          final String defaultSearchFieldName = req.getSchema().getDefaultSearchFieldName();
-          if (null == defaultSearchFieldName) {
-            final String message = "undefined " + IndexSchema.DEFAULT_SEARCH_FIELD;
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
-          }
-          rsp.add(IndexSchema.DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
-          break;
-        }
-        case "/schema/solrqueryparser": {
-          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
-          rsp.add(IndexSchema.SOLR_QUERY_PARSER, props);
-          break;
-        }
         case "/schema/zkversion": {
           int refreshIfBelowVersion = -1;
           Object refreshParam = req.getParams().get("refreshIfBelowVersion");
@@ -174,10 +158,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             }
           }
           rsp.add("zkversion", zkVersion);
-          break;
-        }
-        case "/schema/solrqueryparser/defaultoperator": {
-          rsp.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
           break;
         }
         default: {
@@ -252,7 +232,28 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
+  @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return ApiBag.wrapRequestHandlers(this, "core.SchemaRead",
+        "core.SchemaRead.fields",
+        "core.SchemaRead.copyFields",
+        "core.SchemaEdit",
+        "core.SchemaRead.dynamicFields_fieldTypes"
+        );
+
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }

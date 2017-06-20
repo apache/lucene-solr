@@ -41,6 +41,15 @@ final class StartupLoggingUtils {
   private final static StaticLoggerBinder binder = StaticLoggerBinder.getSingleton();
 
   /**
+   * Checks whether mandatory log dir is given
+   */
+  static void checkLogDir() {
+    if (System.getProperty("solr.log.dir") == null) {
+      log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
+    }
+  }
+
+  /**
    * Disables all log4j ConsoleAppender's by modifying log4j configuration dynamically.
    * Must only be used during early startup
    * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath

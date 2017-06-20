@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -80,9 +81,9 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       badIds = new String[10];
       for(int i = 0; i < 10;i++) {
         // a valid document
-        docs.add(doc(field("id", 1f, String.valueOf(2*i)), field("weight", 1f, i)));
+        docs.add(doc(field("id", String.valueOf(2*i)), field("weight", i)));
         // ... and an invalid one
-        docs.add(doc(field("id", 1f, String.valueOf(2*i+1)), field("weight", 1f, "b")));
+        docs.add(doc(field("id", String.valueOf(2*i+1)), field("weight", "b")));
         badIds[i] = String.valueOf(2*i+1);
       }
     }
@@ -106,7 +107,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
    */
   public void testReflection() {
     for (Method method : TolerantUpdateProcessor.class.getMethods()) {
-      if (method.getDeclaringClass().equals(Object.class)) {
+      if (method.getDeclaringClass().equals(Object.class) || method.getName().equals("close")) {
         continue;
       }
       assertEquals("base class(es) has changed, TolerantUpdateProcessor needs updated to ensure it " +
@@ -118,10 +119,10 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   
   @Test
   public void testValidAdds() throws IOException {
-    SolrInputDocument validDoc = doc(field("id", 1f, "1"), field("text", 1f, "the quick brown fox"));
+    SolrInputDocument validDoc = doc(field("id", "1"), field("text", "the quick brown fox"));
     add("tolerant-chain-max-errors-10", null, validDoc);
     
-    validDoc = doc(field("id", 1f, "2"), field("text", 1f, "the quick brown fox"));
+    validDoc = doc(field("id", "2"), field("text", "the quick brown fox"));
     add("tolerant-chain-max-errors-not-set", null, validDoc);
     
     assertU(commit());
@@ -135,7 +136,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   
   @Test
   public void testInvalidAdds() throws IOException {
-    SolrInputDocument invalidDoc = doc(field("text", 1f, "the quick brown fox")); //no id
+    SolrInputDocument invalidDoc = doc(field("text", "the quick brown fox")); //no id
     try {
       // This doc should fail without being tolerant
       add("not-tolerant", null, invalidDoc);
@@ -147,7 +148,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertAddsSucceedWithErrors("tolerant-chain-max-errors-10", Arrays.asList(new SolrInputDocument[]{invalidDoc}), null, "(unknown)");
     
     //a valid doc
-    SolrInputDocument validDoc = doc(field("id", 1f, "1"), field("text", 1f, "the quick brown fox"));
+    SolrInputDocument validDoc = doc(field("id", "1"), field("text", "the quick brown fox"));
     
     try {
       // This batch should fail without being tolerant
@@ -170,8 +171,8 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     assertQ(req("q","id:1")
         ,"//result[@numFound='1']");
     
-    invalidDoc = doc(field("id", 1f, "2"), field("weight", 1f, "aaa"));
-    validDoc = doc(field("id", 1f, "3"), field("weight", 1f, "3"));
+    invalidDoc = doc(field("id", "2"), field("weight", "aaa"));
+    validDoc = doc(field("id", "3"), field("weight", "3"));
     
     try {
       // This batch should fail without being tolerant
@@ -427,8 +428,9 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     }
     
     SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
+    UpdateRequestProcessor processor = null;
     try {
-      UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
+      processor = pc.createProcessor(req, rsp);
       for(SolrInputDocument doc:docs) {
         AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.solrDoc = doc;
@@ -437,6 +439,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       processor.finish();
       
     } finally {
+      IOUtils.closeQuietly(processor);
       req.close();
     }
     return rsp;

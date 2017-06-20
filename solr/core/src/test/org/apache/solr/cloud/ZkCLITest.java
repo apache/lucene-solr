@@ -16,10 +16,12 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -191,7 +193,33 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkClient.makePath("/test", true);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "list"};
+
+    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8.name());
+    ZkCLI.setStdout(myOut);
+
     ZkCLI.main(args);
+
+    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
+    String separator = System.lineSeparator();
+    assertEquals("/ (1)" + separator + " /test (0)" + separator + separator, standardOutput);
+  }
+
+  @Test
+  public void testLs() throws Exception {
+    zkClient.makePath("/test/path", true);
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+        "ls", "/test"};
+
+    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8.name());
+    ZkCLI.setStdout(myOut);
+
+    ZkCLI.main(args);
+    
+    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
+    String separator = System.lineSeparator();
+    assertEquals("/test (1)" + separator + " /test/path (0)" + separator + separator, standardOutput);
   }
 
   @Test
@@ -272,7 +300,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
-    byte [] data = new String("getNode-data").getBytes(StandardCharsets.UTF_8);
+    byte [] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "get", getNode};
@@ -284,7 +312,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     File tmpDir = createTempDir().toFile();
     
     String getNode = "/getFileNode";
-    byte [] data = new String("getFileNode-data").getBytes(StandardCharsets.UTF_8);
+    byte [] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
     File file = new File(tmpDir,

@@ -183,7 +183,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     if (VERBOSE) System.out.println(message);
   }
   
-  public class CustomSearcher extends IndexSearcher {
+  public static class CustomSearcher extends IndexSearcher {
     private int switcher;
     
     public CustomSearcher(IndexReader r, int switcher) {
@@ -212,7 +212,7 @@ public class TestCustomSearcherSort extends LuceneTestCase {
     }
   }
   
-  private class RandomGen {
+  private static class RandomGen {
     RandomGen(Random random) {
       this.random = random;
       base.set(1980, 1, 1);

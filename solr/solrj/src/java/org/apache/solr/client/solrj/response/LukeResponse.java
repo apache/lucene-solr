@@ -42,6 +42,7 @@ public class LukeResponse extends SolrResponseBase {
     boolean tokenized;
     String analyzer;
     List<String> fields;
+    List<String> dynamicFields;
 
 
     public FieldTypeInfo(String name) {
@@ -60,6 +61,10 @@ public class LukeResponse extends SolrResponseBase {
 
     public List<String> getFields() {
       return fields;
+    }
+
+    public List<String> getDynamicFields() {
+      return dynamicFields;
     }
 
     public String getName() {
@@ -96,6 +101,9 @@ public class LukeResponse extends SolrResponseBase {
         if ("fields".equals(key) && entry.getValue() != null) {
           List<String> theFields = (List<String>) entry.getValue();
           fields = new ArrayList<>(theFields);
+        } else if ("dynamicFields".equals(key) && entry.getValue() != null) {
+          List<String> theDynamicFields = (List<String>) entry.getValue();
+          dynamicFields = new ArrayList<>(theDynamicFields);
         } else if ("tokenized".equals(key) == true) {
           tokenized = Boolean.parseBoolean(entry.getValue().toString());
         } else if ("analyzer".equals(key) == true) {
@@ -194,6 +202,7 @@ public class LukeResponse extends SolrResponseBase {
 
   private NamedList<Object> indexInfo;
   private Map<String, FieldInfo> fieldInfo;
+  private Map<String, FieldInfo> dynamicFieldInfo;
   private Map<String, FieldTypeInfo> fieldTypeInfo;
 
   @Override
@@ -206,6 +215,8 @@ public class LukeResponse extends SolrResponseBase {
 
     NamedList<Object> schema = (NamedList<Object>) res.get("schema");
     NamedList<Object> flds = (NamedList<Object>) res.get("fields");
+    NamedList<Object> dynamicFlds = (NamedList<Object>) res.get("dynamicFields");
+
     if (flds == null && schema != null ) {
       flds = (NamedList<Object>) schema.get("fields");
     }
@@ -215,6 +226,18 @@ public class LukeResponse extends SolrResponseBase {
         FieldInfo f = new FieldInfo(field.getKey());
         f.read((NamedList<Object>) field.getValue());
         fieldInfo.put(field.getKey(), f);
+      }
+    }
+
+    if (dynamicFlds == null && schema != null) {
+      dynamicFlds = (NamedList<Object>) schema.get("dynamicFields");
+    }
+    if (dynamicFlds != null) {
+      dynamicFieldInfo = new HashMap<>();
+      for (Map.Entry<String, Object> dynamicField : dynamicFlds) {
+        FieldInfo f = new FieldInfo(dynamicField.getKey());
+        f.read((NamedList<Object>) dynamicField.getValue());
+        dynamicFieldInfo.put(dynamicField.getKey(), f);
       }
     }
 
@@ -272,6 +295,14 @@ public class LukeResponse extends SolrResponseBase {
 
   public FieldInfo getFieldInfo(String f) {
     return fieldInfo.get(f);
+  }
+
+  public Map<String, FieldInfo> getDynamicFieldInfo() {
+    return dynamicFieldInfo;
+  }
+
+  public FieldInfo getDynamicFieldInfo(String f) {
+    return dynamicFieldInfo.get(f);
   }
 
   //----------------------------------------------------------------

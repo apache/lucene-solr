@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -27,6 +28,8 @@ import java.util.regex.Pattern;
  *
  *
  **/
+// TermsComponent not currently supported for PointFields
+@SolrTestCaseJ4.SuppressPointFields
 public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -311,4 +314,68 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
        ,"count(//lst[@name='standardfilt']/*)=3"
     );
   }
+
+  @Test
+  public void testDocFreqAndTotalTermFreq() throws Exception {
+    SolrQueryRequest req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.list", "snake,spider,shark,ddddd");
+    assertQ(req,
+        "count(//lst[@name='standardfilt']/*)=4",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='ttf'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='df'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='ttf'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='ttf'][.='1']");
+  }
+
+  @Test
+  public void testDocFreqAndTotalTermFreqForNonExistingTerm() throws Exception {
+    SolrQueryRequest req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.list", "boo,snake");
+    assertQ(req,
+        "count(//lst[@name='standardfilt']/*)=1",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']");
+  }
+
+  @Test
+  public void testDocFreqAndTotalTermFreqForMultipleFields() throws Exception {
+    SolrQueryRequest req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "lowerfilt",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.list", "a,aa,aaa");
+    assertQ(req,
+        "count(//lst[@name='lowerfilt']/*)=3",
+        "count(//lst[@name='standardfilt']/*)=3",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='df'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='ttf'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']");
+  }
+
 }

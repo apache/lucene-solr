@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -39,7 +40,22 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.runtime.lib", "true");
     initCore("solrconfig-transformers.xml", "schema.xml");
+  }
+
+  public void testRequestTimeUrp(){
+    SolrCore core = h.getCore();
+    ModifiableSolrParams params = new ModifiableSolrParams()
+        .add("processor", "template")
+        .add("template.field", "id_t:{firstName}_{lastName}")
+        .add("template.field", "another_t:{lastName}_{firstName}")
+        .add("template.field", "missing_t:{lastName}_{unKnown}");
+    UpdateRequestProcessorChain chain = core.getUpdateProcessorChain(params);
+    List<UpdateRequestProcessorFactory> l = chain.getProcessors();
+    assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
+
+
   }
   
   public void testConfiguration() throws Exception 

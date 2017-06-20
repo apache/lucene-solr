@@ -18,28 +18,21 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
 
-import java.util.List;
-import java.util.Set;
-
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 

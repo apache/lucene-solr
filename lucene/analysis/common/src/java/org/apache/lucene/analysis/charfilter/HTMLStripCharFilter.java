@@ -30021,7 +30021,7 @@ public final class HTMLStripCharFilter extends BaseCharFilter {
     return ZZ_BUFFERSIZE;
   }
 
-  private class TextSegment extends OpenStringBuilder {
+  private static class TextSegment extends OpenStringBuilder {
     /** The position from which the next char will be read. */
     int pos = 0;
 

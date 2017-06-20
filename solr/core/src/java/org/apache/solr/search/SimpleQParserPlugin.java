@@ -109,12 +109,12 @@ public class SimpleQParserPlugin extends QParserPlugin {
 
       if (queryFields.isEmpty()) {
         // It qf is not specified setup up the queryFields map to use the defaultField.
-        String defaultField = QueryParsing.getDefaultField(req.getSchema(), defaultParams.get(CommonParams.DF));
+        String defaultField = defaultParams.get(CommonParams.DF);
 
         if (defaultField == null) {
           // A query cannot be run without having a field or set of fields to run against.
-          throw new IllegalStateException("Neither " + SimpleParams.QF + ", " + CommonParams.DF
-              + ", nor the default search field are present.");
+          throw new IllegalStateException("Neither " + SimpleParams.QF + " nor " + CommonParams.DF
+              + " are present.");
         }
 
         queryFields.put(defaultField, 1.0F);
@@ -154,7 +154,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
       parser = new SolrSimpleQueryParser(req.getSchema().getQueryAnalyzer(), queryFields, enabledOps, this, schema);
 
       // Set the default operator to be either 'AND' or 'OR' for the query.
-      QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(req.getSchema(), defaultParams.get(QueryParsing.OP));
+      QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
 
       if (defaultOp == QueryParser.Operator.AND) {
         parser.setDefaultOperator(BooleanClause.Occur.MUST);

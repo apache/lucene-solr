@@ -17,7 +17,10 @@
 package org.apache.lucene.index;
 
 
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -30,7 +33,8 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.index.LeafReader.CoreClosedListener;
+import org.apache.lucene.index.IndexReader.CacheKey;
+import org.apache.lucene.index.IndexReader.ClosedListener;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -56,6 +60,7 @@ final class SegmentCoreReaders {
   final TermVectorsReader termVectorsReaderOrig;
   final PointsReader pointsReader;
   final Directory cfsReader;
+  final String segment;
   /** 
    * fieldinfos for this core: means gen=-1.
    * this is the exact fieldinfos these codec components saw at write.
@@ -80,8 +85,8 @@ final class SegmentCoreReaders {
     }
   };
 
-  private final Set<CoreClosedListener> coreClosedListeners = 
-      Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
+  private final Set<IndexReader.ClosedListener> coreClosedListeners = 
+      Collections.synchronizedSet(new LinkedHashSet<IndexReader.ClosedListener>());
   
   SegmentCoreReaders(Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
@@ -97,6 +102,8 @@ final class SegmentCoreReaders {
         cfsReader = null;
         cfsDir = dir;
       }
+
+      segment = si.info.name;
 
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
@@ -130,6 +137,10 @@ final class SegmentCoreReaders {
         pointsReader = null;
       }
       success = true;
+    } catch (EOFException | FileNotFoundException e) {
+      throw new CorruptIndexException("Problem reading index from " + dir, dir.toString(), e);
+    } catch (NoSuchFileException e) {
+      throw new CorruptIndexException("Problem reading index.", e.getFile(), e);
     } finally {
       if (!success) {
         decRef();
@@ -165,14 +176,32 @@ final class SegmentCoreReaders {
       }
     }
   }
-  
+
+  private final IndexReader.CacheHelper cacheHelper = new IndexReader.CacheHelper() {
+    private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
+
+    @Override
+    public CacheKey getKey() {
+      return cacheKey;
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      coreClosedListeners.add(listener);
+    }
+  };
+
+  IndexReader.CacheHelper getCacheHelper() {
+    return cacheHelper;
+  }
+
   private void notifyCoreClosedListeners(Throwable th) throws IOException {
     synchronized(coreClosedListeners) {
-      for (CoreClosedListener listener : coreClosedListeners) {
+      for (IndexReader.ClosedListener listener : coreClosedListeners) {
         // SegmentReader uses our instance as its
         // coreCacheKey:
         try {
-          listener.onClose(this);
+          listener.onClose(cacheHelper.getKey());
         } catch (Throwable t) {
           if (th == null) {
             th = t;
@@ -181,15 +210,15 @@ final class SegmentCoreReaders {
           }
         }
       }
-      IOUtils.reThrow(th);
+      
+      if (th != null) {
+        throw IOUtils.rethrowAlways(th);
+      }
     }
   }
 
-  void addCoreClosedListener(CoreClosedListener listener) {
-    coreClosedListeners.add(listener);
-  }
-  
-  void removeCoreClosedListener(CoreClosedListener listener) {
-    coreClosedListeners.remove(listener);
+  @Override
+  public String toString() {
+    return "SegmentCoreReader(" + segment + ")";
   }
 }

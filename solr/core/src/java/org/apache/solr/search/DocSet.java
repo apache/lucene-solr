@@ -31,7 +31,7 @@ import org.apache.solr.common.SolrException;
  *
  * @since solr 0.9
  */
-public interface DocSet extends Closeable, Accountable /* extends Collection<Integer> */ {
+public interface DocSet extends Closeable, Accountable, Cloneable /* extends Collection<Integer> */ {
   
   /**
    * Adds the specified document if it is not currently in the DocSet
@@ -130,6 +130,8 @@ public interface DocSet extends Closeable, Accountable /* extends Collection<Int
    * method.
    */
   public void addAllTo(DocSet target);
+
+  public DocSet clone();
 
   public static DocSet EMPTY = new SortedIntDocSet(new int[0], 0);
 }

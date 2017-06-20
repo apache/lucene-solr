@@ -1,0 +1,127 @@
+.summary {
+    color: #808080;
+    border-left: 5px solid #d9411e;
+    font-size:16px;
+}
+
+.nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+    background-color: #FF833D;
+    color: white;
+}
+
+.nav > li.active > a {
+    background-color: #262130;
+}
+
+.nav > li > a:hover {
+    background-color: #FF833D;
+}
+
+div.navbar-collapse .dropdown-menu > li > a:hover {
+    background-color: #D9411E;
+}
+
+.nav li.thirdlevel > a {
+    background-color: #FAFAFA !important;
+    color: #FF833D;
+    font-weight: bold;
+}
+
+a[data-toggle="tooltip"] {
+    color: #649345;
+    font-style: italic;
+    cursor: default;
+}
+
+.navbar-inverse {
+    background-color: #D9411E;
+    border-color: #015CAE;
+}
+
+.navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+    color: #015CAE;
+}
+
+.navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+    background-color: #015CAE;
+    color: #ffffff;
+}
+
+/* not sure if using this ...*/
+.navbar-inverse .navbar-collapse, .navbar-inverse .navbar-form {
+    border-color: #248ec2 !important;
+}
+
+/* Used for nav buttons */
+.btn-primary {
+    color: #ffffff;
+    background-color: #F35B38;
+    border-color: #E6E7E8;
+}
+
+.navbar-inverse .navbar-nav > .active > a, .navbar-inverse .navbar-nav > .active > a:hover, .navbar-inverse .navbar-nav > .active > a:focus {
+    background-color: #D9411E;
+}
+
+/* Used for nav buttons */
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.open .dropdown-toggle.btn-primary {
+    background-color: #305CB3;
+    border-color: #E6E7E8;
+}
+
+.printTitle {
+    color: #015CAE !important;
+}
+
+body.print h1 {color: #015CAE !important; font-size:28px !important;}
+body.print h2 {color: #595959 !important; font-size:20px !important;}
+body.print h3 {color: #E50E51 !important; font-size:14px !important;}
+body.print h4 {color: #679DCE !important; font-size:14px; font-style: italic !important;}
+
+.anchorjs-link:hover {
+    color: #216f9b;
+}
+
+div.sidebarTitle {
+    color: #015CAE;
+}
+
+li.sidebarTitle {
+    margin-top:40px;
+    font-weight:normal;
+    font-size:120%;
+    color: #262130;
+    margin-bottom:10px;
+    margin-left: 5px;
+
+}
+.scrollnav {
+    font-size: larger;
+    /* why do we need both of these??? */
+    padding-bottom: 1em;
+    margin-bottom: 2em;
+}
+.scrollnav .prev {
+    text-align: left;
+    float: left;
+    font-size: inherit;
+}
+.scrollnav .prev:before {
+    padding-right: 0.5em;
+    content: "\25C0 ";
+    display: inline-block; /* text-decoration: none doesn't work, but this does */
+}
+.scrollnav .next {
+    text-align: right;
+    float: right;
+    font-size: inherit;
+}
+.scrollnav .next:after {
+    padding-left: 0.5em;
+    content: " \25B6";
+    display: inline-block; /* text-decoration: none doesn't work, but this does */
+}

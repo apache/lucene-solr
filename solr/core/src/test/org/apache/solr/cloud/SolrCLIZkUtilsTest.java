@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
@@ -28,11 +29,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -131,7 +135,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    
+
     copyConfigUp(configSet, "cloud-subdirs", "cp1");
 
     // Now copy it somewhere else on ZK.
@@ -201,7 +205,6 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp4");
 
-
     // try with recurse not specified
     args = new String[]{
         "-src", "file:" + srcPathCheck.toAbsolutePath().toString(),
@@ -227,9 +230,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // NOTE: really can't test copying to '.' because the test framework doesn't allow altering the source tree
     // and at least IntelliJ's CWD is in the source tree.
 
-    // copy to local ending in '/'
+    // copy to local ending in separator
     //src and cp3 and cp4 are valid
-    String localSlash = tmp.normalize() + "/cpToLocal/";
+    String localSlash = tmp.normalize() +  File.separator +"cpToLocal" + File.separator;
     args = new String[]{
         "-src", "zk:/cp3/schema.xml",
         "-dst", localSlash,
@@ -244,7 +247,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy to ZK ending in '/'.
     //src and cp3 are valid
     args = new String[]{
-        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
+        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + File.separator + "solrconfig.xml",
         "-dst", "zk:/powerup/",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -257,7 +260,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy individual file up
     //src and cp3 are valid
     args = new String[]{
-        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + "/solrconfig.xml",
+        "-src", "file:" + srcPathCheck.normalize().toAbsolutePath().toString() + File.separator + "solrconfig.xml",
         "-dst", "zk:/copyUpFile.xml",
         "-recurse", "false",
         "-zkHost", zkAddr,
@@ -270,7 +273,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // copy individual file down
     //src and cp3 are valid
 
-    String localNamed = tmp.normalize().toString() + "/localnamed/renamed.txt";
+    String localNamed = tmp.normalize().toString() + File.separator + "localnamed" + File.separator +  "renamed.txt";
     args = new String[]{
         "-src", "zk:/cp4/solrconfig.xml",
         "-dst", "file:" + localNamed,
@@ -306,6 +309,70 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("Copy from somewhere in ZK to ZK root should have succeeded.", 0, res);
     assertTrue("Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml", true));
 
+    // Check that the form path/ works for copying files up. Should append the last bit of the source path to the dst
+    args = new String[]{
+        "-src", "file:" + srcPathCheck.toAbsolutePath().toString(),
+        "-dst", "zk:/cp7/",
+        "-recurse", "true",
+        "-zkHost", zkAddr,
+    };
+
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+    verifyZkLocalPathsMatch(srcPathCheck, "/cp7/" + srcPathCheck.getFileName().toString());
+
+    // Check for an intermediate ZNODE having content. You know cp7/stopwords is a parent node.
+    tmp = createTempDir("dirdata");
+    Path file = Paths.get(tmp.toAbsolutePath().toString(), "zknode.data");
+    List<String> lines = new ArrayList<>();
+    lines.add("{Some Arbitrary Data}");
+    Files.write(file, lines, Charset.forName("UTF-8"));
+    // First, just copy the data up the cp7 since it's a directory.
+    args = new String[]{
+        "-src", "file:" + file.toAbsolutePath().toString(),
+        "-dst", "zk:/cp7/conf/stopwords/",
+        "-recurse", "false",
+        "-zkHost", zkAddr,
+    };
+
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    String content = new String(zkClient.getData("/cp7/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
+    assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
+
+
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    tmp = createTempDir("cp8");
+    args = new String[]{
+        "-src", "zk:/cp7",
+        "-dst", "file:" + tmp.toAbsolutePath().toString(),
+        "-recurse", "true",
+        "-zkHost", zkAddr,
+    };
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    // Next, copy cp7 down and verify that zknode.data exists for cp7
+    Path zData = Paths.get(tmp.toAbsolutePath().toString(), "conf/stopwords/zknode.data");
+    assertTrue("znode.data should have been copied down", zData.toFile().exists());
+
+    // Finally, copy up to cp8 and verify that the data is up there.
+    args = new String[]{
+        "-src", "file:" + tmp.toAbsolutePath().toString(),
+        "-dst", "zk:/cp9",
+        "-recurse", "true",
+        "-zkHost", zkAddr,
+    };
+
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    content = new String(zkClient.getData("/cp9/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
+    assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
+
   }
 
   @Test
@@ -338,7 +405,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Files are in mv2
     // Now fail if we specify "file:". Everything should still be in /mv2
     args = new String[]{
-        "-src", "file:/mv2",
+        "-src", "file:" + File.separator + "mv2",
         "-dst", "/mv3",
         "-zkHost", zkAddr,
     };
@@ -577,13 +644,22 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     verifyAllZNodesAreFiles(fileRoot, zkRoot);
   }
 
+  private static boolean isEphemeral(String zkPath) throws KeeperException, InterruptedException {
+    Stat znodeStat = zkClient.exists(zkPath, null, true);
+    return znodeStat.getEphemeralOwner() != 0;
+  }
+
   void verifyAllZNodesAreFiles(Path fileRoot, String zkRoot) throws KeeperException, InterruptedException {
 
-    for (String node : zkClient.getChildren(zkRoot, null, true)) {
-      Path thisPath = Paths.get(fileRoot.toAbsolutePath().toString(), node);
-      assertTrue("Znode " + node + " should have been found on disk at " + fileRoot.toAbsolutePath().toString(),
+    for (String child : zkClient.getChildren(zkRoot, null, true)) {
+      // Skip ephemeral nodes
+      if (zkRoot.endsWith("/") == false) zkRoot += "/";
+      if (isEphemeral(zkRoot + child)) continue;
+      
+      Path thisPath = Paths.get(fileRoot.toAbsolutePath().toString(), child);
+      assertTrue("Znode " + child + " should have been found on disk at " + fileRoot.toAbsolutePath().toString(),
           Files.exists(thisPath));
-      verifyAllZNodesAreFiles(thisPath, zkRoot + "/" + node);
+      verifyAllZNodesAreFiles(thisPath, zkRoot + child);
     }
   }
 

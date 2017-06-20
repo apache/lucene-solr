@@ -28,7 +28,8 @@ import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Lucene 6.0 point format, which encodes dimensional values in a block KD-tree structure
- * for fast shape intersection filtering. See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
+ * for fast 1D range and N dimesional shape intersection filtering.
+ * See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
  *
  * <p>This data structure is written as a series of blocks on disk, with an in-memory perfectly balanced
  * binary tree of split values referencing those blocks at the leaves.
@@ -50,9 +51,12 @@ import org.apache.lucene.index.SegmentWriteState;
  *  <li> maxPointsInLeafNode (vInt)
  *  <li> bytesPerDim (vInt)
  *  <li> count (vInt)
- *  <li> byte[bytesPerDim]<sup>count</sup> (packed <code>byte[]</code> all split values)
- *  <li> delta-blockFP (vLong)<sup>count</sup> (delta-coded file pointers to the on-disk leaf blocks))
+ *  <li> packed index (byte[])
  * </ul>
+ *
+ * <p>The packed index uses hierarchical delta and prefix coding to compactly encode the file pointer for
+ * all leaf blocks, once the tree is traversed, as well as the split dimension and split value for each
+ * inner node of the tree.
  *
  * <p>After all fields blocks + index data are written, {@link CodecUtil#writeFooter} writes the checksum.
  *

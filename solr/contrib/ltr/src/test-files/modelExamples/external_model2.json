@@ -1,0 +1,13 @@
+{
+    "class":"org.apache.solr.ltr.model.LinearModel",
+    "name":"externalmodel2",
+    "store": "fstore2",
+    "features":[
+        { "name": "docPopularity"}
+    ],
+    "params":{
+        "weights": {
+            "docPopularity": 0.5
+        }
+    }
+}

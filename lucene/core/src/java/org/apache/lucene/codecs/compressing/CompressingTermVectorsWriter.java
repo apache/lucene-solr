@@ -37,6 +37,7 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.GrowableByteArrayDataOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -63,9 +64,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final String CODEC_SFX_IDX = "Index";
   static final String CODEC_SFX_DAT = "Data";
 
-  static final int VERSION_START = 0;
-  static final int VERSION_CHUNK_STATS = 1;
-  static final int VERSION_CURRENT = VERSION_CHUNK_STATS;
+  static final int VERSION_START = 1;
+  static final int VERSION_CURRENT = VERSION_START;
 
   static final int PACKED_BLOCK_SIZE = 64;
 
@@ -269,8 +269,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   @Override
   public void finishDocument() throws IOException {
     // append the payload bytes of the doc after its terms
-    termSuffixes.writeBytes(payloadBytes.bytes, payloadBytes.length);
-    payloadBytes.length = 0;
+    termSuffixes.writeBytes(payloadBytes.getBytes(), payloadBytes.getPosition());
+    payloadBytes.reset();
     ++numDocs;
     if (triggerFlush()) {
       flush();
@@ -316,7 +316,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   }
 
   private boolean triggerFlush() {
-    return termSuffixes.length >= chunkSize
+    return termSuffixes.getPosition() >= chunkSize
         || pendingDocs.size() >= MAX_DOCUMENTS_PER_CHUNK;
   }
 
@@ -355,14 +355,14 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
       flushPayloadLengths();
 
       // compress terms and payloads and write them to the output
-      compressor.compress(termSuffixes.bytes, 0, termSuffixes.length, vectorsStream);
+      compressor.compress(termSuffixes.getBytes(), 0, termSuffixes.getPosition(), vectorsStream);
     }
 
     // reset
     pendingDocs.clear();
     curDoc = null;
     curField = null;
-    termSuffixes.length = 0;
+    termSuffixes.reset();
     numChunks++;
   }
 
@@ -730,7 +730,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
   @Override
   public int merge(MergeState mergeState) throws IOException {
-    if (mergeState.segmentInfo.getIndexSort() != null) {
+    if (mergeState.needsIndexSort) {
       // TODO: can we gain back some optos even if index is sorted?  E.g. if sort results in large chunks of contiguous docs from one sub
       // being copied over...?
       return super.merge(mergeState);

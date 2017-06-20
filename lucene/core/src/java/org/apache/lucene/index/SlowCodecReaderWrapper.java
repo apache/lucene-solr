@@ -18,6 +18,8 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -26,7 +28,6 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -93,13 +94,8 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public PointValues getPointValues() {
-          return reader.getPointValues();
-        }
-
-        @Override
         public PointsReader getPointsReader() {
-          return pointValuesToReader(reader.getPointValues());
+          return pointValuesToReader(reader);
         }
 
         @Override
@@ -118,13 +114,13 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public void addCoreClosedListener(CoreClosedListener listener) {
-          reader.addCoreClosedListener(listener);
+        public CacheHelper getCoreCacheHelper() {
+          return reader.getCoreCacheHelper();
         }
 
         @Override
-        public void removeCoreClosedListener(CoreClosedListener listener) {
-          reader.removeCoreClosedListener(listener);
+        public CacheHelper getReaderCacheHelper() {
+          return reader.getReaderCacheHelper();
         }
 
         @Override
@@ -133,21 +129,19 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public Sort getIndexSort() {
-          return reader.getIndexSort();
+        public LeafMetaData getMetaData() {
+          return reader.getMetaData();
         }
       };
     }
   }
 
-  private static PointsReader pointValuesToReader(PointValues values) {
-    if (values == null) {
-      return null;
-    }
+  private static PointsReader pointValuesToReader(LeafReader reader) {
     return new PointsReader() {
+
       @Override
-      public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-        values.intersect(fieldName, visitor);
+      public PointValues getValues(String field) throws IOException {
+        return reader.getPointValues(field);
       }
 
       @Override
@@ -164,35 +158,6 @@ public final class SlowCodecReaderWrapper {
         return 0;
       }
 
-      @Override
-      public byte[] getMinPackedValue(String fieldName) throws IOException {
-        return values.getMinPackedValue(fieldName);
-      }
-
-      @Override
-      public byte[] getMaxPackedValue(String fieldName) throws IOException {
-        return values.getMaxPackedValue(fieldName);
-      }
-
-      @Override
-      public int getNumDimensions(String fieldName) throws IOException {
-        return values.getNumDimensions(fieldName);
-      }
-
-      @Override
-      public int getBytesPerDimension(String fieldName) throws IOException {
-        return values.getBytesPerDimension(fieldName);
-      }
-
-      @Override
-      public long size(String fieldName) {
-        return values.size(fieldName);
-      }
-
-      @Override
-      public int getDocCount(String fieldName) {
-        return values.getDocCount(fieldName);
-      }
     };
   }
   
@@ -321,21 +286,27 @@ public final class SlowCodecReaderWrapper {
   }
 
   private static FieldsProducer readerToFieldsProducer(final LeafReader reader) throws IOException {
-    final Fields fields = reader.fields();
+    ArrayList<String> indexedFields = new ArrayList<>();
+    for (FieldInfo fieldInfo : reader.getFieldInfos()) {
+      if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+        indexedFields.add(fieldInfo.name);
+      }
+    }
+    Collections.sort(indexedFields);
     return new FieldsProducer() {
       @Override
       public Iterator<String> iterator() {
-        return fields.iterator();
+        return indexedFields.iterator();
       }
 
       @Override
       public Terms terms(String field) throws IOException {
-        return fields.terms(field);
+        return reader.terms(field);
       }
 
       @Override
       public int size() {
-        return fields.size();
+        return indexedFields.size();
       }
 
       @Override

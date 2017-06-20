@@ -17,17 +17,11 @@
 
 package org.apache.solr.handler.admin;
 
-import java.util.Optional;
-
-import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 
 
 class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
@@ -39,30 +33,19 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
 
     String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
     String cname = params.required().get(CoreAdminParams.CORE);
-    try (SolrCore core = cc.getCore(cname)) {
-      if (core == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-      }
+    SolrCore core = cc.getCore(cname);
+    if (core == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+    }
 
-      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-      Optional<SolrSnapshotMetaDataManager.SnapshotMetaData> metadata = mgr.release(commitName);
-      if (metadata.isPresent()) {
-        long gen = metadata.get().getGenerationNumber();
-        String indexDirPath = metadata.get().getIndexDirPath();
-
-        // If the directory storing the snapshot is not the same as the *current* core
-        // index directory, then delete the files corresponding to this snapshot.
-        // Otherwise we leave the index files related to snapshot as is (assuming the
-        // underlying Solr IndexDeletionPolicy will clean them up appropriately).
-        if (!indexDirPath.equals(core.getIndexDir())) {
-          Directory d = core.getDirectoryFactory().get(indexDirPath, DirectoryFactory.DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_NONE);
-          try {
-            SolrSnapshotManager.deleteIndexFiles(d, mgr.listSnapshotsInIndexDir(indexDirPath), gen);
-          } finally {
-            core.getDirectoryFactory().release(d);
-          }
-        }
-      }
+    try {
+      core.deleteNamedSnapshot(commitName);
+      // Ideally we shouldn't need this. This is added since the RPC logic in
+      // OverseerCollectionMessageHandler can not provide the coreName as part of the result.
+      it.rsp.add(CoreAdminParams.CORE, core.getName());
+      it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
+    } finally {
+      core.close();
     }
   }
 }

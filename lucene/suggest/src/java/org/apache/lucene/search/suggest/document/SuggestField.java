@@ -38,7 +38,7 @@ import org.apache.lucene.util.BytesRef;
  * Besides the usual {@link org.apache.lucene.analysis.Analyzer}s,
  * {@link CompletionAnalyzer}
  * can be used to tune suggest field only parameters
- * (e.g. preserving token seperators, preserving position increments
+ * (e.g. preserving token separators, preserving position increments
  * when converting the token stream to an automaton)
  * </p>
  * <p>
@@ -47,7 +47,7 @@ import org.apache.lucene.util.BytesRef;
  * document.add(new SuggestField(name, "suggestion", 4));
  * </pre>
  * To perform document suggestions based on the this field, use
- * {@link SuggestIndexSearcher#suggest(CompletionQuery, int)}
+ * {@link SuggestIndexSearcher#suggest(CompletionQuery, int, boolean)}
  *
  * @lucene.experimental
  */

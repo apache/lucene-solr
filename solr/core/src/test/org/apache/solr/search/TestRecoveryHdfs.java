@@ -109,17 +109,6 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     dfsCluster = null;
   }
 
-  // since we make up fake versions in these tests, we can get messed up by a DBQ with a real version
-  // since Solr can think following updates were reordered.
-  @Override
-  public void clearIndex() {
-    try {
-      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE), DISTRIB_UPDATE_PARAM,FROM_LEADER));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   @Test
   public void testReplicationFactor() throws Exception {
     clearIndex(); 

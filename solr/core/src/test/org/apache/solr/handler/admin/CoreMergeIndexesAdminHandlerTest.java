@@ -24,6 +24,7 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
@@ -49,7 +50,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
   private static String FAILING_MSG = "Creating a directory using FailingDirectoryFactoryException always fails";
   public static class FailingDirectoryFactory extends MockFSDirectoryFactory {
-    public class FailingDirectoryFactoryException extends RuntimeException {
+    public static class FailingDirectoryFactoryException extends RuntimeException {
       public FailingDirectoryFactoryException() {
         super(FAILING_MSG);
       }
@@ -75,7 +76,8 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
     try (SolrCore core = cores.getCore("collection1")) {
-      FailingDirectoryFactory dirFactory = (FailingDirectoryFactory)core.getDirectoryFactory();
+      DirectoryFactory df = core.getDirectoryFactory();
+      FailingDirectoryFactory dirFactory = (FailingDirectoryFactory) df;
 
       try {
         dirFactory.fail = true;

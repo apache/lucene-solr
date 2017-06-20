@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,6 +37,7 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocSet;
@@ -43,10 +46,6 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Tests some basic functionality of Solr while demonstrating good
- * Best Practices for using AbstractSolrTestCase
- */
 public class HighlighterTest extends SolrTestCaseJ4 {
 
   private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is " +
@@ -91,6 +90,25 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testMethodPostings() {
+    String field = "t_text";
+    assertU(adoc(field, LONG_TEXT,
+        "id", "1"));
+    assertU(commit());
+
+    try {
+      assertQ("Tried PostingsSolrHighlighter but failed due to offsets not in postings",
+          req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
+      fail("Did not encounter exception for no offsets");
+    } catch (Exception e) {
+      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
+      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
+    }
+    // note: the default schema.xml has no offsets in postings to test the PostingsHighlighter. Leave that for another
+    //  test class.
+  }
+
+  @Test
   public void testMergeContiguous() throws Exception {
     HashMap<String,String> args = new HashMap<>();
     args.put(HighlightParams.HIGHLIGHT, "true");
@@ -99,6 +117,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put(HighlightParams.SNIPPETS, String.valueOf(4));
     args.put(HighlightParams.FRAGSIZE, String.valueOf(40));
     args.put(HighlightParams.MERGE_CONTIGUOUS_FRAGMENTS, "true");
+    args.put(HighlightParams.METHOD, "original"); // test works; no complaints
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     String input = "this is some long text.  It has the word long in many places.  In fact, it has long on some different fragments.  " +
@@ -763,7 +782,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             );
 
     // Prove fallback highlighting works also with FVH
-    args.put("hl.useFastVectorHighlighter", "true");
+    args.put("hl.method", "fastVector");
     args.put("hl.tag.pre", "<fvhpre>");
     args.put("hl.tag.post", "</fvhpost>");
     args.put("f.t_text.hl.maxAlternateFieldLength", "18");
@@ -852,6 +871,8 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "text", "test", // static not stored
         "foo_s", "test", // dynamic stored
         "foo_sI", "test", // dynamic not stored
+        "bar_s", "test", // dynamic stored
+        "bar_sI", "test", // dynamic not stored
         "weight", "1.0")); // stored but not text
     assertU(commit());
     assertU(optimize());
@@ -882,6 +903,21 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     assertEquals("Expected to highlight on field \"foo_s\"", "foo_s",
         highlightFieldNames.get(0));
     request.close();
+
+    // SOLR-5127
+    args.put("hl.fl", (random().nextBoolean() ? "foo_*,bar_*" : "bar_*,foo_*"));
+    lrf = h.getRequestFactory("standard", 0, 10, args);
+    // hl.fl ordering need not be preserved in output
+    final Set<String> highlightedSetExpected = new HashSet<String>();
+    highlightedSetExpected.add("foo_s");
+    highlightedSetExpected.add("bar_s");
+    try (LocalSolrQueryRequest localRequest = lrf.makeRequest("test")) {
+      highlighter = HighlightComponent.getHighlighter(h.getCore());
+      final Set<String> highlightedSetActual = new HashSet<String>(
+          Arrays.asList(highlighter.getHighlightFields(null,
+              localRequest, new String[] {})));
+      assertEquals(highlightedSetExpected, highlightedSetActual);
+    }
   }
 
   @Test

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -149,15 +148,14 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     if (freq.prefix != null) {
       String indexedPrefix = sf.getType().toInternal(freq.prefix);
       startTermBytes = new BytesRef(indexedPrefix);
-    } else if (sf.getType().getNumericType() != null) {
+    } else if (sf.getType().getNumberType() != null) {
       String triePrefix = TrieField.getMainValuePrefix(sf.getType());
       if (triePrefix != null) {
         startTermBytes = new BytesRef(triePrefix);
       }
     }
 
-    Fields fields = fcontext.searcher.getSlowAtomicReader().fields();
-    Terms terms = fields == null ? null : fields.terms(sf.getName());
+    Terms terms = fcontext.searcher.getSlowAtomicReader().terms(sf.getName());
 
     termsEnum = null;
     deState = null;
@@ -333,7 +331,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
         bucket.add("val", bucketVal);
         addStats(bucket, 0);
         if (hasSubFacets) {
-          processSubs(bucket, bucketQuery, termSet);
+          processSubs(bucket, bucketQuery, termSet, false, null);
         }
 
         // TODO... termSet needs to stick around for streaming sub-facets?

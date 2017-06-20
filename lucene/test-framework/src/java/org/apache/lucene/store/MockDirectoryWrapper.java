@@ -1025,7 +1025,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             System.out.println("MockDirectoryWrapper: throw exc");
             t.printStackTrace(System.out);
           }
-          IOUtils.reThrow(t);
+          throw IOUtils.rethrowAlways(t);
         }
       }
     }

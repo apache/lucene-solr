@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.TieredMergePolicy;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,6 +45,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 /**
  * 
  *
@@ -57,14 +61,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    systemSetPropertySolrTestsMergePolicy(TieredMergePolicy.class.getName());
     systemSetPropertySolrTestsMergePolicyFactory(TieredMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema12.xml");
   }
   
   @AfterClass
   public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicy();
     systemClearPropertySolrTestsMergePolicyFactory();
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
@@ -99,11 +101,33 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBasics() throws Exception {
-    
+
+    // get initial metrics
+    Map<String, Metric> metrics = h.getCoreContainer().getMetricManager()
+        .registry(h.getCore().getCoreMetricManager().getRegistryName()).getMetrics();
+
+    String PREFIX = "UPDATE.updateHandler.";
+
+    String commitsName = PREFIX + "commits";
+    assertTrue(metrics.containsKey(commitsName));
+    String addsName = PREFIX + "adds";
+    assertTrue(metrics.containsKey(addsName));
+    String cumulativeAddsName = PREFIX + "cumulativeAdds";
+    String delsIName = PREFIX + "deletesById";
+    String cumulativeDelsIName = PREFIX + "cumulativeDeletesById";
+    String delsQName = PREFIX + "deletesByQuery";
+    String cumulativeDelsQName = PREFIX + "cumulativeDeletesByQuery";
+    long commits = ((Meter) metrics.get(commitsName)).getCount();
+    long adds = ((Gauge<Number>) metrics.get(addsName)).getValue().longValue();
+    long cumulativeAdds = ((Meter) metrics.get(cumulativeAddsName)).getCount();
+    long cumulativeDelsI = ((Meter) metrics.get(cumulativeDelsIName)).getCount();
+    long cumulativeDelsQ = ((Meter) metrics.get(cumulativeDelsQName)).getCount();
+
+
     assertNull("This test requires a schema that has no version field, " +
                "it appears the schema file in use has been edited to violate " +
                "this requirement",
-               h.getCore().getLatestSchema().getFieldOrNull(VersionInfo.VERSION_FIELD));
+               h.getCore().getLatestSchema().getFieldOrNull(VERSION_FIELD));
 
     assertU(adoc("id","5"));
     assertU(adoc("id","6"));
@@ -112,7 +136,22 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertQ(req("q","id:5"), "//*[@numFound='0']");
     assertQ(req("q","id:6"), "//*[@numFound='0']");
 
+    long newAdds = ((Gauge<Number>) metrics.get(addsName)).getValue().longValue();
+    long newCumulativeAdds = ((Meter) metrics.get(cumulativeAddsName)).getCount();
+    assertEquals("new adds", 2, newAdds - adds);
+    assertEquals("new cumulative adds", 2, newCumulativeAdds - cumulativeAdds);
+
     assertU(commit());
+
+    long newCommits = ((Meter) metrics.get(commitsName)).getCount();
+    assertEquals("new commits", 1, newCommits - commits);
+
+    newAdds = ((Gauge<Number>) metrics.get(addsName)).getValue().longValue();
+    newCumulativeAdds = ((Meter) metrics.get(cumulativeAddsName)).getCount();
+    // adds should be reset to 0 after commit
+    assertEquals("new adds after commit", 0, newAdds);
+    // not so with cumulative ones!
+    assertEquals("new cumulative adds after commit", 2, newCumulativeAdds - cumulativeAdds);
 
     // now they should be there
     assertQ(req("q","id:5"), "//*[@numFound='1']");
@@ -121,11 +160,21 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     // now delete one
     assertU(delI("5"));
 
+    long newDelsI = ((Gauge<Number>) metrics.get(delsIName)).getValue().longValue();
+    long newCumulativeDelsI = ((Meter) metrics.get(cumulativeDelsIName)).getCount();
+    assertEquals("new delsI", 1, newDelsI);
+    assertEquals("new cumulative delsI", 1, newCumulativeDelsI - cumulativeDelsI);
+
     // not committed yet
     assertQ(req("q","id:5"), "//*[@numFound='1']");
 
     assertU(commit());
-    
+    // delsI should be reset to 0 after commit
+    newDelsI = ((Gauge<Number>) metrics.get(delsIName)).getValue().longValue();
+    newCumulativeDelsI = ((Meter) metrics.get(cumulativeDelsIName)).getCount();
+    assertEquals("new delsI after commit", 0, newDelsI);
+    assertEquals("new cumulative delsI after commit", 1, newCumulativeDelsI - cumulativeDelsI);
+
     // 5 should be gone
     assertQ(req("q","id:5"), "//*[@numFound='0']");
     assertQ(req("q","id:6"), "//*[@numFound='1']");
@@ -133,13 +182,35 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     // now delete all
     assertU(delQ("*:*"));
 
+    long newDelsQ = ((Gauge<Number>) metrics.get(delsQName)).getValue().longValue();
+    long newCumulativeDelsQ = ((Meter) metrics.get(cumulativeDelsQName)).getCount();
+    assertEquals("new delsQ", 1, newDelsQ);
+    assertEquals("new cumulative delsQ", 1, newCumulativeDelsQ - cumulativeDelsQ);
+
     // not committed yet
     assertQ(req("q","id:6"), "//*[@numFound='1']");
 
     assertU(commit());
 
+    newDelsQ = ((Gauge<Number>) metrics.get(delsQName)).getValue().longValue();
+    newCumulativeDelsQ = ((Meter) metrics.get(cumulativeDelsQName)).getCount();
+    assertEquals("new delsQ after commit", 0, newDelsQ);
+    assertEquals("new cumulative delsQ after commit", 1, newCumulativeDelsQ - cumulativeDelsQ);
+
     // 6 should be gone
     assertQ(req("q","id:6"), "//*[@numFound='0']");
+
+    // verify final metrics
+    newCommits = ((Meter) metrics.get(commitsName)).getCount();
+    assertEquals("new commits", 3, newCommits - commits);
+    newAdds = ((Gauge<Number>) metrics.get(addsName)).getValue().longValue();
+    assertEquals("new adds", 0, newAdds);
+    newCumulativeAdds = ((Meter) metrics.get(cumulativeAddsName)).getCount();
+    assertEquals("new cumulative adds", 2, newCumulativeAdds - cumulativeAdds);
+    newDelsI = ((Gauge<Number>) metrics.get(delsIName)).getValue().longValue();
+    assertEquals("new delsI", 0, newDelsI);
+    newCumulativeDelsI = ((Meter) metrics.get(cumulativeDelsIName)).getCount();
+    assertEquals("new cumulative delsI", 1, newCumulativeDelsI - cumulativeDelsI);
 
   }
 
@@ -161,12 +232,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(ureq, false);
     cmtCmd.waitSearcher = true;
     assertEquals( 1, duh2.addCommands.longValue() );
-    assertEquals( 1, duh2.addCommandsCumulative.longValue() );
-    assertEquals( 0, duh2.commitCommands.longValue() );
+    assertEquals( 1, duh2.addCommandsCumulative.getCount() );
+    assertEquals( 0, duh2.commitCommands.getCount() );
     updater.commit(cmtCmd);
     assertEquals( 0, duh2.addCommands.longValue() );
-    assertEquals( 1, duh2.addCommandsCumulative.longValue() );
-    assertEquals( 1, duh2.commitCommands.longValue() );
+    assertEquals( 1, duh2.addCommandsCumulative.getCount() );
+    assertEquals( 1, duh2.commitCommands.getCount() );
     ureq.close();
 
     assertU(adoc("id","B"));
@@ -175,12 +246,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     ureq = req();
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand(ureq);
     assertEquals( 1, duh2.addCommands.longValue() );
-    assertEquals( 2, duh2.addCommandsCumulative.longValue() );
-    assertEquals( 0, duh2.rollbackCommands.longValue() );
+    assertEquals( 2, duh2.addCommandsCumulative.getCount() );
+    assertEquals( 0, duh2.rollbackCommands.getCount() );
     updater.rollback(rbkCmd);
     assertEquals( 0, duh2.addCommands.longValue() );
-    assertEquals( 1, duh2.addCommandsCumulative.longValue() );
-    assertEquals( 1, duh2.rollbackCommands.longValue() );
+    assertEquals( 1, duh2.addCommandsCumulative.getCount() );
+    assertEquals( 1, duh2.rollbackCommands.getCount() );
     ureq.close();
     
     // search - "B" should not be found.
@@ -221,12 +292,12 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(ureq, false);
     cmtCmd.waitSearcher = true;
     assertEquals( 2, duh2.addCommands.longValue() );
-    assertEquals( 2, duh2.addCommandsCumulative.longValue() );
-    assertEquals( 0, duh2.commitCommands.longValue() );
+    assertEquals( 2, duh2.addCommandsCumulative.getCount() );
+    assertEquals( 0, duh2.commitCommands.getCount() );
     updater.commit(cmtCmd);
     assertEquals( 0, duh2.addCommands.longValue() );
-    assertEquals( 2, duh2.addCommandsCumulative.longValue() );
-    assertEquals( 1, duh2.commitCommands.longValue() );
+    assertEquals( 2, duh2.addCommandsCumulative.getCount() );
+    assertEquals( 1, duh2.commitCommands.getCount() );
     ureq.close();
 
     // search - "A","B" should be found.
@@ -254,13 +325,13 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     ureq = req();
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand(ureq);
     assertEquals( 1, duh2.deleteByIdCommands.longValue() );
-    assertEquals( 1, duh2.deleteByIdCommandsCumulative.longValue() );
-    assertEquals( 0, duh2.rollbackCommands.longValue() );
+    assertEquals( 1, duh2.deleteByIdCommandsCumulative.getCount() );
+    assertEquals( 0, duh2.rollbackCommands.getCount() );
     updater.rollback(rbkCmd);
     ureq.close();
     assertEquals( 0, duh2.deleteByIdCommands.longValue() );
-    assertEquals( 0, duh2.deleteByIdCommandsCumulative.longValue() );
-    assertEquals( 1, duh2.rollbackCommands.longValue() );
+    assertEquals( 0, duh2.deleteByIdCommandsCumulative.getCount() );
+    assertEquals( 1, duh2.rollbackCommands.getCount() );
     
     // search - "B" should be found.
     assertQ("\"B\" should be found.", req

@@ -41,13 +41,13 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.util.CommandOperation.captureErrors;
+import static org.apache.solr.common.util.CommandOperation.captureErrors;
 
 public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   String permissions = "{" +
@@ -305,6 +305,21 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "handler", new DumpRequestHandler(),
         "params", new MapSolrParams(singletonMap("key", "VAL2")))
         , FORBIDDEN);
+
+    checkRules(makeMap("resource", "/update",
+        "userPrincipal", "solr",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new UpdateRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{user-role:{" +
+        "      admin:[admin_role]," +
+        "      update:[update_role]," +
+        "      solr:[read_role]}," +
+        "    permissions:[" +
+        "      {name:update, role:[admin_role,update_role]}," +
+        "      {name:read, role:[admin_role,update_role,read_role]}" +
+        "]}"));
   }
 
   public void testEditRules() throws IOException {
@@ -312,7 +327,7 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     perms.runCmd("{set-permission : {name: config-edit, role: admin } }", true);
     assertEquals("config-edit",  getObjectByPath(perms.conf, false, "permissions[0]/name"));
     assertEquals(1 , perms.getVal("permissions[0]/index"));
-    assertEquals("admin" ,  perms.getVal("permissions[0]/role"));
+    assertEquals("admin", perms.getVal("permissions[0]/role"));
     perms.runCmd("{set-permission : {name: config-edit, role: [admin, dev], index:2 } }", false);
     perms.runCmd("{set-permission : {name: config-edit, role: [admin, dev], index:1}}", true);
     Collection roles = (Collection) perms.getVal("permissions[0]/role");
@@ -324,19 +339,19 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals("x", perms.getVal("permissions[1]/collection"));
     assertEquals("/a/b", perms.getVal("permissions[1]/path"));
     perms.runCmd("{update-permission : {index : 2, method : POST }}", true);
-    assertEquals("POST" , perms.getVal("permissions[1]/method"));
+    assertEquals("POST", perms.getVal("permissions[1]/method"));
     perms.runCmd("{set-permission : {name : read, collection : y, role:[guest, dev] ,  before :2}}", true);
     assertNotNull(perms.getVal("permissions[2]"));
     assertEquals("y", perms.getVal("permissions[1]/collection"));
     assertEquals("read", perms.getVal("permissions[1]/name"));
     perms.runCmd("{delete-permission : 3}", true);
     assertTrue(captureErrors(perms.parsedCommands).isEmpty());
-    assertEquals("y",perms.getVal("permissions[1]/collection"));
+    assertEquals("y", perms.getVal("permissions[1]/collection"));
   }
 
   static class  Perms {
     Map conf =  new HashMap<>();
-    RuleBasedAuthorizationPlugin plugin = new RuleBasedAuthorizationPlugin();
+    ConfigEditablePlugin plugin = new RuleBasedAuthorizationPlugin();
     List<CommandOperation> parsedCommands;
 
     public void runCmd(String cmds, boolean failOnError) throws IOException {
@@ -438,5 +453,13 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     }
   }
 
+static String testPerms = "{user-role:{" +
+    "      admin:[admin_role]," +
+    "      update:[update_role]," +
+    "      solr:[read_role]}," +
+    "    permissions:[" +
+    "      {name:update,role:[admin_role,update_role]}," +
+    "      {name:read,role:[admin_role,update_role,read_role]" +
+    "]}";
 
 }

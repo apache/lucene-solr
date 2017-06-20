@@ -23,6 +23,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -53,10 +54,11 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
       mgr.snapshot(commitName, indexDirPath, ic.getGeneration());
 
-      it.rsp.add("core", core.getName());
-      it.rsp.add("commitName", commitName);
-      it.rsp.add("indexDirPath", indexDirPath);
-      it.rsp.add("generation", ic.getGeneration());
+      it.rsp.add(CoreAdminParams.CORE, core.getName());
+      it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
+      it.rsp.add(SolrSnapshotManager.INDEX_DIR_PATH, indexDirPath);
+      it.rsp.add(SolrSnapshotManager.GENERATION_NUM, ic.getGeneration());
+      it.rsp.add(SolrSnapshotManager.FILE_LIST, ic.getFileNames());
     }
   }
 }

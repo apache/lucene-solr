@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -44,18 +44,18 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.util.stats.Clock;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
@@ -64,10 +64,12 @@ import org.slf4j.LoggerFactory;
 public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
 
-  public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
+  public static final int STATE_UPDATE_DELAY = 2000;  // delay between cloud state updates
+  public static final int STATE_UPDATE_BATCH_SIZE = 10000;
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
-  
+  public static final String OVERSEER_ELECT = "/overseer_elect";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   enum LeaderStatus {DONT_KNOW, NO, YES}
@@ -254,7 +256,7 @@ public class Overseer implements Closeable {
     private ClusterState processQueueItem(ZkNodeProps message, ClusterState clusterState, ZkStateWriter zkStateWriter, boolean enableBatching, ZkStateWriter.ZkWriteCallback callback) throws Exception {
       final String operation = message.getStr(QUEUE_OPERATION);
       List<ZkWriteCommand> zkWriteCommands = null;
-      final TimerContext timerContext = stats.time(operation);
+      final Timer.Context timerContext = stats.time(operation);
       try {
         zkWriteCommands = processMessage(clusterState, message, operation);
         stats.success(operation);
@@ -283,7 +285,7 @@ public class Overseer implements Closeable {
     private void checkIfIamStillLeader() {
       if (zkController != null && zkController.getCoreContainer().isShutDown()) return;//shutting down no need to go further
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      String path = OverseerElectionContext.OVERSEER_ELECT + "/leader";
+      String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
@@ -293,7 +295,7 @@ public class Overseer implements Closeable {
       }
       try {
         Map m = (Map) Utils.fromJSON(data);
-        String id = (String) m.get("id");
+        String id = (String) m.get(ID);
         if(overseerCollectionConfigSetProcessor.getId().equals(id)){
           try {
             log.warn("I'm exiting, but I'm still the leader");
@@ -373,8 +375,8 @@ public class Overseer implements Closeable {
           case UPDATESHARDSTATE:
             return Collections.singletonList(new SliceMutator(getZkStateReader()).updateShardState(clusterState, message));
           case QUIT:
-            if (myId.equals(message.get("id"))) {
-              log.info("Quit command received {}", LeaderElector.getNodeName(myId));
+            if (myId.equals(message.get(ID))) {
+              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               overseerCollectionConfigSetProcessor.close();
               close();
             } else {
@@ -382,7 +384,7 @@ public class Overseer implements Closeable {
             }
             break;
           case DOWNNODE:
-            return new NodeMutator(getZkStateReader()).downNode(clusterState, message);
+            return new NodeMutator().downNode(clusterState, message);
           default:
             throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }
@@ -392,12 +394,12 @@ public class Overseer implements Closeable {
     }
 
     private LeaderStatus amILeader() {
-      TimerContext timerContext = stats.time("am_i_leader");
+      Timer.Context timerContext = stats.time("am_i_leader");
       boolean success = true;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
-            OverseerElectionContext.OVERSEER_ELECT + "/leader", null, null, true));
-        if (myId.equals(props.getStr("id"))) {
+            OVERSEER_ELECT + "/leader", null, null, true));
+        if (myId.equals(props.getStr(ID))) {
           return LeaderStatus.YES;
         }
       } catch (KeeperException e) {
@@ -430,7 +432,7 @@ public class Overseer implements Closeable {
 
   }
 
-  class OverseerThread extends Thread implements Closeable {
+  static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
     private Closeable thread;
@@ -522,6 +524,7 @@ public class Overseer implements Closeable {
     updaterThread.start();
     ccThread.start();
     arfoThread.start();
+    assert ObjectReleaseTracker.track(this);
   }
 
   public Stats getStats() {
@@ -543,11 +546,12 @@ public class Overseer implements Closeable {
   }
   
   public synchronized void close() {
-    if (closed || id == null) return;
+    if (closed) return;
     log.info("Overseer (id=" + id + ") closing");
     
     doClose();
     this.closed = true;
+    assert ObjectReleaseTracker.release(this);
   }
 
   private void doClose() {
@@ -563,6 +567,22 @@ public class Overseer implements Closeable {
     if (arfoThread != null) {
       IOUtils.closeQuietly(arfoThread);
       arfoThread.interrupt();
+    }
+    
+    if (updaterThread != null) {
+      try {
+        updaterThread.join();
+      } catch (InterruptedException e) {}
+    }
+    if (ccThread != null) {
+      try {
+        ccThread.join();
+      } catch (InterruptedException e) {}
+    }
+    if (arfoThread != null) {
+      try {
+        arfoThread.join();
+      } catch (InterruptedException e) {}
     }
     
     updaterThread = null;
@@ -795,7 +815,7 @@ public class Overseer implements Closeable {
       stat.errors.incrementAndGet();
     }
 
-    public TimerContext time(String operation) {
+    public Timer.Context time(String operation) {
       String op = operation.toLowerCase(Locale.ROOT);
       Stat stat = stats.get(op);
       if (stat == null) {
@@ -853,7 +873,7 @@ public class Overseer implements Closeable {
     public Stat() {
       this.success = new AtomicInteger();
       this.errors = new AtomicInteger();
-      this.requestTime = new Timer(TimeUnit.MILLISECONDS, TimeUnit.MINUTES, Clock.defaultClock());
+      this.requestTime = new Timer();
       this.failureDetails = new LinkedList<>();
     }
   }

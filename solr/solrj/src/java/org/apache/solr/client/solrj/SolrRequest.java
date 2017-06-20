@@ -21,9 +21,13 @@ import org.apache.solr.common.util.ContentStream;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Collections.unmodifiableSet;
 
 /**
  * 
@@ -35,8 +39,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public enum METHOD {
     GET,
     POST,
-    PUT
+    PUT,
+    DELETE
   };
+
+  public static final Set<String> SUPPORTED_METHODS = unmodifiableSet(new HashSet<>(Arrays.<String>asList(
+      METHOD.GET.toString(),
+      METHOD.POST.toString(),
+      METHOD.PUT.toString(),
+      METHOD.DELETE.toString())));
 
   private METHOD method = METHOD.GET;
   private String path = null;
@@ -44,6 +55,24 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
+
+  protected boolean usev2;
+  protected boolean useBinaryV2;
+
+  /**If set to true, every request that implements {@link V2RequestSupport} will be converted
+   * to a V2 API call
+   */
+  public SolrRequest setUseV2(boolean flag){
+    this.usev2 = flag;
+    return this;
+  }
+
+  /**If set to true use javabin instead of json (default)
+   */
+  public SolrRequest setUseBinaryV2(boolean flag){
+    this.useBinaryV2 = flag;
+    return this;
+  }
 
   private String basicAuthUser, basicAuthPwd;
 

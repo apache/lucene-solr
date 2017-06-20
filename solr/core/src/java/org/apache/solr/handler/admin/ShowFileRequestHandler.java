@@ -127,7 +127,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
       throws InterruptedException, KeeperException, IOException {
 
-    CoreContainer coreContainer = req.getCore().getCoreDescriptor().getCoreContainer();
+    CoreContainer coreContainer = req.getCore().getCoreContainer();
     if (coreContainer.isZooKeeperAware()) {
       showFromZooKeeper(req, rsp, coreContainer);
     } else {
@@ -363,5 +363,9 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   @Override
   public String getDescription() {
     return "Admin Config File -- view or update config files directly";
+  }
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
   }
 }

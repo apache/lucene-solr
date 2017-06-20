@@ -46,11 +46,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 public class ShortestPathStream extends TupleStream implements Expressible {
 
@@ -69,30 +70,6 @@ public class ShortestPathStream extends TupleStream implements Expressible {
   private StreamContext streamContext;
   private int threads;
   private SolrParams queryParams;
-
-  @Deprecated
-  public ShortestPathStream(String zkHost,
-                            String collection,
-                            String fromNode,
-                            String toNode,
-                            String fromField,
-                            String toField,
-                            Map queryParams,
-                            int joinBatchSize,
-                            int threads,
-                            int maxDepth) {
-
-    init(zkHost,
-        collection,
-        fromNode,
-        toNode,
-        fromField,
-        toField,
-        new MapSolrParams(queryParams),
-        joinBatchSize,
-        threads,
-        maxDepth);
-  }
 
   public ShortestPathStream(String zkHost,
                             String collection,
@@ -450,7 +427,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
 
       joinParams.set("fl", fl);
       joinParams.set("qt", "/export");
-      joinParams.set("sort", toField + " asc,"+fromField +" asc");
+      joinParams.set(SORT, toField + " asc,"+fromField +" asc");
 
       StringBuffer nodeQuery = new StringBuffer();
 
@@ -490,7 +467,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     }
   }
 
-  private class Edge {
+  private static class Edge {
 
     private String from;
     private String to;

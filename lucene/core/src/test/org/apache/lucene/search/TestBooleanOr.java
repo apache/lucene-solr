@@ -34,7 +34,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -239,7 +239,7 @@ public class TestBooleanOr extends LuceneTestCase {
         if (i == matches.length) {
           return DocIdSetIterator.NO_MORE_DOCS;
         }
-        return RandomInts.randomIntBetween(random(), max, matches[i]);
+        return RandomNumbers.randomIntBetween(random(), max, matches[i]);
       }
       @Override
       public long cost() {

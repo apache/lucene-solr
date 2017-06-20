@@ -35,6 +35,7 @@ public class BlockCacheLocation {
     touch();
   }
 
+  /** The block within the bank.  This has no relationship to the blockId in BlockCacheKey */
   public void setBlock(int block) {
     this.block = block;
   }
@@ -42,7 +43,8 @@ public class BlockCacheLocation {
   public void setBankId(int bankId) {
     this.bankId = bankId;
   }
-  
+
+  /** The block within the bank.  This has no relationship to the blockId in BlockCacheKey */
   public int getBlock() {
     return block;
   }

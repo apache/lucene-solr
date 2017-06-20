@@ -56,7 +56,7 @@ public class TestStressVersions extends TestRTGBase {
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
-    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
+    final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 75;
@@ -172,7 +172,7 @@ public class TestStressVersions extends TestRTGBase {
                 verbose("adding id", id, "val=", nextVal);
 
                 // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
-                Long version = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal)), null);
+                Long version = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal)), null);
                 assertTrue(version > 0);
 
                 // only update model if the version is newer
@@ -247,7 +247,7 @@ public class TestStressVersions extends TestRTGBase {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization
               } else {
                 assertEquals(1, doclist.size());
-                long foundVal = (Long)(((Map)doclist.get(0)).get(field));
+                long foundVal = (Long)(((Map)doclist.get(0)).get(FIELD));
                 long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
                 if (foundVer < Math.abs(info.version)
                     || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must

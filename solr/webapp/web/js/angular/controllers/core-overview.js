@@ -52,38 +52,6 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
       function(error) {
         $scope.replicationMessage = "Replication is not configured";
       });
-  /*
-      /replication?command=details&wt=json
-
-              if( is_slave )
-              {
-
-                // warnings if slave version|gen doesn't match what's replicable
-                if( data.indexVersion !== master_data.master.replicableVersion )
-                {
-                  $( '.version', details_element )
-                    .addClass( 'diff' );
-                }
-                else
-                {
-                  $( '.version', details_element )
-                    .removeClass( 'diff' );
-                }
-
-                if( data.generation !== master_data.master.replicableGeneration )
-                {
-                  $( '.generation', details_element )
-                    .addClass( 'diff' );
-                }
-                else
-                {
-                  $( '.generation', details_element )
-                    .removeClass( 'diff' );
-                }
-              }
-            },
-
-*/
   };
 
   $scope.refreshAdminExtra = function() {

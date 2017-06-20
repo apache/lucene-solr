@@ -65,6 +65,8 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "can not be configured with a default value");
     doTest("bad-schema-uniquekey-multivalued.xml", 
            "can not be configured to be multivalued");
+    doTest("bad-schema-uniquekey-uses-points.xml", 
+           "can not be configured to use a Points based FieldType");
   }
 
   public void testMultivaluedCurrency() throws Exception {
@@ -99,6 +101,21 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   public void testDocValuesUnsupported() throws Exception {
     doTest("bad-schema-unsupported-docValues.xml", "does not support doc values");
   }
+  
+  public void testRootTypeMissmatchWithUniqueKey() throws Exception {
+    doTest("bad-schema-uniquekey-diff-type-root.xml",
+           "using the exact same fieldType as the uniqueKey field (id) uses: string1");
+  }
+  
+  public void testRootTypeDynamicMissmatchWithUniqueKey() throws Exception {
+    // in this case, the core should load fine -- but we should get an error adding docs
+    try {
+      initCore("solrconfig.xml","bad-schema-uniquekey-diff-type-dynamic-root.xml");
+      assertFailedU("Unable to index docs with children", adoc(sdocWithChildren("1","-1")));
+    } finally {
+      deleteCore();
+    }
+  }
 
   public void testSweetSpotSimBadConfig() throws Exception {
     doTest("bad-schema-sweetspot-both-tf.xml", "Can not mix");
@@ -127,5 +144,13 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
     doTest("bad-schema-sim-default-does-not-exist.xml",
            "ft-does-not-exist");
   }
-  
+
+  public void testDefaultOperatorBanned() throws Exception {
+    doTest("bad-schema-default-operator.xml",
+           "default operator in schema (solrQueryParser/@defaultOperator) not supported");
+  }
+
+  public void testSchemaWithDefaultSearchField() throws Exception {
+    doTest("bad-schema-defaultsearchfield.xml", "Setting defaultSearchField in schema not supported since Solr 7");
+  }
 }

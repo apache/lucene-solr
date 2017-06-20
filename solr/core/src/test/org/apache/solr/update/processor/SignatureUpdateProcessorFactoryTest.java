@@ -16,30 +16,27 @@
  */
 package org.apache.solr.update.processor;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 
@@ -358,22 +355,5 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   private void addDoc(String doc) throws Exception  {
     addDoc(doc, chain);
-  }
-
-  static void addDoc(String doc, String chain) throws Exception {
-    Map<String, String[]> params = new HashMap<>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
-        (SolrParams) mmparams) {
-    };
-
-    UpdateRequestHandler handler = new UpdateRequestHandler();
-    handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<>(2);
-    streams.add(new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(streams);
-    handler.handleRequestBody(req, new SolrQueryResponse());
-    req.close();
   }
 }

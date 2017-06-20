@@ -87,25 +87,6 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     assertTrue(expected.getMessage() != null && expected.getMessage().contains("Child query must not match same docs with parent filter"));
   }
 
-  public void testAdvanceValidationForToParentBjq() throws Exception {
-    int randomChildNumber = getRandomChildNumber(0);
-    // we need to make advance method meet wrong document, so random child number
-    // in BJQ must be greater than child number in Boolean clause
-    int nextRandomChildNumber = getRandomChildNumber(randomChildNumber);
-    Query parentQueryWithRandomChild = createChildrenQueryWithOneParent(nextRandomChildNumber);
-    ToParentBlockJoinQuery blockJoinQuery = new ToParentBlockJoinQuery(parentQueryWithRandomChild, parentsFilter, ScoreMode.None);
-    // advance() method is used by ConjunctionScorer, so we need to create Boolean conjunction query
-    BooleanQuery.Builder conjunctionQuery = new BooleanQuery.Builder();
-    WildcardQuery childQuery = new WildcardQuery(new Term("child", createFieldValue(randomChildNumber)));
-    conjunctionQuery.add(new BooleanClause(childQuery, BooleanClause.Occur.MUST));
-    conjunctionQuery.add(new BooleanClause(blockJoinQuery, BooleanClause.Occur.MUST));
-    
-    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
-      indexSearcher.search(conjunctionQuery.build(), 1);
-    });
-    assertTrue(expected.getMessage() != null && expected.getMessage().contains("Child query must not match same docs with parent filter"));
-  }
-
   public void testNextDocValidationForToChildBjq() throws Exception {
     Query parentQueryWithRandomChild = createParentsQueryWithOneChild(getRandomChildNumber(0));
 

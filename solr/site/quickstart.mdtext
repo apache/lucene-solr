@@ -263,7 +263,6 @@ Execute the following command to delete a specific document:
     bin/post -c gettingstarted -d "<delete><id>SP2514N</id></delete>"
 
 
-<a name="searching"></a>
 ## Searching
 
 Solr can be queried via REST clients, cURL, wget, Chrome POSTMAN, etc., as well as via the native clients available for
@@ -594,7 +593,6 @@ Here's a Unix script for convenient copying and pasting in order to run the key 
       bin/solr healthcheck -c gettingstarted
     date
 
-<a name="cleanup"></a>
 ## Cleanup
 
 As you work through this guide, you may want to stop Solr and reset the environment back to the starting point.

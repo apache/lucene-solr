@@ -26,10 +26,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Preconditions;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -169,7 +169,7 @@ public class SolrSnapshotMetaDataManager {
    * @throws IOException in case of I/O errors.
    */
   public synchronized void snapshot(String name, String indexDirPath, long gen) throws IOException {
-    Preconditions.checkNotNull(name);
+    Objects.requireNonNull(name);
 
     log.info("Creating the snapshot named {} for core {} associated with index commit with generation {} in directory {}"
         , name, solrCore.getName(), gen, indexDirPath);
@@ -205,7 +205,7 @@ public class SolrSnapshotMetaDataManager {
    */
   public synchronized Optional<SnapshotMetaData> release(String name) throws IOException {
     log.info("Deleting the snapshot named {} for core {}", name, solrCore.getName());
-    SnapshotMetaData result = nameToDetailsMapping.remove(Preconditions.checkNotNull(name));
+    SnapshotMetaData result = nameToDetailsMapping.remove(Objects.requireNonNull(name));
     if(result != null) {
       boolean success = false;
       try {

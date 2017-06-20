@@ -270,6 +270,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("gatherNodes", GatherNodesStream.class)
+        .withFunctionName("nodes", GatherNodesStream.class)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("count", CountMetric.class)
         .withFunctionName("avg", MeanMetric.class)
@@ -277,7 +278,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withFunctionName("min", MinMetric.class)
         .withFunctionName("max", MaxMetric.class);
 
-    String expr = "gatherNodes(collection1, " +
+    String expr = "nodes(collection1, " +
         "walk=\"product1->product_s\"," +
         "gather=\"basket_s\")";
 
@@ -520,10 +521,10 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .add(id, "3", "basket_s", "basket2", "product_ss", "product1", "product_ss", "product6", "product_ss", "product7", "price_f", "1")
         .add(id, "6", "basket_s", "basket3", "product_ss", "product4",  "product_ss","product3", "product_ss","product1", "price_f", "1")
         .add(id, "9", "basket_s", "basket4", "product_ss", "product4", "product_ss", "product3", "product_ss", "product1","price_f", "1")
-        .add(id, "12", "basket_s", "basket5", "product_ss", "product1", "price_f", "1")
-        .add(id, "13", "basket_s", "basket6", "product_ss", "product1", "price_f", "1")
-        .add(id, "14", "basket_s", "basket7", "product_ss", "product1", "price_f", "1")
-        .add(id, "15", "basket_s", "basket4", "product_ss", "product1", "price_f", "1")
+        //.add(id, "12", "basket_s", "basket5", "product_ss", "product1", "price_f", "1")
+        //.add(id, "13", "basket_s", "basket6", "product_ss", "product1", "price_f", "1")
+        //.add(id, "14", "basket_s", "basket7", "product_ss", "product1", "price_f", "1")
+        //.add(id, "15", "basket_s", "basket4", "product_ss", "product1", "price_f", "1")
         .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
@@ -556,7 +557,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     stream.setStreamContext(context);
     tuples = getTuples(stream);
 
-    //The highest scoring tuple will be the product searched for.
     Tuple tuple = tuples.get(0);
     assert(tuple.getString("node").equals("product3"));
     assert(tuple.getLong("docFreq") == 3);
@@ -569,7 +569,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     Tuple tuple1 = tuples.get(2);
     assert(tuple1.getString("node").equals("product1"));
-    assert(tuple1.getLong("docFreq") == 8);
+    assert(tuple1.getLong("docFreq") == 4);
     assert(tuple1.getLong("count(*)") == 3);
 
     Tuple tuple2 = tuples.get(3);
@@ -862,7 +862,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     JettySolrRunner runner = runners.get(0);
     String url = runner.getBaseUrl().toString();
 
-    HttpSolrClient client = new HttpSolrClient(url);
+    HttpSolrClient client = getHttpSolrClient(url);
     ModifiableSolrParams params = new ModifiableSolrParams();
 
 

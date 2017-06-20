@@ -130,7 +130,7 @@ public abstract class NormsConsumer implements Closeable {
                           }
                         }
 
-                        final DocIDMerger<NumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
+                        final DocIDMerger<NumericDocValuesSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
 
                         return new NumericDocValues() {
                           private int docID = -1;
@@ -154,6 +154,11 @@ public abstract class NormsConsumer implements Closeable {
 
                           @Override
                           public int advance(int target) throws IOException {
+                            throw new UnsupportedOperationException();
+                          }
+
+                          @Override
+                          public boolean advanceExact(int target) throws IOException {
                             throw new UnsupportedOperationException();
                           }
 

@@ -35,6 +35,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -170,24 +171,21 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object externalVal, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object externalVal) {
     CurrencyValue value = CurrencyValue.parse(externalVal.toString(), defaultCurrency);
 
     List<IndexableField> f = new ArrayList<>();
     SchemaField amountField = getAmountField(field);
-    f.add(amountField.createField(String.valueOf(value.getAmount()), amountField.indexed() && !amountField.omitNorms() ? boost : 1F));
+    f.add(amountField.createField(String.valueOf(value.getAmount())));
     SchemaField currencyField = getCurrencyField(field);
-    f.add(currencyField.createField(value.getCurrencyCode(), currencyField.indexed() && !currencyField.omitNorms() ? boost : 1F));
+    f.add(currencyField.createField(value.getCurrencyCode()));
 
     if (field.stored()) {
-      org.apache.lucene.document.FieldType customType = new org.apache.lucene.document.FieldType();
-      assert !customType.omitNorms();
-      customType.setStored(true);
       String storedValue = externalVal.toString().trim();
       if (storedValue.indexOf(",") < 0) {
         storedValue += "," + defaultCurrency;
       }
-      f.add(createField(field.getName(), storedValue, customType, 1F));
+      f.add(createField(field.getName(), storedValue, StoredField.TYPE));
     }
 
     return f;
@@ -274,7 +272,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    */
   public RawCurrencyValueSource getValueSource(SchemaField field, 
                                                QParser parser) {
-    field.checkFieldCacheSource();
+    getAmountField(field).checkFieldCacheSource();
+    getCurrencyField(field).checkFieldCacheSource();
     return new RawCurrencyValueSource(field, defaultCurrency, parser);
   }
 
@@ -490,8 +489,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
       }
 
-      SchemaField amountField = schema.getField(sf.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_AMOUNT_RAW);
-      SchemaField currencyField = schema.getField(sf.getName() + POLY_FIELD_SEPARATOR + FIELD_SUFFIX_CURRENCY);
+      SchemaField amountField = getAmountField(sf);
+      SchemaField currencyField = getCurrencyField(sf);
 
       currencyValues = currencyField.getType().getValueSource(currencyField, parser);
       amountValues = amountField.getType().getValueSource(amountField, parser);
@@ -506,7 +505,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 
       return new FunctionValues() {
-        private final int MAX_CURRENCIES_TO_CACHE = 256;
+        private static final int MAX_CURRENCIES_TO_CACHE = 256;
         private final int[] fractionDigitCache = new int[MAX_CURRENCIES_TO_CACHE];
         private final String[] currencyOrdToCurrencyCache = new String[MAX_CURRENCIES_TO_CACHE];
         private final double[] exchangeRateCache = new double[MAX_CURRENCIES_TO_CACHE];

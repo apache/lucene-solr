@@ -19,6 +19,8 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,10 +28,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
@@ -37,16 +39,15 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.Diagnostics;
-import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * 
@@ -130,52 +131,53 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       waitForThingsToLevelOut(30);
 
       checkShardConsistency(false, true);
+      
+      // bring down the other node and index a few docs; so the leader and other node segments diverge
+      forceNodeFailures(singletonList(secondNode));
+      for (int i = 0; i < 10; i++) {
+        indexDoc(id, docId, i1, 50, tlong, 50, t1,
+            "document number " + docId++);
+        if(i % 2 == 0) {
+          commit();
+        }
+      }
+      commit();
+      restartNodes(singletonList(secondNode));
 
       // start the freshNode 
-      ChaosMonkey.start(freshNode.jetty);
-      nodesDown.remove(freshNode);
-
-      waitTillNodesActive();
-      waitForThingsToLevelOut(30);
+      restartNodes(singletonList(freshNode));
       
-      //TODO check how to see if fresh node went into recovery (may be check count for replication handler on new leader) 
-      
-      long numRequestsBefore = (Long) secondNode.jetty
-          .getCoreContainer()
-          .getCores()
-          .iterator()
-          .next()
-          .getRequestHandler(ReplicationHandler.PATH)
-          .getStatistics().get("requests");
-      
+      String replicationProperties = (String) freshNode.jetty.getSolrHome() + "/cores/" +  DEFAULT_TEST_COLLECTION_NAME + "/data/replication.properties";
+      String md5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
+        
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , 15);
+      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , new TimeOut(15, SECONDS));
+      waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
-      
-      long numRequestsAfter = (Long) secondNode.jetty
-          .getCoreContainer()
-          .getCores()
-          .iterator()
-          .next()
-          .getRequestHandler(ReplicationHandler.PATH)
-          .getStatistics().get("requests");
-
-      assertEquals("Node went into replication", numRequestsBefore, numRequestsAfter);
+      assertEquals("Node went into replication", md5, DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
       
       success = true;
     } finally {
       System.clearProperty("solr.disableFingerprint");
     }
   }
+  
+  private void restartNodes(List<CloudJettyRunner> nodesToRestart) throws Exception {
+    for (CloudJettyRunner node : nodesToRestart) {
+      chaosMonkey.start(node.jetty);
+      nodesDown.remove(node);
+    }
+    waitTillNodesActive();
+    checkShardConsistency(false, true);
+  }
 
 
   private void forceNodeFailures(List<CloudJettyRunner> replicasToShutDown) throws Exception {
     for (CloudJettyRunner replicaToShutDown : replicasToShutDown) {
       chaosMonkey.killJetty(replicaToShutDown);
-      waitForNoShardInconsistency();
     }
 
     int totalDown = 0;
@@ -197,35 +199,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   }
 
   
-  static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, int maxWaitInSecs)
-      throws Exception {
-    log.info("Will wait for a node to become leader for {} secs", maxWaitInSecs);
-    boolean waitForLeader = true;
-    int i = 0;
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
-    
-    while(waitForLeader) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection coll = clusterState.getCollection("collection1");
-      Slice slice = coll.getSlice(shardName);
-      if(slice.getLeader() != oldLeader && slice.getState() == State.ACTIVE) {
-        log.info("New leader got elected in {} secs", i);
-        break;
-      }
-      
-      if(i == maxWaitInSecs) {
-        Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
-        zkStateReader.getZkClient().printLayoutToStdOut();
-        fail("Could not find new leader even after waiting for " + maxWaitInSecs + "secs");
-      }
-      
-      i++;
-      Thread.sleep(1000);
-    }
-  }
-    
-
 
   private void waitTillNodesActive() throws Exception {
     for (int i = 0; i < 60; i++) {
@@ -237,8 +210,13 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
 
+      Collection<String> nodesDownNames = nodesDown.stream()
+          .map(n -> n.coreNodeName)
+          .collect(Collectors.toList());
+      
       Collection<Replica> replicasToCheck = null;
-      replicasToCheck = replicas.stream().filter(r -> nodesDown.contains(r.getName()))
+      replicasToCheck = replicas.stream()
+          .filter(r -> !nodesDownNames.contains(r.getName()))
           .collect(Collectors.toList());
 
       for (Replica replica : replicasToCheck) {

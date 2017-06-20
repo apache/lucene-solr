@@ -230,7 +230,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     }
   }
 
-  private class TestSpellChecker extends IndexBasedSpellChecker{
+  private static class TestSpellChecker extends IndexBasedSpellChecker{
     @Override
     public SpellChecker getSpellChecker(){
       return spellChecker;

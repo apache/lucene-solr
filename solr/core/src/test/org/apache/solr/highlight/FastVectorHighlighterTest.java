@@ -70,7 +70,12 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("hl.snippets", "2");
-    args.put("hl.useFastVectorHighlighter", "true");
+    args.put("hl.tag.pre", "<fvpre>"); //... and let post default to </em>. This is just a test.
+    if (random().nextBoolean()) {
+      args.put("hl.useFastVectorHighlighter", "true"); // old way
+    } else {
+      args.put("hl.method", "fastVector"); // the new way
+    }
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
     
@@ -81,7 +86,7 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
     assertQ("Basic summarization",
             sumLRF.makeRequest("tv_text:vector"),
             "//lst[@name='highlighting']/lst[@name='1']",
-            "//lst[@name='1']/arr[@name='tv_text']/str[.='basic fast <em>vector</em> highlighter test']"
+            "//lst[@name='1']/arr[@name='tv_text']/str[.='basic fast <fvpre>vector</em> highlighter test']"
             );
   }
 }

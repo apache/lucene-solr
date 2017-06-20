@@ -18,12 +18,12 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.apache.commons.io.Charsets;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
@@ -49,7 +49,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
         TIMEOUT, TIMEOUT)) {
       zkStateReader.getZkClient().create(ZkStateReader.SOLR_SECURITY_CONF_PATH,
-          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(Charsets.UTF_8),
+          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(StandardCharsets.UTF_8),
           CreateMode.PERSISTENT, true);
     }
   }

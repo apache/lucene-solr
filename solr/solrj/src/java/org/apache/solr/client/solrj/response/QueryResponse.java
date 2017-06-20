@@ -50,7 +50,8 @@ public class QueryResponse extends SolrResponseBase
   private List<NamedList<Object>> _clusterInfo = null;
   private Map<String,NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
-  private NamedList<NamedList<Number>> _termsInfo = null;
+  private NamedList<NamedList<Object>> _termsInfo = null;
+  private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
   private String _cursorMarkNext = null;
 
   // Grouping response
@@ -165,8 +166,11 @@ public class QueryResponse extends SolrResponseBase
         extractStatsInfo( _statsInfo );
       }
       else if ( "terms".equals( n ) ) {
-        _termsInfo = (NamedList<NamedList<Number>>) res.getVal( i );
+        _termsInfo = (NamedList<NamedList<Object>>) res.getVal( i );
         extractTermsInfo( _termsInfo );
+      }
+      else if ( "moreLikeThis".equals( n ) ) {
+        _moreLikeThisInfo = (NamedList<SolrDocumentList>) res.getVal( i );
       }
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
@@ -187,7 +191,7 @@ public class QueryResponse extends SolrResponseBase
     _suggestResponse = new SuggesterResponse(suggestInfo);
   }
 
-  private void extractTermsInfo(NamedList<NamedList<Number>> termsInfo) {
+  private void extractTermsInfo(NamedList<NamedList<Object>> termsInfo) {
     _termsResponse = new TermsResponse(termsInfo);
   }
   
@@ -546,6 +550,10 @@ public class QueryResponse extends SolrResponseBase
 
   public TermsResponse getTermsResponse() {
     return _termsResponse;
+  }
+
+  public NamedList<SolrDocumentList> getMoreLikeThis() {
+    return _moreLikeThisInfo;
   }
   
   /**

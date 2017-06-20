@@ -26,6 +26,14 @@
        seconds part (.999) is optional.
     -->
   <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  
+  <!-- Point Fields -->
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  
 
   <fieldType name="boolean" class="solr.BoolField"/>
   <fieldType name="string" class="solr.StrField"/>
@@ -33,20 +41,63 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
   <field name="id" type="string" required="true" indexed="true"/>
-  <field name="floatdv_m" type="float" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="intdv_m" type="int" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="doubledv_m" type="double" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="longdv_m" type="long" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="datedv_m" type="date" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="floatdv_m" type="${solr.tests.floatClass:pfloat}" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="intdv_m" type="${solr.tests.intClass:pint}" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="doubledv_m" type="${solr.tests.doubleClass:pdouble}" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="longdv_m" type="${solr.tests.longClass:plong}" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="datedv_m" type="${solr.tests.dateClass:pdate}" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="stringdv_m" type="string" indexed="false" stored="false" docValues="true" multiValued="true"/>
 
-  <field name="floatdv" type="float" indexed="false" stored="false" docValues="true"/>
-  <field name="intdv" type="int" indexed="false" stored="false" docValues="true"/>
-  <field name="doubledv" type="double" indexed="false" stored="false" docValues="true"/>
-  <field name="longdv" type="long" indexed="false" stored="false" docValues="true"/>
-  <field name="datedv" type="date" indexed="false" stored="false" docValues="true"/>
+  <field name="floatdv" type="${solr.tests.floatClass:pfloat}" indexed="false" stored="false" docValues="true"/>
+  <field name="intdv" type="${solr.tests.intClass:pint}" indexed="false" stored="false" docValues="true"/>
+  <field name="doubledv" type="${solr.tests.doubleClass:pdouble}" indexed="false" stored="false" docValues="true"/>
+  <field name="longdv" type="${solr.tests.longClass:plong}" indexed="false" stored="false" docValues="true"/>
+  <field name="datedv" type="${solr.tests.dateClass:pdate}" indexed="false" stored="false" docValues="true"/>
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true"/>
 
+   <!-- Point fields explicitly -->
+   <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_is_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_i_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_is_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_l_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ls_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_l_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ls_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_f_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_fs_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_f_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_fs_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_d_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_dts_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_dts_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   
+   <!-- Trie fields explicitly -->
+   <dynamicField name="*_i_t"      type="int"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_is_t"      type="int"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_i_ni_t"   type="int"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_is_ni_t"   type="int"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_l_t"      type="long"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ls_t"      type="long"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_l_ni_t"   type="long"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ls_ni_t"   type="long"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_f_t"      type="float"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_fs_t"      type="float"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_f_ni_t"   type="float"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_fs_ni_t"   type="float"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_d_t"      type="double"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ds_t"      type="double"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_d_ni_t"   type="double"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_ds_ni_t"   type="double"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_t"      type="date"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_dts_t"      type="date"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_ni_t"   type="date"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_dts_ni_t"   type="date"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 

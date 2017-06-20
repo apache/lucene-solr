@@ -18,7 +18,6 @@ package org.apache.lucene.search.highlight;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,7 +29,6 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -217,13 +215,14 @@ public class WeightedSpanTermExtractor {
     } else if (isQueryUnsupported(query.getClass())) {
       // nothing
     } else {
+      if (query instanceof MultiTermQuery &&
+          (!expandMultiTermQuery || !fieldNameComparator(((MultiTermQuery)query).getField()))) {
+        return;
+      }
       Query origQuery = query;
       final IndexReader reader = getLeafContext().reader();
       Query rewritten;
       if (query instanceof MultiTermQuery) {
-        if (!expandMultiTermQuery) {
-          return;
-        }
         rewritten = MultiTermQuery.SCORING_BOOLEAN_REWRITE.rewrite(reader, (MultiTermQuery) query);
       } else {
         rewritten = origQuery.rewrite(reader);
@@ -428,30 +427,15 @@ public class WeightedSpanTermExtractor {
     DelegatingLeafReader(LeafReader in) {
       super(in);
     }
-    
+
     @Override
     public FieldInfos getFieldInfos() {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException();//TODO merge them
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new FilterFields(super.fields()) {
-        @Override
-        public Terms terms(String field) throws IOException {
-          return super.terms(DelegatingLeafReader.FIELD_NAME);
-        }
-
-        @Override
-        public Iterator<String> iterator() {
-          return Collections.singletonList(DelegatingLeafReader.FIELD_NAME).iterator();
-        }
-
-        @Override
-        public int size() {
-          return 1;
-        }
-      };
+    public Terms terms(String field) throws IOException {
+      return super.terms(DelegatingLeafReader.FIELD_NAME);
     }
 
     @Override
@@ -472,6 +456,16 @@ public class WeightedSpanTermExtractor {
     @Override
     public NumericDocValues getNormValues(String field) throws IOException {
       return super.getNormValues(FIELD_NAME);
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
   }
 
@@ -508,11 +502,7 @@ public class WeightedSpanTermExtractor {
    */
   public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, float boost, TokenStream tokenStream,
       String fieldName) throws IOException {
-    if (fieldName != null) {
-      this.fieldName = fieldName;
-    } else {
-      this.fieldName = null;
-    }
+    this.fieldName = fieldName;
 
     Map<String,WeightedSpanTerm> terms = new PositionCheckingMap<>();
     this.tokenStream = tokenStream;

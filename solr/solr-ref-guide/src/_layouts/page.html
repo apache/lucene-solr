@@ -1,0 +1,80 @@
+---
+layout: default
+---
+
+<div class="post-header">
+   <h1 class="post-title-main">{{ page.title }}</h1>
+</div>
+
+<!-- This adds a workflow map, to a page
+     See http://idratherbewriting.com/documentation-theme-jekyll/mydoc_workflow_maps.html
+     Leaving it here commented out in case we want to implement this in the future
+{% if page.simple_map == true %}
+<script>
+    $(document).ready ( function(){
+        $('.box{{page.box_number}}').addClass('active');
+    });
+</script>
+{% include custom/{{page.map_name}}.html %}
+{% elsif page.complex_map == true %}
+<script>
+    $(document).ready ( function(){
+        $('.modalButton{{page.box_number}}').addClass('active');
+    });
+</script>
+{% include custom/{{page.map_name}}.html %}
+{% endif %} -->
+
+<div class="post-content">
+
+   {% if page.summary %}
+    <div class="summary">{{ page.summary }}</div>
+   {% endif %}
+
+    {% unless page.toc == false %}
+    {% include toc.html %}
+    {% endunless %}
+
+<div class="main-content">
+  {{content}}
+</div>
+
+<!-- Adds tags, if any -->
+    <div class="tags">
+        {% if page.tags != null %}
+        <b>Tags: </b>
+        {% assign projectTags = site.data.tags.allowed-tags %}
+        {% for tag in page.tags %}
+        {% if projectTags contains tag %}
+        <a href="{{ "tag-" | append: tag | append: ".html" }}" class="btn btn-default navbar-btn cursorNorm" role="button">{{page.tagName}}{{tag}}</a>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+<!-- Adds nav links on each page -->
+    {% assign scrollnav = site.data.scrollnav[page.shortname] %}
+    {% if scrollnav %}
+    <div class="scrollnav">
+      {% if scrollnav.prev %}
+      <a class="btn btn-primary prev" href="{{ scrollnav.prev.url }}">{{ scrollnav.prev.title }}</a>
+      {% endif %}
+      {% if scrollnav.next %}
+      <a class="btn btn-primary next" href="{{ scrollnav.next.url }}">{{ scrollnav.next.title }}</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Adds comments from Apache's Comment system -->
+
+<div id="comments_thread">
+</div>
+<script type="text/javascript" src="https://comments.apache.org/show_comments.lua?site=solr-refguide&style=css/comments.css&page={{ page.shortname }}" async="true">
+</script>
+<noscript>
+<iframe width="100%" height="500" src="https://comments.apache.org/iframe.lua?site=solr-refguide&style=css/comments.css&page={{ page.shortname }}"></iframe>
+</noscript>
+
+{% include footer.html %}

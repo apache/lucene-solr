@@ -50,6 +50,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /** Replica node, that pulls index changes from the primary node by copying newly flushed or merged index files.
  * 
@@ -138,7 +139,7 @@ public abstract class ReplicaNode extends Node {
       SegmentInfos infos;
       if (segmentsFileName == null) {
         // No index here yet:
-        infos = new SegmentInfos();
+        infos = new SegmentInfos(Version.LATEST.major);
         message("top: init: no segments in index");
       } else {
         message("top: init: read existing segments commit " + segmentsFileName);
@@ -311,7 +312,7 @@ public abstract class ReplicaNode extends Node {
       } else {
         dir.close();
       }
-      IOUtils.reThrow(t);
+      throw IOUtils.rethrowAlways(t);
     }
   }
   
@@ -496,7 +497,7 @@ public abstract class ReplicaNode extends Node {
 
     if (version < curVersion) {
       // This can happen, if two syncs happen close together, and due to thread scheduling, the incoming older version runs after the newer version
-      message("top: new NRT point (version=" + version + ") is older than current (version=" + version + "); skipping");
+      message("top: new NRT point (version=" + version + ") is older than current (version=" + curVersion + "); skipping");
       return null;
     }
 

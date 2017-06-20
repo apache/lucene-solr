@@ -144,12 +144,17 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          return sdv.advanceExact(target + context.docBase);
+        }
+
+        @Override
         public long cost() {
           return 0;
         }
         
         @Override
-        public long longValue() {
+        public long longValue() throws IOException {
           // Keys are always expressed as a long so we obtain the
           // ordinal for our String-based artist name here
           return sdv.ordValue();
@@ -185,6 +190,10 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         @Override
         public int advance(int target) throws IOException {
           return vals.advance(target);
+        }
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          return vals.advanceExact(target);
         }
         @Override
         public long cost() {
@@ -383,7 +392,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     for (int i = 0; i < hitsOfThe60s.length; i++) {
       String cols[] = hitsOfThe60s[i].split("\t");
       Record record = new Record(String.valueOf(i), cols[0], cols[1], cols[2],
-          Float.valueOf(cols[3]));
+          Float.parseFloat(cols[3]));
       parsedRecords.put(record.id, record);
       idField.setStringValue(record.id);
       yearField.setStringValue(record.year);

@@ -30,6 +30,6 @@ public interface EventListener {
    *
    * @param ctx the Context in which this event was called
    */
-  public void onEvent(Context ctx);
+  void onEvent(Context ctx);
 
 }

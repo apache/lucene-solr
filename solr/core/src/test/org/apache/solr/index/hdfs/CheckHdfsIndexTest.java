@@ -121,11 +121,6 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  public void testBogusTermVectors() throws IOException {
-    testCheckIndex.testBogusTermVectors(directory);
-  }
-
-  @Test
   public void testChecksumsOnly() throws IOException {
     testCheckIndex.testChecksumsOnly(directory);
   }

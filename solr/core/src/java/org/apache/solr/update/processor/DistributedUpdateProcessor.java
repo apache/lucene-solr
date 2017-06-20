@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +38,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
@@ -58,6 +66,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -65,7 +74,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -82,9 +91,11 @@ import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,6 +109,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public static final String DISTRIB_FROM_COLLECTION = "distrib.from.collection";
   public static final String DISTRIB_FROM_PARENT = "distrib.from.parent";
   public static final String DISTRIB_FROM = "distrib.from";
+  public static final String DISTRIB_INPLACE_PREVVERSION = "distrib.inplace.prevversion";
   private static final String TEST_DISTRIB_SKIP_SERVERS = "test.distrib.skip.servers";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -231,8 +243,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private final UpdateRequestProcessor next;
   private final AtomicUpdateDocumentMerger docMerger;
 
-  public static final String VERSION_FIELD = "_version_";
-
   private final UpdateHandler updateHandler;
   private final UpdateLog ulog;
   private final VersionInfo vinfo;
@@ -270,6 +280,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // this is set to true in the constructor if the next processors in the chain
   // are custom and may modify the SolrInputDocument racing with its serialization for replication
   private final boolean cloneRequiredOnLeader;
+  private final Replica.Type replicaType;
 
   public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
@@ -300,23 +311,24 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, VERSION_FIELD);
-    
-    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-    
-    this.zkEnabled  = coreDesc.getCoreContainer().isZooKeeperAware();
-    zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD);
+
+    CoreContainer cc = req.getCore().getCoreContainer();
+
+    this.zkEnabled  = cc.isZooKeeperAware();
+    zkController = cc.getZkController();
     if (zkEnabled) {
-      cmdDistrib = new SolrCmdDistributor(coreDesc.getCoreContainer().getUpdateShardHandler());
+      cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
-
-    cloudDesc = coreDesc.getCloudDescriptor();
+    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
+      replicaType = cloudDesc.getReplicaType();
     } else {
       collection = null;
+      replicaType = Replica.Type.NRT;
     }
 
     boolean shouldClone = false;
@@ -583,7 +595,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");
-                      SolrZkClient zkClient = req.getCore().getCoreDescriptor().getCoreContainer().getZkController().getZkClient();
+                      SolrZkClient zkClient = req.getCore().getCoreContainer().getZkController().getZkClient();
                       DistributedQueue queue = Overseer.getStateUpdateQueue(zkClient);
                       queue.offer(Utils.toJSON(map));
                     } catch (KeeperException e) {
@@ -653,13 +665,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
 
   // used for deleteByQuery to get the list of nodes this leader should forward to
-  private List<Node> setupRequest() {
+  private List<Node> setupRequestForDBQ() {
     List<Node> nodes = null;
     String shardId = cloudDesc.getShardId();
 
     try {
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
-          collection, shardId);
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
       isLeader = leaderReplica.getName().equals(
           req.getCore().getCoreDescriptor().getCloudDescriptor()
               .getCoreNodeName());
@@ -668,7 +679,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       forwardToLeader = false;
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, leaderReplica.getName());
+          .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
@@ -677,8 +688,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-          e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
     return nodes;
@@ -728,7 +738,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }                
       }
     }
-    
+
+    // If we were sent a previous version, set this to the AddUpdateCommand (if not already set)
+    if (!cmd.isInPlaceUpdate()) {
+      cmd.prevVersion = cmd.getReq().getParams().getLong(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, -1);
+    }
     // TODO: if minRf > 1 and we know the leader is the only active replica, we could fail
     // the request right here but for now I think it is better to just return the status
     // to the client that the minRf wasn't reached and let them handle it    
@@ -785,8 +799,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       
       if (replicationTracker != null && minRf > 1)
         params.set(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-      
-      cmdDistrib.distribAdd(cmd, nodes, params, false, replicationTracker);
+
+      if (cmd.isInPlaceUpdate()) {
+        params.set(DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
+
+        // Use synchronous=true so that a new connection is used, instead
+        // of the update being streamed through an existing streaming client.
+        // When using a streaming client, the previous update
+        // and the current in-place update (that depends on the previous update), if reordered
+        // in the stream, can result in the current update being bottled up behind the previous
+        // update in the stream and can lead to degraded performance.
+        cmdDistrib.distribAdd(cmd, nodes, params, true, replicationTracker);
+      } else {
+        cmdDistrib.distribAdd(cmd, nodes, params, false, replicationTracker);
+      }
     }
     
     // TODO: what to do when no idField?
@@ -804,6 +830,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // an id may fail before it gets to this processor.
     // Given that, it may also make sense to move the version reporting out of this
     // processor too.
+  }
+  
+  @Override
+  protected void doClose() {
+    if (cmdDistrib != null) {
+      cmdDistrib.close();
+    }
   }
  
   // TODO: optionally fail if n replicas are not reached...
@@ -913,7 +946,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Throwable rootCause = SolrException.getRootCause(error.e);
             log.error("Setting up to try to start recovery on replica {}", replicaUrl, rootCause);
             zkController.ensureReplicaInLeaderInitiatedRecovery(
-                req.getCore().getCoreDescriptor().getCoreContainer(),
+                req.getCore().getCoreContainer(),
                 collection,
                 shardId,
                 stdNode.getNodeProps(),
@@ -996,13 +1029,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     long versionOnUpdate = cmd.getVersion();
 
     if (versionOnUpdate == 0) {
-      SolrInputField versionField = cmd.getSolrInputDocument().getField(VersionInfo.VERSION_FIELD);
+      SolrInputField versionField = cmd.getSolrInputDocument().getField(CommonParams.VERSION_FIELD);
       if (versionField != null) {
         Object o = versionField.getValue();
         versionOnUpdate = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
       } else {
         // Find the version
-        String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+        String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
         versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
       }
     }
@@ -1013,9 +1046,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
+    long dependentVersionFound = -1;
+    // if this is an in-place update, check and wait if we should be waiting for a previous update (on which
+    // this update depends), before entering the synchronized block
+    if (!leaderLogic && cmd.isInPlaceUpdate()) {
+      dependentVersionFound = waitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket);
+      if (dependentVersionFound == -1) {
+        // it means the document has been deleted by now at the leader. drop this update
+        return true;
+      }
+    }
+
     vinfo.lockForUpdate();
     try {
       synchronized (bucket) {
+        bucket.notifyAll(); //just in case anyone is waiting let them know that we have a new update
         // we obtain the version when synchronized and then do the add so we can ensure that
         // if version1 < version2 then version1 is actually added before version2.
 
@@ -1037,7 +1082,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // forwarded from a collection but we are not buffering so strip original version and apply our own
               // see SOLR-5308
               log.info("Removing version field from doc: " + cmd.getPrintableId());
-              cmd.solrDoc.remove(VERSION_FIELD);
+              cmd.solrDoc.remove(CommonParams.VERSION_FIELD);
               versionOnUpdate = 0;
             }
 
@@ -1067,7 +1112,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
             long version = vinfo.getNewClock();
             cmd.setVersion(version);
-            cmd.getSolrInputDocument().setField(VersionInfo.VERSION_FIELD, version);
+            cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
             bucket.updateHighest(version);
           } else {
             // The leader forwarded us this update.
@@ -1080,23 +1125,72 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               return true;
             }
 
-            // if we aren't the leader, then we need to check that updates were not re-ordered
-            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-              // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occurred.
-              bucket.updateHighest(versionOnUpdate);
-            } else {
-              // there have been updates higher than the current update.  we need to check
-              // the specific version for this id.
+            if (cmd.isInPlaceUpdate()) {
+              long prev = cmd.prevVersion;
               Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-                // This update is a repeat, or was reordered.  We need to drop this update.
-                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-                return true;
-              }
+              if (lastVersion == null || Math.abs(lastVersion) < prev) {
+                // this was checked for (in waitForDependentUpdates()) before entering the synchronized block.
+                // So we shouldn't be here, unless what must've happened is:
+                // by the time synchronization block was entered, the prev update was deleted by DBQ. Since
+                // now that update is not in index, the vinfo.lookupVersion() is possibly giving us a version 
+                // from the deleted list (which might be older than the prev update!) 
+                UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
 
-              // also need to re-apply newer deleteByQuery commands
-              checkDeleteByQueries = true;
+                if (fetchedFromLeader instanceof DeleteUpdateCommand) {
+                  log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document"
+                      + " was deleted at the leader subsequently.", idBytes.utf8ToString());
+                  versionDelete((DeleteUpdateCommand)fetchedFromLeader);
+                  return true;
+                } else {
+                  assert fetchedFromLeader instanceof AddUpdateCommand;
+                  // Newer document was fetched from the leader. Apply that document instead of this current in-place update.
+                  log.info("In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
+                      idBytes.utf8ToString(), fetchedFromLeader);
+
+                  // Make this update to become a non-inplace update containing the full document obtained from the leader
+                  cmd.solrDoc = ((AddUpdateCommand)fetchedFromLeader).solrDoc;
+                  cmd.prevVersion = -1;
+                  cmd.setVersion((long)cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
+                  assert cmd.isInPlaceUpdate() == false;
+                }
+              } else {
+                if (lastVersion != null && Math.abs(lastVersion) > prev) {
+                  // this means we got a newer full doc update and in that case it makes no sense to apply the older
+                  // inplace update. Drop this update
+                  log.info("Update was applied on version: " + prev + ", but last version I have is: " + lastVersion
+                      + ". Dropping current update.");
+                  return true;
+                } else {
+                  // We're good, we should apply this update. First, update the bucket's highest.
+                  if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+                    bucket.updateHighest(versionOnUpdate);
+                  }
+                }
+              }
+            }
+
+            if (!cmd.isInPlaceUpdate()) {
+              // if we aren't the leader, then we need to check that updates were not re-ordered
+              if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
+                // we're OK... this update has a version higher than anything we've seen
+                // in this bucket so far, so we know that no reordering has yet occurred.
+                bucket.updateHighest(versionOnUpdate);
+              } else {
+                // there have been updates higher than the current update.  we need to check
+                // the specific version for this id.
+                Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+                if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+                  // This update is a repeat, or was reordered.  We need to drop this update.
+                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
+                  return true;
+                }
+
+                // also need to re-apply newer deleteByQuery commands
+                checkDeleteByQueries = true;
+              }
+            }
+            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
             }
           }
         }
@@ -1122,11 +1216,161 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return false;
   }
 
+  /**
+   * This method checks the update/transaction logs and index to find out if the update ("previous update") that the current update
+   * depends on (in the case that this current update is an in-place update) has already been completed. If not,
+   * this method will wait for the missing update until it has arrived. If it doesn't arrive within a timeout threshold,
+   * then this actively fetches from the leader.
+   * 
+   * @return -1 if the current in-place should be dropped, or last found version if previous update has been indexed.
+   */
+  private long waitForDependentUpdates(AddUpdateCommand cmd, long versionOnUpdate,
+                               boolean isReplayOrPeersync, VersionBucket bucket) throws IOException {
+    long lastFoundVersion = 0;
+    TimeOut waitTimeout = new TimeOut(5, TimeUnit.SECONDS); 
+
+    vinfo.lockForUpdate();
+    try {
+      synchronized (bucket) {
+        Long lookedUpVersion = vinfo.lookupVersion(cmd.getIndexedId());
+        lastFoundVersion = lookedUpVersion == null ? 0L: lookedUpVersion;
+
+        if (Math.abs(lastFoundVersion) < cmd.prevVersion) {
+          log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}", 
+              (cmd.getVersion() == 0 ? versionOnUpdate : cmd.getVersion()), cmd.prevVersion, lastFoundVersion, isReplayOrPeersync, cmd.getPrintableId());
+        }
+
+        while (Math.abs(lastFoundVersion) < cmd.prevVersion && !waitTimeout.hasTimedOut())  {
+          try {
+            long timeLeft = waitTimeout.timeLeft(TimeUnit.MILLISECONDS);
+            if (timeLeft > 0) { // wait(0) waits forever until notified, but we don't want that.
+              bucket.wait(timeLeft);
+            }
+          } catch (InterruptedException ie) {
+            throw new RuntimeException(ie);
+          }
+          lookedUpVersion = vinfo.lookupVersion(cmd.getIndexedId());
+          lastFoundVersion = lookedUpVersion == null ? 0L: lookedUpVersion;
+        }
+      }
+    } finally {
+      vinfo.unlockForUpdate();
+    }
+
+    if (Math.abs(lastFoundVersion) > cmd.prevVersion) {
+      // This must've been the case due to a higher version full update succeeding concurrently, while we were waiting or
+      // trying to index this partial update. Since a full update more recent than this partial update has succeeded,
+      // we can drop the current update.
+      if (log.isDebugEnabled()) {
+        log.debug("Update was applied on version: {}, but last version I have is: {}"
+            + ". Current update should be dropped. id={}", cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
+      }
+      return -1;
+    } else if (Math.abs(lastFoundVersion) == cmd.prevVersion) {
+      assert 0 < lastFoundVersion : "prevVersion " + cmd.prevVersion + " found but is a delete!";
+      if (log.isDebugEnabled()) {
+        log.debug("Dependent update found. id={}", cmd.getPrintableId());
+      }
+      return lastFoundVersion;
+    }
+
+    // We have waited enough, but dependent update didn't arrive. Its time to actively fetch it from leader
+    log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}", 
+        cmd.getPrintableId(), cmd.prevVersion, lastFoundVersion);
+    
+    UpdateCommand missingUpdate = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
+    if (missingUpdate instanceof DeleteUpdateCommand) {
+      log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. " 
+          + "Deleting the document here and skipping this update: Last found version: {}, was looking for: {}", cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
+      versionDelete((DeleteUpdateCommand)missingUpdate);
+      return -1;
+    } else {
+      assert missingUpdate instanceof AddUpdateCommand;
+      log.debug("Fetched the document: {}", ((AddUpdateCommand)missingUpdate).getSolrInputDocument());
+      versionAdd((AddUpdateCommand)missingUpdate);
+      log.info("Added the fetched document, id="+((AddUpdateCommand)missingUpdate).getPrintableId()+", version="+missingUpdate.getVersion());
+    }
+    return missingUpdate.getVersion();
+  }
+
+  /**
+   * This method is used when an update on which a particular in-place update has been lost for some reason. This method
+   * sends a request to the shard leader to fetch the latest full document as seen on the leader.
+   * @return AddUpdateCommand containing latest full doc at shard leader for the given id, or null if not found.
+   */
+  private UpdateCommand fetchFullUpdateFromLeader(AddUpdateCommand inplaceAdd, long versionOnUpdate) throws IOException {
+    String id = inplaceAdd.getPrintableId();
+    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreContainer().getUpdateShardHandler();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(DISTRIB, false);
+    params.set("getInputDocument", id);
+    params.set("onlyIfActive", true);
+    SolrRequest<SimpleSolrResponse> ur = new GenericSolrRequest(METHOD.GET, "/get", params);
+
+    String leaderUrl = req.getParams().get(DISTRIB_FROM);
+    
+    if (leaderUrl == null) {
+      // An update we're dependent upon didn't arrive! This is unexpected. Perhaps likely our leader is
+      // down or partitioned from us for some reason. Lets force refresh cluster state, and request the
+      // leader for the update.
+      if (zkController == null) { // we should be in cloud mode, but wtf? could be a unit test
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find document with id=" + id + ", but fetching from leader "
+            + "failed since we're not in cloud mode.");
+      }
+      Replica leader;
+      try {
+        leader = zkController.getZkStateReader().getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
+      } catch (InterruptedException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
+      }
+      leaderUrl = leader.getCoreUrl();
+    }
+    
+    HttpSolrClient hsc = new HttpSolrClient.Builder(leaderUrl).
+        withHttpClient(updateShardHandler.getHttpClient()).build();
+    NamedList rsp = null;
+    try {
+      rsp = hsc.request(ur);
+    } catch (SolrServerException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error during fetching [" + id +
+          "] from leader (" + leaderUrl + "): ", e);
+    } finally {
+      hsc.close();
+    }
+    Object inputDocObj = rsp.get("inputDocument");
+    Long version = (Long)rsp.get("version");
+    SolrInputDocument leaderDoc = (SolrInputDocument) inputDocObj;
+
+    if (leaderDoc == null) {
+      // this doc was not found (deleted) on the leader. Lets delete it here as well.
+      DeleteUpdateCommand del = new DeleteUpdateCommand(inplaceAdd.getReq());
+      del.setIndexedId(inplaceAdd.getIndexedId());
+      del.setId(inplaceAdd.getIndexedId().utf8ToString());
+      del.setVersion((version == null || version == 0)? -versionOnUpdate: version);
+      return del;
+    }
+
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
+    cmd.solrDoc = leaderDoc;
+    cmd.setVersion((long)leaderDoc.getFieldValue(CommonParams.VERSION_FIELD));
+    return cmd;
+  }
+  
   // TODO: may want to switch to using optimistic locking in the future for better concurrency
   // that's why this code is here... need to retry in a loop closely around/in versionAdd
   boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
     if (!AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) return false;
 
+    Set<String> inPlaceUpdatedFields = AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd);
+    if (inPlaceUpdatedFields.size() > 0) { // non-empty means this is suitable for in-place updates
+      if (docMerger.doInPlaceUpdateMerge(cmd, inPlaceUpdatedFields)) {
+        return true;
+      } else {
+        // in-place update failed, so fall through and re-try the same with a full atomic update
+      }
+    }
+    
+    // full (non-inplace) atomic update
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id);
@@ -1140,9 +1384,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + cmd.getPrintableId());
       }
     } else {
-      oldDoc.remove(VERSION_FIELD);
+      oldDoc.remove(CommonParams.VERSION_FIELD);
     }
-    
+
 
     cmd.solrDoc = docMerger.merge(sdoc, oldDoc);
     return true;
@@ -1331,7 +1575,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (zkEnabled && DistribPhase.TOLEADER == phase) {
       // This core should be a leader
       isLeader = true;
-      replicas = setupRequest();
+      replicas = setupRequestForDBQ();
     } else if (DistribPhase.FROMLEADER == phase) {
       isLeader = false;
     }
@@ -1352,7 +1596,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (zkEnabled)  {
       // forward to all replicas
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
+      params.set(CommonParams.VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
@@ -1365,8 +1609,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           String myShardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
           Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
               collection, myShardId);
+          // DBQ forwarded to NRT and TLOG replicas
           List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-              .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN);
+              .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
           if (replicaProps != null) {
             final List<Node> myReplicas = new ArrayList<>(replicaProps.size());
             for (ZkCoreNodeProps replicaProp : replicaProps) {
@@ -1421,7 +1666,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Find the version
     long versionOnUpdate = cmd.getVersion();
     if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
       versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
     }
     versionOnUpdate = Math.abs(versionOnUpdate);  // normalize to positive version
@@ -1454,6 +1699,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             return;
           }
 
+          if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+            // TLOG replica not leader, don't write the DBQ to IW
+            cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+          }
           doLocalDelete(cmd);
         }
       }
@@ -1492,7 +1741,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
     // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
-    if (req.getCore().getCoreDescriptor().getCoreContainer().isShutDown()) {
+    if (req.getCore().getCoreContainer().isShutDown()) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
     }
 
@@ -1526,7 +1775,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Find the version
     long versionOnUpdate = cmd.getVersion();
     if (versionOnUpdate == 0) {
-      String versionOnUpdateS = req.getParams().get(VERSION_FIELD);
+      String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
       versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
     }
     long signedVersionOnUpdate = versionOnUpdate;
@@ -1607,6 +1856,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 return true;
               }
             }
+
+            if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+              cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
+            }
           }
         }
 
@@ -1631,14 +1884,46 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       zkCheck();
       
       nodes = getCollectionUrls(req, req.getCore().getCoreDescriptor()
-          .getCloudDescriptor().getCollectionName());
-      if (isLeader && nodes.size() == 1) {
+          .getCloudDescriptor().getCollectionName(), EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT));
+      if (nodes == null) {
+        // This could happen if there are only pull replicas
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+            "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
+      }
+      if (isLeader && nodes.size() == 1 && replicaType != Replica.Type.PULL) {
         singleLeader = true;
       }
     }
     
     if (!zkEnabled || req.getParams().getBool(COMMIT_END_POINT, false) || singleLeader) {
-      doLocalCommit(cmd);
+      if (replicaType == Replica.Type.TLOG) {
+        try {
+          Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
+              collection, cloudDesc.getShardId());
+          isLeader = leaderReplica.getName().equals(
+              req.getCore().getCoreDescriptor().getCloudDescriptor()
+                  .getCoreNodeName());
+          if (isLeader) {
+            long commitVersion = vinfo.getNewClock();
+            cmd.setVersion(commitVersion);
+            doLocalCommit(cmd);
+          } else {
+            assert TestInjection.waitForInSyncWithLeader(req.getCore(),
+                zkController, collection, cloudDesc.getShardId()): "Core " + req.getCore() + " not in sync with leader";
+          }
+        } catch (InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
+        }
+      } else if (replicaType == Replica.Type.PULL) {
+        log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
+      } else {
+        // NRT replicas will always commit
+        if (vinfo != null) {
+          long commitVersion = vinfo.getNewClock();
+          cmd.setVersion(commitVersion);
+        }
+        doLocalCommit(cmd);
+      }
     } else {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
@@ -1685,8 +1970,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
  
 
   
-  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection) {
-    ClusterState clusterState = req.getCore().getCoreDescriptor()
+  private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, EnumSet<Replica.Type> types) {
+    ClusterState clusterState = req.getCore()
         .getCoreContainer().getZkController().getClusterState();
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
@@ -1700,6 +1985,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       Map<String,Replica> shardMap = replicas.getReplicasMap();
       
       for (Entry<String,Replica> entry : shardMap.entrySet()) {
+        if (!types.contains(entry.getValue().getType())) {
+          continue;
+        }
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
         if (clusterState.liveNodesContain(nodeProps.getNodeName())) {
           urls.add(new StdNode(nodeProps, collection, replicas.getName()));

@@ -19,9 +19,9 @@ package org.apache.solr.search.facet;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
 // Any type of facet request that generates a variable number of buckets
@@ -29,6 +29,7 @@ import org.apache.solr.schema.SchemaField;
 abstract class FacetRequestSorted extends FacetRequest {
   long offset;
   long limit;
+  int overrequest = -1; // Number of buckets to request beyond the limit to do internally during distributed search. -1 means default.
   long mincount;
   String sortVariable;
   SortDirection sortDirection;
@@ -97,7 +98,12 @@ public class FacetField extends FacetRequestSorted {
     FieldType ft = sf.getType();
     boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
 
-    LegacyNumericType ntype = ft.getNumericType();
+    if (fcontext.facetInfo != null) {
+      // refinement... we will end up either skipping the entire facet, or doing calculating only specific facet buckets
+      return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
+    }
+
+      NumberType ntype = ft.getNumberType();
     // ensure we can support the requested options for numeric faceting:
     if (ntype != null) {
       if (prefix != null) {
@@ -116,7 +122,7 @@ public class FacetField extends FacetRequestSorted {
       method = FacetMethod.STREAM;
     }
     if (method == FacetMethod.STREAM && sf.indexed() &&
-        "index".equals(sortVariable) && sortDirection == SortDirection.asc) {
+        "index".equals(sortVariable) && sortDirection == SortDirection.asc && !ft.isPointField()) {
       return new FacetFieldProcessorByEnumTermsStream(fcontext, this, sf);
     }
 
@@ -134,6 +140,10 @@ public class FacetField extends FacetRequestSorted {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Couldn't pick facet algorithm for field " + sf);
       }
+    }
+
+    if (sf.hasDocValues() && sf.getType().isPointField()) {
+      return new FacetFieldProcessorByHashDV(fcontext, this, sf);
     }
 
     // multi-valued after this point

@@ -461,9 +461,8 @@ based HashBitset. -->
     </highlighting>
   </searchComponent>
 
-  <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
@@ -478,7 +477,7 @@ based HashBitset. -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
-  <queryParser name="count" class="org.apache.solr.search.TestAnalyticsQParserPlugin"/>
+  <queryParser name="count" class="org.apache.solr.search.AnalyticsTestQParserPlugin"/>
 
   <updateRequestProcessorChain name="dedupe">
     <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">

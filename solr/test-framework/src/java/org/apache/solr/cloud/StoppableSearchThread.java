@@ -47,7 +47,7 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
     Random random = LuceneTestCase.random();
     int numSearches = 0;
 
-    while (true && !stop) {
+    while (!stop) {
       numSearches++;
       try {
         //to come to the aid of their country.

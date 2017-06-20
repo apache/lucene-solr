@@ -16,28 +16,36 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Represents a group that is found during the first pass search.
  *
  * @lucene.experimental
  */
-public class SearchGroup<GROUP_VALUE_TYPE> {
+public class SearchGroup<T> {
 
   /** The value that defines this group  */
-  public GROUP_VALUE_TYPE groupValue;
+  public T groupValue;
 
   /** The sort values used during sorting. These are the
    *  groupSort field values of the highest rank document
    *  (by the groupSort) within the group.  Can be
    * <code>null</code> if <code>fillFields=false</code> had
-   * been passed to {@link AbstractFirstPassGroupingCollector#getTopGroups} */
+   * been passed to {@link FirstPassGroupingCollector#getTopGroups} */
   public Object[] sortValues;
 
   @Override
@@ -158,7 +166,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
     public final int[] reversed;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public GroupComparator(Sort groupSort) throws IOException {
+    public GroupComparator(Sort groupSort) {
       final SortField[] sortFields = groupSort.getSort();
       comparators = new FieldComparator[sortFields.length];
       reversed = new int[sortFields.length];
@@ -199,7 +207,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
     private final NavigableSet<MergedGroup<T>> queue;
     private final Map<T,MergedGroup<T>> groupsSeen;
 
-    public GroupMerger(Sort groupSort) throws IOException {
+    public GroupMerger(Sort groupSort) {
       groupComp = new GroupComparator<>(groupSort);
       queue = new TreeSet<>(groupComp);
       groupsSeen = new HashMap<>();
@@ -327,12 +335,11 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
    *  groupSort must match how the groups were sorted, and
    *  the provided SearchGroups must have been computed
    *  with fillFields=true passed to {@link
-   *  AbstractFirstPassGroupingCollector#getTopGroups}.
+   *  FirstPassGroupingCollector#getTopGroups}.
    *
    * <p>NOTE: this returns null if the topGroups is empty.
    */
-  public static <T> Collection<SearchGroup<T>> merge(List<Collection<SearchGroup<T>>> topGroups, int offset, int topN, Sort groupSort)
-    throws IOException {
+  public static <T> Collection<SearchGroup<T>> merge(List<Collection<SearchGroup<T>>> topGroups, int offset, int topN, Sort groupSort) {
     if (topGroups.isEmpty()) {
       return null;
     } else {

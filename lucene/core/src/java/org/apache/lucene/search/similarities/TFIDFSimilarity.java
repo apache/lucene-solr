@@ -30,6 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SmallFloat;
 
 
 /**
@@ -233,11 +234,6 @@ import org.apache.lucene.util.BytesRef;
  *   And this is exactly what normalizing the query vector <i>V(q)</i>
  *   provides: comparability (to a certain extent) of two or more queries.
  *   </li>
- *
- *   <li>Applying query normalization on the scores helps to keep the
- *   scores around the unit vector, hence preventing loss of score data
- *   because of floating point precision limitations.
- *   </li>
  *  </ul>
  *  </li>
  *
@@ -369,49 +365,9 @@ import org.apache.lucene.util.BytesRef;
  *
  *    <li>
  *      <A NAME="formula_norm"></A>
- *      <b><i>norm(t,d)</i></b> encapsulates a few (indexing time) boost and length factors:
- *
- *      <ul>
- *        <li><b>Field boost</b> - set by calling
- *        {@link org.apache.lucene.document.Field#setBoost(float) field.setBoost()}
- *        before adding the field to a document.
- *        </li>
- *        <li><b>lengthNorm</b> - computed
- *        when the document is added to the index in accordance with the number of tokens
- *        of this field in the document, so that shorter fields contribute more to the score.
- *        LengthNorm is computed by the Similarity class in effect at indexing.
- *        </li>
- *      </ul>
- *      The {@link #computeNorm} method is responsible for
- *      combining all of these factors into a single float.
- *
- *      <p>
- *      When a document is added to the index, all the above factors are multiplied.
- *      If the document has multiple fields with the same name, all their boosts are multiplied together:
- *
- *      <br>&nbsp;<br>
- *      <table cellpadding="1" cellspacing="0" border="0" style="width:auto; margin-left:auto; margin-right:auto" summary="index-time normalization">
- *        <tr>
- *          <td valign="middle" align="right" rowspan="1">
- *            norm(t,d) &nbsp; = &nbsp;
- *            lengthNorm
- *            &nbsp;&middot;&nbsp;
- *          </td>
- *          <td valign="bottom" align="center" rowspan="1" style="text-align: center">
- *            <big><big><big>&prod;</big></big></big>
- *          </td>
- *          <td valign="middle" align="right" rowspan="1">
- *            {@link org.apache.lucene.index.IndexableField#boost() f.boost}()
- *          </td>
- *        </tr>
- *        <tr valign="top">
- *          <td></td>
- *          <td align="center" style="text-align: center"><small>field <i><b>f</b></i> in <i>d</i> named as <i><b>t</b></i></small></td>
- *          <td></td>
- *        </tr>
- *      </table>
- *      Note that search time is too late to modify this <i>norm</i> part of scoring, 
- *      e.g. by using a different {@link Similarity} for search.
+ *      <b><i>norm(t,d)</i></b> is an index-time boost factor that solely
+ *      depends on the number of tokens of this field in the document, so
+ *      that shorter fields contribute more to the score.
  *    </li>
  * </ol>
  *
@@ -419,13 +375,49 @@ import org.apache.lucene.util.BytesRef;
  * @see IndexSearcher#setSimilarity(Similarity)
  */
 public abstract class TFIDFSimilarity extends Similarity {
-  
+
+  /** Cache of decoded bytes. */
+  static final float[] OLD_NORM_TABLE = new float[256];
+
+  static {
+    for (int i = 0; i < 256; i++) {
+      OLD_NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
+    }
+  }
+
   /**
    * Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.)
    */
   public TFIDFSimilarity() {}
-  
+
+  /** 
+   * True if overlap tokens (tokens with a position of increment of zero) are
+   * discounted from the document's length.
+   */
+  protected boolean discountOverlaps = true;
+
+  /** Determines whether overlap tokens (Tokens with
+   *  0 position increment) are ignored when computing
+   *  norm.  By default this is true, meaning overlap
+   *  tokens do not count when computing norms.
+   *
+   *  @lucene.experimental
+   *
+   *  @see #computeNorm
+   */
+  public void setDiscountOverlaps(boolean v) {
+    discountOverlaps = v;
+  }
+
+  /**
+   * Returns true if overlap tokens are discounted from the document's length. 
+   * @see #setDiscountOverlaps 
+   */
+  public boolean getDiscountOverlaps() {
+    return discountOverlaps;
+  }
+
   /** Computes a score factor based on a term or phrase's frequency in a
    * document.  This value is multiplied by the {@link #idf(long, long)}
    * factor for each term in the query and these products are then summed to
@@ -484,16 +476,14 @@ public abstract class TFIDFSimilarity extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    float idf = 0.0f;
+    double idf = 0d; // sum into a double before casting into a float
     List<Explanation> subs = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
-      final long df = stat.docFreq();
-      final float termIdf = idf(df, docCount);
-      subs.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
-      idf += termIdf;
+      Explanation idfExplain = idfExplain(collectionStats, stat);
+      subs.add(idfExplain);
+      idf += idfExplain.getValue();
     }
-    return Explanation.match(idf, "idf(), sum of:", subs);
+    return Explanation.match((float) idf, "idf(), sum of:", subs);
   }
 
   /** Computes a score factor based on a term's document frequency (the number
@@ -513,30 +503,25 @@ public abstract class TFIDFSimilarity extends Similarity {
 
   /**
    * Compute an index-time normalization value for this field instance.
-   * <p>
-   * This value will be stored in a single byte lossy representation by 
-   * {@link #encodeNormValue(float)}.
    * 
-   * @param state statistics of the current field (such as length, boost, etc)
-   * @return an index-time normalization value
+   * @param length the number of terms in the field, optionally {@link #setDiscountOverlaps(boolean) discounting overlaps}
+   * @return a length normalization value
    */
-  public abstract float lengthNorm(FieldInvertState state);
+  public abstract float lengthNorm(int length);
   
   @Override
   public final long computeNorm(FieldInvertState state) {
-    float normValue = lengthNorm(state);
-    return encodeNormValue(normValue);
+    final int numTerms;
+    if (discountOverlaps)
+      numTerms = state.getLength() - state.getNumOverlap();
+    else
+      numTerms = state.getLength();
+    if (state.getIndexCreatedVersionMajor() >= 7) {
+      return SmallFloat.intToByte4(numTerms);
+    } else {
+      return SmallFloat.floatToByte315(lengthNorm(numTerms));
+    }
   }
-  
-  /**
-   * Decodes a normalization factor stored in an index.
-   * 
-   * @see #encodeNormValue(float)
-   */
-  public abstract float decodeNormValue(long norm);
-
-  /** Encodes a normalization factor for storage in an index. */
-  public abstract long encodeNormValue(float f);
  
   /** Computes the amount of a sloppy phrase match, based on an edit distance.
    * This value is summed for each sloppy phrase match in a document to form
@@ -571,24 +556,41 @@ public abstract class TFIDFSimilarity extends Similarity {
     final Explanation idf = termStats.length == 1
     ? idfExplain(collectionStats, termStats[0])
     : idfExplain(collectionStats, termStats);
-    return new IDFStats(collectionStats.field(), boost, idf);
+    float[] normTable = new float[256];
+    for (int i = 1; i < 256; ++i) {
+      int length = SmallFloat.byte4ToInt((byte) i);
+      float norm = lengthNorm(length);
+      normTable[i] = norm;
+    }
+    normTable[0] = 1f / normTable[255];
+    return new IDFStats(collectionStats.field(), boost, idf, normTable);
   }
 
   @Override
   public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    return new TFIDFSimScorer(idfstats, context.reader().getNormValues(idfstats.field));
+    final float[] normTable;
+    if (context.reader().getMetaData().getCreatedVersionMajor() >= 7) {
+      // the norms only encode the length, we need a translation table that depends on how lengthNorm is implemented
+      normTable = idfstats.normTable;
+    } else {
+      // the norm is directly encoded in the index
+      normTable = OLD_NORM_TABLE;
+    }
+    return new TFIDFSimScorer(idfstats, context.reader().getNormValues(idfstats.field), normTable);
   }
   
   private final class TFIDFSimScorer extends SimScorer {
     private final IDFStats stats;
     private final float weightValue;
     private final NumericDocValues norms;
+    private final float[] normTable;
     
-    TFIDFSimScorer(IDFStats stats, NumericDocValues norms) throws IOException {
+    TFIDFSimScorer(IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
       this.stats = stats;
       this.weightValue = stats.queryWeight;
       this.norms = norms;
+      this.normTable = normTable;
     }
     
     @Override
@@ -598,17 +600,13 @@ public abstract class TFIDFSimilarity extends Similarity {
       if (norms == null) {
         return raw;
       } else {
-        long normValue;
-        int normsDocID = norms.docID();
-        if (normsDocID < doc) {
-          normsDocID = norms.advance(doc);
-        }
-        if (normsDocID == doc) {
-          normValue = norms.longValue();
+        float normValue;
+        if (norms.advanceExact(doc)) {
+          normValue = normTable[(int) (norms.longValue() & 0xFF)];
         } else {
           normValue = 0;
         }
-        return raw * decodeNormValue(normValue);  // normalize for field
+        return raw * normValue;  // normalize for field
       }
     }
     
@@ -624,35 +622,39 @@ public abstract class TFIDFSimilarity extends Similarity {
 
     @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {
-      return explainScore(doc, freq, stats, norms);
+      return explainScore(doc, freq, stats, norms, normTable);
     }
   }
   
   /** Collection statistics for the TF-IDF model. The only statistic of interest
    * to this model is idf. */
-  private static class IDFStats extends SimWeight {
+  static class IDFStats extends SimWeight {
     private final String field;
     /** The idf and its explanation */
     private final Explanation idf;
     private final float boost;
     private final float queryWeight;
+    final float[] normTable;
     
-    public IDFStats(String field, float boost, Explanation idf) {
+    public IDFStats(String field, float boost, Explanation idf, float[] normTable) {
       // TODO: Validate?
       this.field = field;
       this.idf = idf;
       this.boost = boost;
       this.queryWeight = boost * idf.getValue();
+      this.normTable = normTable;
     }
   }  
 
-  private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) throws IOException {
+  private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
     Explanation tfExplanation = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
     float norm;
-    if (norms != null && norms.advance(doc) == doc) {
-      norm = decodeNormValue(norms.longValue());
-    } else {
+    if (norms == null) {
       norm = 1f;
+    } else if (norms.advanceExact(doc) == false) {
+      norm = 0f;
+    } else {
+      norm = normTable[(int) (norms.longValue() & 0xFF)];
     }
     
     Explanation fieldNormExpl = Explanation.match(
@@ -665,9 +667,9 @@ public abstract class TFIDFSimilarity extends Similarity {
         tfExplanation, stats.idf, fieldNormExpl);
   }
 
-  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) throws IOException {
+  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
     Explanation queryExpl = Explanation.match(stats.boost, "boost");
-    Explanation fieldExpl = explainField(doc, freq, stats, norms);
+    Explanation fieldExpl = explainField(doc, freq, stats, norms, normTable);
     if (stats.boost == 1f) {
       return fieldExpl;
     }

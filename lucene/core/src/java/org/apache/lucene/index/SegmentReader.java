@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -28,10 +30,10 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * IndexReader implementation over a single segment. 
@@ -43,6 +45,7 @@ import org.apache.lucene.util.Bits;
 public final class SegmentReader extends CodecReader {
        
   private final SegmentCommitInfo si;
+  private final LeafMetaData metaData;
   private final Bits liveDocs;
 
   // Normally set to si.maxDoc - si.delDocCount, unless we
@@ -65,8 +68,9 @@ public final class SegmentReader extends CodecReader {
    * @throws IOException if there is a low-level IO error
    */
   // TODO: why is this public?
-  public SegmentReader(SegmentCommitInfo si, IOContext context) throws IOException {
+  public SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
     this.si = si;
+    this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
 
     // We pull liveDocs/DV updates from disk:
     this.isNRT = false;
@@ -130,6 +134,7 @@ public final class SegmentReader extends CodecReader {
       throw new IllegalArgumentException("maxDoc=" + si.info.maxDoc() + " but liveDocs.size()=" + liveDocs.length());
     }
     this.si = si;
+    this.metaData = sr.getMetaData();
     this.liveDocs = liveDocs;
     this.isNRT = isNRT;
     this.numDocs = numDocs;
@@ -230,7 +235,7 @@ public final class SegmentReader extends CodecReader {
   }
   
   @Override
-  public PointValues getPointValues() {
+  public PointsReader getPointsReader() {
     ensureOpen();
     return core.pointsReader;
   }
@@ -251,12 +256,6 @@ public final class SegmentReader extends CodecReader {
   public FieldsProducer getPostingsReader() {
     ensureOpen();
     return core.fields;
-  }
-
-  @Override
-  public PointsReader getPointsReader() {
-    ensureOpen();
-    return core.pointsReader;
   }
 
   @Override
@@ -288,36 +287,72 @@ public final class SegmentReader extends CodecReader {
     return si.info.dir;
   }
 
-  // This is necessary so that cloned SegmentReaders (which
-  // share the underlying postings data) will map to the
-  // same entry for CachingWrapperFilter.  See LUCENE-1579.
+  private final Set<ClosedListener> readerClosedListeners = new CopyOnWriteArraySet<>();
+
   @Override
-  public Object getCoreCacheKey() {
-    // NOTE: if this ever changes, be sure to fix
-    // SegmentCoreReader.notifyCoreClosedListeners to match!
-    // Today it passes "this" as its coreCacheKey:
-    return core;
+  void notifyReaderClosedListeners(Throwable th) throws IOException {
+    synchronized(readerClosedListeners) {
+      for(ClosedListener listener : readerClosedListeners) {
+        try {
+          listener.onClose(readerCacheHelper.getKey());
+        } catch (Throwable t) {
+          if (th == null) {
+            th = t;
+          } else {
+            th.addSuppressed(t);
+          }
+        }
+      }
+      
+      if (th != null) {
+        IOUtils.rethrowAlways(th);
+      }
+    }
+  }
+
+  private final IndexReader.CacheHelper readerCacheHelper = new IndexReader.CacheHelper() {
+    private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
+
+    @Override
+    public CacheKey getKey() {
+      return cacheKey;
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      ensureOpen();
+      readerClosedListeners.add(listener);
+    }
+  };
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return readerCacheHelper;
+  }
+
+  /** Wrap the cache helper of the core to add ensureOpen() calls that make
+   *  sure users do not register closed listeners on closed indices. */
+  private final IndexReader.CacheHelper coreCacheHelper = new IndexReader.CacheHelper() {
+
+    @Override
+    public CacheKey getKey() {
+      return core.getCacheHelper().getKey();
+    }
+
+    @Override
+    public void addClosedListener(ClosedListener listener) {
+      ensureOpen();
+      core.getCacheHelper().addClosedListener(listener);
+    }
+  };
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return coreCacheHelper;
   }
 
   @Override
-  public Object getCombinedCoreAndDeletesKey() {
-    return this;
-  }
-
-  @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    ensureOpen();
-    core.addCoreClosedListener(listener);
-  }
-  
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    ensureOpen();
-    core.removeCoreClosedListener(listener);
-  }
-
-  @Override
-  public Sort getIndexSort() {
-    return si.info.getIndexSort();
+  public LeafMetaData getMetaData() {
+    return metaData;
   }
 }

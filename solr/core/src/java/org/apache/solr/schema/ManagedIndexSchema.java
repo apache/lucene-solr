@@ -368,13 +368,13 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
 
-  public class FieldExistsException extends SolrException {
+  public static class FieldExistsException extends SolrException {
     public FieldExistsException(ErrorCode code, String msg) {
       super(code, msg);
     }
   }
 
-  public class SchemaChangedInZkException extends SolrException {
+  public static class SchemaChangedInZkException extends SolrException {
     public SchemaChangedInZkException(ErrorCode code, String msg) {
       super(code, msg);
     }
@@ -1357,9 +1357,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     
     newSchema.name = name;
     newSchema.version = version;
-    newSchema.defaultSearchFieldName = defaultSearchFieldName;
-    newSchema.queryParserDefaultOperator = queryParserDefaultOperator;
-    newSchema.isExplicitQueryParserDefaultOperator = isExplicitQueryParserDefaultOperator;
     newSchema.similarity = similarity;
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;

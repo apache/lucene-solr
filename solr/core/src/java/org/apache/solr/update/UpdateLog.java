@@ -22,10 +22,12 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,22 +36,30 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -70,8 +80,13 @@ import static org.apache.solr.update.processor.DistributedUpdateProcessor.Distri
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 
-/** @lucene.experimental */
-public class UpdateLog implements PluginInfoInitialized {
+/** 
+ * This holds references to the transaction logs and pointers for the document IDs to their
+ * exact positions in the transaction logs.
+ *
+ * @lucene.experimental
+ */
+public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final long STATUS_TIME = TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
   public static String LOG_FILENAME_PATTERN = "%s.%019d";
   public static String TLOG_NAME="tlog";
@@ -98,12 +113,26 @@ public class UpdateLog implements PluginInfoInitialized {
       }
     }
   }
-  public enum State { REPLAYING, BUFFERING, APPLYING_BUFFERED, ACTIVE }
+
+  // NOTE: when adding new states make sure to keep existing numbers, because external metrics
+  // monitoring may depend on these values being stable.
+  public enum State { REPLAYING(0), BUFFERING(1), APPLYING_BUFFERED(2), ACTIVE(3);
+    private final int value;
+
+    State(final int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
+  }
 
   public static final int ADD = 0x01;
   public static final int DELETE = 0x02;
   public static final int DELETE_BY_QUERY = 0x03;
   public static final int COMMIT = 0x04;
+  public static final int UPDATE_INPLACE = 0x08;
   // Flag indicating that this is a buffered operation, and that a gap exists before buffering started.
   // for example, if full index replication starts and we are buffering updates, then this flag should
   // be set to indicate that replaying the log would not bring us into sync (i.e. peersync should
@@ -111,6 +140,28 @@ public class UpdateLog implements PluginInfoInitialized {
   public static final int FLAG_GAP = 0x10;
   public static final int OPERATION_MASK = 0x0f;  // mask off flags to get the operation
 
+  /**
+   * The index of the flags value in an entry from the transaction log.
+   */
+  public static final int FLAGS_IDX = 0;
+
+  /**
+   * The index of the _version_ value in an entry from the transaction log.
+   */
+  public static final int VERSION_IDX = 1;
+  
+  /**
+   * The index of the previous pointer in an entry from the transaction log.
+   * This is only relevant if flags (indexed at FLAGS_IDX) includes UPDATE_INPLACE.
+   */
+  public static final int PREV_POINTER_IDX = 2;
+
+  /**
+   * The index of the previous version in an entry from the transaction log.
+   * This is only relevant if flags (indexed at FLAGS_IDX) includes UPDATE_INPLACE.
+   */
+  public static final int PREV_VERSION_IDX = 3;
+  
   public static class RecoveryInfo {
     public long positionOfStart;
 
@@ -158,7 +209,10 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   };
 
-  public class DBQ {
+  /**
+   * Holds the query and the version for a DeleteByQuery command
+   */
+  public static class DBQ {
     public String q;     // the query string
     public long version; // positive version of the DBQ
 
@@ -186,13 +240,37 @@ public class UpdateLog implements PluginInfoInitialized {
   List<Long> startingVersions;
   int startingOperation;  // last operation in the logs on startup
 
+  // metrics
+  protected Gauge<Integer> bufferedOpsGauge;
+  protected Meter applyingBufferedOpsMeter;
+  protected Meter replayOpsMeter;
+
   public static class LogPtr {
     final long pointer;
     final long version;
+    final long previousPointer; // used for entries that are in-place updates and need a pointer to a previous update command
 
+    /**
+     * Creates an object that contains the position and version of an update. In this constructor,
+     * the effective value of the previousPointer is -1.
+     * 
+     * @param pointer Position in the transaction log of an update
+     * @param version Version of the update at the given position
+     */
     public LogPtr(long pointer, long version) {
+      this(pointer, version, -1);
+    }
+
+    /**
+     * 
+     * @param pointer Position in the transaction log of an update
+     * @param version Version of the update at the given position
+     * @param previousPointer Position, in the transaction log, of an update on which the current update depends 
+     */
+    public LogPtr(long pointer, long version, long previousPointer) {
       this.pointer = pointer;
       this.version = version;
+      this.previousPointer = previousPointer;
     }
 
     @Override
@@ -333,7 +411,31 @@ public class UpdateLog implements PluginInfoInitialized {
       }
 
     }
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+  }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+    bufferedOpsGauge = () -> {
+      if (tlog == null) {
+        return 0;
+      } else if (state == State.APPLYING_BUFFERED) {
+        // numRecords counts header as a record
+        return tlog.numRecords() - 1 - recoveryInfo.adds - recoveryInfo.deleteByQuery - recoveryInfo.deletes - recoveryInfo.errors;
+      } else if (state == State.BUFFERING) {
+        // numRecords counts header as a record
+        return tlog.numRecords() - 1;
+      } else {
+        return 0;
+      }
+    };
+
+    manager.registerGauge(null, registry, bufferedOpsGauge, true, "ops", scope, "buffered");
+    manager.registerGauge(null, registry, () -> logs.size(), true, "logs", scope, "replay", "remaining");
+    manager.registerGauge(null, registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
+    applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
+    replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
+    manager.registerGauge(null, registry, () -> state.getValue(), true, "state", scope);
   }
 
   /**
@@ -423,16 +525,18 @@ public class UpdateLog implements PluginInfoInitialized {
     synchronized (this) {
       long pos = -1;
 
+      long prevPointer = getPrevPointerForUpdate(cmd);
+
       // don't log if we are replaying from another log
       if ((cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
         ensureLog();
-        pos = tlog.write(cmd, operationFlags);
+        pos = tlog.write(cmd, prevPointer, operationFlags);
       }
 
       if (!clearCaches) {
         // TODO: in the future we could support a real position for a REPLAY update.
         // Only currently would be useful for RTG while in recovery mode though.
-        LogPtr ptr = new LogPtr(pos, cmd.getVersion());
+        LogPtr ptr = new LogPtr(pos, cmd.getVersion(), prevPointer);
 
         // only update our map if we're not buffering
         if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
@@ -453,6 +557,31 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  /**
+   * @return If cmd is an in-place update, then returns the pointer (in the tlog) of the previous
+   *        update that the given update depends on.
+   *        Returns -1 if this is not an in-place update, or if we can't find a previous entry in
+   *        the tlog. Upon receiving a -1, it should be clear why it was -1: if the command's
+   *        flags|UpdateLog.UPDATE_INPLACE is set, then this command is an in-place update whose
+   *        previous update is in the index and not in the tlog; if that flag is not set, it is
+   *        not an in-place update at all, and don't bother about the prevPointer value at
+   *        all (which is -1 as a dummy value).)
+   */
+  private synchronized long getPrevPointerForUpdate(AddUpdateCommand cmd) {
+    // note: sync required to ensure maps aren't changed out form under us
+    if (cmd.isInPlaceUpdate()) {
+      BytesRef indexedId = cmd.getIndexedId();
+      for (Map<BytesRef, LogPtr> currentMap : Arrays.asList(map, prevMap, prevMap2)) {
+        if (currentMap != null) {
+          LogPtr prevEntry = currentMap.get(indexedId);
+          if (null != prevEntry) {
+            return prevEntry.pointer;
+          }
+        }
+      }
+    }
+    return -1;   
+  }
 
 
   public void delete(DeleteUpdateCommand cmd) {
@@ -492,7 +621,7 @@ public class UpdateLog implements PluginInfoInitialized {
       }
 
       // only change our caches if we are not buffering
-      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0) {
+      if ((cmd.getFlags() & UpdateCommand.BUFFERING) == 0 && (cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) == 0) {
         // given that we just did a delete-by-query, we don't know what documents were
         // affected and hence we must purge our caches.
         openRealtimeSearcher();
@@ -702,6 +831,117 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  /**
+   * Goes over backwards, following the prevPointer, to merge all partial updates into the passed doc. Stops at either a full
+   * document, or if there are no previous entries to follow in the update log.
+   *
+   * @param id          Binary representation of the unique key field
+   * @param prevPointer Pointer to the previous entry in the ulog, based on which the current in-place update was made.
+   * @param prevVersion Version of the previous entry in the ulog, based on which the current in-place update was made.
+   * @param onlyTheseFields When a non-null set of field names is passed in, the resolve process only attempts to populate
+   *        the given fields in this set. When this set is null, it resolves all fields.
+   * @param latestPartialDoc   Partial document that is to be populated
+   * @return Returns 0 if a full document was found in the log, -1 if no full document was found. If full document was supposed
+   * to be found in the tlogs, but couldn't be found (because the logs were rotated) then the prevPointer is returned.
+   */
+  synchronized public long applyPartialUpdates(BytesRef id, long prevPointer, long prevVersion,
+      Set<String> onlyTheseFields, SolrDocumentBase latestPartialDoc) {
+    
+    SolrInputDocument partialUpdateDoc = null;
+
+    List<TransactionLog> lookupLogs = Arrays.asList(tlog, prevMapLog, prevMapLog2);
+    while (prevPointer >= 0) {
+      //go through each partial update and apply it on the incoming doc one after another
+      List entry;
+      entry = getEntryFromTLog(prevPointer, prevVersion, lookupLogs);
+      if (entry == null) {
+        return prevPointer; // a previous update was supposed to be found, but wasn't found (due to log rotation)
+      }
+      int flags = (int) entry.get(UpdateLog.FLAGS_IDX);
+      
+      // since updates can depend only upon ADD updates or other UPDATE_INPLACE updates, we assert that we aren't
+      // getting something else
+      if ((flags & UpdateLog.ADD) != UpdateLog.ADD && (flags & UpdateLog.UPDATE_INPLACE) != UpdateLog.UPDATE_INPLACE) {
+        throw new SolrException(ErrorCode.INVALID_STATE, entry + " should've been either ADD or UPDATE_INPLACE update" + 
+            ", while looking for id=" + new String(id.bytes, Charset.forName("UTF-8")));
+      }
+      // if this is an ADD (i.e. full document update), stop here
+      if ((flags & UpdateLog.ADD) == UpdateLog.ADD) {
+        partialUpdateDoc = (SolrInputDocument) entry.get(entry.size() - 1);
+        applyOlderUpdates(latestPartialDoc, partialUpdateDoc, onlyTheseFields);
+        return 0; // Full document was found in the tlog itself
+      }
+      if (entry.size() < 5) {
+        throw new SolrException(ErrorCode.INVALID_STATE, entry + " is not a partial doc" + 
+            ", while looking for id=" + new String(id.bytes, Charset.forName("UTF-8")));
+      }
+      // This update is an inplace update, get the partial doc. The input doc is always at last position.
+      partialUpdateDoc = (SolrInputDocument) entry.get(entry.size() - 1);
+      applyOlderUpdates(latestPartialDoc, partialUpdateDoc, onlyTheseFields);
+      prevPointer = (long) entry.get(UpdateLog.PREV_POINTER_IDX);
+      prevVersion = (long) entry.get(UpdateLog.PREV_VERSION_IDX);
+      
+      if (onlyTheseFields != null && latestPartialDoc.keySet().containsAll(onlyTheseFields)) {
+        return 0; // all the onlyTheseFields have been resolved, safe to abort now.
+      }
+    }
+
+    return -1; // last full document is not supposed to be in tlogs, but it must be in the index
+  }
+  
+  /**
+   * Add all fields from olderDoc into newerDoc if not already present in newerDoc
+   */
+  private void applyOlderUpdates(SolrDocumentBase newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
+    for (String fieldName : olderDoc.getFieldNames()) {
+      // if the newerDoc has this field, then this field from olderDoc can be ignored
+      if (!newerDoc.containsKey(fieldName) && (mergeFields == null || mergeFields.contains(fieldName))) {
+        for (Object val : olderDoc.getFieldValues(fieldName)) {
+          newerDoc.addField(fieldName, val);
+        }
+      }
+    }
+  }
+
+
+  /***
+   * Get the entry that has the given lookupVersion in the given lookupLogs at the lookupPointer position.
+   *
+   * @return The entry if found, otherwise null
+   */
+  private synchronized List getEntryFromTLog(long lookupPointer, long lookupVersion, List<TransactionLog> lookupLogs) {
+    for (TransactionLog lookupLog : lookupLogs) {
+      if (lookupLog != null && lookupLog.getLogSize() > lookupPointer) {
+        lookupLog.incref();
+        try {
+          Object obj = null;
+
+          try {
+            obj = lookupLog.lookup(lookupPointer);
+          } catch (Exception | Error ex) {
+            // This can happen when trying to deserialize the entry at position lookupPointer,
+            // but from a different tlog than the one containing the desired entry.
+            // Just ignore the exception, so as to proceed to the next tlog.
+            log.debug("Exception reading the log (this is expected, don't worry)=" + lookupLog + ", for version=" + lookupVersion +
+                ". This can be ignored.");
+          }
+
+          if (obj != null && obj instanceof List) {
+            List tmpEntry = (List) obj;
+            if (tmpEntry.size() >= 2 && 
+                (tmpEntry.get(UpdateLog.VERSION_IDX) instanceof Long) &&
+                ((Long) tmpEntry.get(UpdateLog.VERSION_IDX)).equals(lookupVersion)) {
+              return tmpEntry;
+            }
+          }
+        } finally {
+          lookupLog.decref();
+        }
+      }
+    }
+    return null;
+  }
+
   public Object lookup(BytesRef indexedId) {
     LogPtr entry;
     TransactionLog lookupLog;
@@ -843,6 +1083,12 @@ public class UpdateLog implements PluginInfoInitialized {
     versionInfo.blockUpdates();
     try {
       state = State.REPLAYING;
+
+      // The deleteByQueries and oldDeletes lists
+      // would've been populated by items from the logs themselves (which we
+      // will replay now). So lets clear them out here before the replay.
+      deleteByQueries.clear();
+      oldDeletes.clear();
     } finally {
       versionInfo.unblockUpdates();
     }
@@ -850,6 +1096,159 @@ public class UpdateLog implements PluginInfoInitialized {
     // At this point, we are guaranteed that any new updates coming in will see the state as "replaying"
 
     return cs.submit(replayer, recoveryInfo);
+  }
+
+  /**
+   * Replay current tlog, so all updates will be written to index.
+   * This is must do task for a tlog replica become a new leader.
+   * @return future of this task
+   */
+  public Future<RecoveryInfo> recoverFromCurrentLog() {
+    if (tlog == null) {
+      return null;
+    }
+    map.clear();
+    recoveryInfo = new RecoveryInfo();
+    tlog.incref();
+
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
+    LogReplayer replayer = new LogReplayer(Collections.singletonList(tlog), false, true);
+
+    versionInfo.blockUpdates();
+    try {
+      state = State.REPLAYING;
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+
+    return cs.submit(replayer, recoveryInfo);
+  }
+
+  /**
+   * Block updates, append a commit at current tlog,
+   * then copy over buffer updates to new tlog and bring back ulog to active state.
+   * So any updates which hasn't made it to the index is preserved in the current tlog,
+   * this also make RTG work
+   * @param cuc any updates that have version larger than the version of cuc will be copied over
+   */
+  public void copyOverBufferingUpdates(CommitUpdateCommand cuc) {
+    versionInfo.blockUpdates();
+    try {
+      operationFlags &= ~FLAG_GAP;
+      state = State.ACTIVE;
+      copyAndSwitchToNewTlog(cuc);
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+  }
+
+  /**
+   * Block updates, append a commit at current tlog, then copy over updates to a new tlog.
+   * So any updates which hasn't made it to the index is preserved in the current tlog
+   * @param cuc any updates that have version larger than the version of cuc will be copied over
+   */
+  public void copyOverOldUpdates(CommitUpdateCommand cuc) {
+    versionInfo.blockUpdates();
+    try {
+      copyAndSwitchToNewTlog(cuc);
+    } finally {
+      versionInfo.unblockUpdates();
+    }
+  }
+
+  protected void copyAndSwitchToNewTlog(CommitUpdateCommand cuc) {
+    synchronized (this) {
+      if (tlog == null) return;
+      preCommit(cuc);
+      try {
+        copyOverOldUpdates(cuc.getVersion());
+      } finally {
+        postCommit(cuc);
+      }
+    }
+  }
+
+  /**
+   * Copy over updates from prevTlog or last tlog (in tlog folder) to a new tlog
+   * @param commitVersion any updates that have version larger than the commitVersion will be copied over
+   */
+  public void copyOverOldUpdates(long commitVersion) {
+    TransactionLog oldTlog = prevTlog;
+    if (oldTlog == null && !logs.isEmpty()) {
+      oldTlog = logs.getFirst();
+    }
+    if (oldTlog == null || oldTlog.refcount.get() == 0) {
+      return;
+    }
+
+    try {
+      if (oldTlog.endsWithCommit()) {
+        return;
+      }
+    } catch (IOException e) {
+      log.warn("Exception reading log", e);
+      return;
+    }
+
+    SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core,
+        new ModifiableSolrParams());
+    TransactionLog.LogReader logReader = oldTlog.getReader(0);
+    Object o = null;
+    try {
+      while ( (o = logReader.next()) != null ) {
+        try {
+          List entry = (List)o;
+          int operationAndFlags = (Integer) entry.get(0);
+          int oper = operationAndFlags & OPERATION_MASK;
+          long version = (Long) entry.get(1);
+          if (Math.abs(version) > commitVersion) {
+            switch (oper) {
+              case UpdateLog.UPDATE_INPLACE:
+              case UpdateLog.ADD: {
+                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+                cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+                add(cmd);
+                break;
+              }
+              case UpdateLog.DELETE: {
+                byte[] idBytes = (byte[]) entry.get(2);
+                DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+                cmd.setIndexedId(new BytesRef(idBytes));
+                cmd.setVersion(version);
+                cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+                delete(cmd);
+                break;
+              }
+
+              case UpdateLog.DELETE_BY_QUERY: {
+                String query = (String) entry.get(2);
+                DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
+                cmd.query = query;
+                cmd.setVersion(version);
+                cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
+                deleteByQuery(cmd);
+                break;
+              }
+
+              default:
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown Operation! " + oper);
+            }
+          }
+        } catch (ClassCastException e) {
+          log.warn("Unexpected log entry or corrupt log.  Entry=" + o, e);
+        }
+      }
+      // Prev tlog will be closed, so nullify prevMap
+      if (prevTlog == oldTlog) {
+        prevMap = null;
+      }
+    } catch (IOException e) {
+      log.error("Exception reading versions from log",e);
+    } catch (InterruptedException e) {
+      log.warn("Exception reading log", e);
+    } finally {
+      if (logReader != null) logReader.close();
+    }
   }
 
 
@@ -908,6 +1307,7 @@ public class UpdateLog implements PluginInfoInitialized {
   static class Update {
     TransactionLog log;
     long version;
+    long previousVersion; // for in-place updates
     long pointer;
   }
 
@@ -1011,15 +1411,16 @@ public class UpdateLog implements PluginInfoInitialized {
               List entry = (List)o;
 
               // TODO: refactor this out so we get common error handling
-              int opAndFlags = (Integer)entry.get(0);
+              int opAndFlags = (Integer)entry.get(UpdateLog.FLAGS_IDX);
               if (latestOperation == 0) {
                 latestOperation = opAndFlags;
               }
               int oper = opAndFlags & UpdateLog.OPERATION_MASK;
-              long version = (Long) entry.get(1);
+              long version = (Long) entry.get(UpdateLog.VERSION_IDX);
 
               switch (oper) {
                 case UpdateLog.ADD:
+                case UpdateLog.UPDATE_INPLACE:
                 case UpdateLog.DELETE:
                 case UpdateLog.DELETE_BY_QUERY:
                   Update update = new Update();
@@ -1027,13 +1428,16 @@ public class UpdateLog implements PluginInfoInitialized {
                   update.pointer = reader.position();
                   update.version = version;
 
+                  if (oper == UpdateLog.UPDATE_INPLACE && entry.size() == 5) {
+                    update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                  }
                   updatesForLog.add(update);
                   updates.put(version, update);
 
                   if (oper == UpdateLog.DELETE_BY_QUERY) {
                     deleteByQueryList.add(update);
                   } else if (oper == UpdateLog.DELETE) {
-                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(2)));
+                    deleteList.add(new DeleteUpdate(version, (byte[])entry.get(entry.size()-1)));
                   }
 
                   break;
@@ -1234,11 +1638,17 @@ public class UpdateLog implements PluginInfoInitialized {
     boolean activeLog;
     boolean finishing = false;  // state where we lock out other updates and finish those updates that snuck in before we locked
     boolean debug = loglog.isDebugEnabled();
+    boolean inSortedOrder;
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
       this.translogs = new LinkedList<>();
       this.translogs.addAll(translogs);
       this.activeLog = activeLog;
+    }
+
+    public LogReplayer(List<TransactionLog> translogs, boolean activeLog, boolean inSortedOrder) {
+      this(translogs, activeLog);
+      this.inSortedOrder = inSortedOrder;
     }
 
 
@@ -1304,9 +1714,13 @@ public class UpdateLog implements PluginInfoInitialized {
 
     public void doReplay(TransactionLog translog) {
       try {
-        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart);
+        loglog.warn("Starting log replay " + translog + " active=" + activeLog + " starting pos=" + recoveryInfo.positionOfStart + " inSortedOrder=" + inSortedOrder);
         long lastStatusTime = System.nanoTime();
-        tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        if (inSortedOrder) {
+          tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
+        } else {
+          tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        }
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
         // to change underneath us.
@@ -1370,23 +1784,17 @@ public class UpdateLog implements PluginInfoInitialized {
 
             // should currently be a List<Oper,Ver,Doc/Id>
             List entry = (List) o;
-
-            operationAndFlags = (Integer) entry.get(0);
+            operationAndFlags = (Integer) entry.get(UpdateLog.FLAGS_IDX);
             int oper = operationAndFlags & OPERATION_MASK;
-            long version = (Long) entry.get(1);
+            long version = (Long) entry.get(UpdateLog.VERSION_IDX);
 
             switch (oper) {
+              case UpdateLog.UPDATE_INPLACE: // fall through to ADD
               case UpdateLog.ADD: {
                 recoveryInfo.adds++;
-                // byte[] idBytes = (byte[]) entry.get(2);
-                SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size() - 1);
-                AddUpdateCommand cmd = new AddUpdateCommand(req);
-                // cmd.setIndexedId(new BytesRef(idBytes));
-                cmd.solrDoc = sdoc;
-                cmd.setVersion(version);
+                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                if (debug) log.debug("add " + cmd);
-
+                if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
                 proc.processAdd(cmd);
                 break;
               }
@@ -1413,7 +1821,6 @@ public class UpdateLog implements PluginInfoInitialized {
                 proc.processDelete(cmd);
                 break;
               }
-
               case UpdateLog.COMMIT: {
                 commitVersion = version;
                 break;
@@ -1427,9 +1834,16 @@ public class UpdateLog implements PluginInfoInitialized {
               loglog.error("REPLAY_ERR: Exception replaying log", rsp.getException());
               throw rsp.getException();
             }
+            if (state == State.REPLAYING) {
+              replayOpsMeter.mark();
+            } else if (state == State.APPLYING_BUFFERED) {
+              applyingBufferedOpsMeter.mark();
+            } else {
+              // XXX should not happen?
+            }
           } catch (IOException ex) {
             recoveryInfo.errors++;
-            loglog.warn("REYPLAY_ERR: IOException reading log", ex);
+            loglog.warn("REPLAY_ERR: IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
           } catch (ClassCastException cl) {
             recoveryInfo.errors++;
@@ -1440,7 +1854,7 @@ public class UpdateLog implements PluginInfoInitialized {
               throw ex;
             }
             recoveryInfo.errors++;
-            loglog.warn("REYPLAY_ERR: IOException reading log", ex);
+            loglog.warn("REPLAY_ERR: IOException reading log", ex);
             // could be caused by an incomplete flush if recovering from log
           } catch (Exception ex) {
             recoveryInfo.errors++;
@@ -1448,6 +1862,7 @@ public class UpdateLog implements PluginInfoInitialized {
             // something wrong with the request?
           }
           assert TestInjection.injectUpdateLogReplayRandomPause();
+          
         }
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
@@ -1477,6 +1892,8 @@ public class UpdateLog implements PluginInfoInitialized {
         } catch (IOException ex) {
           recoveryInfo.errors++;
           loglog.error("Replay exception: finish()", ex);
+        } finally {
+          IOUtils.closeQuietly(proc);
         }
 
       } finally {
@@ -1486,6 +1903,31 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
+  /**
+   * Given a entry from the transaction log containing a document, return a new AddUpdateCommand that 
+   * can be applied to ADD the document or do an UPDATE_INPLACE.
+   *
+   * @param req The request to use as the owner of the new AddUpdateCommand
+   * @param entry Entry from the transaction log that contains the document to be added
+   * @param operation The value of the operation flag; this must be either ADD or UPDATE_INPLACE -- 
+   *        if it is UPDATE_INPLACE then the previous version will also be read from the entry
+   * @param version Version already obtained from the entry.
+   */
+  public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req, List entry,
+                                                                    int operation, long version) {
+    assert operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE;
+    SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
+    cmd.solrDoc = sdoc;
+    cmd.setVersion(version);
+    
+    if (operation == UPDATE_INPLACE) {
+      long prevVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+      cmd.prevVersion = prevVersion;
+    }
+    return cmd;
+  }
+  
   public void cancelApplyBufferedUpdates() {
     this.cancelApplyBufferUpdate = true;
   }
@@ -1557,19 +1999,17 @@ public class UpdateLog implements PluginInfoInitialized {
 
   // this method is primarily used for unit testing and is not part of the public API for this class
   Long getMaxVersionFromIndex() {
-    if (maxVersionFromIndex == null && versionInfo != null) {
-      RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
-          ? uhandler.core.getRealtimeSearcher() : null;
-      if (newestSearcher == null)
-        throw new IllegalStateException("No searcher available to lookup max version from index!");
-
-      try {
-        maxVersionFromIndex = seedBucketsWithHighestVersion(newestSearcher.get(), versionInfo);
-      } finally {
-        newestSearcher.decref();
-      }
+    RefCounted<SolrIndexSearcher> newestSearcher = (uhandler != null && uhandler.core != null)
+      ? uhandler.core.getRealtimeSearcher() : null;
+    if (newestSearcher == null)
+      throw new IllegalStateException("No searcher available to lookup max version from index!");
+    
+    try {
+      seedBucketsWithHighestVersion(newestSearcher.get());
+      return getCurrentMaxVersion();
+    } finally {
+      newestSearcher.decref();
     }
-    return maxVersionFromIndex;
   }
 
   /**

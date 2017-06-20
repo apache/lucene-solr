@@ -78,7 +78,7 @@ public class Test2BPoints extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w);
     IndexSearcher s = new IndexSearcher(r);
     assertEquals(numDocs, s.count(LongPoint.newRangeQuery("long", Long.MIN_VALUE, Long.MAX_VALUE)));
-    assertTrue(r.leaves().get(0).reader().getPointValues().size("long") > Integer.MAX_VALUE);
+    assertTrue(r.leaves().get(0).reader().getPointValues("long").size() > Integer.MAX_VALUE);
     r.close();
     w.close();
     System.out.println("TEST: now CheckIndex");
@@ -126,7 +126,7 @@ public class Test2BPoints extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(w);
     IndexSearcher s = new IndexSearcher(r);
     assertEquals(numDocs, s.count(LongPoint.newRangeQuery("long", new long[] {Long.MIN_VALUE, Long.MIN_VALUE}, new long[] {Long.MAX_VALUE, Long.MAX_VALUE})));
-    assertTrue(r.leaves().get(0).reader().getPointValues().size("long") > Integer.MAX_VALUE);
+    assertTrue(r.leaves().get(0).reader().getPointValues("long").size() > Integer.MAX_VALUE);
     r.close();
     w.close();
     System.out.println("TEST: now CheckIndex");

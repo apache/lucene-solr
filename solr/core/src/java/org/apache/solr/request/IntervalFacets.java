@@ -30,8 +30,8 @@ import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.legacy.LegacyNumericType;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
@@ -42,8 +42,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
@@ -157,15 +158,29 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         if (o2.start == null) {
           return 1;
         }
-        return o1.start.compareTo(o2.start);
+        int startComparison = o1.start.compareTo(o2.start);
+        if (startComparison == 0) {
+          if (o1.startOpen != o2.startOpen) {
+            if (!o1.startOpen) {
+              return -1;
+            } else {
+              return 1;
+            }
+          }
+        }
+        return startComparison;
       }
     });
     return sortedIntervals;
   }
 
   private void doCount() throws IOException {
-    if (schemaField.getType().getNumericType() != null && !schemaField.multiValued()) {
-      getCountNumeric();
+    if (schemaField.getType().getNumberType() != null && (!schemaField.multiValued() || schemaField.getType().isPointField())) {
+      if (schemaField.multiValued()) {
+        getCountMultiValuedNumeric();
+      } else {
+        getCountNumeric();
+      }
     } else {
       getCountString();
     }
@@ -174,7 +189,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   private void getCountNumeric() throws IOException {
     final FieldType ft = schemaField.getType();
     final String fieldName = schemaField.getName();
-    final LegacyNumericType numericType = ft.getNumericType();
+    final NumberType numericType = ft.getNumberType();
     if (numericType == null) {
       throw new IllegalStateException();
     }
@@ -192,9 +207,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         assert doc >= ctx.docBase;
         switch (numericType) {
           case LONG:
-            longs = DocValues.getNumeric(ctx.reader(), fieldName);
-            break;
-          case INT:
+          case DATE:
+          case INTEGER:
             longs = DocValues.getNumeric(ctx.reader(), fieldName);
             break;
           case FLOAT:
@@ -232,6 +246,36 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
     }
   }
+  
+  private void getCountMultiValuedNumeric() throws IOException {
+    final FieldType ft = schemaField.getType();
+    final String fieldName = schemaField.getName();
+    if (ft.getNumberType() == null) {
+      throw new IllegalStateException();
+    }
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+
+    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
+    LeafReaderContext ctx = null;
+    SortedNumericDocValues longs = null;
+    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
+      final int doc = docsIt.nextDoc();
+      if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
+        do {
+          ctx = ctxIt.next();
+        } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
+        assert doc >= ctx.docBase;
+        longs = DocValues.getSortedNumeric(ctx.reader(), fieldName);
+      }
+      int valuesDocID = longs.docID();
+      if (valuesDocID < doc - ctx.docBase) {
+        valuesDocID = longs.advance(doc - ctx.docBase);
+      }
+      if (valuesDocID == doc - ctx.docBase) {
+        accumIntervalWithMultipleValues(longs);
+      }
+    }
+  }
 
   private void getCountString() throws IOException {
     Filter filter = docs.getTopFilter();
@@ -265,6 +309,44 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         }
       }
     }
+  }
+
+  private void accumIntervalWithMultipleValues(SortedNumericDocValues longs) throws IOException {
+    // longs should be already positioned to the correct doc
+    assert longs.docID() != -1;
+    assert longs.docValueCount() > 0: "Should have at least one value for this document";
+    int currentInterval = 0;
+    for (int i = 0; i < longs.docValueCount(); i++) {
+      boolean evaluateNextInterval = true;
+      long value = longs.nextValue();
+      while (evaluateNextInterval && currentInterval < intervals.length) {
+        IntervalCompareResult result = intervals[currentInterval].includes(value);
+        switch (result) {
+          case INCLUDED:
+            /*
+             * Increment the current interval and move to the next one using
+             * the same value
+             */
+            intervals[currentInterval].incCount();
+            currentInterval++;
+            break;
+          case LOWER_THAN_START:
+            /*
+             * None of the next intervals will match this value (all of them have 
+             * higher start value). Move to the next value for this document. 
+             */
+            evaluateNextInterval = false;
+            break;
+          case GREATER_THAN_END:
+            /*
+             * Next interval may match this value
+             */
+            currentInterval++;
+            break;
+        }
+        //Maybe return if currentInterval == intervals.length?
+      }
+     }
   }
 
   private void accumIntervalsMulti(SortedSetDocValues ssdv,
@@ -504,7 +586,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       }
       // TODO: what about escaping star (*)?
       // TODO: escaping spaces on ends?
-      if (schemaField.getType().getNumericType() != null) {
+      if (schemaField.getType().getNumberType() != null) {
         setNumericLimits(schemaField);
       }
       if (start != null && end != null && start.compareTo(end) > 0) {
@@ -526,7 +608,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      */
     public FacetInterval(SchemaField schemaField, String startStr, String endStr,
         boolean includeLower, boolean includeUpper, String key) {
-      assert schemaField.getType().getNumericType() != null: "Only numeric fields supported with this constructor";
+      assert schemaField.getType().getNumberType() != null: "Only numeric fields supported with this constructor";
       this.key = key;
       this.startOpen = !includeLower;
       this.endOpen = !includeUpper;
@@ -548,15 +630,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (start == null) {
         startLimit = Long.MIN_VALUE;
       } else {
-        switch (schemaField.getType().getNumericType()) {
+        switch (schemaField.getType().getNumberType()) {
           case LONG:
-            if (schemaField.getType() instanceof TrieDateField) {
-              startLimit = ((Date) schemaField.getType().toObject(schemaField, start)).getTime();
-            } else {
-              startLimit = (long) schemaField.getType().toObject(schemaField, start);
-            }
+            startLimit = (long) schemaField.getType().toObject(schemaField, start);
             break;
-          case INT:
+          case DATE:
+            startLimit = ((Date) schemaField.getType().toObject(schemaField, start)).getTime();
+            break;
+          case INTEGER:
             startLimit = ((Integer) schemaField.getType().toObject(schemaField, start)).longValue();
             break;
           case FLOAT:
@@ -577,15 +658,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if (end == null) {
         endLimit = Long.MAX_VALUE;
       } else {
-        switch (schemaField.getType().getNumericType()) {
+        switch (schemaField.getType().getNumberType()) {
           case LONG:
-            if (schemaField.getType() instanceof TrieDateField) {
-              endLimit = ((Date) schemaField.getType().toObject(schemaField, end)).getTime();
-            } else {
-              endLimit = (long) schemaField.getType().toObject(schemaField, end);
-            }
+            endLimit = (long) schemaField.getType().toObject(schemaField, end);
             break;
-          case INT:
+          case DATE:
+            endLimit = ((Date) schemaField.getType().toObject(schemaField, end)).getTime();
+            break;
+          case INTEGER:
             endLimit = ((Integer) schemaField.getType().toObject(schemaField, end)).longValue();
             break;
           case FLOAT:
@@ -614,6 +694,9 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     private BytesRef getLimitFromString(SchemaField schemaField, String value) {
       if ("*".equals(value)) {
         return null;
+      }
+      if (schemaField.getType().isPointField()) {
+        return ((PointField)schemaField.getType()).toInternalByteRef(value);
       }
       return new BytesRef(schemaField.getType().toInternal(value));
     }

@@ -56,6 +56,10 @@
   <target name="test" depends="-clover.load, -init-totals, test-core, test-test-framework, test-modules, -check-totals"
           description="Runs all unit tests (core, modules and back-compat)"
   />
+  <target name="test-nocompile">
+    <fail message="Target 'test-nocompile' will not run recursively.  First change directory to the module you want to test."/>
+  </target>
+
 
   <target name="pitest" depends="pitest-modules"
           description="Runs pitests (core, modules and back-compat)"
@@ -204,7 +208,7 @@
     <modules-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <target name="process-webpages" depends="resolve-pegdown">
+  <target name="process-webpages" depends="resolve-markdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
     </makeurl>
@@ -213,6 +217,8 @@
       <filterchain>
         <!--  private static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"                 )   ; -->
         <containsregex pattern="^.*defaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
+        <fixcrlf eol="unix" eof="remove" />
+        <deletecharacters chars="\n"/>
       </filterchain>
     </loadfile>
 
@@ -231,10 +237,10 @@
       <param name="defaultCodec" expression="${defaultCodec}"/>
     </xslt>
     
-    <pegdown todir="${javadoc.dir}">
+    <markdown todir="${javadoc.dir}">
       <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt,SYSTEM_REQUIREMENTS.txt"/>
       <globmapper from="*.txt" to="*.html"/>
-    </pegdown>
+    </markdown>
 
     <copy todir="${javadoc.dir}">
       <fileset dir="site/html"/>
@@ -355,12 +361,13 @@
     
     <build-changes changes.src.file="${local.src.export.dir}/CHANGES.txt"
                    changes.target.dir="${local.src.export.dir}/docs/changes"
-                   changes.product="LUCENE"/>
+                   changes.product="lucene"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${local.src.export.dir}"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
   </target>
+
 
   <!-- ================================================================== -->
   <!-- Packages the sources from local working copy with tar-gzip     -->
@@ -476,7 +483,7 @@
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.product="LUCENE"/>
+    <build-changes changes.product="lucene"/>
   </target>
 
   <target name="pitest-modules" depends="compile-test">
@@ -559,7 +566,7 @@
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
-      <get src="http://people.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
+      <get src="http://home.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
            dest="enwiki.random.lines.txt.bz2"/>
       <bunzip2 src="enwiki.random.lines.txt.bz2" dest="enwiki.random.lines.txt"/>
     </sequential>

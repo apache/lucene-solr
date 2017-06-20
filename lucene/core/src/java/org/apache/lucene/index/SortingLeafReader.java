@@ -42,15 +42,15 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
- * {@link Sort}.  This is package private and is only used by Lucene when it needs to merge
- * a newly flushed (unsorted) segment.
+ * {@link Sort}. This is package private and is only used by Lucene for BWC when it needs to merge
+ * an unsorted flushed segment built by an older version (newly flushed segments are sorted since version 7.0).
  *
  * @lucene.experimental
  */
-
 class SortingLeafReader extends FilterLeafReader {
 
-  private static class SortingFields extends FilterFields {
+  //TODO remove from here; move to FreqProxTermsWriter or FreqProxFields?
+  static class SortingFields extends FilterFields {
 
     private final Sorter.DocMap docMap;
     private final FieldInfos infos;
@@ -154,7 +154,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   }
 
-  private static class SortingBinaryDocValues extends BinaryDocValues {
+  static class SortingBinaryDocValues extends BinaryDocValues {
 
     private final CachedBinaryDVs dvs;
     private int docID = -1;
@@ -186,6 +186,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
+    }
+
+    @Override
     public BytesRef binaryValue() {
       return dvs.values[docID];
     }
@@ -198,7 +204,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   private final Map<String,CachedNumericDVs> cachedNumericDVs = new HashMap<>();
 
-  private static class CachedNumericDVs {
+  static class CachedNumericDVs {
     private final long[] values;
     private final BitSet docsWithField;
 
@@ -210,7 +216,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   private final Map<String,CachedBinaryDVs> cachedBinaryDVs = new HashMap<>();
 
-  private static class CachedBinaryDVs {
+  static class CachedBinaryDVs {
     // TODO: at least cutover to BytesRefArray here:
     private final BytesRef[] values;
     private final BitSet docsWithField;
@@ -223,7 +229,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   private final Map<String,int[]> cachedSortedDVs = new HashMap<>();
 
-  private static class SortingNumericDocValues extends NumericDocValues {
+  static class SortingNumericDocValues extends NumericDocValues {
 
     private final CachedNumericDVs dvs;
     private int docID = -1;
@@ -252,6 +258,12 @@ class SortingLeafReader extends FilterLeafReader {
     public int advance(int target) {
       docID = dvs.docsWithField.nextSetBit(target);
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return dvs.docsWithField.get(target);
     }
 
     @Override
@@ -297,9 +309,8 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-      in.intersect(fieldName,
-                   new IntersectVisitor() {
+    public void intersect(IntersectVisitor visitor) throws IOException {
+      in.intersect(new IntersectVisitor() {
                      @Override
                      public void visit(int docID) throws IOException {
                        visitor.visit(docMap.oldToNew(docID));
@@ -318,37 +329,42 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public byte[] getMinPackedValue(String fieldName) throws IOException {
-      return in.getMinPackedValue(fieldName);
+    public long estimatePointCount(IntersectVisitor visitor) {
+      return in.estimatePointCount(visitor);
     }
 
     @Override
-    public byte[] getMaxPackedValue(String fieldName) throws IOException {
-      return in.getMaxPackedValue(fieldName);
+    public byte[] getMinPackedValue() throws IOException {
+      return in.getMinPackedValue();
     }
 
     @Override
-    public int getNumDimensions(String fieldName) throws IOException {
-      return in.getNumDimensions(fieldName);
+    public byte[] getMaxPackedValue() throws IOException {
+      return in.getMaxPackedValue();
     }
 
     @Override
-    public int getBytesPerDimension(String fieldName) throws IOException {
-      return in.getBytesPerDimension(fieldName);
+    public int getNumDimensions() throws IOException {
+      return in.getNumDimensions();
     }
 
     @Override
-    public long size(String fieldName) {
-      return in.size(fieldName);
+    public int getBytesPerDimension() throws IOException {
+      return in.getBytesPerDimension();
     }
 
     @Override
-    public int getDocCount(String fieldName) {
-      return in.getDocCount(fieldName);
+    public long size() {
+      return in.size();
+    }
+
+    @Override
+    public int getDocCount() {
+      return in.getDocCount();
     }
   }
 
-  private static class SortingSortedDocValues extends SortedDocValues {
+  static class SortingSortedDocValues extends SortedDocValues {
 
     private final SortedDocValues in;
     private final int[] ords;
@@ -396,6 +412,12 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      return ords[target] != -1;
+    }
+
+    @Override
     public int ordValue() {
       return ords[docID];
     }
@@ -419,7 +441,7 @@ class SortingLeafReader extends FilterLeafReader {
   // TODO: pack long[][] into an int[] (offset) and long[] instead:
   private final Map<String,long[][]> cachedSortedSetDVs = new HashMap<>();
 
-  private static class SortingSortedSetDocValues extends SortedSetDocValues {
+  static class SortingSortedSetDocValues extends SortedSetDocValues {
 
     private final SortedSetDocValues in;
     private final long[][] ords;
@@ -469,6 +491,13 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      ordUpto = 0;
+      return ords[docID] != null;
+    }
+
+    @Override
     public long nextOrd() {
       if (ordUpto == ords[docID].length) {
         return NO_MORE_ORDS;
@@ -495,7 +524,7 @@ class SortingLeafReader extends FilterLeafReader {
 
   private final Map<String,long[][]> cachedSortedNumericDVs = new HashMap<>();
 
-  private static class SortingSortedNumericDocValues extends SortedNumericDocValues {
+  static class SortingSortedNumericDocValues extends SortedNumericDocValues {
     private final SortedNumericDocValues in;
     private final long[][] values;
     private int docID = -1;
@@ -537,6 +566,13 @@ class SortingLeafReader extends FilterLeafReader {
         docID = target-1;
         return nextDoc();
       }
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      docID = target;
+      upto = 0;
+      return values[docID] != null;
     }
 
     @Override
@@ -1007,8 +1043,9 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return new SortingFields(in.fields(), in.getFieldInfos(), docMap);
+  public Terms terms(String field) throws IOException {
+    Terms terms = super.terms(field);
+    return terms==null ? null : new SortingTerms(terms, in.getFieldInfos().fieldInfo(field).getIndexOptions(), docMap);
   }
 
   @Override
@@ -1049,8 +1086,8 @@ class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    final PointValues inPointValues = in.getPointValues();
+  public PointValues getPointValues(String fieldName) throws IOException {
+    final PointValues inPointValues = in.getPointValues(fieldName);
     if (inPointValues == null) {
       return null;
     } else {
@@ -1210,5 +1247,17 @@ class SortingLeafReader extends FilterLeafReader {
   @Override
   public String toString() {
     return "SortingLeafReader(" + in + ")";
+  }
+
+  // no caching on sorted views
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
+    return null;
   }
 }

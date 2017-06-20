@@ -424,7 +424,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
     for (ScoreDoc scoreDoc : td2.scoreDocs) {
       final float expectedScore = expectedScores.get(scoreDoc.doc);
       final float actualScore = scoreDoc.score;
-      assertEquals(expectedScore, actualScore, 10e-5);
+      assertEquals(expectedScore, actualScore, expectedScore / 100); // error under 1%
     }
   }
 }

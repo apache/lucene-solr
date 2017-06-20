@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.FlattenGraphFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -81,6 +82,9 @@ import org.apache.lucene.util.fst.FST;
  * used for parsing.  Subsequent tokens simply pass through
  * and are not parsed.  A future improvement would be to
  * allow these tokens to also be matched.</p>
+ *
+ * @deprecated Use {@link SynonymGraphFilter} instead, but be sure to also
+ * use {@link FlattenGraphFilter} at index time (not at search time) as well.
  */ 
 
 // TODO: maybe we should resolve token -> wordID then run
@@ -105,6 +109,7 @@ import org.apache.lucene.util.fst.FST;
 //
 // Another possible solution is described at http://www.cis.uni-muenchen.de/people/Schulz/Pub/dictle5.ps
 
+@Deprecated
 public final class SynonymFilter extends TokenFilter {
 
   public static final String TYPE_SYNONYM = "SYNONYM";

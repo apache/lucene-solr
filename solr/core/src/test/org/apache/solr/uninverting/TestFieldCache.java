@@ -267,7 +267,7 @@ public class TestFieldCache extends LuceneTestCase {
     termOrds = cache.getDocTermOrds(reader, "bogusfield", null);
     assertTrue(termOrds.getValueCount() == 0);
 
-    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
+    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
   }
 
   public void testEmptyIndex() throws Exception {
@@ -279,7 +279,7 @@ public class TestFieldCache extends LuceneTestCase {
     TestUtil.checkReader(reader);
     FieldCache.DEFAULT.getTerms(reader, "foobar");
     FieldCache.DEFAULT.getTermsIndex(reader, "foobar");
-    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheKey());
+    FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
     r.close();
     dir.close();
   }

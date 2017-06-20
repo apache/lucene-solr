@@ -17,8 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,6 +24,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -36,7 +43,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -46,6 +52,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
@@ -65,11 +72,9 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -82,16 +87,6 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -210,10 +205,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     SolrIndexSearcher searcher = req.getSearcher();
     LeafReader reader = searcher.getSlowAtomicReader();
 
-    FieldType fieldType = searcher.getSchema().getField(field).getType();
+    SchemaField schemaField = searcher.getSchema().getField(field);
+    FieldType fieldType = schemaField.getType();
 
     SortedDocValues values = null;
-    long nullValue = 0;
+    long nullValue = 0L;
 
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
@@ -228,20 +224,20 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     } else {
       //Get the nullValue for the numeric collapse field
       String defaultValue = searcher.getSchema().getField(field).getDefaultValue();
-      if(defaultValue != null) {
-        if(fieldType instanceof TrieIntField || fieldType instanceof TrieLongField) {
+      
+      final NumberType numType = fieldType.getNumberType();
+
+      // Since the expand component depends on the operation of the collapse component, 
+      // which validates that numeric field types are 32-bit,
+      // we don't need to handle invalid 64-bit field types here.
+      if (defaultValue != null) {
+        if (numType == NumberType.INTEGER) {
           nullValue = Long.parseLong(defaultValue);
-        } else if(fieldType instanceof TrieFloatField){
+        } else if (numType == NumberType.FLOAT) {
           nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
-        } else if(fieldType instanceof TrieDoubleField){
-          nullValue = Double.doubleToLongBits(Double.parseDouble(defaultValue));
         }
-      } else {
-        if(fieldType instanceof TrieFloatField){
-          nullValue = Float.floatToIntBits(0.0f);
-        } else if(fieldType instanceof TrieDoubleField){
-          nullValue = Double.doubleToLongBits(0.0f);
-        }
+      } else if (NumberType.FLOAT.equals(numType)) { // Integer case already handled by nullValue defaulting to 0
+        nullValue = Float.floatToIntBits(0.0f);
       }
     }
 
@@ -265,6 +261,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     * This code gathers the group information for the current page.
     */
     List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
+
+    if(contexts.size() == 0) {
+      //When no context is available we can skip the expanding
+      return;
+    }
+
     int currentContext = 0;
     int currentDocBase = contexts.get(currentContext).docBase;
     int nextDocBase = (currentContext+1)<contexts.size() ? contexts.get(currentContext+1).docBase : Integer.MAX_VALUE;
@@ -364,7 +366,11 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
 
       if(count > 0 && count < 200) {
-        groupQuery = getGroupQuery(field, fieldType, count, groupSet);
+        if (fieldType.isPointField()) {
+          groupQuery = getPointGroupQuery(schemaField, count, groupSet);
+        } else {
+          groupQuery = getGroupQuery(field, fieldType, count, groupSet);
+        }
       }
     }
 
@@ -437,13 +443,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           String group = charsRef.toString();
           outMap.add(group, slice);
         } else {
-          if(fieldType instanceof TrieIntField || fieldType instanceof TrieLongField ) {
-            outMap.add(Long.toString(groupValue), slice);
-          } else if(fieldType instanceof TrieFloatField) {
-            outMap.add(Float.toString(Float.intBitsToFloat((int) groupValue)), slice);
-          } else if(fieldType instanceof TrieDoubleField) {
-            outMap.add(Double.toString(Double.longBitsToDouble(groupValue)), slice);
-          }
+          outMap.add(numericToString(fieldType, groupValue), slice);
         }
       }
     }
@@ -516,7 +516,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     rb.rsp.add("expanded", expanded);
   }
 
-  private class GroupExpandCollector implements Collector, GroupCollector {
+  private static class GroupExpandCollector implements Collector, GroupCollector {
     private SortedDocValues docValues;
     private MultiDocValues.OrdinalMap ordinalMap;
     private SortedDocValues segmentValues;
@@ -609,7 +609,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
   }
 
-  private class NumericGroupExpandCollector implements Collector, GroupCollector {
+  private static class NumericGroupExpandCollector implements Collector, GroupCollector {
     private NumericDocValues docValues;
 
     private String field;
@@ -698,23 +698,45 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     BytesRefBuilder term = new BytesRefBuilder();
     Iterator<LongCursor> it = groupSet.iterator();
     int index = -1;
-    String stringVal =  null;
+
     while (it.hasNext()) {
       LongCursor cursor = it.next();
-      if(ft instanceof TrieIntField || ft instanceof TrieLongField) {
-        stringVal = Long.toString(cursor.value);
-      } else {
-        if(ft instanceof TrieFloatField) {
-          stringVal = Float.toString(Float.intBitsToFloat((int)cursor.value));
-        } else {
-          stringVal = Double.toString(Double.longBitsToDouble(cursor.value));
-        }
-      }
+      String stringVal = numericToString(ft, cursor.value);
       ft.readableToIndexed(stringVal, term);
       bytesRefs[++index] = term.toBytesRef();
     }
 
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermsQuery(fname, bytesRefs)));
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs)));
+  }
+
+  private Query getPointGroupQuery(SchemaField sf,
+                                   int size,
+                                   LongHashSet groupSet) {
+
+    Iterator<LongCursor> it = groupSet.iterator();
+    List<String> values = new ArrayList<>(size);
+    FieldType ft = sf.getType();
+    while (it.hasNext()) {
+      LongCursor cursor = it.next();
+      values.add(numericToString(ft, cursor.value));
+    }
+
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(sf.getType().getSetQuery(null, sf, values)));
+  }
+
+  private String numericToString(FieldType fieldType, long val) {
+    if (fieldType.getNumberType() != null) {
+      switch (fieldType.getNumberType()) {
+        case INTEGER:
+        case LONG:
+          return Long.toString(val);
+        case FLOAT:
+          return Float.toString(Float.intBitsToFloat((int)val));
+        case DOUBLE:
+          return Double.toString(Double.longBitsToDouble(val));
+      }
+    }
+    throw new IllegalArgumentException("FieldType must be INT,LONG,FLOAT,DOUBLE found " + fieldType);
   }
 
   private Query getGroupQuery(String fname,
@@ -727,12 +749,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       IntObjectCursor<BytesRef> cursor = it.next();
       bytesRefs[++index] = cursor.value;
     }
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermsQuery(fname, bytesRefs)));
+    return new SolrConstantScoreQuery(new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs)));
   }
 
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -741,17 +763,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   }
 
   @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[]{
-          new URL("http://wiki.apache.org/solr/ExpandComponent")
-      };
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
+  public Category getCategory() {
+    return Category.QUERY;
   }
 
-  private class ReaderWrapper extends FilterLeafReader {
+  // this reader alters the content of the given reader so it should not
+  // delegate the caching stuff
+  private static class ReaderWrapper extends FilterLeafReader {
 
     private String field;
 
@@ -762,10 +780,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     public SortedDocValues getSortedDocValues(String field) {
       return null;
-    }
-
-    public Object getCoreCacheKey() {
-      return in.getCoreCacheKey();
     }
 
     public FieldInfos getFieldInfos() {
@@ -794,6 +808,21 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
       FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
       return infos;
+    }
+
+    // NOTE: delegating the caches is wrong here as we are altering the content
+    // of the reader, this should ONLY be used under an uninvertingreader which
+    // will restore doc values back using uninversion, otherwise all sorts of
+    // crazy things could happen.
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
   }
 

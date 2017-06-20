@@ -16,14 +16,14 @@
  */
 package org.apache.solr.search;
 
-import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
@@ -31,7 +31,7 @@ import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoMBean {
+public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
   /** internal use - name of the default parser */
   public static final String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
@@ -47,7 +47,6 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   static {
     HashMap<String, Class<? extends QParserPlugin>> map = new HashMap<>(30, 1);
     map.put(LuceneQParserPlugin.NAME, LuceneQParserPlugin.class);
-    map.put(OldLuceneQParserPlugin.NAME, OldLuceneQParserPlugin.class);
     map.put(FunctionQParserPlugin.NAME, FunctionQParserPlugin.class);
     map.put(PrefixQParserPlugin.NAME, PrefixQParserPlugin.class);
     map.put(BoostQParserPlugin.NAME, BoostQParserPlugin.class);
@@ -79,6 +78,10 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(GraphTermsQParserPlugin.NAME, GraphTermsQParserPlugin.class);
     map.put(IGainTermsQParserPlugin.NAME, IGainTermsQParserPlugin.class);
     map.put(TextLogisticRegressionQParserPlugin.NAME, TextLogisticRegressionQParserPlugin.class);
+    map.put(SignificantTermsQParserPlugin.NAME, SignificantTermsQParserPlugin.class);
+    map.put(PayloadScoreQParserPlugin.NAME, PayloadScoreQParserPlugin.class);
+    map.put(PayloadCheckQParserPlugin.NAME, PayloadCheckQParserPlugin.class);
+
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
@@ -97,11 +100,6 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   }
 
   @Override
-  public String getVersion() {
-    return null;
-  }
-
-  @Override
   public String getDescription() {
     return "";  // UI required non-null to work
   }
@@ -112,19 +110,10 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   }
 
   @Override
-  public String getSource() {
+  public Set<String> getMetricNames() {
     return null;
   }
 
-  @Override
-  public URL[] getDocs() {
-    return new URL[0];
-  }
-
-  @Override
-  public NamedList getStatistics() {
-    return null;
-  }
 }
 
 

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -51,6 +52,7 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -77,6 +79,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -97,6 +101,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
@@ -104,18 +109,13 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOW
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -133,12 +133,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
+  private final CollectionHandlerApi v2Handler ;
 
   public CollectionsHandler() {
     super();
     // Unlike most request handlers, CoreContainer initialization
     // should happen in the constructor...
     this.coreContainer = null;
+    v2Handler = new CollectionHandlerApi(this);
   }
 
 
@@ -149,6 +151,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
+    v2Handler = new CollectionHandlerApi(this);
   }
 
   @Override
@@ -203,33 +206,39 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       CollectionOperation operation = CollectionOperation.get(action);
       log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}", action.toLower(), req.getParamString(), operation.sendToOCPQueue);
 
-      SolrResponse response = null;
-      Map<String, Object> props = operation.execute(req, rsp, this);
-      String asyncId = req.getParams().get(ASYNC);
-      if (props != null) {
-        if (asyncId != null) {
-          props.put(ASYNC, asyncId);
-        }
-        props.put(QUEUE_OPERATION, operation.action.toLower());
-        ZkNodeProps zkProps = new ZkNodeProps(props);
-        if (operation.sendToOCPQueue) {
-          response = handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
-        }
-        else Overseer.getStateUpdateQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
-        final String collectionName = zkProps.getStr(NAME);
-        if (action.equals(CollectionAction.CREATE) && asyncId == null) {
-          if (rsp.getException() == null) {
-            waitForActiveCollection(collectionName, zkProps, cores, response);
-          }
-        }
-      }
+      invokeAction(req, rsp, cores, action, operation);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
     }
     rsp.setHttpCaching(false);
   }
 
-
+  void invokeAction(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer cores, CollectionAction action, CollectionOperation operation) throws Exception {
+    if (!coreContainer.isZooKeeperAware()) {
+      throw new SolrException(BAD_REQUEST,
+          "Invalid request. collections can be accessed only in SolrCloud mode");
+    }
+    SolrResponse response = null;
+    Map<String, Object> props = operation.execute(req, rsp, this);
+    String asyncId = req.getParams().get(ASYNC);
+    if (props != null) {
+      if (asyncId != null) {
+        props.put(ASYNC, asyncId);
+      }
+      props.put(QUEUE_OPERATION, operation.action.toLower());
+      ZkNodeProps zkProps = new ZkNodeProps(props);
+      if (operation.sendToOCPQueue) {
+        response = handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
+      }
+      else Overseer.getStateUpdateQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
+      final String collectionName = zkProps.getStr(NAME);
+      if (action.equals(CollectionAction.CREATE) && asyncId == null) {
+        if (rsp.getException() == null) {
+          waitForActiveCollection(collectionName, zkProps, cores, response);
+        }
+      }
+    }
+  }
 
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
@@ -333,6 +342,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return "Manage SolrCloud Collections";
   }
 
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
+  }
+
   public static final String SYSTEM_COLL = ".system";
 
   private static void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {
@@ -344,9 +358,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     try {
       String path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml";
       byte[] data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSchema.xml"));
+      assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
       path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
       data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSolrConfig.xml"));
+      assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -378,12 +394,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           COLL_CONF,
           NUM_SLICES,
           MAX_SHARDS_PER_NODE,
-          CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE,
+          CREATE_NODE_SET,
+          CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
           STATE_FORMAT,
           AUTO_ADD_REPLICAS,
           RULE,
-          SNITCH);
+          SNITCH,
+          PULL_REPLICAS,
+          TLOG_REPLICAS,
+          NRT_REPLICAS,
+          POLICY);
 
       if (props.get(STATE_FORMAT) == null) {
         props.put(STATE_FORMAT, "2");
@@ -433,10 +454,23 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     CREATEALIAS_OP(CREATEALIAS, (req, rsp, h) -> {
-      final String aliasName = SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
+      SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
       return req.getParams().required().getAll(null, NAME, "collections");
     }),
     DELETEALIAS_OP(DELETEALIAS, (req, rsp, h) -> req.getParams().required().getAll(null, NAME)),
+
+    /**
+     * Handle cluster status request.
+     * Can return status per specific collection/shard or per all collections.
+     */
+    LISTALIASES_OP(LISTALIASES, (req, rsp, h) -> {
+      ZkStateReader zkStateReader = h.coreContainer.getZkController().getZkStateReader();
+      Aliases aliases = zkStateReader.getAliases();
+      if (aliases != null) {
+        rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
+      }
+      return null;
+    }),
     SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, true, (req, rsp, h) -> {
       String name = req.getParams().required().get(COLLECTION_PROP);
       // TODO : add support for multiple shards
@@ -597,7 +631,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           _ROUTE_,
           CoreAdminParams.NAME,
           INSTANCE_DIR,
-          DATA_DIR);
+          DATA_DIR,
+          REPLICA_TYPE);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> (Map) new LinkedHashMap<>()),
@@ -732,8 +767,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
       }
 
-      Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
+      String strategy = req.getParams().get(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
+      if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(strategy)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
+      }
+
+      Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
+      params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
       return params;
     }),
     RESTORE_OP(RESTORE, (req, rsp, h) -> {
@@ -771,15 +812,84 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
       }
 
+      String createNodeArg = req.getParams().get(CREATE_NODE_SET);
+      if (CREATE_NODE_SET_EMPTY.equals(createNodeArg)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Cannot restore with a CREATE_NODE_SET of CREATE_NODE_SET_EMPTY."
+        );
+      }
+
       Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       // from CREATE_OP:
-      req.getParams().getAll(params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS);
+      req.getParams().getAll(params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT,
+          AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
       copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
       return params;
     }),
+    CREATESNAPSHOT_OP(CREATESNAPSHOT, (req, rsp, h) -> {
+      req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
+      String collectionName = req.getParams().get(COLLECTION_PROP);
+      String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
+      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      if (!clusterState.hasCollection(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+      }
+
+      SolrZkClient client = h.coreContainer.getZkController().getZkClient();
+      if (SolrSnapshotManager.snapshotExists(client, collectionName, commitName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Snapshot with name '" + commitName + "' already exists for collection '"
+                + collectionName + "', no action taken.");
+      }
+
+      Map<String, Object> params = req.getParams().getAll(null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      return params;
+    }),
+    DELETESNAPSHOT_OP(DELETESNAPSHOT, (req, rsp, h) -> {
+      req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+
+      String collectionName = req.getParams().get(COLLECTION_PROP);
+      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      if (!clusterState.hasCollection(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+      }
+
+      Map<String, Object> params = req.getParams().getAll(null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      return params;
+    }),
+    LISTSNAPSHOTS_OP(LISTSNAPSHOTS, (req, rsp, h) -> {
+      req.getParams().required().check(COLLECTION_PROP);
+
+      String collectionName = req.getParams().get(COLLECTION_PROP);
+      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      if (!clusterState.hasCollection(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
+      }
+
+      NamedList<Object> snapshots = new NamedList<Object>();
+      SolrZkClient client = h.coreContainer.getZkController().getZkClient();
+      Collection<CollectionSnapshotMetaData> m = SolrSnapshotManager.listSnapshots(client, collectionName);
+      for (CollectionSnapshotMetaData meta : m) {
+        snapshots.add(meta.getName(), meta.toNamedList());
+      }
+
+      rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
+      return null;
+    }),
     REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> req.getParams().required().getAll(req.getParams().getAll(null, "parallel"), "source", "target")),
+    MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
+      Map<String, Object> map = req.getParams().required().getAll(null,
+          COLLECTION_PROP);
+
+      return req.getParams().getAll(map,
+          "fromNode",
+          "targetNode",
+          "replica",
+          "shard");
+    }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> req.getParams().required().getAll(null, "node"));
     public final CollectionOp fun;
     CollectionAction action;
@@ -798,12 +908,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     }
 
-
     public static CollectionOperation get(CollectionAction action) {
       for (CollectionOperation op : values()) {
         if (op.action == action) return op;
       }
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "No such action " + action);
     }
 
     @Override
@@ -993,7 +1102,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   interface CollectionOp {
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception;
-    
+
   }
 
   public static final List<String> MODIFIABLE_COLL_PROPS = Arrays.asList(
@@ -1003,4 +1112,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       MAX_SHARDS_PER_NODE,
       AUTO_ADD_REPLICAS,
       COLL_CONF);
+
+  @Override
+  public Collection<Api> getApis() {
+    return v2Handler.getApis();
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
 }

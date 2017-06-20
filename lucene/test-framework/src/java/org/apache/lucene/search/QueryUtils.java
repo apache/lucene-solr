@@ -17,16 +17,16 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import junit.framework.Assert;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -39,8 +39,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
-
-import junit.framework.Assert;
+import org.apache.lucene.util.Version;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
@@ -93,10 +92,6 @@ public class QueryUtils {
   public static void checkUnequal(Query q1, Query q2) {
     assertFalse(q1 + " equal to " + q2, q1.equals(q2));
     assertFalse(q2 + " equal to " + q1, q2.equals(q1));
-
-    // possible this test can fail on a hash collision... if that
-    // happens, please change test to use a different example.
-    assertTrue(q1.hashCode() != q2.hashCode());
   }
 
   /** deep check that explanations of a query 'score' correctly */
@@ -136,27 +131,6 @@ public class QueryUtils {
     }
   }
 
-  /** This is a MultiReader that can be used for randomly wrapping other readers
-   * without creating FieldCache insanity.
-   * The trick is to use an opaque/fake cache key. */
-  public static class FCInvisibleMultiReader extends MultiReader {
-    private final Object cacheKey = new Object();
-
-    public FCInvisibleMultiReader(IndexReader... readers) throws IOException {
-      super(readers);
-    }
-
-    @Override
-    public Object getCoreCacheKey() {
-      return cacheKey;
-    }
-
-    @Override
-    public Object getCombinedCoreAndDeletesKey() {
-      return cacheKey;
-    }
-  }
-
   /**
    * Given an IndexSearcher, returns a new IndexSearcher whose IndexReader
    * is a MultiReader containing the Reader of the original IndexSearcher,
@@ -176,17 +150,17 @@ public class QueryUtils {
     IndexReader[] readers = new IndexReader[] {
       edge < 0 ? r : new MultiReader(),
       new MultiReader(),
-      new FCInvisibleMultiReader(edge < 0 ? emptyReader(4) : new MultiReader(),
+      new MultiReader(edge < 0 ? emptyReader(4) : new MultiReader(),
           new MultiReader(),
           0 == edge ? r : new MultiReader()),
       0 < edge ? new MultiReader() : emptyReader(7),
       new MultiReader(),
-      new FCInvisibleMultiReader(0 < edge ? new MultiReader() : emptyReader(5),
+      new MultiReader(0 < edge ? new MultiReader() : emptyReader(5),
           new MultiReader(),
           0 < edge ? r : new MultiReader())
     };
 
-    IndexSearcher out = LuceneTestCase.newSearcher(new FCInvisibleMultiReader(readers));
+    IndexSearcher out = LuceneTestCase.newSearcher(new MultiReader(readers));
     out.setSimilarity(s.getSimilarity(true));
     return out;
   }
@@ -195,29 +169,8 @@ public class QueryUtils {
     return new LeafReader() {
 
       @Override
-      public void addCoreClosedListener(CoreClosedListener listener) {}
-
-      @Override
-      public void removeCoreClosedListener(CoreClosedListener listener) {}
-
-      @Override
-      public Fields fields() throws IOException {
-        return new Fields() {
-          @Override
-          public Iterator<String> iterator() {
-            return Collections.<String>emptyList().iterator();
-          }
-
-          @Override
-          public Terms terms(String field) throws IOException {
-            return null;
-          }
-
-          @Override
-          public int size() {
-            return 0;
-          }
-        };
+      public Terms terms(String field) throws IOException {
+        return null;
       }
 
       @Override
@@ -262,7 +215,7 @@ public class QueryUtils {
       }
 
       @Override
-      public PointValues getPointValues() {
+      public PointValues getPointValues(String fieldName) {
         return null;
       }
 
@@ -291,7 +244,17 @@ public class QueryUtils {
       protected void doClose() throws IOException {}
 
       @Override
-      public Sort getIndexSort() {
+      public LeafMetaData getMetaData() {
+        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+      }
+
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return null;
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
         return null;
       }
     };

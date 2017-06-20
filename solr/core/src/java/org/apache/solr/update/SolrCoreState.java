@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
+import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -41,10 +42,16 @@ public abstract class SolrCoreState {
   
   protected boolean closed = false;
   private final Object updateLock = new Object();
+  private final Object reloadLock = new Object();
   
   public Object getUpdateLock() {
     return updateLock;
   }
+  
+  public Object getReloadLock() {
+    return reloadLock;
+  }
+  
   
   private int solrCoreStateRefCnt = 1;
 
@@ -137,6 +144,11 @@ public abstract class SolrCoreState {
    * @return the {@link DirectoryFactory} that should be used.
    */
   public abstract DirectoryFactory getDirectoryFactory();
+
+  /**
+   * @return the {@link org.apache.solr.cloud.RecoveryStrategy.Builder} that should be used.
+   */
+  public abstract RecoveryStrategy.Builder getRecoveryStrategyBuilder();
 
 
   public interface IndexWriterCloser {

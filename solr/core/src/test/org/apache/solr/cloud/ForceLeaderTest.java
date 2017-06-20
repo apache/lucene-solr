@@ -55,6 +55,12 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
+
+  @Override
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
+  }
 
   @Test
   @Override
@@ -146,14 +152,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     } finally {
       log.info("Cleaning up after the test.");
       // try to clean up
-      try {
-        CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-        req.setCollectionName(testCollectionName);
-        req.process(cloudClient);
-      } catch (Exception e) {
-        // don't fail the test
-        log.warn("Could not delete collection {} after test completed", testCollectionName);
-      }
+      attemptCollectionDelete(cloudClient, testCollectionName);
     }
   }
 
@@ -200,15 +199,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       }
     } finally {
       log.info("Cleaning up after the test.");
-      // try to clean up
-      try {
-        CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-        req.setCollectionName(testCollectionName);
-        req.process(cloudClient);
-      } catch (Exception e) {
-        // don't fail the test
-        log.warn("Could not delete collection {} after test completed", testCollectionName);
-      }
+      attemptCollectionDelete(cloudClient, testCollectionName);
     }
   }
 
@@ -425,10 +416,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
   }
 
   private void doForceLeader(SolrClient client, String collectionName, String shard) throws IOException, SolrServerException {
-      CollectionAdminRequest.ForceLeader forceLeader = new CollectionAdminRequest.ForceLeader();
-      forceLeader.setCollectionName(collectionName);
-      forceLeader.setShardName(shard);
-      client.request(forceLeader);
+    CollectionAdminRequest.ForceLeader forceLeader = CollectionAdminRequest.forceLeaderElection(collectionName, shard);
+    client.request(forceLeader);
   }
 
   protected int getNumberOfActiveReplicas(ClusterState clusterState, String collection, String sliceId) {

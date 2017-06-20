@@ -57,6 +57,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   private StreamFactory streamFactory = new StreamFactory();
@@ -82,12 +84,12 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
 
     String defaultCollection;
     String defaultZkhost;
-    CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
+    CoreContainer coreContainer = core.getCoreContainer();
     this.coreName = core.getName();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
-      defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
+      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
       streamFactory.withDefaultZkHost(defaultZkhost);
     }
@@ -117,8 +119,10 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("shortestPath", ShortestPathStream.class)
         .withFunctionName("gatherNodes", GatherNodesStream.class)
-        .withFunctionName("sort", SortStream.class)
-            .withFunctionName("scoreNodes", ScoreNodesStream.class)
+        .withFunctionName("nodes", GatherNodesStream.class)
+        .withFunctionName(SORT, SortStream.class)
+        .withFunctionName("scoreNodes", ScoreNodesStream.class)
+        .withFunctionName("random", RandomStream.class)
 
         // metrics
         .withFunctionName("min", MinMetric.class)

@@ -64,7 +64,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   void createIndex(int nTerms) {
     assertU(delQ("*:*"));
     for (int i=0; i<nTerms; i++) {
-      assertU(adoc("id", Float.toString(i), proto.field(), t(i) ));
+      assertU(adoc("id", Integer.toString(i), proto.field(), t(i) ));
     }
     assertU(optimize()); // squeeze out any possible deleted docs
   }
@@ -297,9 +297,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount() {
-    assertU(adoc("id", "1.0", "f_td", "-420.126"));
-    assertU(adoc("id", "2.0", "f_td", "-285.672"));
-    assertU(adoc("id", "3.0", "f_td", "-1.218"));
+    assertU(adoc("id", "1", "f_td", "-420.126"));
+    assertU(adoc("id", "2", "f_td", "-285.672"));
+    assertU(adoc("id", "3", "f_td", "-1.218"));
     assertU(commit());
 
     assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX),
@@ -329,9 +329,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount0() {
-    assertU(adoc("id", "1.0", "f_td", "-420.126"));
-    assertU(adoc("id", "2.0", "f_td", "-285.672"));
-    assertU(adoc("id", "3.0", "f_td", "-1.218"));
+    assertU(adoc("id", "1", "f_td", "-420.126"));
+    assertU(adoc("id", "2", "f_td", "-285.672"));
+    assertU(adoc("id", "3", "f_td", "-1.218"));
     assertU(commit());
 
     assertQ(req("q", "id:1.0", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "0", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc),

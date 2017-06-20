@@ -25,7 +25,8 @@ Upgrading from Solr 6.x
   SolrHttpClientBuilder rather than an HttpClientConfigurer.
   
 * HttpClientUtil now allows configuring HttpClient instances via SolrHttpClientBuilder
-  rather than an HttpClientConfigurer.
+  rather than an HttpClientConfigurer. Use of env variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER
+  no longer works, please use SOLR_AUTHENTICATION_CLIENT_BUILDER 
 
 * SolrClient implementations now use their own internal configuration for socket timeouts,
   connect timeouts, and allowing redirects rather than what is set as the default when
@@ -41,10 +42,143 @@ Upgrading from Solr 6.x
 * Query time join with scoring {!join score=none} (even none) doesn't handle single value numeric fields.
   Users are advised to convert these fields into string and reindex.
 
+* Deprecated collection and configset methods on MiniSolrCloudCluster have been
+  removed
+
+* Index-time boosts are not supported anymore. If any boosts are provided, they
+  will be ignored by the indexing chain. As a replacement, index-time scoring
+  factors should be indexed in a separate field and combined with the query
+  score using a function query.
+
+* Deprecated method getNumericType() has been removed from FieldType. Use getNumberType() instead
+
+* MBean names and attributes now follow hierarchical names used in metrics. This is reflected also in
+  /admin/mbeans and /admin/plugins output, and can be observed in the UI Plugins tab, because now all these
+  APIs get their data from the metrics API. The old (mostly flat) JMX view has been removed.
+
+* <jmx> element in solrconfig.xml is no longer supported. Equivalent functionality can be configured in
+  solr.xml using <metrics><reporter ...> element and SolrJmxReporter implementation. Limited back-compatibility
+  is offered by automatically adding a default instance of SolrJmxReporter if it's missing, AND when a local
+  MBean server is found (which can be activated either via ENABLE_REMOTE_JMX_OPTS in solr.in.sh or via system
+  properties, eg. -Dcom.sun.management.jmxremote). This default instance exports all Solr metrics from all
+  registries as hierarchical MBeans. This behavior can be also disabled by specifying a SolrJmxReporter
+  configuration with a boolean init arg "enabled" set to "false". For a more fine-grained control users
+  should explicitly specify at least one SolrJmxReporter configuration.
+
+* The sow (split-on-whitespace) request param now defaults to false (true in previous versions).
+  This affects the edismax and standard/"lucene" query parsers: if the sow param is not specified,
+  query text will not be split on whitespace before analysis. See
+  https://lucidworks.com/2017/04/18/multi-word-synonyms-solr-adds-query-time-support/ .
+
+* Setting <solrQueryParser defaultOperator="..."/> in schema is no longer allowed and will cause an exception.
+  Please use "q.op" parameter on the request instead. For more details, see SOLR-10584.
+
+* Setting <defaultSearchField> in schema is no longer allowed and will cause an exception.
+  Please use "df" parameter on the request instead. For more details, see SOLR-10585.
+
+* The PostingsSolrHighlighter is deprecated. Furthermore, it now internally works via a re-configuration
+  of the UnifiedSolrHighlighter.
+
+* Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
+  Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
+
+* The 'lucenePlusSort' QParser has been deprecated, and is no longer implicitly defined.  If you wish to continue using
+  this QParser untill Solr 8, you must explicitly register it in your solrconfig.xml:
+     '<queryParser name="lucenePlusSort" class="solr.OldLuceneQParserPlugin"/>'
+
+* In solrconfig.xml the deprecated <mergePolicy> and <mergeFactor> and <maxMergeDocs> elements have
+  been removed in favor of the <mergePolicyFactory> element introduced by SOLR-8621 in Solr 5.5.0.
+
+* Custom SolrMetricReporter classes must implement a new, factored out doInit() method and the validate() method
+  must pass for all reporters including reporters that are not enabled, please see SOLR-10671 for details.
+
+* TemplateUpdateRequestProcessorFactory uses {} instead of ${} for template
+
+* SOLR-9565: The name of TemplateUpdateRequestProcessorFactory' is changed to 'template' from 'Template' and the
+  name of 'AtomicUpdateProcessorFactory' is changed to 'atomic' from 'Atomic'
+
+New Features
+----------------------
+* SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
+
+* SOLR-9835: Create another replication mode for SolrCloud
+
+* SOLR-10356: Adds basic math Streaming Evaluators (Dennis Gove)
+
+* SOLR-10393: Adds UUID Streaming Evaluator (Dennis Gove)
+
+* SOLR-10046: Add UninvertDocValuesMergePolicyFactory class. (Keith Laban, Christine Poerschke)
+
+* SOLR-10547: JSON Facet API: Implement support for single-valued string fields for min/max aggregations.
+  (yonik)
+
+* SOLR-10262: Add support for configurable metrics implementations. (ab)
+
+* SOLR-10431: Make it possible to invoke v2 api calls using SolrJ (Cao Manh Dat, Noble Paul, shalin)
+
+* SOLR-10233: Add support for different replica types, that can handle updates differently:
+  - NRT: Writes updates to transaction log and indexes locally. Replicas of type “NRT” support NRT 
+         (soft commits) and RTG. Any NRT replica can become a leader. This was the only type supported 
+         in SolrCloud until now and it’s the default type.
+  - TLOG: Writes to transaction log, but not to index, uses replication to copy segment files from the 
+          shard leader. Any TLOG replica can become leader (by first applying all local transaction log 
+          elements). If a replica is of type TLOG but is also the leader, it will behave as a NRT. This
+          is exactly what was added in SOLR-9835 (non-realtime replicas), just the API and naming changes.
+  - PULL: Doesn’t index or writes to transaction log, just replicates from the shard leader. PULL replicas 
+          can’t become shard leaders (i.e., if there are only PULL replicas in the collection at some point, 
+          updates will fail same as if there is no leaders, queries continue to work), so they don’t even 
+          participate in elections.
+  (Tomás Fernández Löbbe)
+
+* SOLR-10278: A new DSL to set cluster-wide preferences and policies on how to allocate replicas to nodes
+  (noble, shalin)
+
+* SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
+  /cluster/autoscaling paths. (shalin)
+
+* SOLR-10677: Expose a diagnostics API to return nodes sorted by load in descending order and
+  any policy violations. (shalin)
+
+* SOLR-7452: Refinement for JSON Facet API: Adding refine:true to any terms facet will cause an
+  additional distributed search phase (overlapped with field retrieval) that requests additional info
+  for top facet buckets from shards that did not previously contribute to that bucket.
+  This will correct counts (and other statistics) for those top buckets collected in the first
+  phase. (yonik)
+
+* SOLR-10433: CollectionAdmin requests in SolrJ to support V2 calls (noble)
+
+* SOLR-9989: Add support for PointFields in FacetModule (JSON Facets) (Cao Manh Dat)
+
+* SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
   (Mark Miller, shalin)
+
+* SOLR-9837: Fix 55% performance regression of FieldCache uninvert time of
+  numeric fields.  (yonik)
+
+* SOLR-10408: v2 API introspect should return useful message for non-existent command (Cao Manh Dat)
+
+* SOLR-10411: v2 Collection API "modify" command specification's replicationFactor property is incorrectly typed as string,
+  should be integer (Cao Manh Dat)
+
+* SOLR-10405: v2 API introspect response contains multiple copies of the experimental format WARNING (Cao Manh Dat)
+
+* SOLR-10412: v2 API: many API command specification properties are typed "number" but should instead be typed "integer"
+  (Steve Rowe, Cao Manh Dat)
+
+* SOLR-10413: v2 API: parsed JSON type should be coerced to expected type (Cao Manh Dat, Noble Paul)
+
+* SOLR-10223: Allow running examples as root on Linux with -force option (janhoy)
+
+* SOLR-10830: Solr now correctly enforces that the '_root_' field has the same fieldType as the
+  uniqueKey field.  With out this enforcement, child document updating was unreliable. (hossman)
+
+* SOLR-10876: Regression in loading runtime UpdateRequestProcessors like TemplateUpdateProcessorFactory (noble)
+
+* SOLR-10886: Using V2Request.process(solrClient) method throws NPE if the API returns an error (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -52,6 +186,1315 @@ Optimizations
 * SOLR-4509: Move to non deprecated HttpClient impl classes to remove stale connection 
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
+
+* SOLR-9255: Rename SOLR_AUTHENTICATION_CLIENT_CONFIGURER -> SOLR_AUTHENTICATION_CLIENT_BUILDER (janhoy) 
+
+* SOLR-9579: Make Solr's SchemaField implement Lucene's IndexableFieldType, removing the 
+  creation of a Lucene FieldType every time a field is indexed. (John Call, yonik) 
+
+* SOLR-9822: JSON Facet API: Recover performance lost due to the DocValues transition to
+  an iterator API (LUCENE-7407).  This only fixes calculating counts for single-valued
+  string fields from the FieldCache, resulting in up to 56% better throughput for those cases.
+  (yonik)
+
+* SOLR-10727: Avoid polluting the filter cache for certain types of faceting (typically ranges) when
+  the base docset is empty. (David Smiley)
+
+Other Changes
+----------------------
+* SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
+
+* SOLR-10347: Removed index level boost support from "documents" section of the admin UI (Amrit Sarkar via
+  Tomás Fernández Löbbe)
+
+* SOLR-9959: SolrInfoMBean category and hierarchy cleanup. Per-component statistics are now obtained from
+  the metrics API, legacy JMX support has been replaced with SolrJmxReporter functionality. Several reporter
+  improvements (support for multiple prefix filters, "enabled" flag, reuse of service clients). (ab)
+
+* SOLR-10418: Expose safe system properties via metrics API as 'system.properties' in 'solr.jvm' group.
+  Add support for selecting specific properties from any compound metric using 'property' parameter to
+  /admin/metrics handler. (ab)
+
+* SOLR-10557: Make "compact" format default for /admin/metrics. (ab)
+
+* SOLR-10310: By default, stop splitting on whitespace prior to analysis
+  in edismax and standard/"lucene" query parsers. (Steve Rowe)
+
+* SOLR-10647: Move the V1 <-> V2 API mapping to SolrJ (noble)
+
+* SOLR-10584: We'll now always throw an exception if defaultOperator is found in schema. This config has
+  been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy)
+
+* SOLR-10585: We'll now always throw an exception if defaultSearchField is found in schema. This config has
+  been deprecated since 3.6, and enforced for new configs since 6.6 (janhoy, David Smiley)
+
+* SOLR-10414: RecoveryStrategy is now a Runnable instead of a Thread. (Tomás Fernández Löbbe)
+
+* SOLR-10042: Delete old deprecated Admin UI, leaving the AngularJS UI the only one supported (janhoy)
+
+* SOLR-10378: Clicking Solr logo on AdminUI shows blank page (Takumi Yoshida via janhoy)
+
+* SOLR-10700: Deprecated and converted the PostingsSolrHighlighter to extend UnifiedSolrHighlighter and thus no
+  longer use the PostingsHighlighter.  It should behave mostly the same. (David Smiley)
+
+* SOLR-10710: Fix LTR failing tests. (Diego Ceccarelli via Tomás Fernández Löbbe)
+
+* SOLR-10755: delete/refactor many solrj deprecations (hossman)
+
+* SOLR-10752: replicationFactor (nrtReplicas) default is 0 if tlogReplicas is specified when creating a collection
+  (Tomás Fernández Löbbe)
+
+* SOLR-10757: delete/refactor/cleanup CollectionAdminRequest deprecations (hossman)
+
+* SOLR-10793: BlobHandler should have a well-known permission name (noble)
+
+* SOLR-10744: Update noggit to newer version (0.8) (noble)
+
+* SOLR-10792: Deprecate and remove implicit registration of "lucenePlusSort" aka OldLuceneQParser (hossman)
+
+* SOLR-10791: Remove deprecated options in SSLTestConfig (hossman)
+
+* LUCENE-7852: Correct copyright year(s) in solr/LICENSE.txt file.
+  (Christine Poerschke, Steve Rowe)
+
+* SOLR-8668: In solrconfig.xml remove <mergePolicy> (and related <mergeFactor> and <maxMergeDocs>)
+  support in favor of the <mergePolicyFactory> element introduced by SOLR-8621 in Solr 5.5.0.
+  (Christine Poerschke, hossman)
+
+* SOLR-10799: Extracted functionality to collect eligible replicas from HttpShardHandler.prepDistributed()
+  to a new method (Domenico Fabio Marino via Tomás Fernández Löbbe)
+
+* SOLR-10801: Remove several deprecated methods that were exposed to plugin writers (hossman)
+
+* SOLR-10671: Add abstract doInit method to the SolrMetricReporter base class.
+  (Christine Poerschke, Anshum Gupta)
+
+* SOLR-10713: Ignore .pid and .out files in solr working directory (Jason Gerlowski via Mike Drob)
+
+* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
+
+* SOLR-10782: Improve error handling and tests for Snitch and subclasses and general cleanups. (Noble Paul, shalin)
+
+* SOLR-10419: All collection APIs should use the new Policy framework for replica placement. (Noble Paul, shalin)
+
+* SOLR-10800: Factor out HttpShardHandler.transformReplicasToShardUrls from HttpShardHandler.prepDistributed.
+  (Domenico Fabio Marino, Christine Poerschke)
+
+* SOLR-10779: JavaBinCodec should use close consistently rather than having marshal() and close() call finish()
+ (which closes the underlying stream). (Erick Erickson)
+
+* SOLR-9623: Disable remote streaming in example configs by default. Adjust Upload Limit defaults (janhoy, yonik)
+
+==================  6.7.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+Upgrade Notes
+----------------------
+
+* SOLR-10307: If starting Jetty without the Solr start script, you must now pass keystore and truststore
+  passwords via the env variables SOLR_SSL_KEY_STORE_PASSWORD and SOLR_SSL_TRUST_STORE_PASSWORD rather
+  than system properties.
+
+* SOLR-10379: ManagedSynonymFilterFactory has been deprecated in favor of ManagedSynonymGraphFilterFactory.
+
+New Features
+----------------------
+
+* SOLR-10849: MoreLikeThisComponent should expose setMaxDocFreqPct (maxDoc 
+  frequency percentage). (Dawid Weiss)
+
+* SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs via Mark Miller)
+
+* SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
+  (Erick Erickson)
+  
+* SOLR-10379: Add ManagedSynonymGraphFilterFactory, deprecate ManagedSynonymFilterFactory. (Steve Rowe)
+
+* SOLR-10479: Adds support for HttpShardHandlerFactory.loadBalancerRequests(MinimumAbsolute|MaximumFraction)
+  configuration. (Ramsey Haddad, Daniel Collins, Christine Poerschke)
+
+* SOLR-3702: concat(...) function query (Andrey Kudryavtsev via Mikhail Khludnev)
+
+* SOLR-10767: Add movingAvg Stream Evaluator (Joel Bernstein)
+
+* SOLR-10813: Add arraySort Stream Evaluator (Joel Bernstein)
+
+* SOLR-10696: Add cumulative probability function (Joel Bernstein)
+
+* SOLR-10765: Add anova Stream Evaluator (Joel Bernstein)
+
+* SOLR-10754: Add hist Stream Evaluator (Joel Bernstein)
+
+* SOLR-10753: Add array Stream Evaluator (Joel Bernstein)
+
+* SOLR-10747: Allow /stream handler to execute Stream Evaluators directly (Joel Bernstein)
+
+* SOLR-10743: Add sequence StreamEvaluator (Joel Bernstein)
+
+* SOLR-10684: Add finddelay Stream Evaluator (Joel Bernstein)
+
+* SOLR-10731: Add knn Streaming Expression (Joel Bernstein)
+
+* SOLR-10724: Add describe Stream Evaluator (Joel Bernstein)
+
+* SOLR-10693: Add copyOfRange Stream Evaluator (Joel Bernstein)
+
+* SOLR-10623: Add sql Streaming Expression (Joel Bernstein)
+
+* SOLR-10661: Add copyOf Stream Evaluator (Joel Bernstein)
+
+* SOLR-10663: Add distance Stream Evaluator (Joel Bernstein)
+
+* SOLR-10664: Add scale Stream Evaluator (Joel Bernstein)
+
+* SOLR-10666: Add rank transformation Stream Evaluator (Joel Bernstein)
+
+* SOLR-10662: Add length Stream Evaluator (Joel Bernstein)
+
+* SOLR-10660: Add reverse Stream Evaluator (Joel Bernstein)
+
+* SOLR-9910: Add solr/solr.cmd parameter to append jetty parameters to the start script.
+  (Mano Kovacs via Mark Miller)
+
+Bug Fixes
+----------------------
+* SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
+  resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
+  (yonik)
+
+* SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
+  (Erick Erickson)
+
+* SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
+  yarn. (Hrishikesh via Mark Miller)
+
+* SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
+
+* SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
+
+* SOLR-10836: The query parsers igain, significantTerms, and tlogit (used by streaming expressions by
+  the same name) might throw a NullPointerException if the referenced field had no indexed data in some
+  shards. The fix included an optimization to use Solr's cached AtomicReader instead of re-calculating.
+  (David Smiley)
+
+* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
+
+* SOLR-10835: Add support for point fields in Export Handler (Tomás Fernández Löbbe)
+
+* SOLR-10704: REPLACENODE may cause data loss when replicationFactor is 1. (ab, shalin)
+
+* SOLR-10833: Point numeric fields should throw SolrException(BAD_REQUEST) for malformed numbers in queries.
+              Trie numeric fields should throw SolrException(BAD_REQUEST) for malformed docValues range queries.
+  (hossman, Tomás Fernández Löbbe)
+
+* SOLR-10832: Fixed VersionInfo.getMaxVersionFromIndex when using PointsField with indexed="true" (hossman)
+
+Optimizations
+----------------------
+* SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
+  and there are no nested facets, aggregations are computed in the first collection phase
+  so that the second phase which would normally involve calculating the domain for the bucket
+  can be skipped entirely, leading to large performance improvements. (yonik)
+
+* SOLR-10722: Speed up Solr's use of the UnifiedHighlighter be re-using FieldInfos. (David Smiley)
+
+Other Changes
+----------------------
+
+* SOLR-10617: JDBCStream accepts columns of type TIME, DATE & TIMESTAMP as well as CLOBs and decimal
+  numeric types (James Dyer)
+
+* SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
+  FieldType.getNumberType() or SchemaField.getSortField() where appropriate. (hossman, Steve Rowe)
+  
+* SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
+  schema-point.xml/TestPointFields. (hossman, Steve Rowe)
+  
+* LUCENE-7705: Allow CharTokenizer-derived tokenizers and KeywordTokenizer to configure the max token length.
+  (Amrit Sarkar via Erick Erickson)
+
+* SOLR-10659: Remove ResponseBuilder.getSortSpec use in SearchGroupShardResponseProcessor.
+  (Judith Silverman via Christine Poerschke)
+
+* SOLR-10741: Factor out createSliceShardsStr method from HttpShardHandler.prepDistributed.
+  (Domenico Fabio Marino via Christine Poerschke)
+
+* SOLR-10790: Fix warnings in Assign.java and ReplicaAssigner.java classes.
+  (Christine Poerschke)
+
+* SOLR-8437: Improve RAMDirectory details in sample solrconfig files (Mark Miller, Varun Thacker)
+
+* SOLR-8762: return child docs in DIH debug (Gopikannan Venugopalsamy via Mikhail Khludnev)
+
+* SOLR-10501: Test sortMissing{First,Last} with points fields.  (Steve Rowe)
+
+* SOLR-10761: Switch trie numeric/date fields to points in data-driven-enabled example and test schemas.
+  (Steve Rowe)
+
+* SOLR-10851: SolrClients should clarify expectations for solrServerUrl parameter (Jason Gerlowski 
+  via Tomás Fernández Löbbe)
+  
+* SOLR-10891: BBoxField should support point-based number sub-fields. (Steve Rowe)
+
+* SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
+
+==================  6.6.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-10857: standalone Solr loads UNLOADed core on request (Erick Erickson, Mikhail Khludnev)
+
+==================  6.6.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Upgrade Notes
+----------------------
+
+* Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
+
+* JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and
+  calculates cardinality before filtering buckets by any mincount greater than 1.
+
+* ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-9992: Add support for grouping with PointFIelds. (Cao Manh Dat)
+
+* SOLR-9994: Add support for CollapseQParser with PointFields. (Varun Thacker, Cao Manh Dat)
+
+* SOLR-10076: Hide keystore and truststore passwords from /admin/info/* outputs. (Mano Kovacs via Mark Miller)
+
+* SOLR-6736: Adding support for uploading zipped configsets using ConfigSets API (Varun Rajput, Ishan Chattopadhyaya,
+  Noble Paul, Anshum Gupta, Gregory Chanan)
+
+* SOLR-10349: Add totalTermFreq support to TermsComponent. (Shai Erera)
+
+* SOLR-9993: Add support for ExpandComponent with PointFields. (Cao Manh Dat)
+
+* SOLR-10239: MOVEREPLICA API (Cao Manh Dat, Noble Paul, shalin)
+
+* SOLR-9936: Allow configuration for recoveryExecutor thread pool size. (Tim Owen via Mark Miller)
+
+* SOLR-10447: Collections API now supports a LISTALIASES command to return a list of all collection aliases.
+  (Yago Riveiro, Ishan Chattopadhyaya, Mark Miller, Steve Molloy, Shawn Heisey, Mike Drob, janhoy)
+
+* SOLR-10446: CloudSolrClient can now be initialized using the base URL of a Solr instance instead of
+  ZooKeeper hosts. This is possible through the use of newly introduced HttpClusterStateProvider.
+  To fetch a list of collection aliases, this depends on LISTALIASES command, and hence this way of
+  initializing CloudSolrClient would not work if you have collection aliases on older versions of Solr
+  server that doesn't support LISTALIASES. (Ishan Chattopadhyaya, Noble Paul)
+
+* SOLR-10082: Variance and Standard Deviation aggregators for the JSON Facet API.
+  Example: json.facet={x:"stddev(field1)", y:"variance(field2)"}
+  (Rustam Hashimov, yonik)
+
+* SOLR-10505: Add multi-field support to TermsComponent when requesting terms' statistics. (Shai Erera)
+
+* SOLR-10537: SolrJ: Added SolrParams.toLocalParamsString() and ClientUtils.encodeLocalParamVal. (David Smiley)
+
+* SOLR-10507: Core Admin status command to emit collection details of each core (noble)
+
+* SOLR-10521: introducing sort=childfield(field) asc for searching by {!parent} (Mikhail Khludnev) 
+
+* SOLR-9596: Add Solr support for SimpleTextCodec, via <codecFactory class="solr.SimpleTextCodecFactory"/>
+  in solrconfig.xml (per-field specification in the schema is not possible). (Steve Rowe)
+
+* SOLR-1485: Add payload support with payload() value source and {!payload_score} and {!payload_check}
+  query parsers.  (Erik Hatcher)
+
+* SOLR-10430: Add ls command to ZkCLI for listing only sub-directories. (Peter Szantai-Kis via Mark Miller)
+
+* SOLR-10583: JSON Faceting now supports a query time 'join' domain change option (hossman)
+
+* SOLR-9530: An Update Processor to convert normal update operation to an atomic operations such as
+  add, set,inc, remove ,set, removeregex (Amrit Sarkar, noble)
+
+* SOLR-10303: Add date/time Stream Evaluators (Gethin James, Dennis Gove, Joel Bernstein)
+
+* SOLR-10351: Add analyze Stream Evaluator to support streaming NLP (Joel Bernstein)
+
+* SOLR-10426: Add shuffle Streaming Expression (Joel Bernstein)
+
+* SOLR-10274: The search Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
+* SOLR-10504: Add echo Streaming Expression (Joel Bernstein)
+
+* SOLR-10516: Add eval Streaming Expression (Joel Bernstein)
+
+* SOLR-10566: Add timeseries Streaming Expression (Joel Bernstein)
+
+* SOLR-10559: Add let, get and tuple Streaming Expressions (Dennis Gove, Joel Bernstein)
+
+* SOLR-10582: Add Correlation Stream Evaluator (Joel Bernstein)
+
+* SOLR-10536: stats Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
+* SOLR-10622: Add regress and predict Stream Evaluators (Joel Bernstein)
+
+* SOLR-10626: Add covariance Stream Evaluator (Joel Bernstein)
+
+* SOLR-10625: Add convolution Stream Evaluator (Joel Bernstein)
+
+* SOLR-10638: Add normalize Stream Evaluator (Joel Bernstein)
+
+* SOLR-8440: Support for enabling basic authentication using bin/solr|bin/solr.cmd. (Ishan Chattopadhyaya, janhoy,
+  Noble Paul, Hrishikesh Gadre)
+
+* SOLR-10292: Adds CartesianProductStream which turns a single tuple with a multi-valued field into N
+  tuples, one for each value in the multi-valued field. (Dennis Gove)
+
+Optimizations
+----------------------
+
+* SOLR-9184: Add a static convenience method ModifiableSolrParams#of(SolrParams) which returns the same
+  instance if it already is modifiable, otherwise creates a new ModifiableSolrParams instance.
+  (Jörg Rathlev via Koji)
+
+* SOLR-10499: facet.heatmap is now significantly faster when the docset (base query) matches everything and there are no
+  deleted docs.  It's also faster when the docset matches a small fraction of the index or none. (David Smiley)
+
+* SOLR-9217: Reduced heap consumption for filter({!join ... score=...}) 
+  (Andrey Kudryavtsev, Gopikannan Venugopalsamy via Mikhail Khludnev)
+
+* SOLR-10548: JSON Facet API now uses hyper-log-log++ for determining the number of buckets
+  when merging requests from a multi-shard distributed request. (yonik)
+
+* SOLR-10524: Better ZkStateWriter batching (Cao Manh Dat, Noble Paul, shalin, Scott Blum)
+
+* SOLR-10619: Optimize using cache for DistributedQueue in case of single-consumer (Cao Manh Dat, Scott Blum)
+
+Bug Fixes
+----------------------
+* SOLR-10281: ADMIN_PATHS is duplicated in two places and inconsistent. This can cause automatic
+  retries to /admin/metrics handler by the CloudSolrClient. (shalin)
+
+* SOLR-10108: bin/solr script recursive copy broken (Erick Erickson)
+
+* SOLR-10362: "Memory Pool not found" error when reporting JVM metrics. (ab)
+
+* SOLR-10369: bin\solr.cmd delete and healthcheck now works again; fixed continuation chars ^ (Luis Goes via janhoy)
+
+* SOLR-10387: zkTransfer normalizes destination path incorrectly if source is a windows directory 
+  (gopikannan venugopalsamy, Erick Erickson)
+
+* SOLR-10323: fix to SpellingQueryConverter to properly strip out colons in field-specific queries.
+  (Amrit Sarkar via James Dyer)
+
+* SOLR-10264: Fixes multi-term synonym parsing in ManagedSynonymFilterFactory.
+  (Jörg Rathlev, Steve Rowe, Christine Poerschke)
+  
+* SOLR-8807: fix Spellcheck "collateMaxCollectDocs" parameter to work with queries that have the 
+  CollpasingQParserPlugin applied.  (James Dyer)
+
+* SOLR-10474: TestPointFields.testPointFieldReturn() depends on order of unsorted hits. (Steve Rowe)
+
+* SOLR-10473: Correct LBHttpSolrClient's confusing SolrServerException message when timeAllowed is exceeded.
+  (Christine Poerschke)
+
+* SOLR-10047: Mismatched Docvalues segments cause exception in Sorting/Faceting. Solr now uninverts per segment
+  to avoid such exceptions. (Keith Laban via shalin)
+  
+* SOLR-10472: Fixed uninversion (aka: FieldCache) bugs with the numeric PointField classes, and CurrencyField (hossman)
+
+* SOLR-5127: Multiple highlight fields and wildcards are now supported e.g. hl.fl=title,text_*
+  (Sven-S. Porst, Daniel Debray, Simon Endele, Christine Poerschke)
+
+* SOLR-10493: Investigate SolrCloudExampleTest failures. (Erick Erickson)
+
+* SOLR-10552: JSON Facet API numBuckets was not consistent between distributed and non-distributed requests
+  when there was a mincount > 1.  This has been corrected by changing numBuckets cardinality processing to
+  ignore mincount > 1 for non-distributed requests. (yonik)
+
+* SOLR-10520: child.facet.field doubled counts at least when rows>0. (Dr. Oleg Savrasov via Mikhail Khludnev) 
+
+* SOLR-10480: Full pagination in JSON Facet API using offset does not work. (yonik)
+
+* SOLR-10526: facet.heatmap didn't honor facet exclusions ('ex') for distributed search. (David Smiley)
+
+* SOLR-10500: nested child docs are adopted by neighbour when several parents come in update/json/docs 
+  (Alexey Suprun,noble via Mikhail Khludnev)
+
+* SOLR-10316: Unloading a core can remove a ZK SolrCore registration entry for the wrong SolrCore. (Mark Miller)
+
+* SOLR-10588: Prevent redundant core reload on config update (Mikhail Khludnev)
+
+* SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true (David Smiley)
+
+* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed.
+  After core container shutdown or severe initialization problem Solr responds with
+  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev)
+
+* SOLR-8149: Admin UI - Plugins / Stats - active item is now highlighted (Labuzov Dmitriy via janhoy)
+
+* SOLR-10630: HttpSolrCall.getAuthCtx().new AuthorizationContext() {...}.getParams()
+  sometimes throws java.lang.NullPointerException (hu xiaodong via shalin)
+
+* SOLR-9527: Improve distribution of replicas when restoring a collection
+  (Hrishikesh Gadre, Stephen Lewis, Rohit, Varun Thacker)
+
+* LUCENE-7821: The classic and flexible query parsers, as well as Solr's
+ "lucene"/standard query parser, should require " TO " in range queries,
+  and accept "TO" as endpoints in range queries. (hossman, Steve Rowe)
+
+* SOLR-10735: Windows script (solr.cmd) didn't work properly with directory containing spaces. Adding quotations
+  to fix (Uwe Schindler, janhoy, Tomas Fernandez-Lobbe, Ishan Chattopadhyaya) 
+
+Ref Guide
+----------------------
+
+* SOLR-10758: Modernize the Solr ref guide's Chinese language analysis coverage. (Steve Rowe)
+
+Other Changes
+----------------------
+
+* SOLR-9221: Remove Solr contribs: map-reduce, morphlines-core and morphlines-cell. (Steve Rowe)
+
+* SOLR-10249: Refactor IndexFetcher.doFetch() to return a more detailed result. (Jeff Miller via David Smiley)
+
+* SOLR-10304: Refactor Document handling out of SolrIndexSearcher into a new class "SolrDocumentFetcher".
+  Deprecated SolrPluginUtils.docListToSolrDocumentList(). (David Smiley)
+
+* SOLR-10352: bin/solr script now prints warning when available system entropy is lower than 300 (Esther Quansah via
+  Ishan Chattopadhyaya)
+  
+* SOLR-10344: Update Solr default/example and test configs to use WordDelimiterGraphFilterFactory. (Steve Rowe)
+
+* SOLR-10343: Update Solr default/example and test configs to use SynonymGraphFilterFactory. (Steve Rowe)
+
+* SOLR-10365: Handle a SolrCoreInitializationException while publishing core state during SolrCore creation
+  (Ishan Chattopadhyaya)
+
+* SOLR-10357: Enable edismax and standard query parsers to handle the option combination 
+  sow=false / autoGeneratePhraseQueries="true" by setting QueryBuilder.autoGenerateMultiTermSynonymsQuery.
+  (Steve Rowe)
+
+* SOLR-10147: Admin UI -> Cloud -> Graph: Impossible to see shard state (Amrit Sarkar, janhoy)
+
+* SOLR-10399: Generalize some internal facet logic to simplify points/non-points field handling (Adrien Grand, hossman)
+
+* SOLR-7383: New DataImportHandler 'atom' example, replacing broken 'rss' example (Alexandre Rafalovitch)
+
+* SOLR-9601: Redone DataImportHandler 'tika' example, removing all unused and irrelevant definitions (Alexandre Rafalovitch)
+
+* SOLR-8906: Make transient core cache pluggable (Erick Erickson)
+
+* SOLR-9745: print errors from solr.cmd (Gopikannan Venugopalsamy via Mikhail Khludnev)
+
+* SOLR-10394: Rename getSortWithinGroup to getWithinGroupSort in search.grouping.Command class.
+  (Judith Silverman, Christine Poerschke)
+
+* SOLR-10440: LBHttpSolrClient.doRequest is now always wrapped in a Mapped Diagnostic Context (MDC).
+  (Christine Poerschke)
+
+* SOLR-10429: UpdateRequest#getRoutes()should copy the response parser (noble)
+
+* SOLR-10007: Clean up references to CoreContainer and CoreDescriptors (Erick Erickson)
+
+* SOLR-10151: Use monotonically incrementing counter for doc ids in TestRecovery. (Peter Szantai-Kis, Mano Kovacs via Mark Miller)
+
+* SOLR-10514: Upgrade Metrics library to 3.2.2. (ab)
+
+* SOLR-9386: Upgrade Zookeeper to 3.4.10. (Shawn Heisey, Steve Rowe)
+
+* SOLR-10519: SolrCLI.atPath cannot handle children that begin with a slash. (Erick Erickson)
+
+* SOLR-9867: Adding isLoading=true as core status. Fixing start after stop scenario in bin/solr
+  (Andrey Kudryavtsev, Mikhail Khludnev)
+
+* SOLR-7041: Cutover tests to using 'q.op' and 'df' instead of schema 'defaultOperator' and 'defaultSearchField' (janhoy)
+
+* SOLR-10601: StreamExpressionParser should handle white space around = in named parameters (Joel Bernstein)
+
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool.
+  Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
+
+* SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
+  was an improvement for the json "arrntv" format, it caused problems for the default json format.
+  (James Dyer, reported by Nikita Pchelintsev)
+
+* SOLR-10644: solr.in.sh installed by install script should be writable by solr user (janhoy)
+
+* SOLR-10729: Deprecated LatLonType, GeoHashField, SpatialPointVectorFieldType, and SpatialTermQueryPrefixTreeFieldType.
+  Instead, switch to LatLonPointSpatialField or SpatialRecursivePrefixTreeFieldType or RptWithGeometrySpatialField.
+  (David Smiley)
+
+==================  6.5.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-10383: Fix debug related NullPointerException in solr/contrib/ltr OriginalScoreFeature class.
+  (Vitezslav Zak, Christine Poerschke)
+
+* SOLR-10416: The JSON output of /admin/metrics is fixed to write the container as a
+  map (SimpleOrderedMap) instead of an array (NamedList). (shalin)
+
+* SOLR-10277: On 'downnode', lots of wasteful mutations are done to ZK.
+  (Joshua Humphries, Scott Blum, Varun Thacker, shalin)
+
+* SOLR-10421: Fix params persistence for solr/contrib/ltr (MinMax|Standard)Normalizer classes.
+  (Jianxiong Dong, Christine Poerschke)
+
+* SOLR-10404: The fetch() streaming expression wouldn't work if a value included query syntax chars (like :+-).
+  Fixed, and enhanced the generated query to not pollute the queryCache. (David Smiley)
+  
+* SOLR-10423: Disable graph query production via schema configuration <fieldtype ... enableGraphQueries="false">.
+  This fixes broken queries for ShingleFilter-containing query-time analyzers when request param sow=false.
+  (Steve Rowe)
+
+* SOLR-10425: Fix indexed="false" on numeric PointFields (Tomás Fernández Löbbe, hossman)
+
+* SOLR-10341: SQL AVG function mis-interprets field type. (Joel Bernstein)
+
+* SOLR-10444: SQL interface does not use client cache. (Joel Bernstein)
+
+* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
+* SOLR-10439: The new 'large' attribute had been forgotten in /schema/fields?showDefaults=true (David Smiley)
+
+* SOLR-10527: edismax with sow=false fails to create dismax-per-term queries when any field is boosted.
+  (Steve Rowe)
+
+==================  6.5.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+Apache Calcite 1.11.0
+
+Detailed Change List
+----------------------
+
+Upgrade Notes
+----------------------
+* SOLR-10226: JMX metric "avgTimePerRequest" (and the corresponding metric in the metrics API for
+  each handler) used to be a simple non-decaying average based on total cumulative time and the
+  number of requests. New Codahale Metrics implementation applies exponential decay to this value,
+  which heavily biases the average towards the last 5 minutes. (ab)
+
+* SOLR-8593: Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change
+  the default aggregation mode has been changed to facet rather than map_reduce. There has also been changes
+  to the SQL aggregate response and some SQL syntax changes. Consult the documentation for full details.
+
+
+New Features
+----------------------
+
+* SOLR-9836: Add ability to recover from leader when index corruption is detected on SolrCore creation.
+  (Mike Drob via Mark Miller)
+
+* SOLR-9926: Allow passing arbitrary java system properties to zkcli. (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-9885: Allow pre-startup Solr log management in Solr bin scripts to be disabled. (Mano Kovacs via Mark Miller)
+
+* SOLR-9481: Authentication and Authorization plugins now work in standalone mode if security.json is placed in
+  SOLR_HOME on every node. Editing config through API is supported but affects only that one node. (janhoy)
+
+* SOLR-8029: Added new style APIs and a framework for creating new APIs and mapping old APIs to new
+  (noble, Steve Rowe, Cassandra Targett, Timothy Potter)
+
+* SOLR-9933: SolrCoreParser now supports configuration of custom SpanQueryBuilder classes.
+  (Daniel Collins, Christine Poerschke)
+
+* SOLR-7955: Auto create .system collection on first request if it does not exist (noble)
+
+* SOLR-10087: StreamHandler now supports registering custom streaming expressions from the blob store (Kevin Risden)
+
+* SOLR-9997: Enable configuring SolrHttpClientBuilder via java system property. (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-9912: Add facet.excludeTerms parameter support. (Jonny Marks, David Smiley, Christine Poerschke)
+
+* SOLR-9916: Adds Stream Evaluators to support evaluating values from tuples. Supports boolean,
+  numeric, and conditional evaluators. BooleanOperations have been removed in preference of
+  BooleanEvaluators. (Dennis Gove)
+
+* SOLR-9903: Stop interrupting the update executor on shutdown, it can cause graceful shutdowns to put replicas into Leader
+  Initiated Recovery among other undesirable things. (Mark Miller)
+
+* SOLR-8396: Add support for PointFields in Solr (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
+
+* SOLR-9987: Add support for MultiValued DocValues in PointFields using SortedNumericDocValues (Tomás Fernández Löbbe)
+
+* SOLR-5944: In-place updates of Numeric DocValues. To leverage this, the _version_ field and the updated
+  field must both be stored=false, indexed=false, docValues=true. (Ishan Chattopadhyaya, hossman, noble,
+  shalin, yonik)
+
+* SOLR-10158: Add support for "preload" option in MMapDirectoryFactory.
+  (Amrit Sarkar via Uwe Schindler)
+
+* SOLR-10153 & SOLR-10152: The Unified and Postings based highlighters: Add hl.bs.type=SEPARATOR along with new param
+  hl.bs.separator to break passages by a provided single character. (Amrit Sarkar, David Smiley)
+
+* SOLR-10156: Add significantTerms Streaming Expression (Joel Bernstein)
+
+* SOLR-8593: Integrate Apache Calcite into the SQLHandler (Kevin Risden, Cao Manh Dat, Joel Bernstein)
+
+* SOLR-10146: Added button to the Admin UI 'Collection' tab for deleting an inactive shard (Amrit Sarkar, janhoy)
+
+* SOLR-9999: Instrument DirectUpdateHandler2. This registers existing statistics under metrics API and adds
+  more metrics to track the rates of update and delete commands. (ab)
+
+* SOLR-9986: Implement DatePointField (Cao Manh Dat, Tomás Fernández Löbbe)
+
+* SOLR-8045: Deploy V2 API at /v2 instead of /solr/v2 (Cao Manh Dat, Noble Paul)
+
+* SOLR-10039: New LatLonPointSpatialField replacement for LatLonType (and some uses of RPT).  Multi-value capable
+  indexed geo lat-lon points, query by rect or circle.  Efficient distance sorting/boosting too. (David Smiley)
+
+* SOLR-10250: CloudSolrClient can now return versions for documents added or deleted when "versions=true" is passed.
+  However, if there is a leader election while this request is in transit, the versions may not be returned from that
+  shard. (Boris Naguet, Ishan Chattopadhyaya)
+
+* SOLR-9045: Make RecoveryStrategy settings configurable. (Christine Poerschke)
+
+* SOLR-10224: Add disk total and disk free metrics. (ab)
+
+* SOLR-10085: SQL result set fields should be ordered by the field list (Joel Bernstein)
+
+* SOLR-10254: significantTerms Streaming Expression should work in non-SolrCloud mode (Joel Bernstein)
+
+* SOLR-10286: string/text fields may now declare themselves as large="true" in the schema.  Large fields are always
+  lazy loaded and will only take up space in the document cache if the actual value is < 512KB.  This option
+  requires "stored" and must not be multiValued.  It's intended for fields that might have very large values so that
+  they don't get cached in memory. (David Smiley)
+
+* SOLR-9185: Solr's edismax and "Lucene"/standard query parsers will no longer split on whitespace before sending
+  terms to analysis, if given the "sow=false" request param ("sow"=>"split on whitespace").  This enables multi-term
+  source synonyms to match at query-time using SynonymGraphFilterFactory; other analysis components will also now
+  work at query time, e.g. ShingleFilterFactory.  By default, and when the "sow=true" param is specified, these
+  parsers' behavior remains the same: queries will be split on whitespace before sending individual terms to analysis.
+  (Steve Rowe)
+
+
+Bug Fixes
+----------------------
+
+* SOLR-9976: Fix init bug in SegmentsInfoRequestHandlerTest (hossman)
+
+* SOLR-9977: Fix config bug in DistribDocExpirationUpdateProcessorTest that allowed false assumptions
+  about when index version changes (hossman)
+
+* SOLR-9979: Macro expansion should not be done in shard requests (Tomás Fernández Löbbe)
+
+* SOLR-9114: NPE using TermVectorComponent, MoreLikeThisComponent in combination with ExactStatsCache (Cao Manh Dat, Varun Thacker)
+
+* SOLR-10049: Collection deletion leaves behind the snapshot metadata (Hrishikesh Gadre via yonik)
+
+* SOLR-10120: A SolrCore reload can remove the index from the previous SolrCore during replication index rollover. (Mark Miller)
+
+* SOLR-10124: Replication can skip removing a temporary index directory in some cases when it should not. (Mark Miller)
+
+* SOLR-9996: Unstored IntPointField returns Long type (Ishan Chattopadhyaya)
+
+* SOLR-10104: BlockDirectoryCache release hooks do not work with multiple directories. (Mike Drob, Mark Miller)
+
+* SOLR-10121: Fix race conditions in HDFS BlockCache that can contribute to corruption in high
+  concurrency situations. (yonik)
+
+* SOLR-10141: Upgrade to Caffeine 2.4.0 since v1.0.1 contributed to BlockCache corruption because the
+  removal listener was called more than once for some items and not at all for other items. (Ben Manes, yonik)
+
+* SOLR-10114: Reordered delete-by-query causes inconsistenties between shards that have
+  child documents (Mano Kovacs, Mihaly Toth, yonik)
+
+* SOLR-10159: When DBQ is reordered with an in-place update, upon whose updated value the DBQ is based
+  on, the DBQ fails due to excessive caching in DeleteByQueryWrapper (Ishan Chattopadhyaya)
+
+* SOLR-10020: CoreAdminHandler silently swallows some errors. (Mike Drob via Erick Erickson)
+
+* SOLR-10063: CoreContainer shutdown has race condition that can cause a hang on shutdown. (Mark Miller)
+
+* SOLR-10170: ClassCastException in RecoveryStrategy. (Mark Miller)
+
+* SOLR-9846: Overseer is not always closed after being started. (Mark Miller)
+
+* SOLR-10168: ShardSplit can fail with NPE in OverseerCollectionMessageHandler#waitForCoreAdminAsyncCallToComplete. (Mark Miller)
+
+* SOLR-9824: Some bulk update paths could be very slow due to CUSC polling. (David Smiley, Mark Miller)
+
+* SOLR-10055: Linux installer now renames existing bin/solr.in.* as bin/solr.in.*.orig to make the installed config in
+  /etc/defaults be the one found by default when launching solr manually. (janhoy)
+
+* SOLR-10196: ElectionContext#runLeaderProcess can hit NPE on core close. (Mark Miller)
+
+* SOLR-10225: Fix HDFS BlockCache evictions metric to not count explicit removal
+  due to a directory close. (yonik)
+
+* SOLR-10088: Installer script does not put zoo.cfg in SOLR_HOME (janhoy)
+
+* SOLR-10226: add back "totalTime" metric to all handlers. See also the back-compat note. (ab)
+
+* SOLR-9838: "inc" atomic update doesn't respect default field value (hoss, Amrit Sarkar, Ishan Chattopadhyaya)
+
+* SOLR-10269: MetricsHandler JSON output incorrect. (ab)
+
+* SOLR-10279: The autoAddReplica feature can result in SolrCores being assigned new shards when using
+  legacyCloud=false and will also fail on a state check when taking over a core registration with a new
+  core. (Mark Miller, Hrishikesh Gadre, Patrick Dvorack)
+
+* SOLR-10184: Fix bin/solr so it can run properly on java9 (hossman, Uwe Schindler)
+
+* SOLR-9516: Admin UI (angular) now works with Kerberos, by excluding serving of /solr/libs/* through
+  SolrDispatchFilter. (Cassandra Targett, Amrit Sarkar via Ishan Chattopadhyaya)
+
+* SOLR-10302: Solr's zkcli scripts now able to find the metrics libraries, which it couldn't earlier (kiran, Ishan Chattopadhyaya)
+
+* SOLR-10283: Learning to Rank (LTR) SolrFeature to reject searches with missing efi (External Feature Information) used by fq.
+  (Christine Poerschke)
+
+* SOLR-10237: Poly-fields should work with subfields that have docValues=true (Tomás Fernández Löbbe, David Smiley)
+
+* SOLR-10218: The Schema API commands "add-field-type" and "replace-field-type" improperly specify SimilarityFactory params.
+  (Benjamin Deininger, Troy Mohl, Steve Rowe)
+
+* SOLR-10319: SolrCore "instanceDir" metric not visible in JMX. (ab)
+
+Optimizations
+----------------------
+
+* SOLR-9941: Clear the deletes lists at UpdateLog before replaying from log. This prevents redundantly pre-applying
+  DBQs, during the log replay, to every update in the log as if the DBQs were out of order. (hossman, Ishan Chattopadhyaya)
+
+* SOLR-9764: All filters that match all documents in the index now share the same memory (DocSet).
+  (Michael Sun, yonik)
+
+* SOLR-9584: Support Solr being proxied with another endpoint than default /solr, by using relative links
+  in AdminUI javascripts (Yun Jie Zhou via janhoy)
+
+* SOLR-10143: PointFields will create IndexOrDocValuesQuery when a field is both, indexed=true and docValues=true
+  (Tomás Fernández Löbbe)
+
+* SOLR-10273: The field with the longest value (if it exceeds 4K) is moved to be last in the Lucene Document in order
+  to benefit from stored field optimizations in Lucene that can avoid reading it when it's not needed.  If the field is
+  multi-valued, they all move together to the end to retain order. (David Smiley)
+
+Other Changes
+----------------------
+* SOLR-9980: Expose configVersion in core admin status (Jessica Cheng Mallet via Tomás Fernández Löbbe)
+
+* SOLR-9972: SpellCheckComponent collations and suggestions returned as a JSON object rather than a list
+  (Christine Poerschke in response to bug report from Ricky Oktavianus Lazuardy)
+
+* SOLR-9983: Fixing NullPointerException failure by TestManagedSchemaThreadSafety 
+  adding check for Zookeeper session expiration (Steve Rowe, Mikhail Khludnev)
+
+* SOLR-10043: Reduce logging of pre-start log rotation (janhoy)
+
+* SOLR-10018: Increase the default hl.maxAnalyzedChars to 51200 for the Unified & Postings Highlighter so that all
+  highlighters now have this same default. (David Smiley)
+
+* SOLR-6246: Added tests to check that the changes in LUCENE-7564 and LUCENE-7670
+  enable AnalyzingInfixSuggester and BlendedInfixSuggester to play nicely with core reload.
+  SolrSuggester.build() now throws SolrCoreState.CoreIsClosedException when interrupted
+  by a core reload/shutdown. (Steve Rowe)
+
+* SOLR-9800: Factor out FacetComponent.newSimpleFacets method. (Jonny Marks via Christine Poerschke)
+
+* SOLR-9914: SimpleFacets: refactor "contains" check into "SubstringBytesRefFilter" class.
+  (Jonny Marks, David Smiley, Christine Poerschke)
+
+* SOLR-10072: The test TestSelectiveWeightCreation appears to be unreliable. (Michael Nilsson via Mark Miller)
+
+* SOLR-10011: Refactor PointField & TrieField to now have a common base class, NumericFieldType. The
+  TrieField.TrieTypes and PointField.PointTypes are now consolidated to NumericFieldType.NumberType. This
+  refactoring also fixes a bug whereby PointFields were not using DocValues for range queries for
+  indexed=false, docValues=true fields. (Ishan Chattopadhyaya, Tomás Fernández Löbbe)
+
+* SOLR-9890: factor out ShardResultTransformerUtils.[un]marshSortValue methods
+  (Judith Silverman, Christine Poerschke)
+
+* SOLR-9966: Convert/migrate tests using EasyMock to Mockito (Cao Manh Dat,  Uwe Schindler)
+
+* SOLR-10173: Make HttpShardHandlerFactory.getReplicaListTransformer more extensible.
+  (Ramsey Haddad via Christine Poerschke)
+
+* SOLR-9842: UpdateRequestProcessors have no way to guarantee the closing of resources used for a request.
+  (Mark Miller)
+
+* SOLR-9848: Lower solr.cloud.wait-for-updates-with-stale-state-pause back down from 7 seconds.
+  (Mark Miller)
+
+* SOLR-10020: Cannot reload a core if it fails initialization. (Mike Drob via Erick Erickson)
+
+* SOLR-9450: The docs/ folder in the binary distribution now contains a single index.html file linking
+  to the online documentation, reducing the size of the download (janhoy, Shawn Heisey, Uwe Schindler)
+
+* SOLR-7453: Remove replication & backup scripts in the solr/scripts directory of the checkout (Varun Thacker)
+
+* SOLR-10214: Remove unused HDFS BlockCache metrics and add storeFails, as well as adding total
+  counts for lookups, hits, and evictions. (yonik)
+
+* SOLR-10134: EmbeddedSolrServer responds on Schema API requests (Robert Alexandersson via Mikhail Khludnev)
+
+* SOLR-10219: re-enable HDFS tests under JDK9 (hossman, Uwe Schindler)
+
+* SOLR-10155: For numeric types facet.contains= and facet.prefix= are now rejected.
+  (Gus Heck, Christine Poerschke)
+
+* SOLR-10171: Add Constant Reduction Rules to Calcite Planner (Kevin Risden)
+
+* SOLR-10230: default TTL of PKIAuthenticationPlugin increased to 10secs (noble)
+
+* SOLR-10235: Fix DIH's TestJdbcDataSource to work with Java 9 and other Java runtimes that
+  do not use the same DriverManager implementation like Oracle's original one. The test now
+  uses a fully implemented Driver instance returning a mock connection. The test also works
+  correct now if other drivers were installed before test execution (e.g., through IDE).
+  (hossman, Uwe Schindler)
+
+* SOLR-8876: change morphline test config files to work around 'importCommands' bug when using java9 (hossman)
+
+* SOLR-10247: Support non-numeric metrics and a "compact" format of /admin/metrics output. (ab)
+
+* SOLR-9990: Add PointFields in example/default schemas (Tomás Fernández Löbbe)
+
+==================  6.4.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+Bug Fixes
+----------------------
+* SOLR-10130, SOLR-10182: Serious performance degradation in Solr 6.4.1 due to the new metrics collection.
+  Default settings in solrconfig.xml /config/indexConfig/metrics have been changed to turn off
+  IndexWriter metrics collection. Directory level metrics collection has been completely removed until
+  a better design is found. (ab, ishan)
+
+* SOLR-10138: Transaction log replay can hit an NPE due to new Metrics code. (ab)
+
+* SOLR-10083: Fix instanceof check in ConstDoubleSource.equals (Pushkar Raste via Christine Poerschke)
+
+* SOLR-10190: Fix NPE in CloudSolrClient when reading stale alias (Janosch Woschitz via Tomás Fernández Löbbe)
+
+* SOLR-10192: Fix copy/paste in solr-ltr pom.xml template. (Christine Poerschke)
+
+==================  6.4.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+Bug Fixes
+----------------------
+* SOLR-9969: "Plugin/Stats" section of the UI doesn't display empty metric types (Tomás Fernández Löbbe)
+
+* SOLR-8491: solr.cmd SOLR_SSL_OPTS is overwritten (Sam Yi, Andy Hind, Marcel Berteler, Kevin Risden)
+
+* SOLR-10031: Validation of filename params in ReplicationHandler (Hrishikesh Gadre, janhoy)
+
+* SOLR-10054: Core swapping doesn't work with new metrics changes in place (ab)
+
+==================  6.4.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+Upgrade Notes
+----------------------
+
+* SOLR-9166: Export handler returns zero for numeric fields that are not in the original doc. One
+  consequence of this change is that you must be aware that some tuples will not have values if 
+  there were none in the original document.
+
+* SOLR-8785: Metrics related classes in org.apache.solr.util.stats have been removed in favor of
+  the dropwizard metrics library. Any custom plugins using these classes should be changed to use
+  the equivalent classes from the metrics library.
+  As part of this, the following changes were made to the output of Overseer Status API:
+  * The "totalTime" metric has been removed because it is no longer supported
+  * The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime"
+    and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime"
+    and so on for consistency with stats output in other parts of Solr.
+  * The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been
+    replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond"
+    and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr.
+
+* SOLR-9708: You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It
+  might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the
+  original Highlighter. That said, some options aren't supported yet.
+  It will get more features in time, especially with your input. See HighlightParams.java
+  for a listing of highlight parameters annotated with which highlighters use them.
+  hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector.
+
+* SOLR-9712: maxWarmingSearchers now defaults to 1, and more importantly commits will now block if this
+  limit is exceeded instead of throwing an exception (a good thing). Consequently there is no longer a
+  risk in overlapping commits.  Nonetheless users should continue to avoid excessive committing. Users are
+  advised to remove any pre-existing maxWarmingSearchers entries from their solrconfig.xml files.
+
+* SOLR-7466: complexphrase query parser now supports leading wildcards, beware of its' possible heaviness. 
+  Users are encouraged to use ReversedWildcardFilter in index time analysis.    
+
+New Features
+----------------------
+* SOLR-9918: Add SkipExistingDocumentsProcessor that skips duplicate inserts and ignores updates to missing docs
+  (Tim Owen via koji)
+
+* SOLR-9293: Solrj client support for hierarchical clusters and other topics 
+  marker. (Dawid Weiss)
+
+* SOLR-9681: FacetModule / JSON Facet API added the ability to add filters directly to
+  any facet command.  The filters are applied after any domain change operations.
+  Example:  { type:terms, field:category, filter:"user:yonik" } 
+  (yonik)
+
+* SOLR-9442, SOLR-9787: Adds Array of Name Type Value (json.nl=arrntv) style to JSONResponseWriter.
+  (Jonny Marks, Christine Poerschke, hossman)
+
+* SOLR-8542: Adds Solr Learning to Rank (LTR) plugin for reranking results with machine learning models.
+  (Michael Nilsson, Diego Ceccarelli, Joshua Pantony, Jon Dorando, Naveen Santhapuri, Alessandro Benedetti, David Grohmann, Christine Poerschke)
+
+* SOLR-9055: Make collection backup/restore extensible. (Hrishikesh Gadre, Varun Thacker, Mark Miller)
+
+* SOLR-9682: JSON Facet API: added "param" query type to facet domain filter specification to obtain
+  filters via query parameters. (yonik)
+
+* SOLR-9038: Add a command-line tool to manage the snapshots functionality (Hrishikesh Gadre via yonik)
+
+* SOLR-9633: Limit memory consumed by FastLRUCache with a new 'maxRamMB' config parameter.
+  (yonik, Michael Sun, shalin)
+
+* SOLR-9666: SolrJ LukeResponse support dynamic fields (Fengtan via Kevin Risden)
+
+* SOLR-9077: Streaming expressions should support collection alias (Kevin Risden)
+
+* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
+  (Gregory Chanan, Hrishikesh Gadre via yonik)
+
+* SOLR-9721: javabin Tuple parser for streaming and other end points (noble)
+
+* SOLR-9708: Added UnifiedSolrHighlighter, a highlighter adapter for Lucene's UnifiedHighlighter. The adapter is a
+  derivative of the PostingsSolrHighlighter, supporting mostly the same parameters with some differences.
+  Introduced "hl.method" parameter which can be set to original|fastVector|postings|unified to pick the highlighter at
+  runtime without the need to modify solrconfig from the default configuration. hl.useFastVectorHighlighter is now
+  considered deprecated in lieu of hl.method=fastVector. (Timothy Rodriguez, David Smiley)
+
+* SOLR-9728: Ability to specify Key Store type in solr.in.sh file for SSL (Michael Suzuki, Kevin Risden)
+
+* SOLR-5043: New solr.dns.prevent.reverse.lookup system property that can be used to prevent long core
+  (re)load delays on systems with missconfigured hostname/DNS (hossman)
+
+* SOLR-9844: FieldCache information fetched via the mbeans handler or seen via the UI now displays the total size used.
+  The individual cache entries in the response are now formatted better as well. (Varun Thacker)
+
+* SOLR-9513: Generic authentication plugins (GenericHadoopAuthPlugin and ConfigurableInternodeAuthHadoopPlugin) that delegate
+  all functionality to Hadoop authentication framework. (Hrishikesh Gadre via Ishan Chattopadhyaya)
+
+* SOLR-9860: Enable configuring invariantParams via HttpSolrClient.Builder (Hrishikesh Gadre, Ishan Chattopadhyaya)
+ 
+* SOLR-4735, SOLR-9921: Improve metrics reporting. This uses the dropwizard metric library, adding an internal
+  API for registering and reporting metrics from Solr components. Several new metrics and an improved JMX
+  reporter have been added (Alan Woodward, Jeff Wartes, Christine Poerschke, Kelvin Wong, shalin, ab)
+
+* SOLR-9788: Use instrumented jetty classes provided by the dropwizard metric library. (shalin)
+
+* SOLR-9805: Use metrics-jvm library to instrument jvm internals such as GC, memory usage and others. (shalin)
+
+* SOLR-9812, SOLR-9911, SOLR-9960: Added a new /admin/metrics API to return all metrics collected by Solr via API.
+  API supports four optional multi-valued parameters:
+  - 'group' (all,jvm,jetty,node,core),
+  - 'type' (all,counter,timer,gauge,histogram),
+  - 'prefix' that filters the returned metrics,
+  - 'registry' that selects one or more registries by prefix (eg. solr.jvm,solr.core.collection1)
+  - Example: http://localhost:8983/solr/admin/metrics?group=jvm,jetty&type=counter
+  - Example: http://localhost:8983/solr/admin/metrics?group=jvm&prefix=buffers,os
+  - Example: http://localhost:8983/solr/admin/metrics?registry=solr.node,solr.core&prefix=ADMIN
+  (shalin, ab)
+
+* SOLR-9884: Add version to segments handler output (Steven Bower via Erick Erickson)
+
+* SOLR-9725: Substitute properties into JdbcDataSource configuration ( Jamie Jackson, Yuri Sashevsky via Mikhail Khludnev)
+
+* SOLR-9877: SOLR-9923: SOLR-9948: Use instrumented http client and connection pool in HttpShardHandler and
+  UpdateShardHandler. The metrics are collected per query-less URL and method by default but it can be configured
+  to host/method and per-method as well. (shalin)
+
+* SOLR-9880: Add Ganglia, Graphite and SLF4J metrics reporters. (ab)
+
+* SOLR-9897: Add hl.requireFieldMatch toggle support when using the UnifiedHighlighter.  Defaults to false like the
+  other highlighters that support this. (David Smiley)
+
+* SOLR-9905: Add NullStream to isolate the performance of the ExportWriter (Joel Bernstein)
+
+* SOLR-9891: Add mkroot command to bin/solr and bin/solr.cmd (Erick Erickson)
+
+* SOLR-9668,SOLR-7197: introduce cursorMark='true' in SolrEntityProcessor (Yegor Kozlov, Raveendra Yerraguntl via Mikhail Khludnev)
+
+* SOLR-9684: Add priority Streaming Expression (Joel Bernstein, David Smiley)
+
+* SOLR-9896: Instrument and collect metrics from query, update, core admin and core load thread pools. (shalin)
+
+* SOLR-9854: Collect metrics for index merges and index store IO (ab)
+
+* SOLR-8530: Add HavingStream to Streaming API and StreamingExpressions (Joel Bernstein)
+
+* SOLR-7466: Enable leading wildcard in complexphrase query parser, optimize it with  ReversedWildcardFilterFactory 
+  when it's provided (Mikhail Khludnev)
+
+* SOLR-9935: Add hl.fragsize support when using the UnifiedHighlighter to avoid snippets/Passages that are too small.
+  Defaults to 70. (David Smiley)
+
+* SOLR-9856: Collect metrics for shard replication and tlog replay on replicas (ab).
+
+* SOLR-9886: Add a 'enable' flag to caches to enable/disable them (Pushkar Raste, noble)
+
+* SOLR-9947: Clean up some SolrInfoMBean categories. Add an alternative hierarchical view in JMX
+  for SolrInfoMBeans, which uses similar conventions to SolrJmxReporter. (ab)
+
+Optimizations
+----------------------
+* SOLR-9704: Facet Module / JSON Facet API: Optimize blockChildren facets that have
+  filters specified by using those filters as acceptDocs. (yonik)
+
+* SOLR-9726: Reduce number of lookupOrd calls made by the DocValuesFacets.getCounts method.
+  (Jonny Marks via Christine Poerschke)
+
+* SOLR-9772: Deriving distributed sort values (fieldSortValues) should reuse
+  comparator and only invalidate leafComparator. (John Call via yonik)
+
+* SOLR-9786: FieldType has a new getSetQuery() method that can take a set of terms
+  and create a more efficient query (such as TermsQuery).  The solr query parser has been
+  changed to use this method when appropriate.  The parser also knows when it is being
+  used to parse a filter and will create TermsQueries from large lists of normal terms
+  or numbers, resulting in a query that will execute faster.  This also acts to avoid
+  BooleanQuery maximum clause limit.  Query parsing itself has also been optimized,
+  resulting in less produced garbage and 5-7% better performance.
+  (yonik)
+
+* SOLR-9902: StandardDirectoryFactory should use Files API for it's move implementation. (Mark Miller, Mike Drob)
+
+Bug Fixes
+----------------------
+* SOLR-9701: NPE in export handler when "fl" parameter is omitted.
+  (Erick Erickson)
+
+* SOLR-9433: SolrCore clean-up logic uses incorrect path to delete dataDir on failure to create a core.
+  (Evan Sayer, shalin)
+
+* SOLR-9360: Solr script not properly checking SOLR_PID
+  (Alessandro Benedetti via Erick Erickson)
+
+* SOLR-9716: RecoveryStrategy sends prep recovery command without setting read time out which can cause
+  replica recovery to hang indefinitely on network partitions. (Cao Manh Dat, shalin)
+
+* SOLR-9624: In Admin UI, do not attempt to highlight CSV output (Alexandre Rafalovitch)
+
+* SOLR-9005: In files example, add a guard condition to javascript URP script (Alexandre Rafalovitch)
+
+* SOLR-9519: JSON Facet API: don't stop at an empty facet bucket if any sub-facets still have a chance
+  of matching something due to filter exclusions (which can widen the domain again).
+  (Michael Sun, yonik)
+
+* SOLR-9740: A bug in macro expansion of multi-valued parameters caused non-expanded values
+  after the first expanded value in the same multi-valued parameter to be dropped.
+  (Erik Hatcher, yonik)
+  
+* SOLR-9751: PreAnalyzedField can cause managed schema corruption. (Steve Rowe)
+
+* SOLR-9736: Solr resolves the collection name against the first available leader or first replica
+  of the first slice. This puts undue pressure on leader cores and likely on the wrong ones. This is
+  fixed to randomly pick a leader on updates or a replica core otherwise. (Cao Manh Dat via shalin)
+
+* SOLR-9284: The HDFS BlockDirectoryCache should not let it's keysToRelease or names maps grow indefinitely.
+  (Mark Miller, Michael Sun)
+
+* SOLR-9729: JDBCStream improvements (Kevin Risden)
+
+* SOLR-9626: new Admin UI now also highlights matched terms in the Analysis screen. (Alexandre Rafalovitch)
+
+* SOLR-9512: CloudSolrClient's cluster state cache can break direct updates to leaders (noble)
+
+* SOLR-5260: Facet search on a docvalue field in a multi shard collection (Trym Møller, Erick Erickson)
+
+* SOLR-9768: RecordingJsonParser produces incomplete json (Wojciech Stryszyk via ab)
+
+* SOLR-9616: Solr throws exception when expand=true on empty index (Timo Hund via Ishan Chattopadhyaya)
+
+* SOLR-9832: Schema modifications are not immediately visible on the coordinating node. (Steve Rowe)
+
+* SOLR-9834: A variety of spots in the code can create a collection zk node after the collection has been 
+  removed. (Mark Miller)
+
+* SOLR-9707: Don't forward DeleteByQuery requests to down replicas. (Jessica Cheng Mallet via Varun Thacker)
+
+* SOLR-9823: CoreContainer incorrectly setting MDCLoggingContext for core (Jessica Cheng Mallet via Erick Erickson)
+
+* SOLR-1953: It may be possible for temporary files to accumulate until the Solr process is shut down.
+  (Karl Wright, Mark Miller)
+
+* SOLR-9847: Stop blocking further schema updates while waiting for a pending update to propagate to other replicas.
+  This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
+  (Mark Miller, Steve Rowe)
+
+* SOLR-9760: Windows script doesn't need write permission (Alex Crome by Mikhail Khludnev)
+
+* SOLR-9699,SOLR-4668: fix exception from core status in parallel with core reload (Mikhail Khludnev)
+
+* SOLR-9859: replication.properties cannot be updated after being written and neither replication.properties or
+  index.properties are durable in the face of a crash. (Pushkar Raste, Chris de Kok, Cao Manh Dat, Mark Miller)
+
+* SOLR-9901: Implement move in HdfsDirectoryFactory. (Mark Miller)
+
+* SOLR-9900: fix false positives on range queries with ReversedWildcardFilterFactory (Yonik Seeley via Mikhail Khludnev)
+
+* SOLR-9495: AIOBE with confusing message for incomplete sort spec in Streaming Expression (Gus Heck, Joel Bernstein)
+
+* SOLR-9154: Fix DirectSolrSpellChecker to work when added through the Config API. (Anshum Gupta)
+
+* SOLR-9919: random Streaming Expression is not registered in /stream or /graph handler (Joel Bernstein)
+
+* SOLR-7495: Support Facet.field on a non-DocValued, single-value, int field (Varun Thacker, Scott Stults)
+
+* SOLR-9917: JSON Facet API percentile function caused a NullPointerException in distributed mode when
+  there were no values in a bucket from a shard. (yonik)
+
+* SOLR-9931: JSON Facet API hll (hyper-log-log) function returned 0 for non-empty buckets with no field values
+  in local mode, but nothing for distributed mode.  Both modes now return 0.  (yonik)
+
+* SOLR-9503: NPE in Replica Placement Rules when using Overseer Role with other rules (Tim Owen via noble)
+
+* SOLR-9883: Example schemaless solr config files can lead to invalid tlog replays: when updates are buffered,
+  update processors ordered before DistributedUpdateProcessor, e.g. field normalization, are never run. (Steve Rowe)
+
+* SOLR-9644: SimpleMLTQParser and CloudMLTQParser did not handle field boosts properly
+  and CloudMLTQParser included extra strings from the field definitions in the query.
+  (Ere Maijala via Anshum Gupta)
+
+* SOLR-9954: Prevent against failure during failed snapshot cleanup from swallowing the actual cause
+  for the snapshot to fail. (thelabdude)
+
+Other Changes
+----------------------
+
+* SOLR-7539: Upgrade the clustering plugin to Carrot2 3.15.0. (Dawid Weiss)
+
+* SOLR-9621: Remove several Guava & Apache Commons calls in favor of java 8 alternatives.
+  (Michael Braun via David Smiley)
+
+* SOLR-9720: Refactor Responsewriters to remove dependencies on TupleStream,
+  Tuple, Explanation (noble)
+
+* SOLR-9717: Refactor '/export' to not hardcode the JSON output and to use an API (noble)
+
+* SOLR-9739: JavabinCodec implements PushWriter interface (noble)
+
+* SOLR-8332: Factor HttpShardHandler[Factory]'s url shuffling out into a ReplicaListTransformer class.
+  (Christine Poerschke, Noble Paul)
+
+* SOLR-9597: Add setReadOnly(String ...) to ConnectionImpl (Kevin Risden)
+
+* SOLR-9609: Change hard-coded keysize from 512 to 1024 (Jeremy Martini via Erick Erickson)
+
+* SOLR-8785: Use Dropwizard Metrics library for core metrics. The copied over code in
+  org.apache.solr.util.stats has been removed. (Jeff Wartes, Kelvin Wong, Christine Poerschke, shalin)
+
+* SOLR-9784: Refactor CloudSolrClient to eliminate direct dependency on ZK (noble)
+
+* SOLR-9801: Upgrade jetty to 9.3.14.v20161028 (shalin)
+
+* SOLR-9783: (Search|Top)Group[s]ShardResponseProcessor.process: turned sortWithinGroup null check into assert.
+  (Christine Poerschke)
+
+* SOLR-9660: in GroupingSpecification factor [group](sort|offset|limit) into [group](sortSpec)
+  (Judith Silverman, Christine Poerschke)
+
+* SOLR-9819: Upgrade commons-fileupload to 1.3.2, fixing a potential vulnerability CVE-2016-3092 (Anshum Gupta)
+
+* SOLR-9827: ConcurrentUpdateSolrClient creates a RemoteSolrException if the remote host responded with a non-ok
+  response (instead of a SolrException) and includes the remote error message as part of the exception message
+  (Tomás Fernández Löbbe)
+
+* SOLR-9846: OverseerAutoReplicaFailoverThread can take too long to stop and leak out of unit tests. (Mark Miller)
+
+* SOLR-8959: Refactored TestSegmentSorting out of TestMiniSolrCloudCluster (hossman)
+
+* SOLR-9874: Solr will reject CREATEALIAS requests if target collections don't exist (Tomás Fernández Löbbe)
+
+* SOLR-9878: fixing lazy logic for retrieving ReversedWildcardFilterFactory in SolrQueryParserBase (Mikhail Khludnev)
+
+* SOLR-9758: refactor preferLocalShards implementation (Christine Poerschke)
+
+* SOLR-9448: providing a test to workaround a differently named uniqueKey field (Mikhail Khludnev)
+
+* SOLR-9899: StandardDirectoryFactory should use optimizations for all FilterDirectorys not just NRTCachingDirectory.
+  (Mark Miller)
+
+* SOLR-9915: PeerSync alreadyInSync check is not backwards compatible and results in full replication during a rolling restart
+  (Tim Owen via noble)
+
+* SOLR-3990: Moves getIndexSize() from ReplicationHandler to SolrCore (Shawn Heisey)
+
+* SOLR-9944: Map the nodes function name to the GatherNodesStream (Joel Bernstein)
+
+* SOLR-9777: IndexFingerprinting should use getCombinedCoreAndDeletesKey() instead of getCoreCacheKey() for per-segment caching (Ishan Chattopadhyaya)
+
+* SOLR-9934: SolrTestCase.clearIndex has been improved to take advantage of low level test specific logic that
+  clears the index metadata more completely then a normal *:* DBQ can due to update versioning.  (hossman)
+
+* SOLR-9893: Update Mockito to version 2.6.2 for Java 9 support. Disable all legacy EasyMock tests when running
+  on Java 9 until they were migrated to Mockito. (Uwe Schindler)
 
 ==================  6.3.0 ==================
 
@@ -73,18 +1516,30 @@ Upgrade Notes
 ----------------------
 
 * If you use the JSON Facet API (json.facet) with method=stream, you must now set sort='index asc' to get the streaming
-behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't change defaults of other parameters.
+  behavior; otherwise it won't stream.  Reminder: "method" is a hint that doesn't change defaults of other parameters.
 
 * If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the
-prefix, then you will now get an error as these options are incompatible with numeric faceting.
+  prefix, then you will now get an error as these options are incompatible with numeric faceting.
 
 * Solr's logging verbosity at the INFO level has been greatly reduced, and
-  you may need to update the log configs to use the DEBUG level to get the
-  same logging messages as before.
+  you may need to update the log configs to use the DEBUG level to see all the
+  logging messages you used to see at INFO level before.
+
+* We are no longer backing up solr.log and solr_gc.log files in date-stamped copies forever. If you relied on
+  the solr_log_<date> or solr_gc_log_<date> being in the logs folder that will no longer be the case. 
+  See SOLR-9570 for details.
+
+* The create/deleteCollection methods on MiniSolrCloudCluster have been
+  deprecated.  Clients should instead use the CollectionAdminRequest API.  In
+  addition, MiniSolrCloudCluster#uploadConfigDir(File, String) has been
+  deprecated in favour of #uploadConfigSet(Path, String)
+
+* The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so,
+  which had the effect of masking existing environment variables.
 
 New Features
 ----------------------
-* SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for 
+* SOLR-5725: facet.method=enum can bypass exact counts calculation with facet.exists=true, it just returns 1 for
   terms which exists in result docset. (Alexey Kozhemiakin, Sebastian Koziel, Radoslaw Zielinski via Mikhail Khludnev)
 
 * SOLR-9127: Excel workbook (.xlsx) response writer. use 'wt=xlsx' (Tony Moriarty, noble)
@@ -118,6 +1573,34 @@ New Features
 * SOLR-9520: Kerberos delegation support in SolrJ (Ishan Chattopadhyaya, noble)
 
 * SOLR-9146: Parallel SQL engine should support >, >=, <, <=, <>, != syntax (Timothy Potter, Joel Bernstein, Kevin Risden)
+
+* SOLR-9337: Add fetch Streaming Expression (Joel Bernstein)
+
+* SOLR-9103: Restore ability for users to add custom Streaming Expressions (Cao Manh Dat)
+
+* SOLR-9657: New TemplateUpdateProcessorFactory added (noble)
+
+* SOLR-9417: Allow daemons to terminate when they finish iterating a topic (Joel Bernstein)
+
+* SOLR-8370: Display configured Similarity in Schema-Browser, both global/default and per-field/field-type 
+  (janhoy, Alexandre Rafalovitch)
+
+* SOLR-9326: Ability to create/delete/list snapshots at collection level.
+  (Hrishikesh Gadre via yonik)
+
+* SOLR-9662: New parameter -u <user:pass> in bin/post to pass basicauth credentials (janhoy)
+
+* SOLR-9654: Add "overrequest" parameter to JSON Facet API to control amount of overrequest
+  on a distributed terms facet. (yonik)
+
+* SOLR-2212: Add a factory class corresponding to Lucene's NoMergePolicy. (Lance Norskog, Cao Manh Dat via shalin)
+
+* SOLR-9670: Support SOLR_AUTHENTICATION_OPTS in solr.cmd (janhoy)
+
+* SOLR-9559: Add ExecutorStream to execute stored Streaming Expressions (Joel Bernstein)
+
+* SOLR-1085: Add support for MoreLikeThis queries and responses in SolrJ client.
+  (Maurice Jumelet, Bill Mitchell, Cao Manh Dat via shalin)
 
 Bug Fixes
 ----------------------
@@ -160,6 +1643,35 @@ Bug Fixes
 
 * SOLR-9278: Index replication interactions with IndexWriter can cause deadlock. (Xunlong via Mark Miller)
 
+* SOLR-9604: Pooled SSL connections were not being re-used (Alan Woodward,
+  Mikhail Khludnev, hossman)
+
+* SOLR-9325: solr.log is now written to $SOLR_LOGS_DIR without changing log4j.properties (janhoy)
+
+* SOLR-9518: Kerberos Delegation Tokens don't work without a chrooted ZK (Ishan Chattopadhyaya,via noble)
+
+* SOLR-9687: Fixed Interval Facet count issue in cases of open/close intervals on the same values
+ (Andy Chillrud, Tomás Fernández Löbbe)  
+
+* SOLR-9441: Solr collection backup on HDFS can only be manipulated by the Solr process owner. 
+ (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-9536: OldBackupDirectory timestamp field needs to be initialized to avoid NPE.
+ (Hrishikesh Gadre, hossman via Mark Miller)
+
+* SOLR-2039: Multivalued fields with dynamic names does not work properly with DIH.
+  (K A, ruslan.shv, Cao Manh Dat via shalin)
+
+* SOLR-4164: group.limit=-1 was not supported for grouping in distributed mode.
+  (Cao Manh Dat, Lance Norskog, Webster Homer, hossman, yonik)
+
+* SOLR-9692: blockUnknown property makes inter-node communication impossible (noble)
+
+* SOLR-2094: XPathEntityProcessor should reinitialize the XPathRecordReader instance if
+  the 'forEach' or 'xpath' attributes are templates & it is not a root entity (Cao Manh Dat, noble)
+
+* SOLR-9697: zk upconfig broken on windows (Xavier Jmlucjav via janhoy)
+ 
 Optimizations
 ----------------------
 
@@ -182,6 +1694,14 @@ Optimizations
   reader rather than ask for a global view.  In extreme cases, this leads to a 100x speedup.
   (Takahiro Ishikawa, yonik)
 
+* SOLR-9566: Don't put replicas into recovery when first creating a Collection
+  (Alan Woodward)
+
+* SOLR-9546: Eliminate unnecessary boxing/unboxing going on in SolrParams (Pushkar Raste, noble)
+
+* SOLR-9506: cache IndexFingerprint for each segment (Pushkar Raste, yonik, noble)
+
+* SOLR-7506: Roll over GC logs by default via bin/solr scripts (shalin, janhoy)
 
 Other Changes
 ----------------------
@@ -255,6 +1775,46 @@ Other Changes
 * SOLR-9589: Remove jackson dependency from SolrJ (Ishan Chattopadhyaya, noble)
 
 * SOLR-8385: Narrow StreamFactory.withFunctionName clazz parameter to prevent misconfiguration (Jason Gerlowski, Kevin Risden)
+
+* SOLR-8969: SQLHandler causes NPE in non-cloud mode (Markus Jelsma, Kevin Risden)
+
+* SOLR-9610: New AssertTool in SolrCLI for easier cross platform assertions from command line (janhoy)
+
+* SOLR-9680: Better error messages in SolrCLI when authentication required (janhoy)
+
+* SOLR-9639: Test only fix. Prevent CDCR tests from removing collection during recovery that used to blow up jvm  (Mikhail Khludnev)
+
+* SOLR-9625: Add HelloWorldSolrCloudTestCase class (Christine Poerschke, Alan Woodward, Alexandre Rafalovitch)
+
+* SOLR-9642: Refactor the core level snapshot cleanup mechanism to rely on Lucene (Hrishikesh Gadre via yonik)
+
+* SOLR-9627: Add QParser.getSortSpec, deprecate misleadingly named QParser.getSort (Judith Silverman, Christine Poerschke)
+
+* SOLR-9632: Add MiniSolrCloudCluster#deleteAllCollections() method (Alan Woodward)
+
+* SOLR-9634: Deprecate collection methods on MiniSolrCloudCluster (Alan Woodward)
+
+* SOLR-7850: Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr (and bin/solr.cmd)
+  such that the default state of these files is to set nothing. This makes Solr work better with Docker. (David Smiley)
+
+* SOLR-9570: Various log tidying now happens at Solr startup:
+  Old solr_log_<date> and solr_gc_log_<date> files are removed, avoiding disks to fill up,
+  solr.log.X files are rotated, preserving solr.log from last run in solr.log.1, solr.log.1 => solr.log.2 etc
+  solr-*-console.log files are moved into $SOLR_LOGS_DIR/archived/ instead of being overwritten
+  Last JVM garbage collection log solr_gc.log is moved into $SOLR_LOGS_DIR/archived/
+  (janhoy)
+
+* SOLR-4531: Add tests to ensure that recovery does not fail on corrupted tlogs.
+  (Simon Scofield, Cao Manh Dat via shalin)
+
+* SOLR-5245: Add a test to ensure that election contexts are keyed off both collection name and coreNodeName
+  so that killing a shard in one collection does not result in leader election in a different collection.
+  See SOLR-5243 for the related bug. (Cao Manh Dat via shalin)
+
+* SOLR-9533: Reload core config when a core is reloaded (Gethin James, Joel Bernstein)
+
+* SOLR-9371: Fix bin/solr calculations for start/stop wait time and RMI_PORT.
+  (Shawn Heisey via Erick Erickson)
 
 ==================  6.2.1 ==================
 
@@ -366,9 +1926,6 @@ New Features
 
 * SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
   (Doug Turnbull, David Smiley)
-
-* SOLR-9324: Support Secure Impersonation / Proxy User for solr authentication
-  (Gregory Chanan)
 
 * SOLR-9252: Feature selection and logistic regression on text (Cao Manh Dat, Joel Bernstein)
 
@@ -1338,6 +2895,28 @@ Other Changes
 
 * SOLR-8904: DateUtil in SolrJ moved to the extraction contrib as ExtractionDateUtil.  Obsolete methods were removed.
   (David Smiley)
+
+======================= 5.5.4 =======================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.14.v20161028
+
+
+Other Changes
+----------------------
+
+* SOLR-9819: Upgrade commons-fileupload to 1.3.2, fixing a potential vulnerability CVE-2016-3092 (Anshum Gupta)
+
+* SOLR-10031: Validation of filename params in ReplicationHandler (Hrishikesh Gadre, janhoy)
+
 
 ======================= 5.5.3 =======================
 
@@ -3208,7 +4787,7 @@ Bug Fixes
   while accessing other collections. (Shai Erera)
 
 * SOLR-7412: Fixed range.facet.other parameter for distributed requests. 
-  (Will Miller, Tomás Fernándes Löbbe)
+  (Will Miller, Tomás Fernández Löbbe)
 
 * SOLR-6087: SolrIndexSearcher makes no DelegatingCollector.finish() call when IndexSearcher
   throws an expected exception. (Christine Poerschke via shalin)
@@ -5201,6 +6780,31 @@ Other Changes
 
 * SOLR-6391: Improve message for CREATECOLLECTION failure due to missing
   numShards (Anshum Gupta)
+
+==================  4.9.1 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.5 (with upgraded Apache POI 3.10.1)
+Carrot2 3.9.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+
+Detailed Change List
+----------------------
+
+Other Changes
+---------------------
+
+* SOLR-6503: Removed support for parsing netcdf files in Solr Cell because
+  of license issues. If you need support for this format, download the parser
+  JAR yourself (version 4.2) and add it to contrib/extraction/lib folder:
+  http://www.unidata.ucar.edu/software/thredds/current/netcdf-java/
+  (Uwe Schindler)
+
+* SOLR-6388: Force upgrade of Apache POI dependency in Solr Cell to version
+  3.10.1 to fix CVE-2014-3529 and CVE-2014-3574.  (Uwe Schindler)
 
 ==================  4.9.0 ==================
 
@@ -11588,6 +13192,122 @@ Documentation
 
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
+
+================== Release 1.4.1 ==================
+Release Date:  See http://lucene.apache.org/solr for the official release date.
+
+Upgrading from Solr 1.4
+-----------------------
+
+This is a bug fix release - no changes are required when upgrading from Solr 1.4.
+However, a reindex is needed for some of the analysis fixes to take effect.
+
+Versions of Major Components
+----------------------------
+Apache Lucene 2.9.3
+Apache Tika 0.4
+Carrot2 3.1.0
+
+Lucene Information
+----------------
+
+Since Solr is built on top of Lucene, many people add customizations to Solr
+that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_3/,
+especially http://lucene.apache.org/java/2_9_3/changes/Changes.html for more
+information on the version of Lucene used in Solr.
+
+Bug Fixes
+----------------------
+
+* SOLR-1934: Upgrade to Apache Lucene 2.9.3 to obtain several bug
+  fixes from the previous 2.9.1.  See the Lucene 2.9.3 release notes
+  for details.  (hossman, Mark Miller)
+
+* SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
+  to the original ValueSource.getValues(reader) so custom sources
+  will work. (yonik)
+
+* SOLR-1572: FastLRUCache correctly implemented the LRU policy only
+  for the first 2B accesses. (yonik)
+
+* SOLR-1595: StreamingUpdateSolrServer used the platform default character
+  set when streaming updates, rather than using UTF-8 as the HTTP headers
+  indicated, leading to an encoding mismatch. (hossman, yonik)
+
+* SOLR-1660: CapitalizationFilter crashes if you use the maxWordCountOption
+  (Robert Muir via shalin)
+
+* SOLR-1662: Added Javadocs in BufferedTokenStream and fixed incorrect cloning
+  in TestBufferedTokenStream (Robert Muir, Uwe Schindler via shalin)
+
+* SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
+  could halt the streaming of documents. The original patch to fix this
+  (never officially released) introduced another hanging bug due to
+  connections not being released.  (Attila Babo, Erik Hetzner via yonik)
+
+* SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
+  retrieved from ContentStreams are not closed in various places, resulting
+  in file descriptor leaks.
+  (Christoff Brill, Mark Miller)
+
+* SOLR-1580: Solr Configuration ignores 'mergeFactor' parameter, always
+  uses Lucene default. (Lance Norskog via Mark Miller)
+
+* SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
+  result in incorrectly sorted results.  (yonik)
+
+* SOLR-1797: fix ConcurrentModificationException and potential memory
+  leaks in ResourceLoader. (yonik)
+
+* SOLR-1798: Small memory leak (~100 bytes) in fastLRUCache for every
+  commit. (yonik)
+
+* SOLR-1522: Show proper message if <script> tag is missing for DIH
+  ScriptTransformer (noble)
+
+* SOLR-1538: Reordering of object allocations in ConcurrentLRUCache to eliminate
+  (an extremely small) potential for deadlock.
+  (gabriele renzi via hossman)
+
+* SOLR-1558: QueryElevationComponent only works if the uniqueKey field is
+  implemented using StrField.  In previous versions of Solr no warning or
+  error would be generated if you attempted to use QueryElevationComponent,
+  it would just fail in unexpected ways.  This has been changed so that it
+  will fail with a clear error message on initialization. (hossman)
+
+* SOLR-1563: Binary fields, including trie-based numeric fields, caused null
+  pointer exceptions in the luke request handler. (yonik)
+
+* SOLR-1579: Fixes to XML escaping in stats.jsp
+  (David Bowen and hossman)
+
+* SOLR-1582: copyField was ignored for BinaryField types (gsingers)
+
+* SOLR-1596: A rollback operation followed by the shutdown of Solr
+  or the close of a core resulted in a warning:
+  "SEVERE: SolrIndexWriter was not closed prior to finalize()" although
+  there were no other consequences. (yonik)
+
+* SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
+  (Akshay Ukey via shalin)
+
+* SOLR-1936: The JSON response format needed to escape unicode code point
+  U+2028 - 'LINE SEPARATOR' (Robert Hofstra, yonik)
+
+* SOLR-1852: Fix WordDelimiterFilterFactory bug where position increments
+  were not being applied properly to subwords.  (Peter Wolanin via Robert Muir)
+
+* SOLR-1706: fixed WordDelimiterFilter for certain combinations of options
+  where it would output incorrect tokens. (Robert Muir, Chris Male)
+
+* SOLR-1948: PatternTokenizerFactory should use parent's args (koji)
+
+* SOLR-1870: Indexing documents using the 'javabin' format no longer
+  fails with a ClassCastException whenSolrInputDocuments contain field
+  values which are Collections or other classes that implement
+  Iterable. (noble, hossman)
+
+* SOLR-1769 Solr 1.4 Replication - Repeater throwing NullPointerException (noble)
 
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.

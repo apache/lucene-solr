@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -84,7 +84,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         long fromCoreOpenTime = 0;
 
         if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
-          CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+          CoreContainer container = req.getCore().getCoreContainer();
 
           // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
           coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
@@ -110,6 +110,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         } else {
           coreName = null;
           QParser fromQueryParser = subQuery(v, null);
+          fromQueryParser.setIsFilter(true);
           fromQuery = fromQueryParser.getQuery();
         }
 
@@ -120,21 +121,37 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
   }
 
+  /**
+   * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary queries against the same core.
+   * 
+   * @param subQuery the query to define the starting set of documents on the "left side" of the join
+   * @param fromField "left side" field name to use in the join
+   * @param toField "right side" field name to use in the join
+   */
+  public static Query createJoinQuery(Query subQuery, String fromField, String toField) {
+    return new JoinQuery(fromField, toField, null, subQuery);
+  }
+  
 }
 
 
 class JoinQuery extends Query {
   String fromField;
   String toField;
-  String fromIndex;
+  String fromIndex; // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core name
   Query q;
   long fromCoreOpenTime;
 
-  public JoinQuery(String fromField, String toField, String fromIndex, Query subQuery) {
+  public JoinQuery(String fromField, String toField, String coreName, Query subQuery) {
+    assert null != fromField;
+    assert null != toField;
+    assert null != subQuery;
+    
     this.fromField = fromField;
     this.toField = toField;
-    this.fromIndex = fromIndex;
     this.q = subQuery;
+    
+    this.fromIndex = coreName; // may be null
   }
 
   public Query getQuery() { return q; }
@@ -172,7 +189,7 @@ class JoinQuery extends Query {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cross-core join must have SolrRequestInfo");
         }
 
-        CoreContainer container = searcher.getCore().getCoreDescriptor().getCoreContainer();
+        CoreContainer container = searcher.getCore().getCoreContainer();
         final SolrCore fromCore = container.getCore(fromIndex);
 
         if (fromCore == null) {
@@ -299,11 +316,11 @@ class JoinQuery extends Query {
         fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
       }
 
-      Fields fromFields = fromSearcher.getSlowAtomicReader().fields();
-      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getSlowAtomicReader().fields();
-      if (fromFields == null) return DocSet.EMPTY;
-      Terms terms = fromFields.terms(fromField);
-      Terms toTerms = toFields.terms(toField);
+
+      LeafReader fromReader = fromSearcher.getSlowAtomicReader();
+      LeafReader toReader = fromSearcher==toSearcher ? fromReader : toSearcher.getSlowAtomicReader();
+      Terms terms = fromReader.terms(fromField);
+      Terms toTerms = toReader.terms(toField);
       if (terms == null || toTerms==null) return DocSet.EMPTY;
       String prefixStr = TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);

@@ -50,7 +50,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     public Throwable lastError = null;
 
     public ErrorTrackingConcurrentUpdateSolrClient(String solrServerUrl, int queueSize, int threadCount) {
-      super(solrServerUrl, queueSize, threadCount);
+      super(solrServerUrl, null, queueSize, threadCount, null, false);
     }
     
     @Override
@@ -104,8 +104,8 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
                    null, failures.get(0));
     }
   }
-  
-  class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+
+  static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
     private final List<Throwable> failures = new ArrayList<>();
     
     public FailureRecordingConcurrentUpdateSolrClient(String serverUrl, int queueSize, int numThreads) {

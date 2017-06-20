@@ -35,26 +35,27 @@ public final class DocValues {
    */
   public static final BinaryDocValues emptyBinary() {
     return new BinaryDocValues() {
-      private boolean exhausted = false;
+      private int doc = -1;
       
       @Override
       public int advance(int target) {
-        assert exhausted == false;
-        assert target >= 0;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
       }
       
       @Override
       public int docID() {
-        return exhausted ? NO_MORE_DOCS : -1;
+        return doc;
       }
       
       @Override
       public int nextDoc() {
-        assert exhausted == false;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
       }
       
       @Override
@@ -75,26 +76,27 @@ public final class DocValues {
    */
   public static final NumericDocValues emptyNumeric() {
     return new NumericDocValues() {
-      private boolean exhausted = false;
+      private int doc = -1;
       
       @Override
       public int advance(int target) {
-        assert exhausted == false;
-        assert target >= 0;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
       }
       
       @Override
       public int docID() {
-        return exhausted ? NO_MORE_DOCS : -1;
+        return doc;
       }
       
       @Override
       public int nextDoc() {
-        assert exhausted == false;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
       }
       
       @Override
@@ -140,26 +142,27 @@ public final class DocValues {
     final BytesRef empty = new BytesRef();
     return new SortedDocValues() {
       
-      private boolean exhausted = false;
+      private int doc = -1;
       
       @Override
       public int advance(int target) {
-        assert exhausted == false;
-        assert target >= 0;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
       }
       
       @Override
       public int docID() {
-        return exhausted ? NO_MORE_DOCS : -1;
+        return doc;
       }
       
       @Override
       public int nextDoc() {
-        assert exhausted == false;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
       }
       
       @Override
@@ -191,26 +194,27 @@ public final class DocValues {
   public static final SortedNumericDocValues emptySortedNumeric(int maxDoc) {
     return new SortedNumericDocValues() {
       
-      private boolean exhausted = false;
+      private int doc = -1;
       
       @Override
       public int advance(int target) {
-        assert exhausted == false;
-        assert target >= 0;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
       }
       
       @Override
       public int docID() {
-        return exhausted ? NO_MORE_DOCS : -1;
+        return doc;
       }
       
       @Override
       public int nextDoc() {
-        assert exhausted == false;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
       }
       
       @Override
@@ -237,26 +241,27 @@ public final class DocValues {
     final BytesRef empty = new BytesRef();
     return new SortedSetDocValues() {
       
-      private boolean exhausted = false;
+      private int doc = -1;
       
       @Override
       public int advance(int target) {
-        assert exhausted == false;
-        assert target >= 0;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
+      }
+      
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        return false;
       }
       
       @Override
       public int docID() {
-        return exhausted ? NO_MORE_DOCS : -1;
+        return doc;
       }
       
       @Override
       public int nextDoc() {
-        assert exhausted == false;
-        exhausted = true;
-        return NO_MORE_DOCS;
+        return doc = NO_MORE_DOCS;
       }
       
       @Override

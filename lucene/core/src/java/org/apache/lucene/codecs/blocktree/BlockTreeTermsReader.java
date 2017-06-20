@@ -98,14 +98,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final static String TERMS_CODEC_NAME = "BlockTreeTermsDict";
 
   /** Initial terms format. */
-  public static final int VERSION_START = 0;
-
-  /** Auto-prefix terms. */
-  public static final int VERSION_AUTO_PREFIX_TERMS = 1;
-
-  /** Conditional auto-prefix terms: we record at write time whether
-   *  this field did write any auto-prefix terms. */
-  public static final int VERSION_AUTO_PREFIX_TERMS_COND = 2;
+  public static final int VERSION_START = 2;
 
   /** Auto-prefix terms have been superseded by points. */
   public static final int VERSION_AUTO_PREFIX_TERMS_REMOVED = 3;
@@ -128,17 +121,9 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<>();
 
-  /** File offset where the directory starts in the terms file. */
-  private long dirOffset;
-
-  /** File offset where the directory starts in the index file. */
-  private long indexDirOffset;
-
   final String segment;
   
   final int version;
-
-  final boolean anyAutoPrefixTerms;
 
   /** Sole constructor. */
   public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
@@ -153,22 +138,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       termsIn = state.directory.openInput(termsName, state.context);
       version = CodecUtil.checkIndexHeader(termsIn, TERMS_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
 
-      if (version < VERSION_AUTO_PREFIX_TERMS || version >= VERSION_AUTO_PREFIX_TERMS_REMOVED) {
-        // Old (pre-5.2.0) or recent (6.2.0+) index, no auto-prefix terms:
-        this.anyAutoPrefixTerms = false;
-      } else if (version == VERSION_AUTO_PREFIX_TERMS) {
-        // 5.2.x index, might have auto-prefix terms:
-        this.anyAutoPrefixTerms = true;
-      } else {
-        // 5.3.x index, we record up front if we may have written any auto-prefix terms:
-        assert version == VERSION_AUTO_PREFIX_TERMS_COND;
+      if (version < VERSION_AUTO_PREFIX_TERMS_REMOVED) {
+        // pre-6.2 index, records whether auto-prefix terms are enabled in the header
         byte b = termsIn.readByte();
-        if (b == 0) {
-          this.anyAutoPrefixTerms = false;
-        } else if (b == 1) {
-          this.anyAutoPrefixTerms = true;
-        } else {
-          throw new CorruptIndexException("invalid anyAutoPrefixTerms: expected 0 or 1 but got " + b, termsIn);
+        if (b != 0) {
+          throw new CorruptIndexException("Index header pretends the index has auto-prefix terms: " + b, termsIn);
         }
       }
 
@@ -187,8 +161,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       CodecUtil.retrieveChecksum(termsIn);
 
       // Read per-field details
-      seekDir(termsIn, dirOffset);
-      seekDir(indexIn, indexDirOffset);
+      seekDir(termsIn);
+      seekDir(indexIn);
 
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
@@ -201,13 +175,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (numTerms <= 0) {
           throw new CorruptIndexException("Illegal numTerms for field number: " + field, termsIn);
         }
-        final int numBytes = termsIn.readVInt();
-        if (numBytes < 0) {
-          throw new CorruptIndexException("invalid rootCode for field number: " + field + ", numBytes=" + numBytes, termsIn);
-        }
-        final BytesRef rootCode = new BytesRef(new byte[numBytes]);
-        termsIn.readBytes(rootCode.bytes, 0, numBytes);
-        rootCode.length = numBytes;
+        final BytesRef rootCode = readBytesRef(termsIn);
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         if (fieldInfo == null) {
           throw new CorruptIndexException("invalid field number: " + field, termsIn);
@@ -250,19 +218,24 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   private static BytesRef readBytesRef(IndexInput in) throws IOException {
+    int numBytes = in.readVInt();
+    if (numBytes < 0) {
+      throw new CorruptIndexException("invalid bytes length: " + numBytes, in);
+    }
+    
     BytesRef bytes = new BytesRef();
-    bytes.length = in.readVInt();
-    bytes.bytes = new byte[bytes.length];
-    in.readBytes(bytes.bytes, 0, bytes.length);
+    bytes.length = numBytes;
+    bytes.bytes = new byte[numBytes];
+    in.readBytes(bytes.bytes, 0, numBytes);
+
     return bytes;
   }
 
   /** Seek {@code input} to the directory offset. */
-  private void seekDir(IndexInput input, long dirOffset)
-      throws IOException {
+  private static void seekDir(IndexInput input) throws IOException {
     input.seek(input.length() - CodecUtil.footerLength() - 8);
-    dirOffset = input.readLong();
-    input.seek(dirOffset);
+    long offset = input.readLong();
+    input.seek(offset);
   }
 
   // for debugging

@@ -28,6 +28,8 @@
     <path refid="base.classpath"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${grouping.jar}"/>
+    <pathelement path="${sandbox.jar}"/>
+    <pathelement path="${analyzers-common.jar}"/>
   </path>
 
   <path id="test.classpath">
@@ -36,16 +38,18 @@
     <path refid="test.base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="jar-grouping,jar-queries,jar-analyzers-common,common.compile-core" />
+  <target name="compile-core" depends="jar-sandbox,jar-grouping,jar-queries,jar-analyzers-common,common.compile-core" />
 
   <target name="jar-core" depends="common.jar-core" />
 
-  <target name="javadocs" depends="javadocs-grouping,compile-core,check-javadocs-uptodate"
+  <target name="javadocs" depends="javadocs-sandbox,javadocs-grouping,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
         <link href="../queries"/>
+        <link href="../analyzers-common"/>
         <link href="../grouping"/>
+        <link href="../sandbox"/>
       </links>
     </invoke-module-javadoc>
   </target>

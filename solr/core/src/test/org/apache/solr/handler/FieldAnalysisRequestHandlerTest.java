@@ -382,7 +382,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testPositionHistoryWithWDF() throws Exception {
+  public void testPositionHistoryWithWDGF() throws Exception {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("skutype1");
@@ -407,12 +407,12 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(1), new TokenInfo("3456-12", null, "word", 4, 11, 2, new int[]{2}, null, false));
     assertToken(tokenList.get(2), new TokenInfo("a", null, "word", 12, 13, 3, new int[]{3}, null, false));
     assertToken(tokenList.get(3), new TokenInfo("Test", null, "word", 14, 18, 4, new int[]{4}, null, false));
-    tokenList = indexPart.get("org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter");
-    assertNotNull("Expcting WordDelimiterFilter analysis breakdown", tokenList);
+    tokenList = indexPart.get("org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter");
+    assertNotNull("Expcting WordDelimiterGraphFilter analysis breakdown", tokenList);
     assertEquals(6, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("hi", null, "word", 0, 2, 1, new int[]{1,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2}, null, false));
     assertToken(tokenList.get(3), new TokenInfo("12", null, "word", 9, 11, 3, new int[]{2,3}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("Test", null, "word", 14, 18, 5, new int[]{4,5}, null, false));
@@ -420,8 +420,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertNotNull("Expcting LowerCaseFilter analysis breakdown", tokenList);
     assertEquals(6, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("hi", null, "word", 0, 2, 1, new int[]{1,1,1}, null, false));
-    assertToken(tokenList.get(1), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2,2}, null, false));
-    assertToken(tokenList.get(2), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2,2}, null, false));
+    assertToken(tokenList.get(1), new TokenInfo("345612", null, "word", 4, 11, 2, new int[]{2,2,2}, null, false));
+    assertToken(tokenList.get(2), new TokenInfo("3456", null, "word", 4, 8, 2, new int[]{2,2,2}, null, false));
     assertToken(tokenList.get(3), new TokenInfo("12", null, "word", 9, 11, 3, new int[]{2,3,3}, null, false));
     assertToken(tokenList.get(4), new TokenInfo("a", null, "word", 12, 13, 4, new int[]{3,4,4}, null, false));
     assertToken(tokenList.get(5), new TokenInfo("test", null, "word", 14, 18, 5, new int[]{4,5,5}, null, false));
@@ -477,6 +477,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     List<NamedList> tokenInfoList = (List<NamedList>) result.findRecursive("index", CustomTokenFilter.class.getName());
     // '1' from CustomTokenFilter plus 900 from CustomFlagsAttributeImpl.
     assertEquals(901, tokenInfoList.get(0).get("org.apache.lucene.analysis.tokenattributes.FlagsAttribute#flags"));
+  }
+
+  @Test(expected = Exception.class)
+  public void testNoDefaultField() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.Q, "fox brown");
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
+    handler.resolveAnalysisRequest(req);
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */

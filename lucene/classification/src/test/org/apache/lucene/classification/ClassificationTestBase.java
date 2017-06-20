@@ -88,8 +88,9 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
 
   protected ClassificationResult<T> checkCorrectClassification(Classifier<T> classifier, String inputDoc, T expectedResult) throws Exception {
     ClassificationResult<T> classificationResult = classifier.assignClass(inputDoc);
-    assertNotNull(classificationResult.getAssignedClass());
-    assertEquals("got an assigned class of " + classificationResult.getAssignedClass(), expectedResult, classificationResult.getAssignedClass());
+    T assignedClass = classificationResult.getAssignedClass();
+    assertNotNull(assignedClass);
+    assertEquals("got an assigned class of " + assignedClass, expectedResult instanceof BytesRef ? ((BytesRef) expectedResult).utf8ToString() : expectedResult, assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass);
     double score = classificationResult.getScore();
     assertTrue("score should be between 0 and 1, got:" + score, score <= 1 && score >= 0);
     return classificationResult;

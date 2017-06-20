@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +26,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -32,9 +39,11 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,24 +63,12 @@ public class SolrStream extends TupleStream {
   private int workerID;
   private boolean trace;
   private Map<String, String> fieldMappings;
-  private transient JSONTupleStream jsonTupleStream;
+  private transient TupleStreamParser tupleStreamParser;
   private transient HttpSolrClient client;
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
-
-  /**
-   * @param baseUrl Base URL of the stream.
-   * @param params  Map&lt;String, String&gt; of parameters
-   * @deprecated, use the form that thakes SolrParams. Existing code can use
-   * new ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(params)))
-   * for existing calls that use Map&lt;String, String&gt;
-   */
-  @Deprecated
-  public SolrStream(String baseUrl, Map params) {
-    this.baseUrl = baseUrl;
-    this.params = new ModifiableSolrParams(new MapSolrParams(params));
-  }
+  private CloseableHttpResponse closeableHttpResponse;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -106,8 +103,6 @@ public class SolrStream extends TupleStream {
   **/
 
   public void open() throws IOException {
-
-
     if(cache == null) {
       client = new HttpSolrClient.Builder(baseUrl).build();
     } else {
@@ -115,9 +110,9 @@ public class SolrStream extends TupleStream {
     }
 
     try {
-      jsonTupleStream = JSONTupleStream.create(client, loadParams(params));
+      tupleStreamParser = constructParser(client, loadParams(params));
     } catch (Exception e) {
-      throw new IOException(e);
+      throw new IOException("params " + params, e);
     }
   }
 
@@ -181,11 +176,7 @@ public class SolrStream extends TupleStream {
   * */
 
   public void close() throws IOException {
-
-    if(jsonTupleStream != null) {
-      jsonTupleStream.close();
-    }
-
+    closeableHttpResponse.close();
     if(cache == null) {
       client.close();
     }
@@ -197,7 +188,7 @@ public class SolrStream extends TupleStream {
 
   public Tuple read() throws IOException {
     try {
-      Map fields = jsonTupleStream.next();
+      Map fields = tupleStreamParser.next();
 
       if (fields == null) {
         //Return the EOF tuple.
@@ -256,5 +247,29 @@ public class SolrStream extends TupleStream {
     }
 
     return fields;
+  }
+
+  // temporary...
+  public TupleStreamParser constructParser(SolrClient server, SolrParams requestParams) throws IOException, SolrServerException {
+    String p = requestParams.get("qt");
+    if (p != null) {
+      ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
+      modifiableSolrParams.remove("qt");
+    }
+
+    String wt = requestParams.get(CommonParams.WT, "json");
+    QueryRequest query = new QueryRequest(requestParams);
+    query.setPath(p);
+    query.setResponseParser(new InputStreamResponseParser(wt));
+    query.setMethod(SolrRequest.METHOD.POST);
+    NamedList<Object> genericResponse = server.request(query);
+    InputStream stream = (InputStream) genericResponse.get("stream");
+    this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
+    if (CommonParams.JAVABIN.equals(wt)) {
+      return new JavabinTupleStreamParser(stream, true);
+    } else {
+      InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+      return new JSONTupleStream(reader);
+    }
   }
 }

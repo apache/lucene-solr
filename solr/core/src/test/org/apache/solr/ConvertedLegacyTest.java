@@ -872,7 +872,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             );
 
 
-    // intra-word delimiter testing (WordDelimiterFilter)
+    // intra-word delimiter testing (WordDelimiterGraphFilter)
 
     assertU("<add><doc><field name=\"id\">42</field><field name=\"subword\">foo bar</field></doc></add>");
     assertU("<commit/>");

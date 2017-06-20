@@ -16,9 +16,13 @@
  */
 package org.apache.lucene.demo.facet;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.text.ParseException;
+
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
@@ -36,9 +40,9 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -47,10 +51,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.SloppyMath;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.text.ParseException;
 
 /** Shows simple usage of dynamic range faceting, using the
  *  expressions module to calculate distance. */
@@ -117,7 +117,7 @@ public class DistanceFacetsExample implements Closeable {
     writer.close();
   }
 
-  private ValueSource getDistanceValueSource() {
+  private DoubleValuesSource getDistanceValueSource() {
     Expression distance;
     try {
       distance = JavascriptCompiler.compile(
@@ -130,7 +130,7 @@ public class DistanceFacetsExample implements Closeable {
     bindings.add(new SortField("latitude", SortField.Type.DOUBLE));
     bindings.add(new SortField("longitude", SortField.Type.DOUBLE));
 
-    return distance.getValueSource(bindings);
+    return distance.getDoubleValuesSource(bindings);
   }
 
   /** Given a latitude and longitude (in degrees) and the
@@ -224,7 +224,7 @@ public class DistanceFacetsExample implements Closeable {
     // Passing no baseQuery means we drill down on all
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(null);
-    final ValueSource vs = getDistanceValueSource();
+    final DoubleValuesSource vs = getDistanceValueSource();
     q.add("field", range.getQuery(getBoundingBoxQuery(ORIGIN_LATITUDE, ORIGIN_LONGITUDE, range.max), vs));
     DrillSideways ds = new DrillSideways(searcher, config, (TaxonomyReader) null) {
         @Override

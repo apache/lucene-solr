@@ -74,7 +74,11 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
       }
     } finally {
       // finish the request
-      processor.finish();
+      try {
+        processor.finish();
+      } finally {
+        processor.close();
+      }
     }
   }
 

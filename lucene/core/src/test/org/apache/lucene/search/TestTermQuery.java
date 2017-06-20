@@ -22,7 +22,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
@@ -108,6 +107,11 @@ public class TestTermQuery extends LuceneTestCase {
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new NoSeekDirectoryReader(in);
     }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
     
   }
 
@@ -118,35 +122,41 @@ public class TestTermQuery extends LuceneTestCase {
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new FilterFields(super.fields()) {
+    public Terms terms(String field) throws IOException {
+      Terms terms = super.terms(field);
+      return terms==null ? null : new FilterTerms(terms) {
         @Override
-        public Terms terms(String field) throws IOException {
-          return new FilterTerms(super.terms(field)) {
+        public TermsEnum iterator() throws IOException {
+          return new FilterTermsEnum(super.iterator()) {
             @Override
-            public TermsEnum iterator() throws IOException {
-              return new FilterTermsEnum(super.iterator()) {
-                @Override
-                public SeekStatus seekCeil(BytesRef text) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-                @Override
-                public void seekExact(BytesRef term, TermState state) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-                @Override
-                public boolean seekExact(BytesRef text) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-                @Override
-                public void seekExact(long ord) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-              };
+            public SeekStatus seekCeil(BytesRef text) throws IOException {
+              throw new AssertionError("no seek");
+            }
+            @Override
+            public void seekExact(BytesRef term, TermState state) throws IOException {
+              throw new AssertionError("no seek");
+            }
+            @Override
+            public boolean seekExact(BytesRef text) throws IOException {
+              throw new AssertionError("no seek");
+            }
+            @Override
+            public void seekExact(long ord) throws IOException {
+              throw new AssertionError("no seek");
             }
           };
         }
       };
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
     }
 
   };

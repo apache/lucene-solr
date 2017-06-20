@@ -179,8 +179,9 @@
     handleSelect=false will use solr1.1 style error formatting
     -->
   <requestDispatcher handleSelect="true" >
-    <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+    <!--Make sure your system has some authentication before enabling remote streaming!
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    -->
         
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           
@@ -232,6 +233,7 @@
     <!-- default values for query parameters -->
      <lst name="defaults">
        <str name="echoParams">explicit</str>
+       <str name="df">desc</str>
        <!-- 
        <int name="rows">10</int>
        <str name="fl">*</str>

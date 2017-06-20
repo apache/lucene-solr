@@ -162,11 +162,6 @@ public class LazyDocument {
     }
 
     @Override
-    public float boost() {
-      return 1.0f;
-    }
-
-    @Override
     public BytesRef binaryValue() {
       return getRealValue().binaryValue();
     }

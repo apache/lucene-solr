@@ -21,13 +21,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -101,7 +104,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   /**
    * Initializes the chain using the factories specified by the <code>PluginInfo</code>.
-   * if the chain includes the <code>RunUpdateProcessorFactory</code>, but 
+   * if the chain includes the <code>RunUpdateProcessorFactory</code>, but
    * does not include an implementation of the 
    * <code>DistributingUpdateProcessorFactory</code> interface, then an 
    * instance of <code>DistributedUpdateProcessorFactory</code> will be 
@@ -269,8 +272,17 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       s = s.trim();
       if (s.isEmpty()) continue;
       UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
-      if (p == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+      if (p == null) {
+        Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
+        if(factoryClass != null) {
+          PluginInfo pluginInfo = new PluginInfo("updateProcessor",
+              Utils.makeMap("name", s,
+                  "class", factoryClass.getName()));
+          core.getUpdateProcessors().put(s, p = core.getUpdateProcessors().createPlugin(pluginInfo).get());
+        }
+        if (p == null)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+      }
       result.add(p);
     }
     return result;
@@ -305,5 +317,10 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
           Objects.equals(this.postProcessor, that.postProcessor);
     }
   }
+
+  public static final Map<String, Class> implicits = new ImmutableMap.Builder()
+      .put(TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class)
+      .put(AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class)
+      .build();
 
 }

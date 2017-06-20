@@ -22,19 +22,23 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.junit.matchers.JUnitMatchers.containsString;
@@ -53,6 +57,11 @@ public class RulesTest extends SolrCloudTestCase {
 
   @org.junit.Rule
   public ExpectedException expectedException = ExpectedException.none();
+
+  @After
+  public void removeCollections() throws Exception {
+    cluster.deleteAllCollections();
+  }
 
   @Test
   public void doIntegrationTest() throws Exception {
@@ -80,8 +89,6 @@ public class RulesTest extends SolrCloudTestCase {
     CollectionAdminRequest.createShard(rulesColl, "shard2").process(cluster.getSolrClient());
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
 
-    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
-
   }
 
   @Test
@@ -105,7 +112,6 @@ public class RulesTest extends SolrCloudTestCase {
     assertEquals(1, list.size());
     assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));
 
-    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
   }
 
   @Test
@@ -134,7 +140,6 @@ public class RulesTest extends SolrCloudTestCase {
     assertEquals(1, list.size());
     assertEquals("ImplicitSnitch", list.get(0).get("class"));
 
-    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
   }
 
 
@@ -157,8 +162,21 @@ public class RulesTest extends SolrCloudTestCase {
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
+  }
 
+  @Test
+  public void testInvokeApi() throws Exception {
+    JettySolrRunner jetty = cluster.getRandomJetty(random());
+    try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+      GenericSolrRequest req =  new GenericSolrRequest(GET, "/____v2/node/invoke", new ModifiableSolrParams()
+          .add("class", ImplicitSnitch.class.getName())
+          .add("cores", "1")
+          .add("freedisk", "1")
+      );
+      SimpleSolrResponse rsp = req.process(client);
+      assertNotNull(((Map) rsp.getResponse().get(ImplicitSnitch.class.getName())).get("cores"));
+      assertNotNull(((Map) rsp.getResponse().get(ImplicitSnitch.class.getName())).get("freedisk"));
+    }
   }
 
 
@@ -201,6 +219,5 @@ public class RulesTest extends SolrCloudTestCase {
     assertEquals(1, list.size());
     assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
 
-    CollectionAdminRequest.deleteCollection(rulesColl).process(cluster.getSolrClient());
   }
 }

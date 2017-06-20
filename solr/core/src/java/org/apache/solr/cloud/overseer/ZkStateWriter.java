@@ -21,12 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -166,17 +166,10 @@ public class ZkStateWriter {
    * @return true if a flush is required, false otherwise
    */
   protected boolean maybeFlushBefore(ZkWriteCommand cmd) {
-    if (lastUpdatedTime == 0) {
-      // first update, make sure we go through
+    if (cmd.collection == null || lastStateFormat <= 0) {
       return false;
     }
-    if (cmd.collection == null) {
-      return false;
-    }
-    if (cmd.collection.getStateFormat() != lastStateFormat) {
-      return true;
-    }
-    return cmd.collection.getStateFormat() > 1 && !cmd.name.equals(lastCollectionName);
+    return cmd.collection.getStateFormat() != lastStateFormat;
   }
 
   /**
@@ -190,7 +183,7 @@ public class ZkStateWriter {
       return false;
     lastCollectionName = cmd.name;
     lastStateFormat = cmd.collection.getStateFormat();
-    return System.nanoTime() - lastUpdatedTime > MAX_FLUSH_INTERVAL;
+    return System.nanoTime() - lastUpdatedTime > MAX_FLUSH_INTERVAL || updates.size() > Overseer.STATE_UPDATE_BATCH_SIZE;
   }
 
   public boolean hasPendingUpdates() {
@@ -210,7 +203,7 @@ public class ZkStateWriter {
       throw new IllegalStateException("ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
     if (!hasPendingUpdates()) return clusterState;
-    TimerContext timerContext = stats.time("update_state");
+    Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {
@@ -268,6 +261,7 @@ public class ZkStateWriter {
       }
     }
 
+    log.trace("New Cluster State is: {}", clusterState);
     return clusterState;
   }
 

@@ -18,14 +18,12 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSetIterator;
-
 
 /**
  * A list of per-document numeric values, sorted 
  * according to {@link Long#compare(long, long)}.
  */
-public abstract class SortedNumericDocValues extends DocIdSetIterator {
+public abstract class SortedNumericDocValues extends DocValuesIterator {
   
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
@@ -40,6 +38,8 @@ public abstract class SortedNumericDocValues extends DocIdSetIterator {
   /** 
    * Retrieves the number of values for the current document.  This must always
    * be greater than zero.
+   * It is illegal to call this method after {@link #advanceExact(int)}
+   * returned {@code false}.
    */
   public abstract int docValueCount();
 }

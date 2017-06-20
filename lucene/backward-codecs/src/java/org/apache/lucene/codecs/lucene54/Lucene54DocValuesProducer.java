@@ -477,6 +477,12 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           }
 
           @Override
+          public boolean advanceExact(int target) throws IOException {
+            docID = target;
+            return true;
+          }
+
+          @Override
           public long cost() {
             // TODO
             return 0;
@@ -491,7 +497,51 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         docsWithField = getLiveBits(entry.missingOffset, maxDoc);
       }
     }
-    return new LegacyNumericDocValuesWrapper(docsWithField, getNumeric(entry));
+    final LongValues values = getNumeric(entry);
+    return new NumericDocValues() {
+
+      int doc = -1;
+      long value;
+
+      @Override
+      public long longValue() throws IOException {
+        return value;
+      }
+
+      @Override
+      public int docID() {
+        return doc;
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return advance(doc + 1);
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        for (int doc = target; doc < maxDoc; ++doc) {
+          value = values.get(doc);
+          if (value != 0 || docsWithField.get(doc)) {
+            return this.doc = doc;
+          }
+        }
+        return doc = NO_MORE_DOCS;
+      }
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        doc = target;
+        value = values.get(doc);
+        return value != 0 || docsWithField.get(doc);
+      }
+
+      @Override
+      public long cost() {
+        return maxDoc;
+      }
+
+    };
   }
 
   @Override
@@ -656,6 +706,16 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
 
       index = (int) hiIndex;
       return doc = hiDoc;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (advance(target) == target) {
+        return true;
+      }
+      --index;
+      doc = target;
+      return index >= 0 && docIds.get(index) == target;
     }
 
     @Override
@@ -854,6 +914,11 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         }
 
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          return sparseValues.advanceExact(target);
+        }
+
+        @Override
         public long cost() {
           return sparseValues.cost();
         }
@@ -896,7 +961,14 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           return nextDoc();
         }
       }
-          
+
+      @Override
+      public boolean advanceExact(int target) throws IOException {
+        docID = target;
+        ord = (int) ordinals.get(target);
+        return ord != -1;
+      }
+
       @Override
       public int ordValue() {
         return ord;
@@ -928,7 +1000,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public TermsEnum termsEnum() {
+      public TermsEnum termsEnum() throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return ((CompressedBinaryDocValues)binary).getTermsEnum();
         } else {
@@ -980,6 +1052,11 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           }
 
           @Override
+          public boolean advanceExact(int target) throws IOException {
+            return sparseValues.advanceExact(target);
+          }
+
+          @Override
           public long cost() {
             return sparseValues.cost();
           }
@@ -1021,6 +1098,12 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
             docID = target-1;
             return nextDoc();
           }
+        }
+
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          return docsWithField.get(docID);
         }
 
         @Override
@@ -1085,6 +1168,14 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         }
         
         @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          startOffset = ordIndex.get(docID);
+          endOffset = ordIndex.get(docID+1L);
+          return endOffset > startOffset;
+        }
+        
+        @Override
         public long cost() {
           // TODO
           return 0;
@@ -1145,6 +1236,15 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
             docID = target-1;
             return nextDoc();
           }
+        }
+        
+        @Override
+        public boolean advanceExact(int target) throws IOException {
+          docID = target;
+          int ord = (int) ordinals.get(docID);
+          startOffset = offsets[ord];
+          endOffset = offsets[ord+1];
+          return endOffset > startOffset;
         }
         
         @Override
@@ -1233,7 +1333,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public TermsEnum termsEnum() {
+      public TermsEnum termsEnum() throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return ((CompressedBinaryDocValues)binary).getTermsEnum();
         } else {
@@ -1292,7 +1392,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public TermsEnum termsEnum() {
+      public TermsEnum termsEnum() throws IOException {
         if (binary instanceof CompressedBinaryDocValues) {
           return ((CompressedBinaryDocValues) binary).getTermsEnum();
         } else {
@@ -1490,12 +1590,8 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
     }
 
-    TermsEnum getTermsEnum() {
-      try {
-        return getTermsEnum(data.clone());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    TermsEnum getTermsEnum() throws IOException {
+      return getTermsEnum(data.clone());
     }
 
     private CompressedBinaryTermsEnum getTermsEnum(IndexInput input) throws IOException {

@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.CodepointCountFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
@@ -52,14 +50,11 @@ public final class NGramTokenFilter extends TokenFilter {
   private int curCodePointCount;
   private int curGramSize;
   private int curPos;
-  private int curPosInc, curPosLen;
-  private int tokStart;
-  private int tokEnd;
+  private int curPosInc;
+  private State state;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt;
-  private final PositionLengthAttribute posLenAtt;
-  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Creates NGramTokenFilter with given min and max n-grams.
@@ -79,7 +74,6 @@ public final class NGramTokenFilter extends TokenFilter {
     this.maxGram = maxGram;
 
     posIncAtt = addAttribute(PositionIncrementAttribute.class);
-    posLenAtt = addAttribute(PositionLengthAttribute.class);
   }
 
   /**
@@ -104,9 +98,7 @@ public final class NGramTokenFilter extends TokenFilter {
           curGramSize = minGram;
           curPos = 0;
           curPosInc = posIncAtt.getPositionIncrement();
-          curPosLen = posLenAtt.getPositionLength();
-          tokStart = offsetAtt.startOffset();
-          tokEnd = offsetAtt.endOffset();
+          state = captureState();
         }
       }
 
@@ -115,14 +107,12 @@ public final class NGramTokenFilter extends TokenFilter {
         curGramSize = minGram;
       }
       if ((curPos + curGramSize) <= curCodePointCount) {
-        clearAttributes();
+        restoreState(state);
         final int start = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
         final int end = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
         termAtt.copyBuffer(curTermBuffer, start, end - start);
         posIncAtt.setPositionIncrement(curPosInc);
         curPosInc = 0;
-        posLenAtt.setPositionLength(curPosLen);
-        offsetAtt.setOffset(tokStart, tokEnd);
         curGramSize++;
         return true;
       }

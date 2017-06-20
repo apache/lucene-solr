@@ -1,0 +1,37 @@
+[
+{ "name":"origScore",
+  "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+  "params":{},
+  "store": "feature-store-6"
+},
+{
+  "name": "descriptionTermFreq",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": { "q" : "{!func}termfreq(description,${user_text})" },
+  "store": "feature-store-6"
+},
+{
+  "name": "popularity",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": { "q" : "{!func}normHits"},
+  "store": "feature-store-6"
+},
+{
+  "name": "isPopular",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": {"fq" : ["{!field f=popularity}201"] },
+  "store": "feature-store-6"
+},
+{
+  "name": "queryPartialMatch2",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": {"q": "{!dismax qf=description mm=2}${user_text}" },
+  "store": "feature-store-6"
+},
+{
+  "name": "queryPartialMatch2.1",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": {"q": "{!dismax qf=description mm=2}${user_text}" },
+  "store": "feature-store-6"
+}
+]

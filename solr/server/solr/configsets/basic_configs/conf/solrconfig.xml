@@ -112,8 +112,7 @@
        One can force a particular implementation via solr.MMapDirectoryFactory,
        solr.NIOFSDirectoryFactory, or solr.SimpleFSDirectoryFactory.
 
-       solr.RAMDirectoryFactory is memory based, not
-       persistent, and doesn't work with replication.
+       solr.RAMDirectoryFactory is memory based and not persistent.
     -->
   <directoryFactory name="DirectoryFactory"
                     class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
@@ -436,6 +435,9 @@
                the cache.  (see java.util.HashMap)
            autowarmCount - the number of entries to prepopulate from
                and old cache.
+           maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
+                      to occupy. Note that when this option is specified, the size
+                      and initialSize parameters are ignored.
       -->
     <filterCache class="solr.FastLRUCache"
                  size="512"
@@ -596,17 +598,6 @@
       -->
     <useColdSearcher>false</useColdSearcher>
 
-    <!-- Max Warming Searchers
-         
-         Maximum number of searchers that may be warming in the
-         background concurrently.  An error is returned if this limit
-         is exceeded.
-
-         Recommend values of 1-2 for read-only slaves, higher for
-         masters w/o cache warming.
-      -->
-    <maxWarmingSearchers>2</maxWarmingSearchers>
-
   </query>
 
 
@@ -655,15 +646,14 @@
          plugins.
          
          *** WARNING ***
-         The settings below authorize Solr to fetch remote files, You
-         should make sure your system has some authentication before
-         using enableRemoteStreaming="true"
+         Before enabling remote streaming, you should make sure your
+         system has authentication enabled.
 
-      -->
-    <requestParsers enableRemoteStreaming="true"
-                    multipartUploadLimitInKB="2048000"
-                    formdataUploadLimitInKB="2048"
+    <requestParsers enableRemoteStreaming="false"
+                    multipartUploadLimitInKB="-1"
+                    formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
+      -->
 
     <!-- HTTP Caching
 
@@ -1195,9 +1185,6 @@
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema">
     <!-- UUIDUpdateProcessorFactory will generate an id if none is present in the incoming document -->
     <processor class="solr.UUIDUpdateProcessorFactory" />
-
-    <processor class="solr.LogUpdateProcessorFactory"/>
-    <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RemoveBlankFieldUpdateProcessorFactory"/>
     <processor class="solr.FieldNameMutatingUpdateProcessorFactory">
       <str name="pattern">[^\w-\.]</str>
@@ -1235,18 +1222,21 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">tdates</str>
+        <str name="fieldType">pdates</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tlongs</str>
+        <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">tdoubles</str>
+        <str name="fieldType">pdoubles</str>
       </lst>
     </processor>
+
+    <processor class="solr.LogUpdateProcessorFactory"/>
+    <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
 

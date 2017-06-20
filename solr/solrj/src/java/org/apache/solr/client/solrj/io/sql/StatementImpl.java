@@ -28,8 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -78,12 +78,7 @@ class StatementImpl implements Statement {
   protected SolrStream constructStream(String sql) throws IOException {
     try {
       ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getCollection());
-
-      if(slices == null) {
-        throw new Exception("Collection not found:"+this.connection.getCollection());
-      }
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.connection.getCollection(), zkStateReader, true);
 
       List<Replica> shuffler = new ArrayList<>();
       for(Slice slice : slices) {

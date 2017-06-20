@@ -431,4 +431,29 @@ public class SolrQueryTest extends LuceneTestCase {
     assertNull(solrQuery.getParams("f.field3.facet.interval.set"));
     
   }
+
+  public void testMoreLikeThis() {
+    SolrQuery solrQuery = new SolrQuery();
+    solrQuery.addMoreLikeThisField("mlt1");
+    assertTrue(solrQuery.getMoreLikeThis());
+
+    solrQuery.addMoreLikeThisField("mlt2");
+    solrQuery.addMoreLikeThisField("mlt3");
+    solrQuery.addMoreLikeThisField("mlt4");
+    assertEquals(4, solrQuery.getMoreLikeThisFields().length);
+    solrQuery.setMoreLikeThisFields((String[])null);
+    assertTrue(null == solrQuery.getMoreLikeThisFields());
+    assertFalse(solrQuery.getMoreLikeThis());
+
+    assertEquals(true, solrQuery.setMoreLikeThisBoost(true).getMoreLikeThisBoost());
+    assertEquals("qf", solrQuery.setMoreLikeThisQF("qf").getMoreLikeThisQF());
+    assertEquals(10, solrQuery.setMoreLikeThisMaxTokensParsed(10).getMoreLikeThisMaxTokensParsed());
+    assertEquals(11, solrQuery.setMoreLikeThisMinTermFreq(11).getMoreLikeThisMinTermFreq());
+    assertEquals(12, solrQuery.setMoreLikeThisMinDocFreq(12).getMoreLikeThisMinDocFreq());
+    assertEquals(13, solrQuery.setMoreLikeThisMaxWordLen(13).getMoreLikeThisMaxWordLen());
+    assertEquals(14, solrQuery.setMoreLikeThisMinWordLen(14).getMoreLikeThisMinWordLen());
+    assertEquals(15, solrQuery.setMoreLikeThisMaxQueryTerms(15).getMoreLikeThisMaxQueryTerms());
+    assertEquals(16, solrQuery.setMoreLikeThisCount(16).getMoreLikeThisCount());
+
+  }
 }

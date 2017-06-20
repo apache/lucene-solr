@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.util.TimeOut;
@@ -150,18 +149,18 @@ public class ZkTestServer {
       }
 
       private String reportLimitViolations() {
-        Object[] maxKeys = maxCounters.keySet().toArray();
-        Arrays.sort(maxKeys, new Comparator<Object>() {
-          private final Comparator<Long> valComp = Ordering.natural().reverse();
+        String[] maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
+        Arrays.sort(maxKeys, new Comparator<String>() {
+          private final Comparator<Long> valComp = Comparator.<Long>naturalOrder().reversed();
           @Override
-          public int compare(Object o1, Object o2) {
+          public int compare(String o1, String o2) {
             return valComp.compare(maxCounters.get(o1), maxCounters.get(o2));
           }
         });
 
         StringBuilder sb = new StringBuilder();
         boolean first = true;
-        for (Object key : maxKeys) {
+        for (String key : maxKeys) {
           long value = maxCounters.get(key);
           if (value <= limit) continue;
           if (first) {

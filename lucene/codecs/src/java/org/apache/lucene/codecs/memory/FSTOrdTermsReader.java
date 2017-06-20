@@ -270,6 +270,9 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+      if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
+        throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
+      }
       return new IntersectTermsEnum(compiled, startTerm);
     }
 
@@ -705,7 +708,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       /** Load frame for start arc(node) on fst */
       Frame loadFirstFrame(Frame frame) throws IOException {
         frame.arc = fst.getFirstArc(frame.arc);
-        frame.state = fsa.getInitialState();
+        frame.state = 0;
         return frame;
       }
 

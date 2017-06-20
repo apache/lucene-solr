@@ -51,6 +51,7 @@ public class AutomatonQuery extends MultiTermQuery {
   protected final CompiledAutomaton compiled;
   /** term containing the field, and possibly some pattern structure */
   protected final Term term;
+  protected final boolean automatonIsBinary;
 
   /**
    * Create a new AutomatonQuery from an {@link Automaton}.
@@ -98,6 +99,7 @@ public class AutomatonQuery extends MultiTermQuery {
     super(term.field());
     this.term = term;
     this.automaton = automaton;
+    this.automatonIsBinary = isBinary;
     // TODO: we could take isFinite too, to save a bit of CPU in CompiledAutomaton ctor?:
     this.compiled = new CompiledAutomaton(automaton, null, true, maxDeterminizedStates, isBinary);
   }
@@ -153,5 +155,10 @@ public class AutomatonQuery extends MultiTermQuery {
   /** Returns the automaton used to create this query */
   public Automaton getAutomaton() {
     return automaton;
+  }
+
+  /** Is this a binary (byte) oriented automaton. See the constructor.  */
+  public boolean isAutomatonBinary() {
+    return automatonIsBinary;
   }
 }

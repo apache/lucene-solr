@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
@@ -137,7 +136,8 @@ public class SolrIndexSplitter {
         // we commit explicitly instead of sending a CommitUpdateCommand through the processor chain
         // because the sub-shard cores will just ignore such a commit because the update log is not
         // in active state at this time.
-        SolrIndexWriter.setCommitData(iw);
+        //TODO no commitUpdateCommand
+        SolrIndexWriter.setCommitData(iw, -1);
         iw.commit();
         success = true;
       } finally {
@@ -164,8 +164,7 @@ public class SolrIndexSplitter {
     }
     Bits liveDocs = reader.getLiveDocs();
 
-    Fields fields = reader.fields();
-    Terms terms = fields==null ? null : fields.terms(field.getName());
+    Terms terms = reader.terms(field.getName());
     TermsEnum termsEnum = terms==null ? null : terms.iterator();
     if (termsEnum == null) return docSets;
 
@@ -288,6 +287,16 @@ public class SolrIndexSplitter {
     @Override
     public Bits getLiveDocs() {
       return liveDocs;
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
   }
 

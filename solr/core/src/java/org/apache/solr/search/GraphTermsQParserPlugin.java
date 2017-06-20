@@ -18,15 +18,19 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.index.Fields;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -48,11 +52,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 /**
  *  The GraphTermsQuery builds a disjunction query from a list of terms. The terms are first filtered by the maxDocFreq parameter.
@@ -220,8 +219,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
         private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
           final LeafReader reader = context.reader();
-          final Fields fields = reader.fields();
-          Terms terms = fields.terms(field);
+          Terms terms = reader.terms(field);
           if(terms == null) {
             return new WeightOrDocIdSet(new BitDocIdSet(new FixedBitSet(reader.maxDoc()), 0));
           }

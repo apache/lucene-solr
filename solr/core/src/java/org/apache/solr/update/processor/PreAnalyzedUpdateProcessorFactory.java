@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * <p>This update processor uses {@link PreAnalyzedParser}
  * to parse the original field content (interpreted as a string value), and thus
  * obtain the stored part and the token stream part. Then it creates the "template"
- * {@link Field}-s using the original {@link SchemaField#createFields(Object, float)}
+ * {@link Field}-s using the original {@link SchemaField#createFields(Object)}
  * as declared in the current schema. Finally it sets the pre-analyzed parts if
  * available (string value and the token
  * stream value) on the first field of these "template" fields. If the declared
@@ -155,17 +155,16 @@ class PreAnalyzedUpdateProcessor extends FieldMutatingUpdateProcessor {
       return null;
     }
     SolrInputField res = new SolrInputField(src.getName());
-    res.setBoost(src.getBoost());
     for (Object o : src) {
       if (o == null) {
         continue;
       }
-      Field pre = (Field)parser.createField(sf, o, 1.0f);
+      Field pre = (Field)parser.createField(sf, o);
       if (pre != null) {
-        res.addValue(pre, 1.0f);
+        res.addValue(pre);
       } else { // restore the original value
         log.warn("Could not parse field {} - using original value as is: {}", src.getName(), o);
-        res.addValue(o, 1.0f);
+        res.addValue(o);
       }
     }
     return res;

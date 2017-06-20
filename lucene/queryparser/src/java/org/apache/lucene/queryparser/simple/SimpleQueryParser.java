@@ -145,6 +145,10 @@ public class SimpleQueryParser extends QueryBuilder {
 
   /** Parses the query text and returns parsed query */
   public Query parse(String queryText) {
+    if ("*".equals(queryText.trim())) {
+      return new MatchAllDocsQuery();
+    }
+
     char data[] = queryText.toCharArray();
     char buffer[] = new char[data.length];
 
@@ -494,7 +498,13 @@ public class SimpleQueryParser extends QueryBuilder {
       }
       int fuzziness = 0;
       try {
-        fuzziness = Integer.parseInt(new String(slopText, 0, slopLength));
+        String fuzzyString =  new String(slopText, 0, slopLength);
+        if ("".equals(fuzzyString)) {
+          // Use automatic fuzziness, ~2
+          fuzziness = 2;
+        } else {
+          fuzziness = Integer.parseInt(fuzzyString);
+        }
       } catch (NumberFormatException e) {
         // swallow number format exceptions parsing fuzziness
       }

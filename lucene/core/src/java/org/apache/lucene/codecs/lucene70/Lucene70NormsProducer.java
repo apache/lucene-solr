@@ -90,12 +90,83 @@ final class Lucene70NormsProducer extends NormsProducer {
   static class NormsEntry {
     byte bytesPerNorm;
     long docsWithFieldOffset;
+    long docsWithFieldLength;
     int numDocsWithField;
     long normsOffset;
   }
 
-  static abstract class LongValues {
-    abstract long get(int index) throws IOException;
+  static abstract class DenseNormsIterator extends NumericDocValues {
+
+    final int maxDoc;
+    int doc = -1;
+
+    DenseNormsIterator(int maxDoc) {
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(doc + 1);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target >= maxDoc) {
+        return doc = NO_MORE_DOCS;
+      }
+      return doc = target;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      this.doc = target;
+      return true;
+    }
+
+    @Override
+    public long cost() {
+      return maxDoc;
+    }
+
+  }
+
+  static abstract class SparseNormsIterator extends NumericDocValues {
+
+    final IndexedDISI disi;
+
+    SparseNormsIterator(IndexedDISI disi) {
+      this.disi = disi;
+    }
+
+    @Override
+    public int docID() {
+      return disi.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return disi.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return disi.advance(target);
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      return disi.advanceExact(target);
+    }
+
+    @Override
+    public long cost() {
+      return disi.cost();
+    }
   }
 
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
@@ -108,6 +179,7 @@ final class Lucene70NormsProducer extends NormsProducer {
       }
       NormsEntry entry = new NormsEntry();
       entry.docsWithFieldOffset = meta.readLong();
+      entry.docsWithFieldLength = meta.readLong();
       entry.numDocsWithField = meta.readInt();
       entry.bytesPerNorm = meta.readByte();
       switch (entry.bytesPerNorm) {
@@ -129,117 +201,87 @@ final class Lucene70NormsProducer extends NormsProducer {
       return DocValues.emptyNumeric();
     } else if (entry.docsWithFieldOffset == -1) {
       // dense
-      final LongValues normValues = getNormValues(entry);
-      return new NumericDocValues() {
-
-        int doc = -1;
-
-        @Override
-        public long longValue() throws IOException {
-          return normValues.get(doc);
-        }
-
-        @Override
-        public int docID() {
-          return doc;
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          return advance(doc + 1);
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          if (target >= maxDoc) {
-            return doc = NO_MORE_DOCS;
+      if (entry.bytesPerNorm == 0) {
+        return new DenseNormsIterator(maxDoc) {
+          @Override
+          public long longValue() throws IOException {
+            return entry.normsOffset;
           }
-          return doc = target;
-        }
-
-        @Override
-        public long cost() {
-          return maxDoc;
-        }
-
-      };
-    } else {
-      // sparse
-      final LongValues normValues = getNormValues(entry);
-      final SparseDISI disi;
-      synchronized (data) {
-        disi = new SparseDISI(maxDoc, data, entry.docsWithFieldOffset, entry.numDocsWithField);
+        };
       }
-      return new NumericDocValues() {
-
-        @Override
-        public int advance(int target) throws IOException {
-          return disi.advance(target);
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          return disi.nextDoc();
-        }
-
-        @Override
-        public int docID() {
-          return disi.docID();
-        }
-
-        @Override
-        public long cost() {
-          return entry.numDocsWithField;
-        }
-
-        @Override
-        public long longValue() throws IOException {
-          return normValues.get(disi.index());
-        }
-      };
-    }
-  }
-
-  private LongValues getNormValues(NormsEntry entry) throws IOException {
-    if (entry.bytesPerNorm == 0) {
-      return new LongValues() {
-        @Override
-        long get(int index) {
-          return entry.normsOffset;
-        }
-      };
-    } else {
-      RandomAccessInput slice;
-      synchronized (data) {
-        slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
-      }
+      final RandomAccessInput slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
       switch (entry.bytesPerNorm) {
         case 1:
-          return new LongValues() {
+          return new DenseNormsIterator(maxDoc) {
             @Override
-            long get(int index) throws IOException {
-              return slice.readByte(index);
+            public long longValue() throws IOException {
+              return slice.readByte(doc);
             }
           };
         case 2:
-          return new LongValues() {
+          return new DenseNormsIterator(maxDoc) {
             @Override
-            long get(int index) throws IOException {
-              return slice.readShort(((long) index) << 1);
+            public long longValue() throws IOException {
+              return slice.readShort(((long) doc) << 1);
             }
           };
         case 4:
-          return new LongValues() {
+          return new DenseNormsIterator(maxDoc) {
             @Override
-            long get(int index) throws IOException {
-              return slice.readInt(((long) index) << 2);
+            public long longValue() throws IOException {
+              return slice.readInt(((long) doc) << 2);
             }
           };
         case 8:
-          return new LongValues() {
+          return new DenseNormsIterator(maxDoc) {
             @Override
-            long get(int index) throws IOException {
-              return slice.readLong(((long) index) << 3);
+            public long longValue() throws IOException {
+              return slice.readLong(((long) doc) << 3);
+            }
+          };
+        default:
+          // should not happen, we already validate bytesPerNorm in readFields
+          throw new AssertionError();
+      }
+    } else {
+      // sparse
+      final IndexedDISI disi = new IndexedDISI(data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.numDocsWithField);
+      if (entry.bytesPerNorm == 0) {
+        return new SparseNormsIterator(disi) {
+          @Override
+          public long longValue() throws IOException {
+            return entry.normsOffset;
+          }
+        };
+      }
+      final RandomAccessInput slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
+      switch (entry.bytesPerNorm) {
+        case 1:
+          return new SparseNormsIterator(disi) {
+            @Override
+            public long longValue() throws IOException {
+              return slice.readByte(disi.index());
+            }
+          };
+        case 2:
+          return new SparseNormsIterator(disi) {
+            @Override
+            public long longValue() throws IOException {
+              return slice.readShort(((long) disi.index()) << 1);
+            }
+          };
+        case 4:
+          return new SparseNormsIterator(disi) {
+            @Override
+            public long longValue() throws IOException {
+              return slice.readInt(((long) disi.index()) << 2);
+            }
+          };
+        case 8:
+          return new SparseNormsIterator(disi) {
+            @Override
+            public long longValue() throws IOException {
+              return slice.readLong(((long) disi.index()) << 3);
             }
           };
         default:

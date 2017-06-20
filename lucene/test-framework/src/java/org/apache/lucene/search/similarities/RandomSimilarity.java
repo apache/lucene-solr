@@ -31,7 +31,7 @@ import java.util.Random;
  * for the same field.
  */
 public class RandomSimilarity extends PerFieldSimilarityWrapper {
-  final ClassicSimilarity defaultSim = new ClassicSimilarity();
+  final BM25Similarity defaultSim = new BM25Similarity();
   final List<Similarity> knownSims;
   Map<String,Similarity> previousMappings = new HashMap<>();
   final int perFieldSeed;
@@ -91,6 +91,8 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
     allSims = new ArrayList<>();
     allSims.add(new ClassicSimilarity());
     allSims.add(new BM25Similarity());
+    // We cannot do this, because this similarity behaves in "non-traditional" ways:
+    // allSims.add(new BooleanSimilarity());
     for (BasicModel basicModel : BASIC_MODELS) {
       for (AfterEffect afterEffect : AFTER_EFFECTS) {
         for (Normalization normalization : NORMALIZATIONS) {

@@ -1,0 +1,91 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html>
+<body>
+Apache Solr Search Server: Learning to Rank Contrib
+
+<p>
+This module contains a logic <strong>to plug machine learned ranking modules into Solr</strong>.
+</p>
+<p>
+In information retrieval systems, Learning to Rank is used to re-rank the top X
+retrieved documents using trained machine learning models. The hope is
+that sophisticated models can make more nuanced ranking decisions than standard ranking
+functions like TF-IDF or BM25.
+</p>
+<p>
+This module allows to plug a reranking model directly into Solr, enabling users
+to easily build their own learning to rank systems and access the rich
+matching features readily available in Solr. It also provides tools to perform
+feature engineering and feature extraction.
+</p>
+<h2> Code structure </h2>
+<p>
+A Learning to Rank model is plugged into the ranking through the {@link org.apache.solr.ltr.search.LTRQParserPlugin},
+a {@link org.apache.solr.search.QParserPlugin}. The plugin will
+read from the request the model (instance of {@link org.apache.solr.ltr.model.LTRScoringModel})
+used to perform the request plus other
+parameters. The plugin will generate a {@link org.apache.solr.ltr.search.LTRQParserPlugin.LTRQuery LTRQuery}:
+a particular {@link org.apache.solr.search.RankQuery}
+that will encapsulate the given model and use it to
+rescore and rerank the document (by using an {@link org.apache.solr.ltr.LTRRescorer}).
+</p>
+<p>
+A model will be applied on each document through a {@link org.apache.solr.ltr.LTRScoringQuery}, a
+subclass of {@link org.apache.lucene.search.Query}. As a normal query,
+the learned model will produce a new score
+for each document reranked.
+</p>
+<p>
+A {@link org.apache.solr.ltr.LTRScoringQuery} is created by providing an instance of
+{@link org.apache.solr.ltr.model.LTRScoringModel}. An instance of
+{@link org.apache.solr.ltr.model.LTRScoringModel}
+defines how to combine the features in order to create a new
+score for a document. A new learning to rank model is plugged
+into the framework  by extending {@link org.apache.solr.ltr.model.LTRScoringModel},
+(see for example {@link org.apache.solr.ltr.model.MultipleAdditiveTreesModel} and {@link org.apache.solr.ltr.model.LinearModel}).
+</p>
+<p>
+The {@link org.apache.solr.ltr.LTRScoringQuery} will take care of computing the values of
+all the features (see {@link org.apache.solr.ltr.feature.Feature}) and then will delegate the final score
+generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling the method
+{@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized)}.
+</p>
+<p>
+A {@link org.apache.solr.ltr.feature.Feature} will produce a particular value for each document, so
+it is modeled as a {@link org.apache.lucene.search.Query}. The package
+{@link org.apache.solr.ltr.feature} contains several examples
+of features. One benefit of extending the Query object is that we can reuse
+Query as a feature, see for example {@link org.apache.solr.ltr.feature.SolrFeature}.
+Features for a document can also be returned in the response by
+using the FeatureTransformer (a {@link org.apache.solr.response.transform.DocTransformer DocTransformer})
+provided by {@link org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory}.
+</p>
+<p>
+{@link org.apache.solr.ltr.store} contains all the logic to store all the features and the models.
+Models are registered into a unique {@link org.apache.solr.ltr.store.ModelStore ModelStore},
+and each model specifies a particular {@link org.apache.solr.ltr.store.FeatureStore FeatureStore} that
+will contain a particular subset of features.
+<p>
+</p>
+Features and models can be managed through a REST API, provided by the
+{@link org.apache.solr.rest.ManagedResource Managed Resources}
+{@link org.apache.solr.ltr.store.rest.ManagedFeatureStore ManagedFeatureStore}
+and {@link org.apache.solr.ltr.store.rest.ManagedModelStore ManagedModelStore}.
+</p>
+</body>
+</html>

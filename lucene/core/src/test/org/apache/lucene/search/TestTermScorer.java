@@ -153,7 +153,7 @@ public class TestTermScorer extends LuceneTestCase {
     assertTrue("doc should be number 5", ts.docID() == 5);
   }
   
-  private class TestHit {
+  private static class TestHit {
     public int doc;
     public float score;
     
@@ -178,6 +178,16 @@ public class TestTermScorer extends LuceneTestCase {
         fail("Norms should not be loaded");
         // unreachable
         return null;
+      }
+
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return in.getCoreCacheHelper();
+      }
+
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return in.getReaderCacheHelper();
       }
     };
     // We don't use newSearcher because it sometimes runs checkIndex which loads norms

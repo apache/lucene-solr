@@ -16,21 +16,9 @@
  */
 package org.apache.lucene.util;
 
-
-import org.apache.lucene.index.LegacyNumericDocValues;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.packed.PackedInts;
-
 /** Abstraction over an array of longs.
- *  This class extends NumericDocValues so that we don't need to add another
- *  level of abstraction every time we want eg. to use the {@link PackedInts}
- *  utility classes to represent a {@link LegacyNumericDocValues} instance.
- *  @lucene.internal
- *
- *  @deprecated Switch to {@link NumericDocValues} instead. */
- @Deprecated
-// TODO: cutover to iterator once codecs have all cutover?
-public abstract class LongValues extends LegacyNumericDocValues {
+ *  @lucene.internal */
+public abstract class LongValues  {
 
   /** An instance that returns the provided value. */
   public static final LongValues IDENTITY = new LongValues() {
@@ -42,12 +30,16 @@ public abstract class LongValues extends LegacyNumericDocValues {
 
   };
 
+  public static final LongValues ZEROES = new LongValues() {
+
+    @Override
+    public long get(long index) {
+      return 0;
+    }
+
+  };
+
   /** Get value at <code>index</code>. */
   public abstract long get(long index);
-
-  @Override
-  public long get(int idx) {
-    return get((long) idx);
-  }
 
 }

@@ -17,6 +17,8 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 /**
  * Wraps a {@link LegacySortedNumericDocValues} into a {@link SortedNumericDocValues}.
  *
@@ -69,6 +71,14 @@ public final class LegacySortedNumericDocValuesWrapper extends SortedNumericDocV
       nextDoc();
     }
     return docID;
+  }
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    docID = target;
+    values.setDocument(docID);
+    upto = 0;
+    return values.count() != 0;
   }
 
   @Override

@@ -60,7 +60,7 @@ import org.apache.lucene.util.TestUtil;
 
 public final class MockRandomPostingsFormat extends PostingsFormat {
   private final Random seedRandom;
-  private final String SEED_EXT = "sd";
+  private static final String SEED_EXT = "sd";
   
   public MockRandomPostingsFormat() {
     // This ctor should *only* be used at read-time: get NPE if you use it!

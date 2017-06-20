@@ -74,6 +74,13 @@ interface GenericTermsCollector extends Collector {
         }
 
         @Override
+        public boolean advanceExact(int dest) throws IOException {
+          boolean exists = target.advanceExact(dest);
+          out.println("\nadvanceExact(" + dest + ") -> exists# "+exists);
+          return exists;
+        }
+
+        @Override
         public long cost() {
           return target.cost();
         }

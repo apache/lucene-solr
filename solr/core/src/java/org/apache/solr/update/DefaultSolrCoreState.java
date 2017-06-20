@@ -63,6 +63,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private SolrIndexWriter indexWriter = null;
   private DirectoryFactory directoryFactory;
+  private final RecoveryStrategy.Builder recoveryStrategyBuilder;
 
   private volatile RecoveryStrategy recoveryStrat;
 
@@ -76,8 +77,15 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   
   protected final ReentrantLock commitLock = new ReentrantLock();
 
+  @Deprecated
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
+    this(directoryFactory, new RecoveryStrategy.Builder());
+  }
+
+  public DefaultSolrCoreState(DirectoryFactory directoryFactory,
+      RecoveryStrategy.Builder recoveryStrategyBuilder) {
     this.directoryFactory = directoryFactory;
+    this.recoveryStrategyBuilder = recoveryStrategyBuilder;
   }
   
   private void closeIndexWriter(IndexWriterCloser closer) {
@@ -263,12 +271,17 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
+  public RecoveryStrategy.Builder getRecoveryStrategyBuilder() {
+    return recoveryStrategyBuilder;
+  }
+
+  @Override
   public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
     
-    Thread thread = new Thread() {
+    Runnable recoveryTask = new Runnable() {
       @Override
       public void run() {
-        MDCLoggingContext.setCoreDescriptor(cd);
+        MDCLoggingContext.setCoreDescriptor(cc, cd);
         try {
           if (SKIP_AUTO_RECOVERY) {
             log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
@@ -310,7 +323,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
               recoveryThrottle.minimumWaitBetweenActions();
               recoveryThrottle.markAttemptingAction();
               
-              recoveryStrat = new RecoveryStrategy(cc, cd, DefaultSolrCoreState.this);
+              recoveryStrat = recoveryStrategyBuilder.create(cc, cd, DefaultSolrCoreState.this);
               recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
               Future<?> future = cc.getUpdateShardHandler().getRecoveryExecutor().submit(recoveryStrat);
               try {
@@ -342,7 +355,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // The recovery executor is not interrupted on shutdown.
       //
       // avoid deadlock: we can't use the recovery executor here
-      cc.getUpdateShardHandler().getUpdateExecutor().submit(thread);
+      cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
     }

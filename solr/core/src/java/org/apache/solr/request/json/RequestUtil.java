@@ -36,6 +36,7 @@ import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
 
 public class RequestUtil {
   /**
@@ -147,14 +148,16 @@ public class RequestUtil {
       newMap.putAll( MultiMapSolrParams.asMultiMap(invariants) );
     }
 
-    String[] doMacrosStr = newMap.get("expandMacros");
-    boolean doMacros = true;
-    if (doMacrosStr != null) {
-      doMacros = "true".equals(doMacrosStr[0]);
-    }
+    if (!isShard) { // Don't expand macros in shard requests
+      String[] doMacrosStr = newMap.get("expandMacros");
+      boolean doMacros = true;
+      if (doMacrosStr != null) {
+        doMacros = "true".equals(doMacrosStr[0]);
+      }
 
-    if (doMacros) {
-      newMap = MacroExpander.expand(newMap);
+      if (doMacros) {
+        newMap = MacroExpander.expand(newMap);
+      }
     }
     // Set these params as soon as possible so if there is an error processing later, things like
     // "wt=json" will take effect from the defaults.
@@ -204,8 +207,8 @@ public class RequestUtil {
           out = "start";
         } else if ("limit".equals(key)) {
           out = "rows";
-        } else if ("sort".equals(key)) {
-          out = "sort";
+        } else if (SORT.equals(key)) {
+          out = SORT;
         } else if ("params".equals(key) || "facet".equals(key) ) {
           // handled elsewhere
           continue;

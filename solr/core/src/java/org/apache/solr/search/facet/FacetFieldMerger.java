@@ -18,8 +18,11 @@
 package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -79,7 +82,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       Object nb = facetResult.get("numBuckets");
       if (nb != null) {
         if (numBuckets == null) {
-          numBuckets = new FacetNumBucketsMerger();
+          numBuckets = new HLLAgg("hll_merger").createFacetMerger(nb);
         }
         numBuckets.merge(nb , mcontext);
       }
@@ -95,26 +98,16 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     SimpleOrderedMap result = new SimpleOrderedMap();
 
     if (numBuckets != null) {
-      int removed = 0;
-      if (freq.mincount > 1) {
-        for (FacetBucket bucket : buckets.values()) {
-          if (bucket.count < freq.mincount) removed++;
-        }
-      }
-      result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue() - removed);
-
-      // TODO: we can further increase this estimate.
-      // If not sorting by count, use a simple ratio to scale
-      // If sorting by count desc, then add up the highest_possible_missing_count from each shard
+      result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue());
     }
 
     sortBuckets();
 
-    int first = (int)freq.offset;
-    int end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
-    int last = Math.min(sortedBuckets.size(), end);
+    long first = freq.offset;
+    long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
+    long last = Math.min(sortedBuckets.size(), end);
 
-    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (last - first)));
+    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
 
     /** this only works if there are no filters (like mincount)
     for (int i=first; i<last; i++) {
@@ -167,9 +160,33 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     // basically , only do at the top-level facet?
   }
 
+  @Override
+  Map<String, Object> getRefinementSpecial(Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial) {
+    if (!tagsWithPartial.isEmpty()) {
+      // Since special buckets missing and allBuckets themselves will always be included, we only need to worry about subfacets being partial.
+      if (freq.missing) {
+        refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, missingBucket, "missing");
+      }
+      /** allBuckets does not execute sub-facets because we don't change the domain.  We may need refinement info in the future though for stats.
+      if (freq.allBuckets) {
+        refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, allBuckets, "allBuckets");
+      }
+       **/
+    }
+    return refinement;
+  }
 
+  private Map<String, Object> getRefinementSpecial(Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial, FacetBucket bucket, String label) {
+    // boolean prev = mcontext.setBucketWasMissing(true); // the special buckets should have the same "missing" status as this facet, so no need to set it again
+    Map<String, Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
+    if (bucketRefinement != null) {
+      refinement = refinement == null ? new HashMap<>(2) : refinement;
+      refinement.put(label, bucketRefinement);
+    }
+    return refinement;
+  }
 
-  private class FacetNumBucketsMerger extends FacetMerger {
+  private static class FacetNumBucketsMerger extends FacetMerger {
     long sumBuckets;
     long shardsMissingSum;
     long shardsTruncatedSum;

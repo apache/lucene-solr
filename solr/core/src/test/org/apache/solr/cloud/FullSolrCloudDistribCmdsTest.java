@@ -16,6 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -38,16 +43,11 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.update.VersionInfo;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  * Super basic testing, no shard restarting or anything.
@@ -157,13 +157,9 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
-            .setCollectionName("implicit_collection_without_routerfield")
-            .setRouterName("implicit")
-            .setNumShards(2)
-            .setShards("shard1,shard2")
-            .setReplicationFactor(2)
-            .setConfigName("conf1");
+    CollectionAdminRequest.Create createCollectionRequest
+      = CollectionAdminRequest.createCollectionWithImplicitRouter("implicit_collection_without_routerfield",
+                                                                  "conf1","shard1,shard2",2);
     response = createCollectionRequest.process(server);
 
     assertEquals(0, response.getStatus());
@@ -285,14 +281,10 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
-    response = new CollectionAdminRequest.Create()
-            .setCollectionName("compositeid_collection_with_routerfield")
+    response = CollectionAdminRequest.createCollection("compositeid_collection_with_routerfield","conf1",2,2)
             .setRouterName("compositeId")
             .setRouterField("routefield_s")
-            .setNumShards(2)
             .setShards("shard1,shard2")
-            .setReplicationFactor(2)
-            .setConfigName("conf1")
             .process(server);
 
     assertEquals(0, response.getStatus());
@@ -718,12 +710,12 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   
   private void testOptimisticUpdate(QueryResponse results) throws Exception {
     SolrDocument doc = results.getResults().get(0);
-    Long version = (Long) doc.getFieldValue(VersionInfo.VERSION_FIELD);
+    Long version = (Long) doc.getFieldValue(VERSION_FIELD);
     Integer theDoc = (Integer) doc.getFieldValue("id");
     UpdateRequest uReq = new UpdateRequest();
     SolrInputDocument doc1 = new SolrInputDocument();
     uReq.setParams(new ModifiableSolrParams());
-    uReq.getParams().set(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+    uReq.getParams().set(VERSION_FIELD, Long.toString(version));
     addFields(doc1, "id", theDoc, t1, "theupdatestuff");
     uReq.add(doc1);
     
@@ -736,7 +728,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     SolrInputDocument doc2 = new SolrInputDocument();
     uReq = new UpdateRequest();
     uReq.setParams(new ModifiableSolrParams());
-    uReq.getParams().set(DistributedUpdateProcessor.VERSION_FIELD, Long.toString(version));
+    uReq.getParams().set(VERSION_FIELD, Long.toString(version));
     addFields(doc2, "id", theDoc, t1, "thenewupdatestuff");
     uReq.add(doc2);
     

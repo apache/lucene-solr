@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
@@ -58,6 +59,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -79,6 +81,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -90,6 +93,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -104,9 +108,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   public static final String NUM_SLICES = "numShards";
 
   static final boolean CREATE_NODE_SET_SHUFFLE_DEFAULT = true;
-  public static final String CREATE_NODE_SET_SHUFFLE = "createNodeSet.shuffle";
+  public static final String CREATE_NODE_SET_SHUFFLE = CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
-  public static final String CREATE_NODE_SET = "createNodeSet";
+  public static final String CREATE_NODE_SET = CollectionAdminParams.CREATE_NODE_SET_PARAM;
 
   public static final String ROUTER = "router";
 
@@ -129,9 +133,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   public static final Map<String, Object> COLL_PROPS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,
       ZkStateReader.REPLICATION_FACTOR, "1",
+      ZkStateReader.NRT_REPLICAS, "1",
+      ZkStateReader.TLOG_REPLICAS, "0",
+      ZkStateReader.PULL_REPLICAS, "0",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
       DocCollection.RULE, null,
+      POLICY, null,
       SNITCH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -182,6 +190,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         .put(DELETENODE, new DeleteNodeCmd(this))
         .put(BACKUP, new BackupCmd(this))
         .put(RESTORE, new RestoreCmd(this))
+        .put(CREATESNAPSHOT, new CreateSnapshotCmd(this))
+        .put(DELETESNAPSHOT, new DeleteSnapshotCmd(this))
         .put(SPLITSHARD, new SplitShardCmd(this))
         .put(ADDROLE, new OverseerRoleCmd(this, ADDROLE, overseerPrioritizer))
         .put(REMOVEROLE, new OverseerRoleCmd(this, REMOVEROLE, overseerPrioritizer))
@@ -205,6 +215,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         .put(DELETESHARD, new DeleteShardCmd(this))
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
         .put(ADDREPLICA, new AddReplicaCmd(this))
+        .put(MOVEREPLICA, new MoveReplicaCmd(this))
         .build()
     ;
   }
@@ -436,7 +447,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         ZkStateReader.CORE_NAME_PROP, core,
         ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
         ZkStateReader.COLLECTION_PROP, collectionName,
-        ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
+        ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
+        ZkStateReader.BASE_URL_PROP, replica.getStr(ZkStateReader.BASE_URL_PROP));
     Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
   }
 
@@ -694,37 +706,62 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   Map<Position, String> identifyNodes(ClusterState clusterState,
                                       List<String> nodeList,
+                                      String collectionName,
                                       ZkNodeProps message,
                                       List<String> shardNames,
-                                      int repFactor) throws IOException {
+                                      int numNrtReplicas, 
+                                      int numTlogReplicas,
+                                      int numPullReplicas) throws KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
-    if (rulesMap == null) {
+    String policyName = message.getStr(POLICY);
+    Map autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+
+    if (rulesMap == null && policyName == null) {
       int i = 0;
       Map<Position, String> result = new HashMap<>();
       for (String aShard : shardNames) {
-        for (int j = 0; j < repFactor; j++){
-          result.put(new Position(aShard, j), nodeList.get(i % nodeList.size()));
+        for (int j = 0; j < numNrtReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.NRT), nodeList.get(i % nodeList.size()));
+          i++;
+        }
+        for (int j = 0; j < numTlogReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.TLOG), nodeList.get(i % nodeList.size()));
+          i++;
+        }
+        for (int j = 0; j < numPullReplicas; j++){
+          result.put(new Position(aShard, j, Replica.Type.PULL), nodeList.get(i % nodeList.size()));
           i++;
         }
       }
       return result;
+    } else {
+      if (numTlogReplicas + numPullReplicas != 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
+      }
     }
 
-    List<Rule> rules = new ArrayList<>();
-    for (Object map : rulesMap) rules.add(new Rule((Map) map));
+    if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
+      return Assign.getPositionsUsingPolicy(collectionName,
+          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
 
-    Map<String, Integer> sharVsReplicaCount = new HashMap<>();
+    } else {
+      List<Rule> rules = new ArrayList<>();
+      for (Object map : rulesMap) rules.add(new Rule((Map) map));
 
-    for (String shard : shardNames) sharVsReplicaCount.put(shard, repFactor);
-    ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
-        sharVsReplicaCount,
-        (List<Map>) message.get(SNITCH),
-        new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
-        nodeList,
-        overseer.getZkController().getCoreContainer(),
-        clusterState);
+      Map<String, Integer> sharVsReplicaCount = new HashMap<>();
 
-    return replicaAssigner.getNodeMappings();
+      for (String shard : shardNames) sharVsReplicaCount.put(shard, numNrtReplicas);
+      ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
+          sharVsReplicaCount,
+          (List<Map>) message.get(SNITCH),
+          new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
+          nodeList,
+          overseer.getZkController().getCoreContainer(),
+          clusterState);
+
+      return replicaAssigner.getNodeMappings();
+    }
   }
 
   Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
@@ -746,6 +783,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       
       if (result.size() == coreNames.size()) {
         return result;
+      } else {
+        log.debug("Expecting {} cores but found {}", coreNames.size(), result.size());
       }
       if (timeout.hasTimedOut()) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state.");
@@ -936,6 +975,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         if (srsp != null) {
           NamedList results = new NamedList();
           processResponse(results, srsp, Collections.emptySet());
+          if (srsp.getSolrResponse().getResponse() == null) {
+            NamedList response = new NamedList();
+            response.add("STATUS", "failed");
+            return response;
+          }
+          
           String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
           if (r.equals("running")) {
             log.debug("The task is still RUNNING, continuing to wait.");

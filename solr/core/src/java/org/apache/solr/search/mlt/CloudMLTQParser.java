@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search.mlt;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,8 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -46,6 +48,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrPluginUtils;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class CloudMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
   private static final Pattern splitList = Pattern.compile(",| ");
@@ -64,80 +68,83 @@ public class CloudMLTQParser extends QParser {
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + id + "]");
     }
-    
+
     String[] qf = localParams.getParams("qf");
     Map<String,Float> boostFields = new HashMap<>();
     MoreLikeThis mlt = new MoreLikeThis(req.getSearcher().getIndexReader());
-    
-    if(localParams.getInt("mintf") != null)
-      mlt.setMinTermFreq(localParams.getInt("mintf"));
 
+    mlt.setMinTermFreq(localParams.getInt("mintf", MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
     mlt.setMinDocFreq(localParams.getInt("mindf", 0));
+    mlt.setMinWordLen(localParams.getInt("minwl", MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
+    mlt.setMaxWordLen(localParams.getInt("maxwl", MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
+    mlt.setMaxQueryTerms(localParams.getInt("maxqt", MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
+    mlt.setMaxNumTokensParsed(localParams.getInt("maxntp", MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
+    mlt.setMaxDocFreq(localParams.getInt("maxdf", MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
 
-    if(localParams.get("minwl") != null)
-      mlt.setMinWordLen(localParams.getInt("minwl"));
-
-    if(localParams.get("maxwl") != null)
-      mlt.setMaxWordLen(localParams.getInt("maxwl"));
-
-    if(localParams.get("maxqt") != null)
-      mlt.setMaxQueryTerms(localParams.getInt("maxqt"));
-
-    if(localParams.get("maxntp") != null)
-      mlt.setMaxNumTokensParsed(localParams.getInt("maxntp"));
-    
-    if(localParams.get("maxdf") != null) {
-      mlt.setMaxDocFreq(localParams.getInt("maxdf"));
-    }
-
-    if(localParams.get("boost") != null) {
-      mlt.setBoost(localParams.getBool("boost"));
-      boostFields = SolrPluginUtils.parseFieldBoosts(qf);
-    }
+    Boolean boost = localParams.getBool("boost", MoreLikeThis.DEFAULT_BOOST);
+    mlt.setBoost(boost);
 
     mlt.setAnalyzer(req.getSchema().getIndexAnalyzer());
 
     Map<String, Collection<Object>> filteredDocument = new HashMap<>();
-    ArrayList<String> fieldNames = new ArrayList<>();
+    String[] fieldNames;
 
     if (qf != null) {
+      ArrayList<String> fields = new ArrayList();
       for (String fieldName : qf) {
         if (!StringUtils.isEmpty(fieldName))  {
           String[] strings = splitList.split(fieldName);
           for (String string : strings) {
             if (!StringUtils.isEmpty(string)) {
-              fieldNames.add(string);
+              fields.add(string);
             }
           }
         }
       }
+      // Parse field names and boosts from the fields
+      boostFields = SolrPluginUtils.parseFieldBoosts(fields.toArray(new String[0]));
+      fieldNames = boostFields.keySet().toArray(new String[0]);
     } else {
+      ArrayList<String> fields = new ArrayList();
       for (String field : doc.getFieldNames()) {
         // Only use fields that are stored and have an explicit analyzer.
         // This makes sense as the query uses tf/idf/.. for query construction.
         // We might want to relook and change this in the future though.
         SchemaField f = req.getSchema().getFieldOrNull(field);
         if (f != null && f.stored() && f.getType().isExplicitAnalyzer()) {
-          fieldNames.add(field);
+          fields.add(field);
         }
       }
+      fieldNames = fields.toArray(new String[0]);
     }
 
-    if( fieldNames.size() < 1 ) {
+    if (fieldNames.length < 1) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
           "MoreLikeThis requires at least one similarity field: qf" );
     }
 
-    mlt.setFieldNames(fieldNames.toArray(new String[fieldNames.size()]));
+    mlt.setFieldNames(fieldNames);
     for (String field : fieldNames) {
-      filteredDocument.put(field, doc.getFieldValues(field));
+      Collection<Object> fieldValues = doc.getFieldValues(field);
+      if (fieldValues != null) {
+        Collection<Object> values = new ArrayList();
+        for (Object val : fieldValues) {
+          if (val instanceof IndexableField) {
+            values.add(((IndexableField)val).stringValue());
+          }
+          else {
+            values.add(val);
+          }
+        }
+        filteredDocument.put(field, values);
+      }
     }
 
     try {
       Query rawMLTQuery = mlt.like(filteredDocument);
       BooleanQuery boostedMLTQuery = (BooleanQuery) rawMLTQuery;
 
-      if (boostFields.size() > 0) {
+      if (boost && boostFields.size() > 0) {
         BooleanQuery.Builder newQ = new BooleanQuery.Builder();
         newQ.setMinimumNumberShouldMatch(boostedMLTQuery.getMinimumNumberShouldMatch());
 
@@ -174,7 +181,7 @@ public class CloudMLTQParser extends QParser {
     SolrCore core = req.getCore();
     SolrQueryResponse rsp = new SolrQueryResponse();
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("id", id);
+    params.add(ID, id);
 
     SolrQueryRequestBase request = new SolrQueryRequestBase(core, params) {
     };
@@ -186,7 +193,7 @@ public class CloudMLTQParser extends QParser {
   }
 
   private Query createIdQuery(String defaultField, String uniqueValue) {
-    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumericType() != null
+    return new TermQuery(req.getSchema().getField(defaultField).getType().getNumberType() != null
         ? createNumericTerm(defaultField, uniqueValue)
         : new Term(defaultField, uniqueValue));
   }

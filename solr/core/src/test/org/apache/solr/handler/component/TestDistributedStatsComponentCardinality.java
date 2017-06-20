@@ -244,7 +244,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                                               final int highId, 
                                               final int log2m, 
                                               final int regwidth) {
-    ModifiableSolrParams p = params("q", "id:["+lowId+" TO "+highId+"]", 
+    ModifiableSolrParams p = params("q", "id_i1:["+lowId+" TO "+highId+"]", 
                                     "rows", "0", "stats", "true");
     final String prefix = "{!cardinality=true hllLog2m="+log2m+" hllRegwidth="+regwidth;
     for (String f : STAT_FIELDS) {
@@ -267,7 +267,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
                                               final int highId, 
                                               final double lowAccuracy,
                                               final double highAccuracy) {
-    ModifiableSolrParams p = params("q", "id:["+lowId+" TO "+highId+"]", 
+    ModifiableSolrParams p = params("q", "id_i1:["+lowId+" TO "+highId+"]", 
                                     "rows", "0", "stats", "true");
     final String[] prefixes = new String[] {
       "{!cardinality=" + lowAccuracy + " key=low_",

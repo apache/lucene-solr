@@ -137,8 +137,6 @@ public class SchemaResponse extends SolrResponseBase {
     schemaRepresentation.setName(getSchemaName(schemaObj));
     schemaRepresentation.setVersion(getSchemaVersion(schemaObj));
     schemaRepresentation.setUniqueKey(getSchemaUniqueKey(schemaObj));
-    schemaRepresentation.setDefaultSearchField(getDefaultSearchField(schemaObj));
-    schemaRepresentation.setDefaultOperator(getDefaultOperator(schemaObj));
     schemaRepresentation.setSimilarity(getSimilarity(schemaObj));
     schemaRepresentation.setFields(getFields(schemaObj));
     schemaRepresentation.setDynamicFields(getDynamicFields(schemaObj));
@@ -159,23 +157,11 @@ public class SchemaResponse extends SolrResponseBase {
     return (String) schemaNamedList.get("uniqueKey");
   }
 
-  private static String getDefaultSearchField(Map schemaNamedList) {
-    return (String) schemaNamedList.get("defaultSearchField");
-  }
-
   private static Map<String, Object> getSimilarity(Map schemaNamedList) {
     NamedList<Object> similarityNamedList = (NamedList<Object>) schemaNamedList.get("similarity");
     Map<String, Object> similarity = null;
     if (similarityNamedList != null) similarity = extractAttributeMap(similarityNamedList);
     return similarity;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static String getDefaultOperator(Map schemaNamedList) {
-    String defaultOperator = null;
-    NamedList<Object> solrQueryParserProperties = (NamedList<Object>) schemaNamedList.get("solrQueryParser");
-    if (solrQueryParserProperties != null) defaultOperator = (String) solrQueryParserProperties.get("defaultOperator");
-    return defaultOperator;
   }
 
   @SuppressWarnings("unchecked")
@@ -414,25 +400,6 @@ public class SchemaResponse extends SolrResponseBase {
       return similarity;
     }
 
-  }
-
-  public static class DefaultQueryOperatorResponse extends SolrResponseBase {
-    private String defaultOperator;
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @SuppressWarnings("unchecked")
-    public void setResponse(NamedList<Object> response) {
-      super.setResponse(response);
-
-      defaultOperator = (String) response.get("defaultOperator");
-    }
-
-    public String getDefaultOperator() {
-      return defaultOperator;
-    }
   }
 
   public static class CopyFieldsResponse extends SolrResponseBase {

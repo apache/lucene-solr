@@ -88,7 +88,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     Query expected = new FuzzyQuery(new Term("field", "foobar"), 2);
 
     assertEquals(expected, parse("foobar~2"));
-    assertEquals(regular, parse("foobar~"));
+    assertEquals(expected, parse("foobar~"));
     assertEquals(regular, parse("foobar~a"));
     assertEquals(regular, parse("foobar~1a"));
 
@@ -622,5 +622,12 @@ public class TestSimpleQueryParser extends LuceneTestCase {
       parse(sb.toString()); // no exception
       parseKeyword(sb.toString(), TestUtil.nextInt(random(), 0, 1024)); // no exception
     }
+  }
+
+  public void testStarBecomesMatchAll() throws Exception {
+    Query q = parse("*");
+    assertEquals(q, new MatchAllDocsQuery());
+    q = parse(" *   ");
+    assertEquals(q, new MatchAllDocsQuery());
   }
 }

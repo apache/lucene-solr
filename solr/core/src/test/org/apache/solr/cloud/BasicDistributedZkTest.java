@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -87,6 +88,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEFAULT_COLLECTION = "collection1";
+
+  private final boolean onlyLeaderIndexes = random().nextBoolean();
   String t1="a_t";
   String i1="a_i1";
   String tlong = "other_tl1";
@@ -114,7 +117,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     pending = new HashSet<>();
     
   }
-  
+
+  @Override
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
+  }
+
   @Override
   protected void setDistributedParams(ModifiableSolrParams params) {
 
@@ -263,7 +271,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ,"facet.field","{!key=other ex=b}"+t1
     ,"facet.field","{!key=again ex=a,b}"+t1
     ,"facet.field",t1
-    ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"}
+    ,"fq","{!tag=a}id_i1:[1 TO 7]", "fq","{!tag=b}id_i1:[3 TO 9]"}
     );
     query(false, new Object[] {"q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1"});
 
@@ -313,10 +321,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     handle.put("time", SKIPVAL);
     handle.put("track", SKIP);
     query(false, new Object[] {"q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true"});
-    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true"});
-    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING});
-    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS});
-    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY});
+    query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG_QUERY, "true"});
+    query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING});
+    query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS});
+    query(false, new Object[] {"q", "id_i1:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY});
 
     // try add commitWithin
     long before = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
@@ -745,19 +753,28 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private Long getNumCommits(HttpSolrClient sourceClient) throws
       SolrServerException, IOException {
-    try (HttpSolrClient client = getHttpSolrClient(sourceClient.getBaseURL())) {
+    // construct the /admin/metrics URL
+    URL url = new URL(sourceClient.getBaseURL());
+    String path = url.getPath().substring(1);
+    String[] elements = path.split("/");
+    String collection = elements[elements.length - 1];
+    String urlString = url.toString();
+    urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
+    try (HttpSolrClient client = getHttpSolrClient(urlString)) {
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
+      //params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." + collection);
+      params.set("qt", "/admin/metrics");
+      params.set("prefix", "UPDATE.updateHandler");
+      params.set("registry", "solr.core." + collection);
       // use generic request to avoid extra processing of queries
       QueryRequest req = new QueryRequest(params);
       NamedList<Object> resp = client.request(req);
-      NamedList mbeans = (NamedList) resp.get("solr-mbeans");
-      NamedList uhandlerCat = (NamedList) mbeans.get("UPDATEHANDLER");
-      NamedList uhandler = (NamedList) uhandlerCat.get("updateHandler");
-      NamedList stats = (NamedList) uhandler.get("stats");
-      return (Long) stats.get("commits");
+      NamedList metrics = (NamedList) resp.get("metrics");
+      NamedList uhandlerCat = (NamedList) metrics.getVal(0);
+      Map<String,Object> commits = (Map<String,Object>) uhandlerCat.get("UPDATE.updateHandler.commits");
+      return (Long) commits.get("count");
     }
   }
 
@@ -1056,12 +1073,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(collection1Docs, found);
     
     assertEquals(collection3Docs, collection2Docs - 1);
-  }
-  
-  protected SolrInputDocument getDoc(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    return doc;
   }
   
   protected void indexDoc(String collection, SolrInputDocument doc) throws IOException, SolrServerException {

@@ -124,10 +124,7 @@ public abstract class DiversifiedTopDocsCollector extends
     // a leaf reader value when looking up keys
     int leafDocID = addition.doc - docBase;
     long value;
-    if (keys.docID() < leafDocID) {
-      keys.advance(leafDocID);
-    }
-    if (keys.docID() == leafDocID) {
+    if (keys.advanceExact(leafDocID)) {
       value = keys.longValue();
     } else {
       value = 0;

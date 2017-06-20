@@ -28,7 +28,7 @@ public class ScoreDoc {
    * @see IndexSearcher#doc(int) */
   public int doc;
 
-  /** Only set by {@link TopDocs#merge} */
+  /** Only set by {@link TopDocs#merge}*/
   public int shardIndex;
 
   /** Constructs a ScoreDoc. */

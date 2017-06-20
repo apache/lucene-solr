@@ -160,7 +160,7 @@ public class RandomSortField extends FieldType {
 
 
 
-  public class RandomValueSource extends ValueSource {
+  public static class RandomValueSource extends ValueSource {
     private final String field;
 
     public RandomValueSource(String field) {

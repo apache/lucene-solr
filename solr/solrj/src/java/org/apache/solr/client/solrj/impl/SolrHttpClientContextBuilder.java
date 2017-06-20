@@ -76,8 +76,8 @@ public class SolrHttpClientContextBuilder {
   public CredentialsProviderProvider getCredentialsProviderProvider() {
     return credentialsProviderProvider;
   }
-  
-  public HttpClientContext createContext() {
+
+  public HttpClientContext createContext(Object userToken) {
     HttpClientContext context = new HttpClientContext();
     if (getCredentialsProviderProvider() != null) {
       context.setCredentialsProvider(getCredentialsProviderProvider().getCredentialsProvider());
@@ -89,6 +89,8 @@ public class SolrHttpClientContextBuilder {
     if (getCookieSpecRegistryProvider() != null) {
       context.setCookieSpecRegistry(getCookieSpecRegistryProvider().getCookieSpecRegistry());
     }
+
+    context.setUserToken(userToken);
     
     return context;
   }

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.io.stream;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 
 public class DaemonStream extends TupleStream implements Expressible {
 
@@ -52,6 +55,8 @@ public class DaemonStream extends TupleStream implements Expressible {
   private Exception exception;
   private long runInterval;
   private String id;
+  private Map<String, DaemonStream> daemons;
+  private boolean terminate;
   private boolean closed = false;
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -61,13 +66,16 @@ public class DaemonStream extends TupleStream implements Expressible {
 
     TupleStream tupleStream = factory.constructStream(streamExpressions.get(0));
 
-    StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, "id");
+    StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, ID);
     StreamExpressionNamedParameter runExpression = factory.getNamedOperand(expression, "runInterval");
     StreamExpressionNamedParameter queueExpression = factory.getNamedOperand(expression, "queueSize");
+    StreamExpressionNamedParameter terminateExpression = factory.getNamedOperand(expression, "terminate");
+
 
     String id = null;
     long runInterval = 0L;
     int queueSize = 0;
+    boolean terminate = false;
 
     if(idExpression == null) {
       throw new IOException("Invalid expression id parameter expected");
@@ -82,24 +90,26 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
 
     if(queueExpression != null) {
-       queueSize= Integer.parseInt(((StreamExpressionValue)queueExpression.getParameter()).getValue());
+       queueSize= Integer.parseInt(((StreamExpressionValue) queueExpression.getParameter()).getValue());
     }
 
-    // validate expression contains only what we want.
-    if(expression.getParameters().size() != streamExpressions.size() + 2 &&
-        expression.getParameters().size() != streamExpressions.size() + 3) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if(terminateExpression != null) {
+      terminate = Boolean.parseBoolean(((StreamExpressionValue) terminateExpression.getParameter()).getValue());
     }
 
     if(1 != streamExpressions.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
     }
 
-    init(tupleStream, id, runInterval, queueSize);
+    init(tupleStream, id, runInterval, queueSize, terminate);
+  }
+
+  public DaemonStream(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
+    init(tupleStream, id, runInterval, queueSize, terminate);
   }
 
   public DaemonStream(TupleStream tupleStream, String id, long runInterval, int queueSize) {
-    init(tupleStream, id, runInterval, queueSize);
+    this(tupleStream, id, runInterval, queueSize, false);
   }
 
   @Override
@@ -123,9 +133,10 @@ public class DaemonStream extends TupleStream implements Expressible {
       expression.addParameter("<stream>");
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("id", id));
+    expression.addParameter(new StreamExpressionNamedParameter(ID, id));
     expression.addParameter(new StreamExpressionNamedParameter("runInterval", Long.toString(runInterval)));
     expression.addParameter(new StreamExpressionNamedParameter("queueSize", Integer.toString(queueSize)));
+    expression.addParameter(new StreamExpressionNamedParameter("terminate", Boolean.toString(terminate)));
 
     return expression;
   }
@@ -148,10 +159,16 @@ public class DaemonStream extends TupleStream implements Expressible {
   }
 
   public void init(TupleStream tupleStream, String id, long runInterval, int queueSize) {
+    init(tupleStream, id, runInterval, queueSize, false);
+  }
+
+  public void init(TupleStream tupleStream, String id, long runInterval, int queueSize, boolean terminate) {
     this.tupleStream = tupleStream;
     this.id = id;
     this.runInterval = runInterval;
     this.queueSize = queueSize;
+    this.terminate = terminate;
+
     if(queueSize > 0) {
       queue = new ArrayBlockingQueue(queueSize);
       eatTuples = false;
@@ -216,7 +233,7 @@ public class DaemonStream extends TupleStream implements Expressible {
 
   public synchronized Tuple getInfo() {
     Tuple tuple = new Tuple(new HashMap());
-    tuple.put("id", id);
+    tuple.put(ID, id);
     tuple.put("startTime", startTime);
     tuple.put("stopTime", stopTime);
     tuple.put("iterations", iterations);
@@ -226,6 +243,10 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
 
     return tuple;
+  }
+
+  public void setDaemons(Map<String, DaemonStream> daemons) {
+    this.daemons = daemons;
   }
 
   private synchronized void incrementIterations() {
@@ -279,6 +300,18 @@ public class DaemonStream extends TupleStream implements Expressible {
                 errors = 0; // Reset errors on successful run.
                 if (tuple.fields.containsKey("sleepMillis")) {
                   this.sleepMillis = tuple.getLong("sleepMillis");
+
+                  if(terminate && sleepMillis > 0) {
+                    //TopicStream provides sleepMillis > 0 if the last run had no Tuples.
+                    //This means the topic queue is empty. Time to terminate.
+                    //Remove ourselves from the daemons map.
+                    if(daemons != null) {
+                      daemons.remove(id);
+                    }
+                    //Break out of the thread loop and end the run.
+                    break OUTER;
+                  }
+
                   this.runInterval = -1;
                 }
                 break INNER;

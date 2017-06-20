@@ -18,12 +18,15 @@ package org.apache.solr.util;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 public class TimeOut {
 
-  private final long timeoutAt;
+  private final long timeoutAt, startTime;
 
   public TimeOut(long interval, TimeUnit unit) {
-    this.timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(interval, unit);
+    startTime = System.nanoTime();
+    this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
   }
 
   public boolean hasTimedOut() {
@@ -31,6 +34,10 @@ public class TimeOut {
   }
 
   public long timeLeft(TimeUnit unit) {
-    return unit.convert(timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS);
+    return unit.convert(timeoutAt - System.nanoTime(), NANOSECONDS);
+  }
+
+  public long timeElapsed(TimeUnit unit) {
+    return unit.convert(System.nanoTime() - startTime, NANOSECONDS);
   }
 }

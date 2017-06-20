@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
@@ -83,7 +83,7 @@ enum AutorizationEditOperation {
       boolean indexSatisfied = index == null;
       for (int i = 0; i < permissions.size(); i++) {
         Map perm = permissions.get(i);
-        Integer thisIdx = (int) perm.get("index");
+        Integer thisIdx = (Integer) perm.get("index");
         if (thisIdx.equals(beforeIdx)) {
           beforeSatisfied = true;
           permissionsCopy.add(dataMap);

@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+import java.util.Collection;
 import java.util.Objects;
 
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -25,13 +27,16 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.search.Sort;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 
 /** 
  * A <code>FilterCodecReader</code> contains another CodecReader, which it
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality.
+ * <p><b>NOTE</b>: If this {@link FilterCodecReader} does not change the
+ * content the contained reader, you could consider delegating calls to
+ * {@link #getCoreCacheHelper()} and {@link #getReaderCacheHelper()}.
  */
 public abstract class FilterCodecReader extends CodecReader {
   /** 
@@ -88,11 +93,6 @@ public abstract class FilterCodecReader extends CodecReader {
   }
 
   @Override
-  public PointValues getPointValues() {
-    return in.getPointValues();
-  }
-
-  @Override
   public int numDocs() {
     return in.numDocs();
   }
@@ -103,17 +103,28 @@ public abstract class FilterCodecReader extends CodecReader {
   }
 
   @Override
-  public Sort getIndexSort() {
-    return in.getIndexSort();
+  public LeafMetaData getMetaData() {
+    return in.getMetaData();
   }
 
   @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    in.addCoreClosedListener(listener);
+  protected void doClose() throws IOException {
+    in.doClose();
   }
 
   @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    in.removeCoreClosedListener(listener);
+  public long ramBytesUsed() {
+    return in.ramBytesUsed();
   }
+
+  @Override
+  public Collection<Accountable> getChildResources() {
+    return in.getChildResources();
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    in.checkIntegrity();
+  }
+
 }

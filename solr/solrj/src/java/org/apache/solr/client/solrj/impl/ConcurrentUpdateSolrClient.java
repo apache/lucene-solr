@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -46,7 +47,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -88,58 +88,19 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   private boolean internalHttpClient;
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
-
-  /**
-   * Uses an internally managed HttpClient instance.
-   * 
-   * @param solrServerUrl
-   *          The Solr server URL
-   * @param queueSize
-   *          The buffer size before the documents are sent to the server
-   * @param threadCount
-   *          The number of background threads used to empty the queue
-   *          
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl, int queueSize,
-                                    int threadCount) {
-    this(solrServerUrl, null, queueSize, threadCount);
-    shutdownExecutor = true;
-    internalHttpClient = true;
-  }
+  private volatile boolean closed;
   
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount) {
-    this(solrServerUrl, client, queueSize, threadCount, ExecutorUtil.newMDCAwareCachedThreadPool(
-        new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
-    shutdownExecutor = true;
-  }
-
-  /**
-   * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es) {
-    this(solrServerUrl, client, queueSize, threadCount, es, false);
-  }
+  AtomicInteger pollInterrupts;
+  AtomicInteger pollExits;
+  AtomicInteger blockLoops;
+  AtomicInteger emptyQueueLoops;
   
   /**
    * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.  This will soon be a
-   * protected method, and will only be available for use in implementing subclasses.
    */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
+  protected ConcurrentUpdateSolrClient(String solrServerUrl,
+                                       HttpClient client, int queueSize, int threadCount,
+                                       ExecutorService es, boolean streamDeletes) {
     this.internalHttpClient = (client == null);
     this.client = new HttpSolrClient.Builder(solrServerUrl)
         .withHttpClient(client)
@@ -156,6 +117,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     } else {
       scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
       shutdownExecutor = true;
+    }
+    
+    if (log.isDebugEnabled()) {
+      pollInterrupts = new AtomicInteger();
+      pollExits = new AtomicInteger();
+      blockLoops = new AtomicInteger();
+      emptyQueueLoops = new AtomicInteger();
     }
   }
 
@@ -175,13 +143,19 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    * Opens a connection and sends everything...
    */
   class Runner implements Runnable {
+    volatile Thread thread = null;
+    volatile boolean inPoll = false;
+    
+    public Thread getThread() {
+      return thread;
+    }
+    
     @Override
     public void run() {
+      this.thread = Thread.currentThread();
       log.debug("starting runner: {}", this);
-
       // This loop is so we can continue if an element was added to the queue after the last runner exited.
       for (;;) {
-
         try {
 
           sendUpdateStream();
@@ -192,7 +166,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           }
           handleError(e);
         } finally {
-
           synchronized (runners) {
             // check to see if anything else was added to the queue
             if (runners.size() == 1 && !queue.isEmpty() && !scheduler.isShutdown()) {
@@ -206,26 +179,42 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               break;
             }
           }
-
         }
       }
 
       log.debug("finished: {}", this);
     }
 
+    public void interruptPoll() {
+      Thread lthread = thread;
+      if (inPoll && lthread != null) {
+        lthread.interrupt();
+      }
+    }
+    
     //
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
     void sendUpdateStream() throws Exception {
+    
       while (!queue.isEmpty()) {
         HttpPost method = null;
         HttpResponse response = null;
-
+        
         InputStream rspBody = null;
         try {
-          final Update update = 
-              queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+          Update update;
+          notifyQueueAndRunnersIfEmptyQueue();
+          try {
+            inPoll = true;
+            update = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+            if (log.isDebugEnabled()) pollInterrupts.incrementAndGet();
+            continue;
+          } finally {
+            inPoll = false;
+          }
           if (update == null)
             break;
 
@@ -235,61 +224,73 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           final ModifiableSolrParams origParams = new ModifiableSolrParams(update.getRequest().getParams());
 
           EntityTemplate template = new EntityTemplate(new ContentProducer() {
-
+            
             @Override
             public void writeTo(OutputStream out) throws IOException {
-              try {
-                if (isXml) {
-                  out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
-                }
-                Update upd = update;
-                while (upd != null) {
-                  UpdateRequest req = upd.getRequest();
-                  SolrParams currentParams = new ModifiableSolrParams(req.getParams());
-                  if (!origParams.toNamedList().equals(currentParams.toNamedList())) {
-                    queue.add(upd); // params are different, push back to queue
-                    break;
-                  }
 
-                  client.requestWriter.write(req, out);
-                  if (isXml) {
-                    // check for commit or optimize
-                    SolrParams params = req.getParams();
-                    if (params != null) {
-                      String fmt = null;
-                      if (params.getBool(UpdateParams.OPTIMIZE, false)) {
-                        fmt = "<optimize waitSearcher=\"%s\" />";
-                      } else if (params.getBool(UpdateParams.COMMIT, false)) {
-                        fmt = "<commit waitSearcher=\"%s\" />";
-                      }
-                      if (fmt != null) {
-                        byte[] content = String.format(Locale.ROOT,
-                            fmt,
-                            params.getBool(UpdateParams.WAIT_SEARCHER, false)
-                                + "").getBytes(StandardCharsets.UTF_8);
-                        out.write(content);
-                      }
+              if (isXml) {
+                out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
+              }
+              Update upd = update;
+              while (upd != null) {
+                UpdateRequest req = upd.getRequest();
+                SolrParams currentParams = new ModifiableSolrParams(req.getParams());
+                if (!origParams.toNamedList().equals(currentParams.toNamedList())) {
+                  queue.add(upd); // params are different, push back to queue
+                  break;
+                }
+
+                client.requestWriter.write(req, out);
+                if (isXml) {
+                  // check for commit or optimize
+                  SolrParams params = req.getParams();
+                  if (params != null) {
+                    String fmt = null;
+                    if (params.getBool(UpdateParams.OPTIMIZE, false)) {
+                      fmt = "<optimize waitSearcher=\"%s\" />";
+                    } else if (params.getBool(UpdateParams.COMMIT, false)) {
+                      fmt = "<commit waitSearcher=\"%s\" />";
+                    }
+                    if (fmt != null) {
+                      byte[] content = String.format(Locale.ROOT,
+                          fmt, params.getBool(UpdateParams.WAIT_SEARCHER, false)
+                              + "")
+                          .getBytes(StandardCharsets.UTF_8);
+                      out.write(content);
                     }
                   }
-                  out.flush();
+                }
+                out.flush();
 
-                  if (pollQueueTime > 0 && threadCount == 1 && req.isLastDocInBatch()) {
-                    // no need to wait to see another doc in the queue if we've hit the last doc in a batch
-                    upd = queue.poll(0, TimeUnit.MILLISECONDS);
-                  } else {
-                    upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                notifyQueueAndRunnersIfEmptyQueue();
+                inPoll = true;
+                try {
+                  while (true) {
+                    try {
+                      upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                      break;
+                    } catch (InterruptedException e) {
+                      if (log.isDebugEnabled()) pollInterrupts.incrementAndGet();
+                      if (!queue.isEmpty()) {
+                        continue;
+                      }
+                      if (log.isDebugEnabled()) pollExits.incrementAndGet();
+                      upd = null;
+                      break;
+                    } finally {
+                      inPoll = false;
+                    }
                   }
-
+                }finally {
+                  inPoll = false;
                 }
-
-                if (isXml) {
-                  out.write("</stream>".getBytes(StandardCharsets.UTF_8));
-                }
-
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("", e);
               }
+
+              if (isXml) {
+                out.write("</stream>".getBytes(StandardCharsets.UTF_8));
+              }
+            
+            
             }
           });
 
@@ -319,9 +320,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.setEntity(template);
           method.addHeader("User-Agent", HttpSolrClient.AGENT);
           method.addHeader("Content-Type", contentType);
-
-          response = client.getHttpClient().execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          
+       
+          response = client.getHttpClient()
+              .execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          
           rspBody = response.getEntity().getContent();
+            
           int statusCode = response.getStatusLine().getStatusCode();
           if (statusCode != HttpStatus.SC_OK) {
             StringBuilder msg = new StringBuilder();
@@ -329,7 +334,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             msg.append("\n\n\n\n");
             msg.append("request: ").append(method.getURI());
 
-            SolrException solrExc = new SolrException(ErrorCode.getErrorCode(statusCode), msg.toString());
+            SolrException solrExc;
+            NamedList<String> metadata = null;
             // parse out the metadata from the SolrException
             try {
               String encoding = "UTF-8"; // default
@@ -342,17 +348,28 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               NamedList<Object> resp = client.parser.processResponse(rspBody, encoding);
               NamedList<Object> error = (NamedList<Object>) resp.get("error");
               if (error != null) {
-                solrExc.setMetadata((NamedList<String>) error.get("metadata"));
+                metadata = (NamedList<String>) error.get("metadata");
+                String remoteMsg = (String) error.get("msg");
+                if (remoteMsg != null) {
+                  msg.append("\nRemote error message: ");
+                  msg.append(remoteMsg);
+                }
               }
             } catch (Exception exc) {
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from " + client.getBaseURL() + " due to: " + exc);
+            } finally {
+              solrExc = new HttpSolrClient.RemoteSolrException(client.getBaseURL(), statusCode, msg.toString(), null);
+              if (metadata != null) {
+                solrExc.setMetadata(metadata);
+              }
             }
 
             handleError(solrExc);
           } else {
             onSuccess(response);
           }
+          
         } finally {
           try {
             if (response != null) {
@@ -361,7 +378,22 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           } catch (Exception e) {
             log.error("Error consuming and closing http response stream.", e);
           }
+          notifyQueueAndRunnersIfEmptyQueue();
         }
+      }
+    }
+  }
+  
+  private void notifyQueueAndRunnersIfEmptyQueue() {
+    if (queue.size() == 0) {
+      synchronized (queue) {
+        // queue may be empty
+        queue.notifyAll();
+      }
+      synchronized (runners) {
+        // we notify runners too - if there is a high queue poll time and this is the update
+        // that emptied the queue, we make an attempt to avoid the 250ms timeout in blockUntilFinished
+        runners.notifyAll();
       }
     }
   }
@@ -372,7 +404,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     try {
       Runner r = new Runner();
       runners.add(r);
-      scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
+      try {
+        scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
+      } catch (RuntimeException e) {
+        runners.remove(r);
+        throw e;
+      }
     } finally {
       MDC.remove("ConcurrentUpdateSolrClient.url");
     }
@@ -381,7 +418,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * Class representing an UpdateRequest and an optional collection.
    */
-  class Update {
+  static class Update {
     UpdateRequest request;
     String collection;
     /**
@@ -506,34 +543,92 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   public synchronized void blockUntilFinished() {
     lock = new CountDownLatch(1);
     try {
+
+      waitForEmptyQueue();
+      interruptRunnerThreadsPolling();
+
       synchronized (runners) {
 
         // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may never be run,
-        // which means it would never remove itself from the runners list.  This is why we don't wait forever
+        // which means it would never remove itself from the runners list. This is why we don't wait forever
         // and periodically check if the scheduler is shutting down.
+        int loopCount = 0;
         while (!runners.isEmpty()) {
-          try {
-            runners.wait(250);
-          } catch (InterruptedException e) {
-            Thread.interrupted();
-          }
+          
+          if (log.isDebugEnabled()) blockLoops.incrementAndGet();
           
           if (scheduler.isShutdown())
             break;
-                      
+          
+          loopCount++;
+          
           // Need to check if the queue is empty before really considering this is finished (SOLR-4260)
           int queueSize = queue.size();
           if (queueSize > 0 && runners.isEmpty()) {
             // TODO: can this still happen?
-            log.warn("No more runners, but queue still has "+
-              queueSize+" adding more runners to process remaining requests on queue");
+            log.warn("No more runners, but queue still has " +
+                queueSize + " adding more runners to process remaining requests on queue");
             addRunner();
+          }
+          
+          interruptRunnerThreadsPolling();
+          
+          // try to avoid the worst case wait timeout
+          // without bad spin
+          int timeout;
+          if (loopCount < 3) {
+            timeout = 10;
+          } else if (loopCount < 10) {
+            timeout = 25;
+          } else {
+            timeout = 250;
+          }
+          
+          try {
+            runners.wait(timeout);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
           }
         }
       }
     } finally {
       lock.countDown();
       lock = null;
+    }
+  }
+
+  private void waitForEmptyQueue() {
+    boolean threadInterrupted = Thread.currentThread().isInterrupted();
+
+    while (!queue.isEmpty()) {
+      if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
+      if (scheduler.isTerminated()) {
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
+            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
+        break;
+      }
+
+      synchronized (runners) {
+        int queueSize = queue.size();
+        if (queueSize > 0 && runners.isEmpty()) {
+          log.warn("No more runners, but queue still has " +
+              queueSize + " adding more runners to process remaining requests on queue");
+          addRunner();
+        }
+      }
+      synchronized (queue) {
+        try {
+          queue.wait(250);
+        } catch (InterruptedException e) {
+          // If we set the thread as interrupted again, the next time the wait it's called i t's going to return immediately
+          threadInterrupted = true;
+          log.warn("Thread interrupted while waiting for update queue to be empty. There are still {} elements in the queue.", 
+              queue.size());
+        }
+      }
+    }
+    if (threadInterrupted) {
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -549,19 +644,42 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   @Override
-  public void close() {
-    if (internalHttpClient) IOUtils.closeQuietly(client);
-    if (shutdownExecutor) {
-      scheduler.shutdown();
-      try {
-        if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+  public synchronized void close() {
+    if (closed) {
+      interruptRunnerThreadsPolling();
+      return;
+    }
+    closed = true;
+    
+    try {
+      if (shutdownExecutor) {
+        scheduler.shutdown();
+        interruptRunnerThreadsPolling();
+        try {
+          if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+            scheduler.shutdownNow();
+            if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) log
+                .error("ExecutorService did not terminate");
+          }
+        } catch (InterruptedException ie) {
           scheduler.shutdownNow();
-          if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) log
-              .error("ExecutorService did not terminate");
+          Thread.currentThread().interrupt();
         }
-      } catch (InterruptedException ie) {
-        scheduler.shutdownNow();
-        Thread.currentThread().interrupt();
+      } else {
+        interruptRunnerThreadsPolling();
+      }
+    } finally {
+      if (internalHttpClient) IOUtils.closeQuietly(client);
+      if (log.isDebugEnabled()) {
+        log.debug("STATS pollInteruppts={} pollExists={} blockLoops={} emptyQueueLoops={}", pollInterrupts.get(), pollExits.get(), blockLoops.get(), emptyQueueLoops.get());
+      }
+    }
+  }
+
+  private void interruptRunnerThreadsPolling() {
+    synchronized (runners) {
+      for (Runner runner : runners) {
+        runner.interruptPoll();
       }
     }
   }
@@ -579,17 +697,29 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   public void shutdownNow() {
-    if (internalHttpClient) IOUtils.closeQuietly(client);
-    if (shutdownExecutor) {
-      scheduler.shutdownNow(); // Cancel currently executing tasks
-      try {
-        if (!scheduler.awaitTermination(30, TimeUnit.SECONDS)) 
-          log.error("ExecutorService did not terminate");
-      } catch (InterruptedException ie) {
-        scheduler.shutdownNow();
-        Thread.currentThread().interrupt();
+    if (closed) {
+      return;
+    }
+    closed = true;
+    try {
+
+      if (shutdownExecutor) {
+        scheduler.shutdown();
+        interruptRunnerThreadsPolling();
+        scheduler.shutdownNow(); // Cancel currently executing tasks
+        try {
+          if (!scheduler.awaitTermination(30, TimeUnit.SECONDS))
+            log.error("ExecutorService did not terminate");
+        } catch (InterruptedException ie) {
+          scheduler.shutdownNow();
+          Thread.currentThread().interrupt();
+        }
+      } else {
+        interruptRunnerThreadsPolling();
       }
-    }    
+    } finally {
+      if (internalHttpClient) IOUtils.closeQuietly(client);
+    }
   }
   
   public void setParser(ResponseParser responseParser) {
@@ -623,7 +753,23 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
-     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created clients.
+     * Two different paths can be specified as a part of this URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core be specified on all requests. 
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;

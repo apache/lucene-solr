@@ -16,23 +16,19 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,11 +88,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   }
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
-    tmpConfigDir.deleteOnExit();
-    FileUtils.copyDirectory(configDir, tmpConfigDir);
-    solrCluster.uploadConfigDir(tmpConfigDir, baseConfigSetName);
+    solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {

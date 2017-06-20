@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -99,8 +100,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
     String docID = "1112211111";
-    doc.addField( "id", docID, 1.0f );
-    doc.addField( "name", "my name!", 1.0f );
+    doc.addField( "id", docID );
+    doc.addField( "name", "my name!" );
     
     Assert.assertEquals( null, doc.getField("foo") );
     Assert.assertTrue(doc.getField("name").getValue() != null );
@@ -126,28 +127,28 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // Now add a few docs for facet testing...
     List<SolrInputDocument> docs = new ArrayList<>();
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "2", 1.0f );
-    doc2.addField( "inStock", true, 1.0f );
-    doc2.addField( "price", 2, 1.0f );
-    doc2.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc2.addField( "id", "2" );
+    doc2.addField( "inStock", true );
+    doc2.addField( "price", 2 );
+    doc2.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc2);
     SolrInputDocument doc3 = new SolrInputDocument();
-    doc3.addField( "id", "3", 1.0f );
-    doc3.addField( "inStock", false, 1.0f );
-    doc3.addField( "price", 3, 1.0f );
-    doc3.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc3.addField( "id", "3" );
+    doc3.addField( "inStock", false );
+    doc3.addField( "price", 3 );
+    doc3.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc3);
     SolrInputDocument doc4 = new SolrInputDocument();
-    doc4.addField( "id", "4", 1.0f );
-    doc4.addField( "inStock", true, 1.0f );
-    doc4.addField( "price", 4, 1.0f );
-    doc4.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc4.addField( "id", "4" );
+    doc4.addField( "inStock", true );
+    doc4.addField( "price", 4 );
+    doc4.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc4);
     SolrInputDocument doc5 = new SolrInputDocument();
-    doc5.addField( "id", "5", 1.0f );
-    doc5.addField( "inStock", false, 1.0f );
-    doc5.addField( "price", 5, 1.0f );
-    doc5.addField( "timestamp_dt", new java.util.Date(), 1.0f );
+    doc5.addField( "id", "5" );
+    doc5.addField( "inStock", false );
+    doc5.addField( "price", 5 );
+    doc5.addField( "timestamp_dt", new java.util.Date() );
     docs.add(doc5);
     
     upres = client.add( docs );
@@ -246,13 +247,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc1 = new SolrInputDocument();
-    doc1.addField( "id", "id1", 1.0f );
-    doc1.addField( "name", "doc1", 1.0f );
+    doc1.addField( "id", "id1" );
+    doc1.addField( "name", "doc1" );
     doc1.addField( "price", 10 );
 
     SolrInputDocument doc2 = new SolrInputDocument();
-    doc2.addField( "id", "id2", 1.0f );
-    doc2.addField( "name", "h\uD866\uDF05llo", 1.0f );
+    doc2.addField( "id", "id2" );
+    doc2.addField( "name", "h\uD866\uDF05llo" );
     doc2.addField( "price", 20 );
     
     Collection<SolrInputDocument> docs = new ArrayList<>();
@@ -301,13 +302,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
      
     // Add two docs
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "id1", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "id1" );
+    doc.addField( "name", "doc1" );
     doc.addField( "price", 10 );
     client.add(doc);
     
     doc = new SolrInputDocument();
-    doc.addField( "id", "id2", 1.0f );
+    doc.addField( "id", "id2" );
     client.add(doc);
     client.commit();
     
@@ -442,9 +443,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     }
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "DOCID", 1.0f);
-    doc.addField("id", "DOCID2", 1.0f);
-    doc.addField("name", "hello", 1.0f);
+    doc.addField("id", "DOCID");
+    doc.addField("id", "DOCID2");
+    doc.addField("name", "hello");
 
     if (client instanceof HttpSolrClient) {
       try {
@@ -463,7 +464,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       concurrentClient.lastError = null;
       concurrentClient.add(doc);
       concurrentClient.blockUntilFinished();
-      assertNotNull("Should throw exception!", concurrentClient.lastError); 
+      assertNotNull("Should throw exception!", concurrentClient.lastError);
+      assertEquals("Unexpected exception type", 
+          RemoteSolrException.class, concurrentClient.lastError.getClass());
+      assertTrue("Unexpected exception message: " + concurrentClient.lastError.getMessage(), 
+          concurrentClient.lastError.getMessage().contains("Remote error message: Document contains multiple values for uniqueKey"));
     } else {
       log.info("Ignoring update test for client:" + client.getClass().getName());
     }
@@ -479,15 +484,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "111", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "111" );
+    doc.addField( "name", "doc1" );
     doc.addField( "price", 11 );
     client.add(doc);
     client.commit(); // make sure this gets in first
     
     doc = new SolrInputDocument();
-    doc.addField( "id", "222", 1.0f );
-    doc.addField( "name", "doc2", 1.0f );
+    doc.addField( "id", "222" );
+    doc.addField( "name", "doc2" );
     doc.addField( "price", 22 );
     client.add(doc);
     client.commit();
@@ -534,8 +539,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "111", 1.0f );
-    doc.addField( "name", "doc1", 1.0f );
+    doc.addField( "id", "111" );
+    doc.addField( "name", "doc1" );
     doc.addField( "json_s", rawJson );
     doc.addField( "xml_s", rawXml );
     client.add(doc);
@@ -684,7 +689,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrInputDocument[] doc = new SolrInputDocument[5];
     for( int i=0; i<doc.length; i++ ) {
       doc[i] = new SolrInputDocument();
-      doc[i].setField( "id", "ID"+i, 1.0f );
+      doc[i].setField( "id", "ID"+i );
       client.add(doc[i]);
     }
     client.commit();
@@ -694,13 +699,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     luke.setShowSchema( false );
     LukeResponse rsp = luke.process( client );
     assertNull( rsp.getFieldTypeInfo() ); // if you don't ask for it, the schema is null
+    assertNull( rsp.getDynamicFieldInfo() );
     
     luke.setShowSchema( true );
     rsp = luke.process( client );
     assertNotNull( rsp.getFieldTypeInfo() );
     assertNotNull(rsp.getFieldInfo().get("id").getSchemaFlags());
     assertTrue(rsp.getFieldInfo().get("id").getSchemaFlags().contains(FieldFlag.INDEXED));
-
+    assertNotNull( rsp.getDynamicFieldInfo() );
   }
 
  @Test
@@ -838,7 +844,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     ArrayList<SolrInputDocument> docs = new ArrayList<>(10);
     for( int i=1; i<=10; i++ ) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.setField( "id", i+"", 1.0f );
+      doc.setField( "id", i+"" );
       if( (i%2)==0 ) {
         doc.addField( "features", "two" );
       }
@@ -1570,8 +1576,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // Now add something...
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField( "id", "DOCID", 1.0f );
-    doc.addField( "name", "hello", 1.0f );
+    doc.addField( "id", "DOCID" );
+    doc.addField( "name", "hello" );
     client.add(doc);
     client.commit();  // Since the transaction log is disabled in the example, we need to commit
     
@@ -1607,16 +1613,16 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("name", "gadget");
-    doc.addField("price_f", 1);
+    doc.addField("price", 1);
     client.add(doc);
     client.commit();
     SolrQuery q = new SolrQuery("*:*");
-    q.setFields("id","price_f","name", "_version_");
+    q.setFields("id","price","name", "_version_");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     Long version = (Long)resp.getResults().get(0).getFirstValue("_version_");
     assertNotNull("no version returned", version);
-    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals(1.0f, resp.getResults().get(0).getFirstValue("price"));
 
     //update "price" with incorrect version (optimistic locking)
     HashMap<String, Object> oper = new HashMap<>();  //need better api for this???
@@ -1625,7 +1631,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version+1);
-    doc.addField("price_f", oper);
+    doc.addField("price", oper);
     try {
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
@@ -1644,24 +1650,24 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
     doc.addField("_version_", version);
-    doc.addField("price_f", oper);
+    doc.addField("price", oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals("price was not updated?", 100.0f, resp.getResults().get(0).getFirstValue("price"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
 
     //update "price", no version
     oper.put("set", 200);
     doc = new SolrInputDocument();
     doc.addField("id", "unique");
-    doc.addField("price_f", oper);
+    doc.addField("price", oper);
     client.add(doc);
     client.commit();
     resp = client.query(q);
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
-    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price_f"));
+    assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
@@ -1996,37 +2002,38 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     // test with mlt.fl having comma separated values
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(20);
-    q.setParam("mlt", "true");
-    q.setParam("mlt.mintf", "0");
-    q.setParam("mlt.count", "2");
-    q.setParam("mlt.fl", "x_s,y_s,z_s");
+    q.setMoreLikeThisFields("x_s", "y_s", "z_s");
+    q.setMoreLikeThisMinTermFreq(0);
+    q.setMoreLikeThisCount(2);
     QueryResponse response = client.query(q);
     assertEquals(20, response.getResults().getNumFound());
-    NamedList<Object> moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
+    NamedList<SolrDocumentList> moreLikeThis = response.getMoreLikeThis();
     assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
     for (int i=0; i<20; i++)  {
       String id = "testMoreLikeThis" + i;
-      SolrDocumentList mltResp = (SolrDocumentList) moreLikeThis.get(id);
+      SolrDocumentList mltResp = moreLikeThis.get(id);
       assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
       assertTrue("MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
+      assertTrue("MoreLikeThis response for id=" + id + " had not returned exactly 2 documents", mltResp.size() == 2);
     }
 
     // now test with multiple mlt.fl parameters
     q = new SolrQuery("*:*");
     q.setRows(20);
     q.setParam("mlt", "true");
-    q.setParam("mlt.mintf", "0");
-    q.setParam("mlt.count", "2");
     q.setParam("mlt.fl", "x_s", "y_s", "z_s");
+    q.setMoreLikeThisMinTermFreq(0);
+    q.setMoreLikeThisCount(2);
     response = client.query(q);
     assertEquals(20, response.getResults().getNumFound());
-    moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
+    moreLikeThis = response.getMoreLikeThis();
     assertNotNull("MoreLikeThis response should not have been null", moreLikeThis);
     for (int i=0; i<20; i++)  {
       String id = "testMoreLikeThis" + i;
-      SolrDocumentList mltResp = (SolrDocumentList) moreLikeThis.get(id);
+      SolrDocumentList mltResp = moreLikeThis.get(id);
       assertNotNull("MoreLikeThis response for id=" + id + " should not be null", mltResp);
       assertTrue("MoreLikeThis response for id=" + id + " had numFound=0", mltResp.getNumFound() > 0);
+      assertTrue("MoreLikeThis response for id=" + id + " had not returned exactly 2 documents", mltResp.size() == 2);
     }
   }
 

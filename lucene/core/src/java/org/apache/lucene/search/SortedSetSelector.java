@@ -118,6 +118,15 @@ public class SortedSetSelector {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }
@@ -177,6 +186,15 @@ public class SortedSetSelector {
       in.advance(target);
       setOrd();
       return docID();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
     }
 
     @Override
@@ -246,6 +264,15 @@ public class SortedSetSelector {
       in.advance(target);
       setOrd();
       return docID();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
     }
 
     @Override
@@ -327,6 +354,15 @@ public class SortedSetSelector {
       in.advance(target);
       setOrd();
       return docID();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setOrd();
+        return true;
+      }
+      return false;
     }
 
     @Override

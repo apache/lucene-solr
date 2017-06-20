@@ -42,6 +42,8 @@ import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
@@ -527,7 +529,7 @@ public final class CheckIndex implements Closeable {
       sis = SegmentInfos.readCommit(dir, lastSegmentsFile);
     } catch (Throwable t) {
       if (failFast) {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
       msg(infoStream, "ERROR: could not read any segments file in directory");
       result.missingSegments = true;
@@ -563,11 +565,12 @@ public final class CheckIndex implements Closeable {
       input = dir.openInput(segmentsFileName, IOContext.READONCE);
     } catch (Throwable t) {
       if (failFast) {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
       msg(infoStream, "ERROR: could not open segments file in directory");
-      if (infoStream != null)
+      if (infoStream != null) {
         t.printStackTrace(infoStream);
+      }
       result.cantOpenSegments = true;
       return result;
     }
@@ -575,11 +578,12 @@ public final class CheckIndex implements Closeable {
       /*int format =*/ input.readInt();
     } catch (Throwable t) {
       if (failFast) {
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
       msg(infoStream, "ERROR: could not read segment file version in directory");
-      if (infoStream != null)
+      if (infoStream != null) {
         t.printStackTrace(infoStream);
+      }
       result.missingSegmentVersion = true;
       return result;
     } finally {
@@ -695,7 +699,7 @@ public final class CheckIndex implements Closeable {
         long startOpenReaderNS = System.nanoTime();
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, IOContext.DEFAULT);
+        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), IOContext.DEFAULT);
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startOpenReaderNS)));
 
         segInfoStat.openReaderPassed = true;
@@ -740,13 +744,13 @@ public final class CheckIndex implements Closeable {
           segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
 
           // Test the Term Index
-          segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast);
+          segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast, version);
 
           // Test Stored Fields
           segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
 
           // Test Term Vectors
-          segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast);
+          segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast, version);
 
           // Test Docvalues
           segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
@@ -771,8 +775,10 @@ public final class CheckIndex implements Closeable {
             throw new RuntimeException("Stored Field test failed");
           } else if (segInfoStat.termVectorStatus.error != null) {
             throw new RuntimeException("Term Vector test failed");
-          }  else if (segInfoStat.docValuesStatus.error != null) {
+          } else if (segInfoStat.docValuesStatus.error != null) {
             throw new RuntimeException("DocValues test failed");
+          } else if (segInfoStat.pointsStatus.error != null) {
+            throw new RuntimeException("Points test failed");
           }
         }
 
@@ -785,7 +791,7 @@ public final class CheckIndex implements Closeable {
 
       } catch (Throwable t) {
         if (failFast) {
-          IOUtils.reThrow(t);
+          throw IOUtils.rethrowAlways(t);
         }
         msg(infoStream, "FAILED");
         String comment;
@@ -879,7 +885,7 @@ public final class CheckIndex implements Closeable {
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startNS)));
       } catch (Throwable e) {
         if (failFast) {
-          IOUtils.reThrow(e);
+          throw IOUtils.rethrowAlways(e);
         }
         msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
         status.error = e;
@@ -937,7 +943,7 @@ public final class CheckIndex implements Closeable {
       
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -970,7 +976,7 @@ public final class CheckIndex implements Closeable {
       status.totFields = fieldInfos.size();
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1009,7 +1015,7 @@ public final class CheckIndex implements Closeable {
       msg(infoStream, String.format(Locale.ROOT, "OK [%d fields] [took %.3f sec]", status.totFields, nsToSec(System.nanoTime()-startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -1203,7 +1209,7 @@ public final class CheckIndex implements Closeable {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose) throws IOException {
+  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, Version version) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     long startNS;
     if (doPrint) {
@@ -1459,14 +1465,13 @@ public final class CheckIndex implements Closeable {
               if (hasOffsets) {
                 int startOffset = postings.startOffset();
                 int endOffset = postings.endOffset();
-                // NOTE: we cannot enforce any bounds whatsoever on vectors... they were a free-for-all before?
-                // but for offsets in the postings lists these checks are fine: they were always enforced by IndexWriter
-                if (!isVectors) {
+                // In Lucene 7 we fixed IndexWriter to also enforce term vector offsets
+                if (isVectors == false || version.onOrAfter(Version.LUCENE_7_0_0)) {
                   if (startOffset < 0) {
                     throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
                   }
                   if (startOffset < lastOffset) {
-                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset);
+                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset + "; consider using the FixBrokenOffsets tool in Lucene's backward-codecs module to correct your index");
                   }
                   if (endOffset < 0) {
                     throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
@@ -1740,15 +1745,15 @@ public final class CheckIndex implements Closeable {
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream) throws IOException {
-    return testPostings(reader, infoStream, false, false);
+  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, Version version) throws IOException {
+    return testPostings(reader, infoStream, false, false, version);
   }
   
   /**
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, boolean verbose, boolean failFast) throws IOException {
+  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, boolean verbose, boolean failFast, Version version) throws IOException {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -1763,10 +1768,10 @@ public final class CheckIndex implements Closeable {
 
       final Fields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
-      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose);
+      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose, version);
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR: " + e);
       status = new Status.TermIndexStatus();
@@ -1793,164 +1798,56 @@ public final class CheckIndex implements Closeable {
     try {
 
       if (fieldInfos.hasPointValues()) {
-        PointsReader values = reader.getPointsReader();
-        if (values == null) {
+        PointsReader pointsReader = reader.getPointsReader();
+        if (pointsReader == null) {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
           if (fieldInfo.getPointDimensionCount() > 0) {
-            FixedBitSet docsSeen = new FixedBitSet(reader.maxDoc());
+            PointValues values = pointsReader.getValues(fieldInfo.name);
+            if (values == null) {
+              continue;
+            }
+
             status.totalValueFields++;
-            int dimCount = fieldInfo.getPointDimensionCount();
-            int bytesPerDim = fieldInfo.getPointNumBytes();
-            int packedBytesCount = dimCount * bytesPerDim;
-            byte[] lastMinPackedValue = new byte[packedBytesCount];
-            byte[] lastMaxPackedValue = new byte[packedBytesCount];
-            BytesRef scratch = new BytesRef();
-            scratch.length = bytesPerDim;
-            byte[] lastPackedValue = new byte[packedBytesCount];
 
-            long[] pointCountSeen = new long[1];
+            long size = values.size();
+            int docCount = values.getDocCount();
 
-            byte[] globalMinPackedValue = values.getMinPackedValue(fieldInfo.name);
-            long size = values.size(fieldInfo.name);
-            int docCount = values.getDocCount(fieldInfo.name);
-
-            if (docCount > size) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points and inconsistent docCount=" + docCount);
+            final long crossCost = values.estimatePointCount(new ConstantRelationIntersectVisitor(Relation.CELL_CROSSES_QUERY));
+            if (crossCost < size / 2) {
+              throw new RuntimeException("estimatePointCount should return >= size/2 when all cells match");
+            }
+            final long insideCost = values.estimatePointCount(new ConstantRelationIntersectVisitor(Relation.CELL_INSIDE_QUERY));
+            if (insideCost < size) {
+              throw new RuntimeException("estimatePointCount should return >= size when all cells fully match");
+            }
+            final long outsideCost = values.estimatePointCount(new ConstantRelationIntersectVisitor(Relation.CELL_OUTSIDE_QUERY));
+            if (outsideCost != 0) {
+              throw new RuntimeException("estimatePointCount should return 0 when no cells match");
             }
 
-            if (docCount > reader.maxDoc()) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but that's greater than maxDoc=" + reader.maxDoc());
+            VerifyPointsVisitor visitor = new VerifyPointsVisitor(fieldInfo.name, reader.maxDoc(), values);
+            values.intersect(visitor);
+
+            if (visitor.getPointCountSeen() != size) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points, but in fact has " + visitor.getPointCountSeen());
             }
 
-            if (globalMinPackedValue == null) {
-              if (size != 0) {
-                throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
-              }
-            } else if (globalMinPackedValue.length != packedBytesCount) {
-              throw new RuntimeException("getMinPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
-            }
-            byte[] globalMaxPackedValue = values.getMaxPackedValue(fieldInfo.name);
-            if (globalMaxPackedValue == null) {
-              if (size != 0) {
-                throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
-              }
-            } else if (globalMaxPackedValue.length != packedBytesCount) {
-              throw new RuntimeException("getMaxPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
+            if (visitor.getDocCountSeen() != docCount) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but in fact has " + visitor.getDocCountSeen());
             }
 
-            values.intersect(fieldInfo.name,
-                             new PointValues.IntersectVisitor() {
-
-                               private int lastDocID = -1;
-
-                               @Override
-                               public void visit(int docID) {
-                                 throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
-                               }
-
-                               @Override
-                               public void visit(int docID, byte[] packedValue) {
-                                 checkPackedValue("packed value", packedValue, docID);
-                                 pointCountSeen[0]++;
-                                 docsSeen.set(docID);
-
-                                 for(int dim=0;dim<dimCount;dim++) {
-                                   int offset = bytesPerDim * dim;
-
-                                   // Compare to last cell:
-                                   if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
-                                     // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
-                                   }
-
-                                   if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
-                                     // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
-                                   }
-                                 }
-
-                                 // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
-                                 // increasing docID:
-                                 if (dimCount == 1) {
-                                   int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
-                                   if (cmp > 0) {
-                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
-                                   } else if (cmp == 0) {
-                                     if (docID < lastDocID) {
-                                       throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID);
-                                     }
-                                   }
-                                   System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
-                                   lastDocID = docID;
-                                 }
-
-                                 status.totalValuePoints++;
-                               }
-
-                               @Override
-                               public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                                 checkPackedValue("min packed value", minPackedValue, -1);
-                                 System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedBytesCount);
-                                 checkPackedValue("max packed value", maxPackedValue, -1);
-                                 System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedBytesCount);
-
-                                 for(int dim=0;dim<dimCount;dim++) {
-                                   int offset = bytesPerDim * dim;
-
-                                   // Make sure this cell is not outside of the global min/max:
-                                   if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
-                                     throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim);
-                                   }
-
-                                   if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
-                                     throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim);
-                                   }
-
-                                   if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
-                                     throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
-                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim);
-                                   }
-                                   if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
-                                     throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
-                                                                " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim);
-                                   }
-                                 }                                   
-
-                                 // We always pretend the query shape is so complex that it crosses every cell, so
-                                 // that packedValue is passed for every document
-                                 return PointValues.Relation.CELL_CROSSES_QUERY;
-                               }
-
-                               private void checkPackedValue(String desc, byte[] packedValue, int docID) {
-                                 if (packedValue == null) {
-                                   throw new RuntimeException(desc + " is null for docID=" + docID);
-                                 }
-
-                                 if (packedValue.length != packedBytesCount) {
-                                   throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID);
-                                 }
-                               }
-                             });
-
-            if (pointCountSeen[0] != size) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points, but in fact has " + pointCountSeen[0]);
-            }
-
-            if (docsSeen.cardinality() != docCount) {
-              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but in fact has " + docsSeen.cardinality());
-            }
+            status.totalValuePoints += visitor.getPointCountSeen();
           }
         }
       }
+
       msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d points] [took %.3f sec]", status.totalValueFields, status.totalValuePoints, nsToSec(System.nanoTime()-startNS)));
 
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR: " + e);
       status.error = e;
@@ -1962,6 +1859,189 @@ public final class CheckIndex implements Closeable {
     return status;
   }
 
+  /** Walks the entire N-dimensional points space, verifying that all points fall within the last cell's boundaries.
+   *
+   * @lucene.internal */
+  public static class VerifyPointsVisitor implements PointValues.IntersectVisitor {
+    private long pointCountSeen;
+    private int lastDocID = -1;
+    private final int maxDoc;
+    private final FixedBitSet docsSeen;
+    private final byte[] lastMinPackedValue;
+    private final byte[] lastMaxPackedValue;
+    private final byte[] lastPackedValue;
+    private final byte[] globalMinPackedValue;
+    private final byte[] globalMaxPackedValue;
+    private final int packedBytesCount;
+    private final int numDims;
+    private final int bytesPerDim;
+    private final String fieldName;
+
+    /** Sole constructor */
+    public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
+      this.maxDoc = maxDoc;
+      this.fieldName = fieldName;
+      numDims = values.getNumDimensions();
+      bytesPerDim = values.getBytesPerDimension();
+      packedBytesCount = numDims * bytesPerDim;
+      globalMinPackedValue = values.getMinPackedValue();
+      globalMaxPackedValue = values.getMaxPackedValue();
+      docsSeen = new FixedBitSet(maxDoc);
+      lastMinPackedValue = new byte[packedBytesCount];
+      lastMaxPackedValue = new byte[packedBytesCount];
+      lastPackedValue = new byte[packedBytesCount];
+
+      if (values.getDocCount() > values.size()) {
+        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have size=" + values.size() + " points and inconsistent docCount=" + values.getDocCount());
+      }
+
+      if (values.getDocCount() > maxDoc) {
+        throw new RuntimeException("point values for field \"" + fieldName + "\" claims to have docCount=" + values.getDocCount() + " but that's greater than maxDoc=" + maxDoc);
+      }
+
+      if (globalMinPackedValue == null) {
+        if (values.size() != 0) {
+          throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
+        }
+      } else if (globalMinPackedValue.length != packedBytesCount) {
+        throw new RuntimeException("getMinPackedValue for field \"" + fieldName + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
+      }
+      if (globalMaxPackedValue == null) {
+        if (values.size() != 0) {
+          throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
+        }
+      } else if (globalMaxPackedValue.length != packedBytesCount) {
+        throw new RuntimeException("getMaxPackedValue for field \"" + fieldName + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
+      }
+    }
+
+    /** Returns total number of points in this BKD tree */
+    public long getPointCountSeen() {
+      return pointCountSeen;
+    }
+
+    /** Returns total number of unique docIDs in this BKD tree */
+    public long getDocCountSeen() {
+      return docsSeen.cardinality();
+    }
+
+    @Override
+    public void visit(int docID) {
+      throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
+    }
+
+    @Override
+    public void visit(int docID, byte[] packedValue) {
+      checkPackedValue("packed value", packedValue, docID);
+      pointCountSeen++;
+      docsSeen.set(docID);
+
+      for(int dim=0;dim<numDims;dim++) {
+        int offset = bytesPerDim * dim;
+
+        // Compare to last cell:
+        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
+          // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
+          throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+        }
+
+        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
+          // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
+          throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+        }
+      }
+
+      // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
+      // increasing docID:
+      if (numDims == 1) {
+        int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
+        if (cmp > 0) {
+          throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
+        } else if (cmp == 0) {
+          if (docID < lastDocID) {
+            throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID + ", field=\"" + fieldName + "\"");
+          }
+        }
+        System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
+        lastDocID = docID;
+      }
+    }
+
+    @Override
+    public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      checkPackedValue("min packed value", minPackedValue, -1);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedBytesCount);
+      checkPackedValue("max packed value", maxPackedValue, -1);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedBytesCount);
+
+      for(int dim=0;dim<numDims;dim++) {
+        int offset = bytesPerDim * dim;
+
+        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) > 0) {
+          throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                     " is out-of-bounds of the cell's maxPackedValue " + Arrays.toString(maxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+
+        // Make sure this cell is not outside of the global min/max:
+        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
+          throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                     " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+
+        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
+          throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
+                                     " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+
+        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+          throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
+                                     " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+          throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
+                                     " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
+        }
+      }                                   
+
+      // We always pretend the query shape is so complex that it crosses every cell, so
+      // that packedValue is passed for every document
+      return PointValues.Relation.CELL_CROSSES_QUERY;
+    }
+
+    private void checkPackedValue(String desc, byte[] packedValue, int docID) {
+      if (packedValue == null) {
+        throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldName + "\"");
+      }
+
+      if (packedValue.length != packedBytesCount) {
+        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
+      }
+    }
+  }
+
+  private static class ConstantRelationIntersectVisitor implements IntersectVisitor {
+    private final Relation relation;
+
+    ConstantRelationIntersectVisitor(Relation relation) {
+      this.relation = relation;
+    }
+
+    @Override
+    public void visit(int docID) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void visit(int docID, byte[] packedValue) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      return relation;
+    }
+  }
+  
   /**
    * Test stored fields.
    * @lucene.experimental
@@ -2001,7 +2081,7 @@ public final class CheckIndex implements Closeable {
                                     nsToSec(System.nanoTime() - startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -2048,7 +2128,7 @@ public final class CheckIndex implements Closeable {
                                     nsToSec(System.nanoTime()-startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
@@ -2059,13 +2139,83 @@ public final class CheckIndex implements Closeable {
     return status;
   }
 
+  @FunctionalInterface
+  private static interface DocValuesIteratorSupplier {
+    DocValuesIterator get(FieldInfo fi) throws IOException;
+  }
+
+  private static void checkDVIterator(FieldInfo fi, int maxDoc, DocValuesIteratorSupplier producer) throws IOException {
+    String field = fi.name;
+
+    // Check advance
+    DocValuesIterator it1 = producer.get(fi);
+    DocValuesIterator it2 = producer.get(fi);
+    int i = 0;
+    for (int doc = it1.nextDoc(); ; doc = it1.nextDoc()) {
+
+      if (i++ % 10 == 1) {
+        int doc2 = it2.advance(doc - 1);
+        if (doc2 < doc - 1) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " went backwords (got: " + doc2 + ")");
+        }
+        if (doc2 == doc - 1) {
+          doc2 = it2.nextDoc();
+        }
+        if (doc2 != doc) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
+        }
+        if (it2.docID() != doc) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " reports wrong doc ID (got: " + it2.docID() + ")");
+        }
+      }
+
+      if (doc == NO_MORE_DOCS) {
+        break;
+      }
+    }
+
+    // Check advanceExact
+    it1 = producer.get(fi);
+    it2 = producer.get(fi);
+    i = 0;
+    int lastDoc = -1;
+    for (int doc = it1.nextDoc(); doc != NO_MORE_DOCS ; doc = it1.nextDoc()) {
+
+      if (i++ % 13 == 1) {
+        boolean found = it2.advanceExact(doc - 1);
+        if ((doc - 1 == lastDoc) != found) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " disagrees about whether document exists (got: " + found + ")");
+        }
+        if (it2.docID() != doc - 1) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " reports wrong doc ID (got: " + it2.docID() + ")");
+        }
+        
+        boolean found2 = it2.advanceExact(doc - 1);
+        if (found != found2) {
+          throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " has unstable advanceExact");
+        }
+
+        if (i % 1 == 0) {
+          int doc2 = it2.nextDoc();
+          if (doc != doc2) {
+            throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
+          }
+          if (it2.docID() != doc) {
+            throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " reports wrong doc ID (got: " + it2.docID() + ")");
+          }
+        }
+      }
+
+      lastDoc = doc;
+    }
+  }
+
   private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues bdv) throws IOException {
     int doc;
     if (bdv.docID() != -1) {
       throw new RuntimeException("binary dv iterator for field: " + fieldName + " should start at docID=-1, but got " + bdv.docID());
     }
     // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
-    // TODO: check advance too
     while ((doc = bdv.nextDoc()) != NO_MORE_DOCS) {
       BytesRef value = bdv.binaryValue();
       value.isValid();
@@ -2080,7 +2230,6 @@ public final class CheckIndex implements Closeable {
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
     int docID;
-    // TODO: check advance too
     while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
       int ord = dv.ordValue();
       if (ord == -1) {
@@ -2116,7 +2265,6 @@ public final class CheckIndex implements Closeable {
     LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
     int docID;
-    // TODO: check advance too
     while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
       long lastOrd = -1;
       long ord;
@@ -2161,7 +2309,6 @@ public final class CheckIndex implements Closeable {
     if (ndv.docID() != -1) {
       throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
     }
-    // TODO: check advance too
     while (true) {
       int docID = ndv.nextDoc();
       if (docID == NO_MORE_DOCS) {
@@ -2188,7 +2335,6 @@ public final class CheckIndex implements Closeable {
       throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
     }
     // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
-    // TODO: check advance too
     while ((doc = ndv.nextDoc()) != NO_MORE_DOCS) {
       ndv.longValue();
     }
@@ -2198,23 +2344,28 @@ public final class CheckIndex implements Closeable {
     switch(fi.getDocValuesType()) {
       case SORTED:
         status.totalSortedFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getSorted);
         checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
         checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
         break;
       case SORTED_NUMERIC:
         status.totalSortedNumericFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getSortedNumeric);
         checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi));
         break;
       case SORTED_SET:
         status.totalSortedSetFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getSortedSet);
         checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi));
         break;
       case BINARY:
         status.totalBinaryFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getBinary);
         checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi));
         break;
       case NUMERIC:
         status.totalNumericFields++;
+        checkDVIterator(fi, maxDoc, dvReader::getNumeric);
         checkNumericDocValues(fi.name, dvReader.getNumeric(fi));
         break;
       default:
@@ -2226,15 +2377,15 @@ public final class CheckIndex implements Closeable {
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream) throws IOException {
-    return testTermVectors(reader, infoStream, false, false, false);
+  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, Version version) throws IOException {
+    return testTermVectors(reader, infoStream, false, false, false, version);
   }
 
   /**
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
+  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast, Version version) throws IOException {
     long startNS = System.nanoTime();
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     final FieldInfos fieldInfos = reader.getFieldInfos();
@@ -2274,7 +2425,7 @@ public final class CheckIndex implements Closeable {
           
           if (tfv != null) {
             // First run with no deletions:
-            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
+            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose, version);
             
             // Only agg stats if the doc is live:
             final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -2418,7 +2569,7 @@ public final class CheckIndex implements Closeable {
                                     status.totVectors, vectorAvg, nsToSec(System.nanoTime() - startNS)));
     } catch (Throwable e) {
       if (failFast) {
-        IOUtils.reThrow(e);
+        throw IOUtils.rethrowAlways(e);
       }
       msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;

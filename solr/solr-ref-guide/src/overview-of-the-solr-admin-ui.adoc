@@ -1,0 +1,38 @@
+= Overview of the Solr Admin UI
+:page-shortname: overview-of-the-solr-admin-ui
+:page-permalink: overview-of-the-solr-admin-ui.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr features a Web interface that makes it easy for Solr administrators and programmers to view <<files-screen.adoc#files-screen,Solr configuration>> details, run <<query-screen.adoc#query-screen,queries and analyze>> document fields in order to fine-tune a Solr configuration and access <<getting-assistance.adoc#getting-assistance,online documentation>> and other help.
+
+.Solr Dashboard
+image::images/overview-of-the-solr-admin-ui/dashboard.png[image,height=400]
+
+
+Accessing the URL `\http://hostname:8983/solr/` will show the main dashboard, which is divided into two parts.
+
+A left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI. The first set of links are for system-level information and configuration and provide access to <<logging.adoc#logging,Logging>>, <<collections-core-admin.adoc#collections-core-admin,Collection/Core Administration>>, and <<java-properties.adoc#java-properties,Java Properties>>, among other things. At the end of this information is at least one pulldown listing Solr cores configured for this instance. On <<solrcloud.adoc#solrcloud,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster. Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>>, <<files-screen.adoc#files-screen,Config Files>>, <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#query-screen,Queries>> on indexed data.
+
+The center of the screen shows the detail of the option selected. This may include a sub-navigation for the option or text or graphical representation of the requested data. See the sections in this guide for each screen for more details.
+
+Under the covers, the Solr Admin UI re-uses the same HTTP APIs available to all clients to access Solr-related data to drive an external interface.
+
+[TIP]
+====
+The path to the Solr Admin UI given above is `\http://hostname:port/solr`, which redirects to `\http://hostname:port/solr/\#/` in the current version. A convenience redirect is also supported, so simply accessing the Admin UI at `\http://hostname:port/` will also redirect to `\http://hostname:port/solr/#/`.
+====

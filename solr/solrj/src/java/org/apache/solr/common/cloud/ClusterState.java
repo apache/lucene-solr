@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -321,6 +322,10 @@ public class ClusterState implements JSONWriter.Writable {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
+    return load(version, stateMap, liveNodes, znode);
+  }
+
+  public static ClusterState load(Integer version, Map<String, Object> stateMap, Set<String> liveNodes, String znode) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
@@ -330,7 +335,6 @@ public class ClusterState implements JSONWriter.Writable {
 
     return new ClusterState( liveNodes, collections,version);
   }
-
 
   public static Aliases load(byte[] bytes) {
     if (bytes == null || bytes.length == 0) {
@@ -442,13 +446,19 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   public static class CollectionRef {
+    protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
+
+    public int getCount(){
+      return gets.get();
+    }
 
     public CollectionRef(DocCollection coll) {
       this.coll = coll;
     }
 
     public DocCollection get(){
+      gets.incrementAndGet();
       return coll;
     }
 

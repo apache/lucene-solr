@@ -20,11 +20,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.search.stats.ExactStatsCache;
+import org.apache.solr.search.stats.LRUStatsCache;
+import org.apache.solr.search.stats.LocalStatsCache;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -48,6 +54,23 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   public void distribSetUp() throws Exception {
     requestHandlerName = "mltrh";
     super.distribSetUp();
+  }
+
+  @BeforeClass
+  public static void beforeClass() {
+    int statsType = TestUtil.nextInt(random(), 1, 3);
+    if (statsType == 1) {
+      System.setProperty("solr.statsCache", ExactStatsCache.class.getName());
+    } else if (statsType == 2) {
+      System.setProperty("solr.statsCache", LRUStatsCache.class.getName());
+    } else {
+      System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
+    }
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.statsCache");
   }
   
   @Test
@@ -117,28 +140,28 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     // we ask for an mlt.count of 20 to ensure both include all results
     
     query("q", "lowerfilt:moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 2,
-        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id_i1 desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
         requestHandlerName, "mlt.count", "20");
     
     query("q", "lowerfilt:fox", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
-        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id_i1 desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
         requestHandlerName, "mlt.count", "20");
 
     query("q", "lowerfilt:the red fox", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
-        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id_i1 desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
         requestHandlerName, "mlt.count", "20");
     
     query("q", "lowerfilt:blue moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
-        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id_i1 desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
         requestHandlerName, "mlt.count", "20");
 
     // let's query by specifying multiple mlt.fl as comma-separated values
     QueryResponse response = query("q", "lowerfilt:moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 2,
-        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id_i1 desc", "mlt", "true",
         "mlt.fl", "lowerfilt1,lowerfilt", "qt", requestHandlerName, "shards.qt",
         requestHandlerName, "mlt.count", "20");
     NamedList<Object> moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");
@@ -150,7 +173,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
 
     // let's query by specifying multiple mlt.fl as multiple request parameters
     response = query("q", "lowerfilt:moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 2,
-        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id_i1 desc", "mlt", "true",
         "mlt.fl", "lowerfilt1", "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
         requestHandlerName, "mlt.count", "20");
     moreLikeThis = (NamedList<Object>) response.getResponse().get("moreLikeThis");

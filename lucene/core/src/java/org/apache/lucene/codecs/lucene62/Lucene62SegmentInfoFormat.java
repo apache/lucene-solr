@@ -29,11 +29,14 @@ import org.apache.lucene.index.SegmentInfo; // javadocs
 import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Version;
 
 /**
@@ -69,7 +72,7 @@ import org.apache.lucene.util.Version;
  *       addIndexes), etc.</li>
  *   <li>Files is a list of files referred to by this segment.</li>
  * </ul>
- * 
+ *
  * @see SegmentInfos
  * @lucene.experimental
  */
@@ -78,7 +81,7 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
   /** Sole constructor. */
   public Lucene62SegmentInfoFormat() {
   }
-  
+
   @Override
   public SegmentInfo read(Directory dir, String segment, byte[] segmentID, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene62SegmentInfoFormat.SI_EXTENSION);
@@ -91,13 +94,13 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
                                                 Lucene62SegmentInfoFormat.VERSION_CURRENT,
                                                 segmentID, "");
         final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
-        
+
         final int docCount = input.readInt();
         if (docCount < 0) {
           throw new CorruptIndexException("invalid docCount: " + docCount, input);
         }
         final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
-        
+
         final Map<String,String> diagnostics = input.readMapOfStrings();
         final Set<String> files = input.readSetOfStrings();
         final Map<String,String> attributes = input.readMapOfStrings();
@@ -110,6 +113,8 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
             String fieldName = input.readString();
             int sortTypeID = input.readVInt();
             SortField.Type sortType;
+            SortedSetSelector.Type sortedSetSelector = null;
+            SortedNumericSelector.Type sortedNumericSelector = null;
             switch(sortTypeID) {
             case 0:
               sortType = SortField.Type.STRING;
@@ -126,6 +131,43 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
             case 4:
               sortType = SortField.Type.FLOAT;
               break;
+            case 5:
+              sortType = SortField.Type.STRING;
+              byte selector = input.readByte();
+              if (selector == 0) {
+                sortedSetSelector = SortedSetSelector.Type.MIN;
+              } else if (selector == 1) {
+                sortedSetSelector = SortedSetSelector.Type.MAX;
+              } else if (selector == 2) {
+                sortedSetSelector = SortedSetSelector.Type.MIDDLE_MIN;
+              } else if (selector == 3) {
+                sortedSetSelector = SortedSetSelector.Type.MIDDLE_MAX;
+              } else {
+                throw new CorruptIndexException("invalid index SortedSetSelector ID: " + selector, input);
+              }
+              break;
+            case 6:
+              byte type = input.readByte();
+              if (type == 0) {
+                sortType = SortField.Type.LONG;
+              } else if (type == 1) {
+                sortType = SortField.Type.INT;
+              } else if (type == 2) {
+                sortType = SortField.Type.DOUBLE;
+              } else if (type == 3) {
+                sortType = SortField.Type.FLOAT;
+              } else {
+                throw new CorruptIndexException("invalid index SortedNumericSortField type ID: " + type, input);
+              }
+              byte numericSelector = input.readByte();
+              if (numericSelector == 0) {
+                sortedNumericSelector = SortedNumericSelector.Type.MIN;
+              } else if (numericSelector == 1) {
+                sortedNumericSelector = SortedNumericSelector.Type.MAX;
+              } else {
+                throw new CorruptIndexException("invalid index SortedNumericSelector ID: " + numericSelector, input);
+              }
+              break;
             default:
               throw new CorruptIndexException("invalid index sort field type ID: " + sortTypeID, input);
             }
@@ -139,7 +181,13 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
               throw new CorruptIndexException("invalid index sort reverse: " + b, input);
             }
 
-            sortFields[i] = new SortField(fieldName, sortType, reverse);
+            if (sortedSetSelector != null) {
+              sortFields[i] = new SortedSetSortField(fieldName, reverse, sortedSetSelector);
+            } else if (sortedNumericSelector != null) {
+              sortFields[i] = new SortedNumericSortField(fieldName, sortType, reverse, sortedNumericSelector);
+            } else {
+              sortFields[i] = new SortField(fieldName, sortType, reverse);
+            }
 
             Object missingValue;
             b = input.readByte();
@@ -194,8 +242,8 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
         } else {
           indexSort = null;
         }
-        
-        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, indexSort);
+
+        si = new SegmentInfo(dir, version, null, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, indexSort);
         si.setFiles(files);
       } catch (Throwable exception) {
         priorE = exception;
@@ -207,112 +255,14 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
   }
 
   @Override
-  public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene62SegmentInfoFormat.SI_EXTENSION);
-
-    try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
-      // Only add the file once we've successfully created it, else IFD assert can trip:
-      si.addFile(fileName);
-      CodecUtil.writeIndexHeader(output, 
-                                   Lucene62SegmentInfoFormat.CODEC_NAME, 
-                                   Lucene62SegmentInfoFormat.VERSION_CURRENT,
-                                   si.getId(),
-                                   "");
-      Version version = si.getVersion();
-      if (version.major < 5) {
-        throw new IllegalArgumentException("invalid major version: should be >= 5 but got: " + version.major + " segment=" + si);
-      }
-      // Write the Lucene version that created this segment, since 3.1
-      output.writeInt(version.major);
-      output.writeInt(version.minor);
-      output.writeInt(version.bugfix);
-      assert version.prerelease == 0;
-      output.writeInt(si.maxDoc());
-
-      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeMapOfStrings(si.getDiagnostics());
-      Set<String> files = si.files();
-      for (String file : files) {
-        if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
-          throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
-        }
-      }
-      output.writeSetOfStrings(files);
-      output.writeMapOfStrings(si.getAttributes());
-
-      Sort indexSort = si.getIndexSort();
-      int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
-      output.writeVInt(numSortFields);
-      for (int i = 0; i < numSortFields; ++i) {
-        SortField sortField = indexSort.getSort()[i];
-        output.writeString(sortField.getField());
-        int sortTypeID;
-        switch (sortField.getType()) {
-          case STRING:
-            sortTypeID = 0;
-            break;
-          case LONG:
-            sortTypeID = 1;
-            break;
-          case INT:
-            sortTypeID = 2;
-            break;
-          case DOUBLE:
-            sortTypeID = 3;
-            break;
-          case FLOAT:
-            sortTypeID = 4;
-            break;
-          default:
-            throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
-        }
-        output.writeVInt(sortTypeID);
-        output.writeByte((byte) (sortField.getReverse() ? 0 : 1));
-
-        // write missing value 
-        Object missingValue = sortField.getMissingValue();
-        if (missingValue == null) {
-          output.writeByte((byte) 0);
-        } else {
-          switch(sortField.getType()) {
-          case STRING:
-            if (missingValue == SortField.STRING_LAST) {
-              output.writeByte((byte) 1);
-            } else if (missingValue == SortField.STRING_FIRST) {
-              output.writeByte((byte) 2);
-            } else {
-              throw new AssertionError("unrecognized missing value for STRING field \"" + sortField.getField() + "\": " + missingValue);
-            }
-            break;
-          case LONG:
-            output.writeByte((byte) 1);
-            output.writeLong(((Long) missingValue).longValue());
-            break;
-          case INT:
-            output.writeByte((byte) 1);
-            output.writeInt(((Integer) missingValue).intValue());
-            break;
-          case DOUBLE:
-            output.writeByte((byte) 1);
-            output.writeLong(Double.doubleToLongBits(((Double) missingValue).doubleValue()));
-            break;
-          case FLOAT:
-            output.writeByte((byte) 1);
-            output.writeInt(Float.floatToIntBits(((Float) missingValue).floatValue()));
-            break;
-          default:
-            throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
-          }
-        }
-      }
-      
-      CodecUtil.writeFooter(output);
-    }
+  public void write(Directory dir, SegmentInfo info, IOContext ioContext) throws IOException {
+    throw new UnsupportedOperationException("This format can only be used for reading");
   }
 
   /** File extension used to store {@link SegmentInfo}. */
   public final static String SI_EXTENSION = "si";
   static final String CODEC_NAME = "Lucene62SegmentInfo";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_MULTI_VALUED_SORT = 1;
+  static final int VERSION_CURRENT = VERSION_MULTI_VALUED_SORT;
 }

@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -30,9 +31,6 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static com.google.common.base.Predicates.alwaysFalse;
-import static com.google.common.base.Predicates.alwaysTrue;
 
 public class DistributedQueueTest extends SolrTestCaseJ4 {
 
@@ -93,6 +91,35 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testDistributedQueueCache() throws Exception {
+    String dqZNode = "/distqueue/test";
+    byte[] data = "hello world".getBytes(UTF8);
+
+    DistributedQueue consumer = makeDistributedQueue(dqZNode);
+    DistributedQueue producer = makeDistributedQueue(dqZNode);
+    DistributedQueue producer2 = makeDistributedQueue(dqZNode);
+
+    producer2.offer(data);
+    producer.offer(data);
+    producer.offer(data);
+    consumer.poll();
+
+    assertEquals(2, consumer.getStats().getQueueLength());
+    producer.offer(data);
+    producer2.offer(data);
+    consumer.poll();
+    // Wait for watcher being kicked off
+    while (!consumer.isDirty()) {
+      Thread.sleep(20);
+    }
+    // DQ still have elements in their queue, so we should not fetch elements path from Zk
+    assertEquals(1, consumer.getStats().getQueueLength());
+    consumer.poll();
+    consumer.peek();
+    assertEquals(2, consumer.getStats().getQueueLength());
+  }
+
+  @Test
   public void testDistributedQueueBlocking() throws Exception {
     String dqZNode = "/distqueue/test";
     String testData = "hello world";
@@ -115,13 +142,15 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     // After draining the queue, a watcher should be set.
     assertNull(dq.peek(100));
-    assertTrue(dq.hasWatcher());
+    assertFalse(dq.isDirty());
+    assertEquals(1, dq.watcherCount());
 
     forceSessionExpire();
 
     // Session expiry should have fired the watcher.
     Thread.sleep(100);
-    assertFalse(dq.hasWatcher());
+    assertTrue(dq.isDirty());
+    assertEquals(0, dq.watcherCount());
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
     future = executor.submit(() -> new String(dq.peek(true), UTF8));
@@ -140,6 +169,57 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testLeakChildWatcher() throws Exception {
+    String dqZNode = "/distqueue/test";
+    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    assertTrue(dq.peekElements(1, 1, s1 -> true).isEmpty());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertTrue(dq.peekElements(1, 1, s1 -> true).isEmpty());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertNull(dq.peek());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertNull(dq.peek(10));
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+
+    dq.offer("hello world".getBytes(UTF8));
+    assertNotNull(dq.peek()); // synchronously available
+    // dirty and watcher state indeterminate here, race with watcher
+    Thread.sleep(100); // watcher should have fired now
+    assertNotNull(dq.peek());
+    // in case of race condition, childWatcher is kicked off after peek()
+    if (dq.watcherCount() == 0) {
+      assertTrue(dq.isDirty());
+      dq.poll();
+      dq.offer("hello world".getBytes(UTF8));
+      dq.peek();
+    }
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+    assertFalse(dq.peekElements(1, 1, s -> true).isEmpty());
+    assertEquals(1, dq.watcherCount());
+    assertFalse(dq.isDirty());
+  }
+
+  @Test
+  public void testLocallyOffer() throws Exception {
+    String dqZNode = "/distqueue/test";
+    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    dq.peekElements(1, 1, s -> true);
+    for (int i = 0; i < 100; i++) {
+      byte[] data = String.valueOf(i).getBytes(UTF8);
+      dq.offer(data);
+      assertNotNull(dq.peek());
+      dq.poll();
+      dq.peekElements(1, 1, s -> true);
+    }
+  }
+
+
+  @Test
   public void testPeekElements() throws Exception {
     String dqZNode = "/distqueue/test";
     byte[] data = "hello world".getBytes(UTF8);
@@ -151,17 +231,20 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     dq.offer(data);
     dq.offer(data);
 
+    Predicate<String> alwaysTrue = s -> true;
+    Predicate<String> alwaysFalse = s -> false;
+
     // Should be able to get 0, 1, 2, or 3 instantly
     for (int i = 0; i <= 3; ++i) {
-      assertEquals(i, dq.peekElements(i, 0, alwaysTrue()).size());
+      assertEquals(i, dq.peekElements(i, 0, alwaysTrue).size());
     }
 
     // Asking for more should return only 3.
-    assertEquals(3, dq.peekElements(4, 0, alwaysTrue()).size());
+    assertEquals(3, dq.peekElements(4, 0, alwaysTrue).size());
 
     // If we filter everything out, we should block for the full time.
     long start = System.nanoTime();
-    assertEquals(0, dq.peekElements(4, 1000, alwaysFalse()).size());
+    assertEquals(0, dq.peekElements(4, 1000, alwaysFalse).size());
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
@@ -201,7 +284,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     return new DistributedQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
   }
 
-  private class QueueChangerThread extends Thread {
+  private static class QueueChangerThread extends Thread {
 
     DistributedQueue dq;
     long waitBeforeOfferMs;

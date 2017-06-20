@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -101,7 +102,7 @@ public class CdcrUpdateProcessor extends DistributedUpdateProcessor {
 //      } else {
 //        log.info("+++ cdcr.update version present, params are: " + params);
 //      }
-      result.set(DistributedUpdateProcessor.VERSION_FIELD, params.get(DistributedUpdateProcessor.VERSION_FIELD));
+      result.set(CommonParams.VERSION_FIELD, params.get(CommonParams.VERSION_FIELD));
     }
 
     return result;

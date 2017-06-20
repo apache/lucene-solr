@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -51,36 +51,11 @@ public class QueryParsing {
   public static final String F = "f";      // field that a query or command pertains to
   public static final String TYPE = "type";// parser for this query or command
   public static final String DEFTYPE = "defType"; // default parser for any direct subqueries
+  public static final String SPLIT_ON_WHITESPACE = "sow"; // Whether to split on whitespace prior to analysis
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
-
-
-  /**
-   * Returns the "preferred" default operator for use by Query Parsers,
-   * based on the settings in the IndexSchema which may be overridden using 
-   * an optional String override value.
-   *
-   * @see IndexSchema#getQueryParserDefaultOperator()
-   * @see #OP
-   */
-  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema sch,
-                                                       final String override) {
-    String val = override;
-    if (null == val) val = sch.getQueryParserDefaultOperator();
-    return "AND".equals(val) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
-  }
-
-  /**
-   * Returns the effective default field based on the 'df' param or
-   * hardcoded schema default.  May be null if either exists specified.
-   * @see org.apache.solr.common.params.CommonParams#DF
-   * @see org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName
-   */
-  public static String getDefaultField(final IndexSchema s, final String df) {
-    return df != null ? df : s.getDefaultSearchFieldName();
-  }
 
   /**
    * @param txt Text to parse
@@ -169,33 +144,6 @@ public class QueryParsing {
     }
   }
 
-
-  public static String encodeLocalParamVal(String val) {
-    int len = val.length();
-    int i = 0;
-    if (len > 0 && val.charAt(0) != '$') {
-      for (;i<len; i++) {
-        char ch = val.charAt(i);
-        if (Character.isWhitespace(ch) || ch=='}') break;
-      }
-    }
-
-    if (i>=len) return val;
-
-    // We need to enclose in quotes... but now we need to escape
-    StringBuilder sb = new StringBuilder(val.length() + 4);
-    sb.append('\'');
-    for (i=0; i<len; i++) {
-      char ch = val.charAt(i);
-      if (ch=='\'') {
-        sb.append('\\');
-      }
-      sb.append(ch);
-    }
-    sb.append('\'');
-    return sb.toString();
-  }
-  
 
   /**
    * "foo" returns null
@@ -422,4 +370,12 @@ public class QueryParsing {
     return out;
   }
 
+  /**
+   * Parses default operator string into Operator object
+   * @param operator the string from request
+   * @return Operator.AND if string equals "AND", else return Operator.OR (default)
+   */
+  public static QueryParser.Operator parseOP(String operator) {
+    return "and".equalsIgnoreCase(operator) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
+  }
 }

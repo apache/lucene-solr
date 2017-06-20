@@ -23,6 +23,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
@@ -91,11 +93,15 @@ public class ZkStateReader implements Closeable {
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
   public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
+  public static final String SOLR_AUTOSCALING_CONF_PATH = "/autoscaling.json";
 
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
   public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
+  public static final String PULL_REPLICAS = "pullReplicas";
+  public static final String NRT_REPLICAS = "nrtReplicas";
+  public static final String TLOG_REPLICAS = "tlogReplicas";
 
   public static final String ROLES = "/roles.json";
 
@@ -105,6 +111,8 @@ public class ZkStateReader implements Closeable {
   public static final String LEGACY_CLOUD = "legacyCloud";
 
   public static final String URL_SCHEME = "urlScheme";
+  
+  public static final String REPLICA_TYPE = "type";
 
 
   /** A view of the current state of all collections; combines all the different state sources into a single view. */
@@ -144,7 +152,7 @@ public class ZkStateReader implements Closeable {
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
-  private class CollectionWatch {
+  private static class CollectionWatch {
 
     int coreRefCount = 0;
     Set<CollectionStateWatcher> stateWatchers = ConcurrentHashMap.newKeySet();
@@ -633,6 +641,7 @@ public class ZkStateReader implements Closeable {
 
     @Override
     public DocCollection get() {
+      gets.incrementAndGet();
       // TODO: consider limited caching
       return getCollectionLive(ZkStateReader.this, collName);
     }
@@ -778,6 +787,12 @@ public class ZkStateReader implements Closeable {
   
   public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisCoreNodeName,
       Replica.State mustMatchStateFilter, Replica.State mustNotMatchStateFilter) {
+    //TODO: We don't need all these getReplicaProps method overloading. Also, it's odd that the default is to return replicas of type TLOG and NRT only
+    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null, EnumSet.of(Replica.Type.TLOG,  Replica.Type.NRT));
+  }
+  
+  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisCoreNodeName,
+      Replica.State mustMatchStateFilter, Replica.State mustNotMatchStateFilter, final EnumSet<Replica.Type> acceptReplicaType) {
     assert thisCoreNodeName != null;
     ClusterState clusterState = this.clusterState;
     if (clusterState == null) {
@@ -796,7 +811,7 @@ public class ZkStateReader implements Closeable {
     
     Map<String,Replica> shardMap = replicas.getReplicasMap();
     List<ZkCoreNodeProps> nodes = new ArrayList<>(shardMap.size());
-    for (Entry<String,Replica> entry : shardMap.entrySet()) {
+    for (Entry<String,Replica> entry : shardMap.entrySet().stream().filter((e)->acceptReplicaType.contains(e.getValue().getType())).collect(Collectors.toList())) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       
       String coreNodeName = entry.getValue().getName();
@@ -915,22 +930,25 @@ public class ZkStateReader implements Closeable {
     }
     return null;
   }
-  
+
   /**
    * Returns the baseURL corresponding to a given node's nodeName --
-   * NOTE: does not (currently) imply that the nodeName (or resulting 
+   * NOTE: does not (currently) imply that the nodeName (or resulting
    * baseURL) exists in the cluster.
    * @lucene.experimental
    */
   public String getBaseUrlForNodeName(final String nodeName) {
+    return getBaseUrlForNodeName(nodeName, getClusterProperty(URL_SCHEME, "http"));
+  }
+
+  public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
-      throw new IllegalArgumentException("nodeName does not contain expected '_' seperator: " + nodeName);
+      throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0,_offset);
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
-      String urlScheme = getClusterProperty(URL_SCHEME, "http");
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);

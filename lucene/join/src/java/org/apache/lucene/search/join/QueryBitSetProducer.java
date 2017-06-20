@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,7 +40,7 @@ import org.apache.lucene.util.BitSet;
  */
 public class QueryBitSetProducer implements BitSetProducer {
   private final Query query;
-  private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<>());
+  final Map<IndexReader.CacheKey,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<>());
 
   /** Wraps another query's result and caches it into bitsets.
    * @param query Query to cache results of
@@ -59,9 +60,12 @@ public class QueryBitSetProducer implements BitSetProducer {
   @Override
   public BitSet getBitSet(LeafReaderContext context) throws IOException {
     final LeafReader reader = context.reader();
-    final Object key = reader.getCoreCacheKey();
+    final IndexReader.CacheHelper cacheHelper = reader.getCoreCacheHelper();
 
-    DocIdSet docIdSet = cache.get(key);
+    DocIdSet docIdSet = null;
+    if (cacheHelper != null) {
+      docIdSet = cache.get(cacheHelper.getKey());
+    }
     if (docIdSet == null) {
       final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
       final IndexSearcher searcher = new IndexSearcher(topLevelContext);
@@ -74,7 +78,9 @@ public class QueryBitSetProducer implements BitSetProducer {
       } else {
         docIdSet = new BitDocIdSet(BitSet.of(s.iterator(), context.reader().maxDoc()));
       }
-      cache.put(key, docIdSet);
+      if (cacheHelper != null) {
+        cache.put(cacheHelper.getKey(), docIdSet);
+      }
     }
     return docIdSet == DocIdSet.EMPTY ? null : ((BitDocIdSet) docIdSet).bits();
   }

@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -46,7 +47,9 @@ import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
 
-
+/**
+ * A class which performs per-segment field faceting for single-valued string fields.
+ */
 class PerSegmentSingleValuedFaceting {
 
   // input params
@@ -59,14 +62,18 @@ class PerSegmentSingleValuedFaceting {
   boolean missing;
   String sort;
   String prefix;
-  String contains;
-  boolean ignoreCase;
+
+  private final Predicate<BytesRef> termFilter;
 
   Filter baseSet;
 
   int nThreads;
 
   public PerSegmentSingleValuedFaceting(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase) {
+    this(searcher, docs, fieldName, offset, limit, mincount, missing, sort, prefix, new SubstringBytesRefFilter(contains, ignoreCase));
+  }
+
+  public PerSegmentSingleValuedFaceting(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, Predicate<BytesRef> filter) {
     this.searcher = searcher;
     this.docs = docs;
     this.fieldName = fieldName;
@@ -76,8 +83,7 @@ class PerSegmentSingleValuedFaceting {
     this.missing = missing;
     this.sort = sort;
     this.prefix = prefix;
-    this.contains = contains;
-    this.ignoreCase = ignoreCase;
+    this.termFilter = filter;
   }
 
   public void setNumThreads(int threads) {
@@ -180,8 +186,7 @@ class PerSegmentSingleValuedFaceting {
     while (queue.size() > 0) {
       SegFacet seg = queue.top();
       
-      // if facet.contains specified, only actually collect the count if substring contained
-      boolean collect = contains == null || SimpleFacets.contains(seg.tempBR.utf8ToString(), contains, ignoreCase);
+      boolean collect = termFilter == null || termFilter.test(seg.tempBR);
       
       // we will normally end up advancing the term enum for this segment
       // while still using "val", so we need to make a copy since the BytesRef
@@ -293,11 +298,8 @@ class PerSegmentSingleValuedFaceting {
         // specialized version when collecting counts for all terms
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc > si.docID()) {
-            si.advance(doc);
-          }
           int t;
-          if (doc == si.docID()) {
+          if (si.advanceExact(doc)) {
             t = 1+si.ordValue();
           } else {
             t = 0;
@@ -309,11 +311,8 @@ class PerSegmentSingleValuedFaceting {
         // version that adjusts term numbers because we aren't collecting the full range
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc > si.docID()) {
-            si.advance(doc);
-          }
           int term;
-          if (doc == si.docID()) {
+          if (si.advanceExact(doc)) {
             term = si.ordValue();
           } else {
             term = -1;

@@ -50,7 +50,7 @@ import org.apache.lucene.util.PriorityQueue;
  *  being that the documents in each group must always be
  *  indexed as a block.  This collector also fills in
  *  TopGroups.totalGroupCount without requiring the separate
- *  {@link org.apache.lucene.search.grouping.term.TermAllGroupsCollector}.  However, this collector does
+ *  {@link org.apache.lucene.search.grouping.AllGroupsCollector}.  However, this collector does
  *  not fill in the groupValue of each group; this field
  *  will always be null.
  *
@@ -216,7 +216,7 @@ public class BlockGroupingCollector extends SimpleCollector {
    *  @param lastDocPerGroup a {@link Weight} that marks the
    *    last document in each group.
    */
-  public BlockGroupingCollector(Sort groupSort, int topNGroups, boolean needsScores, Weight lastDocPerGroup) throws IOException {
+  public BlockGroupingCollector(Sort groupSort, int topNGroups, boolean needsScores, Weight lastDocPerGroup) {
 
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");

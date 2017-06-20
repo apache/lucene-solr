@@ -39,9 +39,10 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   @After
   public void tearDown() throws Exception {
     MockDataSource.clearCache();
+    MockStringDataSource.clearCache();
     super.tearDown();
   }
-  
+
   @Test
   public void loadClass() throws Exception {
     @SuppressWarnings("unchecked")
@@ -180,6 +181,52 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(3, di.getDocBuilder().importStatistics.rowsCount.get());
   }
 
+  @Test
+  public void templateXPath() {
+    DataImporter di = new DataImporter();
+    di.loadAndInit(dc_variableXpath);
+    DIHConfiguration cfg = di.getConfig();
+
+    RequestInfo rp = new RequestInfo(null, createMap("command", "full-import"), null);
+    List<Map<String, Object>> l = new ArrayList<>();
+    l.add(createMap("id", 1, "name", "iphone", "manufacturer", "Apple"));
+    l.add(createMap("id", 2, "name", "ipad", "manufacturer", "Apple"));
+    l.add(createMap("id", 3, "name", "pixel", "manufacturer", "Google"));
+
+    MockDataSource.setIterator("select * from x", l.iterator());
+
+    List<Map<String,Object>> nestedData = new ArrayList<>();
+    nestedData.add(createMap("founded", "Cupertino, California, U.S", "year", "1976", "year2", "1976"));
+    nestedData.add(createMap("founded", "Cupertino, California, U.S", "year", "1976", "year2", "1976"));
+    nestedData.add(createMap("founded", "Menlo Park, California, U.S", "year", "1998", "year2", "1998"));
+
+    MockStringDataSource.setData("companies.xml", xml_attrVariableXpath);
+    MockStringDataSource.setData("companies2.xml", xml_variableXpath);
+    MockStringDataSource.setData("companies3.xml", xml_variableForEach);
+
+    SolrWriterImpl swi = new SolrWriterImpl();
+    di.runCmd(rp, swi);
+    assertEquals(Boolean.TRUE, swi.deleteAllCalled);
+    assertEquals(Boolean.TRUE, swi.commitCalled);
+    assertEquals(Boolean.TRUE, swi.finishCalled);
+    assertEquals(3, swi.docs.size());
+    for (int i = 0; i < l.size(); i++) {
+      SolrInputDocument doc = swi.docs.get(i);
+
+      Map<String, Object> map = l.get(i);
+      for (Map.Entry<String, Object> entry : map.entrySet()) {
+        assertEquals(entry.getValue(), doc.getFieldValue(entry.getKey()));
+      }
+
+      map = nestedData.get(i);
+      for (Map.Entry<String, Object> entry : map.entrySet()) {
+        assertEquals(entry.getValue(), doc.getFieldValue(entry.getKey()));
+      }
+    }
+    assertEquals(1, di.getDocBuilder().importStatistics.queryCount.get());
+    assertEquals(3, di.getDocBuilder().importStatistics.docCount.get());
+  }
+
   static class SolrWriterImpl extends SolrWriter {
     List<SolrInputDocument> docs = new ArrayList<>();
 
@@ -215,21 +262,73 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
   }
 
   public static final String dc_singleEntity = "<dataConfig>\n"
-          + "<dataSource  type=\"MockDataSource\"/>\n"
-          + "    <document name=\"X\" >\n"
-          + "        <entity name=\"x\" query=\"select * from x\">\n"
-          + "          <field column=\"id\"/>\n"
-          + "          <field column=\"desc\"/>\n"
-          + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"
-          + "    </document>\n" + "</dataConfig>";
+      + "<dataSource  type=\"MockDataSource\"/>\n"
+      + "    <document name=\"X\" >\n"
+      + "        <entity name=\"x\" query=\"select * from x\">\n"
+      + "          <field column=\"id\"/>\n"
+      + "          <field column=\"desc\"/>\n"
+      + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"
+      + "    </document>\n" + "</dataConfig>";
 
   public static final String dc_deltaConfig = "<dataConfig>\n"
-          + "<dataSource  type=\"MockDataSource\"/>\n"          
-          + "    <document name=\"X\" >\n"
-          + "        <entity name=\"x\" query=\"select * from x\" deltaQuery=\"select id from x\">\n"
-          + "          <field column=\"id\"/>\n"
-          + "          <field column=\"desc\"/>\n"
-          + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"
-          + "    </document>\n" + "</dataConfig>";
+      + "<dataSource  type=\"MockDataSource\"/>\n"
+      + "    <document name=\"X\" >\n"
+      + "        <entity name=\"x\" query=\"select * from x\" deltaQuery=\"select id from x\">\n"
+      + "          <field column=\"id\"/>\n"
+      + "          <field column=\"desc\"/>\n"
+      + "          <field column=\"desc\" name=\"desc_s\" />" + "        </entity>\n"
+      + "    </document>\n" + "</dataConfig>";
+
+  public static final String dc_variableXpath = "<dataConfig>\n"
+      + "<dataSource type=\"MockDataSource\"/>\n"
+      + "<dataSource name=\"xml\" type=\"MockStringDataSource\"/>\n"
+      + "    <document name=\"X\" >\n"
+      + "        <entity name=\"x\" query=\"select * from x\">\n"
+      + "          <field column=\"id\"/>\n"
+      + "          <field column=\"name\"/>\n"
+      + "          <field column=\"manufacturer\"/>"
+      + "          <entity name=\"c1\" url=\"companies.xml\" dataSource=\"xml\" forEach=\"/companies/company\" processor=\"XPathEntityProcessor\">"
+      + "            <field column=\"year\" xpath=\"/companies/company/year[@name='p_${x.manufacturer}_s']\" />"
+      + "          </entity>"
+      + "          <entity name=\"c2\" url=\"companies2.xml\" dataSource=\"xml\" forEach=\"/companies/company\" processor=\"XPathEntityProcessor\">"
+      + "            <field column=\"founded\" xpath=\"/companies/company/p_${x.manufacturer}_s/founded\" />"
+      + "          </entity>"
+      + "          <entity name=\"c3\" url=\"companies3.xml\" dataSource=\"xml\" forEach=\"/companies/${x.manufacturer}\" processor=\"XPathEntityProcessor\">"
+      + "            <field column=\"year2\" xpath=\"/companies/${x.manufacturer}/year\" />"
+      + "          </entity>"
+      + "        </entity>\n"
+      + "    </document>\n" + "</dataConfig>";
+
+
+  public static final String xml_variableForEach = "<companies>\n" +
+      "\t<Apple>\n" +
+      "\t\t<year>1976</year>\n" +
+      "\t</Apple>\n" +
+      "\t<Google>\n" +
+      "\t\t<year>1998</year>\n" +
+      "\t</Google>\n" +
+      "</companies>";
+
+  public static final String xml_variableXpath = "<companies>\n" +
+      "\t<company>\n" +
+      "\t\t<p_Apple_s>\n" +
+      "\t\t\t<founded>Cupertino, California, U.S</founded>\n" +
+      "\t\t</p_Apple_s>\t\t\n" +
+      "\t</company>\n" +
+      "\t<company>\n" +
+      "\t\t<p_Google_s>\n" +
+      "\t\t\t<founded>Menlo Park, California, U.S</founded>\n" +
+      "\t\t</p_Google_s>\n" +
+      "\t</company>\n" +
+      "</companies>";
+
+  public static final String xml_attrVariableXpath = "<companies>\n" +
+      "\t<company>\n" +
+      "\t\t<year name='p_Apple_s'>1976</year>\n" +
+      "\t</company>\n" +
+      "\t<company>\n" +
+      "\t\t<year name='p_Google_s'>1998</year>\t\t\n" +
+      "\t</company>\n" +
+      "</companies>";
 
 }

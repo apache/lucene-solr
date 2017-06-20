@@ -45,9 +45,10 @@ import org.apache.lucene.store.DataOutput;
  *   <p>Norms metadata (.dvm) --&gt; Header,&lt;Entry&gt;<sup>NumFields</sup>,Footer</p>
  *   <ul>
  *     <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- *     <li>Entry --&gt; FieldNumber, DocsWithFieldAddress, NumDocsWithField, BytesPerNorm, NormsAddress</li>
+ *     <li>Entry --&gt; FieldNumber, DocsWithFieldAddress, DocsWithFieldLength, NumDocsWithField, BytesPerNorm, NormsAddress</li>
  *     <li>FieldNumber --&gt; {@link DataOutput#writeInt Int32}</li>
  *     <li>DocsWithFieldAddress --&gt; {@link DataOutput#writeLong Int64}</li>
+ *     <li>DocsWithFieldLength --&gt; {@link DataOutput#writeLong Int64}</li>
  *     <li>NumDocsWithField --&gt; {@link DataOutput#writeInt Int32}</li>
  *     <li>BytesPerNorm --&gt; {@link DataOutput#writeByte byte}</li>
  *     <li>NormsAddress --&gt; {@link DataOutput#writeLong Int64}</li>
@@ -60,6 +61,7 @@ import org.apache.lucene.store.DataOutput;
  *   <p>DocsWithFieldAddress is the pointer to the start of the bit set containing documents that have a norm
  *      in the norms data (.nvd), or -2 if no documents have a norm value, or -1 if all documents have a norm
  *      value.</p>
+ *   <p>DocsWithFieldLength is the number of bytes used to encode the set of documents that have a norm.</p>
  *   <li><a name="nvd"></a>
  *   <p>The Norms data or .nvd file.</p>
  *   <p>For each Norms field, this stores the actual per-document data (the heavy-lifting)</p>

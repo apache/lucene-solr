@@ -26,7 +26,6 @@
   <path id="classpath">
     <path refid="base.classpath"/>
     <fileset dir="lib"/>
-    <pathelement path="${queries.jar}"/>
   </path>
 
   <path id="test.classpath">
@@ -34,16 +33,6 @@
     <fileset dir="lib"/>
     <pathelement path="src/test-files"/>
   </path>
-
-  <target name="compile-core" depends="jar-queries,common.compile-core" />
-
-  <target name="javadocs" depends="javadocs-queries,compile-core,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
-    <invoke-module-javadoc>
-      <links>
-        <link href="../queries"/>
-      </links>
-    </invoke-module-javadoc>
-  </target>
 
   <target name="regenerate" depends="run-antlr"/>
 

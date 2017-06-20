@@ -59,6 +59,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   private static final long serialVersionUID = 1;
@@ -250,17 +253,15 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
   }
 
   private List<String> getShardUrls() throws IOException {
-
     try {
-
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
 
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
+      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+
+      ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
-
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList<>();
@@ -357,7 +358,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
           if (tuples.size() == numTerms) break;
           index++;
           Map map = new HashMap();
-          map.put("id", featureSet + "_" + index);
+          map.put(ID, featureSet + "_" + index);
           map.put("index_i", index);
           map.put("term_s", termScore.getKey());
           map.put("score_f", termScore.getValue());
@@ -415,7 +416,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
-      params.add("distrib", "false");
+      params.add(DISTRIB, "false");
       params.add("fq","{!igain}");
 
       for(String key : paramsMap.keySet()) {

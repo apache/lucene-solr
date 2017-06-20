@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
@@ -116,9 +117,6 @@ public class JavabinLoader extends ContentStreamLoader {
 
   private AddUpdateCommand getAddCommand(SolrQueryRequest req, SolrParams params) {
     AddUpdateCommand addCmd = new AddUpdateCommand(req);
-    // since we can give a hint to the leader that the end of a batch is being processed, it's OK to have a larger
-    // pollQueueTime than the default 0 since we can optimize around not waiting unnecessarily
-    addCmd.pollQueueTime = pollQueueTime;
     addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
     addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     return addCmd;
@@ -143,7 +141,7 @@ public class JavabinLoader extends ContentStreamLoader {
           }
         }
         if (map != null) {
-          String route = (String) map.get(UpdateRequest.ROUTE);
+          String route = (String) map.get(ShardParams._ROUTE_);
           if (route != null) {
             delcmd.setRoute(route);
           }

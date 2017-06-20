@@ -49,7 +49,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
   }
   
   // add enough document so that the index will be larger than RAMDirectory.READ_BUFFER_SIZE
-  private final int docsToAdd = 500;
+  private static final int DOCS_TO_ADD = 500;
 
   private Path buildIndex() throws IOException {
     Path path = createTempDir("buildIndex");
@@ -59,12 +59,12 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE));
     // add some documents
     Document doc = null;
-    for (int i = 0; i < docsToAdd; i++) {
+    for (int i = 0; i < DOCS_TO_ADD; i++) {
       doc = new Document();
       doc.add(newStringField("content", English.intToEnglish(i).trim(), Field.Store.YES));
       writer.addDocument(doc);
     }
-    assertEquals(docsToAdd, writer.maxDoc());
+    assertEquals(DOCS_TO_ADD, writer.maxDoc());
     writer.close();
     dir.close();
 
@@ -100,13 +100,13 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     
     // open reader to test document count
     IndexReader reader = DirectoryReader.open(ramDir);
-    assertEquals(docsToAdd, reader.numDocs());
+    assertEquals(DOCS_TO_ADD, reader.numDocs());
     
     // open search zo check if all doc's are there
     IndexSearcher searcher = newSearcher(reader);
     
     // search for all documents
-    for (int i = 0; i < docsToAdd; i++) {
+    for (int i = 0; i < DOCS_TO_ADD; i++) {
       Document doc = searcher.doc(i);
       assertTrue(doc.getField("content") != null);
     }
@@ -115,8 +115,8 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     reader.close();
   }
   
-  private final int numThreads = 10;
-  private final int docsPerThread = 40;
+  private static final int NUM_THREADS = 10;
+  private static final int DOCS_PER_THREAD = 40;
   
   public void testRAMDirectorySize() throws IOException, InterruptedException {
 
@@ -132,15 +132,15 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
-    Thread[] threads = new Thread[numThreads];
-    for (int i=0; i<numThreads; i++) {
+    Thread[] threads = new Thread[NUM_THREADS];
+    for (int i = 0; i< NUM_THREADS; i++) {
       final int num = i;
       threads[i] = new Thread(){
         @Override
         public void run() {
-          for (int j=1; j<docsPerThread; j++) {
+          for (int j = 1; j< DOCS_PER_THREAD; j++) {
             Document doc = new Document();
-            doc.add(newStringField("sizeContent", English.intToEnglish(num*docsPerThread+j).trim(), Field.Store.YES));
+            doc.add(newStringField("sizeContent", English.intToEnglish(num* DOCS_PER_THREAD +j).trim(), Field.Store.YES));
             try {
               writer.addDocument(doc);
             } catch (IOException e) {
@@ -150,10 +150,10 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         }
       };
     }
-    for (int i=0; i<numThreads; i++) {
+    for (int i = 0; i< NUM_THREADS; i++) {
       threads[i].start();
     }
-    for (int i=0; i<numThreads; i++) {
+    for (int i = 0; i< NUM_THREADS; i++) {
       threads[i].join();
     }
 

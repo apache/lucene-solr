@@ -41,7 +41,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
   private Map<String,Tracker> dirs = new HashMap<>();
   private volatile boolean stop = false;
   
-  private class Tracker {
+  private static class Tracker {
     String path;
     AtomicInteger refCnt = new AtomicInteger(0);
     Directory dir;

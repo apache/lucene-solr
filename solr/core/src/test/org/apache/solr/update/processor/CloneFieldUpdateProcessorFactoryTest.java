@@ -177,7 +177,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
       // append to existing values, preserve boost
       d = processAdd(chain,
                      doc(f("id", "1111"),
-                         field("dest_s", 2.3f, "orig1", "orig2"),
+                         field("dest_s", "orig1", "orig2"),
                          f("source0_s", "NOT COPIED"),
                          f("source1_s", "123456789", "", 42, "abcd")));
       assertNotNull(chain, d);
@@ -187,8 +187,6 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
       assertEquals(chain,
                    Arrays.asList("orig1", "orig2", "123456789", "", 42, "abcd"),
                    d.getFieldValues("dest_s"));
-      assertEquals(chain + ": dest boost changed",
-                   2.3f, d.getField("dest_s").getBoost(), 0.0f);
     }
 
     // should be equivalent for any chain matching source1_s and source2_s (but not source0_s)
@@ -213,10 +211,10 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                    Arrays.asList("123456789", "", 42, "abcd", "xxx", 999),
                    d.getFieldValues("dest_s"));
 
-      // append to existing values, preserve boost
+      // append to existing values
       d = processAdd(chain,
                      doc(f("id", "1111"),
-                         field("dest_s", 2.3f, "orig1", "orig2"),
+                         field("dest_s", "orig1", "orig2"),
                          f("source0_s", "NOT COPIED"),
                          f("source1_s", "123456789", "", 42, "abcd"),
                          f("source2_s", "xxx", 999)));
@@ -232,8 +230,6 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
                                  "123456789", "", 42, "abcd",
                                  "xxx", 999),
                    d.getFieldValues("dest_s"));
-      assertEquals(chain + ": dest boost changed",
-                   2.3f, d.getField("dest_s").getBoost(), 0.0f);
     }
     
     // any chain that copies source1_s to dest_s should be equivalent for these assertions
@@ -258,7 +254,7 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
       // append to existing values, preserve boost
       d = processAdd(chain,
                      doc(f("id", "1111"),
-                         field("dest_s", 2.3f, "orig1", "orig2"),
+                         field("dest_s", "orig1", "orig2"),
                          f("source1_s", "123456789", "", 42, "abcd")));
       assertNotNull(chain, d);
       assertEquals(chain,
@@ -267,8 +263,6 @@ public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBas
       assertEquals(chain,
                    Arrays.asList("orig1", "orig2", "123456789", "", 42, "abcd"),
                    d.getFieldValues("dest_s"));
-      assertEquals(chain + ": dest boost changed",
-                   2.3f, d.getField("dest_s").getBoost(), 0.0f);
     }
   }
 

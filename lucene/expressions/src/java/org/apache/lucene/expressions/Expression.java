@@ -16,29 +16,47 @@
  */
 package org.apache.lucene.expressions;
 
-import org.apache.lucene.expressions.js.JavascriptCompiler; // javadocs
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.SortField;
 
 /**
  * Base class that computes the value of an expression for a document.
  * <p>
- * Example usage:
+ * Example that sorts based on an expression:
  * <pre class="prettyprint">
  *   // compile an expression:
  *   Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
  *   
  *   // SimpleBindings just maps variables to SortField instances
- *   SimpleBindings bindings = new SimpleBindings();    
+ *   SimpleBindings bindings = new SimpleBindings();
  *   bindings.add(new SortField("_score", SortField.Type.SCORE));
  *   bindings.add(new SortField("popularity", SortField.Type.INT));
  *   
  *   // create a sort field and sort by it (reverse order)
  *   Sort sort = new Sort(expr.getSortField(bindings, true));
  *   Query query = new TermQuery(new Term("body", "contents"));
- *   searcher.search(query, null, 10, sort);
+ *   searcher.search(query, 10, sort);
+ * </pre>
+ * <p>
+ * Example that modifies the scores produced by the query:
+ * <pre class="prettyprint">
+ *   // compile an expression:
+ *   Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
+ *
+ *   // SimpleBindings just maps variables to SortField instances
+ *   SimpleBindings bindings = new SimpleBindings();
+ *   bindings.add(new SortField("_score", SortField.Type.SCORE));
+ *   bindings.add(new SortField("popularity", SortField.Type.INT));
+ *
+ *   // create a query that matches based on body:contents but
+ *   // scores using expr
+ *   Query query = new FunctionScoreQuery(
+ *       new TermQuery(new Term("body", "contents")),
+ *       expr.getDoubleValuesSource(bindings));
+ *   searcher.search(query, 10);
  * </pre>
  * @see JavascriptCompiler#compile
  * @lucene.experimental
@@ -63,26 +81,25 @@ public abstract class Expression {
   }
 
   /**
-   * Evaluates the expression for the given document.
+   * Evaluates the expression for the current document.
    *
-   * @param document <code>docId</code> of the document to compute a value for
-   * @param functionValues {@link FunctionValues} for each element of {@link #variables}.
+   * @param functionValues {@link DoubleValues} for each element of {@link #variables}.
    * @return The computed value of the expression for the given document.
    */
-  public abstract double evaluate(int document, FunctionValues[] functionValues);
+  public abstract double evaluate(DoubleValues[] functionValues);
 
   /**
-   * Get a value source which can compute the value of this expression in the context of the given bindings.
+   * Get a DoubleValuesSource which can compute the value of this expression in the context of the given bindings.
    * @param bindings Bindings to use for external values in this expression
-   * @return A value source which will evaluate this expression when used
+   * @return A DoubleValuesSource which will evaluate this expression when used
    */
-  public ValueSource getValueSource(Bindings bindings) {
+  public DoubleValuesSource getDoubleValuesSource(Bindings bindings) {
     return new ExpressionValueSource(bindings, this);
   }
   
   /** Get a sort field which can be used to rank documents by this expression. */
   public SortField getSortField(Bindings bindings, boolean reverse) {
-    return getValueSource(bindings).getSortField(reverse);
+    return getDoubleValuesSource(bindings).getSortField(reverse);
   }
 
   /** Get a {@link Rescorer}, to rescore first-pass hits

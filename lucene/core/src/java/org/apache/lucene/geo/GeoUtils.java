@@ -20,6 +20,10 @@ import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 import static org.apache.lucene.util.SloppyMath.cos;
 import static org.apache.lucene.util.SloppyMath.haversinMeters;
 
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.SloppyMath;
+
 /**
  * Basic reusable geo-spatial utility methods
  *
@@ -124,4 +128,50 @@ public final class GeoUtils {
     assert haversinMeters(ceil) > radius;
     return ceil;
   }
+
+  /**
+   * Compute the relation between the provided box and distance query.
+   * This only works for boxes that do not cross the dateline.
+   */
+  public static PointValues.Relation relate(
+      double minLat, double maxLat, double minLon, double maxLon,
+      double lat, double lon, double distanceSortKey, double axisLat) {
+
+    if (minLon > maxLon) {
+      throw new IllegalArgumentException("Box crosses the dateline");
+    }
+
+    if ((lon < minLon || lon > maxLon) && (axisLat + Rectangle.AXISLAT_ERROR < minLat || axisLat - Rectangle.AXISLAT_ERROR > maxLat)) {
+      // circle not fully inside / crossing axis
+      if (SloppyMath.haversinSortKey(lat, lon, minLat, minLon) > distanceSortKey &&
+          SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) > distanceSortKey &&
+          SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) > distanceSortKey &&
+          SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) > distanceSortKey) {
+        // no points inside
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
+    }
+
+    if (within90LonDegrees(lon, minLon, maxLon) &&
+        SloppyMath.haversinSortKey(lat, lon, minLat, minLon) <= distanceSortKey &&
+        SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) <= distanceSortKey &&
+        SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) <= distanceSortKey &&
+        SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) <= distanceSortKey) {
+      // we are fully enclosed, collect everything within this subtree
+      return Relation.CELL_INSIDE_QUERY;
+    }
+
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /** Return whether all points of {@code [minLon,maxLon]} are within 90 degrees of {@code lon}. */
+  static boolean within90LonDegrees(double lon, double minLon, double maxLon) {
+    if (maxLon <= lon - 180) {
+      lon -= 360;
+    } else if (minLon >= lon + 180) {
+      lon += 360;
+    }
+    return maxLon - lon < 90 && lon - minLon < 90;
+  }
+
 }

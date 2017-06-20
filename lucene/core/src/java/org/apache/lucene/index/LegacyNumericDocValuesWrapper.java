@@ -17,6 +17,8 @@
 
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.util.Bits;
 
 /**
@@ -67,6 +69,13 @@ public final class LegacyNumericDocValuesWrapper extends NumericDocValues {
       nextDoc();
     }
     return docID;
+  }
+
+  @Override
+  public boolean advanceExact(int target) throws IOException {
+    docID = target;
+    value = values.get(docID);
+    return value != 0 || docsWithField.get(docID);
   }
 
   @Override

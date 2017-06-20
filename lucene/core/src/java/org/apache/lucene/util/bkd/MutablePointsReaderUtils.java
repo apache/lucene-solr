@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.util.bkd;
 
-import org.apache.lucene.codecs.MutablePointsReader;
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntroSelector;
 import org.apache.lucene.util.IntroSorter;
@@ -26,13 +26,16 @@ import org.apache.lucene.util.Selector;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.PackedInts;
 
-final class MutablePointsReaderUtils {
+/** Utility APIs for sorting and partitioning buffered points.
+ *
+ * @lucene.internal */
+public final class MutablePointsReaderUtils {
 
   MutablePointsReaderUtils() {}
 
-  /** Sort the given {@link MutablePointsReader} based on its packed value then doc ID. */
-  static void sort(int maxDoc, int packedBytesLength,
-      MutablePointsReader reader, int from, int to) {
+  /** Sort the given {@link MutablePointValues} based on its packed value then doc ID. */
+  public static void sort(int maxDoc, int packedBytesLength,
+                          MutablePointValues reader, int from, int to) {
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
     new MSBRadixSorter(packedBytesLength + (bitsPerDocId + 7) / 8) {
 
@@ -88,9 +91,9 @@ final class MutablePointsReaderUtils {
   }
 
   /** Sort points on the given dimension. */
-  static void sortByDim(int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
-      MutablePointsReader reader, int from, int to,
-      BytesRef scratch1, BytesRef scratch2) {
+  public static void sortByDim(int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
+                               MutablePointValues reader, int from, int to,
+                               BytesRef scratch1, BytesRef scratch2) {
 
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
@@ -127,9 +130,9 @@ final class MutablePointsReaderUtils {
   /** Partition points around {@code mid}. All values on the left must be less
    *  than or equal to it and all values on the right must be greater than or
    *  equal to it. */
-  static void partition(int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
-      MutablePointsReader reader, int from, int to, int mid,
-      BytesRef scratch1, BytesRef scratch2) {
+  public static void partition(int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
+                               MutablePointValues reader, int from, int to, int mid,
+                               BytesRef scratch1, BytesRef scratch2) {
     final int offset = splitDim * bytesPerDim + commonPrefixLen;
     final int cmpBytes = bytesPerDim - commonPrefixLen;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);

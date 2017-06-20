@@ -106,7 +106,7 @@ public final class CommonGramsFilter extends TokenFilter {
       saveTermBuffer();
       return true;
     } else if (!input.incrementToken()) {
-        return false;
+      return false;
     }
     
     /* We build n-grams before and after stopwords. 

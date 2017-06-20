@@ -139,6 +139,8 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                     for (var c in state) {
                         var shards = [];
                         for (var s in state[c].shards) {
+                            var shard_status = state[c].shards[s].state;
+                            shard_status = shard_status == 'inactive' ? 'shard-inactive' : shard_status;
                             var nodes = [];
                             for (var n in state[c].shards[s].replicas) {
                                 leaf_count++;
@@ -160,17 +162,19 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                                 $scope.helperData.port.push(uri_parts.port);
                                 $scope.helperData.pathname.push(uri_parts.pathname);
 
-                                var status = replica.state;
+                                var replica_status = replica.state;
 
                                 if (!live_nodes[replica.node_name]) {
-                                    status = 'gone';
+                                    replica_status = 'gone';
+                                } else if(shard_status=='shard-inactive') {
+                                    replica_status += ' ' + shard_status;
                                 }
 
                                 var node = {
                                     name: uri,
                                     data: {
                                         type: 'node',
-                                        state: status,
+                                        state: replica_status,
                                         leader: 'true' === replica.leader,
                                         uri: uri_parts
                                     }
@@ -179,9 +183,10 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
                             }
 
                             var shard = {
-                                name: s,
+                                name: shard_status == "shard-inactive" ? s + ' (inactive)' : s,
                                 data: {
-                                    type: 'shard'
+                                    type: 'shard',
+                                    state: shard_status
                                 },
                                 children: nodes
                             };
@@ -280,7 +285,9 @@ solrAdminApp.directive('graph', function(Constants) {
                 }
 
                 if (d.data && d.data.state) {
-                    classes.push(d.data.state);
+                    if(!(d.data.type=='shard' && d.data.state=='active')){
+                        classes.push(d.data.state);
+                    }
                 }
 
                 return classes.join(' ');
@@ -451,101 +458,3 @@ solrAdminApp.directive('graph', function(Constants) {
         }
     };
 })
-
-/*
-
-========================
-var init_debug = function( cloud_element )
-{
-  var debug_element = $( '#debug', cloud_element );
-  var debug_button = $( '#menu #cloud .dump a' );
-
-  var clipboard_element = $( '.clipboard', debug_element );
-  var clipboard_button = $( 'a', clipboard_element );
-
-  $( '.clipboard', debug_element )
-    .die( 'click' )
-    .live
-    (
-      'click',
-      function( event )
-      {
-        return false;
-      }
-    );
-
-            url : app.config.solr_path + '/zookeeper?wt=json&dump=true',
-              ZeroClipboard.setMoviePath( 'img/ZeroClipboard.swf' );
-
-              clipboard_client = new ZeroClipboard.Client();
-
-              clipboard_client.addEventListener
-              (
-                'load',
-                function( client )
-                {
-                }
-              );
-
-              clipboard_client.addEventListener
-              (
-                'complete',
-                function( client, text )
-                {
-                  clipboard_element
-                    .addClass( 'copied' );
-
-                  clipboard_button
-                    .data( 'text', clipboard_button.text() )
-                    .text( clipboard_button.data( 'copied' ) );
-                }
-              );
-            },
-            success : function( response, text_status, xhr )
-            {
-              clipboard_client.glue
-              (
-                clipboard_element.get(0),
-                clipboard_button.get(0)
-              );
-
-              clipboard_client.setText( response.replace( /\\/g, '\\\\' ) );
-
-              $( '.debug', debug_element )
-                .removeClass( 'loader' )
-                .text( response );
-            },
-            error : function( xhr, text_status, error_thrown )
-            {
-            },
-            complete : function( xhr, text_status )
-            {
-            }
-          }
-        );
-      }
-    )
-    .die( 'hide' )
-    .live
-    (
-      'hide',
-      function( event )
-      {
-        $( '.debug', debug_element )
-          .empty();
-
-        clipboard_element
-          .removeClass( 'copied' );
-
-        clipboard_button
-          .data( 'copied', clipboard_button.text() )
-          .text( clipboard_button.data( 'text' ) );
-
-        clipboard_client.destroy();
-
-        debug_element.hide();
-      }
-    );
-};
-
-*/

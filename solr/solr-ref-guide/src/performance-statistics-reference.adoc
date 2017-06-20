@@ -1,0 +1,135 @@
+= Performance Statistics Reference
+:page-shortname: performance-statistics-reference
+:page-permalink: performance-statistics-reference.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This page explains some of the <<using-jmx-with-solr.adoc#using-jmx-with-solr,JMX>> statistics that Solr exposes.
+
+The same statistics are also exposed via the <<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>> when statistics are requested.
+
+These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to each performance of an individual replica.
+
+== Request Handlers
+
+=== Update Request Handler
+
+The update request handler is an endpoint to send data to Solr. We can see how many update requests are being fired, how fast is it performing, and other valuable information regarding requests.
+
+*Path:* `/solr/<core>/update`
+
+=== Search Request Handler
+
+Can be useful to measure and track number of search queries , response times etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler , the realtime handler “get”, or any other handler similar statistics can be found for that as well.
+
+*Path*: `/solr/<core>/select`
+
+Both Update Request Handler and Search Request Handler along with handlers like “sql”, “export” and realtime “get” handler will provide the following attributes in their statistics.
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Attribute |Description
+|15minRateReqsPerSecond |Requests per second received over the past 15 minutes.
+|5minRateReqsPerSecond |Requests per second received over the past 5 minutes.
+|75thPcRequestTime |Request processing time for the request which belongs to the 75th Percentile. E.g., if 100 requests are received, then the 75th fastest request time will be reported by this statistic.
+|95thPcRequestTime |Request processing time in milliseconds for the request which belongs to the 95th Percentile. E.g., if 80 requests are received, then the 76th fastest request time will be reported in this statistic.
+|999thPcRequestTime |Request processing time in milliseconds for the request which belongs to the 99.9th Percentile. E.g., if 1000 requests are received, then the 999th fastest request time will be reported in this statistic.
+|99thPcRequestTime |Request processing time in milliseconds for the request which belongs to the 99th Percentile. E.g., if 200 requests are received, then the 198th fastest request time will be reported in this statistic.
+|avgRequestsPerSecond |Average number of requests received per second.
+|avgTimePerRequest |Average time taken for processing the requests. This parameter will decay over time, with a bias toward activity in the last 5 minutes.
+|errors |Number of error encountered by handler.
+|clientErrors |Number of syntax errors/parse errors made by client while making requests.
+|handlerStart |Epoch time when the handler was registered.
+|medianRequestTime |Median of all the request processing time.
+|requests |Total number of requests made since the Solr process was started.
+|serverErrors |Number of errors thrown by the server while executing the request.
+|timeouts |Number of responses received with partial results.
+|totalTime |The sum of all request processing times since the Solr process was started.
+|===
+
+== Update Handler
+
+*Update Handler:* This section has information on the total number of adds, how many commits have been fired against a solr core.
+
+*Path:* `/solr/<core>/updateHandler/DirectUpdateHandler2`
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Attribute |Description
+|adds |Total number of “add” requests since last commit.
+|autocommit maxTime |Maximum time between two autocommits execution.
+|autocommits |Total number of auto-commits executed.
+|cumulative_adds |Number of “effective” additions executed over the lifetime. The counter is incremented when “add‘ command is executed while decremented when “rollback” is executed.
+|cumulative_deletesById |Number of document deletions executed by ID over the lifetime. The counter is incremented when “delete” command is executed while decremented when “rollback” is executed.
+|cumulative_deletesByQuery |Number of document deletions executed by query over the lifetime. The counter is incremented when “delete” command is executed while decremented when “rollback” is executed.
+|cumulative_errors |Number of error messages received by Update Handler while performing addition/deletion action on documents over the lifetime.
+|deletesById |Currently uncommitted deletions by ID.
+|deletesByQuery |Currently uncommitted deletions by query.
+|docsPending |Number of documents which are pending commit.
+|errors |Number of error messages received by Update Handler while performing addition/deletion/commit/rollback action on documents over the lifetime.
+|expungeDeletes |Number of commit commands issued with expunge deletes.
+|optimizes |Number of explicit optimize commands issued
+|rollbacks |Number of rollbacks executed.
+|soft autocommit maxTime |Maximum documents ‘adds’ between two soft auto-commits.
+|soft autocommits |Number of soft commits executed.
+|transaction_logs_total_number |Number of TLogs created from the beginning of the Solr instance. It will be equivalent to number of Hard commits executed.
+|transaction_logs_total_size |Total size of all the TLogs created so far from the beginning of the Solr instance.
+|===
+
+== Caches
+
+=== Document Cache
+
+This cache holds Lucene Document objects (the stored fields for each document). Since Lucene internal document IDs are transient, this cache cannot be auto-warmed.
+
+*Path:* `/solr/<cache>/documentCache`
+
+=== Query Result Cache
+
+This cache holds the results of previous searches: ordered lists of document IDs based on a query, a sort, and the range of documents requested
+
+*Path:* `/solr/<cache>/queryResultCache`
+
+=== Filter Cache
+
+This cache is used for filters for unordered sets of all documents that match a query.
+
+*Path:* `/solr/<cache>/filterCache`
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="30,70",options="header"]
+|===
+|Attribute |Description
+|cumulative_evictions |Number of cache evictions across all caches since this node has been running.
+|cumulative_hitratio |Ratio of cache hits to lookups across all the caches since this node has been running.
+|cumulative_hits |Number of cache hits across all the caches since this node has been running.
+|cumulative_inserts |Number of cache insertions across all the caches since this node has been running.
+|cumulative_lookups |Number of cache lookups across all the caches since this node has been running.
+|evictions |Number of cache evictions for the current index searcher.
+|hitratio |Ratio of cache hits to lookups for the current index searcher.
+|hits |Number of hits for the current index searcher.
+|inserts |Number of inserts into the cache.
+|lookups |Number of lookups against the cache.
+|size |Size of the cache at that particular instance (in KBs).
+|warmupTime |Warm-up time for the registered index searcher. This time is taken in account for the “auto-warming” of caches.
+|===
+
+More information on Solr caches is available in the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>>.

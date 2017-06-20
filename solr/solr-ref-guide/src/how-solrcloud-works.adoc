@@ -1,0 +1,53 @@
+= How SolrCloud Works
+:page-shortname: how-solrcloud-works
+:page-permalink: how-solrcloud-works.html
+:page-children: shards-and-indexing-data-in-solrcloud, distributed-requests, read-and-write-side-fault-tolerance
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The following sections cover provide general information about how various SolrCloud features work. To understand these features, it's important to first understand a few key concepts that relate to SolrCloud.
+
+* <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Shards and Indexing Data in SolrCloud>>
+* <<distributed-requests.adoc#distributed-requests,Distributed Requests>>
+* <<read-and-write-side-fault-tolerance.adoc#read-and-write-side-fault-tolerance,Read and Write Side Fault Tolerance>>
+
+If you are already familiar with SolrCloud concepts and basic functionality, you can skip to the section covering <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>.
+
+[[HowSolrCloudWorks-KeySolrCloudConcepts]]
+== Key SolrCloud Concepts
+
+A SolrCloud cluster consists of some "logical" concepts layered on top of some "physical" concepts.
+
+[[HowSolrCloudWorks-Logical]]
+=== Logical
+
+* A Cluster can host multiple Collections of Solr Documents.
+* A collection can be partitioned into multiple Shards, which contain a subset of the Documents in the Collection.
+* The number of Shards that a Collection has determines:
+** The theoretical limit to the number of Documents that Collection can reasonably contain.
+** The amount of parallelization that is possible for an individual search request.
+
+[[HowSolrCloudWorks-Physical]]
+=== Physical
+
+* A Cluster is made up of one or more Solr Nodes, which are running instances of the Solr server process.
+* Each Node can host multiple Cores.
+* Each Core in a Cluster is a physical Replica for a logical Shard.
+* Every Replica uses the same configuration specified for the Collection that it is a part of.
+* The number of Replicas that each Shard has determines:
+** The level of redundancy built into the Collection and how fault tolerant the Cluster can be in the event that some Nodes become unavailable.
+** The theoretical limit in the number concurrent search requests that can be processed under heavy load.

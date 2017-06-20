@@ -290,7 +290,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
     assertEquals(bytesUsed, flushControl.activeBytes());
   }
 
-  public class IndexThread extends Thread {
+  public static class IndexThread extends Thread {
     IndexWriter writer;
     LiveIndexWriterConfig iwc;
     LineFileDocs docs;

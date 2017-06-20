@@ -53,7 +53,10 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
 
-  <field name="id" type="int" required="true"/>
+  <field name="id" type="string" required="true"/>
+  <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+  <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+  <copyField source="id" dest="id_i" />
 
   <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" default="1"/>
   <field name="intdv" type="int" indexed="false" stored="false" docValues="true" default="2"/>
@@ -62,6 +65,7 @@
   <field name="datedv" type="date" indexed="false" stored="false" docValues="true" default="1995-12-31T23:59:59.999Z"/>
 
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" default="solr" />
+  <field name="string_add_dv_later" type="string" indexed="true" stored="true" docValues="false"/>
   <field name="booldv" type="boolean" indexed="false" stored="false" docValues="true" default="true" />
 
   <field name="floatdvs" type="float" indexed="false" stored="false" docValues="true" default="1"/>

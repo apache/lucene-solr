@@ -80,7 +80,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       this.relationships = relationships;
     }
     
-    public void setSubScorers(Scorer scorer, String relationship) {
+    public void setSubScorers(Scorer scorer, String relationship) throws IOException {
       for (ChildScorer child : scorer.getChildren()) {
         if (scorer instanceof AssertingScorer || relationships.contains(child.relationship)) {
           setSubScorers(child.child, child.relationship);

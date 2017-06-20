@@ -58,6 +58,25 @@
         <str>id2</str>
         <str>id3</str>
       </arr>
+      <arr name="clusters">
+        <lst>
+          <arr name="labels">
+            <str>label1.sub1</str>
+          </arr>
+          <arr name="docs">
+            <str>id1</str>
+            <str>id2</str>
+          </arr>
+        </lst>      
+        <lst>
+          <arr name="labels">
+            <str>label1.sub2</str>
+          </arr>
+          <arr name="docs">
+            <str>id2</str>
+          </arr>
+        </lst>      
+      </arr>
     </lst>
     <lst>
       <arr name="labels">

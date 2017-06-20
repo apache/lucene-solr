@@ -16,8 +16,13 @@
  */
 package org.apache.solr.request;
 
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.schema.IndexSchema;
@@ -27,8 +32,11 @@ import org.apache.solr.core.SolrCore;
 
 import java.io.Closeable;
 import java.security.Principal;
-import java.util.Map;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * Base implementation of <code>SolrQueryRequest</code> that provides some
@@ -182,5 +190,28 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   @Override
   public Principal getUserPrincipal() {
     return null;
+  }
+
+  List<CommandOperation> parsedCommands;
+
+  public List<CommandOperation> getCommands(boolean validateInput) {
+    if (parsedCommands == null) {
+      Iterable<ContentStream> contentStreams = getContentStreams();
+      if (contentStreams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No content stream");
+      for (ContentStream contentStream : contentStreams) {
+        parsedCommands = ApiBag.getCommandOperations(contentStream, getValidators(), validateInput);
+      }
+
+    }
+    return CommandOperation.clone(parsedCommands);
+
+  }
+
+  protected ValidatingJsonMap getSpec() {
+    return null;
+  }
+
+  protected Map<String, JsonSchemaValidator> getValidators(){
+    return Collections.EMPTY_MAP;
   }
 }

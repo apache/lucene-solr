@@ -414,7 +414,6 @@ public class IndexSearcher {
       throw new IllegalArgumentException("after.doc exceeds the number of documents in the reader: after.doc="
           + after.doc + " limit=" + limit);
     }
-    numHits = Math.min(numHits, limit);
 
     final int cappedNumHits = Math.min(numHits, limit);
 
@@ -432,7 +431,7 @@ public class IndexSearcher {
         for (TopScoreDocCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(cappedNumHits, topDocs);
+        return TopDocs.merge(0, cappedNumHits, topDocs, true);
       }
 
     };
@@ -559,7 +558,7 @@ public class IndexSearcher {
         for (TopFieldCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(sort, cappedNumHits, topDocs);
+        return TopDocs.merge(sort, 0, cappedNumHits, topDocs, true);
       }
 
     };

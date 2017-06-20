@@ -368,8 +368,9 @@ public class CheckHits {
         boolean productOf = descr.endsWith("product of:");
         boolean sumOf = descr.endsWith("sum of:");
         boolean maxOf = descr.endsWith("max of:");
+        boolean computedOf = descr.matches(".*, computed as .* from:");
         boolean maxTimesOthers = false;
-        if (!(productOf || sumOf || maxOf)) {
+        if (!(productOf || sumOf || maxOf || computedOf)) {
           // maybe 'max plus x times others'
           int k1 = descr.indexOf("max plus ");
           if (k1>=0) {
@@ -387,9 +388,9 @@ public class CheckHits {
         // TODO: this is a TERRIBLE assertion!!!!
         Assert.assertTrue(
             q+": multi valued explanation description=\""+descr
-            +"\" must be 'max of plus x times others' or end with 'product of'"
+            +"\" must be 'max of plus x times others', 'computed as x from:' or end with 'product of'"
             +" or 'sum of:' or 'max of:' - "+expl,
-            productOf || sumOf || maxOf || maxTimesOthers);
+            productOf || sumOf || maxOf || computedOf || maxTimesOthers);
         float sum = 0;
         float product = 1;
         float max = 0;
@@ -410,7 +411,8 @@ public class CheckHits {
         } else if (maxTimesOthers) {
           combined = max + x * (sum - max);
         } else {
-            Assert.assertTrue("should never get here!",false);
+          Assert.assertTrue("should never get here!", computedOf);
+          combined = value;
         }
         Assert.assertEquals(q+": actual subDetails combined=="+combined+
             " != value="+value+" Explanation: "+expl,

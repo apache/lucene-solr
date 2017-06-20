@@ -1,0 +1,183 @@
+= Post Tool
+:page-shortname: post-tool
+:page-permalink: post-tool.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr includes a simple command line tool for POSTing various types of content to a Solr server.
+
+The tool is `bin/post`. The bin/post tool is a Unix shell script; for Windows (non-Cygwin) usage, see the <<PostTool-WindowsSupport,Windows section>> below.
+
+To run it, open a window and enter:
+
+[source,bash]
+----
+bin/post -c gettingstarted example/films/films.json
+----
+
+This will contact the server at `localhost:8983`. Specifying the `collection/core name` is *mandatory*. The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/post -help)`.
+
+
+== Using the bin/post Tool
+
+Specifying either the `collection/core name` or the full update `url` is *mandatory* when using `bin/post`.
+
+The basic usage of `bin/post` is:
+
+[source,plain]
+----
+$ bin/post -h
+Usage: post -c <collection> [OPTIONS] <files|directories|urls|-d ["...",...]>
+    or post -help
+
+   collection name defaults to DEFAULT_SOLR_COLLECTION if not specified
+
+OPTIONS
+=======
+  Solr options:
+    -url <base Solr update URL> (overrides collection, host, and port)
+    -host <host> (default: localhost)
+    -p or -port <port> (default: 8983)
+    -commit yes|no (default: yes)
+    -u or -user <user:pass> (sets BasicAuth credentials)
+
+  Web crawl options:
+    -recursive <depth> (default: 1)
+    -delay <seconds> (default: 10)
+
+
+  Directory crawl options:
+    -delay <seconds> (default: 0)
+
+  stdin/args options:
+    -type <content/type> (default: application/xml)
+
+
+  Other options:
+    -filetypes <type>[,<type>,...] (default: xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)
+    -params "<key>=<value>[&<key>=<value>...]" (values must be URL-encoded; these pass through to Solr update request)
+    -out yes|no (default: no; yes outputs Solr response to console)
+...
+----
+
+[[bin_post_examples]]
+== Examples
+
+There are several ways to use `bin/post`. This section presents several examples.
+
+=== Indexing XML
+
+Add all documents with file extension `.xml` to collection or core named `gettingstarted`.
+
+[source,bash]
+----
+bin/post -c gettingstarted *.xml
+----
+
+Add all documents with file extension `.xml` to the `gettingstarted` collection/core on Solr running on port `8984`.
+
+[source,bash]
+----
+bin/post -c gettingstarted -p 8984 *.xml
+----
+
+Send XML arguments to delete a document from `gettingstarted`.
+
+[source,bash]
+----
+bin/post -c gettingstarted -d '<delete><id>42</id></delete>'
+----
+
+=== Indexing CSV
+
+Index all CSV files into `gettingstarted`:
+
+[source,bash]
+----
+bin/post -c gettingstarted *.csv
+----
+
+Index a tab-separated file into `gettingstarted`:
+
+[source,bash]
+----
+bin/post -c signals -params "separator=%09" -type text/csv data.tsv
+----
+
+The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is. The <<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVFormattedIndexUpdates,CSV handler>> supports the `separator` parameter, and is passed through using the `-params` setting.
+
+=== Indexing JSON
+
+Index all JSON files into `gettingstarted`.
+
+[source,bash]
+----
+bin/post -c gettingstarted *.json
+----
+
+=== Indexing Rich Documents (PDF, Word, HTML, etc)
+
+Index a PDF file into `gettingstarted`.
+
+[source,bash]
+----
+bin/post -c gettingstarted a.pdf
+----
+
+Automatically detect content types in a folder, and recursively scan it for documents for indexing into `gettingstarted`.
+
+[source,bash]
+----
+bin/post -c gettingstarted afolder/
+----
+
+Automatically detect content types in a folder, but limit it to PPT and HTML files and index into `gettingstarted`.
+
+[source,bash]
+----
+bin/post -c gettingstarted -filetypes ppt,html afolder/
+----
+
+=== Indexing to a Password Protected Solr (Basic Auth)
+
+Index a pdf as the user solr with password `SolrRocks`:
+
+[source,bash]
+----
+bin/post -u solr:SolrRocks -c gettingstarted a.pdf
+----
+
+[[PostTool-WindowsSupport]]
+== Windows Support
+
+`bin/post` exists currently only as a Unix shell script, however it delegates its work to a cross-platform capable Java program. The <<SimplePostTool>> can be run directly in supported environments, including Windows.
+
+== SimplePostTool
+
+The `bin/post` script currently delegates to a standalone Java program called `SimplePostTool`.
+
+This tool, bundled into a executable JAR, can be run directly using `java -jar example/exampledocs/post.jar`. See the help output and take it from there to post files, recurse a website or file system folder, or send direct commands to a Solr server.
+
+[source,plain]
+----
+$ java -jar example/exampledocs/post.jar -h
+SimplePostTool version 5.0.0
+Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]
+.
+.
+.
+----

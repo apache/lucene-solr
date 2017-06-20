@@ -21,6 +21,6 @@ import java.io.IOException;
 
 abstract class DocConsumer {
   abstract void processDocument() throws IOException, AbortingException;
-  abstract void flush(final SegmentWriteState state) throws IOException, AbortingException;
+  abstract Sorter.DocMap flush(final SegmentWriteState state) throws IOException, AbortingException;
   abstract void abort();
 }

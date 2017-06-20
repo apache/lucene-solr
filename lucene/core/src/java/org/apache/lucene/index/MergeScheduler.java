@@ -20,15 +20,15 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.lucene.index.MergePolicy.OneMerge;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.util.InfoStream;
 
 /** <p>Expert: {@link IndexWriter} uses an instance
  *  implementing this interface to execute the merges
  *  selected by a {@link MergePolicy}.  The default
  *  MergeScheduler is {@link ConcurrentMergeScheduler}.</p>
- *  <p>Implementers of sub-classes should make sure that {@link #clone()}
- *  returns an independent instance able to work with any {@link IndexWriter}
- *  instance.</p>
  * @lucene.experimental
 */
 public abstract class MergeScheduler implements Closeable {
@@ -44,6 +44,15 @@ public abstract class MergeScheduler implements Closeable {
    * @param newMergesFound <code>true</code> iff any new merges were found by the caller otherwise <code>false</code>
    * */
   public abstract void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException;
+
+  /** 
+   * Wraps the incoming {@link Directory} so that we can merge-throttle it
+   * using {@link RateLimitedIndexOutput}. 
+   */
+  public Directory wrapForMerge(OneMerge merge, Directory in) {
+    // A no-op by default.
+    return in;
+  }
 
   /** Close this MergeScheduler. */
   @Override

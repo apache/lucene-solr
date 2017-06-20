@@ -411,7 +411,7 @@ public class DocumentDictionaryTest extends LuceneTestCase {
     return suggestionList;
   }
 
-  private class Suggestion {
+  private static class Suggestion {
     private long weight;
     private BytesRef payload;
     private Set<BytesRef> contexts;

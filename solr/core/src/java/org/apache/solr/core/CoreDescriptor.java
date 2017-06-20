@@ -66,6 +66,14 @@ public class CoreDescriptor {
   public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
 
   /**
+   * Whether this core was configured using a configSet that was trusted.
+   * This helps in avoiding the loading of plugins that have potential
+   * vulnerabilities, when the configSet was not uploaded from a trusted
+   * user.
+   */
+  private boolean trustedConfigSet = true;
+
+  /**
    * Get the standard properties in persistable form
    * @return the standard core properties in persistable form
    */
@@ -113,8 +121,6 @@ public class CoreDescriptor {
       CloudDescriptor.NUM_SHARDS
   );
 
-  private final CoreContainer coreContainer;
-
   private final CloudDescriptor cloudDesc;
 
   private final Path instanceDir;
@@ -131,8 +137,9 @@ public class CoreDescriptor {
   /** The properties for this core, substitutable by resource loaders */
   protected final Properties substitutableProperties = new Properties();
 
-  public CoreDescriptor(CoreContainer container, String name, Path instanceDir, String... properties) {
-    this(container, name, instanceDir, toMap(properties));
+  public CoreDescriptor(String name, Path instanceDir, Properties containerProperties,
+                        boolean isZooKeeperAware, String... properties) {
+    this(name, instanceDir, toMap(properties), containerProperties, isZooKeeperAware);
   }
 
   private static Map<String, String> toMap(String... properties) {
@@ -146,12 +153,14 @@ public class CoreDescriptor {
 
   /**
    * Create a new CoreDescriptor with a given name and instancedir
-   * @param container     the CoreDescriptor's container
    * @param name          the CoreDescriptor's name
    * @param instanceDir   the CoreDescriptor's instancedir
+   * @param containerProperties the enclosing container properties for variable resolution
+   * @param isZooKeeperAware whether we are part of SolrCloud or not. 
    */
-  public CoreDescriptor(CoreContainer container, String name, Path instanceDir) {
-    this(container, name, instanceDir, Collections.emptyMap());
+  public CoreDescriptor(String name, Path instanceDir,
+                        Properties containerProperties, boolean isZooKeeperAware) {
+    this(name, instanceDir, Collections.emptyMap(), containerProperties, isZooKeeperAware);
   }
 
   /**
@@ -160,7 +169,6 @@ public class CoreDescriptor {
    * @param other    the CoreDescriptor to copy
    */
   public CoreDescriptor(String coreName, CoreDescriptor other) {
-    this.coreContainer = other.coreContainer;
     this.cloudDesc = other.cloudDesc;
     this.instanceDir = other.instanceDir;
     this.originalExtraProperties.putAll(other.originalExtraProperties);
@@ -170,24 +178,25 @@ public class CoreDescriptor {
     this.coreProperties.setProperty(CORE_NAME, coreName);
     this.originalCoreProperties.setProperty(CORE_NAME, coreName);
     this.substitutableProperties.setProperty(SOLR_CORE_PROP_PREFIX + CORE_NAME, coreName);
+    this.trustedConfigSet = other.trustedConfigSet;
   }
 
   /**
    * Create a new CoreDescriptor.
-   * @param container       the CoreDescriptor's container
    * @param name            the CoreDescriptor's name
    * @param instanceDir     a Path resolving to the instanceDir
    * @param coreProps       a Map of the properties for this core
+   * @param containerProperties the properties from the enclosing container.
+   * @param isZooKeeperAware if true, we ar in SolrCloud mode.
    */
-  public CoreDescriptor(CoreContainer container, String name, Path instanceDir,
-                        Map<String, String> coreProps) {
 
-    this.coreContainer = container;
+
+  public CoreDescriptor(String name, Path instanceDir, Map<String, String> coreProps,
+                        Properties containerProperties, boolean isZooKeeperAware) {
     this.instanceDir = instanceDir;
 
     originalCoreProperties.setProperty(CORE_NAME, name);
 
-    Properties containerProperties = container.getContainerProperties();
     name = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(name, CORE_NAME),
                                              containerProperties);
 
@@ -212,7 +221,7 @@ public class CoreDescriptor {
     buildSubstitutableProperties();
 
     // TODO maybe make this a CloudCoreDescriptor subclass?
-    if (container.isZooKeeperAware()) {
+    if (isZooKeeperAware) {
       cloudDesc = new CloudDescriptor(name, coreProperties, this);
     }
     else {
@@ -315,13 +324,17 @@ public class CoreDescriptor {
   public String getName() {
     return coreProperties.getProperty(CORE_NAME);
   }
+  
+  public void setProperty(String prop, String val) {
+    if (substitutableProperties.containsKey(prop)) {
+      substitutableProperties.setProperty(prop, val);
+      return;
+    }
+    coreProperties.setProperty(prop, val);
+  }
 
   public String getCollectionName() {
     return cloudDesc == null ? null : cloudDesc.getCollectionName();
-  }
-
-  public CoreContainer getCoreContainer() {
-    return coreContainer;
   }
 
   public CloudDescriptor getCloudDescriptor() {
@@ -371,5 +384,13 @@ public class CoreDescriptor {
 
   public String getConfigSetPropertiesName() {
     return coreProperties.getProperty(CORE_CONFIGSET_PROPERTIES);
+  }
+
+  public boolean isConfigSetTrusted() {
+    return trustedConfigSet;
+  }
+
+  public void setConfigSetTrusted(boolean trusted) {
+    this.trustedConfigSet = trusted;
   }
 }

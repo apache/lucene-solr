@@ -17,30 +17,44 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader.ConfigData;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.CommandOperation;
-import org.apache.zookeeper.KeeperException;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.JsonSchemaValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class SecurityConfHandler extends RequestHandlerBase implements PermissionNameProvider {
-  private CoreContainer cores;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
+public abstract class SecurityConfHandler extends RequestHandlerBase implements PermissionNameProvider {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected CoreContainer cores;
 
   public SecurityConfHandler(CoreContainer coreContainer) {
     this.cores = coreContainer;
@@ -60,7 +74,7 @@ public class SecurityConfHandler extends RequestHandlerBase implements Permissio
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrConfigHandler.setWt(req, CommonParams.JSON);
+    RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
     String key = path.substring(path.lastIndexOf('/')+1);
@@ -88,15 +102,16 @@ public class SecurityConfHandler extends RequestHandlerBase implements Permissio
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp);
+    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
-    for (; ; ) {
-      ConfigData data = getSecurityProps(true);
-      Map<String, Object> latestConf = (Map<String, Object>) data.data.get(key);
+    for (int count = 1; count <= 3 ; count++ ) {
+      SecurityConfig securityConfig = getSecurityConfig(true);
+      Map<String, Object> data = securityConfig.getData();
+      Map<String, Object> latestConf = (Map<String, Object>) data.get(key);
       if (latestConf == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No configuration present for " + key);
+        throw new SolrException(SERVER_ERROR, "No configuration present for " + key);
       }
       List<CommandOperation> commandsCopy = CommandOperation.clone(ops);
       Map<String, Object> out = configEditablePlugin.edit(Utils.getDeepCopy(latestConf, 4) , commandsCopy);
@@ -106,19 +121,30 @@ public class SecurityConfHandler extends RequestHandlerBase implements Permissio
           rsp.add(CommandOperation.ERR_MSGS, errs);
           return;
         }
-        //no edits
+        log.debug("No edits made");
         return;
       } else {
         if(!Objects.equals(latestConf.get("class") , out.get("class"))){
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "class cannot be modified");
+          throw new SolrException(SERVER_ERROR, "class cannot be modified");
         }
         Map meta = getMapValue(out, "");
-        meta.put("v", data.version+1);//encode the expected zkversion
-        data.data.put(key, out);
-        if(persistConf("/security.json", Utils.toJSON(data.data), data.version)) return;
+        meta.put("v", securityConfig.getVersion()+1);//encode the expected zkversion
+        data.put(key, out);
+        
+        if(persistConf(securityConfig)) {
+          securityConfEdited();
+          return;
+        }
       }
+      log.debug("Security edit operation failed {} time(s)" + count);
     }
+    throw new SolrException(SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
   }
+
+  /**
+   * Hook where you can do stuff after a config has been edited. Defaults to NOP
+   */
+  protected void securityConfEdited() {}
 
   Object getPlugin(String key) {
     Object plugin = null;
@@ -127,38 +153,14 @@ public class SecurityConfHandler extends RequestHandlerBase implements Permissio
     return plugin;
   }
 
-  ConfigData getSecurityProps(boolean getFresh) {
-    return cores.getZkController().getZkStateReader().getSecurityProps(getFresh);
-  }
-
-  boolean persistConf(String path,  byte[] buf, int version) {
-    try {
-      cores.getZkController().getZkClient().setData(path,buf,version, true);
-      return true;
-    } catch (KeeperException.BadVersionException bdve){
-      return false;
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, " Unable to persist conf",e);
-    }
-  }
-
-
-  private void getConf(SolrQueryResponse rsp, String key) {
-    ConfigData map = cores.getZkController().getZkStateReader().getSecurityProps(false);
-    Object o = map == null ? null : map.data.get(key);
-    if (o == null) {
-      rsp.add(CommandOperation.ERR_MSGS, Collections.singletonList("No " + key + " configured"));
-    } else {
-      rsp.add(key+".enabled", getPlugin(key)!=null);
-      rsp.add(key, o);
-    }
-  }
+  protected abstract void getConf(SolrQueryResponse rsp, String key);
 
   public static Map<String, Object> getMapValue(Map<String, Object> lookupMap, String key) {
     Map<String, Object> m = (Map<String, Object>) lookupMap.get(key);
     if (m == null) lookupMap.put(key, m = new LinkedHashMap<>());
     return m;
   }
+
   public static List getListValue(Map<String, Object> lookupMap, String key) {
     List l = (List) lookupMap.get(key);
     if (l == null) lookupMap.put(key, l= new ArrayList());
@@ -170,6 +172,147 @@ public class SecurityConfHandler extends RequestHandlerBase implements Permissio
     return "Edit or read security configuration";
   }
 
-
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
   }
+
+  /**
+   * Gets security.json from source
+   */
+  public abstract SecurityConfig getSecurityConfig(boolean getFresh);
+
+  /**
+   * Persist security.json to the source, optionally with a version
+   */
+  protected abstract boolean persistConf(SecurityConfig securityConfig) throws IOException;
+
+  /**
+   * Object to hold security.json as nested <code>Map&lt;String,Object&gt;</code> and optionally its version.
+   * The version property is optional and defaults to -1 if not initialized.
+   * The data object defaults to EMPTY_MAP if not set
+   */
+  public static class SecurityConfig {
+    private Map<String, Object> data = Collections.EMPTY_MAP;
+    private int version = -1;
+
+    public SecurityConfig() {}
+
+    /**
+     * Sets the data as a Map
+     * @param data a Map
+     * @return SecurityConf object (builder pattern)
+     */
+    public SecurityConfig setData(Map<String, Object> data) {
+      this.data = data;
+      return this;
+    }
+
+    /**
+     * Sets the data as an Object, but the object needs to be of type Map
+     * @param data an Object of type Map&lt;String,Object&gt;
+     * @return SecurityConf object (builder pattern)
+     */
+    public SecurityConfig setData(Object data) {
+      if (data instanceof Map) {
+        this.data = (Map<String, Object>) data;
+        return this;
+      } else {
+        throw new SolrException(SERVER_ERROR, "Illegal format when parsing security.json, not object");
+      }
+    }
+
+    /**
+     * Sets version
+     * @param version integer for version. Depends on underlying storage
+     * @return SecurityConf object (builder pattern)
+     */
+    public SecurityConfig setVersion(int version) {
+      this.version = version;
+      return this;
+    }
+
+    public Map<String, Object> getData() {
+      return data;
+    }
+
+    public int getVersion() {
+      return version;
+    }
+
+    /**
+     * Set data from input stream
+     * @param securityJsonInputStream an input stream for security.json
+     * @return this (builder pattern)
+     */
+    public SecurityConfig setData(InputStream securityJsonInputStream) {
+      return setData(Utils.fromJSON(securityJsonInputStream));
+    }
+
+    public String toString() {
+      return "SecurityConfig: version=" + version + ", data=" + Utils.toJSONString(data);
+    } 
+  }
+
+  private Collection<Api> apis;
+  private AuthenticationPlugin authcPlugin;
+  private AuthorizationPlugin authzPlugin;
+
+  @Override
+  public Collection<Api> getApis() {
+    if (apis == null) {
+      synchronized (this) {
+        if (apis == null) {
+          Collection<Api> apis = new ArrayList<>();
+          final SpecProvider authcCommands = Utils.getSpec("cluster.security.authentication.Commands");
+          final SpecProvider authzCommands = Utils.getSpec("cluster.security.authorization.Commands");
+          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
+          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
+          SpecProvider authcSpecProvider = () -> {
+            AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
+            return authcPlugin != null && authcPlugin instanceof SpecProvider ?
+                ((SpecProvider) authcPlugin).getSpec() :
+                authcCommands.getSpec();
+          };
+
+          apis.add(new ReqHandlerToApi(this, authcSpecProvider) {
+            @Override
+            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
+              //it is possible that the Authentication plugin is modified since the last call. invalidate the
+              // the cached commandSchema
+              if(SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin()) commandSchema = null;
+              SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
+              return super.getCommandSchema();
+            }
+          });
+
+          SpecProvider authzSpecProvider = () -> {
+            AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
+            return authzPlugin != null && authzPlugin instanceof SpecProvider ?
+                ((SpecProvider) authzPlugin).getSpec() :
+                authzCommands.getSpec();
+          };
+          apis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
+            @Override
+            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
+              //it is possible that the Authorization plugin is modified since the last call. invalidate the
+              // the cached commandSchema
+              if(SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin()) commandSchema = null;
+              SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();
+              return super.getCommandSchema();
+            }
+          });
+
+          this.apis = ImmutableList.copyOf(apis);
+        }
+      }
+    }
+    return this.apis;
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+}
 

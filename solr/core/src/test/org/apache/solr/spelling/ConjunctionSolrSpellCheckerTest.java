@@ -44,8 +44,8 @@ public class ConjunctionSolrSpellCheckerTest extends LuceneTestCase {
       // correct behavior
     }
   }
-  
-  class MockSolrSpellChecker extends SolrSpellChecker {
+
+  static class MockSolrSpellChecker extends SolrSpellChecker {
     
     final StringDistance sd;
     

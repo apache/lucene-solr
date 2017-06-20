@@ -124,7 +124,7 @@ final class IntersectTermsEnum extends TermsEnum {
     final IntersectTermsEnumFrame f = stack[0];
     f.fp = f.fpOrig = fr.rootBlockFP;
     f.prefix = 0;
-    f.setState(runAutomaton.getInitialState());
+    f.setState(0);
     f.arc = arc;
     f.outputPrefix = arc.output;
     f.load(fr.rootCode);

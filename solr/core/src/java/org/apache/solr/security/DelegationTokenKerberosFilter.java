@@ -50,6 +50,11 @@ import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This is an authentication filter based on Hadoop's {@link DelegationTokenAuthenticationFilter}.
+ * The Kerberos plugin can be configured to use delegation tokens, which allow an
+ * application to reuse the authentication of an end-user or another application.
+ */
 public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -136,9 +141,9 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     // set the internal authentication handler in order to record whether the request should continue
     super.initializeAuthHandler(authHandlerClassName, filterConfig);
     AuthenticationHandler authHandler = getAuthenticationHandler();
-    super.initializeAuthHandler(KerberosPlugin.RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
-    KerberosPlugin.RequestContinuesRecorderAuthenticationHandler newAuthHandler =
-        (KerberosPlugin.RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
+    super.initializeAuthHandler(RequestContinuesRecorderAuthenticationHandler.class.getName(), filterConfig);
+    RequestContinuesRecorderAuthenticationHandler newAuthHandler =
+        (RequestContinuesRecorderAuthenticationHandler)getAuthenticationHandler();
     newAuthHandler.setAuthHandler(authHandler);
   }
 
@@ -149,10 +154,10 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       throw new IllegalArgumentException("zkClient required");
     }
     String zkHost = zkClient.getZkServerAddress();
-    String zkChroot = zkHost.substring(zkHost.indexOf("/"));
-    zkChroot = zkChroot.startsWith("/") ? zkChroot.substring(1) : zkChroot;
+    String zkChroot = zkHost.contains("/")? zkHost.substring(zkHost.indexOf("/")): "";
     String zkNamespace = zkChroot + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH;
-    String zkConnectionString = zkHost.substring(0, zkHost.indexOf("/"));
+    zkNamespace = zkNamespace.startsWith("/") ? zkNamespace.substring(1) : zkNamespace;
+    String zkConnectionString = zkHost.contains("/")? zkHost.substring(0, zkHost.indexOf("/")): zkHost;
     SolrZkToCuratorCredentialsACLs curatorToSolrZk = new SolrZkToCuratorCredentialsACLs(zkClient);
     final int connectionTimeoutMs = 30000; // this value is currently hard coded, see SOLR-7561.
 

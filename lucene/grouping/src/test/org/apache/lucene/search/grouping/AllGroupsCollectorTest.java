@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.util.HashMap;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,13 +30,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.HashMap;
 
 public class AllGroupsCollectorTest extends LuceneTestCase {
 
@@ -102,7 +100,7 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     IndexSearcher indexSearcher = newSearcher(w.getReader());
     w.close();
 
-    AbstractAllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField);
+    AllGroupsCollector<?> allGroupsCollector = createRandomCollector(groupField);
     indexSearcher.search(new TermQuery(new Term("content", "random")), allGroupsCollector);
     assertEquals(4, allGroupsCollector.getGroupCount());
 
@@ -123,20 +121,14 @@ public class AllGroupsCollectorTest extends LuceneTestCase {
     doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
   }
 
-  private AbstractAllGroupsCollector<?> createRandomCollector(String groupField) {
-    AbstractAllGroupsCollector<?> selected;
+  private AllGroupsCollector<?> createRandomCollector(String groupField) {
     if (random().nextBoolean()) {
-      selected = new TermAllGroupsCollector(groupField);
-    } else {
+      return new AllGroupsCollector<>(new TermGroupSelector(groupField));
+    }
+    else {
       ValueSource vs = new BytesRefFieldSource(groupField);
-      selected = new FunctionAllGroupsCollector(vs, new HashMap<>());
+      return new AllGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()));
     }
-
-    if (VERBOSE) {
-      System.out.println("Selected implementation: " + selected.getClass().getName());
-    }
-
-    return selected;
   }
 
 }

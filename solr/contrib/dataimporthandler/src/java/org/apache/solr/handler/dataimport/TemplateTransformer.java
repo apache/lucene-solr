@@ -56,12 +56,11 @@ public class TemplateTransformer extends Transformer {
   public Object transformRow(Map<String, Object> row, Context context) {
 
 
-    VariableResolver resolver = (VariableResolver) context
-            .getVariableResolver();
+    VariableResolver resolver = context.getVariableResolver();
     // Add current row to the copy of resolver map
-//    for (Map.Entry<String, Object> entry : row.entrySet())
 
     for (Map<String, String> map : context.getAllEntityFields()) {
+      map.entrySet();
       String expr = map.get(TEMPLATE);
       if (expr == null)
         continue;

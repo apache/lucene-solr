@@ -47,6 +47,16 @@
       <filter class="solr.DoubleMetaphoneFilterFactory" inject="false"/>
     </analyzer>
   </fieldType>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
   <fieldType name="point" class="solr.PointType" subFieldSuffix="_d" dimension="2"/>
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
@@ -133,7 +143,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
       <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.EnglishPossessiveFilterFactory"/>
@@ -145,27 +155,39 @@
     <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
-      <filter class="solr.WordDelimiterFilterFactory" catenateNumbers="1" generateNumberParts="1" splitOnCaseChange="1" generateWordParts="1" catenateAll="0" catenateWords="1"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" catenateNumbers="1" generateNumberParts="1" splitOnCaseChange="1" generateWordParts="1" catenateAll="0" catenateWords="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory" />
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
       <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
-      <filter class="solr.WordDelimiterFilterFactory" catenateNumbers="0" generateNumberParts="1" splitOnCaseChange="1" generateWordParts="1" catenateAll="0" catenateWords="0"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" catenateNumbers="0" generateNumberParts="1" splitOnCaseChange="1" generateWordParts="1" catenateAll="0" catenateWords="0"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.PorterStemFilterFactory"/>
     </analyzer>
   </fieldType>
   <fieldType name="text_en_splitting_tight" class="solr.TextField" autoGeneratePhraseQueries="true" positionIncrementGap="100">
-    <analyzer>
+    <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" expand="false" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="false" ignoreCase="true" synonyms="synonyms.txt"/>
       <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
-      <filter class="solr.WordDelimiterFilterFactory" catenateNumbers="1" generateNumberParts="0" generateWordParts="0" catenateAll="0" catenateWords="1"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" catenateNumbers="1" generateNumberParts="0" generateWordParts="0" catenateAll="0" catenateWords="1"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.EnglishMinimalStemFilterFactory"/>
+      <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+      <filter class="solr.FlattenGraphFilterFactory" />
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="false" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory" catenateNumbers="1" generateNumberParts="0" generateWordParts="0" catenateAll="0" catenateWords="1"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
       <filter class="solr.EnglishMinimalStemFilterFactory"/>
@@ -234,7 +256,7 @@
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
-      <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -247,7 +269,7 @@
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
       <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
@@ -481,6 +503,7 @@
   <dynamicField name="*_srpt" type="location_rpt" indexed="true" stored="true"/>
   <dynamicField name="*_tdts" type="tdates" indexed="true" stored="true"/>
   <dynamicField name="attr_*" type="text_general" multiValued="true" indexed="true" stored="true"/>
+  <dynamicField name="*_pdts" type="pdates"  indexed="true"  stored="true"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
   <dynamicField name="*_dts" type="date" multiValued="true" indexed="true" stored="true"/>
   <dynamicField name="*_tis" type="tints" indexed="true" stored="true"/>
@@ -488,6 +511,11 @@
   <dynamicField name="*_tfs" type="tfloats" indexed="true" stored="true"/>
   <dynamicField name="*_tds" type="tdoubles" indexed="true" stored="true"/>
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
+  <dynamicField name="*_pds" type="pdoubles" indexed="true"  stored="true"/>
+  <dynamicField name="*_pdt" type="pdate"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pfs" type="pfloats"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pis" type="pints"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pls" type="plongs"   indexed="true"  stored="true"/>
   <dynamicField name="*_is" type="ints" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="strings" indexed="true" stored="true"/>
   <dynamicField name="*_ls" type="longs" indexed="true" stored="true"/>
@@ -500,6 +528,10 @@
   <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_ws" type="text_ws" indexed="true" stored="true"/>
+  <dynamicField name="*_pd" type="pdouble" indexed="true"  stored="true"/>
+  <dynamicField name="*_pf" type="pfloat"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pi" type="pint"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pl" type="plong"   indexed="true"  stored="true"/>
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>

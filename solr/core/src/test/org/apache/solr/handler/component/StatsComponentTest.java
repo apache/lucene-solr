@@ -84,7 +84,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             "stats_i","stats_l","stats_f","stats_d",
             "stats_ti","stats_tl","stats_tf","stats_td",
             "stats_ti_dv","stats_tl_dv","stats_tf_dv","stats_td_dv", 
-            "stats_ti_ni_dv","stats_tl_ni_dv","stats_tf_ni_dv","stats_td_ni_dv"
+            "stats_ti_ni_dv","stats_tl_ni_dv","stats_tf_ni_dv","stats_td_ni_dv",
+            "stats_i_ni_p","stats_l_ni_p","stats_f_ni_p","stats_d_ni_p",
     }) {
 
       // all of our checks should work with all of these params
@@ -93,8 +94,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         // NOTE: doTestFieldStatisticsResult needs the full list of possible tags to exclude
         params("stats.field", f, "stats", "true"),
         params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
-               "fq", "{!tag=fq1}-id:[0 TO 2]", 
-               "fq", "{!tag=fq2}-id:[2 TO 1000]"), 
+               "fq", "{!tag=fq1}-id_i:[0 TO 2]", 
+               "fq", "{!tag=fq2}-id_i:[2 TO 1000]"), 
         params("stats.field", "{!ex=fq1}"+f, "stats", "true",
                "fq", "{!tag=fq1}id:1")
       };
@@ -111,7 +112,9 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     for (String f : new String[] {"stats_ii",
             "stats_tis","stats_tfs","stats_tls","stats_tds",  // trie fields
             "stats_tis_dv","stats_tfs_dv","stats_tls_dv","stats_tds_dv",  // Doc Values
-            "stats_tis_ni_dv","stats_tfs_ni_dv","stats_tls_ni_dv","stats_tds_ni_dv"  // Doc Values Not indexed
+            "stats_tis_ni_dv","stats_tfs_ni_dv","stats_tls_ni_dv","stats_tds_ni_dv",  // Doc Values Not indexed
+            "stats_is_p", "stats_fs_p", "stats_ls_p", "stats_ds_p", // Point Fields
+            "stats_is_ni_p","stats_fs_ni_p","stats_ls_ni_p" // Point Doc Values Not indexed
                                   }) {
 
       doTestMVFieldStatisticsResult(f);
@@ -296,8 +299,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         params("stats.field", "{!ex=fq1}"+f, "stats", "true",
                "fq", "{!tag=fq1}id:1"),
         params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
-               "fq", "{!tag=fq1}-id:[0 TO 2]", 
-               "fq", "{!tag=fq2}-id:[2 TO 1000]")  }) {
+               "fq", "{!tag=fq1}-id_i:[0 TO 2]", 
+               "fq", "{!tag=fq2}-id_i:[2 TO 1000]")  }) {
       
       
       assertQ("test statistics values", 
@@ -875,19 +878,19 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     Map<String, String> args = new HashMap<String, String>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "{!ex=id}id");
-    args.put("fq", "{!tag=id}id:[2 TO 3]");
+    args.put(StatsParams.STATS_FIELD, "{!ex=id}id_i");
+    args.put("fq", "{!tag=id}id_i:[2 TO 3]");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ("test exluding filter query", req
-            , "//lst[@name='id']/double[@name='min'][.='1.0']"
-            , "//lst[@name='id']/double[@name='max'][.='4.0']");
+            , "//lst[@name='id_i']/double[@name='min'][.='1.0']"
+            , "//lst[@name='id_i']/double[@name='max'][.='4.0']");
 
     args = new HashMap<String, String>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "{!key=id2}id");
-    args.put("fq", "{!tag=id}id:[2 TO 3]");
+    args.put(StatsParams.STATS_FIELD, "{!key=id2}id_i");
+    args.put("fq", "{!tag=id}id_i:[2 TO 3]");
     req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ("test rename field", req

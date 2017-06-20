@@ -42,6 +42,8 @@ import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.internal.ThreadLocalRandom;
+
 public class HdfsTestUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -75,7 +77,11 @@ public class HdfsTestUtil {
     
     if (!HA_TESTING_ENABLED) haTesting = false;
     
-    int dataNodes = 2;
+    
+    // keep netty from using secure random on startup: SOLR-10098
+    ThreadLocalRandom.setInitialSeedUniquifier(1L);
+    
+    int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 2);
     
     Configuration conf = new Configuration();
     conf.set("dfs.block.access.token.enable", "false");

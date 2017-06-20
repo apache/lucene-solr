@@ -513,7 +513,7 @@ public class TestRealTimeGet extends TestRTGBase {
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
-    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
+    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time...
 
         // query variables
     final int percentRealtimeQuery = 60;
@@ -667,7 +667,7 @@ public class TestRealTimeGet extends TestRTGBase {
                 }
 
                 Long version = null;
-                SolrInputDocument sd = sdoc("id", Integer.toString(id), field, Long.toString(nextVal));
+                SolrInputDocument sd = sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal));
 
                 if (opt) {
                   if (correct) {
@@ -762,7 +762,7 @@ public class TestRealTimeGet extends TestRTGBase {
                 // This is also correct when filteredOut==true
               } else {
                 assertEquals(1, doclist.size());
-                long foundVal = (Long)(((Map)doclist.get(0)).get(field));
+                long foundVal = (Long)(((Map)doclist.get(0)).get(FIELD));
                 long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
                 if (filteredOut || foundVal < Math.abs(info.val)
                     || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must

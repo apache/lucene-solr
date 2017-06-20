@@ -24,7 +24,6 @@
  *    <li>Fast and low memory overhead construction of the minimal FST 
  *        (but inputs must be provided in sorted order)</li>
  *    <li>Low object overhead and quick deserialization (byte[] representation)</li>
- *    <li>Optional two-pass compression: {@link org.apache.lucene.util.fst.FST#pack FST.pack()}</li>
  *    <li>{@link org.apache.lucene.util.fst.Util#getByOutput Lookup-by-output} when the 
  *        outputs are in sorted order (e.g., ordinals or file pointers)</li>
  *    <li>Pluggable {@link org.apache.lucene.util.fst.Outputs Outputs} representation</li>

@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -595,7 +595,7 @@ public class DocTermOrds implements Accountable {
     public OrdWrappedTermsEnum(LeafReader reader) throws IOException {
       assert indexedTermsArray != null;
       assert 0 != indexedTermsArray.length;
-      termsEnum = reader.fields().terms(field).iterator();
+      termsEnum = reader.terms(field).iterator();
     }
 
     @Override    

@@ -68,8 +68,7 @@ public class TestStressReorder extends TestRTGBase {
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
-    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
-
+    final int maxConcurrentCommits = nWriteThreads;
         // query variables
     final int percentRealtimeQuery = 75;
     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to perform in total
@@ -84,7 +83,7 @@ public class TestStressReorder extends TestRTGBase {
     final int ndocs = 1;
     int nWriteThreads = 2;
 
-    final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it should be <= maxWarmingSearchers
+    final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 101;
@@ -224,7 +223,7 @@ public class TestStressReorder extends TestRTGBase {
               } else {
                 verbose("adding id", id, "val=", nextVal,"version",version);
 
-                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), field, Long.toString(nextVal), "_version_",Long.toString(version)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), "_version_",Long.toString(version)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
                 if (returnedVersion != null) {
                   assertEquals(version, returnedVersion.longValue());
                 }
@@ -302,7 +301,7 @@ public class TestStressReorder extends TestRTGBase {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization
               } else {
                 assertEquals(1, doclist.size());
-                long foundVal = (Long)(((Map)doclist.get(0)).get(field));
+                long foundVal = (Long)(((Map)doclist.get(0)).get(FIELD));
                 long foundVer = (Long)(((Map)doclist.get(0)).get("_version_"));
                 if (foundVer < Math.abs(info.version)
                     || (foundVer == info.version && foundVal != info.val) ) {    // if the version matches, the val must

@@ -112,8 +112,8 @@ public class BinaryRequestWriter extends RequestWriter {
   /*
    * A hack to get access to the protected internal buffer and avoid an additional copy
    */
-  class BAOS extends ByteArrayOutputStream {
-    byte[] getbuf() {
+  public static class BAOS extends ByteArrayOutputStream {
+    public byte[] getbuf() {
       return super.buf;
     }
   }

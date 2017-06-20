@@ -40,12 +40,15 @@ public interface PermissionNameProvider {
     CORE_EDIT_PERM("core-admin-edit", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
-    CONFIG_EDIT_PERM("config-edit", "*"),
+    CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
     CONFIG_READ_PERM("config-read", "*"),
     SCHEMA_READ_PERM("schema-read", "*"),
     SCHEMA_EDIT_PERM("schema-edit", "*"),
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
+    METRICS_READ_PERM("metrics-read", null),
+    AUTOSCALING_READ_PERM("autoscaling-read", null),
+    AUTOSCALING_WRITE_PERM("autoscaling-write", null),
     ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
     ;
     final String name;

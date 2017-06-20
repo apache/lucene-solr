@@ -35,18 +35,6 @@ public class TestFilterLeafReader extends LuceneTestCase {
 
   private static class TestReader extends FilterLeafReader {
 
-    /** Filter that only permits terms containing 'e'.*/
-    private static class TestFields extends FilterFields {
-      TestFields(Fields in) {
-        super(in);
-      }
-
-      @Override
-      public Terms terms(String field) throws IOException {
-        return new TestTerms(super.terms(field));
-      }
-    }
-
     private static class TestTerms extends FilterTerms {
       TestTerms(Terms in) {
         super(in);
@@ -103,8 +91,19 @@ public class TestFilterLeafReader extends LuceneTestCase {
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new TestFields(super.fields());
+    public Terms terms(String field) throws IOException {
+      Terms terms = super.terms(field);
+      return terms==null ? null : new TestTerms(terms);
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
   }
     
@@ -196,7 +195,16 @@ public class TestFilterLeafReader extends LuceneTestCase {
     w.addDocument(new Document());
     DirectoryReader dr = w.getReader();
     LeafReader r = dr.leaves().get(0).reader();
-    FilterLeafReader r2 = new FilterLeafReader(r) {};
+    FilterLeafReader r2 = new FilterLeafReader(r) {
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return in.getCoreCacheHelper();
+      }
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return in.getReaderCacheHelper();
+      }
+    };
     assertEquals(r, r2.getDelegate());
     assertEquals(r, FilterLeafReader.unwrap(r2));
     w.close();

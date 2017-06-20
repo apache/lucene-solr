@@ -16,20 +16,26 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -45,6 +51,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
@@ -68,6 +75,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
@@ -78,7 +86,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class RealTimeGetComponent extends SearchComponent
 {
@@ -99,7 +106,21 @@ public class RealTimeGetComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
+    CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
 
+    if (cloudDesc != null) {
+      Replica.Type replicaType = cloudDesc.getReplicaType();
+      if (replicaType != null) {
+        if (replicaType == Replica.Type.PULL) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, 
+              String.format(Locale.ROOT, "%s can't handle realtime get requests. Replicas of type %s do not support these type of requests", 
+                  cloudDesc.getCoreNodeName(),
+                  Replica.Type.PULL));
+        } 
+        // non-leader TLOG replicas should not respond to distrib /get requests, but internal requests are OK
+      }
+    }
+    
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
@@ -133,7 +154,7 @@ public class RealTimeGetComponent extends SearchComponent
               .getNewestSearcher(false);
           SolrIndexSearcher searcher = searchHolder.get();
           try {
-            log.debug(req.getCore().getCoreDescriptor()
+            log.debug(req.getCore()
                 .getCoreContainer().getZkController().getNodeName()
                 + " min count to sync to (from most recent searcher view) "
                 + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -146,6 +167,12 @@ public class RealTimeGetComponent extends SearchComponent
       }
       
       processGetUpdates(rb);
+      return;
+    }
+    
+    val = params.get("getInputDocument");
+    if (val != null) {
+      processGetInputDocument(rb);
       return;
     }
 
@@ -176,14 +203,14 @@ public class RealTimeGetComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-    SolrCore core = req.getCore();
+    final SolrCore core = req.getCore();
     SchemaField idField = core.getLatestSchema().getUniqueKeyField();
     FieldType fieldType = idField.getType();
 
     SolrDocumentList docList = new SolrDocumentList();
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
-    RefCounted<SolrIndexSearcher> searcherHolder = null;
+    SearcherInfo searcherInfo =  new SearcherInfo(core);
     
     // this is initialized & set on the context *after* any searcher (re-)opening
     ResultContext resultContext = null;
@@ -197,7 +224,7 @@ public class RealTimeGetComponent extends SearchComponent
       || ((null != transformer) && transformer.needsSolrIndexSearcher());
 
    try {
-     SolrIndexSearcher searcher = null;
+
 
      BytesRefBuilder idBytes = new BytesRefBuilder();
      for (String idStr : reqIds.allIds) {
@@ -208,24 +235,34 @@ public class RealTimeGetComponent extends SearchComponent
            // should currently be a List<Oper,Ver,Doc/Id>
            List entry = (List)o;
            assert entry.size() >= 3;
-           int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
+           int oper = (Integer)entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK;
            switch (oper) {
+             case UpdateLog.UPDATE_INPLACE: // fall through to ADD
              case UpdateLog.ADD:
 
                if (mustUseRealtimeSearcher) {
-                 if (searcherHolder != null) {
-                   // close handles to current searchers & result context
-                   searcher = null;
-                   searcherHolder.decref();
-                   searcherHolder = null;
-                   resultContext = null;
-                 }
+                 // close handles to current searchers & result context
+                 searcherInfo.clear();
+                 resultContext = null;
                  ulog.openRealtimeSearcher();  // force open a new realtime searcher
                  o = null;  // pretend we never found this record and fall through to use the searcher
                  break;
                }
 
-               SolrDocument doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
+               SolrDocument doc;
+               if (oper == UpdateLog.ADD) {
+                 doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
+               } else if (oper == UpdateLog.UPDATE_INPLACE) {
+                 assert entry.size() == 5;
+                 // For in-place update case, we have obtained the partial document till now. We need to
+                 // resolve it to a full document to be returned to the user.
+                 doc = resolveFullDocument(core, idBytes.get(), rsp.getReturnFields(), (SolrInputDocument)entry.get(entry.size()-1), entry, null);
+                 if (doc == null) {
+                   break; // document has been deleted as the resolve was going on
+                 }
+               } else {
+                 throw new SolrException(ErrorCode.INVALID_STATE, "Expected ADD or UPDATE_INPLACE. Got: " + oper);
+               }
                if (transformer!=null) {
                  transformer.transform(doc, -1, 0); // unknown docID
                }
@@ -241,23 +278,20 @@ public class RealTimeGetComponent extends SearchComponent
        }
 
        // didn't find it in the update log, so it should be in the newest searcher opened
-       if (searcher == null) {
-         searcherHolder = core.getRealtimeSearcher();
-         searcher = searcherHolder.get();
-         // don't bother with ResultContext yet, we won't need it if doc doesn't match filters
-       }
+       searcherInfo.init();
+       // don't bother with ResultContext yet, we won't need it if doc doesn't match filters
 
        int docid = -1;
-       long segAndId = searcher.lookupId(idBytes.get());
+       long segAndId = searcherInfo.getSearcher().lookupId(idBytes.get());
        if (segAndId >= 0) {
          int segid = (int) segAndId;
-         LeafReaderContext ctx = searcher.getTopReaderContext().leaves().get((int) (segAndId >> 32));
+         LeafReaderContext ctx = searcherInfo.getSearcher().getTopReaderContext().leaves().get((int) (segAndId >> 32));
          docid = segid + ctx.docBase;
 
          if (rb.getFilters() != null) {
            for (Query raw : rb.getFilters()) {
-             Query q = raw.rewrite(searcher.getIndexReader());
-             Scorer scorer = searcher.createWeight(q, false, 1f).scorer(ctx);
+             Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
+             Scorer scorer = searcherInfo.getSearcher().createWeight(q, false, 1f).scorer(ctx);
              if (scorer == null || segid != scorer.iterator().advance(segid)) {
                // filter doesn't match.
                docid = -1;
@@ -269,13 +303,14 @@ public class RealTimeGetComponent extends SearchComponent
 
        if (docid < 0) continue;
        
-       Document luceneDocument = searcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
+       Document luceneDocument = searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
        SolrDocument doc = toSolrDoc(luceneDocument,  core.getLatestSchema());
-       searcher.decorateDocValueFields(doc, docid, searcher.getNonStoredDVs(true));
+       SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
+       docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(true));
        if ( null != transformer) {
          if (null == resultContext) {
            // either first pass, or we've re-opened searcher - either way now we setContext
-           resultContext = new RTGResultContext(rsp.getReturnFields(), searcher, req);
+           resultContext = new RTGResultContext(rsp.getReturnFields(), searcherInfo.getSearcher(), req);
            transformer.setContext(resultContext);
          }
          transformer.transform(doc, docid, 0);
@@ -284,22 +319,211 @@ public class RealTimeGetComponent extends SearchComponent
      }
 
    } finally {
-     if (searcherHolder != null) {
-       searcherHolder.decref();
-     }
+     searcherInfo.clear();
    }
 
    addDocListToResponse(rb, docList);
   }
+  
+  /**
+   * Return the requested SolrInputDocument from the tlog/index. This will
+   * always be a full document, i.e. any partial in-place document will be resolved.
+   */
+  void processGetInputDocument(ResponseBuilder rb) throws IOException {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
+    SolrParams params = req.getParams();
 
+    if (!params.getBool(COMPONENT_NAME, true)) {
+      return;
+    }
+
+    String idStr = params.get("getInputDocument", null);
+    if (idStr == null) return;
+    AtomicLong version = new AtomicLong();
+    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, false, null, true);
+    log.info("getInputDocument called for id="+idStr+", returning: "+doc);
+    rb.rsp.add("inputDocument", doc);
+    rb.rsp.add("version", version.get());
+  }
+
+  /**
+   * A SearcherInfo provides mechanism for obtaining RT searcher, from
+   * a SolrCore, and closing it, while taking care of the RefCounted references.
+   */
+  private static class SearcherInfo {
+    private RefCounted<SolrIndexSearcher> searcherHolder = null;
+    private SolrIndexSearcher searcher = null;
+    final SolrCore core;
+    
+    public SearcherInfo(SolrCore core) {
+      this.core = core;
+    }
+    
+    void clear(){
+      if (searcherHolder != null) {
+        // close handles to current searchers
+        searcher = null;
+        searcherHolder.decref();
+        searcherHolder = null;
+      }
+    }
+
+    void init(){
+      if (searcher == null) {
+        searcherHolder = core.getRealtimeSearcher();
+        searcher = searcherHolder.get();
+      }
+    }
+    
+    public SolrIndexSearcher getSearcher() {
+      assert null != searcher : "init not called!";
+      return searcher;
+    }
+  }
+
+  /***
+   * Given a partial document obtained from the transaction log (e.g. as a result of RTG), resolve to a full document
+   * by populating all the partial updates that were applied on top of that last full document update.
+   * 
+   * @param onlyTheseFields When a non-null set of field names is passed in, the resolve process only attempts to populate
+   *        the given fields in this set. When this set is null, it resolves all fields.
+   * @return Returns the merged document, i.e. the resolved full document, or null if the document was not found (deleted
+   *          after the resolving began)
+   */
+  private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
+                                           ReturnFields returnFields, SolrInputDocument partialDoc, List logEntry, Set<String> onlyTheseFields) throws IOException {
+    if (idBytes == null || logEntry.size() != 5) {
+      throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
+    }
+    long prevPointer = (long) logEntry.get(UpdateLog.PREV_POINTER_IDX);
+    long prevVersion = (long) logEntry.get(UpdateLog.PREV_VERSION_IDX);
+
+    // get the last full document from ulog
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    long lastPrevPointer = ulog.applyPartialUpdates(idBytes, prevPointer, prevVersion, onlyTheseFields, partialDoc);
+
+    if (lastPrevPointer == -1) { // full document was not found in tlog, but exists in index
+      SolrDocument mergedDoc = mergePartialDocWithFullDocFromIndex(core, idBytes, returnFields, onlyTheseFields, partialDoc);
+      return mergedDoc;
+    } else if (lastPrevPointer > 0) {
+      // We were supposed to have found the last full doc also in the tlogs, but the prevPointer links led to nowhere
+      // We should reopen a new RT searcher and get the doc. This should be a rare occurrence
+      Term idTerm = new Term(core.getLatestSchema().getUniqueKeyField().getName(), idBytes);
+      SolrDocument mergedDoc = reopenRealtimeSearcherAndGet(core, idTerm, returnFields);
+      if (mergedDoc == null) {
+        return null; // the document may have been deleted as the resolving was going on.
+      }
+      return mergedDoc;
+    } else { // i.e. lastPrevPointer==0
+      assert lastPrevPointer == 0;
+      // We have successfully resolved the document based off the tlogs
+      return toSolrDoc(partialDoc, core.getLatestSchema());
+    }
+  }
+
+  /**
+   * Re-open the RT searcher and get the document, referred to by the idTerm, from that searcher. 
+   * @return Returns the document or null if not found.
+   */
+  private static SolrDocument reopenRealtimeSearcherAndGet(SolrCore core, Term idTerm, ReturnFields returnFields) throws IOException {
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    ulog.openRealtimeSearcher();
+    RefCounted<SolrIndexSearcher> searcherHolder = core.getRealtimeSearcher();
+    try {
+      SolrIndexSearcher searcher = searcherHolder.get();
+
+      int docid = searcher.getFirstMatch(idTerm);
+      if (docid < 0) {
+        return null;
+      }
+      Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
+      SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+      docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(false));
+
+      return doc;
+    } finally {
+      searcherHolder.decref();
+    }
+  }
+
+  /**
+   * Gets a document from the index by id. If a non-null partial document (for in-place update) is passed in,
+   * this method obtains the document from the tlog/index by the given id, merges the partial document on top of it and then returns
+   * the resultant document.
+   *
+   * @param core           A SolrCore instance, useful for obtaining a realtimesearcher and the schema
+   * @param idBytes        Binary representation of the value of the unique key field
+   * @param returnFields   Return fields, as requested
+   * @param onlyTheseFields When a non-null set of field names is passed in, the merge process only attempts to merge
+   *        the given fields in this set. When this set is null, it merges all fields.
+   * @param partialDoc     A partial document (containing an in-place update) used for merging against a full document
+   *                       from index; this maybe be null.
+   * @return If partial document is null, this returns document from the index or null if not found. 
+   *         If partial document is not null, this returns a document from index merged with the partial document, or null if
+   *         document doesn't exist in the index.
+   */
+  private static SolrDocument mergePartialDocWithFullDocFromIndex(SolrCore core, BytesRef idBytes, ReturnFields returnFields,
+             Set<String> onlyTheseFields, SolrInputDocument partialDoc) throws IOException {
+    RefCounted<SolrIndexSearcher> searcherHolder = core.getRealtimeSearcher(); //Searcher();
+    try {
+      // now fetch last document from index, and merge partialDoc on top of it
+      SolrIndexSearcher searcher = searcherHolder.get();
+      SchemaField idField = core.getLatestSchema().getUniqueKeyField();
+      Term idTerm = new Term(idField.getName(), idBytes);
+
+      int docid = searcher.getFirstMatch(idTerm);
+      if (docid < 0) {
+        // The document was not found in index! Reopen a new RT searcher (to be sure) and get again.
+        // This should be because the document was deleted recently.
+        SolrDocument doc = reopenRealtimeSearcherAndGet(core, idTerm, returnFields);
+        if (doc == null) {
+          // Unable to resolve the last full doc in tlog fully,
+          // and document not found in index even after opening new rt searcher.
+          // This must be a case of deleted doc
+          return null;
+        }
+        return doc;
+      }
+
+      SolrDocument doc;
+      Set<String> decorateFields = onlyTheseFields == null ? searcher.getDocFetcher().getNonStoredDVs(false): onlyTheseFields;
+      Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
+      doc = toSolrDoc(luceneDocument, core.getLatestSchema());
+      searcher.getDocFetcher().decorateDocValueFields(doc, docid, decorateFields);
+
+      long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
+      Object partialVersionObj = partialDoc.getFieldValue(VERSION_FIELD);
+      long partialDocVersion = partialVersionObj instanceof Field? ((Field) partialVersionObj).numericValue().longValue():
+        partialVersionObj instanceof Number? ((Number) partialVersionObj).longValue(): Long.parseLong(partialVersionObj.toString());
+      if (docVersion > partialDocVersion) {
+        return doc;
+      }
+      for (String fieldName: partialDoc.getFieldNames()) {
+        doc.setField(fieldName.toString(), partialDoc.getFieldValue(fieldName));  // since partial doc will only contain single valued fields, this is fine
+      }
+
+      return doc;
+    } finally {
+      if (searcherHolder != null) {
+        searcherHolder.decref();
+      }
+    }
+  }
 
   public static SolrInputDocument DELETED = new SolrInputDocument();
 
   /** returns the SolrInputDocument from the current tlog, or DELETED if it has been deleted, or
    * null if there is no record of it in the current update log.  If null is returned, it could
    * still be in the latest index.
+   * @param versionReturned If a non-null AtomicLong is passed in, it is set to the version of the update returned from the TLog.
+   * @param resolveFullDocument In case the document is fetched from the tlog, it could only be a partial document if the last update
+   *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
+   *                  back prevPointer/prevVersion)?
    */
-  public static SolrInputDocument getInputDocumentFromTlog(SolrCore core, BytesRef idBytes) {
+  public static SolrInputDocument getInputDocumentFromTlog(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
+      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument) {
 
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
@@ -310,9 +534,32 @@ public class RealTimeGetComponent extends SearchComponent
         List entry = (List)o;
         assert entry.size() >= 3;
         int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
+        if (versionReturned != null) {
+          versionReturned.set((long)entry.get(UpdateLog.VERSION_IDX));
+        }
         switch (oper) {
+          case UpdateLog.UPDATE_INPLACE:
+            assert entry.size() == 5;
+
+            if (resolveFullDocument) {
+              SolrInputDocument doc = (SolrInputDocument)entry.get(entry.size()-1);
+              try {
+                // For in-place update case, we have obtained the partial document till now. We need to
+                // resolve it to a full document to be returned to the user.
+                SolrDocument sdoc = resolveFullDocument(core, idBytes, new SolrReturnFields(), doc, entry, onlyTheseNonStoredDVs);
+                if (sdoc == null) {
+                  return DELETED;
+                }
+                doc = toSolrInputDocument(sdoc, core.getLatestSchema());
+                return doc;
+              } catch (IOException ex) {
+                throw new SolrException(ErrorCode.SERVER_ERROR, "Error while resolving full document. ", ex);
+              }
+            } else {
+              // fall through to ADD, so as to get only the partial document
+            }
           case UpdateLog.ADD:
-            return (SolrInputDocument)entry.get(entry.size()-1);
+            return (SolrInputDocument) entry.get(entry.size()-1);
           case UpdateLog.DELETE:
             return DELETED;
           default:
@@ -324,12 +571,40 @@ public class RealTimeGetComponent extends SearchComponent
     return null;
   }
 
+  /**
+   * Obtains the latest document for a given id from the tlog or index (if not found in the tlog).
+   * 
+   * NOTE: This method uses the effective value for avoidRetrievingStoredFields param as false and
+   * for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, boolean, Set, boolean)},
+   * so as to retrieve all stored and non-stored DV fields from all documents. Also, it uses the effective value of
+   * resolveFullDocument param as true, i.e. it resolves any partial documents (in-place updates), in case the 
+   * document is fetched from the tlog, to a full document.
+   */
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes) throws IOException {
+    return getInputDocument (core, idBytes, null, false, null, true);
+  }
+  
+  /**
+   * Obtains the latest document for a given id from the tlog or through the realtime searcher (if not found in the tlog). 
+   * @param versionReturned If a non-null AtomicLong is passed in, it is set to the version of the update returned from the TLog.
+   * @param avoidRetrievingStoredFields Setting this to true avoids fetching stored fields through the realtime searcher,
+   *                  however has no effect on documents obtained from the tlog. 
+   *                  Non-stored docValues fields are populated anyway, and are not affected by this parameter. Note that if
+   *                  the id field is a stored field, it will not be populated if this parameter is true and the document is
+   *                  obtained from the index.
+   * @param onlyTheseNonStoredDVs If not-null, populate only these DV fields in the document fetched through the realtime searcher. 
+   *                  If this is null, decorate all non-stored  DVs (that are not targets of copy fields) from the searcher.
+   * @param resolveFullDocument In case the document is fetched from the tlog, it could only be a partial document if the last update
+   *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
+   *                  back prevPointer/prevVersion)?
+   */
+  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned, boolean avoidRetrievingStoredFields,
+      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument) throws IOException {
     SolrInputDocument sid = null;
     RefCounted<SolrIndexSearcher> searcherHolder = null;
     try {
       SolrIndexSearcher searcher = null;
-      sid = getInputDocumentFromTlog(core, idBytes);
+      sid = getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs, resolveFullDocument);
       if (sid == DELETED) {
         return null;
       }
@@ -346,9 +621,19 @@ public class RealTimeGetComponent extends SearchComponent
 
         int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
         if (docid < 0) return null;
-        Document luceneDocument = searcher.doc(docid);
-        sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
-        searcher.decorateDocValueFields(sid, docid, searcher.getNonStoredDVsWithoutCopyTargets());
+
+        SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+        if (avoidRetrievingStoredFields) {
+          sid = new SolrInputDocument();
+        } else {
+          Document luceneDocument = docFetcher.doc(docid);
+          sid = toSolrInputDocument(luceneDocument, core.getLatestSchema());
+        }
+        if (onlyTheseNonStoredDVs != null) {
+          docFetcher.decorateDocValueFields(sid, docid, onlyTheseNonStoredDVs);
+        } else {
+          docFetcher.decorateDocValueFields(sid, docid, docFetcher.getNonStoredDVsWithoutCopyTargets());
+        }
       }
     } finally {
       if (searcherHolder != null) {
@@ -356,6 +641,11 @@ public class RealTimeGetComponent extends SearchComponent
       }
     }
 
+    if (versionReturned != null) {
+      if (sid.containsKey(VERSION_FIELD)) {
+        versionReturned.set((long)sid.getFieldValue(VERSION_FIELD));
+      }
+    }
     return sid;
   }
 
@@ -381,6 +671,30 @@ public class RealTimeGetComponent extends SearchComponent
     return out;
   }
 
+  private static SolrInputDocument toSolrInputDocument(SolrDocument doc, IndexSchema schema) {
+    SolrInputDocument out = new SolrInputDocument();
+    for( String fname : doc.getFieldNames() ) {
+      SchemaField sf = schema.getFieldOrNull(fname);
+      if (sf != null) {
+        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) continue;
+      }
+      for (Object val: doc.getFieldValues(fname)) {
+        if (val instanceof Field) {
+          Field f = (Field) val;
+          if (sf != null) {
+            val = sf.getType().toObject(f);   // object or external string?
+          } else {
+            val = f.stringValue();
+            if (val == null) val = f.numericValue();
+            if (val == null) val = f.binaryValue();
+            if (val == null) val = f;
+          }
+        }
+        out.addField(fname, val);
+      }
+    }
+    return out;
+  }
 
   private static SolrDocument toSolrDoc(Document doc, IndexSchema schema) {
     SolrDocument out = new SolrDocument();
@@ -395,23 +709,60 @@ public class RealTimeGetComponent extends SearchComponent
 
         if (sf != null && sf.multiValued()) {
           List<Object> vals = new ArrayList<>();
-          vals.add( f );
+          if (f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
+            // SORTED_NUMERICS store sortable bits version of the value, need to retrieve the original
+            vals.add(sf.getType().toObject(f)); // (will materialize by side-effect)
+          } else {
+            vals.add( materialize(f) );
+          }
           out.setField( f.name(), vals );
         }
         else{
-          out.setField( f.name(), f );
+          out.setField( f.name(), materialize(f) );
         }
       }
       else {
-        out.addField( f.name(), f );
+        out.addField( f.name(), materialize(f) );
       }
     }
     return out;
   }
 
-  private static SolrDocument toSolrDoc(SolrInputDocument sdoc, IndexSchema schema) {
+  /**
+   * Ensure we don't have {@link org.apache.lucene.document.LazyDocument.LazyField} or equivalent.
+   * It can pose problems if the searcher is about to be closed and we haven't fetched a value yet.
+   */
+  private static IndexableField materialize(IndexableField in) {
+    if (in instanceof Field) { // already materialized
+      return in;
+    }
+    return new ClonedField(in);
+  }
+
+  private static class ClonedField extends Field { // TODO Lucene Field has no copy constructor; maybe it should?
+    ClonedField(IndexableField in) {
+      super(in.name(), in.fieldType());
+      this.fieldsData = in.numericValue();
+      if (this.fieldsData == null) {
+        this.fieldsData = in.binaryValue();
+        if (this.fieldsData == null) {
+          this.fieldsData = in.stringValue();
+          if (this.fieldsData == null) {
+            // fallback:
+            assert false : in; // unexpected
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Converts a SolrInputDocument to SolrDocument, using an IndexSchema instance. 
+   * @lucene.experimental
+   */
+  public static SolrDocument toSolrDoc(SolrInputDocument sdoc, IndexSchema schema) {
     // TODO: do something more performant than this double conversion
-    Document doc = DocumentBuilder.toDocument(sdoc, schema);
+    Document doc = DocumentBuilder.toDocument(sdoc, schema, false);
 
     // copy the stored fields only
     Document out = new Document();
@@ -424,7 +775,7 @@ public class RealTimeGetComponent extends SearchComponent
           out.add(f);
         }
       } else {
-        log.debug("Don't know how to handle field " + f);
+        log.debug("Don't know how to handle field {}", f);
       }
     }
 
@@ -452,7 +803,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {
@@ -508,10 +859,10 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: how to avoid hardcoding this and hit the same handler?
     sreq.params.set(ShardParams.SHARDS_QT,"/get");      
-    sreq.params.set("distrib",false);
+    sreq.params.set(DISTRIB,false);
 
     sreq.params.remove(ShardParams.SHARDS);
-    sreq.params.remove("id");
+    sreq.params.remove(ID);
     sreq.params.remove("ids");
     sreq.params.set("ids", StrUtils.join(ids, ','));
     
@@ -590,7 +941,7 @@ public class RealTimeGetComponent extends SearchComponent
                                                                                                
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -599,12 +950,10 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   @Override
-  public URL[] getDocs() {
-    return null;
+  public Category getCategory() {
+    return Category.QUERY;
   }
 
-  
-  
   public void processGetFingeprint(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -811,7 +1160,7 @@ public class RealTimeGetComponent extends SearchComponent
         return (IdsRequsted)req.getContext().get(contextKey);
       }
       final SolrParams params = req.getParams();
-      final String id[] = params.getParams("id");
+      final String id[] = params.getParams(ID);
       final String ids[] = params.getParams("ids");
       
       if (id == null && ids == null) {

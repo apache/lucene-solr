@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * A per-document byte[] with presorted values.  This is fundamentally an
@@ -40,10 +41,12 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
   /**
    * Returns the ordinal for the current docID.
+   * It is illegal to call this method after {@link #advanceExact(int)}
+   * returned {@code false}.
    * @return ordinal for the document: this is dense, starts at 0, then
    *         increments by 1 for the next value in sorted order.
    */
-  public abstract int ordValue();
+  public abstract int ordValue() throws IOException;
 
   /** Retrieves the value for the specified ordinal. The returned
    * {@link BytesRef} may be re-used across calls to {@link #lookupOrd(int)}
@@ -104,7 +107,29 @@ public abstract class SortedDocValues extends BinaryDocValues {
    * Returns a {@link TermsEnum} over the values.
    * The enum supports {@link TermsEnum#ord()} and {@link TermsEnum#seekExact(long)}.
    */
-  public TermsEnum termsEnum() {
+  public TermsEnum termsEnum() throws IOException {
     return new SortedDocValuesTermsEnum(this);
   }
+
+  /**
+   * Returns a {@link TermsEnum} over the values, filtered by a {@link CompiledAutomaton}
+   * The enum supports {@link TermsEnum#ord()}.
+   */
+  public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
+    TermsEnum in = termsEnum();
+    switch (automaton.type) {
+      case NONE:
+        return TermsEnum.EMPTY;
+      case ALL:
+        return in;
+      case SINGLE:
+        return new SingleTermsEnum(in, automaton.term);
+      case NORMAL:
+        return new AutomatonTermsEnum(in, automaton);
+      default:
+        // unreachable
+        throw new RuntimeException("unhandled case");
+    }
+  }
+
 }

@@ -17,27 +17,30 @@
 package org.apache.lucene.search;
 
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class TestTopDocsMerge extends LuceneTestCase {
 
@@ -70,6 +73,68 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
   public void testSort_2() throws Exception {
     testSort(true);
+  }
+
+  public void testInconsistentTopDocsFail() {
+    TopDocs[] topDocs = new TopDocs[] {
+        new TopDocs(1, new ScoreDoc[] { new ScoreDoc(1, 1.0f) }),
+        new TopDocs(1, new ScoreDoc[] { new ScoreDoc(1, 1.0f, -1) })
+    };
+    if (random().nextBoolean()) {
+      ArrayUtil.swap(topDocs, 0, 1);
+    }
+    expectThrows(IllegalArgumentException.class, () -> {
+        TopDocs.merge(0, 1, topDocs, false);
+    });
+  }
+
+  public void testPreAssignedShardIndex() {
+    boolean useConstantScore = random().nextBoolean();
+    int numTopDocs = 2 + random().nextInt(10);
+    ArrayList<TopDocs> topDocs = new ArrayList<>(numTopDocs);
+    Map<Integer, TopDocs> shardResultMapping = new HashMap<>();
+    int numHitsTotal = 0;
+    for (int i = 0; i < numTopDocs; i++) {
+      int numHits = 1 + random().nextInt(10);
+      numHitsTotal += numHits;
+      ScoreDoc[] scoreDocs = new ScoreDoc[numHits];
+      for (int j = 0; j < scoreDocs.length; j++) {
+        float score = useConstantScore ? 1.0f : random().nextFloat();
+        // we set the shard index to index in the list here but shuffle the entire list below
+        scoreDocs[j] = new ScoreDoc((100 * i) + j, score , i);
+      }
+      topDocs.add(new TopDocs(numHits, scoreDocs));
+      shardResultMapping.put(i, topDocs.get(i));
+    }
+    // shuffle the entire thing such that we don't get 1 to 1 mapping of shard index to index in the array
+    // -- well likely ;)
+    Collections.shuffle(topDocs, random());
+    final int from = random().nextInt(numHitsTotal-1);
+    final int size = 1 + random().nextInt(numHitsTotal - from);
+
+    // passing false here means TopDocs.merge uses the incoming ScoreDoc.shardIndex
+    // that we already set, instead of the position of that TopDocs in the array:
+    TopDocs merge = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]), false);
+    
+    assertTrue(merge.scoreDocs.length > 0);
+    for (ScoreDoc scoreDoc : merge.scoreDocs) {
+      assertTrue(scoreDoc.shardIndex != -1);
+      TopDocs shardTopDocs = shardResultMapping.get(scoreDoc.shardIndex);
+      assertNotNull(shardTopDocs);
+      boolean found = false;
+      for (ScoreDoc shardScoreDoc : shardTopDocs.scoreDocs) {
+        if (shardScoreDoc == scoreDoc) {
+          found = true;
+          break;
+        }
+      }
+      assertTrue(found);
+    }
+
+    // now ensure merge is stable even if we use our own shard IDs
+    Collections.shuffle(topDocs, random());
+    TopDocs merge2 = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]), false);
+    assertArrayEquals(merge.scoreDocs, merge2.scoreDocs);
   }
 
   void testSort(boolean useFrom) throws Exception {
@@ -285,9 +350,9 @@ public class TestTopDocsMerge extends LuceneTestCase {
       final TopDocs mergedHits;
       if (useFrom) {
         if (sort == null) {
-          mergedHits = TopDocs.merge(from, size, shardHits);
+          mergedHits = TopDocs.merge(from, size, shardHits, true);
         } else {
-          mergedHits = TopDocs.merge(sort, from, size, (TopFieldDocs[]) shardHits);
+          mergedHits = TopDocs.merge(sort, from, size, (TopFieldDocs[]) shardHits, true);
         }
       } else {
         if (sort == null) {

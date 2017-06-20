@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -60,7 +61,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public URI createURI(String location) {
-    Preconditions.checkNotNull(location);
+    Objects.requireNonNull(location);
 
     URI result = null;
     try {

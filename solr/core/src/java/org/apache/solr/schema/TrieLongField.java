@@ -23,7 +23,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -45,7 +45,7 @@ import org.apache.lucene.util.mutable.MutableValueLong;
  */
 public class TrieLongField extends TrieField implements LongValueFieldType {
   {
-    type=TrieTypes.LONG;
+    type = NumberType.LONG;
   }
 
   @Override
@@ -80,6 +80,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
               throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
             }
             if (docID > view.docID()) {
+              lastDocID = docID;
               return docID == view.advance(docID);
             } else {
               return docID == view.docID();

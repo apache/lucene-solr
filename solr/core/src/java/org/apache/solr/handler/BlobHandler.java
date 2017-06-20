@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -51,6 +54,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QParser;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -61,10 +66,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.common.util.Utils.makeMap;
 
-public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
+public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized , PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -72,9 +80,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
   @Override
   public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    String httpMethod = (String) req.getContext().get("httpMethod");
+    String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
-    SolrConfigHandler.setWt(req, JSON);
+    RequestHandlerUtils.setWt(req, JSON);
 
     List<String> pieces = StrUtils.splitSmart(path, '/');
     String blobName = null;
@@ -128,15 +136,15 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         version++;
         String id = blobName + "/" + version;
         Map<String, Object> doc = makeMap(
-            "id", id,
+            ID, id,
             "md5", md5,
             "blobName", blobName,
-            "version", version,
+            VERSION, version,
             "timestamp", new Date(),
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get("id"), String.valueOf(payload.limit()), md5));
+        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
         indexMap(req, rsp, doc);
         log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
 
@@ -199,7 +207,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             new MapSolrParams((Map) makeMap(
                 "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
-                "sort", "version desc"))
+                SORT, "version desc"))
             , rsp);
       }
     }
@@ -209,7 +217,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     for (; ; ) {
       SolrQueryResponse response = new SolrQueryResponse();
       String id = blobName + "/" + version;
-      forward(req, "/get", new MapSolrParams(singletonMap("id", id)), response);
+      forward(req, "/get", new MapSolrParams(singletonMap(ID, id)), response);
       if (response.getValues().get("doc") == null) {
         //ensure that the version does not exist
         return;
@@ -218,7 +226,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         version++;
         doc.put("version", version);
         id = blobName + "/" + version;
-        doc.put("id", id);
+        doc.put(ID, id);
       }
     }
 
@@ -228,14 +236,15 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     SolrInputDocument solrDoc = new SolrInputDocument();
     for (Map.Entry<String, Object> e : doc.entrySet()) solrDoc.addField(e.getKey(), e.getValue());
     UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(req.getParams());
-    UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
-    AddUpdateCommand cmd = new AddUpdateCommand(req);
-    cmd.solrDoc = solrDoc;
-    log.info("Adding doc: " + doc);
-    processor.processAdd(cmd);
-    log.info("committing doc: " + doc);
-    processor.processCommit(new CommitUpdateCommand(req, false));
-    processor.finish();
+    try (UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp)) {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = solrDoc;
+      log.info("Adding doc: " + doc);
+      processor.processAdd(cmd);
+      log.info("committing doc: " + doc);
+      processor.processCommit(new CommitUpdateCommand(req, false));
+      processor.finish();
+    }
   }
 
   @Override
@@ -277,4 +286,26 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
   }
 
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return ApiBag.wrapRequestHandlers(this, "core.system.blob", "core.system.blob.upload");
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext ctx) {
+    switch (ctx.getHttpMethod()) {
+      case "GET":
+        return Name.READ_PERM;
+      case "POST":
+        return Name.UPDATE_PERM;
+      default:
+        return null;
+    }
+
+  }
 }

@@ -29,17 +29,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  *  concatenated (unsorted) order, or by a specified index-time sort, skipping
  *  deleted documents and remapping non-deleted documents. */
 
-public class DocIDMerger<T extends DocIDMerger.Sub> {
-
-  private final List<T> subs;
-
-  // Used when indexSort != null:
-  private final PriorityQueue<T> queue;
-  private boolean first;
-
-  // Used when indexIsSorted
-  private T current;
-  private int nextIndex;
+public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
 
   /** Represents one sub-reader being merged */
   public static abstract class Sub {
@@ -58,104 +48,54 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   }
 
   /** Construct this from the provided subs, specifying the maximum sub count */
-  public DocIDMerger(List<T> subs, int maxCount, boolean indexIsSorted) throws IOException {
-    this.subs = subs;
-
+  public static <T extends DocIDMerger.Sub> DocIDMerger<T> of(List<T> subs, int maxCount, boolean indexIsSorted) throws IOException {
     if (indexIsSorted && maxCount > 1) {
-      queue = new PriorityQueue<T>(maxCount) {
-        @Override
-        protected boolean lessThan(Sub a, Sub b) {
-          assert a.mappedDocID != b.mappedDocID;
-          return a.mappedDocID < b.mappedDocID;
-        }
-      };
+      return new SortedDocIDMerger<>(subs, maxCount);
     } else {
-      // We simply concatentate
-      queue = null;
+      return new SequentialDocIDMerger<>(subs);
     }
-
-    reset();
   }
 
   /** Construct this from the provided subs */
-  public DocIDMerger(List<T> subs, boolean indexIsSorted) throws IOException {
-    this(subs, subs.size(), indexIsSorted);
+  public static <T extends DocIDMerger.Sub> DocIDMerger<T> of(List<T> subs, boolean indexIsSorted) throws IOException {
+    return of(subs, subs.size(), indexIsSorted);
   }
 
   /** Reuse API, currently only used by postings during merge */
-  public void reset() throws IOException {
-    if (queue != null) {
-      // caller may not have fully consumed the queue:
-      queue.clear();
-      for(T sub : subs) {
-        while (true) {
-          int docID = sub.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            // all docs in this sub were deleted; do not add it to the queue!
-            break;
-          }
+  public abstract void reset() throws IOException;
 
-          int mappedDocID = sub.docMap.get(docID);
-          if (mappedDocID == -1) {
-            // doc was deleted
-            continue;
-          } else {
-            sub.mappedDocID = mappedDocID;
-            queue.add(sub);
-            break;
-          }
-        }
-      }
-      first = true;
-    } else if (subs.size() > 0) {
-      current = subs.get(0);
-      nextIndex = 1;
-    } else {
-      current = null;
-      nextIndex = 0;
+  /** Returns null when done.
+   *  <b>NOTE:</b> after the iterator has exhausted you should not call this
+   *  method, as it may result in unpredicted behavior. */
+  public abstract T next() throws IOException;
+
+  private DocIDMerger() {}
+
+  private static class SequentialDocIDMerger<T extends DocIDMerger.Sub> extends DocIDMerger<T> {
+
+    private final List<T> subs;
+    private T current;
+    private int nextIndex;
+
+    private SequentialDocIDMerger(List<T> subs) throws IOException {
+      this.subs = subs;
+      reset();
     }
-  }
 
-  /** Returns null when done */
-  public T next() throws IOException {
-    // Loop until we find a non-deleted document
-    if (queue != null) {
-      T top = queue.top();
-      if (top == null) {
-        // NOTE: it's annoying that caller is allowed to call us again even after we returned null before
-        return null;
+    @Override
+    public void reset() throws IOException {
+      if (subs.size() > 0) {
+        current = subs.get(0);
+        nextIndex = 1;
+      } else {
+        current = null;
+        nextIndex = 0;
       }
+    }
 
-      if (first == false) {
-        while (true) {
-          int docID = top.nextDoc();
-          if (docID == NO_MORE_DOCS) {
-            queue.pop();
-            top = queue.top();
-            break;
-          }
-          int mappedDocID = top.docMap.get(docID);
-          if (mappedDocID == -1) {
-            // doc was deleted
-            continue;
-          } else {
-            top.mappedDocID = mappedDocID;
-            top = queue.updateTop();
-            break;
-          }
-        }
-      }
-
-      first = false;
-
-      return top;
-
-    } else {
+    @Override
+    public T next() throws IOException {
       while (true) {
-        if (current == null) {
-          // NOTE: it's annoying that caller is allowed to call us again even after we returned null before
-          return null;
-        }
         int docID = current.nextDoc();
         if (docID == NO_MORE_DOCS) {
           if (nextIndex == subs.size()) {
@@ -166,15 +106,92 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
           nextIndex++;
           continue;
         }
-        int mappedDocID = current.docMap.get(docID);
-        if (mappedDocID == -1) {
-          // doc is deleted
-          continue;
-        }
 
-        current.mappedDocID = mappedDocID;
-        return current;
+        int mappedDocID = current.docMap.get(docID);
+        if (mappedDocID != -1) {
+          current.mappedDocID = mappedDocID;
+          return current;
+        }
       }
     }
+
   }
+
+  private static class SortedDocIDMerger<T extends DocIDMerger.Sub> extends DocIDMerger<T> {
+
+    private final List<T> subs;
+    private final PriorityQueue<T> queue;
+
+    private SortedDocIDMerger(List<T> subs, int maxCount) throws IOException {
+      this.subs = subs;
+      queue = new PriorityQueue<T>(maxCount) {
+        @Override
+        protected boolean lessThan(Sub a, Sub b) {
+          assert a.mappedDocID != b.mappedDocID;
+          return a.mappedDocID < b.mappedDocID;
+        }
+      };
+      reset();
+    }
+
+    @Override
+    public void reset() throws IOException {
+      // caller may not have fully consumed the queue:
+      queue.clear();
+      boolean first = true;
+      for(T sub : subs) {
+        if (first) {
+          // by setting mappedDocID = -1, this entry is guaranteed to be the top of the queue
+          // so the first call to next() will advance it
+          sub.mappedDocID = -1;
+          first = false;
+        } else {
+          int mappedDocID;
+          while (true) {
+            int docID = sub.nextDoc();
+            if (docID == NO_MORE_DOCS) {
+              mappedDocID = NO_MORE_DOCS;
+              break;
+            }
+            mappedDocID = sub.docMap.get(docID);
+            if (mappedDocID != -1) {
+              break;
+            }
+          }
+          if (mappedDocID == NO_MORE_DOCS) {
+            // all docs in this sub were deleted; do not add it to the queue!
+            continue;
+          }
+          sub.mappedDocID = mappedDocID;
+        }
+        queue.add(sub);
+      }
+    }
+
+    @Override
+    public T next() throws IOException {
+      T top = queue.top();
+
+      while (true) {
+        int docID = top.nextDoc();
+        if (docID == NO_MORE_DOCS) {
+          queue.pop();
+          top = queue.top();
+          break;
+        }
+        int mappedDocID = top.docMap.get(docID);
+        if (mappedDocID == -1) {
+          // doc was deleted
+          continue;
+        } else {
+          top.mappedDocID = mappedDocID;
+          top = queue.updateTop();
+          break;
+        }
+      }
+
+      return top;
+    }
+  }
+
 }

@@ -27,16 +27,16 @@ public class ByteRunAutomaton extends RunAutomaton {
     this(a, false, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
   }
   
-  /** expert: if utf8 is true, the input is already byte-based */
+  /** expert: if isBinary is true, the input is already byte-based */
   public ByteRunAutomaton(Automaton a, boolean isBinary, int maxDeterminizedStates) {
-    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, true, maxDeterminizedStates);
+    super(isBinary ? a : new UTF32ToUTF8().convert(a), 256, maxDeterminizedStates);
   }
 
   /**
    * Returns true if the given byte array is accepted by this automaton
    */
   public boolean run(byte[] s, int offset, int length) {
-    int p = initial;
+    int p = 0;
     int l = offset + length;
     for (int i = offset; i < l; i++) {
       p = step(p, s[i] & 0xFF);

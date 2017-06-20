@@ -33,6 +33,7 @@ import java.util.StringTokenizer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -71,6 +72,8 @@ import org.apache.lucene.search.PhraseQuery.Builder;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -146,7 +149,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     CustomScoreQuery query = new CustomScoreQuery(termQuery);
 
     searcher = newSearcher(reader);
-    TopDocs hits = searcher.search(query, 10);
+    TopDocs hits = searcher.search(query, 10, new Sort(SortField.FIELD_DOC, SortField.FIELD_SCORE));
     assertEquals(2, hits.totalHits);
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(scorer);
@@ -198,7 +201,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     query.add(new Term(FIELD_NAME, "very"));
 
     searcher = newSearcher(reader);
-    TopDocs hits = searcher.search(query, 10);
+    TopDocs hits = searcher.search(query, 10, new Sort(SortField.FIELD_DOC, SortField.FIELD_SCORE));
     assertEquals(2, hits.totalHits);
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(scorer);
@@ -270,7 +273,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     };
 
     searcher = newSearcher(reader);
-    TopDocs hits = searcher.search(query, 10);
+    TopDocs hits = searcher.search(query, 10, new Sort(SortField.FIELD_DOC, SortField.FIELD_SCORE));
     assertEquals(2, hits.totalHits);
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(scorer);
@@ -1337,6 +1340,22 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     helper.start();
 
+  }
+
+  public void testNotRewriteMultiTermQuery() throws IOException {
+    // field "bar": (not the field we ultimately want to extract)
+    MultiTermQuery mtq = new TermRangeQuery("bar", new BytesRef("aa"), new BytesRef("zz"), true, true) ;
+    WeightedSpanTermExtractor extractor = new WeightedSpanTermExtractor() {
+      @Override
+      protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms) throws IOException {
+        assertEquals(mtq, query);
+        super.extract(query, boost, terms);
+      }
+    };
+    extractor.setExpandMultiTermQuery(true);
+    extractor.setMaxDocCharsToAnalyze(51200);
+    extractor.getWeightedSpanTerms(
+        mtq, 3, new CannedTokenStream(new Token("aa",0,2), new Token("bb", 2,4)), "foo"); // field "foo"
   }
 
   public void testGetBestSingleFragmentWithWeights() throws Exception {

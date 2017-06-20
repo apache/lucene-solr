@@ -141,7 +141,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       boolean match = false;
-      float max = 0.0f, sum = 0.0f;
+      float max = Float.NEGATIVE_INFINITY, sum = 0.0f;
       List<Explanation> subs = new ArrayList<>();
       for (Weight wt : weights) {
         Explanation e = wt.explain(context, doc);
@@ -176,6 +176,14 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
   public Query rewrite(IndexReader reader) throws IOException {
     if (disjuncts.length == 1) {
       return disjuncts[0];
+    }
+
+    if (tieBreakerMultiplier == 1.0f) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (Query sub : disjuncts) {
+        builder.add(sub, BooleanClause.Occur.SHOULD);
+      }
+      return builder.build();
     }
 
     boolean actuallyRewritten = false;

@@ -18,15 +18,21 @@ package org.apache.solr.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -48,21 +54,16 @@ public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
     final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(reader);
     
     final int numListeners = TestUtil.nextInt(random(), 1, 10);
-    final List<LeafReader.CoreClosedListener> listeners = new ArrayList<>();
+    final List<IndexReader.ClosedListener> listeners = new ArrayList<>();
     AtomicInteger counter = new AtomicInteger(numListeners);
     
     for (int i = 0; i < numListeners; ++i) {
-      CountCoreListener listener = new CountCoreListener(counter, leafReader.getCoreCacheKey());
+      CountCoreListener listener = new CountCoreListener(counter, leafReader.getCoreCacheHelper().getKey());
       listeners.add(listener);
-      leafReader.addCoreClosedListener(listener);
+      leafReader.getCoreCacheHelper().addClosedListener(listener);
     }
     for (int i = 0; i < 100; ++i) {
-      leafReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
-    }
-    final int removed = random().nextInt(numListeners);
-    Collections.shuffle(listeners, random());
-    for (int i = 0; i < removed; ++i) {
-      leafReader.removeCoreClosedListener(listeners.get(i));
+      leafReader.getCoreCacheHelper().addClosedListener(listeners.get(random().nextInt(listeners.size())));
     }
     assertEquals(numListeners, counter.get());
     // make sure listeners are registered on the wrapped reader and that closing any of them has the same effect
@@ -71,11 +72,11 @@ public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
     } else {
       leafReader.close();
     }
-    assertEquals(removed, counter.get());
+    assertEquals(0, counter.get());
     w.w.getDirectory().close();
   }
 
-  private static final class CountCoreListener implements LeafReader.CoreClosedListener {
+  private static final class CountCoreListener implements IndexReader.ClosedListener {
 
     private final AtomicInteger count;
     private final Object coreCacheKey;
@@ -86,10 +87,37 @@ public class TestSlowCompositeReaderWrapper extends LuceneTestCase {
     }
 
     @Override
-    public void onClose(Object coreCacheKey) {
+    public void onClose(IndexReader.CacheKey coreCacheKey) {
       assertSame(this.coreCacheKey, coreCacheKey);
       count.decrementAndGet();
     }
 
+  }
+
+  public void testOrdMapsAreCached() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("sorted", new BytesRef("a")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("b")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("c")));
+    w.addDocument(doc);
+    w.getReader().close();
+    doc = new Document();
+    doc.add(new SortedDocValuesField("sorted", new BytesRef("b")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("c")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("d")));
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+    assertTrue(reader.leaves().size() > 1);
+    SlowCompositeReaderWrapper slowWrapper = (SlowCompositeReaderWrapper) SlowCompositeReaderWrapper.wrap(reader);
+    assertEquals(0, slowWrapper.cachedOrdMaps.size());
+    assertEquals(MultiSortedDocValues.class, slowWrapper.getSortedDocValues("sorted").getClass());
+    assertEquals(1, slowWrapper.cachedOrdMaps.size());
+    assertEquals(MultiSortedSetDocValues.class, slowWrapper.getSortedSetDocValues("sorted_set").getClass());
+    assertEquals(2, slowWrapper.cachedOrdMaps.size());
+    reader.close();
+    w.close();
+    dir.close();
   }
 }

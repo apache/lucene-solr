@@ -229,8 +229,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     final FieldType ft = sf.getType();
     final RangeEndpointCalculator<?> calc;
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField)ft;
-      switch (trie.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatRangeEndpointCalculator(request);
           break;
@@ -266,7 +265,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     
     @Override
     public Float parseAndAddGap(Float value, String gap) {
-      return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
+      return new Float(value.floatValue() + Float.parseFloat(gap));
     }
     
   }
@@ -282,7 +281,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     
     @Override
     public Double parseAndAddGap(Double value, String gap) {
-      return new Double(value.doubleValue() + Double.valueOf(gap).doubleValue());
+      return new Double(value.doubleValue() + Double.parseDouble(gap));
     }
     
   }
@@ -298,7 +297,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     
     @Override
     public Integer parseAndAddGap(Integer value, String gap) {
-      return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
+      return new Integer(value.intValue() + Integer.parseInt(gap));
     }
     
   }
@@ -314,7 +313,7 @@ public abstract class RangeEndpointCalculator<T extends Comparable<T>> {
     
     @Override
     public Long parseAndAddGap(Long value, String gap) {
-      return new Long(value.longValue() + Long.valueOf(gap).longValue());
+      return new Long(value.longValue() + Long.parseLong(gap));
     }
     
   }

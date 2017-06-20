@@ -25,6 +25,8 @@ import java.util.Set;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 
@@ -42,16 +44,18 @@ public class UniqueAgg extends StrAggValueSource {
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-      if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, getArg(), numSlots, null);
+      if (sf.getType().isPointField()) {
+        return new SortedNumericAcc(fcontext, getArg(), numSlots);
+      } else if (sf.hasDocValues()) {
+        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, getArg(), numSlots, null);
+        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, null);
       }
     } else {
-      if (sf.getType().getNumericType() != null) {
+      if (sf.getType().getNumberType() != null) {
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, getArg(), numSlots, null);
+        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, null);
       }
     }
   }
@@ -187,12 +191,11 @@ public class UniqueAgg extends StrAggValueSource {
   }
 
 
-  class NumericAcc extends SlotAcc {
+  static abstract class BaseNumericAcc extends SlotAcc {
     SchemaField sf;
     LongSet[] sets;
-    NumericDocValues values;
 
-    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+    public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
       super(fcontext);
       sf = fcontext.searcher.getSchema().getField(field);
       sets = new LongSet[numSlots];
@@ -209,29 +212,26 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public void setNextReader(LeafReaderContext readerContext) throws IOException {
-      values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
-    }
-
-    @Override
     public void collect(int doc, int slot) throws IOException {
-      int valuesDocID = values.docID();
+      int valuesDocID = docIdSetIterator().docID();
       if (valuesDocID < doc) {
-        valuesDocID = values.advance(doc);
+        valuesDocID = docIdSetIterator().advance(doc);
       }
       if (valuesDocID > doc) {
         // missing
         return;
       }
-      long val = values.longValue();
 
       LongSet set = sets[slot];
       if (set == null) {
         set = sets[slot] = new LongSet(16);
       }
-      // TODO: could handle 0s at this level too
-      set.add(val);
+      collectValues(doc, set);
     }
+
+    protected abstract DocIdSetIterator docIdSetIterator();
+
+    protected abstract void collectValues(int doc, LongSet set) throws IOException;
 
     @Override
     public Object getValue(int slot) throws IOException {
@@ -281,6 +281,54 @@ public class UniqueAgg extends StrAggValueSource {
       return getCardinality(slotA) - getCardinality(slotB);
     }
 
+  }
+
+  static class NumericAcc extends BaseNumericAcc {
+    NumericDocValues values;
+
+    public NumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+      super(fcontext, field, numSlots);
+    }
+
+    @Override
+    protected DocIdSetIterator docIdSetIterator() {
+      return values;
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
+    }
+
+    @Override
+    protected void collectValues(int doc, LongSet set) throws IOException {
+      set.add(values.longValue());
+    }
+  }
+
+  static class SortedNumericAcc extends BaseNumericAcc {
+    SortedNumericDocValues values;
+
+    public SortedNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
+      super(fcontext, field, numSlots);
+    }
+
+    @Override
+    protected DocIdSetIterator docIdSetIterator() {
+      return values;
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
+    }
+
+    @Override
+    protected void collectValues(int doc, LongSet set) throws IOException {
+      for (int i = 0; i < values.docValueCount(); i++) {
+        set.add(values.nextValue());
+      }
+    }
   }
 
 

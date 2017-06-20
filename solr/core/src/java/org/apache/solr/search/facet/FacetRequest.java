@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,13 +30,16 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.FunctionQParserPlugin;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryContext;
+import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
 
 
@@ -77,16 +82,93 @@ public abstract class FacetRequest {
 
   protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
   protected Map<String,FacetRequest> subFacets;     // per-bucket sub-facets
-  protected List<String> filters;
   protected boolean processEmpty;
   protected Domain domain;
 
   // domain changes
   public static class Domain {
     public List<String> excludeTags;
+    public JoinField joinField;
     public boolean toParent;
     public boolean toChildren;
-    public String parents;
+    public String parents; // identifies the parent filter... the full set of parent documents for any block join operation
+    public List<Object> filters; // list of symbolic filters (JSON query format)
+
+    // True if a starting set of documents can be mapped onto a different set of documents not originally in the starting set.
+    public boolean canTransformDomain() {
+      return toParent || toChildren || (excludeTags != null) || (joinField != null);
+    }
+
+    // Can this domain become non-empty if the input domain is empty?  This does not check any sub-facets (see canProduceFromEmpty for that)
+    public boolean canBecomeNonEmpty() {
+      return excludeTags != null;
+    }
+
+    /** Are we doing a query time join across other documents */
+    public static class JoinField {
+      public final String from;
+      public final String to;
+      
+      private JoinField(String from, String to) {
+        assert null != from;
+        assert null != to;
+        
+        this.from = from;
+        this.to = to;
+      }
+
+      /**
+       * Given a <code>Domain</code>, and a (JSON) map specifying the configuration for that Domain,
+       * validates if a '<code>join</code>' is specified, and if so creates a <code>JoinField</code> 
+       * and sets it on the <code>Domain</code>.
+       *
+       * (params must not be null)
+       */
+      public static void createJoinField(FacetRequest.Domain domain, Map<String,Object> domainMap) {
+        assert null != domain;
+        assert null != domainMap;
+        
+        final Object queryJoin = domainMap.get("join");
+        if (null != queryJoin) {
+          // TODO: maybe allow simple string (instead of map) to mean "self join on this field name" ?
+          if (! (queryJoin instanceof Map)) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'join' domain change requires a map containing the 'from' and 'to' fields");
+          }
+          final Map<String,String> join = (Map<String,String>) queryJoin;
+          if (! (join.containsKey("from") && join.containsKey("to") && 
+                 null != join.get("from") && null != join.get("to")) ) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'join' domain change requires non-null 'from' and 'to' field names");
+          }
+          if (2 != join.size()) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                    "'join' domain change contains unexpected keys, only 'from' and 'to' supported: "
+                                    + join.toString());
+          }
+          domain.joinField = new JoinField(join.get("from"), join.get("to"));
+        }
+      }
+
+      /**
+       * Creates a Query that can be used to recompute the new "base" for this domain, realtive to the 
+       * current base of the FacetContext.
+       */
+      public Query createDomainQuery(FacetContext fcontext) throws IOException {
+        // NOTE: this code lives here, instead of in FacetProcessor.handleJoin, in order to minimize
+        // the number of classes that have to know about the number of possible settings on the join
+        // (ie: if we add a score mode, or some other modifier to how the joins are done)
+        
+        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
+        // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
+        fromQuery.setCache(false); 
+
+        return JoinQParserPlugin.createJoinQuery(fromQuery, this.from, this.to);
+      }
+      
+      
+    }
+    
   }
 
   public FacetRequest() {
@@ -115,6 +197,15 @@ public abstract class FacetRequest {
    * This is normally true only for facets with a limit.
    */
   public boolean returnsPartial() {
+    return false;
+  }
+
+  /** Returns true if this facet, or any sub-facets can produce results from an empty domain. */
+  public boolean canProduceFromEmpty() {
+    if (domain != null && domain.canBecomeNonEmpty()) return true;
+    for (FacetRequest freq : subFacets.values()) {
+      if (freq.canProduceFromEmpty()) return true;
+    }
     return false;
   }
 
@@ -148,7 +239,10 @@ public abstract class FacetRequest {
 class FacetContext {
   // Context info for actually executing a local facet command
   public static final int IS_SHARD=0x01;
+  public static final int IS_REFINEMENT=0x02;
+  public static final int SKIP_FACET=0x04;  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on facetInfo
 
+  Map<String,Object> facetInfo; // refinement info for this node
   QueryContext qcontext;
   SolrQueryRequest req;  // TODO: replace with params?
   SolrIndexSearcher searcher;
@@ -358,23 +452,40 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
 
       Map<String,Object> domainMap = (Map<String,Object>) m.get("domain");
       if (domainMap != null) {
+        FacetRequest.Domain domain = getDomain();
+
         excludeTags = getStringList(domainMap, "excludeTags");
         if (excludeTags != null) {
-          getDomain().excludeTags = excludeTags;
+          domain.excludeTags = excludeTags;
         }
 
         String blockParent = (String)domainMap.get("blockParent");
         String blockChildren = (String)domainMap.get("blockChildren");
 
         if (blockParent != null) {
-          getDomain().toParent = true;
-          getDomain().parents = blockParent;
+          domain.toParent = true;
+          domain.parents = blockParent;
         } else if (blockChildren != null) {
-          getDomain().toChildren = true;
-          getDomain().parents = blockChildren;
+          domain.toChildren = true;
+          domain.parents = blockChildren;
+        }
+          
+        FacetRequest.Domain.JoinField.createJoinField(domain, domainMap);
+
+        Object filterOrList = domainMap.get("filter");
+        if (filterOrList != null) {
+          assert domain.filters == null;
+          if (filterOrList instanceof List) {
+            domain.filters = (List<Object>)filterOrList;
+          } else {
+            domain.filters = new ArrayList<>(1);
+            domain.filters.add(filterOrList);
+          }
         }
 
-      }
+
+      } // end "domain"
+
 
     }
   }
@@ -533,6 +644,7 @@ class FacetQueryParser extends FacetParser<FacetQuery> {
 
     if (qstring != null) {
       QParser parser = QParser.getParser(qstring, getSolrRequest());
+      parser.setIsFilter(true);
       facet.q = parser.getQuery();
     }
 
@@ -586,6 +698,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       facet.field = getField(m);
       facet.offset = getLong(m, "offset", facet.offset);
       facet.limit = getLong(m, "limit", facet.limit);
+      facet.overrequest = (int) getLong(m, "overrequest", facet.overrequest);
       if (facet.limit == 0) facet.offset = 0;  // normalize.  an offset with a limit of non-zero isn't useful.
       facet.mincount = getLong(m, "mincount", facet.mincount);
       facet.missing = getBoolean(m, "missing", facet.missing);
@@ -605,7 +718,7 @@ class FacetFieldParser extends FacetParser<FacetField> {
       Object o = m.get("facet");
       parseSubs(o);
 
-      parseSort( m.get("sort") );
+      parseSort( m.get(SORT) );
     }
 
     return facet;

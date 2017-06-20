@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,15 +35,14 @@ import org.apache.lucene.util.BytesRef;
 public class SortableBinaryField extends BinaryField {
 
   @Override
-  public void checkSchemaField(final SchemaField field) {
-    // NOOP, It's Aaaaaall Good.
+  protected void checkSupportsDocValues() { // we support DocValues
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value) {
     if (field.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
-      IndexableField storedField = createField(field, value, boost);
+      IndexableField storedField = createField(field, value);
       fields.add(storedField);
       ByteBuffer byteBuffer = toObject(storedField);
       BytesRef bytes = new BytesRef
@@ -56,7 +54,7 @@ public class SortableBinaryField extends BinaryField {
       }
       return fields;
     } else {
-      return Collections.singletonList(createField(field, value, boost));
+      return Collections.singletonList(createField(field, value));
     }
   }
 
@@ -71,7 +69,7 @@ public class SortableBinaryField extends BinaryField {
       super(field, new FieldComparatorSource() {
         @Override
         public FieldComparator.TermOrdValComparator newComparator
-            (final String fieldname, final int numHits, final int sortPos, final boolean reversed) throws IOException {
+            (final String fieldname, final int numHits, final int sortPos, final boolean reversed) {
           return new FieldComparator.TermOrdValComparator(numHits, fieldname);
         }}, reverse);
     }

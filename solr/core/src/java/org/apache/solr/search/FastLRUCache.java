@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
+
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // contains the statistics objects for all open caches of the same type
@@ -54,6 +56,12 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   private String description = "Concurrent LRU Cache";
   private ConcurrentLRUCache<K,V> cache;
   private int showItems = 0;
+
+  private long maxRamBytes;
+
+  private MetricsMap cacheMap;
+  private Set<String> metricNames = new HashSet<>();
+  private MetricRegistry registry;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -67,7 +75,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     } else {
       minLimit = Integer.parseInt(str);
     }
-    if (minLimit==0) minLimit=1;
+    if (minLimit <= 0) minLimit = 1;
     if (limit <= minLimit) limit=minLimit+1;
 
     int acceptableLimit;
@@ -87,8 +95,18 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
     str = (String) args.get("showItems");
     showItems = str == null ? 0 : Integer.parseInt(str);
-    description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
-    cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+
+    str = (String) args.get("maxRamMB");
+    this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
+    if (maxRamBytes != Long.MAX_VALUE)  {
+      int ramLowerWatermark = (int) (maxRamBytes * 0.8);
+      description = generateDescription(maxRamBytes, ramLowerWatermark, newThread);
+      cache = new ConcurrentLRUCache<K, V>(ramLowerWatermark, maxRamBytes, newThread, null);
+    } else  {
+      description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
+      cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+    }
+
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLRUCache.Stats>) persistence;
@@ -111,6 +129,16 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   protected String generateDescription(int limit, int initialSize, int minLimit, int acceptableLimit, boolean newThread) {
     String description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
         ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
+    if (isAutowarmingOn()) {
+      description += ", " + getAutowarmDescription();
+    }
+    description += ')';
+    return description;
+  }
+
+  protected String generateDescription(long maxRamBytes, long ramLowerWatermark, boolean newThread) {
+    String description = "Concurrent LRU Cache(ramMinSize=" + ramLowerWatermark + ", ramMaxSize" + maxRamBytes
+        + ", cleanupThread=" + newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
@@ -193,68 +221,80 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   }
 
   @Override
-  public String getSource() {
-    return null;
+  public Set<String> getMetricNames() {
+    return metricNames;
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+    registry = manager.registry(registryName);
+    cacheMap = new MetricsMap((detailed, map) -> {
+      if (cache != null) {
+        ConcurrentLRUCache.Stats stats = cache.getStats();
+        long lookups = stats.getCumulativeLookups();
+        long hits = stats.getCumulativeHits();
+        long inserts = stats.getCumulativePuts();
+        long evictions = stats.getCumulativeEvictions();
+        long size = stats.getCurrentSize();
+        long clookups = 0;
+        long chits = 0;
+        long cinserts = 0;
+        long cevictions = 0;
+
+        // NOTE: It is safe to iterate on a CopyOnWriteArrayList
+        for (ConcurrentLRUCache.Stats statistiscs : statsList) {
+          clookups += statistiscs.getCumulativeLookups();
+          chits += statistiscs.getCumulativeHits();
+          cinserts += statistiscs.getCumulativePuts();
+          cevictions += statistiscs.getCumulativeEvictions();
+        }
+
+        map.put("lookups", lookups);
+        map.put("hits", hits);
+        map.put("hitratio", calcHitRatio(lookups, hits));
+        map.put("inserts", inserts);
+        map.put("evictions", evictions);
+        map.put("size", size);
+
+        map.put("warmupTime", warmupTime);
+        map.put("cumulative_lookups", clookups);
+        map.put("cumulative_hits", chits);
+        map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
+        map.put("cumulative_inserts", cinserts);
+        map.put("cumulative_evictions", cevictions);
+
+        if (detailed && showItems != 0) {
+          Map items = cache.getLatestAccessedItems( showItems == -1 ? Integer.MAX_VALUE : showItems );
+          for (Map.Entry e : (Set <Map.Entry>)items.entrySet()) {
+            Object k = e.getKey();
+            Object v = e.getValue();
+
+            String ks = "item_" + k;
+            String vs = v.toString();
+            map.put(ks,vs);
+          }
+
+        }
+      }
+    });
+    manager.registerGauge(this, registryName, cacheMap, true, scope, getCategory().toString());
+  }
+
+  // for unit tests only
+  MetricsMap getMetricsMap() {
+    return cacheMap;
+  }
 
   @Override
-  public NamedList getStatistics() {
-    NamedList<Serializable> lst = new SimpleOrderedMap<>();
-    if (cache == null)  return lst;
-    ConcurrentLRUCache.Stats stats = cache.getStats();
-    long lookups = stats.getCumulativeLookups();
-    long hits = stats.getCumulativeHits();
-    long inserts = stats.getCumulativePuts();
-    long evictions = stats.getCumulativeEvictions();
-    long size = stats.getCurrentSize();
-    long clookups = 0;
-    long chits = 0;
-    long cinserts = 0;
-    long cevictions = 0;
-
-    // NOTE: It is safe to iterate on a CopyOnWriteArrayList
-    for (ConcurrentLRUCache.Stats statistiscs : statsList) {
-      clookups += statistiscs.getCumulativeLookups();
-      chits += statistiscs.getCumulativeHits();
-      cinserts += statistiscs.getCumulativePuts();
-      cevictions += statistiscs.getCumulativeEvictions();
-    }
-
-    lst.add("lookups", lookups);
-    lst.add("hits", hits);
-    lst.add("hitratio", calcHitRatio(lookups, hits));
-    lst.add("inserts", inserts);
-    lst.add("evictions", evictions);
-    lst.add("size", size);
-
-    lst.add("warmupTime", warmupTime);
-    lst.add("cumulative_lookups", clookups);
-    lst.add("cumulative_hits", chits);
-    lst.add("cumulative_hitratio", calcHitRatio(clookups, chits));
-    lst.add("cumulative_inserts", cinserts);
-    lst.add("cumulative_evictions", cevictions);
-
-    if (showItems != 0) {
-      Map items = cache.getLatestAccessedItems( showItems == -1 ? Integer.MAX_VALUE : showItems );
-      for (Map.Entry e : (Set <Map.Entry>)items.entrySet()) {
-        Object k = e.getKey();
-        Object v = e.getValue();
-
-        String ks = "item_" + k;
-        String vs = v.toString();
-        lst.add(ks,vs);
-      }
-      
-    }
-
-    return lst;
+  public MetricRegistry getMetricRegistry() {
+    return registry;
   }
 
   @Override
   public String toString() {
-    return name() + getStatistics().toString();
+    return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
+
 }
 
 

@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
@@ -39,6 +41,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-10136")
 public class TestReqParamsAPI extends SolrCloudTestCase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
@@ -47,6 +50,9 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
   private void setupHarnesses() {
     for (final JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       RestTestHarness harness = new RestTestHarness(() -> jettySolrRunner.getBaseUrl().toString() + "/" + COLL_NAME);
+      if (random().nextBoolean()) {
+        harness.setServerProvider(() -> jettySolrRunner.getBaseUrl().toString() + "/____v2/c/" + COLL_NAME);
+      }
       restTestHarnesses.add(harness);
     }
   }
@@ -57,7 +63,8 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
-    cluster.createCollection(COLL_NAME, 1, 2, "conf1", null);
+    CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
+        .process(cluster.getSolrClient());
   }
 
   @Test

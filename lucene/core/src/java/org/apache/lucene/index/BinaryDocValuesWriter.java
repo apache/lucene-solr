@@ -21,10 +21,10 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.Counter;
@@ -32,6 +32,8 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Buffers up pending byte[] per doc, then flushes when
  *  segment flushes. */
@@ -48,7 +50,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final Counter iwBytesUsed;
   private final PackedLongValues.Builder lengths;
-  private FixedBitSet docsWithField;
+  private DocsWithFieldSet docsWithField;
   private final FieldInfo fieldInfo;
   private long bytesUsed;
   private int lastDocID = -1;
@@ -60,7 +62,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     this.bytesOut = bytes.getDataOutput();
     this.lengths = PackedLongValues.deltaPackedBuilder(PackedInts.COMPACT);
     this.iwBytesUsed = iwBytesUsed;
-    this.docsWithField = new FixedBitSet(64);
+    this.docsWithField = new DocsWithFieldSet();
     this.bytesUsed = lengths.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(bytesUsed);
   }
@@ -84,8 +86,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
       // Should never happen!
       throw new RuntimeException(ioe);
     }
-    docsWithField = FixedBitSet.ensureCapacity(docsWithField, docID);
-    docsWithField.set(docID);
+    docsWithField.add(docID);
     updateBytesUsed();
 
     lastDocID = docID;
@@ -101,10 +102,37 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   public void finish(int maxDoc) {
   }
 
+  private SortingLeafReader.CachedBinaryDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
+    FixedBitSet docsWithField = new FixedBitSet(maxDoc);
+    BytesRef[] values = new BytesRef[maxDoc];
+    while (true) {
+      int docID = oldValues.nextDoc();
+      if (docID == NO_MORE_DOCS) {
+        break;
+      }
+      int newDocID = sortMap.oldToNew(docID);
+      docsWithField.set(newDocID);
+      values[newDocID] = BytesRef.deepCopyOf(oldValues.binaryValue());
+    }
+    return new SortingLeafReader.CachedBinaryDVs(values, docsWithField);
+  }
+
   @Override
-  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
+  Sorter.DocComparator getDocComparator(int numDoc, SortField sortField) throws IOException {
+    throw new IllegalArgumentException("It is forbidden to sort on a binary field");
+  }
+
+  @Override
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
     bytes.freeze(false);
     final PackedLongValues lengths = this.lengths.build();
+    final SortingLeafReader.CachedBinaryDVs sorted;
+    if (sortMap != null) {
+      sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap,
+          new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
+    } else {
+      sorted = null;
+    }
     dvConsumer.addBinaryField(fieldInfo,
                               new EmptyDocValuesProducer() {
                                 @Override
@@ -112,7 +140,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                                   if (fieldInfoIn != fieldInfo) {
                                     throw new IllegalArgumentException("wrong fieldInfo");
                                   }
-                                  return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField);
+                                  if (sorted == null) {
+                                    return new BufferedBinaryDocValues(lengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
+                                  } else {
+                                    return new SortingLeafReader.SortingBinaryDocValues(sorted);
+                                  }
                                 }
                               });
   }
@@ -124,12 +156,12 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     final DocIdSetIterator docsWithField;
     final DataInput bytesIterator;
     
-    BufferedBinaryDocValues(PackedLongValues lengths, int maxLength, DataInput bytesIterator, FixedBitSet docsWithFields) {
+    BufferedBinaryDocValues(PackedLongValues lengths, int maxLength, DataInput bytesIterator, DocIdSetIterator docsWithFields) {
       this.value = new BytesRefBuilder();
       this.value.grow(maxLength);
       this.lengthsIterator = lengths.iterator();
       this.bytesIterator = bytesIterator;
-      this.docsWithField = new BitSetIterator(docsWithFields, lengths.size());
+      this.docsWithField = docsWithFields;
     }
 
     @Override
@@ -150,6 +182,11 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
     @Override
     public int advance(int target) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
       throw new UnsupportedOperationException();
     }
 

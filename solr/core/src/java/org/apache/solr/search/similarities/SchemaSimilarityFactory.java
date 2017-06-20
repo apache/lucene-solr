@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.similarities;
 
+import java.util.HashMap;
+
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
@@ -28,12 +30,14 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.util.PayloadDecoder;
+import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * <p>
  * <code>SimilarityFactory</code> that returns a global {@link PerFieldSimilarityWrapper}
- * that delegates to the field type, if it's configured.  For field type's that
+ * that delegates to the field type, if it's configured.  For field types that
  * do not have a <code>Similarity</code> explicitly configured, the global <code>Similarity</code> 
  * will use per fieldtype defaults -- either based on an explicitly configured 
  * <code>defaultSimFromFieldType</code> a sensible default depending on the {@link Version} 
@@ -45,7 +49,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </ul>
  * <p>
  * The <code>defaultSimFromFieldType</code> option accepts the name of any fieldtype, and uses 
- * whatever <code>Similarity</code> is explicitly configured for that fieldType as thedefault for 
+ * whatever <code>Similarity</code> is explicitly configured for that fieldType as the default for
  * all other field types.  For example:
  * </p>
  * <pre class="prettyprint">
@@ -129,21 +133,45 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
                                   "' but that <fieldType> does not define a <similarity>");
         }
       }
-      assert null != defaultSim;
-      final Similarity defaultSimilarity = defaultSim;
-      similarity = new PerFieldSimilarityWrapper() {
-        @Override
-        public Similarity get(String name) {
-          FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
-          if (fieldType == null) {
-            return defaultSimilarity;
-          } else {
-            Similarity similarity = fieldType.getSimilarity();
-            return similarity == null ? defaultSimilarity : similarity;
-          }
-        }
-      };
+      similarity = new SchemaSimilarity(defaultSim);
     }
     return similarity;
+  }
+  
+  private class SchemaSimilarity extends PerFieldSimilarityWrapper {
+    private Similarity defaultSimilarity;
+    private HashMap<FieldType,PayloadDecoder> decoders;  // cache to avoid scanning token filters repeatedly, unnecessarily
+
+    public SchemaSimilarity(Similarity defaultSimilarity) {
+      this.defaultSimilarity = defaultSimilarity;
+    }
+
+    @Override
+    public Similarity get(String name) {
+      FieldType fieldType = core.getLatestSchema().getFieldTypeNoEx(name);
+      if (fieldType == null) {
+        return defaultSimilarity;
+      } else {
+        Similarity similarity = fieldType.getSimilarity();
+        similarity = similarity == null ? defaultSimilarity : similarity;
+
+        // Payload score handling: if field type has index-time payload encoding, wrap and computePayloadFactor accordingly
+        if (decoders == null) decoders = new HashMap<>();
+        PayloadDecoder decoder;
+        if (!decoders.containsKey(fieldType)) {
+          decoders.put(fieldType, PayloadUtils.getPayloadDecoder(fieldType));
+        }
+        decoder = decoders.get(fieldType);
+
+        if (decoder != null) similarity = new PayloadScoringSimilarityWrapper(similarity, decoder);
+
+        return similarity;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "SchemaSimilarity. Default: " + ((get("") == null) ? "null" : get("").toString());
+    }
   }
 }

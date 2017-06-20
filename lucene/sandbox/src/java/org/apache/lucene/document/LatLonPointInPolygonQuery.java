@@ -35,6 +35,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 
@@ -92,13 +93,14 @@ final class LatLonPointInPolygonQuery extends Query {
     NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
 
     final Polygon2D tree = Polygon2D.create(polygons);
+    final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createPolygonPredicate(polygons, tree);
 
     return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        PointValues values = reader.getPointValues();
+        PointValues values = reader.getPointValues(field);
         if (values == null) {
           // No docs in this segment had any points fields
           return null;
@@ -113,7 +115,7 @@ final class LatLonPointInPolygonQuery extends Query {
         // matching docids
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
-        values.intersect(field, 
+        values.intersect( 
                          new IntersectVisitor() {
 
                            DocIdSetBuilder.BulkAdder adder;
@@ -130,8 +132,8 @@ final class LatLonPointInPolygonQuery extends Query {
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
-                             if (tree.contains(decodeLatitude(packedValue, 0), 
-                                               decodeLongitude(packedValue, Integer.BYTES))) {
+                             if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
                                adder.add(docID);
                              }
                            }

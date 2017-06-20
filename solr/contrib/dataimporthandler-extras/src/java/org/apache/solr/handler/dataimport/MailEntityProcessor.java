@@ -728,8 +728,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
       return true;
     }
   }
-  
-  class MailsSinceLastCheckFilter implements CustomFilter {
+
+  static class MailsSinceLastCheckFilter implements CustomFilter {
     
     private Date since;
     
@@ -843,7 +843,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       String val = context.getEntityAttribute(prop);
       if (val != null) {
         val = context.replaceTokens(val);
-        v = Integer.valueOf(val);
+        v = Integer.parseInt(val);
       }
     } catch (NumberFormatException e) {
       // do nothing

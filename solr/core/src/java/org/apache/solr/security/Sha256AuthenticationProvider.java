@@ -30,7 +30,10 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,13 +49,17 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
 
   static void putUser(String user, String pwd, Map credentials) {
     if (user == null || pwd == null) return;
+    String val = getSaltedHashedValue(pwd);
+    credentials.put(user, val);
+  }
 
+  public static String getSaltedHashedValue(String pwd) {
     final Random r = new SecureRandom();
     byte[] salt = new byte[32];
     r.nextBytes(salt);
     String saltBase64 = Base64.encodeBase64String(salt);
     String val = sha256(pwd, saltBase64) + " " + saltBase64;
-    credentials.put(user, val);
+    return val;
   }
 
   @Override
@@ -64,7 +71,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     credentials = new LinkedHashMap<>();
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
     if (users == null) {
-      log.warn("No users configured yet");
+      log.debug("No users configured yet");
       return;
     }
     for (Map.Entry<String, String> e : users.entrySet()) {
@@ -150,6 +157,11 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
       }
     }
     return latestConf;
+  }
+
+  @Override
+  public ValidatingJsonMap getSpec() {
+    return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
   }
 
   static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");

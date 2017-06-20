@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -56,7 +57,8 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * {@link QueryCachingPolicy caching policies} that only cache on "large"
  * segments, and it is advised to not share this cache across too many indices.
  *
- * Typical usage looks like this:
+ * A default query cache and policy instance is used in IndexSearcher. If you want to replace those defaults
+ * it is typically done like this:
  * <pre class="prettyprint">
  *   final int maxNumberOfCachedQueries = 256;
  *   final long maxRamBytesUsed = 50 * 1024L * 1024L; // 50MB
@@ -64,15 +66,8 @@ import org.apache.lucene.util.RoaringDocIdSet;
  *   // it is fine to eg. store them into static variables
  *   final QueryCache queryCache = new LRUQueryCache(maxNumberOfCachedQueries, maxRamBytesUsed);
  *   final QueryCachingPolicy defaultCachingPolicy = new UsageTrackingQueryCachingPolicy();
- *
- *   // ...
- *
- *   // Then at search time
- *   Query myQuery = ...;
- *   Query myCacheQuery = queryCache.doCache(myQuery, defaultCachingPolicy);
- *   // myCacheQuery is now a wrapper around the original query that will interact with the cache
- *   IndexSearcher searcher = ...;
- *   TopDocs topDocs = searcher.search(new ConstantScoreQuery(myCacheQuery), 10);
+ *   indexSearcher.setQueryCache(queryCache);
+ *   indexSearcher.setQueryCachingPolicy(defaultCachingPolicy);
  * </pre>
  *
  * This cache exposes some global statistics ({@link #getHitCount() hit count},
@@ -113,7 +108,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // are only allowed to store sub-sets of the queries that are contained in
   // mostRecentlyUsedQueries. This is why write operations are performed under a lock
   private final Set<Query> mostRecentlyUsedQueries;
-  private final Map<Object, LeafCache> cache;
+  private final Map<IndexReader.CacheKey, LeafCache> cache;
   private final ReentrantLock lock;
 
   // these variables are volatile so that we do not need to sync reads
@@ -270,11 +265,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  DocIdSet get(Query key, LeafReaderContext context) {
+  DocIdSet get(Query key, LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
     assert lock.isHeldByCurrentThread();
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
-    final Object readerKey = context.reader().getCoreCacheKey();
+    final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
       onMiss(readerKey, key);
@@ -295,7 +290,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     return cached;
   }
 
-  void putIfAbsent(Query query, LeafReaderContext context, DocIdSet set) {
+  void putIfAbsent(Query query, LeafReaderContext context, DocIdSet set, IndexReader.CacheHelper cacheHelper) {
     assert query instanceof BoostQuery == false;
     assert query instanceof ConstantScoreQuery == false;
     // under a lock to make sure that mostRecentlyUsedQueries and cache remain sync'ed
@@ -303,19 +298,19 @@ public class LRUQueryCache implements QueryCache, Accountable {
     try {
       Query singleton = uniqueQueries.putIfAbsent(query, query);
       if (singleton == null) {
-        onQueryCache(singleton, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(query));
+        onQueryCache(query, LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsed(query));
       } else {
         query = singleton;
       }
-      final Object key = context.reader().getCoreCacheKey();
+      final IndexReader.CacheKey key = cacheHelper.getKey();
       LeafCache leafCache = cache.get(key);
       if (leafCache == null) {
         leafCache = new LeafCache(key);
-        final LeafCache previous = cache.put(context.reader().getCoreCacheKey(), leafCache);
+        final LeafCache previous = cache.put(key, leafCache);
         ramBytesUsed += HASHTABLE_RAM_BYTES_PER_ENTRY;
         assert previous == null;
         // we just created a new leaf cache, need to register a close listener
-        context.reader().addCoreClosedListener(this::clearCoreCacheKey);
+        cacheHelper.addClosedListener(this::clearCoreCacheKey);
       }
       leafCache.putIfAbsent(query, set);
       evictIfNecessary();
@@ -722,24 +717,32 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) throws IOException {
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
+
+      // TODO: should it be pluggable, eg. for queries that run on doc values?
+      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      if (cacheHelper == null) {
+        // this segment is not suitable for caching
+        return in.scorerSupplier(context);
+      }
+
       // Short-circuit: Check whether this segment is eligible for caching
       // before we take a lock because of #get
       if (shouldCache(context) == false) {
-        return in.scorer(context);
+        return in.scorerSupplier(context);
       }
 
       // If the lock is already busy, prefer using the uncached version than waiting
       if (lock.tryLock() == false) {
-        return in.scorer(context);
+        return in.scorerSupplier(context);
       }
 
       DocIdSet docIdSet;
       try {
-        docIdSet = get(in.getQuery(), context);
+        docIdSet = get(in.getQuery(), context, cacheHelper);
       } finally {
         lock.unlock();
       }
@@ -747,9 +750,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
           docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), context, docIdSet);
+          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
         } else {
-          return in.scorer(context);
+          return in.scorerSupplier(context);
         }
       }
 
@@ -762,7 +765,27 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return null;
       }
 
-      return new ConstantScoreScorer(this, 0f, disi);
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(boolean randomAccess) throws IOException {
+          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, disi);
+        }
+        
+        @Override
+        public long cost() {
+          return disi.cost();
+        }
+      };
+
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      ScorerSupplier scorerSupplier = scorerSupplier(context);
+      if (scorerSupplier == null) {
+        return null;
+      }
+      return scorerSupplier.get(false);
     }
 
     @Override
@@ -770,6 +793,14 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
+
+      // TODO: should it be pluggable, eg. for queries that run on doc values?
+      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      if (cacheHelper == null) {
+        // this segment is not suitable for caching
+        return in.bulkScorer(context);
+      }
+
       // Short-circuit: Check whether this segment is eligible for caching
       // before we take a lock because of #get
       if (shouldCache(context) == false) {
@@ -783,7 +814,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet;
       try {
-        docIdSet = get(in.getQuery(), context);
+        docIdSet = get(in.getQuery(), context, cacheHelper);
       } finally {
         lock.unlock();
       }
@@ -791,7 +822,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
           docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), context, docIdSet);
+          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
         } else {
           return in.bulkScorer(context);
         }

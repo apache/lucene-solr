@@ -331,11 +331,13 @@ limitations under the License.
 {
   color: #C43C35;
   stroke: #C43C35;
+  font-style: italic; 
 }
 
 #content #graph-content .node.recovery_failed text
 {
   fill: #C43C35;
+  font-style: italic; 
 }
 
 #content #cloud #legend .down,
@@ -357,11 +359,13 @@ limitations under the License.
 {
   color: #d5dd00;
   stroke: #d5dd00;
+  font-style: italic; 
 }
 
 #content #graph-content .node.recovering text
 {
   fill: #d5dd00;
+  font-style: italic; 
 }
 
 #content #cloud #legend .active,
@@ -394,6 +398,12 @@ limitations under the License.
   stroke: #c0c0c0;
 }
 
+#content #cloud #legend .leader,
+#content #graph-content .leader text
+{
+  font-weight: bold;
+}
+
 #content #graph-content .node.lvl-0 circle
 {
   stroke: #fff;
@@ -409,4 +419,18 @@ limitations under the License.
   display: inline-block;
   padding-top: 15px;
   padding-bottom: 15px;
+}
+
+#content #cloud #legend .shard-inactive,
+#content #cloud #legend .shard-inactive li,
+#content #cloud #legend .shard-inactive li text,
+#content #graph-content .shard-inactive text
+{
+  text-decoration: line-through;
+}
+#content #cloud #legend .shard-inactive circle,
+#content #graph-content .shard-inactive circle,
+#content #graph-content .link.shard-inactive
+{
+  stroke: #e9e9e9;
 }

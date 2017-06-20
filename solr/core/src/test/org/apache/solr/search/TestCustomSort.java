@@ -49,7 +49,7 @@ public class TestCustomSort extends SolrTestCaseJ4 {
     assertU(adoc(sdoc("id", "13", "text", "d", "payload", ByteBuffer.wrap(new byte[] { (byte)0x80, 0x11, 0x33 }))));             // 12
     assertU(commit());
     
-    assertQ(req("q", "*:*", "fl", "id", "sort", "payload asc", "rows", "20")
+    assertQ(req("q", "*:*", "fl", "id_i", "sort", "payload asc", "rows", "20")
         , "//result[@numFound='13']"                   // <result name="response" numFound="13" start="0">
         , "//result/doc[int='7'  and position()=1]"    //   <doc><int name="id">7</int></doc>   00 3c 73
         , "//result/doc[int='1'  and position()=2]"    //   <doc><int name="id">1</int></doc>   12 62 15
@@ -64,7 +64,7 @@ public class TestCustomSort extends SolrTestCaseJ4 {
         , "//result/doc[int='8'  and position()=11]"   //   <doc><int name="id">8</int></doc>   59 2d 4d      
         , "//result/doc[int='13' and position()=12]"   //   <doc><int name="id">13</int></doc>  80 11 33       
         , "//result/doc[int='11' and position()=13]"); //   <doc><int name="id">11</int></doc>  ff af 9c
-    assertQ(req("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20")
+    assertQ(req("q", "*:*", "fl", "id_i", "sort", "payload desc", "rows", "20")
         , "//result[@numFound='13']"                   // <result name="response" numFound="13" start="0">
         , "//result/doc[int='11' and position()=1]"    //   <doc><int name="id">11</int></doc>  ff af 9c            
         , "//result/doc[int='13' and position()=2]"    //   <doc><int name="id">13</int></doc>  80 11 33                   
@@ -79,44 +79,44 @@ public class TestCustomSort extends SolrTestCaseJ4 {
         , "//result/doc[int='6'  and position()=11]"   //   <doc><int name="id">6</int></doc>   1a 2b 3c 00 00 03   
         , "//result/doc[int='1'  and position()=12]"   //   <doc><int name="id">1</int></doc>   12 62 15            
         , "//result/doc[int='7'  and position()=13]"); //   <doc><int name="id">7</int></doc>   00 3c 73            
-    assertQ(req("q", "text:a", "fl", "id", "sort", "payload asc", "rows", "20")
+    assertQ(req("q", "text:a", "fl", "id_i", "sort", "payload asc", "rows", "20")
         , "//result[@numFound='4']"                    // <result name="response" numFound="4" start="0">
         , "//result/doc[int='1'  and position()=1]"    //   <doc><int name="id">1</int></doc>   12 62 15    
         , "//result/doc[int='3'  and position()=2]"    //   <doc><int name="id">3</int></doc>   35 32 58    
         , "//result/doc[int='5'  and position()=3]"    //   <doc><int name="id">5</int></doc>   35 35 10 00 
         , "//result/doc[int='9'  and position()=4]");  //   <doc><int name="id">9</int></doc>   39 79 7a    
-    assertQ(req("q", "text:a", "fl", "id", "sort", "payload desc", "rows", "20")
+    assertQ(req("q", "text:a", "fl", "id_i", "sort", "payload desc", "rows", "20")
         , "//result[@numFound='4']"                    // <result name="response" numFound="4" start="0">
         , "//result/doc[int='9'  and position()=1]"    //   <doc><int name="id">9</int></doc>   39 79 7a    
         , "//result/doc[int='5'  and position()=2]"    //   <doc><int name="id">5</int></doc>   35 35 10 00 
         , "//result/doc[int='3'  and position()=3]"    //   <doc><int name="id">3</int></doc>   35 32 58    
         , "//result/doc[int='1'  and position()=4]");  //   <doc><int name="id">1</int></doc>   12 62 15    
-    assertQ(req("q", "text:b", "fl", "id", "sort", "payload asc", "rows", "20")
+    assertQ(req("q", "text:b", "fl", "id_i", "sort", "payload asc", "rows", "20")
         , "//result[@numFound='3']"                    // <result name="response" numFound="3" start="0">
         , "//result/doc[int='4'  and position()=1]"    //   <doc><int name="id">4</int></doc>   25 21 15
         , "//result/doc[int='2'  and position()=2]"    //   <doc><int name="id">2</int></doc>   25 21 16
         , "//result/doc[int='10' and position()=3]");  //   <doc><int name="id">10</int></doc>  31 39 7c
-    assertQ(req("q", "text:b", "fl", "id", "sort", "payload desc", "rows", "20")
+    assertQ(req("q", "text:b", "fl", "id_i", "sort", "payload desc", "rows", "20")
         , "//result[@numFound='3']"                    // <result name="response" numFound="3" start="0">
         , "//result/doc[int='10' and position()=1]"    //   <doc><int name="id">10</int></doc>  31 39 7c
         , "//result/doc[int='2'  and position()=2]"    //   <doc><int name="id">2</int></doc>   25 21 16
         , "//result/doc[int='4'  and position()=3]");  //   <doc><int name="id">4</int></doc>   25 21 15
-    assertQ(req("q", "text:c", "fl", "id", "sort", "payload asc", "rows", "20")
+    assertQ(req("q", "text:c", "fl", "id_i", "sort", "payload asc", "rows", "20")
         , "//result[@numFound='3']"                   // <result name="response" numFound="3" start="0">
         , "//result/doc[int='7'  and position()=1]"   //   <doc><int name="id">7</int></doc>    00 3c 73         
         , "//result/doc[int='6'  and position()=2]"   //   <doc><int name="id">6</int></doc>    1a 2b 3c 00 00 03
         , "//result/doc[int='8'  and position()=3]"); //   <doc><int name="id">8</int></doc>    59 2d 4d              
-    assertQ(req("q", "text:c", "fl", "id", "sort", "payload desc", "rows", "20")
+    assertQ(req("q", "text:c", "fl", "id_i", "sort", "payload desc", "rows", "20")
         , "//result[@numFound='3']"                   // <result name="response" numFound="3" start="0">
         , "//result/doc[int='8'  and position()=1]"   //   <doc><int name="id">8</int></doc>    59 2d 4d              
         , "//result/doc[int='6'  and position()=2]"   //   <doc><int name="id">6</int></doc>    1a 2b 3c 00 00 03
         , "//result/doc[int='7'  and position()=3]"); //   <doc><int name="id">7</int></doc>    00 3c 73         
-    assertQ(req("q", "text:d", "fl", "id", "sort", "payload asc", "rows", "20")
+    assertQ(req("q", "text:d", "fl", "id_i", "sort", "payload asc", "rows", "20")
         , "//result[@numFound='3']"                   // <result name="response" numFound="3" start="0">
         , "//result/doc[int='12' and position()=1]"   //   <doc><int name="id">12</int></doc>   34 dd 4d
         , "//result/doc[int='13' and position()=2]"   //   <doc><int name="id">13</int></doc>   80 11 33      
         , "//result/doc[int='11' and position()=3]"); //   <doc><int name="id">11</int></doc>   ff af 9c
-    assertQ(req("q", "text:d", "fl", "id", "sort", "payload desc", "rows", "20")
+    assertQ(req("q", "text:d", "fl", "id_i", "sort", "payload desc", "rows", "20")
         , "//result[@numFound='3']"                   // <result name="response" numFound="3" start="0">
         , "//result/doc[int='11' and position()=1]"   //   <doc><int name="id">11</int></doc>   ff af 9c
         , "//result/doc[int='13' and position()=2]"   //   <doc><int name="id">13</int></doc>   80 11 33      

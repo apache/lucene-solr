@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +47,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
 import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
 
 public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static final int NUM_SERVERS = 2;
@@ -109,11 +108,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
-    String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("</solr>",
-        " <str name=\"collectionsHandler\">" + ImpersonatorCollectionsHandler.class.getName() + "</str>\n" +
-            "</solr>");
+    System.setProperty("collectionsHandler", ImpersonatorCollectionsHandler.class.getName());
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), solrXml, buildJettyConfig("/solr"));
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
   }
@@ -169,12 +166,14 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     }
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
+    System.clearProperty("collectionsHandler");
+
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(false);
   }
 
   private void create1ShardCollection(String name, String config, MiniSolrCloudCluster solrCluster) throws Exception {
     CollectionAdminResponse response;
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create() {
+    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create(name,config,1,1,0,0) {
       @Override
       public SolrParams getParams() {
         ModifiableSolrParams msp = new ModifiableSolrParams(super.getParams());
@@ -182,10 +181,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
         return msp;
       }
     };
-    create.setConfigName(config);
-    create.setCollectionName(name);
-    create.setNumShards(1);
-    create.setReplicationFactor(1);
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
 
@@ -343,8 +338,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
-    File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
-    miniCluster.uploadConfigDir(configDir, "conf1");
+    miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
     create1ShardCollection(collectionName, "conf1", miniCluster);
 
     // try a command to each node, one of them must be forwarded

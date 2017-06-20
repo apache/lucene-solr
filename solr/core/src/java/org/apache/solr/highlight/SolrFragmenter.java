@@ -19,10 +19,10 @@ package org.apache.solr.highlight;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public interface SolrFragmenter extends SolrInfoMBean, NamedListInitializedPlugin {
+public interface SolrFragmenter extends SolrInfoBean, NamedListInitializedPlugin {
 
   /** <code>init</code> will be called just once, immediately after creation.
    * <p>The args are user-level initialization parameters that

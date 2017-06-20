@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
@@ -34,8 +35,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Version;
 
 /**
  * Wraps a Terms with a {@link org.apache.lucene.index.LeafReader}, typically from term vectors.
@@ -85,22 +86,12 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public void addCoreClosedListener(CoreClosedListener listener) {
-    addCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
-  @Override
-  public void removeCoreClosedListener(CoreClosedListener listener) {
-    removeCoreClosedListenerAsReaderClosedListener(this, listener);
-  }
-
-  @Override
   protected void doClose() throws IOException {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return fields;
+  public Terms terms(String field) throws IOException {
+    return fields.terms(field);
   }
 
   @Override
@@ -144,7 +135,7 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public PointValues getPointValues() {
+  public PointValues getPointValues(String fieldName) {
     return null;
   }
 
@@ -157,7 +148,7 @@ public class TermVectorLeafReader extends LeafReader {
     if (docID != 0) {
       return null;
     }
-    return fields();
+    return fields;
   }
 
   @Override
@@ -175,7 +166,17 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public Sort getIndexSort() {
+  public LeafMetaData getMetaData() {
+    return new LeafMetaData(Version.LATEST.major, null, null);
+  }
+
+  @Override
+  public CacheHelper getCoreCacheHelper() {
+    return null;
+  }
+
+  @Override
+  public CacheHelper getReaderCacheHelper() {
     return null;
   }
 }

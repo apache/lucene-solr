@@ -464,6 +464,15 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
+  @Override
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false)) return;
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0) {
+      sreq.params.set(COMPONENT_NAME, "false");
+    }
+  }
+
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
 
   @Override
@@ -480,6 +489,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public String getDescription() {
     return "A Component for working with Term Vectors";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.QUERY;
   }
 }
 

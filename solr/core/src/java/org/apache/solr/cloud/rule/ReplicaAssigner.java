@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -39,7 +38,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.Snitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
@@ -48,7 +46,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.*;
 import static org.apache.solr.cloud.rule.Rule.Phase.*;
-import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 public class ReplicaAssigner {
@@ -65,10 +62,12 @@ public class ReplicaAssigner {
   public static class Position implements Comparable<Position> {
     public final String shard;
     public final int index;
+    public final Replica.Type type;
 
-    public Position(String shard, int replicaIdx) {
+    public Position(String shard, int replicaIdx, Replica.Type type) {
       this.shard = shard;
       this.index = replicaIdx;
+      this.type = type;
     }
 
     @Override
@@ -103,7 +102,6 @@ public class ReplicaAssigner {
     this.participatingLiveNodes = new ArrayList<>(participatingLiveNodes);
     this.nodeVsTags = getTagsForNodes(cc, snitches);
     this.shardVsNodes = getDeepCopy(shardVsNodes, 2);
-    validateTags(nodeVsTags);
 
     if (clusterState != null) {
       Map<String, DocCollection> collections = clusterState.getCollectionsMap();
@@ -192,7 +190,7 @@ public class ReplicaAssigner {
       List<Position> positions = new ArrayList<>();
       for (int pos : p) {
         for (int j = 0; j < shardVsReplicaCount.get(shardNames.get(pos)); j++) {
-          positions.add(new Position(shardNames.get(pos), j));
+          positions.add(new Position(shardNames.get(pos), j, Replica.Type.NRT));
         }
       }
       Collections.sort(positions);
@@ -213,7 +211,7 @@ public class ReplicaAssigner {
     int startPosition = 0;
     Map<String, Map<String, Integer>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
     List<String> sortedLiveNodes = new ArrayList<>(this.participatingLiveNodes);
-    Collections.sort(sortedLiveNodes, (n1, n2) -> {
+    Collections.sort(sortedLiveNodes, (String n1, String n2) -> {
       int result1 = 0;
       for (int i = 0; i < rulePermutation.length; i++) {
         Rule rule = rules.get(rulePermutation[i]);
@@ -283,21 +281,6 @@ public class ReplicaAssigner {
     }
     return result;
   }
-
-  private void validateTags(Map<String, Map<String, Object>> nodeVsTags) {
-    List<String> errors = new ArrayList<>();
-    for (Rule rule : rules) {
-      for (Map.Entry<String, Map<String, Object>> e : nodeVsTags.entrySet()) {
-        if (e.getValue().get(rule.tag.name) == null) {
-          errors.add(formatString("The value for tag {0} is not available for node {1}", rule.tag.name, e.getKey()));
-        }
-      }
-    }
-    if (!errors.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, StrUtils.join(errors, ','));
-    }
-  }
-
 
   /**
    * get all permutations for the int[] whose items are 0..level
@@ -422,14 +405,12 @@ public class ReplicaAssigner {
           context.exception = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Not all tags were obtained from node " + node);
         } else {
-          if (context.getTags().keySet().containsAll(context.snitchInfo.getTagNames())) {
-            Map<String, Object> tags = result.get(node);
-            if (tags == null) {
-              tags = new HashMap<>();
-              result.put(node, tags);
-            }
-            tags.putAll(context.getTags());
+          Map<String, Object> tags = result.get(node);
+          if (tags == null) {
+            tags = new HashMap<>();
+            result.put(node, tags);
           }
+          tags.putAll(context.getTags());
         }
       }
     }

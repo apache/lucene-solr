@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -36,8 +38,8 @@ import org.apache.lucene.util.TestUtil;
  * 
  */
 public class TestCustomNorms extends LuceneTestCase {
-  final String floatTestField = "normsTestFloat";
-  final String exceptionTestField = "normsTestExcp";
+  static final String FLOAT_TEST_FIELD = "normsTestFloat";
+  static final String EXCEPTION_TEST_FIELD = "normsTestExcp";
 
   public void testFloatNorms() throws IOException {
 
@@ -53,13 +55,13 @@ public class TestCustomNorms extends LuceneTestCase {
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
-      float nextFloat = random().nextFloat();
-      Field f = new TextField(floatTestField, "" + nextFloat, Field.Store.YES);
-      f.setBoost(nextFloat);
+      int boost = TestUtil.nextInt(random(), 1, 10);
+      String value = IntStream.range(0, boost).mapToObj(k -> Integer.toString(boost)).collect(Collectors.joining(" "));
+      Field f = new TextField(FLOAT_TEST_FIELD, value, Field.Store.YES);
 
       doc.add(f);
       writer.addDocument(doc);
-      doc.removeField(floatTestField);
+      doc.removeField(FLOAT_TEST_FIELD);
       if (rarely()) {
         writer.commit();
       }
@@ -67,13 +69,13 @@ public class TestCustomNorms extends LuceneTestCase {
     writer.commit();
     writer.close();
     DirectoryReader open = DirectoryReader.open(dir);
-    NumericDocValues norms = MultiDocValues.getNormValues(open, floatTestField);
+    NumericDocValues norms = MultiDocValues.getNormValues(open, FLOAT_TEST_FIELD);
     assertNotNull(norms);
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
-      float expected = Float.parseFloat(document.get(floatTestField));
+      int expected = Integer.parseInt(document.get(FLOAT_TEST_FIELD).split(" ")[0]);
       assertEquals(i, norms.nextDoc());
-      assertEquals(expected, Float.intBitsToFloat((int)norms.longValue()), 0.0f);
+      assertEquals(expected, norms.longValue());
     }
     open.close();
     dir.close();
@@ -85,7 +87,7 @@ public class TestCustomNorms extends LuceneTestCase {
 
     @Override
     public Similarity get(String field) {
-      if (floatTestField.equals(field)) {
+      if (FLOAT_TEST_FIELD.equals(field)) {
         return new FloatEncodingBoostSimilarity();
       } else {
         return delegate;
@@ -97,7 +99,7 @@ public class TestCustomNorms extends LuceneTestCase {
 
     @Override
     public long computeNorm(FieldInvertState state) {
-      return Float.floatToIntBits(state.getBoost());
+      return state.getLength();
     }
     
     @Override

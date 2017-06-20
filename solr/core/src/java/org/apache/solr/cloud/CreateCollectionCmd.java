@@ -25,19 +25,23 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -46,7 +50,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +60,7 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.RANDOM;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -64,9 +69,11 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 public class CreateCollectionCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
+  private SolrZkClient zkClient;
 
   public CreateCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+    this.zkClient = ocmh.zkStateReader.getZkClient();
   }
 
   @Override
@@ -84,12 +91,13 @@ public class CreateCollectionCmd implements Cmd {
 
     ocmh.validateConfigOrThrowSolrException(configName);
 
-
     try {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
 
-      int repFactor = message.getInt(REPLICATION_FACTOR, 1);
+      int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
+      int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
+      int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
 
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
       final String async = message.getStr(ASYNC);
@@ -109,8 +117,8 @@ public class CreateCollectionCmd implements Cmd {
 
       int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
 
-      if (repFactor <= 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, REPLICATION_FACTOR + " must be greater than 0");
+      if (numNrtReplicas + numTlogReplicas <= 0) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
       }
 
       if (numSlices <= 0) {
@@ -128,39 +136,50 @@ public class CreateCollectionCmd implements Cmd {
 
         positionVsNodes = new HashMap<>();
       } else {
-        if (repFactor > nodeList.size()) {
-          log.warn("Specified "
-              + REPLICATION_FACTOR
-              + " of "
-              + repFactor
+        int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
+        if (totalNumReplicas > nodeList.size()) {
+          log.warn("Specified number of replicas of "
+              + totalNumReplicas
               + " on collection "
               + collectionName
-              + " is higher than or equal to the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
+              + " is higher than the number of Solr instances currently live or live and part of your " + CREATE_NODE_SET + "("
               + nodeList.size()
               + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
         }
 
         int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
-        int requestedShardsToCreate = numSlices * repFactor;
+        int requestedShardsToCreate = numSlices * totalNumReplicas;
         if (maxShardsAllowedToCreate < requestedShardsToCreate) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
               + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
               + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
               + ". This allows a maximum of " + maxShardsAllowedToCreate
               + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-              + " and value of " + REPLICATION_FACTOR + " is " + repFactor
+              + ", value of " + NRT_REPLICAS + " is " + numNrtReplicas
+              + ", value of " + TLOG_REPLICAS + " is " + numTlogReplicas
+              + " and value of " + PULL_REPLICAS + " is " + numPullReplicas
               + ". This requires " + requestedShardsToCreate
               + " shards to be created (higher than the allowed number)");
         }
 
-        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, message, shardNames, repFactor);
+        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, collectionName, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
       }
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
-      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader);
+      boolean isLegacyCloud = Overseer.isLegacy(zkStateReader);
 
       ocmh.createConfNode(configName, collectionName, isLegacyCloud);
 
+      Map<String,String> collectionParams = new HashMap<>();
+      Map<String,Object> collectionProps = message.getProperties();
+      for (String propName : collectionProps.keySet()) {
+        if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
+          collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), (String) collectionProps.get(propName));
+        }
+      }
+      
+      createCollectionZkNode(zkClient, collectionName, collectionParams);
+      
       Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
       // wait for a while until we don't see the collection
@@ -183,13 +202,13 @@ public class CreateCollectionCmd implements Cmd {
       Map<String, String> requestMap = new HashMap<>();
 
 
-      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , replicationFactor : {2}",
-          collectionName, shardNames, repFactor));
+      log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , nrtReplicas : {2}, tlogReplicas: {3}, pullReplicas: {4}",
+          collectionName, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas));
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
         ReplicaAssigner.Position position = e.getKey();
         String nodeName = e.getValue();
-        String coreName = collectionName + "_" + position.shard + "_replica" + (position.index + 1);
+        String coreName = Assign.buildCoreName(collectionName, position.shard, position.type, position.index + 1);
         log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
             , coreName, position.shard, collectionName, nodeName));
 
@@ -204,7 +223,8 @@ public class CreateCollectionCmd implements Cmd {
               ZkStateReader.SHARD_ID_PROP, position.shard,
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-              ZkStateReader.BASE_URL_PROP, baseUrl);
+              ZkStateReader.BASE_URL_PROP, baseUrl, 
+              ZkStateReader.REPLICA_TYPE, position.type.name());
           Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
         }
 
@@ -217,6 +237,8 @@ public class CreateCollectionCmd implements Cmd {
         params.set(CoreAdminParams.COLLECTION, collectionName);
         params.set(CoreAdminParams.SHARD, position.shard);
         params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
+        params.set(CoreAdminParams.NEW_COLLECTION, "true");
+        params.set(CoreAdminParams.REPLICA_TYPE, position.type.name());
 
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());
@@ -286,5 +308,130 @@ public class CreateCollectionCmd implements Cmd {
       }
     }
     return configName;
+  }
+  
+  public static void createCollectionZkNode(SolrZkClient zkClient, String collection, Map<String,String> params) {
+    log.debug("Check for collection zkNode:" + collection);
+    String collectionPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
+
+    try {
+      if (!zkClient.exists(collectionPath, true)) {
+        log.debug("Creating collection in ZooKeeper:" + collection);
+
+        try {
+          Map<String,Object> collectionProps = new HashMap<>();
+
+          // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
+          String defaultConfigName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, collection);
+
+          if (params.size() > 0) {
+            collectionProps.putAll(params);
+            // if the config name wasn't passed in, use the default
+            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP)) {
+              // users can create the collection node and conf link ahead of time, or this may return another option
+              getConfName(zkClient, collection, collectionPath, collectionProps);
+            }
+
+          } else if (System.getProperty("bootstrap_confdir") != null) {
+            // if we are bootstrapping a collection, default the config for
+            // a new collection to the collection we are bootstrapping
+            log.info("Setting config for collection:" + collection + " to " + defaultConfigName);
+
+            Properties sysProps = System.getProperties();
+            for (String sprop : System.getProperties().stringPropertyNames()) {
+              if (sprop.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
+                collectionProps.put(sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), sysProps.getProperty(sprop));
+              }
+            }
+
+            // if the config name wasn't passed in, use the default
+            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP))
+              collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
+
+          } else if (Boolean.getBoolean("bootstrap_conf")) {
+            // the conf name should should be the collection name of this core
+            collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
+          } else {
+            getConfName(zkClient, collection, collectionPath, collectionProps);
+          }
+
+          collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);  // we don't put numShards in the collections properties
+
+          ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
+          zkClient.makePath(collectionPath, Utils.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
+
+        } catch (KeeperException e) {
+          // it's okay if the node already exists
+          if (e.code() != KeeperException.Code.NODEEXISTS) {
+            throw e;
+          }
+        }
+      } else {
+        log.debug("Collection zkNode exists");
+      }
+
+    } catch (KeeperException e) {
+      // it's okay if another beats us creating the node
+      if (e.code() == KeeperException.Code.NODEEXISTS) {
+        return;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error creating collection node in Zookeeper", e);
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error creating collection node in Zookeeper", e);
+    }
+
+  }
+  
+  private static void getConfName(SolrZkClient zkClient, String collection, String collectionPath, Map<String,Object> collectionProps) throws KeeperException,
+      InterruptedException {
+    // check for configName
+    log.debug("Looking for collection configName");
+    if (collectionProps.containsKey("configName")) {
+      log.info("configName was passed as a param {}", collectionProps.get("configName"));
+      return;
+    }
+    
+    List<String> configNames = null;
+    int retry = 1;
+    int retryLimt = 6;
+    for (; retry < retryLimt; retry++) {
+      if (zkClient.exists(collectionPath, true)) {
+        ZkNodeProps cProps = ZkNodeProps.load(zkClient.getData(collectionPath, null, null, true));
+        if (cProps.containsKey(ZkController.CONFIGNAME_PROP)) {
+          break;
+        }
+      }
+
+      // if there is only one conf, use that
+      try {
+        configNames = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE, null,
+            true);
+      } catch (NoNodeException e) {
+        // just keep trying
+      }
+      if (configNames != null && configNames.size() == 1) {
+        // no config set named, but there is only 1 - use it
+        log.info("Only one config set found in zk - using it:" + configNames.get(0));
+        collectionProps.put(ZkController.CONFIGNAME_PROP, configNames.get(0));
+        break;
+      }
+
+      if (configNames != null && configNames.contains(collection)) {
+        log.info(
+            "Could not find explicit collection configName, but found config name matching collection name - using that set.");
+        collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
+        break;
+      }
+
+      log.info("Could not find collection configName - pausing for 3 seconds and trying again - try: " + retry);
+      Thread.sleep(3000);
+    }
+    if (retry == retryLimt) {
+      log.error("Could not find configName for collection " + collection);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not find configName for collection " + collection + " found:" + configNames);
+    }
   }
 }

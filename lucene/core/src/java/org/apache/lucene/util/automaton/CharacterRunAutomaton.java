@@ -36,14 +36,14 @@ public class CharacterRunAutomaton extends RunAutomaton {
    *   it then a TooComplexToDeterminizeException is thrown.
    */ 
   public CharacterRunAutomaton(Automaton a, int maxDeterminizedStates) {
-    super(a, Character.MAX_CODE_POINT, false, maxDeterminizedStates);
+    super(a, Character.MAX_CODE_POINT+1, maxDeterminizedStates);
   }
 
   /**
    * Returns true if the given string is accepted by this automaton.
    */
   public boolean run(String s) {
-    int p = initial;
+    int p = 0;
     int l = s.length();
     for (int i = 0, cp = 0; i < l; i += Character.charCount(cp)) {
       p = step(p, cp = s.codePointAt(i));
@@ -56,7 +56,7 @@ public class CharacterRunAutomaton extends RunAutomaton {
    * Returns true if the given string is accepted by this automaton
    */
   public boolean run(char[] s, int offset, int length) {
-    int p = initial;
+    int p = 0;
     int l = offset + length;
     for (int i = offset, cp = 0; i < l; i += Character.charCount(cp)) {
       p = step(p, cp = Character.codePointAt(s, i, l));

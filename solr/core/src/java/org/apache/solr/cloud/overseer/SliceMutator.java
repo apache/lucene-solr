@@ -16,14 +16,16 @@
  */
 package org.apache.solr.cloud.overseer;
 
-import java.lang.invoke.MethodHandles;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
+import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
+import static org.apache.solr.common.util.Utils.makeMap;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.cloud.Assign;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
@@ -37,9 +39,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
-import static org.apache.solr.common.util.Utils.makeMap;
+import com.google.common.collect.ImmutableSet;
 
 public class SliceMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -66,20 +66,21 @@ public class SliceMutator {
       log.error("Invalid Collection/Slice {}/{} ", coll, slice);
       return ZkStateWriter.NO_OP;
     }
-
     String coreNodeName = Assign.assignNode(collection);
     Replica replica = new Replica(coreNodeName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
             ZkStateReader.BASE_URL_PROP, message.getStr(ZkStateReader.BASE_URL_PROP),
             ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
-            ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP)));
+            ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP), 
+            ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)));
     return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
     final String cnn = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    final String baseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
     DocCollection coll = clusterState.getCollectionOrNull(collection);
@@ -92,7 +93,7 @@ public class SliceMutator {
 
     for (Slice slice : coll.getSlices()) {
       Replica replica = slice.getReplica(cnn);
-      if (replica != null) {
+      if (replica != null && (baseUrl == null || baseUrl.equals(replica.getBaseUrl()))) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(cnn);
         slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
@@ -248,13 +249,15 @@ public class SliceMutator {
   }
 
   public static DocCollection updateReplica(DocCollection collection, final Slice slice, String coreNodeName, final Replica replica) {
-    Map<String, Replica> copy = slice.getReplicasCopy();
+    Map<String, Replica> replicasCopy = slice.getReplicasCopy();
     if (replica == null) {
-      copy.remove(coreNodeName);
+      replicasCopy.remove(coreNodeName);
     } else {
-      copy.put(replica.getName(), replica);
+      replicasCopy.put(replica.getName(), replica);
     }
-    Slice newSlice = new Slice(slice.getName(), copy, slice.getProperties());
+    Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties());
+    log.debug("Old Slice: {}", slice);
+    log.debug("New Slice: {}", newSlice);
     return CollectionMutator.updateSlice(collection.getName(), collection, newSlice);
   }
 }

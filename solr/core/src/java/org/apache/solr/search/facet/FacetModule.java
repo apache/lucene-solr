@@ -39,6 +39,7 @@ import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RTimer;
 import org.noggit.JSONUtil;
+import org.noggit.ObjectBuilder;
 
 public class FacetModule extends SearchComponent {
 
@@ -52,7 +53,7 @@ public class FacetModule extends SearchComponent {
   public final static int PURPOSE_REFINE_JSON_FACETS   = 0x00200000;
 
   // Internal information passed down from the top level to shards for distributed faceting.
-  private final static String FACET_STATE = "_facet_";
+  private final static String FACET_INFO = "_facet_";
   private final static String FACET_REFINE = "refine";
 
 
@@ -61,6 +62,58 @@ public class FacetModule extends SearchComponent {
     // rb.componentInfo.get(FacetComponentState.class);
     return (FacetComponentState) rb.req.getContext().get(FacetComponentState.class);
   }
+
+
+  @Override
+  public void prepare(ResponseBuilder rb) throws IOException {
+    Map<String,Object> json = rb.req.getJSON();
+    Map<String,Object> jsonFacet = null;
+    if (json == null) {
+      int version = rb.req.getParams().getInt("facet.version",1);
+      if (version <= 1) return;
+      boolean facetsEnabled = rb.req.getParams().getBool(FacetParams.FACET, false);
+      if (!facetsEnabled) return;
+      jsonFacet = new LegacyFacet(rb.req.getParams()).getLegacy();
+    } else {
+      jsonFacet = (Map<String, Object>) json.get("facet");
+    }
+    if (jsonFacet == null) return;
+
+    SolrParams params = rb.req.getParams();
+
+    boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
+    Map<String,Object> facetInfo = null;
+    if (isShard) {
+      String jfacet = params.get(FACET_INFO);
+      if (jfacet == null) {
+        // if this is a shard request, but there is no _facet_ info, then don't do anything.
+        return;
+      }
+      facetInfo = (Map<String,Object>) ObjectBuilder.fromJSON(jfacet);
+    }
+
+    // At this point, we know we need to do something.  Create and save the state.
+    rb.setNeedDocSet(true);
+
+    // Parse the facet in the prepare phase?
+    FacetParser parser = new FacetTopParser(rb.req);
+    FacetRequest facetRequest = null;
+    try {
+      facetRequest = parser.parse(jsonFacet);
+    } catch (SyntaxError syntaxError) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+    }
+
+    FacetComponentState fcState = new FacetComponentState();
+    fcState.rb = rb;
+    fcState.isShard = isShard;
+    fcState.facetInfo = facetInfo;
+    fcState.facetCommands = jsonFacet;
+    fcState.facetRequest = facetRequest;
+
+    rb.req.getContext().put(FacetComponentState.class, fcState);
+  }
+
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
@@ -77,6 +130,11 @@ public class FacetModule extends SearchComponent {
     fcontext.qcontext = QueryContext.newContext(fcontext.searcher);
     if (isShard) {
       fcontext.flags |= FacetContext.IS_SHARD;
+      fcontext.facetInfo = facetState.facetInfo.isEmpty() ? null : (Map<String,Object>)facetState.facetInfo.get(FACET_REFINE);
+      if (fcontext.facetInfo != null) {
+        fcontext.flags |= FacetContext.IS_REFINEMENT;
+        fcontext.flags |= FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
+      }
     }
 
     FacetProcessor fproc = facetState.facetRequest.createFacetProcessor(fcontext);
@@ -100,60 +158,14 @@ public class FacetModule extends SearchComponent {
   }
 
 
-  @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
-    Map<String,Object> json = rb.req.getJSON();
-    Map<String,Object> jsonFacet = null;
-    if (json == null) {
-      int version = rb.req.getParams().getInt("facet.version",1);
-      if (version <= 1) return;
-      boolean facetsEnabled = rb.req.getParams().getBool(FacetParams.FACET, false);
-      if (!facetsEnabled) return;
-      jsonFacet = new LegacyFacet(rb.req.getParams()).getLegacy();
-    } else {
-      jsonFacet = (Map<String, Object>) json.get("facet");
-    }
-    if (jsonFacet == null) return;
-
-    SolrParams params = rb.req.getParams();
-
-    boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
-    if (isShard) {
-      String jfacet = params.get(FACET_STATE);
-      if (jfacet == null) {
-        // if this is a shard request, but there is no facet state, then don't do anything.
-        return;
-      }
-    }
-
-    // At this point, we know we need to do something.  Create and save the state.
-    rb.setNeedDocSet(true);
-
-    // Parse the facet in the prepare phase?
-    FacetParser parser = new FacetTopParser(rb.req);
-    FacetRequest facetRequest = null;
-    try {
-      facetRequest = parser.parse(jsonFacet);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-    }
-
-    FacetComponentState fcState = new FacetComponentState();
-    fcState.rb = rb;
-    fcState.isShard = isShard;
-    fcState.facetCommands = jsonFacet;
-    fcState.facetRequest = facetRequest;
-
-    rb.req.getContext().put(FacetComponentState.class, fcState);
-  }
 
 
   private void clearFaceting(List<ShardRequest> outgoing) {
     // turn off faceting for requests not marked as being for faceting refinements
     for (ShardRequest sreq : outgoing) {
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) continue;
-      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_STATE really control the faceting
-      sreq.params.remove(FACET_STATE);
+      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_INFO is enough to control the faceting
+      sreq.params.remove(FACET_INFO);
     }
   }
 
@@ -215,16 +227,16 @@ public class FacetModule extends SearchComponent {
         // don't request any documents
         shardsRefineRequest.params.remove(CommonParams.START);
         shardsRefineRequest.params.set(CommonParams.ROWS, "0");
-        shardsRefineRequest.params.set(CommonParams.ROWS, "0");
         shardsRefineRequest.params.set(FacetParams.FACET, false);
       }
 
       shardsRefineRequest.purpose |= PURPOSE_REFINE_JSON_FACETS;
 
-      Map<String,Object> fstate = new HashMap<>(1);
-      fstate.put(FACET_REFINE, refinement);
-      String fstateString = JSONUtil.toJSON(fstate);
-      shardsRefineRequest.params.add(FACET_STATE, fstateString);
+      Map<String,Object> finfo = new HashMap<>(1);
+      finfo.put(FACET_REFINE, refinement);
+      String finfoStr = JSONUtil.toJSON(finfo, -1);
+      // System.err.println("##################### REFINE=" + finfoStr);
+      shardsRefineRequest.params.add(FACET_INFO, finfoStr);
 
       if (newRequest) {
         rb.addRequest(this, shardsRefineRequest);
@@ -242,12 +254,12 @@ public class FacetModule extends SearchComponent {
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       sreq.purpose |= FacetModule.PURPOSE_GET_JSON_FACETS;
-      sreq.params.set(FACET_STATE, "{}"); // The presence of FACET_STATE (_facet_) turns on json faceting
+      sreq.params.set(FACET_INFO, "{}"); // The presence of FACET_INFO (_facet_) turns on json faceting
     } else {
       // turn off faceting on other requests
       /*** distributedProcess will need to use other requests for refinement
-      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_STATE really control the faceting
-      sreq.params.remove(FACET_STATE);
+      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_INFO really control the faceting
+      sreq.params.remove(FACET_INFO);
        **/
     }
   }
@@ -267,6 +279,16 @@ public class FacetModule extends SearchComponent {
         facetState.merger = facetState.facetRequest.createFacetMerger(facet);
         facetState.mcontext = new FacetMerger.Context( sreq.responses.size() );
       }
+
+      if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) {
+        // System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
+        // call merge again with a diff flag set on the context???
+        facetState.mcontext.root = facet;
+        facetState.mcontext.setShard(shardRsp.getShard());  // TODO: roll newShard into setShard?
+        facetState.merger.merge(facet , facetState.mcontext);
+        return;
+      }
+
       facetState.mcontext.root = facet;
       facetState.mcontext.newShard(shardRsp.getShard());
       facetState.merger.merge(facet , facetState.mcontext);
@@ -292,18 +314,21 @@ public class FacetModule extends SearchComponent {
   }
 
   @Override
-  public String getSource() {
-    return null;
+  public Category getCategory() {
+    return Category.QUERY;
   }
-
 }
 
 
+// TODO: perhaps factor out some sort of root/parent facet object that doesn't depend
+// on stuff like ResponseBuilder, but contains request parameters,
+// root filter lists (for filter exclusions), etc?
 class FacetComponentState {
   ResponseBuilder rb;
   Map<String,Object> facetCommands;
   FacetRequest facetRequest;
   boolean isShard;
+  Map<String,Object> facetInfo; // _facet_ param: contains out-of-band facet info, mainly for refinement requests
 
   //
   // Only used for distributed search
@@ -471,171 +496,5 @@ class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
   }
 }
 
-
-
-class FacetBucket {
-  final FacetBucketMerger parent;
-  final Comparable bucketValue;
-  final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, across all field buckets)
-
-  long count;
-  Map<String, FacetMerger> subs;
-
-  public FacetBucket(FacetBucketMerger parent, Comparable bucketValue, FacetMerger.Context mcontext) {
-    this.parent = parent;
-    this.bucketValue = bucketValue;
-    this.bucketNumber = mcontext.getNewBucketNumber(); // TODO: we don't need bucket numbers for all buckets...
-  }
-
-  public long getCount() {
-    return count;
-  }
-
-  /** returns the existing merger for the given key, or null if none yet exists */
-  FacetMerger getExistingMerger(String key) {
-    if (subs == null) return null;
-    return subs.get(key);
-  }
-
-  private FacetMerger getMerger(String key, Object prototype) {
-    FacetMerger merger = null;
-    if (subs != null) {
-      merger = subs.get(key);
-      if (merger != null) return merger;
-    }
-
-    merger = parent.createFacetMerger(key, prototype);
-
-    if (merger != null) {
-      if (subs == null) {
-        subs = new HashMap<>();
-      }
-      subs.put(key, merger);
-    }
-
-    return merger;
-  }
-
-  public void mergeBucket(SimpleOrderedMap bucket, FacetMerger.Context mcontext) {
-    // todo: for refinements, we want to recurse, but not re-do stats for intermediate buckets
-
-    mcontext.setShardFlag(bucketNumber);
-
-    // drive merging off the received bucket?
-    for (int i=0; i<bucket.size(); i++) {
-      String key = bucket.getName(i);
-      Object val = bucket.getVal(i);
-      if ("count".equals(key)) {
-        count += ((Number)val).longValue();
-        continue;
-      }
-      if ("val".equals(key)) {
-        // this is taken care of at a higher level...
-        continue;
-      }
-
-      FacetMerger merger = getMerger(key, val);
-
-      if (merger != null) {
-        merger.merge( val , mcontext );
-      }
-    }
-  }
-
-
-  public SimpleOrderedMap getMergedBucket() {
-    SimpleOrderedMap out = new SimpleOrderedMap( (subs == null ? 0 : subs.size()) + 2 );
-    if (bucketValue != null) {
-      out.add("val", bucketValue);
-    }
-    out.add("count", count);
-    if (subs != null) {
-      for (Map.Entry<String,FacetMerger> mergerEntry : subs.entrySet()) {
-        FacetMerger subMerger = mergerEntry.getValue();
-        out.add(mergerEntry.getKey(), subMerger.getMergedResult());
-      }
-    }
-
-    return out;
-  }
-
-  public Map<String, Object> getRefinement(FacetMerger.Context mcontext, Collection<String> refineTags) {
-    if (subs == null) {
-      return null;
-    }
-    Map<String,Object> refinement = null;
-    for (String tag : refineTags) {
-      FacetMerger subMerger = subs.get(tag);
-      if (subMerger != null) {
-        Map<String,Object> subRef = subMerger.getRefinement(mcontext);
-        if (subRef != null) {
-          if (refinement == null) {
-            refinement = new HashMap<>(refineTags.size());
-          }
-          refinement.put(tag, subRef);
-        }
-      }
-    }
-    return refinement;
-  }
-
-  public Map<String, Object> getRefinement2(FacetMerger.Context mcontext, Collection<String> refineTags) {
-    // TODO - partial results should turn off refining!!!
-
-    boolean parentMissing = mcontext.bucketWasMissing();
-
-    // TODO: this is a redundant check for many types of facets... only do on field faceting
-    if (!parentMissing) {
-      // if parent bucket wasn't missing, check if this bucket was.
-      // this really only needs checking on certain buckets... (like terms facet)
-      boolean sawThisBucket = mcontext.getShardFlag(bucketNumber);
-      if (!sawThisBucket) {
-        mcontext.setBucketWasMissing(true);
-      }
-    } else {
-      // if parent bucket was missing, then we should be too
-      assert !mcontext.getShardFlag(bucketNumber);
-    }
-
-    Map<String,Object> refinement = null;
-
-    if (!mcontext.bucketWasMissing()) {
-      // this is just a pass-through bucket... see if there is anything to do at all
-      if (subs == null || refineTags.isEmpty()) {
-        return null;
-      }
-    } else {
-      // for missing bucket, go over all sub-facts
-      refineTags = null;
-      refinement = new HashMap<>(4);
-      if (bucketValue != null) {
-        refinement.put("_v", bucketValue);
-      }
-      refinement.put("_m",1);
-    }
-
-    // TODO: listing things like sub-facets that have no field facets are redundant
-    // (we only need facet that have variable values)
-
-    for (Map.Entry<String,FacetMerger> sub : subs.entrySet()) {
-      if (refineTags != null && !refineTags.contains(sub.getKey())) {
-        continue;
-      }
-      Map<String,Object> subRef = sub.getValue().getRefinement(mcontext);
-      if (subRef != null) {
-        if (refinement == null) {
-          refinement = new HashMap<>(4);
-        }
-        refinement.put(sub.getKey(), subRef);
-      }
-    }
-
-
-    // reset the "bucketMissing" flag on the way back out.
-    mcontext.setBucketWasMissing(parentMissing);
-    return refinement;
-  }
-
-}
 
 

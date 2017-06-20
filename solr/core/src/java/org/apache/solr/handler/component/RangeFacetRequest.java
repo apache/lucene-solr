@@ -31,6 +31,7 @@ import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.DateRangeField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -91,6 +92,11 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
           DateRangeField.class + "'. Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
       method = FacetParams.FacetRangeMethod.FILTER;
     }
+    if (method.equals(FacetParams.FacetRangeMethod.DV) && !schemaField.hasDocValues() && (schemaField.getType().isPointField())) {
+      log.warn("Range facet method '" + FacetParams.FacetRangeMethod.DV + "' is not supported on PointFields without docValues." +
+          "Will use method '" + FacetParams.FacetRangeMethod.FILTER + "' instead");
+      method = FacetParams.FacetRangeMethod.FILTER;
+    }
 
     this.start = required.getFieldParam(facetOn, FacetParams.FACET_RANGE_START);
     this.end = required.getFieldParam(facetOn, FacetParams.FACET_RANGE_END);
@@ -138,9 +144,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     FieldType ft = schemaField.getType();
 
     if (ft instanceof TrieField) {
-      final TrieField trie = (TrieField) ft;
-
-      switch (trie.getType()) {
+      switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatRangeEndpointCalculator(this);
           break;
@@ -159,10 +163,32 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
         default:
           throw new SolrException
               (SolrException.ErrorCode.BAD_REQUEST,
-                  "Unable to range facet on tried field of unexpected type:" + this.facetOn);
+                  "Unable to range facet on Trie field of unexpected type:" + this.facetOn);
       }
     } else if (ft instanceof DateRangeField) {
       calc = new DateRangeEndpointCalculator(this, null);
+    } else if (ft.isPointField()) {
+      switch (ft.getNumberType()) {
+        case FLOAT:
+          calc = new FloatRangeEndpointCalculator(this);
+          break;
+        case DOUBLE:
+          calc = new DoubleRangeEndpointCalculator(this);
+          break;
+        case INTEGER:
+          calc = new IntegerRangeEndpointCalculator(this);
+          break;
+        case LONG:
+          calc = new LongRangeEndpointCalculator(this);
+          break;
+        case DATE:
+          calc = new DateRangeEndpointCalculator(this, null);
+          break;
+        default:
+          throw new SolrException
+              (SolrException.ErrorCode.BAD_REQUEST,
+                  "Unable to range facet on Point field of unexpected type:" + this.facetOn);
+      }
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -633,7 +659,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Float parseAndAddGap(Float value, String gap) {
-      return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
+      return new Float(value.floatValue() + Float.parseFloat(gap));
     }
   }
 
@@ -651,7 +677,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Double parseAndAddGap(Double value, String gap) {
-      return new Double(value.doubleValue() + Double.valueOf(gap).doubleValue());
+      return new Double(value.doubleValue() + Double.parseDouble(gap));
     }
   }
 
@@ -669,7 +695,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Integer parseAndAddGap(Integer value, String gap) {
-      return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
+      return new Integer(value.intValue() + Integer.parseInt(gap));
     }
   }
 
@@ -687,7 +713,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Long parseAndAddGap(Long value, String gap) {
-      return new Long(value.longValue() + Long.valueOf(gap).longValue());
+      return new Long(value.longValue() + Long.parseLong(gap));
     }
   }
 
@@ -700,7 +726,9 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
                                        final Date now) {
       super(rangeFacetRequest);
       this.now = now;
-      if (!(field.getType() instanceof TrieDateField) && !(field.getType() instanceof DateRangeField)) {
+      if (!(field.getType() instanceof TrieDateField)
+          && !(field.getType() instanceof DateRangeField)
+          && !(field.getType() instanceof DatePointField)) {
         throw new IllegalArgumentException(TYPE_ERR_MSG);
       }
     }

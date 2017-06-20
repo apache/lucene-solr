@@ -16,27 +16,27 @@
  */
 package org.apache.solr.search.grouping.distributed.command;
 
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
-import org.apache.lucene.search.grouping.GroupDocs;
-import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.grouping.function.FunctionSecondPassGroupingCollector;
-import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.mutable.MutableValue;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.grouping.Command;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.grouping.GroupDocs;
+import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.search.grouping.TermGroupSelector;
+import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.search.grouping.TopGroupsCollector;
+import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.mutable.MutableValue;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.grouping.Command;
 
 /**
  * Defines all collectors for retrieving the second phase and how to handle the collector result.
@@ -47,7 +47,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
     private SchemaField field;
     private Sort groupSort;
-    private Sort sortWithinGroup;
+    private Sort withinGroupSort;
     private Collection<SearchGroup<BytesRef>> firstPhaseGroups;
     private Integer maxDocPerGroup;
     private boolean needScores = false;
@@ -63,8 +63,8 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
       return this;
     }
 
-    public Builder setSortWithinGroup(Sort sortWithinGroup) {
-      this.sortWithinGroup = sortWithinGroup;
+    public Builder setSortWithinGroup(Sort withinGroupSort) {
+      this.withinGroupSort = withinGroupSort;
       return this;
     }
 
@@ -89,35 +89,35 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     }
 
     public TopGroupsFieldCommand build() {
-      if (field == null || groupSort == null ||  sortWithinGroup == null || firstPhaseGroups == null ||
+      if (field == null || groupSort == null ||  withinGroupSort == null || firstPhaseGroups == null ||
           maxDocPerGroup == null) {
         throw new IllegalStateException("All required fields must be set");
       }
 
-      return new TopGroupsFieldCommand(field, groupSort, sortWithinGroup, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
+      return new TopGroupsFieldCommand(field, groupSort, withinGroupSort, firstPhaseGroups, maxDocPerGroup, needScores, needMaxScore);
     }
 
   }
 
   private final SchemaField field;
   private final Sort groupSort;
-  private final Sort sortWithinGroup;
+  private final Sort withinGroupSort;
   private final Collection<SearchGroup<BytesRef>> firstPhaseGroups;
   private final int maxDocPerGroup;
   private final boolean needScores;
   private final boolean needMaxScore;
-  private AbstractSecondPassGroupingCollector secondPassCollector;
+  private TopGroupsCollector secondPassCollector;
 
   private TopGroupsFieldCommand(SchemaField field,
                                 Sort groupSort,
-                                Sort sortWithinGroup,
+                                Sort withinGroupSort,
                                 Collection<SearchGroup<BytesRef>> firstPhaseGroups,
                                 int maxDocPerGroup,
                                 boolean needScores,
                                 boolean needMaxScore) {
     this.field = field;
     this.groupSort = groupSort;
-    this.sortWithinGroup = sortWithinGroup;
+    this.withinGroupSort = withinGroupSort;
     this.firstPhaseGroups = firstPhaseGroups;
     this.maxDocPerGroup = maxDocPerGroup;
     this.needScores = needScores;
@@ -132,15 +132,15 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
 
     final List<Collector> collectors = new ArrayList<>(1);
     final FieldType fieldType = field.getType();
-    if (fieldType.getNumericType() != null) {
+    if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(field, null);
       Collection<SearchGroup<MutableValue>> v = GroupConverter.toMutable(field, firstPhaseGroups);
-      secondPassCollector = new FunctionSecondPassGroupingCollector(
-          v, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true, vs, new HashMap<Object,Object>()
+      secondPassCollector = new TopGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()),
+          v, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
       );
     } else {
-      secondPassCollector = new TermSecondPassGroupingCollector(
-          field.getName(), firstPhaseGroups, groupSort, sortWithinGroup, maxDocPerGroup, needScores, needMaxScore, true
+      secondPassCollector = new TopGroupsCollector<>(new TermGroupSelector(field.getName()),
+          firstPhaseGroups, groupSort, withinGroupSort, maxDocPerGroup, needScores, needMaxScore, true
       );
     }
     collectors.add(secondPassCollector);
@@ -151,11 +151,11 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
     if (firstPhaseGroups.isEmpty()) {
-      return new TopGroups<>(groupSort.getSort(), sortWithinGroup.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
+      return new TopGroups<>(groupSort.getSort(), withinGroupSort.getSort(), 0, 0, new GroupDocs[0], Float.NaN);
     }
 
     FieldType fieldType = field.getType();
-    if (fieldType.getNumericType() != null) {
+    if (fieldType.getNumberType() != null) {
       return GroupConverter.fromMutable(field, secondPassCollector.getTopGroups(0));
     } else {
       return secondPassCollector.getTopGroups(0);
@@ -173,7 +173,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
   }
 
   @Override
-  public Sort getSortWithinGroup() {
-    return sortWithinGroup;
+  public Sort getWithinGroupSort() {
+    return withinGroupSort;
   }
 }

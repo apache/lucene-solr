@@ -22,10 +22,13 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -36,6 +39,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -44,6 +48,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.Before;
 
@@ -67,7 +72,7 @@ import org.junit.Before;
  */
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
-  public static final int DEFAULT_TIMEOUT = 30;
+  public static final int DEFAULT_TIMEOUT = 90;
 
   private static class Config {
     final String name;
@@ -88,6 +93,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private final Path baseDir;
     private String solrxml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
     private JettyConfig jettyConfig = buildJettyConfig("/solr");
+    private Optional<String> securityJson = Optional.empty();
 
     private List<Config> configs = new ArrayList<>();
     private Map<String, String> clusterProperties = new HashMap<>();
@@ -131,6 +137,32 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
+     * Configure the specified security.json for the {@linkplain MiniSolrCloudCluster}
+     *
+     * @param securityJson The path specifying the security.json file
+     * @return the instance of {@linkplain Builder}
+     */
+    public Builder withSecurityJson(Path securityJson) {
+      try {
+        this.securityJson = Optional.of(new String(Files.readAllBytes(securityJson), Charset.defaultCharset()));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return this;
+    }
+
+    /**
+     * Configure the specified security.json for the {@linkplain MiniSolrCloudCluster}
+     *
+     * @param securityJson The string specifying the security.json configuration
+     * @return the instance of {@linkplain Builder}
+     */
+    public Builder withSecurityJson(String securityJson) {
+      this.securityJson = Optional.of(securityJson);
+      return this;
+    }
+
+    /**
      * Upload a collection config before tests start
      * @param configName the config name
      * @param configPath the path to the config files
@@ -155,10 +187,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public void configure() throws Exception {
-      cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig);
+      cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        client.uploadConfig(config.path, config.name);
+        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {
@@ -174,7 +206,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /** The cluster */
   protected static MiniSolrCloudCluster cluster;
 
-  protected SolrZkClient zkClient() {
+  protected static SolrZkClient zkClient() {
+    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    if (reader == null)
+      cluster.getSolrClient().connect();
     return cluster.getSolrClient().getZkStateReader().getZkClient();
   }
 
@@ -223,13 +258,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected void waitForState(String message, String collection, CollectionStatePredicate predicate) {
     AtomicReference<DocCollection> state = new AtomicReference<>();
+    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
       cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
         state.set(c);
+        liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
-      fail(message + "\n" + e.getMessage() + "\nLast available state: " + state.get());
+      fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
     }
   }
 

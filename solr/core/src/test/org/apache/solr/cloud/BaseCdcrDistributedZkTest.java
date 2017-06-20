@@ -593,6 +593,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       }
     }
 
+    this.waitForRecoveriesToFinish(temporaryCollection,zkStateReader, true);
     // delete the temporary collection - we will create our own collections later
     this.deleteCollection(temporaryCollection);
     this.waitForCollectionToDisappear(temporaryCollection);
@@ -815,7 +816,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     return info;
   }
 
-  protected class CollectionInfo {
+  protected static class CollectionInfo {
 
     List<CoreInfo> coreInfos = new ArrayList<>();
 
@@ -868,7 +869,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       this.coreInfos.add(info);
     }
 
-    public class CoreInfo {
+    public static class CoreInfo {
       String collectionName;
       String shard;
       boolean isLeader;

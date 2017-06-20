@@ -30,10 +30,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -64,13 +64,10 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
     
     int shards = 3;
     int replicas = 2 ;
-    assertNotNull(cluster.createCollection(collection, shards, replicas,
-        configName,
-        collectionProperties));
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, 
-        cluster.getSolrClient().getZkStateReader(), false, true, 30);
-   
+    CollectionAdminRequest.createCollection(collection, configName, shards, replicas)
+        .setProperties(collectionProperties)
+        .process(cluster.getSolrClient());
+
   }
 
   final static List<String> colors = Arrays.asList("red","blue","brown","white","black","yellow","cyan","magenta","blur",
@@ -133,12 +130,18 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
 
     // to parent query
     final String childQueryClause = "COLOR_s:("+(matchingColors.toString().replaceAll("[,\\[\\]]", " "))+")";
+      final boolean oldFacetsEnabled = random().nextBoolean();
       QueryResponse results = query("q", "{!parent which=\"type_s:parent\"}"+childQueryClause,
-          "facet", random().nextBoolean() ? "true":"false",
+          "facet", oldFacetsEnabled ? "true":"false", // try to enforce multiple phases
+              oldFacetsEnabled ? "facet.field" : "ignore" , "BRAND_s",
+              oldFacetsEnabled&&usually() ? "facet.limit" : "ignore" , "1",
+              oldFacetsEnabled&&usually() ? "facet.mincount" : "ignore" , "2",
+              oldFacetsEnabled&&usually() ? "facet.overrequest.count" : "ignore" , "0",
           "qt",  random().nextBoolean() ? "blockJoinDocSetFacetRH" : "blockJoinFacetRH",
           "child.facet.field", "COLOR_s",
           "child.facet.field", "SIZE_s",
-          "rows","0" // we care only abt results 
+          "distrib.singlePass", random().nextBoolean() ? "true":"false",
+          "rows", random().nextBoolean() ? "0":"10"
           );
       NamedList<Object> resultsResponse = results.getResponse();
       assertNotNull(resultsResponse);

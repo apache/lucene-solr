@@ -28,8 +28,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,24 +48,37 @@ public class ImplicitSnitch extends Snitch {
   public static final String CORES = "cores";
   public static final String DISK = "freedisk";
   public static final String ROLE = "role";
+  public static final String NODEROLE = "nodeRole";
   public static final String SYSPROP = "sysprop.";
+  public static final String SYSLOADAVG = "sysLoadAvg";
+  public static final String HEAPUSAGE = "heapUsage";
   public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
   public static final Set<String> tags = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NODE, PORT, HOST, CORES, DISK, ROLE, "ip_1", "ip_2", "ip_3", "ip_4")));
 
   @Override
   public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
-    if (requestedTags.contains(NODE)) ctx.getTags().put(NODE, solrNode);
-    if (requestedTags.contains(HOST)) {
-      Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
-      if (hostAndPortMatcher.find()) ctx.getTags().put(HOST, hostAndPortMatcher.group(1));
-    }
-    if (requestedTags.contains(PORT)) {
-      Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
-      if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
-    }
-    if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx);
-    addIpTags(solrNode, requestedTags, ctx);
+    try {
+      if (requestedTags.contains(NODE)) ctx.getTags().put(NODE, solrNode);
+      if (requestedTags.contains(HOST)) {
+        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+        if (hostAndPortMatcher.find()) ctx.getTags().put(HOST, hostAndPortMatcher.group(1));
+      }
+      if (requestedTags.contains(PORT)) {
+        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+        if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
+      }
+      if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);
+      if (requestedTags.contains(NODEROLE)) fillRole(solrNode, ctx, NODEROLE);// for new policy framework
 
+      addIpTags(solrNode, requestedTags, ctx);
+
+      getRemoteInfo(solrNode, requestedTags, ctx);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (requestedTags.contains(CORES)) params.add(CORES, "1");
     if (requestedTags.contains(DISK)) params.add(DISK, "1");
@@ -73,17 +88,25 @@ public class ImplicitSnitch extends Snitch {
     if (params.size() > 0) ctx.invokeRemote(solrNode, params, "org.apache.solr.cloud.rule.ImplicitSnitch", null);
   }
 
-  private void fillRole(String solrNode, SnitchContext ctx) {
+  private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
     Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
-    if(roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
-    ctx.store(ZkStateReader.ROLES, roles == null ? Collections.emptyMap() : roles);
+    try {
+      if (roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
+      cacheRoles(solrNode, ctx, key, roles);
+    } catch (KeeperException.NoNodeException e) {
+      cacheRoles(solrNode, ctx, key, Collections.emptyMap());
+    }
+  }
+
+  private void cacheRoles(String solrNode, SnitchContext ctx, String key, Map roles) {
+    ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
       for (Object o : roles.entrySet()) {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof List) {
-          if(((List) e.getValue()).contains(solrNode)) {
-            ctx.getTags().put(ROLE, e.getKey());
+          if (((List) e.getValue()).contains(solrNode)) {
+            ctx.getTags().put(key, e.getKey());
             break;
           }
         }

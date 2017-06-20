@@ -17,10 +17,13 @@
 package org.apache.solr.store.blockcache;
 
 import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 
 /**
@@ -38,6 +41,11 @@ public class BlockCache {
   private final int numberOfBlocksPerBank;
   private final int maxEntries;
   private final Metrics metrics;
+  private final List<OnRelease> onReleases = new CopyOnWriteArrayList<>();
+
+  public static interface OnRelease {
+    public void release(BlockCacheKey blockCacheKey);
+  }
   
   public BlockCache(Metrics metrics, boolean directAllocation, long totalMemory) {
     this(metrics, directAllocation, totalMemory, _128M);
@@ -68,8 +76,8 @@ public class BlockCache {
       lockCounters[i] = new AtomicInteger();
     }
 
-    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = 
-        notification -> releaseLocation(notification.getValue());
+    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation, removalCause);
+
     cache = Caffeine.newBuilder()
         .removalListener(listener)
         .maximumSize(maxEntries)
@@ -81,19 +89,39 @@ public class BlockCache {
     cache.invalidate(key);
   }
   
-  private void releaseLocation(BlockCacheLocation location) {
+  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location, RemovalCause removalCause) {
     if (location == null) {
       return;
     }
     int bankId = location.getBankId();
     int block = location.getBlock();
+
+    // mark the block removed before we release the lock to allow it to be reused
     location.setRemoved(true);
+
     locks[bankId].clear(block);
     lockCounters[bankId].decrementAndGet();
-    metrics.blockCacheEviction.incrementAndGet();
+    for (OnRelease onRelease : onReleases) {
+      onRelease.release(blockCacheKey);
+    }
+    if (removalCause.wasEvicted()) {
+      metrics.blockCacheEviction.incrementAndGet();
+    }
     metrics.blockCacheSize.decrementAndGet();
   }
-  
+
+  /**
+   * This is only best-effort... it's possible for false to be returned, meaning the block was not able to be cached.
+   * NOTE: blocks may not currently be updated (false will be returned if the block is already cached)
+   * The blockCacheKey is cloned before it is inserted into the map, so it may be reused by clients if desired.
+   *
+   * @param blockCacheKey the key for the block
+   * @param blockOffset the offset within the block
+   * @param data source data to write to the block
+   * @param offset offset within the source data array
+   * @param length the number of bytes to write.
+   * @return true if the block was cached/updated
+   */
   public boolean store(BlockCacheKey blockCacheKey, int blockOffset,
       byte[] data, int offset, int length) {
     if (length + blockOffset > blockSize) {
@@ -102,44 +130,69 @@ public class BlockCache {
           + blockOffset + "]");
     }
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
-    boolean newLocation = false;
     if (location == null) {
-      newLocation = true;
       location = new BlockCacheLocation();
       if (!findEmptyLocation(location)) {
+        // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes will result in one of them failing
+        // because no eviction is done first.  The code seems to rely on leaving just a single block empty.
+        // TODO: simplest fix would be to leave more than one block empty
+        metrics.blockCacheStoreFail.incrementAndGet();
         return false;
       }
-    }
-    if (location.isRemoved()) {
+    } else {
+      // If we allocated a new block, then it has never been published and is thus never in danger of being concurrently removed.
+      // On the other hand, if this is an existing block we are updating, it may concurrently be removed and reused for another
+      // purpose (and then our write may overwrite that).  This can happen even if clients never try to update existing blocks,
+      // since two clients can try to cache the same block concurrently.  Because of this, the ability to update an existing
+      // block has been removed for the time being (see SOLR-10121).
+
+      // No metrics to update: we don't count a redundant store as a store fail.
       return false;
     }
+
     int bankId = location.getBankId();
     int bankOffset = location.getBlock() * blockSize;
     ByteBuffer bank = getBank(bankId);
     bank.position(bankOffset + blockOffset);
     bank.put(data, offset, length);
-    if (newLocation) {
-      cache.put(blockCacheKey.clone(), location);
-      metrics.blockCacheSize.incrementAndGet();
-    }
+
+    // make sure all modifications to the block have been completed before we publish it.
+    cache.put(blockCacheKey.clone(), location);
+    metrics.blockCacheSize.incrementAndGet();
     return true;
   }
-  
+
+  /**
+   * @param blockCacheKey the key for the block
+   * @param buffer the target buffer for the read result
+   * @param blockOffset offset within the block
+   * @param off offset within the target buffer
+   * @param length the number of bytes to read
+   * @return true if the block was cached and the bytes were read
+   */
   public boolean fetch(BlockCacheKey blockCacheKey, byte[] buffer,
       int blockOffset, int off, int length) {
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     if (location == null) {
+      metrics.blockCacheMiss.incrementAndGet();
       return false;
     }
-    if (location.isRemoved()) {
-      return false;
-    }
+
     int bankId = location.getBankId();
-    int offset = location.getBlock() * blockSize;
+    int bankOffset = location.getBlock() * blockSize;
     location.touch();
     ByteBuffer bank = getBank(bankId);
-    bank.position(offset + blockOffset);
+    bank.position(bankOffset + blockOffset);
     bank.get(buffer, off, length);
+
+    if (location.isRemoved()) {
+      // must check *after* the read is done since the bank may have been reused for another block
+      // before or during the read.
+      metrics.blockCacheMiss.incrementAndGet();
+      return false;
+    }
+
+    metrics.blockCacheHit.incrementAndGet();
     return true;
   }
   
@@ -192,12 +245,18 @@ public class BlockCache {
           + "] got [" + buffer.length + "]");
     }
   }
-  
+
+  /** Returns a new copy of the ByteBuffer for the given bank, so it's safe to call position() on w/o additional synchronization */
   private ByteBuffer getBank(int bankId) {
     return banks[bankId].duplicate();
   }
-  
+
+  /** returns the number of elements in the cache */
   public int getSize() {
     return cache.asMap().size();
+  }
+
+  void setOnRelease(OnRelease onRelease) {
+    this.onReleases.add(onRelease);
   }
 }

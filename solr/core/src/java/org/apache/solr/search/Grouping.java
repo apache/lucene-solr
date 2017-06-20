@@ -46,18 +46,15 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
+import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
+import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.function.FunctionAllGroupsCollector;
-import org.apache.lucene.search.grouping.function.FunctionFirstPassGroupingCollector;
-import org.apache.lucene.search.grouping.function.FunctionSecondPassGroupingCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
-import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
-import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
+import org.apache.lucene.search.grouping.TopGroupsCollector;
+import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.common.SolrException;
@@ -323,7 +320,7 @@ public class Grouping {
       cmd.prepare();
     }
 
-    AbstractAllGroupHeadsCollector<?> allGroupHeadsCollector = null;
+    AllGroupHeadsCollector<?> allGroupHeadsCollector = null;
     List<Collector> collectors = new ArrayList<>(commands.size());
     for (Command cmd : commands) {
       Collector collector = cmd.createFirstPassCollector();
@@ -459,10 +456,10 @@ public class Grouping {
    *
    * @param offset The offset
    * @param len    The number of documents to return
-   * @param max    The number of document to return if len < 0 or if offset + len < 0
+   * @param max    The number of document to return if len &lt; 0 or if offset + len &gt; 0
    * @return offset + len if len equals zero or higher. Otherwise returns max
    */
-  int getMax(int offset, int len, int max) {
+  public static int getMax(int offset, int len, int max) {
     int v = len < 0 ? max : offset + len;
     if (v < 0 || v > max) v = max;
     return v;
@@ -513,7 +510,7 @@ public class Grouping {
    * Note: Maybe the creating the response structure should be done in something like a ReponseBuilder???
    * Warning NOT thread save!
    */
-  public abstract class Command<GROUP_VALUE_TYPE> {
+  public abstract class Command<T> {
 
     public String key;       // the name to use for this group in the response
     public Sort withinGroupSort;   // the sort of the documents *within* a single group.
@@ -527,7 +524,7 @@ public class Grouping {
     public boolean main;     // use as the main result in simple format (grouped.main=true param)
     public TotalCount totalCount = TotalCount.ungrouped;
 
-    TopGroups<GROUP_VALUE_TYPE> result;
+    TopGroups<T> result;
 
 
     /**
@@ -565,7 +562,7 @@ public class Grouping {
      * @return a collector that is able to return the most relevant document of all groups.
      * @throws IOException If I/O related errors occur
      */
-    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+    public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       return null;
     }
 
@@ -601,7 +598,7 @@ public class Grouping {
       groupResult.add("matches", matches);
       if (totalCount == TotalCount.grouped) {
         Integer totalNrOfGroups = getNumberOfGroups();
-        groupResult.add("ngroups", totalNrOfGroups == null ? 0 : totalNrOfGroups);
+        groupResult.add("ngroups", totalNrOfGroups == null ? Integer.valueOf(0) : totalNrOfGroups);
       }
       maxMatches = Math.max(maxMatches, matches);
       return groupResult;
@@ -700,10 +697,10 @@ public class Grouping {
   public class CommandField extends Command<BytesRef> {
 
     public String groupBy;
-    TermFirstPassGroupingCollector firstPass;
-    TermSecondPassGroupingCollector secondPass;
+    FirstPassGroupingCollector<BytesRef> firstPass;
+    TopGroupsCollector<BytesRef> secondPass;
 
-    TermAllGroupsCollector allGroupsCollector;
+    AllGroupsCollector<BytesRef> allGroupsCollector;
 
     // If offset falls outside the number of documents a group can provide use this collector instead of secondPass
     TotalHitCountCollector fallBackCollector;
@@ -729,7 +726,7 @@ public class Grouping {
       }
 
       groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
-      firstPass = new TermFirstPassGroupingCollector(groupBy, groupSort, actualGroupsToFind);
+      firstPass = new FirstPassGroupingCollector<>(new TermGroupSelector(groupBy), groupSort, actualGroupsToFind);
       return firstPass;
     }
 
@@ -739,14 +736,14 @@ public class Grouping {
     @Override
     protected Collector createSecondPassCollector() throws IOException {
       if (actualGroupsToFind <= 0) {
-        allGroupsCollector = new TermAllGroupsCollector(groupBy);
+        allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(groupBy));
         return totalCount == TotalCount.grouped ? allGroupsCollector : null;
       }
 
       topGroups = format == Format.grouped ? firstPass.getTopGroups(offset, false) : firstPass.getTopGroups(0, false);
       if (topGroups == null) {
         if (totalCount == TotalCount.grouped) {
-          allGroupsCollector = new TermAllGroupsCollector(groupBy);
+          allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(groupBy));
           fallBackCollector = new TotalHitCountCollector();
           return MultiCollector.wrap(allGroupsCollector, fallBackCollector);
         } else {
@@ -758,12 +755,12 @@ public class Grouping {
       int groupedDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupedDocsToCollect = Math.max(groupedDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
-      secondPass = new TermSecondPassGroupingCollector(
-          groupBy, topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false
+      secondPass = new TopGroupsCollector<>(new TermGroupSelector(groupBy),
+          topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false
       );
 
       if (totalCount == TotalCount.grouped) {
-        allGroupsCollector = new TermAllGroupsCollector(groupBy);
+        allGroupsCollector = new AllGroupsCollector<>(new TermGroupSelector(groupBy));
         return MultiCollector.wrap(secondPass, allGroupsCollector);
       } else {
         return secondPass;
@@ -774,9 +771,9 @@ public class Grouping {
      * {@inheritDoc}
      */
     @Override
-    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+    public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
-      return TermAllGroupHeadsCollector.create(groupBy, sortWithinGroup);
+      return AllGroupHeadsCollector.newCollector(new TermGroupSelector(groupBy), sortWithinGroup);
     }
 
     /**
@@ -819,7 +816,7 @@ public class Grouping {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
           String readableValue = fieldType.indexedToReadable(group.groupValue.utf8ToString());
-          IndexableField field = schemaField.createField(readableValue, 1.0f);
+          IndexableField field = schemaField.createField(readableValue);
           nl.add("groupValue", fieldType.toObject(field));
         } else {
           nl.add("groupValue", null);
@@ -921,11 +918,15 @@ public class Grouping {
     public ValueSource groupBy;
     Map context;
 
-    FunctionFirstPassGroupingCollector firstPass;
-    FunctionSecondPassGroupingCollector secondPass;
+    private ValueSourceGroupSelector newSelector() {
+      return new ValueSourceGroupSelector(groupBy, context);
+    }
+
+    FirstPassGroupingCollector<MutableValue> firstPass;
+    TopGroupsCollector<MutableValue> secondPass;
     // If offset falls outside the number of documents a group can provide use this collector instead of secondPass
     TotalHitCountCollector fallBackCollector;
-    FunctionAllGroupsCollector allGroupsCollector;
+    AllGroupsCollector<MutableValue> allGroupsCollector;
     Collection<SearchGroup<MutableValue>> topGroups;
 
     /**
@@ -950,7 +951,7 @@ public class Grouping {
       }
 
       groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
-      firstPass = new FunctionFirstPassGroupingCollector(groupBy, context, searcher.weightSort(groupSort), actualGroupsToFind);
+      firstPass = new FirstPassGroupingCollector<>(newSelector(), searcher.weightSort(groupSort), actualGroupsToFind);
       return firstPass;
     }
 
@@ -960,14 +961,14 @@ public class Grouping {
     @Override
     protected Collector createSecondPassCollector() throws IOException {
       if (actualGroupsToFind <= 0) {
-        allGroupsCollector = new FunctionAllGroupsCollector(groupBy, context);
+        allGroupsCollector = new AllGroupsCollector<>(newSelector());
         return totalCount == TotalCount.grouped ? allGroupsCollector : null;
       }
 
       topGroups = format == Format.grouped ? firstPass.getTopGroups(offset, false) : firstPass.getTopGroups(0, false);
       if (topGroups == null) {
         if (totalCount == TotalCount.grouped) {
-          allGroupsCollector = new FunctionAllGroupsCollector(groupBy, context);
+          allGroupsCollector = new AllGroupsCollector<>(newSelector());
           fallBackCollector = new TotalHitCountCollector();
           return MultiCollector.wrap(allGroupsCollector, fallBackCollector);
         } else {
@@ -979,12 +980,12 @@ public class Grouping {
       int groupdDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupdDocsToCollect = Math.max(groupdDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
-      secondPass = new FunctionSecondPassGroupingCollector(
-          topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false, groupBy, context
+      secondPass = new TopGroupsCollector<>(newSelector(),
+          topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false
       );
 
       if (totalCount == TotalCount.grouped) {
-        allGroupsCollector = new FunctionAllGroupsCollector(groupBy, context);
+        allGroupsCollector = new AllGroupsCollector<>(newSelector());
         return MultiCollector.wrap(secondPass, allGroupsCollector);
       } else {
         return secondPass;
@@ -992,9 +993,9 @@ public class Grouping {
     }
 
     @Override
-    public AbstractAllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
+    public AllGroupHeadsCollector<?> createAllGroupCollector() throws IOException {
       Sort sortWithinGroup = withinGroupSort != null ? withinGroupSort : Sort.RELEVANCE;
-      return new FunctionAllGroupHeadsCollector(groupBy, context, sortWithinGroup);
+      return AllGroupHeadsCollector.newCollector(newSelector(), sortWithinGroup);
     }
 
     /**

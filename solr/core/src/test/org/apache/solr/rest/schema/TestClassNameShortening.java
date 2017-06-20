@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-@Ignore
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10142")
 public class TestClassNameShortening extends RestTestBase {
 
   @BeforeClass

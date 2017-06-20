@@ -1,0 +1,11 @@
+{
+  "methods": [
+    "GET",
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "$handlerName"
+    ]
+  }
+}

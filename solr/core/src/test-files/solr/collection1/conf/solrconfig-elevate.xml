@@ -150,9 +150,8 @@
     </arr>
   </requestHandler>-->
 
-  <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
@@ -168,5 +167,11 @@
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
   <queryParser name="foo" class="FooQParserPlugin"/>
+
+  <initParams path="/elevate,/dataElevate">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>

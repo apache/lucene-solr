@@ -31,7 +31,6 @@ public class GoodbyeQueryBuilder extends SolrQueryBuilder {
     super(defaultField, analyzer, req, queryFactory);
   }
 
-  @Override
   public Query getQuery(Element e) throws ParserException {
     return new MatchNoDocsQuery();
   }

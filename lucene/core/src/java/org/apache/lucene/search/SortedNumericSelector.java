@@ -132,6 +132,15 @@ public class SortedNumericSelector {
     }
 
     @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        value = in.nextValue();
+        return true;
+      }
+      return false;
+    }
+
+    @Override
     public long cost() {
       return in.cost();
     }
@@ -179,6 +188,15 @@ public class SortedNumericSelector {
         setValue();
       }
       return docID;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (in.advanceExact(target)) {
+        setValue();
+        return true;
+      }
+      return false;
     }
 
     @Override

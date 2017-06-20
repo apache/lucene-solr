@@ -19,12 +19,12 @@ package org.apache.lucene.util.packed;
 
 import java.util.Random;
 
-import org.apache.lucene.index.LegacyNumericDocValues;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.DirectReader;
@@ -46,7 +46,7 @@ public class TestDirectPacked extends LuceneTestCase {
     writer.finish();
     output.close();
     IndexInput input = dir.openInput("foo", IOContext.DEFAULT);
-    LegacyNumericDocValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsPerValue, 0);
+    LongValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsPerValue, 0);
     assertEquals(1, reader.get(0));
     assertEquals(0, reader.get(1));
     assertEquals(2, reader.get(2));
@@ -110,7 +110,7 @@ public class TestDirectPacked extends LuceneTestCase {
       writer.finish();
       output.close();
       IndexInput input = directory.openInput(name, IOContext.DEFAULT);
-      LegacyNumericDocValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsRequired, offset);
+      LongValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsRequired, offset);
       for (int j = 0; j < original.length; j++) {
         assertEquals("bpv=" + bpv, original[j], reader.get(j));
       }

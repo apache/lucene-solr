@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -82,9 +83,13 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testBasicAuth() throws Exception {
-
+    boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
     String authzPrefix = "/admin/authorization";
+    if(isUseV2Api){
+      authcPrefix = "/____v2/cluster/security/authentication";
+      authzPrefix = "/____v2/cluster/security/authorization";
+    }
 
     NamedList<Object> rsp;
     HttpClient cl = null;
@@ -106,8 +111,14 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
 
-      GenericSolrRequest genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
-      genericReq.setContentStreams(Collections.singletonList(new ContentStreamBase.ByteArrayStream(command.getBytes(UTF_8), "")));
+      final SolrRequest genericReq;
+      if (isUseV2Api) {
+        genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
+      } else {
+        genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
+        ((GenericSolrRequest)genericReq).setContentStreams(Collections.singletonList(new ContentStreamBase.ByteArrayStream(command.getBytes(UTF_8), "")));
+      }
+
 
       HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().request(genericReq);
@@ -192,7 +203,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
-      verifySecurityStatus(cl, baseUrl + PKIAuthenticationPlugin.PATH + "?wt=json", "key", NOT_NULL_PREDICATE, 20);
+      verifySecurityStatus(cl, baseUrl + "/admin/info/key?wt=json", "key", NOT_NULL_PREDICATE, 20);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};
@@ -292,11 +303,11 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
     return l.isEmpty() ? null : l.get(0);
   }
 
-  static final Predicate NOT_NULL_PREDICATE = o -> o != null;
+  protected static final Predicate NOT_NULL_PREDICATE = o -> o != null;
 
   //the password is 'SolrRocks'
   //this could be generated everytime. But , then we will not know if there is any regression
-  private static final String STD_CONF = "{\n" +
+  protected static final String STD_CONF = "{\n" +
       "  'authentication':{\n" +
       "    'class':'solr.BasicAuthPlugin',\n" +
       "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +

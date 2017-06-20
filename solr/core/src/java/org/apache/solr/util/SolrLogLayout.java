@@ -164,7 +164,7 @@ public class SolrLogLayout extends Layout {
         sb.append(" " + core);
       }
 
-      zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+      zkController = core.getCoreContainer().getZkController();
       if (zkController != null) {
         if (info.url == null) {
           info.url = zkController.getBaseUrl() + "/" + core.getName();

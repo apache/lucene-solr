@@ -84,6 +84,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     segmentInfoMap.add("age", new Date(timestamp));
     segmentInfoMap.add("source",
         segmentCommitInfo.info.getDiagnostics().get("source"));
+    segmentInfoMap.add("version", segmentCommitInfo.info.getVersion().toString());
 
     return segmentInfoMap;
   }
@@ -115,5 +116,10 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "Lucene segments info.";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.ADMIN;
   }
 }

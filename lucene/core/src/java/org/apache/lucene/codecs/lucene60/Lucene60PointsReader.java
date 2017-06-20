@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -117,7 +118,8 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
   /** Returns the underlying {@link BKDReader}.
    *
    * @lucene.internal */
-  public BKDReader getBKDReader(String fieldName) {
+  @Override
+  public PointValues getValues(String fieldName) {
     FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(fieldName);
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
@@ -127,19 +129,6 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
     }
 
     return readers.get(fieldInfo.number);
-  }
-
-  @Override
-  public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-    BKDReader bkdReader = getBKDReader(fieldName);
-
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return;
-    }
-
-    bkdReader.intersect(visitor);
   }
 
   @Override
@@ -173,72 +162,5 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
     readers.clear();
   }
 
-  @Override
-  public byte[] getMinPackedValue(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return null;
-    }
-
-    return bkdReader.getMinPackedValue();
-  }
-
-  @Override
-  public byte[] getMaxPackedValue(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return null;
-    }
-
-    return bkdReader.getMaxPackedValue();
-  }
-
-  @Override
-  public int getNumDimensions(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return 0;
-    }
-    return bkdReader.getNumDimensions();
-  }
-
-  @Override
-  public int getBytesPerDimension(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return 0;
-    }
-    return bkdReader.getBytesPerDimension();
-  }
-
-  @Override
-  public long size(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return 0;
-    }
-    return bkdReader.getPointCount();
-  }
-
-  @Override
-  public int getDocCount(String fieldName) {
-    BKDReader bkdReader = getBKDReader(fieldName);
-    if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index points in the past, but
-      // now all docs having this point field were deleted in this segment:
-      return 0;
-    }
-    return bkdReader.getDocCount();
-  }
 }
   

@@ -474,7 +474,7 @@ final class Stemmer {
   private boolean checkCondition(int condition, char c1[], int c1off, int c1len, char c2[], int c2off, int c2len) {
     if (condition != 0) {
       CharacterRunAutomaton pattern = dictionary.patterns.get(condition);
-      int state = pattern.getInitialState();
+      int state = 0;
       for (int i = c1off; i < c1off + c1len; i++) {
         state = pattern.step(state, c1[i]);
         if (state == -1) {

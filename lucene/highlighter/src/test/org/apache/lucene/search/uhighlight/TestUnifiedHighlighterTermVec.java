@@ -48,8 +48,6 @@ import java.util.Map;
  * This test DOES NOT represent all testing for highlighting when term vectors are used.  Other tests pick the offset
  * source at random (to include term vectors) and in-effect test term vectors generally.
  */
-@LuceneTestCase.SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "")//Gradle interferes with this Lucene test rule
 public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
 
   private Analyzer indexAnalyzer;
@@ -132,6 +130,16 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
 
             return super.getTermVectors(docID);
           }
+
+          @Override
+          public CacheHelper getCoreCacheHelper() {
+            return null;
+          }
+
+          @Override
+          public CacheHelper getReaderCacheHelper() {
+            return null;
+          }
         };
       }
     };
@@ -143,6 +151,11 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     @Override
     protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
       return new AssertOnceTermVecDirectoryReader(in);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
     }
   }
 

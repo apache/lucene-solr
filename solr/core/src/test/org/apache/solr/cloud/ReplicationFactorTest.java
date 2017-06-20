@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -65,20 +64,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   public JettySolrRunner createJetty(File solrHome, String dataDir,
-      String shardList, String solrConfigOverride, String schemaOverride)
+      String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception {
 
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
   
-  protected int getNextAvailablePort() throws Exception {    
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
-  }
-
   @Test
   public void test() throws Exception {
     log.info("replication factor test running");
@@ -110,9 +101,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
     
     if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
+      CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
       
       resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
       

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -116,7 +118,7 @@ public class SpellCheckCollator {
         params.remove(CommonParams.START);
         params.set(CommonParams.ROWS, "" + docCollectionLimit);
         // we don't want any stored fields
-        params.set(CommonParams.FL, "id");
+        params.set(CommonParams.FL, ID);
         // we'll sort by doc id to ensure no scoring is done.
         params.set(CommonParams.SORT, "_docid_ asc");
         // CursorMark does not like _docid_ sorting, and we don't need it.
@@ -130,6 +132,19 @@ public class SpellCheckCollator {
         params.remove(DisMaxParams.BF);
         // Collate testing does not support Grouping (see SOLR-2577)
         params.remove(GroupParams.GROUP);
+        
+        // Collate testing does not support the Collapse QParser (See SOLR-8807)
+        params.remove("expand");
+        String[] filters = params.getParams(CommonParams.FQ);
+        if (filters != null) {
+          List<String> filtersToApply = new ArrayList<>(filters.length);
+          for (String fq : filters) {
+            if (!fq.startsWith("{!collapse")) {
+              filtersToApply.add(fq);
+            }
+          }
+          params.set("fq", filtersToApply.toArray(new String[filtersToApply.size()]));
+        }      
 
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(

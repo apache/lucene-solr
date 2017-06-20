@@ -71,11 +71,13 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +104,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private Lock reloadLock = new ReentrantLock(true);
+
+  public Lock getReloadLock() {
+    return reloadLock;
+  }
+
   private boolean isImmutableConfigSet = false;
 
   static {
@@ -117,7 +124,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    setWt(req, CommonParams.JSON);
+    RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
     if ("POST".equals(httpMethod)) {
@@ -323,7 +330,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
 
     private void handlePOST() throws IOException {
-      List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp);
+      List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp.getValues());
       if (ops == null) return;
       try {
         for (; ; ) {
@@ -434,7 +441,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
           log.debug("persisted to version : {} ", latestVersion);
           waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
-              req.getCore().getCoreDescriptor().getCoreContainer().getZkController(), RequestParams.NAME, latestVersion, 30);
+              req.getCore().getCoreContainer().getZkController(), RequestParams.NAME, latestVersion, 30);
         }
 
       } else {
@@ -493,12 +500,12 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
         log.info("Executed config commands successfully and persisted to ZK {}", ops);
         waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
-            req.getCore().getCoreDescriptor().getCoreContainer().getZkController(),
+            req.getCore().getCoreContainer().getZkController(),
             ConfigOverlay.NAME,
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
+        req.getCore().getCoreContainer().reload(req.getCore().getName());
         log.info("Executed config commands successfully and persited to File System {}", ops);
       }
 
@@ -666,15 +673,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     return null;
   }
 
-  public static void setWt(SolrQueryRequest req, String wt) {
-    SolrParams params = req.getParams();
-    if (params.get(CommonParams.WT) != null) return;//wt is set by user
-    Map<String, String> map = new HashMap<>(1);
-    map.put(CommonParams.WT, wt);
-    map.put("indent", "true");
-    req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
-  }
-
   @Override
   public SolrRequestHandler getSubHandler(String path) {
     if (subPaths.contains(path)) return this;
@@ -700,15 +698,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     return "Edit solrconfig.xml";
   }
 
-
-  @Override
-  public String getVersion() {
-    return getClass().getPackage().getSpecificationVersion();
-  }
-
   @Override
   public Category getCategory() {
-    return Category.OTHER;
+    return Category.ADMIN;
   }
 
 
@@ -894,5 +886,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     protected SolrResponse createResponse(SolrClient client) {
       return null;
     }
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return ApiBag.wrapRequestHandlers(this,
+        "core.config",
+        "core.config.Commands",
+        "core.config.Params",
+        "core.config.Params.Commands");
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 }

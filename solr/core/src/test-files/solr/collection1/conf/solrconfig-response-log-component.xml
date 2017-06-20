@@ -52,4 +52,10 @@
     </lst>
   </requestHandler>
 
+  <initParams path="withlog,nolog">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
 </config>

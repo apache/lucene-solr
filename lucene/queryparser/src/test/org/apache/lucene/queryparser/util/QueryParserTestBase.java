@@ -38,8 +38,10 @@ import org.apache.lucene.index.Term;
 //import org.apache.lucene.queryparser.classic.ParseException;
 //import org.apache.lucene.queryparser.classic.QueryParser;
 //import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 //import org.apache.lucene.queryparser.classic.QueryParserTokenManager;
+import org.apache.lucene.queryparser.classic.TestQueryParser;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -263,7 +265,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
   }
 
-  private class SimpleCJKAnalyzer extends Analyzer {
+  private static class SimpleCJKAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       return new TokenStreamComponents(new SimpleCJKTokenizer());
@@ -328,6 +330,9 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   
     PhraseQuery expected = new PhraseQuery("field", "中", "国");
     CommonQueryParserConfiguration qp = getParserConfig(analyzer);
+    if (qp instanceof QueryParser) { // Always true, since TestStandardQP overrides this method
+      ((QueryParser)qp).setSplitOnWhitespace(true); // LUCENE-7533
+    }
     setAutoGeneratePhraseQueries(qp, true);
     assertEquals(expected, getQuery("中国",qp));
   }
@@ -588,6 +593,56 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   public void testRangeWithPhrase() throws Exception {
     assertQueryEquals("[\\* TO \"*\"]",null,"[\\* TO \\*]");
     assertQueryEquals("[\"*\" TO *]",null,"[\\* TO *]");
+  }
+
+  public void testRangeQueryEndpointTO() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    assertQueryEquals("[to TO to]", a, "[to TO to]");
+    assertQueryEquals("[to TO TO]", a, "[to TO to]");
+    assertQueryEquals("[TO TO to]", a, "[to TO to]");
+    assertQueryEquals("[TO TO TO]", a, "[to TO to]");
+
+    assertQueryEquals("[\"TO\" TO \"TO\"]", a, "[to TO to]");
+    assertQueryEquals("[\"TO\" TO TO]", a, "[to TO to]");
+    assertQueryEquals("[TO TO \"TO\"]", a, "[to TO to]");
+
+    assertQueryEquals("[to TO xx]", a, "[to TO xx]");
+    assertQueryEquals("[\"TO\" TO xx]", a, "[to TO xx]");
+    assertQueryEquals("[TO TO xx]", a, "[to TO xx]");
+
+    assertQueryEquals("[xx TO to]", a, "[xx TO to]");
+    assertQueryEquals("[xx TO \"TO\"]", a, "[xx TO to]");
+    assertQueryEquals("[xx TO TO]", a, "[xx TO to]");
+  }
+
+  public void testRangeQueryRequiresTO() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+
+    assertQueryEquals("{A TO B}", a, "{a TO b}");
+    assertQueryEquals("[A TO B}", a, "[a TO b}");
+    assertQueryEquals("{A TO B]", a, "{a TO b]");
+    assertQueryEquals("[A TO B]", a, "[a TO b]");
+
+    // " TO " is required between range endpoints
+
+    Class<? extends Throwable> exceptionClass = this instanceof TestQueryParser 
+        ? org.apache.lucene.queryparser.classic.ParseException.class
+        : org.apache.lucene.queryparser.flexible.standard.parser.ParseException.class;
+    
+    expectThrows(exceptionClass, () -> getQuery("{A B}"));
+    expectThrows(exceptionClass, () -> getQuery("[A B}"));
+    expectThrows(exceptionClass, () -> getQuery("{A B]"));
+    expectThrows(exceptionClass, () -> getQuery("[A B]"));
+
+    expectThrows(exceptionClass, () -> getQuery("{TO B}"));
+    expectThrows(exceptionClass, () -> getQuery("[TO B}"));
+    expectThrows(exceptionClass, () -> getQuery("{TO B]"));
+    expectThrows(exceptionClass, () -> getQuery("[TO B]"));
+
+    expectThrows(exceptionClass, () -> getQuery("{A TO}"));
+    expectThrows(exceptionClass, () -> getQuery("[A TO}"));
+    expectThrows(exceptionClass, () -> getQuery("{A TO]"));
+    expectThrows(exceptionClass, () -> getQuery("[A TO]"));
   }
 
   private String escapeDateString(String s) {
@@ -1091,7 +1146,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   /** whitespace+lowercase analyzer with synonyms */
-  protected class Analyzer1 extends Analyzer {
+  protected static class Analyzer1 extends Analyzer {
     public Analyzer1(){
       super();
     }
@@ -1103,7 +1158,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
   
   /** whitespace+lowercase analyzer without synonyms */
-  protected class Analyzer2 extends Analyzer {
+  protected static class Analyzer2 extends Analyzer {
     public Analyzer2(){
       super();
     }
@@ -1118,7 +1173,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   /**
    * Mock collation analyzer: indexes terms as "collated" + term
    */
-  private class MockCollationFilter extends TokenFilter {
+  private static class MockCollationFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     protected MockCollationFilter(TokenStream input) {
@@ -1137,7 +1192,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     }
     
   }
-  private class MockCollationAnalyzer extends Analyzer {
+  private static class MockCollationAnalyzer extends Analyzer {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);

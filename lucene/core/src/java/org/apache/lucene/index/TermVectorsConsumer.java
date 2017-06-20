@@ -29,8 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-final class TermVectorsConsumer extends TermsHash {
-
+class TermVectorsConsumer extends TermsHash {
   TermVectorsWriter writer;
 
   /** Scratch term used by TermVectorsConsumerPerField.finishDocument. */
@@ -54,7 +53,7 @@ final class TermVectorsConsumer extends TermsHash {
   }
 
   @Override
-  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
+  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
     if (writer != null) {
       int numDocs = state.segmentInfo.maxDoc();
       assert numDocs > 0;
@@ -82,7 +81,7 @@ final class TermVectorsConsumer extends TermsHash {
     }
   }
 
-  private void initTermVectorsWriter() throws IOException {
+  void initTermVectorsWriter() throws IOException {
     if (writer == null) {
       IOContext context = new IOContext(new FlushInfo(docWriter.getNumDocsInRAM(), docWriter.bytesUsed()));
       writer = docWriter.codec.termVectorsFormat().vectorsWriter(docWriter.directory, docWriter.getSegmentInfo(), context);

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
+import org.apache.solr.search.function.ConcatStringFunction;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -106,7 +107,7 @@ public interface AnalyticsParams {
   //Strings
   final static String CONSTANT_STRING = "const_str";
   final static String REVERSE = "rev";
-  final static String CONCATENATE = "concat";
+  final static String CONCATENATE = ConcatStringFunction.NAME;
   public static final Set<String> STRING_OPERATION_SET = Collections.unmodifiableSet(Sets.newLinkedHashSet(Lists.newArrayList(CONSTANT_STRING,REVERSE,CONCATENATE)));
   
   // Field Source Wrappers

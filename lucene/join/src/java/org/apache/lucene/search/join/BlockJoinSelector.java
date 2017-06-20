@@ -102,7 +102,7 @@ public class BlockJoinSelector {
     }
     return new SortedDocValues() {
 
-      private int ord;
+      private int ord = -1;
       private int docID = -1;
 
       @Override
@@ -162,8 +162,64 @@ public class BlockJoinSelector {
           return nextDoc();
         }
         int prevParentDocID = parents.prevSetBit(target-1);
-        values.advance(prevParentDocID+1);
+        if (values.docID() <= prevParentDocID) {
+          values.advance(prevParentDocID+1);
+        }
         return nextDoc();
+      }
+
+      @Override
+      public boolean advanceExact(int targetParentDocID) throws IOException {
+        if (targetParentDocID < docID) {
+          throw new IllegalArgumentException("target must be after the current document: current=" + docID + " target=" + targetParentDocID);
+        }
+        int previousDocId = docID;
+        docID = targetParentDocID;
+        if (targetParentDocID == previousDocId) {
+          return ord != -1;
+        }
+        docID = targetParentDocID;
+        ord = -1;
+        if (parents.get(targetParentDocID) == false) {
+          return false;
+        }
+        int prevParentDocId = docID == 0 ? -1 : parents.prevSetBit(docID - 1);
+        int childDoc = values.docID();
+        if (childDoc <= prevParentDocId) {
+          childDoc = values.advance(prevParentDocId + 1);
+        }
+        if (childDoc >= docID) {
+          return false;
+        }
+        
+        boolean hasValue = false;
+        for (int doc = values.docID(); doc < docID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            ord = values.ordValue();
+            hasValue = true;
+            values.nextDoc();
+            break;
+          }
+        }
+        if (hasValue == false) {
+          return false;
+        }
+
+        for (int doc = values.docID(); doc < docID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            switch (selection) {
+              case MIN:
+                ord = Math.min(ord, values.ordValue());
+                break;
+              case MAX:
+                ord = Math.max(ord, values.ordValue());
+                break;
+              default:
+                throw new AssertionError();
+            }
+          }
+        }
+        return true;
       }
 
       @Override
@@ -283,6 +339,54 @@ public class BlockJoinSelector {
         } else {
           return nextDoc();
         }
+      }
+
+      @Override
+      public boolean advanceExact(int targetParentDocID) throws IOException {
+        if (targetParentDocID <= parentDocID) {
+          throw new IllegalArgumentException("target must be after the current document: current=" + parentDocID + " target=" + targetParentDocID);
+        }
+        parentDocID = targetParentDocID;
+        if (parents.get(targetParentDocID) == false) {
+          return false;
+        }
+        int prevParentDocId = parentDocID == 0 ? -1 : parents.prevSetBit(parentDocID - 1);
+        int childDoc = values.docID();
+        if (childDoc <= prevParentDocId) {
+          childDoc = values.advance(prevParentDocId + 1);
+        }
+        if (childDoc >= parentDocID) {
+          return false;
+        }
+        
+        boolean hasValue = false;
+        for (int doc = values.docID(); doc < parentDocID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            value = values.longValue();
+            hasValue = true;
+            values.nextDoc();
+            break;
+          }
+        }
+        if (hasValue == false) {
+          return false;
+        }
+
+        for (int doc = values.docID(); doc < parentDocID; doc = values.nextDoc()) {
+          if (children.get(doc)) {
+            switch (selection) {
+              case MIN:
+                value = Math.min(value, values.longValue());
+                break;
+              case MAX:
+                value = Math.max(value, values.longValue());
+                break;
+              default:
+                throw new AssertionError();
+            }
+          }
+        }
+        return true;
       }
 
       @Override

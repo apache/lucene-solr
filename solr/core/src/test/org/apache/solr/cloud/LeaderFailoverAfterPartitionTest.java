@@ -20,7 +20,6 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.Test;
@@ -159,7 +158,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     
     proxy0.reopen();
     
-    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(90, TimeUnit.SECONDS);
     while (System.nanoTime() < timeout) {
       List<Replica> activeReps = getActiveOrRecoveringReplicas(testCollectionName, "shard1");
       if (activeReps.size() >= 2) break;
@@ -184,13 +183,6 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     assertDocsExistInAllReplicas(participatingReplicas, testCollectionName, 1, 6);
 
     // try to clean up
-    try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
   }
 }

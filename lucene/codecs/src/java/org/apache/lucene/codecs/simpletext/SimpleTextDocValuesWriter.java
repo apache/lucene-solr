@@ -342,6 +342,15 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
             return doc;
           }
 
+          @Override
+          public boolean advanceExact(int target) throws IOException {
+            if (values.advanceExact(target)) {
+              setCurrentDoc();
+              return true;
+            }
+            return false;
+          }
+          
           final StringBuilder builder = new StringBuilder();
           BytesRef binaryValue;
 

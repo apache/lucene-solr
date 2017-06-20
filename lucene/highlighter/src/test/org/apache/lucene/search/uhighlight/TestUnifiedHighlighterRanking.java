@@ -37,22 +37,18 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Random;
 
-@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "")//Gradle interferes with this Lucene test rule
 public class TestUnifiedHighlighterRanking extends LuceneTestCase {
 
   Analyzer indexAnalyzer;
 
-  // note: don't choose reanalysis because it doesn't always know the term frequency, which is a statistic used
-  //   in passage ranking.  Sometimes it does (e.g. when it builds a MemoryIndex) but not necessarily.
-  final FieldType fieldType = UHTestHelper.randomFieldType(random(), UHTestHelper.postingsType, UHTestHelper.tvType);
+  // note: all offset sources, by default, use term freq, so it shouldn't matter which we choose.
+  final FieldType fieldType = UHTestHelper.randomFieldType(random());
 
   /**
    * indexes a bunch of gibberish, and then highlights top(n).

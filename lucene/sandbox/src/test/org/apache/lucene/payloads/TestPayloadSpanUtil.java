@@ -72,7 +72,7 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
     directory.close();
   }
 
-  final class PayloadAnalyzer extends Analyzer {
+  final static class PayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
@@ -81,7 +81,7 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
     }
   }
 
-  final class PayloadFilter extends TokenFilter {
+  static final class PayloadFilter extends TokenFilter {
     Set<String> entities = new HashSet<>();
     Set<String> nopayload = new HashSet<>();
     int pos;

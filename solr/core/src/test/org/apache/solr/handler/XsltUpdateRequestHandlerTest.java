@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
-
+  
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
@@ -90,7 +90,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ("test document was correctly committed", req("q","*:*")
             , "//result[@numFound='1']"
-            , "//int[@name='id'][.='12345']"
+            , "//str[@name='id'][.='12345']"
         );
   }
   

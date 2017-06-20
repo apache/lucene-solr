@@ -96,7 +96,7 @@ public abstract class CopyJob implements Comparable<CopyJob> {
       } catch (Throwable t) {
         dest.message("xfer: exc during transferAndCancel");
         cancel("exc during transferAndCancel", t);
-        IOUtils.reThrow(t);
+        throw IOUtils.rethrowAlways(t);
       }
     }
   }

@@ -19,8 +19,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -117,7 +115,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           if (q != null) {
             QParser parser = QParser.getParser(q, defType, req);
             query = parser.getQuery();
-            sortSpec = parser.getSort(true);
+            sortSpec = parser.getSortSpec(true);
           }
 
           String[] fqs = req.getParams().getParams(CommonParams.FQ);
@@ -337,6 +335,13 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       mlt.setMaxQueryTerms(     params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS,       MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
       mlt.setMaxNumTokensParsed(params.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
       mlt.setBoost(            params.getBool(MoreLikeThisParams.BOOST, false ) );
+      
+      // There is no default for maxDocFreqPct. Also, it's a bit oddly expressed as an integer value 
+      // (percentage of the collection's documents count). We keep Lucene's convention here. 
+      if (params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT) != null) {
+        mlt.setMaxDocFreqPct(params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT));
+      }
+
       boostFields = SolrPluginUtils.parseFieldBoosts(params.getParams(MoreLikeThisParams.QF));
     }
     
@@ -480,13 +485,5 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   @Override
   public String getDescription() {
     return "Solr MoreLikeThis";
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[] { new URL("http://wiki.apache.org/solr/MoreLikeThis") };
-    }
-    catch( MalformedURLException ex ) { return null; }
   }
 }

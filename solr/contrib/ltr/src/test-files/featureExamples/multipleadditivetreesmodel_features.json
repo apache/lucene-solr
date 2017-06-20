@@ -1,0 +1,16 @@
+[
+    {
+        "name": "matchedTitle",
+        "class": "org.apache.solr.ltr.feature.SolrFeature",
+        "params": {
+            "q": "{!terms f=title}${user_query}"
+        }
+    },
+    {
+        "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": 1
+        }
+    }
+]

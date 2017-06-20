@@ -70,7 +70,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
       int n = random().nextInt(getShardCount());
       String nodeName = cloudJettys.get(n).nodeName;
       log.info("Chose {} as overseer designate", nodeName);
-      new CollectionAdminRequest.AddRole().setRole("overseer").setNode(nodeName).process(cloudClient);
+      CollectionAdminRequest.addRole(nodeName,"overseer").process(cloudClient);
       designates.add(nodeName);
       designateJettys.add(cloudJettys.get(n));
     }

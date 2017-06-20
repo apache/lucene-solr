@@ -41,7 +41,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
 
-  private class MyField implements IndexableField {
+  private static class MyField implements IndexableField {
 
     private final int counter;
     private final IndexableFieldType fieldType = new IndexableFieldType() {
@@ -108,11 +108,6 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public String name() {
       return "f" + counter;
-    }
-
-    @Override
-    public float boost() {
-      return 1.0f + random().nextFloat();
     }
 
     @Override
@@ -336,11 +331,6 @@ public class TestIndexableField extends LuceneTestCase {
     @Override
     public Reader readerValue() {
       return null;
-    }
-
-    @Override
-    public float boost() {
-      return 1.0f;
     }
 
     @Override

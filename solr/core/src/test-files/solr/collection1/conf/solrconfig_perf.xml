@@ -57,13 +57,12 @@
     <queryResultWindowSize>20</queryResultWindowSize>
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
     <useColdSearcher>false</useColdSearcher>
-    <maxWarmingSearchers>2</maxWarmingSearchers>
 
   </query>
 
   <requestDispatcher handleSelect="true" >
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048000" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime"
                  etagSeed="Solr">
     </httpCaching>

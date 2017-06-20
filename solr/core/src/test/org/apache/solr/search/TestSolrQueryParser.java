@@ -16,14 +16,34 @@
  */
 package org.apache.solr.search;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.parser.QueryParser;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.ObjectBuilder;
 
 
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
@@ -37,9 +57,9 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public static void createIndex() {
     String v;
     v = "how now brown cow";
-    assertU(adoc("id", "1", "text", v, "text_np", v));
+    assertU(adoc("id", "1", "text", v, "text_np", v, "foo_i","11"));
     v = "now cow";
-    assertU(adoc("id", "2", "text", v, "text_np", v));
+    assertU(adoc("id", "2", "text", v, "text_np", v, "foo_i","12"));
     assertU(adoc("id", "3", "foo_s", "a ' \" \\ {! ) } ( { z"));  // A value filled with special chars
 
     assertU(adoc("id", "10", "qqq_s", "X"));
@@ -47,15 +67,32 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "12", "eee_s", "X"));
     assertU(adoc("id", "13", "eee_s", "'balance'", "rrr_s", "/leading_slash"));
 
+    assertU(adoc("id", "20", "syn", "wifi ATM"));
+    
+    assertU(adoc("id", "30", "shingle23", "A B X D E"));
+
     assertU(commit());
   }
 
   @Test
   public void testPhrase() {
+    // "text" field's type has WordDelimiterGraphFilter (WDGFF) and autoGeneratePhraseQueries=true
     // should generate a phrase of "now cow" and match only one doc
-    assertQ(req("q", "text:now-cow", "indent", "true")
+    assertQ(req("q", "text:now-cow", "indent", "true", "sow","true")
         , "//*[@numFound='1']"
     );
+    // When sow=false, autoGeneratePhraseQueries=true only works when a graph is produced
+    // (i.e. overlapping terms, e.g. if WDGFF's preserveOriginal=1 or concatenateWords=1).
+    // The WDGFF config on the "text" field doesn't produce a graph, so the generated query
+    // is not a phrase query.  As a result, docs can match that don't match phrase query "now cow"
+    assertQ(req("q", "text:now-cow", "indent", "true", "sow","false")
+        , "//*[@numFound='2']"
+    );
+    assertQ(req("q", "text:now-cow", "indent", "true") // default sow=false
+        , "//*[@numFound='2']"
+    );
+    
+    // "text_np" field's type has WDGFF and (default) autoGeneratePhraseQueries=false
     // should generate a query of (now OR cow) and match both docs
     assertQ(req("q", "text_np:now-cow", "indent", "true")
         , "//*[@numFound='2']"
@@ -112,9 +149,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     // length of date math caused issues...
-    assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
-        , "/debug/parsedquery=='foo_dt:2013-09-11T00:00:00Z'"
-    );
+    if (h.getCore().getLatestSchema().getField("foo_dt").getType().isPointField()) {
+      assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
+          , "/debug/parsedquery=='IndexOrDocValuesQuery(foo_dt:[1378857600000 TO 1378857600000])'"
+      );
+    } else {
+      assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
+          , "/debug/parsedquery=='foo_dt:2013-09-11T00:00:00Z'"
+      );
+    }
   }
 
   @Test
@@ -184,6 +227,137 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     req.close();
   }
 
+
+  // automatically use TermsQuery when appropriate
+  @Test
+  public void testAutoTerms() throws Exception {
+    SolrQueryRequest req = req();
+    QParser qParser;
+    Query q,qq;
+
+    Map<String, String> sowFalseParamsMap = new HashMap<>();
+    sowFalseParamsMap.put("sow", "false");
+    Map<String, String> sowTrueParamsMap = new HashMap<>();
+    sowTrueParamsMap.put("sow", "true");
+    List<MapSolrParams> paramMaps = Arrays.asList
+        (new MapSolrParams(Collections.emptyMap()), // no sow param (i.e. the default sow value) 
+         new MapSolrParams(sowFalseParamsMap),
+         new MapSolrParams(sowTrueParamsMap));
+
+    for (MapSolrParams params : paramMaps) {
+      // relevance query should not be a filter
+      qParser = QParser.getParser("foo_s:(a b c)", req);
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(3, ((BooleanQuery) q).clauses().size());
+
+      // small filter query should still use BooleanQuery
+      if (QueryParser.TERMS_QUERY_THRESHOLD > 3) {
+        qParser = QParser.getParser("foo_s:(a b c)", req);
+        qParser.setParams(params);
+        qParser.setIsFilter(true); // this may change in the future
+        q = qParser.getQuery();
+        assertEquals(3, ((BooleanQuery) q).clauses().size());
+      }
+
+      // large relevancy query should use BooleanQuery
+      // TODO: we may decide that string fields shouldn't have relevance in the future... change to a text field w/o a stop filter if so
+      qParser = QParser.getParser("foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z)", req);
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(26, ((BooleanQuery)q).clauses().size());
+
+      // large filter query should use TermsQuery
+      qParser = QParser.getParser("foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(26, ((TermInSetQuery)q).getTermData().size());
+
+      // large numeric filter query should use TermsQuery (for trie fields)
+      qParser = QParser.getParser("foo_ti:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(20, ((TermInSetQuery)q).getTermData().size());
+
+      // for point fields large filter query should use PointInSetQuery
+      qParser = QParser.getParser("foo_pi:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertTrue(q instanceof PointInSetQuery);
+      assertEquals(20, ((PointInSetQuery)q).getPackedPoints().size());
+
+      // a filter() clause inside a relevancy query should be able to use a TermsQuery
+      qParser = QParser.getParser("foo_s:aaa filter(foo_s:(a b c d e f g h i j k l m n o p q r s t u v w x y z))", req);
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(2, ((BooleanQuery)q).clauses().size());
+      qq = ((BooleanQuery)q).clauses().get(0).getQuery();
+      if (qq instanceof TermQuery) {
+        qq = ((BooleanQuery)q).clauses().get(1).getQuery();
+      }
+
+      if (qq instanceof FilterQuery) {
+        qq = ((FilterQuery)qq).getQuery();
+      }
+
+      assertEquals(26, ((TermInSetQuery) qq).getTermData().size());
+
+      // test mixed boolean query, including quotes (which shouldn't matter)
+      qParser = QParser.getParser("foo_s:(a +aaa b -bbb c d e f bar_s:(qqq www) g h i j k l m n o p q r s t u v w x y z)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(4, ((BooleanQuery)q).clauses().size());
+      qq = null;
+      for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+        qq = clause.getQuery();
+        if (qq instanceof TermInSetQuery) break;
+      }
+      assertEquals(26, ((TermInSetQuery)qq).getTermData().size());
+
+      // test terms queries of two different fields (LUCENE-7637 changed to require all terms be in the same field)
+      StringBuilder sb = new StringBuilder();
+      for (int i=0; i<17; i++) {
+        char letter = (char)('a'+i);
+        sb.append("foo_s:" + letter + " bar_s:" + letter + " ");
+      }
+      qParser = QParser.getParser(sb.toString(), req);
+      qParser.setIsFilter(true); // this may change in the future
+      qParser.setParams(params);
+      q = qParser.getQuery();
+      assertEquals(2, ((BooleanQuery)q).clauses().size());
+      for (BooleanClause clause : ((BooleanQuery)q).clauses()) {
+        qq = clause.getQuery();
+        assertEquals(17, ((TermInSetQuery)qq).getTermData().size());
+      }
+    }
+    req.close();
+  }
+
+  @Test
+  public void testManyClauses() throws Exception {
+    String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
+    StringBuilder sb = new StringBuilder("id:(");
+    for (int i = 0; i < 1024; i++) { // historically, the max number of boolean clauses defaulted to 1024
+      sb.append('z').append(i).append(' ');
+    }
+    sb.append(a);
+    sb.append(")");
+
+    String q = sb.toString();
+
+    // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
+    assertJQ(req("q","*:*", "fq", q)
+        ,"/response/numFound==6");
+    assertJQ(req("q","*:*", "fq", q, "sow", "false")
+        ,"/response/numFound==6");
+    assertJQ(req("q","*:*", "fq", q, "sow", "true")
+        ,"/response/numFound==6");
+  }
+
   @Test
   public void testComments() throws Exception {
     assertJQ(req("q", "id:1 id:2 /* *:* */ id:3")
@@ -229,33 +403,33 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
 
 
-    final SolrInfoMBean filterCacheStats
-        = h.getCore().getInfoRegistry().get("filterCache");
+    final MetricsMap filterCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.filterCache");
     assertNotNull(filterCacheStats);
-    final SolrInfoMBean queryCacheStats
-        = h.getCore().getInfoRegistry().get("queryResultCache");
+    final MetricsMap queryCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
+        .getMetrics().get("CACHE.searcher.queryResultCache");
 
     assertNotNull(queryCacheStats);
 
 
-    long inserts = (Long) filterCacheStats.getStatistics().get("inserts");
-    long hits = (Long) filterCacheStats.getStatistics().get("hits");
+    long inserts = (Long) filterCacheStats.getValue().get("inserts");
+    long hits = (Long) filterCacheStats.getValue().get("hits");
 
     assertJQ(req("q", "doesnotexist filter(id:1) filter(qqq_s:X) filter(abcdefg)")
         , "/response/numFound==2"
     );
 
     inserts += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue());
+    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     assertJQ(req("q", "doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)")
         , "/response/numFound==2"
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue());
+    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // make sure normal "fq" parameters also hit the cache the same way
     assertJQ(req("q", "doesnotexist3", "fq", "id:1", "fq", "qqq_s:X", "fq", "abcdefg")
@@ -263,8 +437,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue());
+    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // try a query deeply nested in a FQ
     assertJQ(req("q", "*:* doesnotexist4", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -273,8 +447,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 1;  // +1 for top level fq
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue());
+    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
     assertJQ(req("q", "*:* doesnotexist5", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -282,8 +456,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 1;  // top-level fq should have been found.
-    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue());
+    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
 
     // try nested filter with multiple top-level args (i.e. a boolean query)
@@ -293,8 +467,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 1;  // the inner filter
     inserts += 1; // the outer filter
-    assertEquals(inserts, ((Long) filterCacheStats.getStatistics().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getStatistics().get("hits")).longValue());
+    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // test the score for a filter, and that default score is 0
     assertJQ(req("q", "+filter(*:*) +filter(id:1)", "fl", "id,score", "sort", "id asc")
@@ -317,4 +491,587 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   }
 
+  // parsing performance test
+  // Run from command line with ant test -Dtestcase=TestSolrQueryParser -Dtestmethod=testParsingPerformance -Dtests.asserts=false 2>/dev/null | grep QPS
+  @Test
+  public void testParsingPerformance() throws Exception {
+    String[] args = {"-queries","100" ,"-iter","1000", "-clauses","100", "-format","term%d", "-seed","0"};
+    args = new String[] {"-queries","1000" ,"-iter","2000", "-clauses","10", "-format","term%d", "-seed","0"};
+    // args = new String[] {"-queries","1000" ,"-iter","1000000000", "-clauses","10", "-format","term%d", "-seed","0"};
+
+    boolean assertOn = false;
+    assert assertOn = true;
+    if (assertOn) {
+      // System.out.println("WARNING! Assertions are enabled!!!! Will only execute small run.  Change with -Dtests.asserts=false");
+      args = new String[]{"-queries","10" ,"-iter","2", "-clauses","20", "-format","term%d", "-seed","0"};
+    }
+
+
+    int iter = 1000;
+    int numQueries = 100;
+    int maxClauses = 5;
+    int maxTerm = 10000000;
+    String format = "term%d";
+    String field = "foo_s";
+    long seed = 0;
+    boolean isFilter = true;
+    boolean rewrite = false;
+
+    String otherStuff = "";
+
+    for (int i = 0; i < args.length; i++) {
+      String a = args[i];
+      if ("-queries".equals(a)) {
+        numQueries = Integer.parseInt(args[++i]);
+      } else if ("-iter".equals(a)) {
+        iter = Integer.parseInt(args[++i]);
+      } else if ("-clauses".equals(a)) {
+        maxClauses = Integer.parseInt(args[++i]);
+      } else if ("-format".equals(a)) {
+        format = args[++i];
+      } else if ("-seed".equals(a)) {
+        seed = Long.parseLong(args[++i]);
+      } else {
+        otherStuff = otherStuff + " " + a;
+      }
+    }
+
+    Random r = new Random(seed);
+
+    String[] queries = new String[numQueries];
+    for (int i = 0; i < queries.length; i++) {
+      StringBuilder sb = new StringBuilder();
+      boolean explicitField = r.nextInt(5) == 0;
+      if (!explicitField) {
+        sb.append(field + ":(");
+      }
+
+      sb.append(otherStuff).append(" ");
+
+      int nClauses = r.nextInt(maxClauses) + 1;  // TODO: query parse can't parse () for some reason???
+
+      for (int c = 0; c<nClauses; c++) {
+        String termString = String.format(Locale.US, format, r.nextInt(maxTerm));
+        if (explicitField) {
+          sb.append(field).append(':');
+        }
+        sb.append(termString);
+        sb.append(' ');
+      }
+
+      if (!explicitField) {
+        sb.append(")");
+      }
+      queries[i] = sb.toString();
+      // System.out.println(queries[i]);
+    }
+
+    SolrQueryRequest req = req();
+
+    long start = System.nanoTime();
+
+    int ret = 0;
+    for (int i=0; i<iter; i++) {
+      for (String qStr : queries) {
+        QParser parser = QParser.getParser(qStr,req);
+        parser.setIsFilter(isFilter);
+        Query q = parser.getQuery();
+        if (rewrite) {
+          // TODO: do rewrite
+        }
+        ret += q.getClass().hashCode(); // use the query somehow
+      }
+    }
+
+    long end = System.nanoTime();
+
+    System.out.println((assertOn ? "WARNING, assertions enabled. " : "") + "ret=" + ret + " Parser QPS:" + ((long)numQueries * iter)*1000000000/(end-start));
+
+    req.close();
+  }
+
+  @Test
+  public void testSplitOnWhitespace_Basic() throws Exception {
+    // The "syn" field has synonyms loaded from synonyms.txt
+
+    assertJQ(req("df", "syn", "q", "wifi", "sow", "true") // retrieve the single document containing literal "wifi"
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+    assertJQ(req("df", "syn", "q", "wi fi", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+    assertJQ(req("df", "syn", "q", "wi fi", "sow", "true")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+    assertJQ(req("df", "syn", "q", "{!lucene sow=false}wi fi")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=true}wi fi")
+        , "/response/numFound==0"
+    );
+
+    assertJQ(req("df", "syn", "q", "{!lucene}wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+  }
+
+  public void testSplitOnWhitespace_Comments() throws Exception {
+    // The "syn" field has synonyms loaded from synonyms.txt
+
+    assertJQ(req("df", "syn", "q", "wifi", "sow", "true") // retrieve the single document containing literal "wifi"
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "wi /* foo */ fi", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "wi /* foo */ /* bar */ fi", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", " /* foo */ wi fi /* bar */", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", " /* foo */ wi /* bar */ fi /* baz */", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+    assertJQ(req("df", "syn", "q", "wi fi", "sow", "true")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi /* foo */ fi", "sow", "true")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi /* foo */ /* bar */ fi", "sow", "true")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "/* foo */ wi fi /* bar */", "sow", "true")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "/* foo */ wi /* bar */ fi /* baz */", "sow", "true")
+        , "/response/numFound==0"
+    );
+
+    assertJQ(req("df", "syn", "q", "wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "wi /* foo */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "wi /* foo */ /* bar */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", " /* foo */ wi fi /* bar */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", " /* foo */ wi /* bar */ fi /* baz */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+
+    assertJQ(req("df", "syn", "q", "{!lucene sow=false}wi fi")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=false}wi /* foo */ fi")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=false}wi /* foo */ /* bar */ fi")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=false}/* foo */ wi fi /* bar */")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=false}/* foo */ wi /* bar */ fi /* baz */")
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+    assertJQ(req("df", "syn", "q", "{!lucene sow=true}wi fi")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=true}wi /* foo */ fi")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=true}wi /* foo */ /* bar */ fi")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=true}/* foo */ wi fi /* bar */")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene sow=true}/* foo */ wi /* bar */ fi /* baz */")
+        , "/response/numFound==0"
+    );
+
+    assertJQ(req("df", "syn", "q", "{!lucene}wi fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene}wi /* foo */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene}wi /* foo */ /* bar */ fi") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene}/* foo */ wi fi /* bar */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "{!lucene}/* foo */ wi /* bar */ fi /* baz */") // default sow=false
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+  }
+
+  public void testOperatorsAndMultiWordSynonyms() throws Exception {
+    // The "syn" field has synonyms loaded from synonyms.txt
+
+    assertJQ(req("df", "syn", "q", "wifi", "sow", "true") // retrieve the single document containing literal "wifi"
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi", "sow", "false") // trigger the "wi fi => wifi" synonym
+        , "/response/numFound==1"
+        , "/response/docs/[0]/id=='20'"
+    );
+
+    assertJQ(req("df", "syn", "q", "+wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "-wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "!wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi* fi", "sow", "false")    // matches because wi* matches wifi
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "w? fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi~1 fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi^2 fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi^=2 fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi +fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi -fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi !fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi*", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi?", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi~1", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi^2", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi^=2", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "syn:wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi syn:fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "NOT wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi NOT fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+
+    assertJQ(req("df", "syn", "q", "wi fi AND ATM", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "ATM AND wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi && ATM", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "ATM && wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi) AND ATM", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "ATM AND (wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi) && ATM", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "ATM && (wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+
+    assertJQ(req("df", "syn", "q", "wi fi OR NotThereAtAll", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "NotThereAtAll OR wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi || NotThereAtAll", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "NotThereAtAll || wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi) OR NotThereAtAll", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "NotThereAtAll OR (wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi) || NotThereAtAll", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "NotThereAtAll || (wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+
+    assertJQ(req("df", "syn", "q", "\"wi\" fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi \"fi\"", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "(wi) fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi (fi)", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "/wi/ fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi /fi/", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "+(wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+
+    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
+    int allDocsExceptOne = totalDocs - 1;
+
+    assertJQ(req("df", "syn", "q", "-(wi fi)", "sow", "false")
+        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
+    );
+    assertJQ(req("df", "syn", "q", "!(wi fi)", "sow", "false")
+        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
+    );
+    assertJQ(req("df", "syn", "q", "NOT (wi fi)", "sow", "false")
+        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi)^2", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "(wi fi)^=2", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "syn:(wi fi)", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "+ATM wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "-ATM wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "-NotThereAtAll wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "!ATM wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "!NotThereAtAll wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "NOT ATM wi fi", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "NOT NotThereAtAll wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "AT* wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "AT? wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "\"ATM\" wi fi", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi +ATM", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi -ATM", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi -NotThereAtAll", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi !ATM", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi !NotThereAtAll", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi NOT ATM", "sow", "false")
+        , "/response/numFound==0"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi NOT NotThereAtAll", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi AT*", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi AT?", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "wi fi \"ATM\"", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "\"wi fi\"~2", "sow", "false")
+        , "/response/numFound==1"
+    );
+    assertJQ(req("df", "syn", "q", "syn:\"wi fi\"", "sow", "false")
+        , "/response/numFound==1"
+    );
+  }
+
+  @Test
+  public void testAutoGeneratePhraseQueries() throws Exception {
+    ModifiableSolrParams noSowParams = new ModifiableSolrParams();
+    ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
+    sowFalseParams.add("sow", "false");
+    ModifiableSolrParams sowTrueParams = new ModifiableSolrParams();
+    sowTrueParams.add("sow", "true");
+
+    // From synonyms.txt:
+    //
+    //     crow blackbird, grackle
+    //
+    try (SolrQueryRequest req = req()) {
+
+      for (SolrParams params : Arrays.asList(noSowParams, sowFalseParams)) {
+        QParser qParser = QParser.getParser("text:grackle", req); // "text" has autoGeneratePhraseQueries="true"
+        qParser.setParams(sowFalseParams);
+        Query q = qParser.getQuery();
+        assertEquals("(text:\"crow blackbird\" text:grackl)", q.toString());
+      }
+
+      QParser qParser = QParser.getParser("text:grackle", req);
+      qParser.setParams(sowTrueParams);
+      Query q = qParser.getQuery();
+      assertEquals("spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+
+      for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
+        qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
+        qParser.setParams(params);
+        q = qParser.getQuery();
+        assertEquals("((+text_sw:crow +text_sw:blackbird) text_sw:grackl)", q.toString());
+      }
+    }
+  }
+
+  @Test
+  public void testShingleQueries() throws Exception {
+    ModifiableSolrParams sowFalseParams = new ModifiableSolrParams();
+    sowFalseParams.add("sow", "false");
+
+    try (SolrQueryRequest req = req(sowFalseParams)) {
+      QParser qParser = QParser.getParser("shingle23:(A B C)", req);
+      Query q = qParser.getQuery();
+      assertEquals("Synonym(shingle23:A_B shingle23:A_B_C) shingle23:B_C", q.toString());
+    }
+
+    assertJQ(req("df", "shingle23", "q", "A B C", "sow", "false")
+        , "/response/numFound==1"
+    );
+  }
+  
+  @Test
+  public void testBadRequestInSetQuery() throws SyntaxError {
+    SolrQueryRequest req = req();
+    QParser qParser;
+    String[] fieldSuffix = new String[] {
+        "ti", "tf", "td", "tl",
+        "i", "f", "d", "l",
+        "is", "fs", "ds", "ls",
+        "i_dv", "f_dv", "d_dv", "l_dv",
+        "is_dv", "fs_dv", "ds_dv", "ls_dv",
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo",
+    };
+    
+    for (String suffix:fieldSuffix) {
+      //Good queries
+      qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 25)", req);
+      qParser.setIsFilter(true);
+      qParser.getQuery();
+    }
+    
+    for (String suffix:fieldSuffix) {
+      qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      try {
+        qParser.getQuery();
+        fail("Expecting exception");
+      } catch (SolrException e) {
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
+      }
+    }
+    
+    
+  }
 }

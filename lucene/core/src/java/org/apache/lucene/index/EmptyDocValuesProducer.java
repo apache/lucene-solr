@@ -44,12 +44,12 @@ public abstract class EmptyDocValuesProducer extends DocValuesProducer {
   }
 
   @Override
-  public SortedNumericDocValues getSortedNumeric(FieldInfo field) {
+  public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException();
   }
   
   @Override
-  public SortedSetDocValues getSortedSet(FieldInfo field) {
+  public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException();
   }
 
