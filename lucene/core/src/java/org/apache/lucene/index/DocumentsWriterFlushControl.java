@@ -424,22 +424,16 @@ final class DocumentsWriterFlushControl implements Accountable {
     };
   }
 
-  
-
   synchronized void doOnDelete() {
     // pass null this is a global delete no update
     flushPolicy.onDelete(this, null);
   }
 
-  /**
-   * Returns the number of delete terms in the global pool
-   */
-  public int getNumGlobalTermDeletes() {
-    return documentsWriter.deleteQueue.numGlobalTermDeletes() + bufferedUpdatesStream.numTerms();
-  }
-  
+  /** Returns heap bytes currently consumed by buffered deletes/updates that would be
+   *  freed if we pushed all deletes.  This does not include bytes consumed by
+   *  already pushed delete/update packets. */
   public long getDeleteBytesUsed() {
-    return documentsWriter.deleteQueue.ramBytesUsed() + bufferedUpdatesStream.ramBytesUsed();
+    return documentsWriter.deleteQueue.ramBytesUsed();
   }
 
   @Override
@@ -501,7 +495,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
       flushingQueue.maxSeqNo = seqNo+1;
 
-      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1, seqNo+1);
+      DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(infoStream, flushingQueue.generation+1, seqNo+1);
 
       documentsWriter.deleteQueue = newQueue;
     }
@@ -648,8 +642,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       }
       for (BlockedFlush blockedFlush : blockedFlushes) {
         try {
-          flushingWriters
-              .put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
+          flushingWriters.put(blockedFlush.dwpt, Long.valueOf(blockedFlush.bytes));
           documentsWriter.subtractFlushedNumDocs(blockedFlush.dwpt.getNumDocsInRAM());
           blockedFlush.dwpt.abort();
         } catch (Throwable ex) {
@@ -720,6 +713,4 @@ final class DocumentsWriterFlushControl implements Accountable {
   public InfoStream getInfoStream() {
     return infoStream;
   }
-  
-  
 }

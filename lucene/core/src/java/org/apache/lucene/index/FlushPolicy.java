@@ -33,9 +33,6 @@ import org.apache.lucene.util.InfoStream;
  * <li>Number of RAM resident documents - configured via
  * {@link IndexWriterConfig#setMaxBufferedDocs(int)}</li>
  * </ul>
- * The policy also applies pending delete operations (by term and/or query),
- * given the threshold set in
- * {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)}.
  * <p>
  * {@link IndexWriter} consults the provided {@link FlushPolicy} to control the
  * flushing process. The policy is informed for each added or updated document

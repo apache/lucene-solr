@@ -1188,13 +1188,16 @@ public class TestJoinUtil extends LuceneTestCase {
   private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter, int numberOfDocumentsToIndex) throws Exception {
     for (int indexIter = 1; indexIter <= maxIndexIter; indexIter++) {
       if (VERBOSE) {
-        System.out.println("indexIter=" + indexIter);
+        System.out.println("TEST: indexIter=" + indexIter + " numDocs=" + numberOfDocumentsToIndex);
       }
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, multipleValuesPerDocument, false);
       IndexSearcher indexSearcher = context.searcher;
+      if (VERBOSE) {
+        System.out.println("TEST: got searcher=" + indexSearcher);
+      }
       for (int searchIter = 1; searchIter <= maxSearchIter; searchIter++) {
         if (VERBOSE) {
-          System.out.println("searchIter=" + searchIter);
+          System.out.println("TEST: searchIter=" + searchIter);
         }
 
         int r = random().nextInt(context.randomUniqueValues.length);
@@ -1360,9 +1363,9 @@ public class TestJoinUtil extends LuceneTestCase {
       }
       final List<String> subValues;
       {
-      int start = randomUniqueValuesReplica.size()==numberOfLinkValues? 0 : random.nextInt(randomUniqueValuesReplica.size()-numberOfLinkValues);
-      subValues = randomUniqueValuesReplica.subList(start, start+numberOfLinkValues);
-      Collections.shuffle(subValues, random);
+        int start = randomUniqueValuesReplica.size()==numberOfLinkValues? 0 : random.nextInt(randomUniqueValuesReplica.size()-numberOfLinkValues);
+        subValues = randomUniqueValuesReplica.subList(start, start+numberOfLinkValues);
+        Collections.shuffle(subValues, random);
       }
       for (String linkValue : subValues) {
 
@@ -1404,6 +1407,9 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     if (random.nextBoolean()) {
+      if (VERBOSE) {
+        System.out.println("TEST: now force merge");
+      }
       w.forceMerge(1);
     }
     w.close();

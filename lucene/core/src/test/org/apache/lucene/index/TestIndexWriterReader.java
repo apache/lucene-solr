@@ -158,6 +158,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     writer.updateDocument(new Term("id", id10), newDoc);
     assertFalse(r1.isCurrent());
 
+    System.out.println("TEST: now get reader");
     DirectoryReader r2 = writer.getReader();
     assertTrue(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r2));

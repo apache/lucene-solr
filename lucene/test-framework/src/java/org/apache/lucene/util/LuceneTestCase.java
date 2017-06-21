@@ -1183,17 +1183,6 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (rarely(r)) {
-      // change buffered deletes parameters
-      boolean limitBufferedDeletes = r.nextBoolean();
-      if (limitBufferedDeletes) {
-        c.setMaxBufferedDeleteTerms(TestUtil.nextInt(r, 1, 1000));
-      } else {
-        c.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      }
-      didChange = true;
-    }
-    
-    if (rarely(r)) {
       IndexWriter.IndexReaderWarmer curWarmer = c.getMergedSegmentWarmer();
       if (curWarmer == null || curWarmer instanceof SimpleMergedSegmentWarmer) {
         // change warmer parameters

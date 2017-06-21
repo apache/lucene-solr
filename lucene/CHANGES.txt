@@ -24,6 +24,10 @@ New Features
   the term frequency to this value.  (Uwe Schindler, Robert Muir, Mike
   McCandless)
 
+* LUCENE-7868: Multiple threads can now resolve deletes and doc values
+  updates concurrently, giving sizable speedups in update-heavy
+  indexing use cases (Simon Willnauer, Mike McCandless)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
@@ -75,6 +79,9 @@ API Changes
   (David Smiley)
 
 * LUCENE-7872: TopDocs.totalHits is now a long. (Adrien Grand, hossman)
+
+* LUCENE-7868: IndexWriterConfig.setMaxBufferedDeleteTerms is
+  removed. (Simon Willnauer, Mike McCandless)
 
 Bug Fixes
 

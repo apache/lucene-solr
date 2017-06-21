@@ -129,7 +129,7 @@ public class PrefixCodedTerms implements Accountable {
 
     private TermIterator(long delGen, RAMFile buffer) {
       try {
-        input = new RAMInputStream("MergedPrefixCodedTermsIterator", buffer);
+        input = new RAMInputStream("PrefixCodedTermsIterator", buffer);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

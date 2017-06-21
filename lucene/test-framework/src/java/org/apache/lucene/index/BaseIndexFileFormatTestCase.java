@@ -564,7 +564,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
           handleFakeIOException(e, exceptionStream);
           allowAlreadyClosed = true;
         }
-        
+
         if (random().nextInt(10) == 0) {
           // trigger flush:
           try {
