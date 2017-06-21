@@ -396,8 +396,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       assertTrue(!usedcollations.contains(multipleCollation));
       usedcollations.add(multipleCollation);
 
-      int hits = (Integer) expandedCollation.get("hits");
-      assertTrue(hits == 1);
+      assertEquals(new Long(1L), expandedCollation.get("hits"));
 
       NamedList misspellingsAndCorrections = (NamedList) expandedCollation.get("misspellingsAndCorrections");
       assertTrue(misspellingsAndCorrections.size() == 3);
@@ -473,7 +472,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 */
         "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='false'",
         "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/str[@name='collationQuery']='teststop:(flew AND from AND heathrow)'",
-        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/int[@name='hits']=1",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/long[@name='hits']=1",
         "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='form']='from'"
       );
 
@@ -497,7 +496,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='june']/arr[@name='suggestion']/lst/str[@name='word']='jane'",
         "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='false'",
         "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/str[@name='collationQuery']='teststop:(jane AND customs)'",
-        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/int[@name='hits']=1",
+        "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/long[@name='hits']=1",
         "//lst[@name='spellcheck']/lst[@name='collations']/lst[@name='collation']/lst[@name='misspellingsAndCorrections']/str[@name='june']='jane'"
       );
       //SOLR-5090, alternativeTermCount==0 was being evaluated, sometimes would throw NPE
@@ -529,7 +528,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     assertQ(req(reusedParams, 
                 CommonParams.Q, "teststop:metnoia")
             , xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'"
-            , xpathPrefix + "int[@name='hits']=6"        
+            , xpathPrefix + "long[@name='hits']=6"        
             );
 
     // specifying 0 means "exact" same as default, but specifing a value greater 
@@ -540,7 +539,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
                   CommonParams.Q, "teststop:metnoia",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, val)
               , xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'"
-              , xpathPrefix + "int[@name='hits']=6"        
+              , xpathPrefix + "long[@name='hits']=6"        
               );
     }
 
@@ -553,7 +552,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
                   CommonParams.Q, "teststop:metnoia",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
               , xpathPrefix + "str[@name='collationQuery']='teststop:metanoia'"
-              , xpathPrefix + "int[@name='hits' and . <= 17 and 0 < .]"        
+              , xpathPrefix + "long[@name='hits' and . <= 17 and 0 < .]"        
               );
     }
 
@@ -570,7 +569,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
                   CommonParams.Q, "teststop:everother",
                   SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, ""+val)
               , xpathPrefix + "str[@name='collationQuery']='teststop:everyother'"
-              , xpathPrefix + "int[@name='hits' and " + min + " <= . and . <= " + max + "]"
+              , xpathPrefix + "long[@name='hits' and " + min + " <= . and . <= " + max + "]"
               );
     }
 

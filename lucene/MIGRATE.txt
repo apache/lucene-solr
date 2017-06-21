@@ -121,3 +121,13 @@ use TopGroupsCollector.
 Support for legacy numerics has been removed since legacy numerics had been
 deprecated since Lucene 6.0. Points should be used instead, see
 org.apache.lucene.index.PointValues for an introduction.
+
+## TopDocs.totalHits is now a long (LUCENE-7872)
+
+TopDocs.totalHits is now a long so that TopDocs instances can be used to
+represent top hits that have more than 2B matches. This is necessary for the
+case that multiple TopDocs instances are merged together with TopDocs#merge as
+they might have more than 2B matches in total. However TopDocs instances
+returned by IndexSearcher will still have a total number of hits which is less
+than 2B since Lucene indexes are still bound to at most 2B documents, so it
+can safely be casted to an int in that case.

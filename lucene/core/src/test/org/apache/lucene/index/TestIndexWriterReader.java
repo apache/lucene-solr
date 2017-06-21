@@ -768,7 +768,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       threads[i].start();
     }
 
-    int lastCount = 0;
+    long lastCount = 0;
     while(threadDone.get() == false) {
       DirectoryReader r2 = DirectoryReader.openIfChanged(r);
       if (r2 != null) {
@@ -776,7 +776,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
         r = r2;
         Query q = new TermQuery(new Term("indexname", "test"));
         IndexSearcher searcher = newSearcher(r);
-        final int count = searcher.search(q, 10).totalHits;
+        final long count = searcher.search(q, 10).totalHits;
         assertTrue(count >= lastCount);
         lastCount = count;
       }
@@ -793,7 +793,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     }
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
-    final int count = searcher.search(q, 10).totalHits;
+    final long count = searcher.search(q, 10).totalHits;
     assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());

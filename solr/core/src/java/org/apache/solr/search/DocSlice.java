@@ -36,7 +36,7 @@ public class DocSlice extends DocSetBase implements DocList {
   final int[] docs;    // a slice of documents (docs 0-100 of the query)
 
   final float[] scores;  // optional score list
-  final int matches;
+  final long matches;
   final float maxScore;
 
   /**
@@ -48,7 +48,7 @@ public class DocSlice extends DocSetBase implements DocList {
    * @param scores  array of scores that corresponds to docs, may be null
    * @param matches total number of matches for the query
    */
-  public DocSlice(int offset, int len, int[] docs, float[] scores, int matches, float maxScore) {
+  public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore) {
     this.offset=offset;
     this.len=len;
     this.docs=docs;
@@ -87,7 +87,7 @@ public class DocSlice extends DocSetBase implements DocList {
   @Override
   public int size()    { return len; }
   @Override
-  public int matches() { return matches; }
+  public long matches() { return matches; }
 
 
   @Override

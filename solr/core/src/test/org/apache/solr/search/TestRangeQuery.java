@@ -303,7 +303,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // now build some random queries (against *any* field) and validate that using it in a DBQ changes
     // the index by the expected number of docs
-    int numDocsLeftInIndex = numDocs;
+    long numDocsLeftInIndex = numDocs;
     final int numDBQs= atLeast(10);
     for (int i=0; i < numDBQs; i++) {
       int lower = TestUtil.nextInt(random(), 2 * l, u);
@@ -337,7 +337,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       assertU(commit());
       try (SolrQueryRequest req = req("q","*:*","rows","0","_trace_after_dbq",dbq)) {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
-        final int allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
+        final long allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
         assertEquals(dbq, numDocsLeftInIndex, allDocsFound);
       }
     }

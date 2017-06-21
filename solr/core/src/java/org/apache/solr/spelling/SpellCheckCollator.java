@@ -93,7 +93,7 @@ public class SpellCheckCollator {
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);
-      int hits = 0;
+      long hits = 0;
 
       if (verifyCandidateWithQuery) {
         tryNo++;
@@ -162,7 +162,7 @@ public class SpellCheckCollator {
             checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);            
           }
           queryComponent.process(checkResponse);
-          hits = (Integer) checkResponse.rsp.getToLog().get("hits");
+          hits = ((Number) checkResponse.rsp.getToLog().get("hits")).longValue();
         } catch (EarlyTerminatingCollectorException etce) {
           assert (docCollectionLimit > 0);
           assert 0 < etce.getNumberScanned();
@@ -171,7 +171,7 @@ public class SpellCheckCollator {
           if (etce.getNumberScanned() == maxDocId) {
             hits = etce.getNumberCollected();
           } else {
-            hits = (int) ( ((float)( maxDocId * etce.getNumberCollected() )) 
+            hits = (long) ( ((float)( maxDocId * etce.getNumberCollected() )) 
                            / (float)etce.getNumberScanned() );
           }
         } catch (Exception e) {

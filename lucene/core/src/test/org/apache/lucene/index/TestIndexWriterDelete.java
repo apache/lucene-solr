@@ -76,7 +76,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.commit();
 
     Term term = new Term("city", "Amsterdam");
-    int hitCount = getHitCount(dir, term);
+    long hitCount = getHitCount(dir, term);
     assertEquals(1, hitCount);
     if (VERBOSE) {
       System.out.println("\nTEST: now delete by term=" + term);
@@ -177,7 +177,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       IndexReader reader = DirectoryReader.open(dir);
       assertEquals(1, reader.numDocs());
 
-      int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
+      long hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
       assertEquals(1, hitCount);
       reader.close();
       modifier.close();
@@ -470,10 +470,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.addDocument(doc);
   }
 
-  private int getHitCount(Directory dir, Term term) throws IOException {
+  private long getHitCount(Directory dir, Term term) throws IOException {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    int hitCount = searcher.search(new TermQuery(term), 1000).totalHits;
+    long hitCount = searcher.search(new TermQuery(term), 1000).totalHits;
     reader.close();
     return hitCount;
   }
@@ -802,7 +802,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // one of the two files hits
 
     Term term = new Term("city", "Amsterdam");
-    int hitCount = getHitCount(dir, term);
+    long hitCount = getHitCount(dir, term);
     assertEquals(1, hitCount);
 
     // open the writer again (closed above)

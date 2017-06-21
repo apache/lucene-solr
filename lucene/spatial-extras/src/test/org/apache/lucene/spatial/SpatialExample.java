@@ -190,7 +190,7 @@ public class SpatialExample extends LuceneTestCase {
   }
 
   private void assertDocMatchedIds(IndexSearcher indexSearcher, TopDocs docs, int... ids) throws IOException {
-    int[] gotIds = new int[docs.totalHits];
+    int[] gotIds = new int[Math.toIntExact(docs.totalHits)];
     for (int i = 0; i < gotIds.length; i++) {
       gotIds[i] = indexSearcher.doc(docs.scoreDocs[i].doc).getField("id").numericValue().intValue();
     }

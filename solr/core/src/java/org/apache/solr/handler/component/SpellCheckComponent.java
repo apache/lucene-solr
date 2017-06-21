@@ -171,12 +171,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           customParams.add(getCustomParams(checkerName, params));
         }
 
-        Integer hitsInteger = (Integer) rb.rsp.getToLog().get("hits");
+        Number hitsLong = (Number) rb.rsp.getToLog().get("hits");
         long hits = 0;
-        if (hitsInteger == null) {
+        if (hitsLong == null) {
           hits = rb.getNumberDocumentsFound();
         } else {
-          hits = hitsInteger.longValue();
+          hits = hitsLong.longValue();
         }
         
         SpellingResult spellingResult = null;
@@ -543,7 +543,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             NamedList expandedCollation = (NamedList) o;
             SpellCheckCollation coll = new SpellCheckCollation();
             coll.setCollationQuery((String) expandedCollation.get("collationQuery"));
-            coll.setHits((Integer) expandedCollation.get("hits"));
+            coll.setHits(((Number) expandedCollation.get("hits")).longValue());
             if(maxCollationTries>0)
             {
               coll.setInternalRank((Integer) expandedCollation.get("collationInternalRank"));

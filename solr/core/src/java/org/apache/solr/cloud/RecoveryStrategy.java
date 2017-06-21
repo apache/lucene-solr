@@ -234,7 +234,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           LOG.debug(core.getCoreContainer()
               .getZkController().getNodeName()
               + " replicated "
-              + searcher.search(new MatchAllDocsQuery(), 1).totalHits
+              + searcher.count(new MatchAllDocsQuery())
               + " from "
               + leaderUrl
               + " gen:"
@@ -781,7 +781,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
       SolrIndexSearcher searcher = searchHolder.get();
       try {
-        final int totalHits = searcher.search(new MatchAllDocsQuery(), 1).totalHits;
+        final int totalHits = searcher.count(new MatchAllDocsQuery());
         final String nodeName = core.getCoreContainer().getZkController().getNodeName();
         LOG.debug("[{}] {} [{} total hits]", nodeName, op, totalHits);
       } finally {
