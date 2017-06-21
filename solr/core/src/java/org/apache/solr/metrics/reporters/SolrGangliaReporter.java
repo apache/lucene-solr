@@ -114,10 +114,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
-    if (!enabled) {
-      log.info("Reporter disabled for registry " + registryName);
-      return;
-    }
     if (host == null) {
       throw new IllegalStateException("Init argument 'host' must be set to a valid Ganglia server name.");
     }

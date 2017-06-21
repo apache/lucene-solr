@@ -566,7 +566,7 @@ public class ZkController {
    * this data is retrieved from ZK on each call.
    */
   public AutoScalingConfig getAutoScalingConfig() throws KeeperException, InterruptedException {
-    Map<String, Object> jsonMap = zkClient.getJson(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
+    Map<String, Object> jsonMap = Utils.getJson(zkClient, ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     return new AutoScalingConfig(jsonMap);
   }
 
