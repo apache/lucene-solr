@@ -52,7 +52,7 @@ Remote streaming is disabled by default. Enabling it is not recommended in a pro
 
 When `enableRemoteStreaming` is not specified in `solrconfig.xml`, the default behavior is to _not_ allow remote streaming (i.e., `enableRemoteStreaming="false"`).
 
-Remote streaming can also be enabled through the <<config-api.adoc,Config API>> as follows:
+Remote streaming can also be enabled through the <<config-api.adoc#config-api,Config API>> as follows:
 
 [source]
 ----
