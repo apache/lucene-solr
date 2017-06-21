@@ -48,13 +48,11 @@ public final class SPIClassIterator<S> implements Iterator<Class<? extends S>> {
   private final Enumeration<URL> profilesEnum;
   private Iterator<String> linesIterator;
   
-  /** Creates a new SPI iterator to lookup services of type {@code clazz} using the context classloader. */
+  /** Creates a new SPI iterator to lookup services of type {@code clazz} using
+   * the same {@link ClassLoader} as the argument. */
   public static <S> SPIClassIterator<S> get(Class<S> clazz) {
-    ClassLoader cl = Thread.currentThread().getContextClassLoader();
-    if (cl == null) {
-      cl = clazz.getClassLoader();
-    }
-    return new SPIClassIterator<>(clazz, cl);
+    return new SPIClassIterator<>(clazz,
+        Objects.requireNonNull(clazz.getClassLoader(), () -> clazz + " has no classloader."));
   }
   
   /** Creates a new SPI iterator to lookup services of type {@code clazz} using the given classloader. */
