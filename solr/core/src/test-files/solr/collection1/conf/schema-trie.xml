@@ -253,9 +253,7 @@
    -->
   <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField"/>
 
-  <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField"
-             valType="float"/>
-
+  <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
   <!-- Valid attributes for fields:
     name: mandatory - the name for the field

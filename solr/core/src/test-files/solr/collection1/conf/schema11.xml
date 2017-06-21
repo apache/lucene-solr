@@ -245,9 +245,9 @@
      --> 
     <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
 
-    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
-    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
 
     <fieldType name="tint" class="solr.TrieIntField"  omitNorms="true" positionIncrementGap="0"/>
@@ -275,19 +275,9 @@
 valued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
-     <!-- These should pass right through and insure that we can declare external field types -->
-    <fieldType name="eff_float" keyField="id" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="float"/>
-
     <fieldType name="eff_tfloat" keyField="eff_ti" defVal="0"
                stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="tfloat"/>
-
-    <!-- Be sure that the valType can be optional Since valType has done nothing up until now, this is preferred -->
-    <fieldType name="eff_none" keyField="id" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField"/>
+               class="solr.ExternalFileField" />
 
     <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
 
