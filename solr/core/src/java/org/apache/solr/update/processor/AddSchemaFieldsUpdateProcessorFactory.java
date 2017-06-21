@@ -384,8 +384,10 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           TypeMapping typeMapping = mapValueClassesToFieldType(entry.getValue());
           if (typeMapping != null) {
             fieldTypeName = typeMapping.fieldTypeName;
-            newCopyFields.put(fieldName, 
-                typeMapping.copyFieldDefs.stream().collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
+            if (!typeMapping.copyFieldDefs.isEmpty()) {
+              newCopyFields.put(fieldName,
+                  typeMapping.copyFieldDefs.stream().collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
+            }
           } 
           newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
         }
@@ -399,7 +401,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         }
         if (log.isDebugEnabled()) {
           StringBuilder builder = new StringBuilder();
-          builder.append("Fields to be added to the schema: [");
+          builder.append("\nFields to be added to the schema: [");
           boolean isFirst = true;
           for (SchemaField field : newFields) {
             builder.append(isFirst ? "" : ",");
@@ -429,8 +431,8 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // the schema on the request is the latest
         synchronized (oldSchema.getSchemaUpdateLock()) {
           try {
+            IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
             // Add copyFields
-            IndexSchema newSchema = oldSchema.addFields(newFields);
             for (String srcField : newCopyFields.keySet()) {
               for (Integer maxChars : newCopyFields.get(srcField).keySet()) {
                 newSchema = newSchema.addCopyFields(srcField, 
@@ -439,6 +441,10 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
               }
             }
             if (null != newSchema) {
+              if (newSchema instanceof ManagedIndexSchema) {
+                // NOCOMMIT: Hack to avoid persisting schema once after addFields and then once after each copyField
+                ((ManagedIndexSchema)newSchema).persistManagedSchema(false);
+              }
               core.setLatestSchema(newSchema);
               cmd.getReq().updateSchemaToLatest();
               log.debug("Successfully added field(s) to the schema.");

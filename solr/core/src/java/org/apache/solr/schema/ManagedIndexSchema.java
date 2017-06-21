@@ -109,8 +109,12 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   
-  /** Persist the schema to local storage or to ZooKeeper */
-  boolean persistManagedSchema(boolean createOnly) {
+  // NOCOMMIT: Made this public to be able to persist once at end of modifications. Better solutions?
+  /** 
+   * Persist the schema to local storage or to ZooKeeper
+   * @param createOnly set to false to allow update of existing schema
+   */
+  public boolean persistManagedSchema(boolean createOnly) {
     if (loader instanceof ZkSolrResourceLoader) {
       return persistManagedSchemaToZooKeeper(createOnly);
     }
