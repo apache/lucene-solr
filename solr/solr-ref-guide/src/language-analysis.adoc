@@ -1409,7 +1409,7 @@ Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, 
 
 In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
-There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö->o etc.
+There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö\->o etc.
 
 See also each language section for other relevant filters.
 
@@ -1444,7 +1444,7 @@ It's a semantically less destructive solution than `ScandinavianFoldingFilter`, 
 [[LanguageAnalysis-ScandinavianFoldingFilter]]
 ==== Scandinavian Folding Filter
 
-This filter folds Scandinavian characters åÅäæÄÆ->a and öÖøØ->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
+This filter folds Scandinavian characters åÅäæÄÆ\->a and öÖøØ\->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
 
 It's a semantically more destructive solution than `ScandinavianNormalizationFilter`, but can in addition help with matching raksmorgas as räksmörgås.
 

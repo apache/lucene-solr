@@ -44,7 +44,7 @@ For most installations, Apache Zeppelin configures PostgreSQL as the JDBC interp
 [[SolrJDBC-ApacheZeppelin-CreateaNotebook]]
 == Create a Notebook
 
-.Click Notebook -> Create new note
+.Click Notebook \-> Create new note
 image::images/solr-jdbc-apache-zeppelin/zeppelin_solrjdbc_4.png[image,width=517,height=400]
 
 .Provide a name and click "Create Note"

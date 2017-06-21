@@ -529,7 +529,7 @@ Use the `zk upconfig` command to upload one of the pre-configured configuration 
 |-n <name> a|
 Name of the configuration set in ZooKeeper. This command will upload the configuration set to the "configs" ZooKeeper node giving it the name specified.
 
-You can see all uploaded configuration sets in the Admin UI via the Cloud screens. Choose Cloud -> Tree -> configs to see them.
+You can see all uploaded configuration sets in the Admin UI via the Cloud screens. Choose Cloud \-> Tree \-> configs to see them.
 
 If a pre-existing configuration set is specified, it will be overwritten in ZooKeeper.
 
@@ -571,7 +571,7 @@ Use the `zk downconfig` command to download a configuration set from ZooKeeper t
 [cols="20,40,40",options="header"]
 |===
 |Parameter |Description |Example
-|-n <name> |Name of config set in ZooKeeper to download. The Admin UI Cloud -> Tree -> configs node lists all available configuration sets. |`-n myconfig`
+|-n <name> |Name of config set in ZooKeeper to download. The Admin UI Cloud \-> Tree \-> configs node lists all available configuration sets. |`-n myconfig`
 |-d <configset dir> a|
 The path to write the downloaded configuration set into. If just a name is supplied, `$SOLR_HOME/server/solr/configsets` will be the parent. An absolute path may be supplied as well.
 
