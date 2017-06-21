@@ -523,6 +523,21 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
       assertTrue("score should be negative", h[i].score < 0);
     }
   }
+
+  public void testRewriteBoolean() throws Exception {
+    Query sub1 = tq("hed", "albino");
+    Query sub2 = tq("hed", "elephant");
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(
+        Arrays.asList(
+            sub1, sub2
+        ), 1.0f);
+    Query rewritten = s.rewrite(q);
+    assertTrue(rewritten instanceof BooleanQuery);
+    BooleanQuery bq = (BooleanQuery) rewritten;
+    assertEquals(bq.clauses().size(), 2);
+    assertEquals(bq.clauses().get(0), new BooleanClause(sub1, BooleanClause.Occur.SHOULD));
+    assertEquals(bq.clauses().get(1), new BooleanClause(sub2, BooleanClause.Occur.SHOULD));
+  }
   
   /** macro */
   protected Query tq(String f, String t) {

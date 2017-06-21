@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Arrays;
 
@@ -38,13 +39,13 @@ public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements 
 
   public EmpiricalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(1 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Tuple evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 1) {
-      throw new IOException("Empirical dist expects 1 column as a parameters");
-    }
 
     StreamEvaluator colEval1 = subEvaluators.get(0);
 

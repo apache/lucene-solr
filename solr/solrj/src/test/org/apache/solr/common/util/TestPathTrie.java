@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.common.util;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,7 +23,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.PathTrie;
+import org.apache.solr.common.util.PathTrie;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;

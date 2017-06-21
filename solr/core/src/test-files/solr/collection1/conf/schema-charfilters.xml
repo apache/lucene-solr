@@ -16,7 +16,7 @@
   -->
 
 <schema name="test" version="1.0">
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
   <!--  charfilter only at query-time -->
   <fieldType name="text" class="solr.TextField">
     <analyzer type="index">
@@ -38,7 +38,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="content" type="text" indexed="true" stored="true"/>
   <field name="content2" type="text2" indexed="true" stored="true"/>
 

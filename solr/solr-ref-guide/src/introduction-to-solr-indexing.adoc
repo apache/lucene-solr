@@ -44,7 +44,7 @@ For more information on indexing in Solr, see the https://wiki.apache.org/solr/F
 When starting Solr with the "-e" option, the `example/` directory will be used as base directory for the example Solr instances that are created. This directory also includes an `example/exampledocs/` subdirectory containing sample documents in a variety of formats that you can use to experiment with indexing into the various examples.
 
 [[IntroductiontoSolrIndexing-ThecurlUtilityforTransferringFiles]]
-== The `curl` Utility for Transferring Files
+== The curl Utility for Transferring Files
 
 Many of the instructions and examples in this section make use of the `curl` utility for transferring content through a URL. `curl` posts and retrieves data over HTTP, FTP, and many other protocols. Most Linux distributions include a copy of `curl`. You'll find curl downloads for Linux, Windows, and many other operating systems at http://curl.haxx.se/download.html. Documentation for `curl` is available here: http://curl.haxx.se/docs/manpage.html.
 

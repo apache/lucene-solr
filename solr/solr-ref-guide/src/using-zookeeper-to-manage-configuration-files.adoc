@@ -58,7 +58,7 @@ It's a good idea to keep these files under version control.
 
 
 [[UsingZooKeepertoManageConfigurationFiles-UploadingConfigurationFilesusingbin_solrorSolrJ]]
-== Uploading Configuration Files using `bin/solr` or SolrJ
+== Uploading Configuration Files using bin/solr or SolrJ
 
 In production situations, <<config-sets.adoc#config-sets,Config Sets>> can also be uploaded to ZooKeeper independent of collection creation using either Solr's <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> or the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient.uploadConfig] java method.
 

@@ -316,7 +316,7 @@
   </fieldType>
 
 
-  <field name="id" type="int" multiValued="false" indexed="true"
+  <field name="id" type="string" multiValued="false" indexed="true"
          stored="true"/> <!-- the uniqueKey is required by default -->
   <field name="name" type="nametext" indexed="true" stored="true" required="true"/>
   <field name="text" type="text" indexed="true" stored="false"/>

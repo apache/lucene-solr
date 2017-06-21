@@ -25,8 +25,8 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
@@ -90,8 +90,8 @@ public class TermVectorLeafReader extends LeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return fields;
+  public Terms terms(String field) throws IOException {
+    return fields.terms(field);
   }
 
   @Override
@@ -148,7 +148,7 @@ public class TermVectorLeafReader extends LeafReader {
     if (docID != 0) {
       return null;
     }
-    return fields();
+    return fields;
   }
 
   @Override

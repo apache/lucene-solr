@@ -94,8 +94,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         // NOTE: doTestFieldStatisticsResult needs the full list of possible tags to exclude
         params("stats.field", f, "stats", "true"),
         params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
-               "fq", "{!tag=fq1}-id:[0 TO 2]", 
-               "fq", "{!tag=fq2}-id:[2 TO 1000]"), 
+               "fq", "{!tag=fq1}-id_i:[0 TO 2]", 
+               "fq", "{!tag=fq2}-id_i:[2 TO 1000]"), 
         params("stats.field", "{!ex=fq1}"+f, "stats", "true",
                "fq", "{!tag=fq1}id:1")
       };
@@ -299,8 +299,8 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         params("stats.field", "{!ex=fq1}"+f, "stats", "true",
                "fq", "{!tag=fq1}id:1"),
         params("stats.field", "{!ex=fq1,fq2}"+f, "stats", "true",
-               "fq", "{!tag=fq1}-id:[0 TO 2]", 
-               "fq", "{!tag=fq2}-id:[2 TO 1000]")  }) {
+               "fq", "{!tag=fq1}-id_i:[0 TO 2]", 
+               "fq", "{!tag=fq2}-id_i:[2 TO 1000]")  }) {
       
       
       assertQ("test statistics values", 
@@ -878,19 +878,19 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     Map<String, String> args = new HashMap<String, String>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "{!ex=id}id");
-    args.put("fq", "{!tag=id}id:[2 TO 3]");
+    args.put(StatsParams.STATS_FIELD, "{!ex=id}id_i");
+    args.put("fq", "{!tag=id}id_i:[2 TO 3]");
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ("test exluding filter query", req
-            , "//lst[@name='id']/double[@name='min'][.='1.0']"
-            , "//lst[@name='id']/double[@name='max'][.='4.0']");
+            , "//lst[@name='id_i']/double[@name='min'][.='1.0']"
+            , "//lst[@name='id_i']/double[@name='max'][.='4.0']");
 
     args = new HashMap<String, String>();
     args.put(CommonParams.Q, "*:*");
     args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "{!key=id2}id");
-    args.put("fq", "{!tag=id}id:[2 TO 3]");
+    args.put(StatsParams.STATS_FIELD, "{!key=id2}id_i");
+    args.put("fq", "{!tag=id}id_i:[2 TO 3]");
     req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ("test rename field", req

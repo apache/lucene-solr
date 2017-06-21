@@ -333,7 +333,7 @@
   </fieldType>
 
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="subject" type="text" indexed="true" stored="true"/>

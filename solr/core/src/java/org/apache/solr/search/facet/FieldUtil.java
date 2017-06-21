@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -55,6 +56,11 @@ public class FieldUtil {
     return si == null ? DocValues.emptySortedSet() : si;
   }
 
+  public static NumericDocValues getNumericDocValues(QueryContext context, SchemaField field, QParser qparser) throws IOException {
+    SolrIndexSearcher searcher = context.searcher();
+    NumericDocValues si = searcher.getSlowAtomicReader().getNumericDocValues(field.getName());
+    return si == null ? DocValues.emptyNumeric() : si;
+  }
 
   /** The following ord visitors and wrappers are a work in progress and experimental
    *  @lucene.experimental */

@@ -18,6 +18,8 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -284,21 +286,27 @@ public final class SlowCodecReaderWrapper {
   }
 
   private static FieldsProducer readerToFieldsProducer(final LeafReader reader) throws IOException {
-    final Fields fields = reader.fields();
+    ArrayList<String> indexedFields = new ArrayList<>();
+    for (FieldInfo fieldInfo : reader.getFieldInfos()) {
+      if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+        indexedFields.add(fieldInfo.name);
+      }
+    }
+    Collections.sort(indexedFields);
     return new FieldsProducer() {
       @Override
       public Iterator<String> iterator() {
-        return fields.iterator();
+        return indexedFields.iterator();
       }
 
       @Override
       public Terms terms(String field) throws IOException {
-        return fields.terms(field);
+        return reader.terms(field);
       }
 
       @Override
       public int size() {
-        return fields.size();
+        return indexedFields.size();
       }
 
       @Override

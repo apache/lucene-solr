@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.SpecProvider;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.common.util.CommandOperation;
 import org.slf4j.Logger;
@@ -238,7 +238,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return ApiBag.getSpec("cluster.security.RuleBasedAuthorization").getSpec();
+    return Utils.getSpec("cluster.security.RuleBasedAuthorization").getSpec();
 
   }
 }

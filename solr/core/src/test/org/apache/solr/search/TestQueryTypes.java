@@ -20,6 +20,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestQueryTypes extends AbstractSolrTestCase {
 
@@ -44,7 +45,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     assertU(adoc("id","10","text_no_analyzer","should just work"));
 
     Object[] arr = new Object[] {
-    "id",999.0
+    "id",999
     ,"v_s","wow dude"
     ,"v_t","wow"
     ,"v_ti",-1
@@ -74,7 +75,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
       // normal lucene fielded query
       assertQ(req( "q",f+":\""+v+'"')
               ,"//result[@numFound='1']"
-              ,"//*[@name='id'][.='999.0']"
+              ,"//*[@name='id'][.='999']"
               ,"//*[@name='" + f + "'][.='" + v + "']"
               );
 
@@ -115,7 +116,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
 
     // frange and function query only work on single valued field types
     Object[] fc_vals = new Object[] {
-      "id",999.0
+      "id_i",999
       ,"v_s","wow dude"
       ,"v_ti",-1
       ,"v_tl",-1234567891234567890L
@@ -153,7 +154,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
               ,"//result[@numFound='1']"
               );
 
-      if (!"id".equals(f)) {
+      if (!"id_i".equals(f)) {
         assertQ(req( "fq","id:1", "q", "{!frange l=1 u=1}if(exists("+f+"),1,0)" )
             ,"//result[@numFound='0']"
         );
@@ -208,7 +209,6 @@ public class TestQueryTypes extends AbstractSolrTestCase {
            req("q","{!term f=v_t}hello")
            ,"//result[@numFound='2']"
            );
-
 
     //
     // test escapes in quoted strings
@@ -352,40 +352,40 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case.z=Yonik} x ")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
     assertQ("test empty matching switch query",
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case=Yonik}  ")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='2.0']");
+            ,"//*[@name='id'][.='2']");
     assertQ("test empty matching switch query",
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case=Yonik v=''}")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='2.0']");
+            ,"//*[@name='id'][.='2']");
     assertQ("test empty matching switch query",
             req("df", "v_t",
                 "q", "{!switch case.x=Dude case=Yonik v=$qq}")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='2.0']");
+            ,"//*[@name='id'][.='2']");
     assertQ("test matching switch query w/deref",
             req("q", "{!switch case.x=$d case.z=Yonik} x ",
                 "df", "v_t",
                 "d", "Dude")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
     assertQ("test default switch query",
             req("q", "{!switch default=$d case.x=$d case.z=Yonik}asdf",
                 "df", "v_t",
                 "d", "Dude")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
     assertQ("test empty default switch query",
             req("q", "{!switch default=$d case.x=$d case.z=Yonik v=$qq}",
                 "df", "v_t",
                 "d", "Dude")
             ,"//result[@numFound='1']"
-            ,"//*[@name='id'][.='1.0']");
+            ,"//*[@name='id'][.='1']");
 
     try {
       ignoreException("No\\ default\\, and no switch case");
@@ -435,6 +435,50 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             );
     assertQ("Test text field with no analysis doesn't NPE with wildcards (SOLR-4318)",
         req("q", "text_no_analyzer:should*"), "//result[@numFound='1']");
+
+    
+  }
+  
+  @Test
+  public void testNumericBadRequests() {
+    String[] suffixes = new String[50];
+    int fieldNum = 0;
+    for (String type:new String[]{"i", "l", "f", "d", "dt"}) {
+      for (String s:new String[]{"", "s"}) {
+        //Trie
+        suffixes[fieldNum++] = "t" + type + s;
+        suffixes[fieldNum++] = "t" + type + s + "_dv";
+        suffixes[fieldNum++] = "t" + type + s + "_ni_dv";
+        
+        //Points
+        suffixes[fieldNum++] = type + s + "_p";
+        suffixes[fieldNum++] = type + s + "_ni_p";
+      }
+    }
+    assertEquals(fieldNum,suffixes.length);
+    
+    String badNumber = "NOT_A_NUMBER";
+    for (String suffix:suffixes) {
+      // Numeric bad requests
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!term f=foo_" + suffix + "}" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!terms f=foo_" + suffix + "}1 2 3 4 5 " + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!lucene}foo_" + suffix + ":" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!field f=foo_" + suffix + "}" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!maxscore}foo_" + suffix + ":" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber,
+          req("q","{!xmlparser}<PointRangeQuery fieldName=\"foo_"+ suffix  + "\" lowerTerm=\"1\" upperTerm=\"" + badNumber + "\"/>"), SolrException.ErrorCode.BAD_REQUEST);
+      if (suffix.contains("_p")) {
+        // prefix queries work in Trie fields
+        assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields",
+            req("q","{!prefix f=foo_" + suffix + "}NOT_A_NUMBER"), SolrException.ErrorCode.BAD_REQUEST);
+        assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields",
+            req("q","{!lucene}foo_" + suffix + ":123*"), SolrException.ErrorCode.BAD_REQUEST);
+      }
+      
+      // Skipping: func, boost, raw, nested, frange, spatial*, join, surround, switch, parent, child, collapsing, 
+      // complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain, tlogit, sigificantTerms, payload*
+      // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, sigificantTerms, simple
+    }
 
   }
 }

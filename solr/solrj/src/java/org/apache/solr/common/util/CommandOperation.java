@@ -17,10 +17,12 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -221,7 +223,41 @@ public class CommandOperation {
   }
 
   /**
-   * Parse the command operations into command objects
+   * Parse the command operations into command objects from javabin payload
+   * * @param singletonCommands commands that cannot be repeated
+   */
+  public static List<CommandOperation> parse(InputStream in, Set<String> singletonCommands) throws IOException {
+    List<CommandOperation> operations = new ArrayList<>();
+
+    final HashMap map = new HashMap(0) {
+      @Override
+      public Object put(Object key, Object value) {
+        List vals = null;
+        if (value instanceof List && !singletonCommands.contains(key)) {
+          vals = (List) value;
+        } else {
+          vals = Collections.singletonList(value);
+        }
+        for (Object val : vals) {
+          operations.add(new CommandOperation(String.valueOf(key), val));
+        }
+        return null;
+      }
+    };
+
+    new JavaBinCodec() {
+      int level = 0;
+      @Override
+      protected Map<Object, Object> newMap(int size) {
+        level++;
+        return level == 1 ? map : super.newMap(size);
+      }
+    }.unmarshal(in);
+    return operations;
+  }
+
+  /**
+   * Parse the command operations into command objects from a json payload
    *
    * @param rdr               The payload
    * @param singletonCommands commands that cannot be repeated
@@ -304,9 +340,13 @@ public class CommandOperation {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
     }
     ArrayList<CommandOperation> ops = new ArrayList<>();
-
-    for (ContentStream stream : streams)
-      ops.addAll(parse(stream.getReader(), singletonCommands));
+    for (ContentStream stream : streams) {
+      if ("application/javabin".equals(stream.getContentType())) {
+        ops.addAll(parse(stream.getStream(), singletonCommands));
+      } else {
+        ops.addAll(parse(stream.getReader(), singletonCommands));
+      }
+    }
     List<Map> errList = CommandOperation.captureErrors(ops);
     if (!errList.isEmpty()) {
       resp.add(CommandOperation.ERR_MSGS, errList);

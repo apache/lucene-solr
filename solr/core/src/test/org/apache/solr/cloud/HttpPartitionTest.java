@@ -598,7 +598,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   @SuppressWarnings("rawtypes")
   protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
     NamedList rsp = realTimeGetDocId(solr, docId);
-    String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), new Integer(docId));
+    String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }

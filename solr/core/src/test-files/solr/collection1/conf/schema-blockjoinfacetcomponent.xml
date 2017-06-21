@@ -22,9 +22,9 @@
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
-  <field name="_root_" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="name" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="false"/>

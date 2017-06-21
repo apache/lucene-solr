@@ -20,9 +20,15 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-/** Flex API for access to fields and terms
- *  @lucene.experimental */
+import org.apache.lucene.codecs.FieldsProducer;
 
+/**
+ * Provides a {@link Terms} index for fields that have it, and lists which fields do.
+ * This is primarily an internal/experimental API (see {@link FieldsProducer}),
+ * although it is also used to expose the set of term vectors per document.
+ *
+ * @lucene.experimental
+ */
 public abstract class Fields implements Iterable<String> {
 
   /** Sole constructor. (For invocation by subclass 

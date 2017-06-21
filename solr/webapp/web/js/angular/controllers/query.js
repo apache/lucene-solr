@@ -23,7 +23,7 @@ solrAdminApp.controller('QueryController',
     $scope.query = {wt: 'json', q:'*:*', indent:'on'};
     $scope.filters = [{fq:""}];
     $scope.dismax = {defType: "dismax"};
-    $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: true};
+    $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: false};
     $scope.hl = {hl:"on"};
     $scope.facet = {facet: "on"};
     $scope.spatial = {};

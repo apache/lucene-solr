@@ -28,7 +28,7 @@ To merge indexes, they must meet these requirements:
 Optimally, the two indexes should be built using the same schema.
 
 [[MergingIndexes-UsingIndexMergeTool]]
-== Using `IndexMergeTool`
+== Using IndexMergeTool
 
 To merge the indexes, do the following:
 

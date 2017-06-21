@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -55,7 +56,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
  *
  * @since solr 4.5
  */
-public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> {
+public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport {
 
   protected final CollectionAction action;
 
@@ -68,6 +69,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public CollectionAdminRequest(String path, CollectionAction action) {
     super(METHOD.GET, path);
     this.action = checkNotNull("action", action);
+  }
+
+  @Override
+  public SolrRequest getV2Request() {
+    return usev2 ?
+        V1toV2ApiMapper.convert(this).useBinary(useBinaryV2).build() :
+        this;
   }
 
   @Override

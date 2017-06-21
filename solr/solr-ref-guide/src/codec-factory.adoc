@@ -45,7 +45,7 @@ Example:
 
 === solr.SimpleTextCodecFactory
 
-This factory for Lucene's {solr-javadocs}/solr-core/org/apache/solr/core/SimpleTextCodecFactory.html[`solr.SimpleTextCodecFactory`] produces a plain text human-readable index format.
+This factory for Lucene's {solr-javadocs}/solr-core/org/apache/solr/core/SimpleTextCodecFactory.html[`SimpleTextCodecFactory`] produces a plain text human-readable index format.
 
 CAUTION: *FOR RECREATIONAL USE ONLY*. This codec should never be used in production. `SimpleTextCodec` is relatively slow and takes up a large amount of disk space. Its use should be limited to educational and debugging purposes.
 

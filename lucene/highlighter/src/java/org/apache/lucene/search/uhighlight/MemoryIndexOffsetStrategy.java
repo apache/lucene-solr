@@ -83,8 +83,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
       return allAutomata.get(0);
     }
     //TODO it'd be nice if we could get at the underlying Automaton in CharacterRunAutomaton so that we
-    //  could union them all. But it's not exposed, and note TermRangeQuery isn't modelled as an Automaton
-    //  by MultiTermHighlighting.
+    //  could union them all. But it's not exposed, and sometimes the automaton is byte (not char) oriented
 
     // Return an aggregate CharacterRunAutomaton of others
     return new CharacterRunAutomaton(Automata.makeEmpty()) {// the makeEmpty() is bogus; won't be used

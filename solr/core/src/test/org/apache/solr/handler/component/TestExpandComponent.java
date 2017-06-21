@@ -119,12 +119,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand", "true");
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='2.0']",
-        "/response/result/doc[2]/float[@name='id'][.='6.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='1.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='5.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='8.0']"
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
     );
 
     //Basic test case page 2
@@ -139,9 +139,9 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("start", "1");
     assertQ(req(params), "*[count(/response/result/doc)=1]",
         "*[count(/response/lst[@name='expanded']/result)=1]",
-        "/response/result/doc[1]/float[@name='id'][.='6.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='5.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='8.0']"
+        "/response/result/doc[1]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
     );
 
     //Test expand.sort
@@ -154,12 +154,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.sort", "test_l desc, sub(1,1) asc");//the "sub()" just testing function queries
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='2.0']",
-        "/response/result/doc[2]/float[@name='id'][.='6.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='1.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='8.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='5.0']"
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
     );
 
     //Test with nullPolicy, ExpandComponent should ignore docs with null values in the collapse fields.
@@ -173,13 +173,13 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.sort", "test_l desc");
     assertQ(req(params), "*[count(/response/result/doc)=3]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='3.0']",
-        "/response/result/doc[2]/float[@name='id'][.='2.0']",
-        "/response/result/doc[3]/float[@name='id'][.='6.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='1.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='8.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='5.0']"
+        "/response/result/doc[1]/str[@name='id'][.='3']",
+        "/response/result/doc[2]/str[@name='id'][.='2']",
+        "/response/result/doc[3]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
     );
 
 
@@ -195,12 +195,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.sort", "test_l desc");
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='1.0']",
-        "/response/result/doc[2]/float[@name='id'][.='5.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='2.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='8.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='6.0']"
+        "/response/result/doc[1]/str[@name='id'][.='1']",
+        "/response/result/doc[2]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
 
@@ -217,12 +217,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.sort", "test_l desc");
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='1.0']",
-        "/response/result/doc[2]/float[@name='id'][.='5.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='2.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='8.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='6.0']"
+        "/response/result/doc[1]/str[@name='id'][.='1']",
+        "/response/result/doc[2]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
     //Test overide expand.fq and expand.q
@@ -239,12 +239,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.sort", "test_l desc");
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='1.0']",
-        "/response/result/doc[2]/float[@name='id'][.='5.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='2.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='8.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='6.0']"
+        "/response/result/doc[1]/str[@name='id'][.='1']",
+        "/response/result/doc[2]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
     //Test expand.rows
@@ -261,10 +261,10 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=1]",
         "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=1]",
-        "/response/result/doc[1]/float[@name='id'][.='2.0']",
-        "/response/result/doc[2]/float[@name='id'][.='6.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='8.0']"
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
     );
 
 
@@ -307,12 +307,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("fl", "id");
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
-        "/response/result/doc[1]/float[@name='id'][.='2.0']",
-        "/response/result/doc[2]/float[@name='id'][.='6.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/float[@name='id'][.='1.0']",
-        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/float[@name='id'][.='7.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/float[@name='id'][.='5.0']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/float[@name='id'][.='8.0']"
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
     );
   }
 

@@ -14,6 +14,16 @@ New Features
   well as the oldest Lucene version that contributed to the segment.
   (Adrien Grand)
 
+* LUCENE-7854: The new TermFrequencyAttribute used during analysis
+  with a custom token stream allows indexing custom term frequencies
+  (Mike McCandless)
+
+* LUCENE-7866: Add a new DelimitedTermFrequencyTokenFilter that allows to
+  mark tokens with a custom term frequency (LUCENE-7854). It parses a numeric
+  value after a separator char ('|') at the end of each token and changes
+  the term frequency to this value.  (Uwe Schindler, Robert Muir, Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
@@ -59,6 +69,11 @@ API Changes
 
 * LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
 
+* LUCENE-7500: Removed abstract LeafReader.fields(); instead terms(fieldName)
+  has been made abstract, fomerly was final.  Also, MultiFields.getTerms
+  was optimized to work directly instead of being implemented on getFields.
+  (David Smiley)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
@@ -97,6 +112,8 @@ Optimizations
   query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
   the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
 
+* LUCENE-7874: DisjunctionMaxQuery rewrites to a BooleanQuery when tiebreaker is set to 1. (Jim Ferenczi)
+
 Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
@@ -113,7 +130,32 @@ Other
 * LUCENE-7852: Correct copyright year(s) in lucene/LICENSE.txt file.
   (Christine Poerschke, Steve Rowe)
 
+* LUCENE-7719: Generalized the UnifiedHighlighter's support for AutomatonQuery
+  for character & binary automata. Added AutomatonQuery.isBinary. (David Smiley)
+
+* LUCENE-7873: Due to serious problems with context class loaders in several
+  frameworks (OSGI, Java 9 Jigsaw), the lookup of Codecs, PostingsFormats,
+  DocValuesFormats and all analysis factories was changed to only inspect the
+  current classloader that defined the interface class (lucene-core.jar).
+  See MIGRATE.txt for more information!  (Uwe Schindler, Dawid Weiss)
+
 ======================= Lucene 6.7.0 =======================
+
+New Features
+
+* LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
+  (Juan Pedro via Adrien Grand)
+
+Bug Fixes
+
+* LUCENE-7864: IndexMergeTool is not using intermediate hard links (even 
+  if possible). (Dawid Weiss)
+
+* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
+  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
+  with multiple points that should match to not match. (Martijn van Groningen)
+
+* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
 
 Other
 
@@ -121,9 +163,19 @@ Other
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss)
 
+* LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
+  that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
+  (David Smiley)
+
 Improvements
 
 * LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+
+Optimizations
+
+* LUCENE-7828: Speed up range queries on range fields by improving how we
+  compute the relation between the query and inner nodes of the BKD tree.
+  (Adrien Grand)
 
 ======================= Lucene 6.6.0 =======================
 

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,13 +36,14 @@ public class ScaleEvaluator extends ComplexEvaluator implements Expressible {
 
   public ScaleEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    }
+
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Scale evaluator expects 2 parameters found: "+subEvaluators.size());
-    }
 
     StreamEvaluator numEval = subEvaluators.get(0);
     StreamEvaluator colEval1 = subEvaluators.get(1);

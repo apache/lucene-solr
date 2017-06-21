@@ -148,7 +148,7 @@ curl http://localhost:8983/solr/techproducts/config/params/myQueries
 ----
 
 [[RequestParametersAPI-TheuseParamsParameter]]
-== The `useParams` Parameter
+== The useParams Parameter
 
 When making a request, the `useParams` parameter applies the request parameters sent to the request. This is translated at request time to the actual parameters.
 

@@ -18,7 +18,6 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -52,24 +51,9 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return new TermVectorFilteredFields(in.fields(), filterTerms);
-  }
-
-  private static final class TermVectorFilteredFields extends FilterLeafReader.FilterFields {
-    // NOTE: super ("in") is baseFields
-
-    private final Terms filterTerms;
-
-    TermVectorFilteredFields(Fields baseFields, Terms filterTerms) {
-      super(baseFields);
-      this.filterTerms = filterTerms;
-    }
-
-    @Override
-    public Terms terms(String field) throws IOException {
-      return new TermsFilteredTerms(in.terms(field), filterTerms);
-    }
+  public Terms terms(String field) throws IOException {
+    Terms terms = in.terms(field);
+    return terms==null ? null : new TermsFilteredTerms(terms, filterTerms);
   }
 
   private static final class TermsFilteredTerms extends FilterLeafReader.FilterTerms {

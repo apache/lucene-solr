@@ -297,7 +297,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.5.0-cfs",
     "6.5.0-nocfs",
     "6.5.1-cfs",
-    "6.5.1-nocfs"
+    "6.5.1-nocfs",
+    "6.6.0-cfs",
+    "6.6.0-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -1190,7 +1192,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
       IndexReader r = DirectoryReader.open(dir);
-      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator();
+      TermsEnum terms = MultiFields.getTerms(r, "content").iterator();
       BytesRef t = terms.next();
       assertNotNull(t);
 

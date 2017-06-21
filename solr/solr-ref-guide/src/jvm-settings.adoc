@@ -51,4 +51,4 @@ If you are using Sun's JVM, add the `-server` command-line option when you start
 
 A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `solr/admin/system`. This request handler will display a wealth of server statistics and settings.
 
-You can also use any of the tools that are compatible with the Java Management Extensions (JMX). See the section _Using JMX with Solr_ in <<managing-solr.adoc#managing-solr,Managing Solr>> for more information.
+You can also use any of the tools that are compatible with the Java Management Extensions (JMX). See the section <<using-jmx-with-solr.adoc#using-jmx-with-solr,Using JMX with Solr>> for more information.

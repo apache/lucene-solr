@@ -14,22 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.util.ValidatingJsonMap;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 import static org.apache.solr.common.util.Utils.toJSONString;
+import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
-public class JsonValidatorTest extends SolrTestCaseJ4 {
+public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
     checkSchema("collections.Commands");
@@ -48,7 +44,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
 
 
   public void testSchemaValidation() {
-    ValidatingJsonMap spec = ApiBag.getSpec("collections.Commands").getSpec();
+    ValidatingJsonMap spec = Utils.getSpec("collections.Commands").getSpec();
     Map createSchema = spec.getMap("commands", NOT_NULL).getMap("create-alias", NOT_NULL);
     JsonSchemaValidator validator = new JsonSchemaValidator(createSchema);
     List<String> errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
@@ -181,7 +177,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
   }
 
   private void checkSchema(String name) {
-    ValidatingJsonMap spec = ApiBag.getSpec(name).getSpec();
+    ValidatingJsonMap spec = Utils.getSpec(name).getSpec();
     Map commands = (Map) spec.get("commands");
     for (Object o : commands.entrySet()) {
       Map.Entry cmd = (Map.Entry) o;

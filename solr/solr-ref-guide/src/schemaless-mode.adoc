@@ -69,7 +69,7 @@ You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to co
 
 [TIP]
 ====
-Because the `data_driven_schema_configs` config set includes a `copyField` directive that causes all content to be indexed in a predefined "catch-all" `\_text_` field, to enable single-field search that includes all fields' content, the index will be larger than it would be without the `copyField`. When you nail down your schema, consider removing the `\_text_` field and the corresponding `copyField` directive if you don't need it.
+The `data_driven_schema_configs` configset includes a `copyField` directive that causes all content to be indexed in a predefined "catch-all" `\_text_` field, which is used to enable single-field search that includes all fields' content. This will cause the index to be larger than it would be without this "catch-all" `copyField`. When you nail down your schema, consider removing the `\_text_` field and the corresponding `copyField` directive if you don't need it.
 ====
 
 [[SchemalessMode-ConfiguringSchemalessMode]]
@@ -139,16 +139,16 @@ The UpdateRequestProcessorChain allows Solr to guess field types, and you can de
     </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.util.Date</str>
-      <str name="fieldType">tdates</str>
+      <str name="fieldType">pdates</str>
     </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.Long</str>
       <str name="valueClass">java.lang.Integer</str>
-      <str name="fieldType">tlongs</str>
+      <str name="fieldType">plongs</str>
     </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.Number</str>
-      <str name="fieldType">tdoubles</str>
+      <str name="fieldType">pdoubles</str>
     </lst>
   </processor>
   <processor class="solr.LogUpdateProcessorFactory"/>

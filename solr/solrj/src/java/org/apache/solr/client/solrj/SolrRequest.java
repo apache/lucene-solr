@@ -56,6 +56,24 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
 
+  protected boolean usev2;
+  protected boolean useBinaryV2;
+
+  /**If set to true, every request that implements {@link V2RequestSupport} will be converted
+   * to a V2 API call
+   */
+  public SolrRequest setUseV2(boolean flag){
+    this.usev2 = flag;
+    return this;
+  }
+
+  /**If set to true use javabin instead of json (default)
+   */
+  public SolrRequest setUseBinaryV2(boolean flag){
+    this.useBinaryV2 = flag;
+    return this;
+  }
+
   private String basicAuthUser, basicAuthPwd;
 
   public SolrRequest setBasicAuthCredentials(String user, String password) {

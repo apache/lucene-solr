@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,13 +36,13 @@ public class MovingAverageEvaluator extends ComplexEvaluator implements Expressi
 
   public MovingAverageEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Moving average evaluator expects 2 parameters found: "+subEvaluators.size());
-    }
 
     StreamEvaluator colEval = subEvaluators.get(0);
     StreamEvaluator windowEval = subEvaluators.get(1);

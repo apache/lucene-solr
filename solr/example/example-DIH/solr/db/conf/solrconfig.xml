@@ -628,15 +628,14 @@
          plugins.
          
          *** WARNING ***
-         The settings below authorize Solr to fetch remote files, You
-         should make sure your system has some authentication before
-         using enableRemoteStreaming="true"
+         Before enabling remote streaming, you should make sure your
+         system has authentication enabled.
 
-      --> 
-    <requestParsers enableRemoteStreaming="true" 
-                    multipartUploadLimitInKB="2048000"
-                    formdataUploadLimitInKB="2048"
+    <requestParsers enableRemoteStreaming="false"
+                    multipartUploadLimitInKB="-1"
+                    formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
+      -->
 
     <!-- HTTP Caching
 

@@ -121,12 +121,6 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<>();
 
-  /** File offset where the directory starts in the terms file. */
-  private long dirOffset;
-
-  /** File offset where the directory starts in the index file. */
-  private long indexDirOffset;
-
   final String segment;
   
   final int version;
@@ -167,8 +161,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
       CodecUtil.retrieveChecksum(termsIn);
 
       // Read per-field details
-      seekDir(termsIn, dirOffset);
-      seekDir(indexIn, indexDirOffset);
+      seekDir(termsIn);
+      seekDir(indexIn);
 
       final int numFields = termsIn.readVInt();
       if (numFields < 0) {
@@ -181,13 +175,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
         if (numTerms <= 0) {
           throw new CorruptIndexException("Illegal numTerms for field number: " + field, termsIn);
         }
-        final int numBytes = termsIn.readVInt();
-        if (numBytes < 0) {
-          throw new CorruptIndexException("invalid rootCode for field number: " + field + ", numBytes=" + numBytes, termsIn);
-        }
-        final BytesRef rootCode = new BytesRef(new byte[numBytes]);
-        termsIn.readBytes(rootCode.bytes, 0, numBytes);
-        rootCode.length = numBytes;
+        final BytesRef rootCode = readBytesRef(termsIn);
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
         if (fieldInfo == null) {
           throw new CorruptIndexException("invalid field number: " + field, termsIn);
@@ -230,19 +218,24 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   private static BytesRef readBytesRef(IndexInput in) throws IOException {
+    int numBytes = in.readVInt();
+    if (numBytes < 0) {
+      throw new CorruptIndexException("invalid bytes length: " + numBytes, in);
+    }
+    
     BytesRef bytes = new BytesRef();
-    bytes.length = in.readVInt();
-    bytes.bytes = new byte[bytes.length];
-    in.readBytes(bytes.bytes, 0, bytes.length);
+    bytes.length = numBytes;
+    bytes.bytes = new byte[numBytes];
+    in.readBytes(bytes.bytes, 0, numBytes);
+
     return bytes;
   }
 
   /** Seek {@code input} to the directory offset. */
-  private void seekDir(IndexInput input, long dirOffset)
-      throws IOException {
+  private static void seekDir(IndexInput input) throws IOException {
     input.seek(input.length() - CodecUtil.footerLength() - 8);
-    dirOffset = input.readLong();
-    input.seek(dirOffset);
+    long offset = input.readLong();
+    input.seek(offset);
   }
 
   // for debugging

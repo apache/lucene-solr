@@ -86,6 +86,10 @@
 # If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 #SOLR_HOME=
 
+# Path to a directory that Solr will use as root for data folders for each core.
+# If not set, defaults to <instance_dir>/data. Overridable per core through 'dataDir' core property
+#SOLR_DATA_HOME=
+
 # Solr provides a default Log4J configuration properties file in server/resources
 # however, you may want to customize the log settings and file appender location
 # so you can point the script to use a different log4j.properties file

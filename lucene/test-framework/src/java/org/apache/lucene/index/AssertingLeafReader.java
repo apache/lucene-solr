@@ -71,10 +71,11 @@ public class AssertingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return new AssertingFields(super.fields());
+  public Terms terms(String field) throws IOException {
+    Terms terms = super.terms(field);
+    return terms == null ? null : new AssertingTerms(terms);
   }
-  
+
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     Fields fields = super.getTermVectors(docID);

@@ -161,7 +161,6 @@ Tip::
 +
 //TODO update Jenkins link
 If you do not have the required dependencies, and don't choose to install them, you can download the files from the Jenkins (https://builds.apache.org/job/Solr-reference-guide-jira-SOLR-10290/lastSuccessfulBuild/artifact/solr/build/solr-ref-guide/html-site/[Solr Reference Guide job]).  But these HTML pages will have the `DRAFT` status noted in them and will not be suitable for publishing.
-+
 
 === Publish a New Guide
 // A lot of this was copied from https://wiki.apache.org/lucene-java/ReleaseTodo#Website_.2B-.3D_javadocs. See that section for explanations for why some steps are required.

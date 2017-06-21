@@ -90,6 +90,7 @@
   <fieldType name="highlittext" class="solr.TextField"/>
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+  <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
@@ -540,7 +541,25 @@
       <filter class="solr.ManagedSynonymGraphFilterFactory" managed="germangraph"/>
     </analyzer>
   </fieldType>
-  
+
+  <!--
+    Numeric field types that index values using KD-trees. *Point fields are faster and more efficient than Trie* fields both, at
+    search time and at index time, but some features are still not supported.
+    Point fields don't support FieldCache, so they must have docValues="true" if needed for sorting, faceting, functions, etc.
+  -->
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+
+  <!-- KD-tree versions of date fields -->
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>
@@ -680,6 +699,18 @@
   <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
+
+  <!-- KD-tree (point) numerics -->
+  <dynamicField name="*_pi" type="pint"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pis" type="pints"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pl" type="plong"   indexed="true"  stored="true"/>
+  <dynamicField name="*_pls" type="plongs"   indexed="true"  stored="true"/>
+  <dynamicField name="*_pf" type="pfloat"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pfs" type="pfloats"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pd" type="pdouble" indexed="true"  stored="true"/>
+  <dynamicField name="*_pds" type="pdoubles" indexed="true"  stored="true"/>
+  <dynamicField name="*_pdt" type="pdate"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pdts" type="pdates"  indexed="true"  stored="true"/>
 
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>

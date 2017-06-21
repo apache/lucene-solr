@@ -20,9 +20,41 @@
 // specific language governing permissions and limitations
 // under the License.
 
+
+Stream evaluators are different then stream sources or stream decorators. Both
+stream sources and stream decorators return streams of tuples. Stream evaluators are more like
+a traditional function that evaluates its parameters and
+returns an result. That result can be a single value, array, map or other structure.
+
+Stream evaluators can be nested so that the output of an evaluator becomes the input
+for another evaluator.
+
+Stream evaluators can be called in different contexts. For example a stream evaluator
+can be called on its own or it can be called within the context of a streaming expression.
+
+
 == analyze
 
-// TODO
+The `analyze` function analyzes text using a Lucene/Solr analyzer and returns a list of tokens
+emitted by the analyzer. The `analyze` function can be called on its own or within the
+`select` and `cartasianProduct` Streaming Expressions.
+
+=== analyze Parameters
+
+* `Field Name` | `Raw Text`: Either the field in a tuple or the raw text to be analyzed.
+* `Analyzer Field Name`: The field name of the analyzer to use to analyze the text.
+
+=== analyze Syntax
+
+The expressions below show the various ways in which you can use the `analyze` evaluator.
+
+[source,text]
+----
+analyze("hello world", analyzerField) // Analyze the raw text
+select(expr, analyze(textField, analyzerField) as outField) // Analyze a text field within a select expression. This will annotate the tuples with output of the analyzer
+cartesianProduct(expr, analyze(textField, analyzer) as outField) // Analyze a text field with a cartesianProduct expression. This will stream each token emitted by the analyzer in its own tuple.
+----
+
 
 == abs
 
@@ -160,16 +192,81 @@ if(gt(fieldA,fieldB),sub(fieldA,fieldB),sub(fieldB,fieldA)) // if fieldA > field
 ----
 
 == pow
-//TODO
+The `pow` function returns the value of its first parameter raised to the power of its second parameter.
+
+=== pow Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: Parameter 1
+* `Field Name | Raw Number | Number Evaluator`: Parameter 2
+
+=== pow Syntax
+
+The expressions below show the various ways in which you can use the `pow` evaluator.
+
+[source,text]
+----
+pow(2,3) // returns 2 raised to the 3rd power.
+pow(4,fieldA) // returns 4 raised by the value of fieldA.
+pow(fieldA,1.4) // returns the value of fieldA raised by 1.4.
+if(gt(fieldA,fieldB),pow(fieldA,fieldB),pow(fieldB,fieldA)) // if fieldA > fieldB then raise fieldA by fieldB, else raise fieldB by fieldA.
+----
 
 == mod
-//TODO
+The `mod` function returns the remainder (modulo) of the first parameter divided by the second parameter.
 
-=== ceil
-//TODO
+=== mod Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: Parameter 1
+* `Field Name | Raw Number | Number Evaluator`: Parameter 2
+
+=== mod Syntax
+
+The expressions below show the various ways in which you can use the `mod` evaluator.
+
+[source,text]
+----
+mod(100,3) // returns the remainder of 100 / 3 .
+mod(100,fieldA) // returns the remainder of 100 divided by the value of fieldA.
+mod(fieldA,1.4) // returns the remainder of fieldA divided by 1.4.
+if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > fieldB then return the remainder of fieldA/fieldB, else return the remainder of fieldB/fieldA.
+----
+
+== ceil
+The `ceil` function rounds a decimal value to the next highest whole number.
+
+=== ceil Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The decimal to round up.
+
+=== ceil Syntax
+
+The expressions below show the various ways in which you can use the `ceil` evaluator.
+
+[source,text]
+----
+ceil(100.4) // returns 101.
+ceil(fieldA) // returns the next highest whole number for fieldA.
+if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then return the ceil of fieldA, else return the ceil of fieldB.
+----
 
 == floor
-//TODO
+The `floor` function rounds a decimal value to the next lowest whole number.
+
+=== floor Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The decimal to round down.
+
+=== floor Syntax
+
+The expressions below show the various ways in which you can use the `floor` evaluator.
+
+[source,text]
+----
+floor(100.4) // returns 100.
+ceil(fieldA) // returns the next lowestt whole number for fieldA.
+if(gt(fieldA,fieldB),floor(fieldA),floor(fieldB)) // if fieldA > fieldB then return the floor of fieldA, else return the floor of fieldB.
+----
+
 
 == sin
 //TODO
@@ -303,7 +400,7 @@ The expressions below show the various ways in which you can use the `gt` evalua
 ----
 gt(1,2) // 1 > 2
 gt(1,fieldA) // 1 > fieldA
-gt(fieldA,val(foo)) fieldA > "foo"
+gt(fieldA,val(foo)) // fieldA > "foo"
 gt(add(fieldA,fieldB),6) // fieldA + fieldB > 6
 ----
 
@@ -412,30 +509,6 @@ or(and(fieldA,fieldB),fieldC) // (fieldA && fieldB) || fieldC
 or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 ----
 
-== analyze
-//TODO
-
-== second
-//TODO
-
-== minute
-//TODO
-
-== hour
-//TODO
-
-== day
-//TODO
-
-== month
-//TODO
-
-== year
-//TODO
-
-== convert
-//TODO
-
 == raw
 
 The `raw` function will return whatever raw value is the parameter. This is useful for cases where you want to use a string as part of another evaluator.
@@ -457,5 +530,3 @@ raw(true) // "true" (note: this returns the string "true" and not the boolean tr
 eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA"
 ----
 
-== UUID
-//TODO

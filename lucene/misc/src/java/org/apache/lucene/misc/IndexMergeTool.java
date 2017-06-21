@@ -39,15 +39,16 @@ public class IndexMergeTool {
       System.err.println("Usage: IndexMergeTool <mergedIndex> <index1> <index2> [index3] ...");
       System.exit(1);
     }
-    FSDirectory mergedIndex = FSDirectory.open(Paths.get(args[0]));
 
-    IndexWriter writer = new IndexWriter(mergedIndex, new IndexWriterConfig(null)
-        .setOpenMode(OpenMode.CREATE));
+    // Try to use hardlinks to source segments, if possible.
+    Directory mergedIndex = new HardlinkCopyDirectoryWrapper(FSDirectory.open(Paths.get(args[0])));
+
+    IndexWriter writer = new IndexWriter(mergedIndex, 
+        new IndexWriterConfig(null).setOpenMode(OpenMode.CREATE));
 
     Directory[] indexes = new Directory[args.length - 1];
     for (int i = 1; i < args.length; i++) {
-      // try to use hardlinks if possible
-      indexes[i  - 1] = new HardlinkCopyDirectoryWrapper(FSDirectory.open(Paths.get(args[i])));
+      indexes[i  - 1] = FSDirectory.open(Paths.get(args[i]));
     }
 
     System.out.println("Merging...");

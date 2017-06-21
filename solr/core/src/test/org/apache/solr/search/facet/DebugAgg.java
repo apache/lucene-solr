@@ -84,8 +84,7 @@ public class DebugAgg extends AggValueSource {
       this.numSlots = numSlots;
       creates.addAndGet(1);
       sub = new CountSlotArrAcc(fcontext, numSlots);
-
-      new RuntimeException("DEBUG Acc numSlots=" + numSlots).printStackTrace();
+//      new RuntimeException("DEBUG Acc numSlots=" + numSlots).printStackTrace();
     }
 
     @Override

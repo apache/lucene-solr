@@ -204,6 +204,8 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     
     log.info("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     
+    log.info("collection state: " + printClusterStateInfo(DEFAULT_COLLECTION));
+    
     waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS));
 //    waitForAllWarmingSearchers();
 

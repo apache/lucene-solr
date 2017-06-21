@@ -31,7 +31,7 @@ The cases where this functionality may be useful include: session analysis, dist
 All the fields being sorted and exported must have docValues set to true. For more information, see the section on <<docvalues.adoc#docvalues,DocValues>>.
 
 [[ExportingResultSets-The_exportRequestHandler]]
-== The `/export` RequestHandler
+== The /export RequestHandler
 
 The `/export` request handler with the appropriate configuration is one of Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> for more information.
 

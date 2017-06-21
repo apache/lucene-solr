@@ -70,26 +70,32 @@ The minimal `core.properties` file is an empty file, in which case all of the pr
 
 Java properties files allow the hash (`#`) or bang (`!`) characters to specify comment-to-end-of-line.
 
-This table defines the recognized properties:
+The following properties are available:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`name`:: The name of the SolrCore. You'll use this name to reference the SolrCore when running commands with the CoreAdminHandler.
 
-[cols="25,75",options="header"]
-|===
-|Property |Description
-|`name` |The name of the SolrCore. You'll use this name to reference the SolrCore when running commands with the CoreAdminHandler.
-|`config` |The configuration file name for a given core. The default is `solrconfig.xml`.
-|`schema` |The schema file name for a given core. The default is `schema.xml` but please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for details.
-|`dataDir` |The core's data directory (where indexes are stored) as either an absolute pathname, or a path relative to the value of `instanceDir`. This is `data` by default.
-|`configSet` |The name of a defined configset, if desired, to use to configure the core (see the <<config-sets.adoc#config-sets,Config Sets>> for more details).
-|`properties` |The name of the properties file for this core. The value can be an absolute pathname or a path relative to the value of `instanceDir`.
-|`transient` |If *true*, the core can be unloaded if Solr reaches the `transientCacheSize`. The default if not specified is *false*. Cores are unloaded in order of least recently used first. _Setting to *true* is not recommended in SolrCloud mode._
-|`loadOnStartup` |If *true*, the default if it is not specified, the core will loaded when Solr starts. _Setting to *false* is not recommended in SolrCloud mode._
-|`coreNodeName` |Used only in SolrCloud, this is a unique identifier for the node hosting this replica. By default a coreNodeName is generated automatically, but setting this attribute explicitly allows you to manually assign a new core to replace an existing replica. For example: when replacing a machine that has had a hardware failure by restoring from backups on a new machine with a new hostname or port..
-|`ulogDir` |The absolute or relative directory for the update log for this core (SolrCloud).
-|`shard` |The shard to assign this core to (SolrCloud).
-|`collection` |The name of the collection this core is part of (SolrCloud).
-|`roles` |Future param for SolrCloud or a way for users to mark nodes for their own use.
-|===
+`config`:: The configuration file name for a given core. The default is `solrconfig.xml`.
 
-Additional "user defined" properties may be specified for use as variables. For more information on how to define local properties, see the section <<configuring-solrconfig-xml.adoc#Configuringsolrconfig.xml-SubstitutingPropertiesinSolrConfigFiles,Substituting Properties in Solr Config Files>>.
+`schema`:: The schema file name for a given core. The default is `schema.xml` but please note that if you are using a "managed schema" (the default behavior) then any value for this property which does not match the effective `managedSchemaResourceName` will be read once, backed up, and converted for managed schema use. See <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details.
+
+`dataDir`:: The core's data directory (where indexes are stored) as either an absolute pathname, or a path relative to the value of `instanceDir`. This is `data` by default.
+
+`configSet`:: The name of a defined configset, if desired, to use to configure the core (see the section  <<config-sets.adoc#config-sets,Config Sets>> for more details).
+
+`properties`:: The name of the properties file for this core. The value can be an absolute pathname or a path relative to the value of `instanceDir`.
+
+`transient`:: If *true*, the core can be unloaded if Solr reaches the `transientCacheSize`. The default if not specified is *false*. Cores are unloaded in order of least recently used first. _Setting this to *true* is not recommended in SolrCloud mode._
+
+`loadOnStartup`:: If *true*, the default if it is not specified, the core will loaded when Solr starts. _Setting this to *false* is not recommended in SolrCloud mode._
+
+`coreNodeName`:: Used only in SolrCloud, this is a unique identifier for the node hosting this replica. By default a `coreNodeName` is generated automatically, but setting this attribute explicitly allows you to manually assign a new core to replace an existing replica. For example, this can be useful when replacing a machine that has had a hardware failure by restoring from backups on a new machine with a new hostname or port.
+
+`ulogDir`:: The absolute or relative directory for the update log for this core (SolrCloud).
+
+`shard`:: The shard to assign this core to (SolrCloud).
+
+`collection`:: The name of the collection this core is part of (SolrCloud).
+
+`roles`:: Future parameter for SolrCloud or a way for users to mark nodes for their own use.
+
+Additional user-defined properties may be specified for use as variables. For more information on how to define local properties, see the section <<configuring-solrconfig-xml.adoc#Configuringsolrconfig.xml-SubstitutingPropertiesinSolrConfigFiles,Substituting Properties in Solr Config Files>>.

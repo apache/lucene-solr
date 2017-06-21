@@ -335,7 +335,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     // PostingsFormat
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
-      consumer.write(oneDocReader.fields());
+      consumer.write(MultiFields.getFields(oneDocReader));
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }

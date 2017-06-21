@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -35,13 +36,14 @@ public class RankEvaluator extends ComplexEvaluator implements Expressible {
 
   public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(1 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    }
+
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 1) {
-      throw new IOException("Rank evaluator expects 1 parameters found: "+subEvaluators.size());
-    }
 
     StreamEvaluator colEval = subEvaluators.get(0);
 

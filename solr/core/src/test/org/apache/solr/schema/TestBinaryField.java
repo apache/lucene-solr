@@ -105,7 +105,7 @@ public class TestBinaryField extends SolrJettyTestBase {
       assertEquals(3, beans.size());
       for (SolrDocument d : res) {
 
-        Integer id = (Integer) d.getFieldValue("id");
+        Integer id = Integer.parseInt(d.getFieldValue("id").toString());
         byte[] data = (byte[]) d.getFieldValue("data");
         if (id == 1) {
           assertEquals(5, data.length);
@@ -133,7 +133,7 @@ public class TestBinaryField extends SolrJettyTestBase {
 
       }
       for (Bean d : beans) {
-        Integer id = d.id;
+        Integer id = Integer.parseInt(d.id);
         byte[] data = d.data;
         if (id == 1) {
           assertEquals(5, data.length);
@@ -165,7 +165,7 @@ public class TestBinaryField extends SolrJettyTestBase {
   }
   public static class Bean{
     @Field
-    int id;
+    String id;
     @Field
     byte [] data;
   }

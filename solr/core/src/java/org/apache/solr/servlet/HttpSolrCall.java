@@ -102,7 +102,7 @@ import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.util.JsonSchemaValidator;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -687,7 +687,7 @@ public class HttpSolrCall {
         solrReq = new SolrQueryRequestBase(core, solrParams) {
         };
       }
-      QueryResponseWriter writer = core.getQueryResponseWriter(solrReq);
+      QueryResponseWriter writer = getResponseWriter();
       writeResponse(solrResp, writer, Method.GET);
     } catch (Exception e) { // This error really does not matter
       exp = e;
@@ -1108,14 +1108,7 @@ public class HttpSolrCall {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
       if (contentStreams == null) parsedCommands = Collections.EMPTY_LIST;
       else {
-        for (ContentStream contentStream : contentStreams) {
-          try {
-            parsedCommands = ApiBag.getCommandOperations(contentStream.getReader(), getValidators(), validateInput);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Error reading commands");
-          }
-          break;
-        }
+        parsedCommands = ApiBag.getCommandOperations(contentStreams.iterator().next(), getValidators(), validateInput);
       }
     }
     return CommandOperation.clone(parsedCommands);

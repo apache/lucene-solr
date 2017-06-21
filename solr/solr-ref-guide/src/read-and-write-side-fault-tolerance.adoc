@@ -30,7 +30,7 @@ In a SolrCloud cluster each individual node load balances read requests across a
 Even if some nodes in the cluster are offline or unreachable, a Solr node will be able to correctly respond to a search request as long as it can communicate with at least one replica of every shard, or one replica of every _relevant_ shard if the user limited the search via the `shards` or `\_route_` parameters. The more replicas there are of every shard, the more likely that the Solr cluster will be able to handle search results in the event of node failures.
 
 [[ReadandWriteSideFaultTolerance-zkConnected]]
-=== `zkConnected`
+=== zkConnected
 
 A Solr node will return the results of a search request as long as it can communicate with at least one replica of every shard that it knows about, even if it can _not_ communicate with ZooKeeper at the time it receives the request. This is normally the preferred behavior from a fault tolerance standpoint, but may result in stale or incorrect results if there have been major changes to the collection structure that the node has not been informed of via ZooKeeper (i.e., shards may have been added or removed, or split into sub-shards)
 
@@ -57,7 +57,7 @@ A `zkConnected` header is included in every search response indicating if the no
 ----
 
 [[ReadandWriteSideFaultTolerance-shards.tolerant]]
-=== `shards.tolerant`
+=== shards.tolerant
 
 In the event that one or more shards queried are completely unavailable, then Solr's default behavior is to fail the request. However, there are many use-cases where partial results are acceptable and so Solr provides a boolean `shards.tolerant` parameter (default `false`).
 

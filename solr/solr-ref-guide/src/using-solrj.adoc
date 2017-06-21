@@ -69,6 +69,14 @@ You can sidestep a lot of the messing around with the JAR files by using Maven i
 
 If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.
 
+[[UsingSolrJ-SpecifyingSolrUrl]]
+== Specifying Solr Base URLs
+
+Most `SolrClient` implementations (with the notable exception of `CloudSolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
+
+. A URL with a path pointing to a specific core or collection (e.g. `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
+. A URL with a generic path pointing to the root Solr path (e.g. `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
+
 [[UsingSolrJ-SettingXMLResponseParser]]
 == Setting XMLResponseParser
 
@@ -127,7 +135,7 @@ SolrDocumentList list = response.getResults();
 [[UsingSolrJ-IndexingDocuments]]
 == Indexing Documents
 
-Other operations are just as simple. To index (add) a document, all you need to do is create a `SolrInputDocument` and pass it along to the `SolrClient`'s `add()` method. This example assumes that the SolrClient object called 'solr' is already created based on the examples shown earlier.
+Other operations are just as simple. To index (add) a document, all you need to do is create a `SolrInputDocument` and pass it along to the `SolrClient` 's `add()` method. This example assumes that the SolrClient object called 'solr' is already created based on the examples shown earlier.
 
 [source,java]
 ----

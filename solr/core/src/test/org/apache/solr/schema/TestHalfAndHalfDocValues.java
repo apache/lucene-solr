@@ -123,9 +123,9 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
     // Assert sort order is correct
     assertQ(req("q", "string_add_dv_later:*", "sort", "string_add_dv_later asc"),
         "//*[@numFound='3']",
-        "//result/doc[1]/int[@name='id'][.=1]",
-        "//result/doc[2]/int[@name='id'][.=2]",
-        "//result/doc[3]/int[@name='id'][.=3]"
+        "//result/doc[1]/str[@name='id'][.=1]",
+        "//result/doc[2]/str[@name='id'][.=2]",
+        "//result/doc[3]/str[@name='id'][.=3]"
     );
   }
 

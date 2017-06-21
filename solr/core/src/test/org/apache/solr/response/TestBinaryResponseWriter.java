@@ -60,7 +60,10 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
     BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    NamedList res = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+    NamedList res;
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      res = (NamedList) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+    } 
     SolrDocumentList docs = (SolrDocumentList) res.get("response");
     for (Object doc : docs) {
       SolrDocument document = (SolrDocument) doc;

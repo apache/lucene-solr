@@ -33,8 +33,8 @@ public class CurrencyFieldXmlFileTest extends AbstractCurrencyFieldTest {
     assertU(adoc("id", "" + 2, field(), "15.00,EUR"));
     assertU(commit());
 
-    assertQ(req("fl", "*,score", "q", field()+":15.00,EUR"), "//int[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", field()+":7.50,USD"), "//int[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", field()+":15.00,EUR"), "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", field()+":7.50,USD"), "//str[@name='id']='2'");
     assertQ(req("fl", "*,score", "q", field()+":7.49,USD"), "//*[@numFound='0']");
     assertQ(req("fl", "*,score", "q", field()+":7.51,USD"), "//*[@numFound='0']");
   }

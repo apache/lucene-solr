@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,11 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.api;
-import org.apache.solr.common.util.ValidatingJsonMap;
 
-/**A generic interface for any class that is capable of providing its specification as a json schema
- */
-public interface SpecProvider {
-  ValidatingJsonMap getSpec();
+package org.apache.lucene.analysis.tokenattributes;
+
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.util.Attribute;
+
+/** Sets the custom term frequency of a term within one document.  If this attribute
+ *  is present in your analysis chain for a given field, that field must be indexed with
+ *  {@link IndexOptions#DOCS_AND_FREQS}. */
+public interface TermFrequencyAttribute extends Attribute {
+
+  /** Set the custom term frequency of the current term within one document. */
+  public void setTermFrequency(int termFrequency);
+
+  /** Returns the custom term frequencey. */
+  public int getTermFrequency();
 }

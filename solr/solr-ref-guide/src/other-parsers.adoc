@@ -942,14 +942,33 @@ The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQP
 |defType |`xmlparser`
 |q a|
 [source,xml]
-<BooleanQuery fieldName="description"> <Clause occurs="must"> <TermQuery>shirt</TermQuery> </Clause> <Clause occurs="mustnot"> <TermQuery>plain</TermQuery> </Clause> <Clause occurs="should"> <TermQuery>cotton</TermQuery> </Clause> <Clause occurs="must"> <BooleanQuery fieldName="size"> <Clause occurs="should"> <TermsQuery>S M L</TermsQuery> </Clause> </BooleanQuery> </Clause> </BooleanQuery>
+----
+<BooleanQuery fieldName="description">
+   <Clause occurs="must">
+      <TermQuery>shirt</TermQuery>
+   </Clause>
+   <Clause occurs="mustnot">
+      <TermQuery>plain</TermQuery>
+   </Clause>
+   <Clause occurs="should">
+      <TermQuery>cotton</TermQuery>
+   </Clause>
+   <Clause occurs="must">
+      <BooleanQuery fieldName="size">
+         <Clause occurs="should">
+            <TermsQuery>S M L</TermsQuery>
+         </Clause>
+      </BooleanQuery>
+   </Clause>
+</BooleanQuery>
+----
 |===
 
 The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[width="50%",cols="30,70",options="header"]
+[width="100%",cols="30,70",options="header"]
 |===
 |XML element |QueryBuilder class
 |<BooleanQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/BooleanQueryBuilder.html[BooleanQueryBuilder]

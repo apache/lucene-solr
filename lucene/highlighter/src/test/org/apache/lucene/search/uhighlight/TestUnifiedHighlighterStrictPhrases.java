@@ -54,8 +54,6 @@ import org.apache.lucene.util.QueryBuilder;
 import org.junit.After;
 import org.junit.Before;
 
-@LuceneTestCase.SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom", "Lucene3x"})
-@LuceneTestCase.SuppressSysoutChecks(bugUrl = "")//Gradle interferes with this Lucene test rule
 public class TestUnifiedHighlighterStrictPhrases extends LuceneTestCase {
 
   final FieldType fieldType;

@@ -134,7 +134,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']"
-              ,"//result/doc[1]/int[@name='id'][.='5']"
+              ,"//result/doc[1]/str[@name='id'][.='5']"
               );
       
       args = new HashMap<>();
@@ -143,7 +143,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
       assertQ("dynamic source", req
               ,"//*[@numFound='1']"
-              ,"//result/doc[1]/int[@name='id'][.='5']"
+              ,"//result/doc[1]/str[@name='id'][.='5']"
               ,"//result/doc[1]/arr[@name='highlight']/str[.='this is a simple test of ']"
               );
 
@@ -194,7 +194,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/int[@name='id'][.='5']"
+        ,"//result/doc[1]/str[@name='id'][.='5']"
     );
 
     args = new HashMap<>();
@@ -203,7 +203,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku1 copied to dynamic dest *_s", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/int[@name='id'][.='5']"
+        ,"//result/doc[1]/str[@name='id'][.='5']"
         ,"//result/doc[1]/arr[@name='sku1']/str[.='10-1839ACX-93']"
     );
 
@@ -242,7 +242,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/int[@name='id'][.='5']"
+        ,"//result/doc[1]/str[@name='id'][.='5']"
     );
   }
 
@@ -257,7 +257,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     for (String q : new String[] {"5", "10-1839ACX-93", "AAM46" }) {
       assertQ(req("q","catchall_t:" + q)
               ,"//*[@numFound='1']"
-              ,"//result/doc[1]/int[@name='id'][.='5']");
+              ,"//result/doc[1]/str[@name='id'][.='5']");
     }
   }
 }

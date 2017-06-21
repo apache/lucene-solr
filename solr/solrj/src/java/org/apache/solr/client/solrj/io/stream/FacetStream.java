@@ -477,6 +477,9 @@ public class FacetStream extends TupleStream implements Expressible  {
     for(int b=0; b<allBuckets.size(); b++) {
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
+      if (val instanceof Integer) {
+        val=((Integer)val).longValue();  // calcite currently expects Long values here
+      }
       Tuple t = currentTuple.clone();
       t.put(bucketName, val);
       int nextLevel = level+1;

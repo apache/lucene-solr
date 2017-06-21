@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -34,13 +35,14 @@ public class ReverseEvaluator extends ComplexEvaluator implements Expressible {
 
   public ReverseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(1 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    }
+
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 1) {
-      throw new IOException("Reverse evaluator expects 1 parameters found: "+subEvaluators.size());
-    }
 
     StreamEvaluator colEval1 = subEvaluators.get(0);
 

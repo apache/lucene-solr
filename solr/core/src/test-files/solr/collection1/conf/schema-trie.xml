@@ -273,7 +273,7 @@
   -->
 
   <!-- for testing, a type that does a transform to see if it's correctly done everywhere -->
-  <field name="id" type="tfloat" indexed="true" stored="true" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
 

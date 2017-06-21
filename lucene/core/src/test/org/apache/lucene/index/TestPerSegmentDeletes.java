@@ -221,9 +221,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
   public int[] toDocsArray(Term term, Bits bits, IndexReader reader)
       throws IOException {
-    Fields fields = MultiFields.getFields(reader);
-    Terms cterms = fields.terms(term.field);
-    TermsEnum ctermsEnum = cterms.iterator();
+    TermsEnum ctermsEnum = MultiFields.getTerms(reader, term.field).iterator();
     if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
       PostingsEnum postingsEnum = TestUtil.docs(random(), ctermsEnum, null, PostingsEnum.NONE);
       return toArray(postingsEnum);

@@ -17,6 +17,10 @@
 
 package org.apache.solr.handler;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,6 +30,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.function.LongFunction;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
@@ -34,6 +39,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
@@ -44,6 +50,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -60,24 +67,20 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DateValueFieldType;
+import org.apache.solr.schema.DoubleValueFieldType;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.FloatValueFieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IntValueFieldType;
+import org.apache.solr.schema.LongValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -322,25 +325,25 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
-      if (fieldType instanceof TrieIntField) {
+      if (fieldType instanceof IntValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
         } else {
           writers[i] = new IntFieldWriter(field);
         }
-      } else if (fieldType instanceof TrieLongField) {
+      } else if (fieldType instanceof LongValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
         } else {
           writers[i] = new LongFieldWriter(field);
         }
-      } else if (fieldType instanceof TrieFloatField) {
+      } else if (fieldType instanceof FloatValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
         } else {
           writers[i] = new FloatFieldWriter(field);
         }
-      } else if (fieldType instanceof TrieDoubleField) {
+      } else if (fieldType instanceof DoubleValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
         } else {
@@ -352,7 +355,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           writers[i] = new StringFieldWriter(field, fieldType);
         }
-      } else if (fieldType instanceof TrieDateField) {
+      } else if (fieldType instanceof DateValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
         } else {
@@ -385,25 +388,25 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         throw new IOException(field+" must have DocValues to use this feature.");
       }
 
-      if(ft instanceof TrieIntField) {
+      if(ft instanceof IntValueFieldType) {
         if(reverse) {
           sortValues[i] = new IntValue(field, new IntDesc());
         } else {
           sortValues[i] = new IntValue(field, new IntAsc());
         }
-      } else if(ft instanceof TrieFloatField) {
+      } else if(ft instanceof FloatValueFieldType) {
         if(reverse) {
           sortValues[i] = new FloatValue(field, new FloatDesc());
         } else {
           sortValues[i] = new FloatValue(field, new FloatAsc());
         }
-      } else if(ft instanceof TrieDoubleField) {
+      } else if(ft instanceof DoubleValueFieldType) {
         if(reverse) {
           sortValues[i] = new DoubleValue(field, new DoubleDesc());
         } else {
           sortValues[i] = new DoubleValue(field, new DoubleAsc());
         }
-      } else if(ft instanceof TrieLongField) {
+      } else if(ft instanceof LongValueFieldType) {
         if(reverse) {
           sortValues[i] = new LongValue(field, new LongDesc());
         } else {
@@ -417,7 +420,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         } else {
           sortValues[i] = new StringValue(vals, field, new IntAsc());
         }
-      } else if (ft instanceof TrieDateField) {
+      } else if (ft instanceof DateValueFieldType) {
         if (reverse) {
           sortValues[i] = new LongValue(field, new LongDesc());
         } else {
@@ -1352,6 +1355,23 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return true;
     }
   }
+  
+  static LongFunction<Object> bitsToValue(FieldType fieldType) {
+    switch (fieldType.getNumberType()) {
+      case LONG:
+        return (bits)-> bits;
+      case DATE:
+        return (bits)-> new Date(bits);
+      case INTEGER:
+        return (bits)-> (int)bits;
+      case FLOAT:
+        return (bits)-> NumericUtils.sortableIntToFloat((int)bits);
+      case DOUBLE:
+        return (bits)-> NumericUtils.sortableLongToDouble(bits);
+      default:
+        throw new AssertionError("Unsupported NumberType: " + fieldType.getNumberType());
+    }
+  }
 
   class MultiFieldWriter extends FieldWriter {
     private String field;
@@ -1359,29 +1379,48 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     private SchemaField schemaField;
     private boolean numeric;
     private CharsRefBuilder cref = new CharsRefBuilder();
+    private final LongFunction<Object> bitsToValue;
 
     public MultiFieldWriter(String field, FieldType fieldType, SchemaField schemaField, boolean numeric) {
       this.field = field;
       this.fieldType = fieldType;
       this.schemaField = schemaField;
       this.numeric = numeric;
+      if (this.fieldType.isPointField()) {
+        bitsToValue = bitsToValue(fieldType);
+      } else {
+        bitsToValue = null;
+      }
     }
 
     public boolean write(int docId, LeafReader reader, EntryWriter out, int fieldIndex) throws IOException {
-      SortedSetDocValues vals = DocValues.getSortedSet(reader, this.field);
-      if (vals.advance(docId) != docId) return false;
-      out.put(this.field,
-          (IteratorWriter) w -> {
-            long o;
-            while((o = vals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              BytesRef ref = vals.lookupOrd(o);
-              fieldType.indexedToReadable(ref, cref);
-              IndexableField f = fieldType.createField(schemaField, cref.toString());
-              if (f == null) w.add(cref.toString());
-              else w.add(fieldType.toObject(f));
-            }
-          });
-      return true;
+      if (this.fieldType.isPointField()) {
+        SortedNumericDocValues vals = DocValues.getSortedNumeric(reader, this.field);
+        if (!vals.advanceExact(docId)) return false;
+        out.put(this.field,
+            (IteratorWriter) w -> {
+              for (int i = 0; i < vals.docValueCount(); i++) {
+                w.add(bitsToValue.apply(vals.nextValue()));
+              }
+            });
+        return true;
+      } else {
+        SortedSetDocValues vals = DocValues.getSortedSet(reader, this.field);
+        if (vals.advance(docId) != docId) return false;
+        out.put(this.field,
+            (IteratorWriter) w -> {
+              long o;
+              while((o = vals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+                BytesRef ref = vals.lookupOrd(o);
+                fieldType.indexedToReadable(ref, cref);
+                IndexableField f = fieldType.createField(schemaField, cref.toString());
+                if (f == null) w.add(cref.toString());
+                else w.add(fieldType.toObject(f));
+              }
+            });
+        return true;
+      }
+      
     }
   }
 

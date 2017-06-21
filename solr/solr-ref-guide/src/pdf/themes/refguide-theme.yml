@@ -45,7 +45,7 @@ base:
   border_color: '#eeeeee'
   border_radius: 4
   border_width: 0.5
-vertical_rhythm: $base_line_height_length
+vertical_rhythm: 10
 horizontal_rhythm: $base_line_height_length
 vertical_spacing: $vertical_rhythm
 link:
@@ -54,6 +54,7 @@ link:
 literal:
   font_color: '#333333'
   font_family: Inconsolata
+  font_size: 11
   background_color: '#f5f5f5'
 # code is used for source code blocks
 code:
@@ -92,8 +93,8 @@ title_page:
   align: right
   logo:
     top: 10%
-    image: image:../../images/solr-sunOnly-small.png[pdfwidth=10%]
-    align: right
+    image: image:../../images/Solr_Logo_on_white.png[pdfwidth=50%]
+    align: left
   title:
     top: 55%
     font_size: $heading_h1_font_size
@@ -105,8 +106,7 @@ title_page:
     line_height: 1
   authors:
     margin_top: $base_font_size * 1.25
-    font_size: $base_font_size_large
-    font_color: '#181818'
+    font_size: $base_font_size
   revision:
     margin_top: $base_font_size * 1.25
 block:
@@ -144,12 +144,13 @@ admonition:
     caution:
       name: fa-fire
       stroke_color: '#bf6900'
-    information:
+    important:
       name: fa-bolt
       stroke_color: '#eeea74'
 blockquote:
   font_color: $base_font_color
-  font_size: $base_font_size_large
+  font_size: $base_font_size
+  font_style: italic
   border_color: $base_border_color
   border_width: 5
   padding: [$vertical_rhythm / 2, $horizontal_rhythm, $vertical_rhythm / -2, $horizontal_rhythm + $blockquote_border_width / 2]
@@ -194,7 +195,7 @@ thematic_break:
   margin_top: $vertical_rhythm * 0.5
   margin_bottom: $vertical_rhythm * 1.5
 description_list:
-  term_font_style: italic
+  term_font_style: bold
   term_spacing: $vertical_rhythm / 4
   description_indent: $horizontal_rhythm * 1.25
 outline_list:

@@ -70,8 +70,11 @@ class MergeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    return fields;
+  public Terms terms(String field) throws IOException {
+    ensureOpen();
+    // We could check the FieldInfo IndexOptions but there's no point since
+    //   PostingsReader will simply return null for fields that don't exist or that have no terms index.
+    return fields.terms(field);
   }
 
   @Override

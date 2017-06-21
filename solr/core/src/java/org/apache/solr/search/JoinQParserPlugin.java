@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -316,11 +316,11 @@ class JoinQuery extends Query {
         fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
       }
 
-      Fields fromFields = fromSearcher.getSlowAtomicReader().fields();
-      Fields toFields = fromSearcher==toSearcher ? fromFields : toSearcher.getSlowAtomicReader().fields();
-      if (fromFields == null) return DocSet.EMPTY;
-      Terms terms = fromFields.terms(fromField);
-      Terms toTerms = toFields.terms(toField);
+
+      LeafReader fromReader = fromSearcher.getSlowAtomicReader();
+      LeafReader toReader = fromSearcher==toSearcher ? fromReader : toSearcher.getSlowAtomicReader();
+      Terms terms = fromReader.terms(fromField);
+      Terms toTerms = toReader.terms(toField);
       if (terms == null || toTerms==null) return DocSet.EMPTY;
       String prefixStr = TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);

@@ -28,7 +28,6 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
@@ -73,7 +72,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   private Api getApi(final V2EndPoint op) {
     final BaseHandlerApiSupport apiHandler = this;
-    return new Api(ApiBag.getSpec(op.getSpecName())) {
+    return new Api(Utils.getSpec(op.getSpecName())) {
       @Override
       public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
         SolrParams params = req.getParams();
