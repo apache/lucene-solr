@@ -379,9 +379,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);
     try {
       response = solrClient.request(req);
-      fail("Trying to remove trigger which has listeners registered should have failed");
+      String errorMsg = (String) ((NamedList)response.get("error")).get("msg");
+      assertTrue(errorMsg.contains("Cannot remove trigger: node_lost_trigger because it has active listeners: [xyz]"));
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
+      assertTrue(e.getMessage().contains("Cannot remove trigger: node_lost_trigger because it has active listeners: [xyz]"));
     }
 
     String removeListenerCommand = "{\n" +
@@ -425,9 +427,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
     try {
       response = solrClient.request(req);
-      fail("Adding a listener on a non-existent trigger should have failed");
+      String errorMsg = (String) ((NamedList)response.get("error")).get("msg");
+      assertTrue(errorMsg.contains("A trigger with the name node_lost_trigger does not exist"));
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
+      assertTrue(e.getMessage().contains("A trigger with the name node_lost_trigger does not exist"));
     }
   }
 
