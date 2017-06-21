@@ -761,8 +761,8 @@ public class Overseer implements Closeable {
     }
   }
   public static boolean isLegacy(ZkStateReader stateReader) {
-    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true");
-    return !"false".equals(legacyProperty);
+    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
+    return "true".equals(legacyProperty);
   }
 
   public ZkStateReader getZkStateReader() {

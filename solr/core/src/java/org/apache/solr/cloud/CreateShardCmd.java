@@ -18,10 +18,10 @@ package org.apache.solr.cloud;
 
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
@@ -32,16 +32,13 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
@@ -49,7 +46,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CreateShardCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -67,11 +63,8 @@ public class CreateShardCmd implements Cmd {
     log.info("Create shard invoked: {}", message);
     if (collectionName == null || sliceName == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'collection' and 'shard' are required parameters");
-    int numSlices = 1;
 
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     DocCollection collection = clusterState.getCollection(collectionName);
-//    int repFactor = message.getInt(REPLICATION_FACTOR, collection.getInt(REPLICATION_FACTOR, 1));
     int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
     int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
     int numTlogReplicas = message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0));
@@ -88,26 +81,12 @@ public class CreateShardCmd implements Cmd {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
     // wait for a while until we see the shard
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
-    boolean created = false;
-    while (!timeout.hasTimedOut()) {
-      Thread.sleep(100);
-      created = zkStateReader.getClusterState().getCollection(collectionName).getSlice(sliceName) != null;
-      if (created) break;
-    }
-    if (!created)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create shard: " + message.getStr(NAME));
-
-    String configName = message.getStr(COLL_CONF);
+    ocmh.waitForNewShard(collectionName, sliceName);
 
     String async = message.getStr(ASYNC);
-    Map<String, String> requestMap = null;
-    if (async != null) {
-      requestMap = new HashMap<>(totalReplicas, 1.0f);
-    }
     
     int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
-
+    CountDownLatch countDownLatch = new CountDownLatch(totalReplicas);
     for (int j = 1; j <= totalReplicas; j++) {
       int coreNameNumber;
       Replica.Type typeToCreate;
@@ -131,20 +110,41 @@ public class CreateShardCmd implements Cmd {
           + " on " + nodeName);
 
       // Need to create new params for each request
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString());
-      params.set(CoreAdminParams.NAME, coreName);
-      params.set(CoreAdminParams.REPLICA_TYPE, typeToCreate.name());
-      params.set(COLL_CONF, configName);
-      params.set(CoreAdminParams.COLLECTION, collectionName);
-      params.set(CoreAdminParams.SHARD, sliceName);
-      params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
-      ocmh.addPropertyParams(message, params);
-
-      ocmh.sendShardRequest(nodeName, params, shardHandler, async, requestMap);
+      ZkNodeProps addReplicasProps = new ZkNodeProps(
+          COLLECTION_PROP, collectionName,
+          SHARD_ID_PROP, sliceName,
+          CoreAdminParams.REPLICA_TYPE, typeToCreate.name(),
+          CoreAdminParams.NODE, nodeName,
+          CoreAdminParams.NAME, coreName);
+      Map<String, Object> propertyParams = new HashMap<>();
+      ocmh.addPropertyParams(message, propertyParams);;
+      addReplicasProps = addReplicasProps.plus(propertyParams);
+      if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
+      final NamedList addResult = new NamedList();
+      ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, ()-> {
+        countDownLatch.countDown();
+        Object addResultFailure = addResult.get("failure");
+        if (addResultFailure != null) {
+          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+          if (failure == null) {
+            failure = new SimpleOrderedMap();
+            results.add("failure", failure);
+          }
+          failure.addAll((NamedList) addResultFailure);
+        } else {
+          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+          if (success == null) {
+            success = new SimpleOrderedMap();
+            results.add("success", success);
+          }
+          success.addAll((NamedList) addResult.get("success"));
+        }
+      });
     }
 
-    ocmh.processResponses(results, shardHandler, true, "Failed to create shard", async, requestMap, Collections.emptySet());
+    log.debug("Waiting for create shard action to complete");
+    countDownLatch.await(5, TimeUnit.MINUTES);
+    log.debug("Finished waiting for create shard action to complete");
 
     log.info("Finished create command on all shards for collection: " + collectionName);
 

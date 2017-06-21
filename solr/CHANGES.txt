@@ -21,6 +21,14 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 Upgrading from Solr 6.x
 ----------------------
 
+* the cluster property 'legacyCloud' is set to false from 7.0. This means 'zookeeper is the truth' by
+  default. If an entry for a replica does not exist in the state.json, that replica cannot get
+  registered. This may affect users who use that feature where they bring up replicas and they are
+  automatically registered as a part of a shard. However, it is possible to fall back to the old behavior by
+  setting the property legacyCloud=true , in the cluster properties using the following command
+
+  ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:2181  -cmd clusterprop -name legacyCloud -val true
+
 * HttpClientInterceptorPlugin is now HttpClientBuilderPlugin and must work with a 
   SolrHttpClientBuilder rather than an HttpClientConfigurer.
   
@@ -289,6 +297,8 @@ Other Changes
 * SOLR-9623: Disable remote streaming in example configs by default. Adjust Upload Limit defaults (janhoy, yonik)
 
 * SOLR-4646: eDismax lowercaseOperators now defaults to "false" for luceneMatchVersion >= 7.0.0 (janhoy, David Smiley)
+
+* SOLR-8256: Set legacyCloud=false as default (Cao Manh Dat)
 
 ==================  6.7.0 ==================
 
