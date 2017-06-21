@@ -6550,7 +6550,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"id,test_t, test_i\", sort=\"id desc\")";
-    String cat = "let(a ="+expr+", b = add(1,3), c=col(a, test_i), tuple(test = add(1,1), test1=b, results=a, test2=add(c)))";
+    String cat = "let(d ="+expr+", b = add(1,3), c=col(d, test_i), tuple(test = add(1,1), test1=b, results=d, test2=add(c)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cat);
     paramsLoc.set("qt", "/stream");
