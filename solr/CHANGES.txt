@@ -472,6 +472,10 @@ Other Changes
 
 * SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
 
+* SOLR-10883: Ref guide: Escape replacement substitutions, e.g. => to right arrow, so that they are
+  rendered visibly in the PDF.  Also add .adoc file checks to the top-level validate target, including
+  for the invisible substitutions PDF problem.  (Steve Rowe)
+
 ==================  6.6.1 ==================
 
 Bug Fixes

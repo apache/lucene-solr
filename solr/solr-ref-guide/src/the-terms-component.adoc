@@ -89,7 +89,7 @@ Specifies the minimum document frequency to return in order for a term to be inc
 Example: `terms.mincount=5`
 
 `terms.maxcount`::
-Specifies the maximum document frequency a term must have in order to be included in a query response. The default setting is -1, which sets no upper bound. Results are inclusive of the maxcount (that is, <= maxcount).
+Specifies the maximum document frequency a term must have in order to be included in a query response. The default setting is -1, which sets no upper bound. Results are inclusive of the maxcount (that is, \<= maxcount).
 +
 Example: `terms.maxcount=25`
 

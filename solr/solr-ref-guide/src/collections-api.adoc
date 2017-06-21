@@ -1666,7 +1666,7 @@ Assigns leaders in a collection according to the preferredLeader property on act
 |===
 |Key |Type |Required |Description
 |collection |string |Yes |The name of the collection to rebalance preferredLeaders on.
-|maxAtOnce |string |No |The maximum number of reassignments to have queue up at once. Values <=0 are use the default value Integer.MAX_VALUE. When this number is reached, the process waits for one or more leaders to be successfully assigned before adding more to the queue.
+|maxAtOnce |string |No |The maximum number of reassignments to have queue up at once. Values \<=0 are use the default value Integer.MAX_VALUE. When this number is reached, the process waits for one or more leaders to be successfully assigned before adding more to the queue.
 |maxWaitSeconds |string |No |Defaults to 60. This is the timeout value when waiting for leaders to be reassigned. NOTE: if maxAtOnce is less than the number of reassignments that will take place, this is the maximum interval that any _single_ wait for at least one reassignment. For example, if 10 reassignments are to take place and maxAtOnce is 1 and maxWaitSeconds is 60, the upper bound on the time that the command may wait is 10 minutes.
 |===
 

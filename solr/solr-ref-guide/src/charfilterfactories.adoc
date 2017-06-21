@@ -43,8 +43,8 @@ Example:
 Mapping file syntax:
 
 * Comment lines beginning with a hash mark (`#`), as well as blank lines, are ignored.
-* Each non-comment, non-blank line consists of a mapping of the form: `"source" => "target"`
-** Double-quoted source string, optional whitespace, an arrow (`=>`), optional whitespace, double-quoted target string.
+* Each non-comment, non-blank line consists of a mapping of the form: `"source" \=> "target"`
+** Double-quoted source string, optional whitespace, an arrow (`\=>`), optional whitespace, double-quoted target string.
 * Trailing comments on mapping lines are not allowed.
 * The source string must contain at least one character, but the target string may be empty.
 * The following character escape sequences are recognized within source and target strings:
@@ -54,14 +54,14 @@ Mapping file syntax:
 [cols="20,30,20,30",options="header"]
 |===
 |Escape Sequence |Resulting Character (http://www.ecma-international.org/publications/standards/Ecma-048.htm[ECMA-48] alias) |Unicode Character |Example Mapping Line
-|`\\` |`\` |U+005C |`"\\" => "/"`
-|`\"` |`"` |U+0022 |`"\"and\"" => "'and'"`
-|`\b` |backspace (BS) |U+0008 |`"\b" => " "`
-|`\t` |tab (HT) |U+0009 |`"\t" => ","`
-|`\n` |newline (LF) |U+000A |`"\n" => "<br>"`
-|`\f` |form feed (FF) |U+000C |`"\f" => "\n"`
-|`\r` |carriage return (CR) |U+000D |`"\r" => "/carriage-return/"`
-|`\uXXXX` |Unicode char referenced by the 4 hex digits |U+XXXX |`"\uFEFF" => ""`
+|`\\` |`\` |U+005C |`"\\" \=> "/"`
+|`\"` |`"` |U+0022 |`"\"and\"" \=> "'and'"`
+|`\b` |backspace (BS) |U+0008 |`"\b" \=> " "`
+|`\t` |tab (HT) |U+0009 |`"\t" \=> ","`
+|`\n` |newline (LF) |U+000A |`"\n" \=> "<br>"`
+|`\f` |form feed (FF) |U+000C |`"\f" \=> "\n"`
+|`\r` |carriage return (CR) |U+000D |`"\r" \=> "/carriage-return/"`
+|`\uXXXX` |Unicode char referenced by the 4 hex digits |U+XXXX |`"\uFEFF" \=> ""`
 |===
 ** A backslash followed by any other character is interpreted as if the character were present without the backslash.
 
@@ -96,8 +96,8 @@ The table below presents examples of HTML stripping.
 |===
 |Input |Output
 |`my <a href="www.foo.bar">link</a>` |my link
-|`<br>hello<!--comment-->` |hello
-|`hello<script><!-- f('<!--internal--></script>'); --></script>` |hello
+|`<br>hello<!--comment-\->` |hello
+|`hello<script><!-- f('<!--internal-\-></script>'); -\-></script>` |hello
 |`if a<b then print a;` |if a<b then print a;
 |`hello <td height=22 nowrap align="left">` |hello
 |`a<b &#65 Alpha&Omega` Ω |a<b A Alpha&Omega Ω
