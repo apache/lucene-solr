@@ -232,7 +232,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @Target(ElementType.TYPE)
   public @interface SuppressPointFields {
     /** Point to JIRA entry. */
-    public String bugUrl() default "None";
+    public String bugUrl();
   }
   
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
