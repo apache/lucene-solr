@@ -269,8 +269,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     // sanity check our expected default
     final ClusterProperties props = new ClusterProperties(zkClient());
-    assertEquals("Expecting legacyCloud to false as default",
-                 props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), "false");
+    assertEquals("Expecting prop to default to unset, test needs upated",
+                 props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
     
     CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true")
       .process(cluster.getSolrClient());
