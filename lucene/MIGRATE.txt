@@ -35,11 +35,18 @@ If you are migrating your project to Java 9 Jigsaw module system, keep in mind
 that Lucene currently does not yet support `module-info.java` declarations of
 service provider impls (`provides` statement). It is therefore recommended
 to keep all of Lucene in one Uber-Module and not try to split Lucene into
-several modules. As soon as Lucene will migrate to Java 9 as minimum requirement,
-we will work on improving that.
+several modules. As soon as Lucene will migrate to Java 9 as minimum
+requirement, we will work on improving that.
 
 For OSGI, the same applies. You have to create a bundle with all of Lucene for
 SPI to work correctly.
+
+## CustomAnalyzer resources (LUCENE-7883)##
+
+Lucene no longer uses the context class loader when resolving resources in
+CustomAnalyzer or ClassPathResourceLoader. Resources are only resolved
+against Lucene's class loader by default. Please use another builder method
+to change to a custom classloader.
 
 ## Query.hashCode and Query.equals are now abstract methods (LUCENE-7277)
 

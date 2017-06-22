@@ -59,7 +59,7 @@ public class ExternalPaths {
       try {
         file = new File("solr/conf");
         if (!file.exists()) {
-          file = new File(Thread.currentThread().getContextClassLoader().getResource("solr/conf").toURI());
+          file = new File(ExternalPaths.class.getClassLoader().getResource("solr/conf").toURI());
         }
       } catch (Exception e) {
         // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.

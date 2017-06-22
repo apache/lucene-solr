@@ -309,6 +309,10 @@ Other Changes
   option to PointsField to ignore 'precisionStep' attribute.  This change also begins to attempt to randomize
   'docValues' on numeric field types unless tests explicity enable/disable them. (hossman, Steve Rowe)
 
+* LUCENE-7883: Solr no longer uses the context class loader when resolving
+  resources, they are only resolved against Solr's own or "core" class loader
+  by default.  (Uwe Schindler)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

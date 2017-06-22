@@ -1891,7 +1891,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
    */
   public static File getFile(String name) {
-    final URL url = Thread.currentThread().getContextClassLoader().getResource(name.replace(File.separatorChar, '/'));
+    final URL url = SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
     if (url != null) {
       try {
         return new File(url.toURI());

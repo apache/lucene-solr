@@ -265,7 +265,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome, SolrDispatchFilter.class.getClassLoader(), nodeProperties);
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn("Solr property solr.solrxml.location is no longer supported. " +
                "Will automatically load solr.xml from ZooKeeper if it exists");

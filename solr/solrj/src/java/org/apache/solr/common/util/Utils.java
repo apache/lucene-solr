@@ -193,8 +193,7 @@ public class Utils {
   }
 
   public static Object fromJSONResource(String resourceName){
-   return fromJSON(Thread.currentThread()
-        .getContextClassLoader().getResourceAsStream(resourceName));
+   return fromJSON(Utils.class.getClassLoader().getResourceAsStream(resourceName));
 
   }
   public static JSONParser getJSONParser(Reader reader){

@@ -151,6 +151,11 @@ Other
   current classloader that defined the interface class (lucene-core.jar).
   See MIGRATE.txt for more information!  (Uwe Schindler, Dawid Weiss)
 
+* LUCENE-7883: Lucene no longer uses the context class loader when resolving
+  resources in CustomAnalyzer or ClassPathResourceLoader. Resources are only
+  resolved against Lucene's class loader by default. Please use another builder
+  method to change to a custom classloader.  (Uwe Schindler)
+
 ======================= Lucene 6.7.0 =======================
 
 New Features

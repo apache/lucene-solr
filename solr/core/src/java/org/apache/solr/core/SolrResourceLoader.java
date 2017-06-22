@@ -145,7 +145,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   /**
    * <p>
-   * This loader will delegate to the context classloader when possible,
+   * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
    * </p>
@@ -162,9 +162,10 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
-    if (parent == null)
-      parent = Thread.currentThread().getContextClassLoader();
-    this.classLoader = new URLClassLoader(new URL[0], parent);
+    if (parent == null) {
+      parent = getClass().getClassLoader();
+    }
+    this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
 
     /* 
      * Skip the lib subdirectory when we are loading from the solr home.

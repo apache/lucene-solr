@@ -486,7 +486,7 @@ public class SolrCLI {
   private static List<Class<Tool>> findToolClassesInPackage(String packageName) {
     List<Class<Tool>> toolClasses = new ArrayList<Class<Tool>>();
     try {
-      ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+      ClassLoader classLoader = SolrCLI.class.getClassLoader();
       String path = packageName.replace('.', '/');
       Enumeration<URL> resources = classLoader.getResources(path);
       Set<String> classes = new TreeSet<String>();
