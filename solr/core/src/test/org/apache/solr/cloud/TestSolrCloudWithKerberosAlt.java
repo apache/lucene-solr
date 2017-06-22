@@ -94,6 +94,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
 
   @Override
   public void setUp() throws Exception {
+    SolrTestCaseJ4.randomizeNumericTypesProperties(); // SOLR-10916
     super.setUp();
     setupMiniKdc();
   }
@@ -225,6 +226,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     System.clearProperty("solr.kerberos.name.rules");
     System.clearProperty("solr.jaas.debug");
     kerberosTestServices.stop();
+    SolrTestCaseJ4.clearNumericTypesProperties(); // SOLR-10916
     super.tearDown();
   }
 }

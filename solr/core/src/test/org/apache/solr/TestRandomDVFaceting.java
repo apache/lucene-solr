@@ -45,6 +45,11 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    // but test also has hard coded assumptions about these field types *NOT* having DV when *NOT* points
+    // so use docvalue if and only if we are using points...
+    System.setProperty(NUMERIC_DOCVALUES_SYSPROP, System.getProperty(NUMERIC_POINTS_SYSPROP));
+    
     initCore("solrconfig-basic.xml","schema-docValuesFaceting.xml");
   }
 

@@ -24,14 +24,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -242,21 +239,13 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   
   @Test
   public void testDuplicates() throws Exception {
-    RefCounted<SolrIndexSearcher> ref = null;
-    try {
-      ref = h.getCore().getSearcher();
-      LeafReader reader = ref.get().getSlowAtomicReader();
-      // MultiValued Trie fields use SortedSet
-      assertNotNull(reader.getSortedSetDocValues("int_is_t"));
-      assertNull(reader.getSortedNumericDocValues("int_is_t"));
-      // MultiValued Point fields use SortedNumerics
-      assertNull(reader.getSortedSetDocValues("int_is_p"));
-      assertNotNull(reader.getSortedNumericDocValues("int_is_p"));
-    } finally {
-      if (ref != null) ref.decref();
-    }
+    // see SOLR-10924
+    String expected = h.getCore().getLatestSchema().getField("int_is_t").getType().isPointField()
+      ? "1,1,1,1" : "1";
     String s =  h.query(req("q", "id:3", "qt", "/export", "fl", "int_is_t", "sort", "intdv asc"));
-    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"int_is_t\":[1]}]}}");
+    assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"int_is_t\":["+expected+"]}]}}");
+    expected = h.getCore().getLatestSchema().getField("int_is_p").getType().isPointField()
+      ? "1,1,1,1" : "1";
     s =  h.query(req("q", "id:8", "qt", "/export", "fl", "int_is_p", "sort", "intdv asc"));
     assertJsonEquals(s, "{\"responseHeader\": {\"status\": 0}, \"response\":{\"numFound\":1, \"docs\":[{\"int_is_p\":[1,1,1,1]}]}}");
   }
@@ -279,7 +268,6 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           SchemaField sf = h.getCore().getLatestSchema().getField(field + "_t");
           assertTrue(sf.hasDocValues());
           assertTrue(sf.getType().getNumberType() != null);
-          assertFalse(sf.getType().isPointField());
           
           sf = h.getCore().getLatestSchema().getField(field + "_p");
           assertTrue(sf.hasDocValues());

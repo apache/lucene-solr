@@ -86,8 +86,8 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
             req("cool stuff")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/str[@name='id'][.='42']"
-            ,"//result/doc[2]/str[@name='id'][.='666']"
-            ,"//result/doc[3]/str[@name='id'][.='8675309']"
+            ,"//result/doc[2]/str[@name='id'][.='8675309']"
+            ,"//result/doc[3]/str[@name='id'][.='666']"
             );
 
     assertQ("multi qf",

@@ -293,6 +293,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testExternalFileFieldNumericKey() throws Exception {
+    assumeFalse("SOLR-10846: ExternalFileField/FileFloatSource throws NPE if keyField is Points based",
+                Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
+    
     final String extField = "eff_trie";
     final String keyField = "eff_ti";
     assertU(adoc("id", "991", keyField, "91"));

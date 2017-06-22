@@ -58,6 +58,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
   public BasicDistributedZk2Test() {
     super();
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     sliceCount = 2;
   }
 

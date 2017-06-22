@@ -114,6 +114,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   Set<Future<Object>> pending;
   
   public BasicDistributedZkTest() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();

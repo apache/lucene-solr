@@ -43,7 +43,9 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -172,13 +174,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
-
-  /**
-   * The system property {@code "solr.tests.preferPointFields"} can be used to make tests use PointFields when possible. 
-   * PointFields will only be used if the schema used by the tests uses "${solr.tests.TYPEClass}" when defining fields. 
-   * If this environment variable is not set, those tests will use PointFields 50% of the times and TrieFields the rest.
-   */
-  public static final boolean PREFER_POINT_FIELDS = Boolean.getBoolean("solr.tests.preferPointFields");
 
   private static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -314,6 +309,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       HttpClientUtil.resetHttpClientBuilder();
 
+      clearNumericTypesProperties();
+      
       // clean up static
       sslConfig = null;
       testSolrHome = null;
@@ -510,22 +507,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       mergeSchedulerClass = "org.apache.lucene.index.ConcurrentMergeScheduler";
     }
     System.setProperty("solr.tests.mergeScheduler", mergeSchedulerClass);
-    if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SuppressPointFields.class)
-        || (!PREFER_POINT_FIELDS && random().nextBoolean())) {
-      log.info("Using TrieFields");
-      System.setProperty("solr.tests.intClass", "int");
-      System.setProperty("solr.tests.longClass", "long");
-      System.setProperty("solr.tests.doubleClass", "double");
-      System.setProperty("solr.tests.floatClass", "float");
-      System.setProperty("solr.tests.dateClass", "date");
-    } else {
-      log.info("Using PointFields");
-      System.setProperty("solr.tests.intClass", "pint");
-      System.setProperty("solr.tests.longClass", "plong");
-      System.setProperty("solr.tests.doubleClass", "pdouble");
-      System.setProperty("solr.tests.floatClass", "pfloat");
-      System.setProperty("solr.tests.dateClass", "pdate");
-    }
+    randomizeNumericTypesProperties();
   }
 
   public static Throwable getWrappedException(Throwable e) {
@@ -2485,4 +2467,127 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   protected <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }
+  
+  /**
+   * The name of a sysprop that can be set by users when running tests to force the types of numerics 
+   * used for test classes that do not have the {@link SuppressPointFields} annotation:
+   * <ul>
+   *  <li>If unset, then a random variable will be used to decide the type of numerics.</li>
+   *  <li>If set to <code>true</code> then Points based numerics will be used.</li>
+   *  <li>If set to <code>false</code> (or any other string) then Trie based numerics will be used.</li>
+   * </ul>
+   * @see #NUMERIC_POINTS_SYSPROP
+   */
+  public static final String USE_NUMERIC_POINTS_SYSPROP = "solr.tests.use.numeric.points";
+  
+  /**
+   * The name of a sysprop that will either <code>true</code> or <code>false</code> indicating if 
+   * numeric points fields are currently in use, depending on the user specified value of 
+   * {@link #USE_NUMERIC_POINTS_SYSPROP} and/or the {@link SuppressPointFields} annotation and/or 
+   * randomization. Tests can use <code>Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)</code>.
+   *
+   * @see #randomizeNumericTypesProperties
+   */
+  public static final String NUMERIC_POINTS_SYSPROP = "solr.tests.numeric.points";
+  
+  /**
+   * The name of a sysprop that will be either <code>true</code> or <code>false</code> indicating if 
+   * docValues should be used on a numeric field.  This property string should be used in the 
+   * <code>docValues</code> attribute of (most) numeric fieldTypes in schemas, and by default will be 
+   * randomized by this class in a <code>@BeforeClass</code>.  Subclasses that need to force specific 
+   * behavior can use <code>System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true")</code> 
+   * to override the default randomization.
+   *
+   * @see #randomizeNumericTypesProperties
+   */
+  public static final String NUMERIC_DOCVALUES_SYSPROP = "solr.tests.numeric.dv";
+  
+  /**
+   * Sets various sys props related to user specified or randomized choices regarding the types 
+   * of numerics that should be used in tests.
+   * <p>
+   * TODO: This method can be private once SOLR-10916 is resolved
+   * </p>
+   * @see #NUMERIC_DOCVALUES_SYSPROP
+   * @see #NUMERIC_POINTS_SYSPROP
+   * @see #clearNumericTypesProperties
+   * @lucene.experimental
+   * @lucene.internal
+   */
+  public static void randomizeNumericTypesProperties() {
+
+    final boolean useDV = random().nextBoolean();
+    System.setProperty(NUMERIC_DOCVALUES_SYSPROP, ""+useDV);
+    
+    // consume a consistent amount of random data even if sysprop/annotation is set
+    final boolean randUsePoints = random().nextBoolean();
+
+    final String usePointsStr = System.getProperty(USE_NUMERIC_POINTS_SYSPROP);
+    final boolean usePoints = (null == usePointsStr) ? randUsePoints : Boolean.parseBoolean(usePointsStr);
+    
+    if (RandomizedContext.current().getTargetClass().isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class)
+        || (! usePoints)) {
+      log.info("Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP="+useDV);
+      
+      org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.TrieIntField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Float.class, "solr.TrieFloatField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
+      
+      System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
+    } else {
+      log.info("Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP="+useDV);
+
+      org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.IntPointField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Float.class, "solr.FloatPointField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
+      
+      System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
+    }
+    for (Map.Entry<Class,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
+      System.setProperty("solr.tests." + entry.getKey().getSimpleName() + "FieldType",
+                         entry.getValue());
+
+    }
+  }
+  
+  /**
+   * Cleans up the randomized sysproperties and variables set by {@link #randomizeNumericTypesProperties}
+   * <p>
+   * TODO: This method can be private once SOLR-10916 is resolved
+   * </p>
+   * @see #randomizeNumericTypesProperties
+   * @lucene.experimental
+   * @lucene.internal
+   */
+  public static void clearNumericTypesProperties() {
+    org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
+    System.clearProperty("solr.tests.numeric.points");
+    System.clearProperty("solr.tests.numeric.points.dv");
+    for (Class c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
+      System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
+    }
+    private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
+  }
+
+  private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
+  
+  /**
+   * A Map of "primative" java "numeric" types and the string name of the <code>class</code> used in the 
+   * corrisponding schema fieldType declaration.
+   * <p>
+   * Example: <code>java.util.Date =&gt; "solr.DatePointField"</code>
+   * </p>
+   *
+   * @see #randomizeNumericTypesProperties
+   */
+  protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
+    = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
+  
+  
 }

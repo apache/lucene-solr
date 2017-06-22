@@ -40,6 +40,11 @@ import org.junit.Test;
 public class DistributedFacetPivotLongTailTest extends BaseDistributedSearchTestCase {
   
   private int docNumber = 0;
+
+  public DistributedFacetPivotLongTailTest() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
   
   public int getDocNum() {
     docNumber++;

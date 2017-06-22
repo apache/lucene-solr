@@ -305,6 +305,9 @@ Other Changes
 
 * SOLR-10929: Removed unused 'valType' option from ExternalFileField (hossman)
 
+* SOLR-10864: Simplified how Trie vs Points based numerics are randomized by SolrTestCaseJ4 by adding a static
+  option to PointsField to ignore 'precisionStep' attribute.  This change also begins to attempt to randomize
+  'docValues' on numeric field types unless tests explicity enable/disable them. (hossman, Steve Rowe)
 
 ==================  6.7.0 ==================
 
