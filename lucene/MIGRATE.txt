@@ -131,3 +131,9 @@ they might have more than 2B matches in total. However TopDocs instances
 returned by IndexSearcher will still have a total number of hits which is less
 than 2B since Lucene indexes are still bound to at most 2B documents, so it
 can safely be casted to an int in that case.
+
+## PrefixAwareTokenFilter and PrefixAndSuffixAwareTokenFilter removed
+(LUCENE-7877)
+
+Instead use ConcatentingTokenStream, which will allow for the use of custom
+attributes.
