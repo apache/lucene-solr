@@ -213,15 +213,20 @@ public class Utils {
     }
   }
 
-  public static Object getObjectByPath(Map root, boolean onlyPrimitive, String hierarchy) {
+  public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
+    if(root == null) return null;
+    if(!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
     List<String> parts = StrUtils.splitSmart(hierarchy, '/');
     if (parts.get(0).isEmpty()) parts.remove(0);
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
-  public static Object getObjectByPath(Map root, boolean onlyPrimitive, List<String> hierarchy) {
+
+
+  public static Object getObjectByPath(Object root, boolean onlyPrimitive, List<String> hierarchy) {
     if(root == null) return null;
-    Map obj = root;
+    if(!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
+    Object obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -1;
       String s = hierarchy.get(i);
@@ -233,22 +238,22 @@ public class Utils {
         }
       }
       if (i < hierarchy.size() - 1) {
-        Object o = obj.get(s);
+        Object o = getVal(obj, s);
         if (o == null) return null;
         if (idx > -1) {
           List l = (List) o;
           o = idx < l.size() ? l.get(idx) : null;
         }
-        if (!(o instanceof Map)) return null;
-        obj = (Map) o;
+        if (!isMapLike(o)) return null;
+        obj = o;
       } else {
-        Object val = obj.get(s);
+        Object val = getVal(obj, s);
         if (val == null) return null;
         if (idx > -1) {
           List l = (List) val;
           val = idx < l.size() ? l.get(idx) : null;
         }
-        if (onlyPrimitive && val instanceof Map) {
+        if (onlyPrimitive && isMapLike(val)) {
           return null;
         }
         return val;
@@ -257,7 +262,17 @@ public class Utils {
 
     return false;
   }
-  
+
+  private static boolean isMapLike(Object o) {
+    return o instanceof Map || o instanceof NamedList;
+  }
+
+  private static Object getVal(Object obj, String key) {
+    if(obj instanceof NamedList) return ((NamedList) obj).get(key);
+    else if (obj instanceof Map) return ((Map) obj).get(key);
+    else throw new RuntimeException("must be a NamedList or Map");
+  }
+
   /**
    * If the passed entity has content, make sure it is fully
    * read and closed.

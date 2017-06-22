@@ -82,6 +82,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
  */
@@ -575,6 +577,12 @@ public class HttpSolrClient extends SolrClient {
       } catch (Exception e) {
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
+      if (isV2Api) {
+        Object err = rsp.get("error");
+        if (err != null) {
+          throw RemoteExecutionException.create(baseUrl, rsp);
+        }
+      }
       if (httpStatus != HttpStatus.SC_OK && !isV2Api) {
         NamedList<String> metadata = null;
         String reason = null;
@@ -755,6 +763,39 @@ public class HttpSolrClient extends SolrClient {
      */
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
       super(code, "Error from server at " + remoteHost + ": " + msg, th);
+    }
+  }
+
+  /**
+   * This should be thrown when a server has an error in executing the request and
+   * it sends a proper payload back to the client
+   */
+  public static class RemoteExecutionException extends RemoteSolrException {
+    private NamedList meta;
+
+    public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
+      super(remoteHost, code, msg, null);
+      this.meta = meta;
+    }
+
+
+    public static RemoteExecutionException create(String host, NamedList errResponse) {
+      Object errObj = errResponse.get("error");
+      if (errObj != null) {
+        Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
+        String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
+        return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
+            msg == null ? "Unknown Error" : msg, errResponse);
+
+      } else {
+        throw new RuntimeException("No error");
+      }
+
+    }
+
+    public NamedList getMetaData() {
+
+      return meta;
     }
   }
 
