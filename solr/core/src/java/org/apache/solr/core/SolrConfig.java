@@ -367,6 +367,9 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
+    // Raise the Lucene static limit so we can control this with higher granularity.  See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+
     Map<String, SolrPluginInfo> map = new HashMap<>();
     for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);

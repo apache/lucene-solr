@@ -358,6 +358,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String q = sb.toString();
 
     // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
+    try {
+      ignoreException("Too many clauses");
+      assertJQ(req("q",q)
+          ,"/response/numFound==6");
+      fail();
+    } catch (Exception e) {
+      // expect "too many clauses" exception... see SOLR-10921
+      assertTrue(e.getMessage().contains("many clauses"));
+    }
+
     assertJQ(req("q","*:*", "fq", q)
         ,"/response/numFound==6");
     assertJQ(req("q","*:*", "fq", q, "sow", "false")

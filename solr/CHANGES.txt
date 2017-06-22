@@ -194,6 +194,11 @@ Bug Fixes
 
 * SOLR-10886: Using V2Request.process(solrClient) method throws NPE if the API returns an error (Cao Manh Dat)
 
+* SOLR-10921: Work around the static Lucene BooleanQuery.maxClauseCount that causes Solr's maxBooleanClauses
+  setting behavior to be "last core wins".  This patch sets  BooleanQuery.maxClauseCount to its maximum value,
+  thus disabling the global check, and replaces it with specific checks where desired via
+  QueryUtils.build().  (yonik)
+
 Optimizations
 ----------------------
 

@@ -192,7 +192,7 @@ public class ExtendedDismaxQParser extends QParser {
     //
     // create a boosted query (scores multiplied by boosts)
     //
-    Query topQuery = query.build();
+    Query topQuery = QueryUtils.build(query, this);
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size()>1) {
       ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[boosts.size()]));
@@ -282,7 +282,7 @@ public class ExtendedDismaxQParser extends QParser {
       BooleanQuery.Builder t = new BooleanQuery.Builder();
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)query);
       SolrPluginUtils.setMinShouldMatch(t, config.minShouldMatch, config.mmAutoRelax);
-      query = t.build();
+      query = QueryUtils.build(t, this);
     }
     return query;
   }
@@ -1163,7 +1163,7 @@ public class ExtendedDismaxQParser extends QParser {
           for (Query sub : lst) {
             q.add(sub, BooleanClause.Occur.SHOULD);
           }
-          return q.build();
+          return QueryUtils.build(q, parser);
         }
       } else {
         
@@ -1225,7 +1225,7 @@ public class ExtendedDismaxQParser extends QParser {
               }
               q.add(newBooleanClause(new DisjunctionMaxQuery(subs, a.tie), BooleanClause.Occur.SHOULD));
             }
-            return q.build();
+            return QueryUtils.build(q, parser);
           } else {
             return new DisjunctionMaxQuery(lst, a.tie); 
           }
@@ -1234,7 +1234,7 @@ public class ExtendedDismaxQParser extends QParser {
           for (Query sub : lst) {
             q.add(sub, BooleanClause.Occur.SHOULD);
           }
-          return q.build();
+          return QueryUtils.build(q, parser);
         }
       } else {
         // verify that a fielded query is actually on a field that exists... if not,
