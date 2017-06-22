@@ -233,77 +233,44 @@ public class CloudSolrClient extends SolrClient {
       retriedAt = System.nanoTime();
     }
   }
-
+  
   /**
    * Create a new client object that connects to Zookeeper and is always aware
    * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
    * SolrCloud has enough replicas for every shard in a collection, there is no
    * single point of failure. Updates will be sent to shard leaders by default.
    *
-   * @param zkHosts
-   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
-   *          each host in the zookeeper ensemble. Note that with certain
-   *          Collection types like HashSet, the order of hosts in the final
-   *          connect string may not be in the same order you added them.
-   *          Provide only one of solrUrls or zkHosts.
-   * @param chroot
-   *          A chroot value for zookeeper, starting with a forward slash. If no
-   *          chroot is required, use null.
-   * @param solrUrls
-   *          A list of Solr URLs to configure the underlying {@link HttpClusterStateProvider}, which will
-   *          use of the these URLs to fetch the list of live nodes for this Solr cluster.  URL's must point to the
-   *          root Solr path ("/solr"). Provide only one of solrUrls or zkHosts.
-   * @param httpClient
-   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
-   *          multi-threaded connection manager.  If null, a default HttpClient will be used.
-   * @param lbSolrClient
-   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
-   * @param lbHttpSolrClientBuilder
-   *          LBHttpSolrClient builder to construct the LBHttpSolrClient. If null, a default builder will be used.
-   * @param updatesToLeaders
-   *          If true, sends updates to shard leaders.
-   * @param directUpdatesToLeadersOnly
-   *          If true, sends direct updates to shard leaders only.
+   * @param builder a {@link CloudSolrClient.Builder} with the options used to create the client.
    */
-  private CloudSolrClient(Collection<String> zkHosts,
-                          String chroot,
-                          List<String> solrUrls,
-                          HttpClient httpClient,
-                          LBHttpSolrClient lbSolrClient,
-                          LBHttpSolrClient.Builder lbHttpSolrClientBuilder,
-                          boolean updatesToLeaders,
-                          boolean directUpdatesToLeadersOnly,
-                          ClusterStateProvider stateProvider
-
-  ) {
-    if (stateProvider == null) {
-      if (zkHosts != null && solrUrls != null) {
+  protected CloudSolrClient(Builder builder) {
+    if (builder.stateProvider == null) {
+      if (builder.zkHosts != null && builder.solrUrls != null) {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
-      if (zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(zkHosts, chroot);
-      } else if (solrUrls != null && !solrUrls.isEmpty()) {
+      if (builder.zkHosts != null) {
+        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
-          this.stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);
+          this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
         } catch (Exception e) {
           throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
-              + "Solr server(s), "  + solrUrls + ", down?)", e);
+              + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
         }
       } else {
         throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
       }
     } else {
-      this.stateProvider = stateProvider;
+      this.stateProvider = builder.stateProvider;
     }
-    this.clientIsInternal = httpClient == null;
-    this.shutdownLBHttpSolrServer = lbSolrClient == null;
-    if(lbHttpSolrClientBuilder != null) lbSolrClient = lbHttpSolrClientBuilder.build();
-    if(lbSolrClient != null) httpClient = lbSolrClient.getHttpClient();
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    if (lbSolrClient == null) lbSolrClient = createLBHttpSolrClient(myClient);
-    this.lbClient = lbSolrClient;
-    this.updatesToLeaders = updatesToLeaders;
-    this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
+    this.clientIsInternal = builder.httpClient == null;
+    this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
+    if(builder.lbClientBuilder != null) builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
+    if(builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
+    this.myClient = (builder.httpClient == null) ? HttpClientUtil.createClient(null) : builder.httpClient;
+    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(myClient);
+    this.lbClient = builder.loadBalancedSolrClient;
+    this.updatesToLeaders = builder.shardLeadersOnly;
+    this.directUpdatesToLeadersOnly = builder.directUpdatesToLeadersOnly;
   }
 
   /**Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -1372,15 +1339,15 @@ public class CloudSolrClient extends SolrClient {
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
   public static class Builder {
-    private Collection<String> zkHosts;
-    private List<String> solrUrls;
-    private HttpClient httpClient;
-    private String zkChroot;
-    private LBHttpSolrClient loadBalancedSolrClient;
-    private LBHttpSolrClient.Builder lbClientBuilder;
-    private boolean shardLeadersOnly;
-    private boolean directUpdatesToLeadersOnly;
-    private ClusterStateProvider stateProvider;
+    protected Collection<String> zkHosts;
+    protected List<String> solrUrls;
+    protected HttpClient httpClient;
+    protected String zkChroot;
+    protected LBHttpSolrClient loadBalancedSolrClient;
+    protected LBHttpSolrClient.Builder lbClientBuilder;
+    protected boolean shardLeadersOnly;
+    protected boolean directUpdatesToLeadersOnly;
+    protected ClusterStateProvider stateProvider;
 
 
     public Builder() {
@@ -1536,8 +1503,7 @@ public class CloudSolrClient extends SolrClient {
           throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
         }
       }
-      return new CloudSolrClient(zkHosts, zkChroot, solrUrls, httpClient, loadBalancedSolrClient, lbClientBuilder,
-          shardLeadersOnly, directUpdatesToLeadersOnly, stateProvider);
+      return new CloudSolrClient(this);
     }
   }
 }

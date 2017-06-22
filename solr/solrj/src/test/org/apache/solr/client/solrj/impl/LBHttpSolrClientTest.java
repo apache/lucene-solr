@@ -40,7 +40,7 @@ public class LBHttpSolrClientTest {
   public void testLBHttpSolrClientHttpClientResponseParserStringArray() throws IOException {
     CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
     try (
-         LBHttpSolrClient testClient = new LBHttpSolrClient(httpClient, (ResponseParser) null);
+         LBHttpSolrClient testClient = new LBHttpSolrClient.Builder().withHttpClient(httpClient).withResponseParser(null).build();
          HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
       assertNull("Generated server should have null parser.", httpSolrClient.getParser());
     } finally {

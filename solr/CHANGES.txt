@@ -29,7 +29,7 @@ Upgrading from Solr 6.x
 
   ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:2181  -cmd clusterprop -name legacyCloud -val true
 
-* HttpClientInterceptorPlugin is now HttpClientBuilderPlugin and must work with a 
+* HttpClientInterceptorPlugin is now HttpClientBuilderPlugin and must work with a
   SolrHttpClientBuilder rather than an HttpClientConfigurer.
   
 * HttpClientUtil now allows configuring HttpClient instances via SolrHttpClientBuilder
@@ -317,6 +317,10 @@ Other Changes
 * LUCENE-7883: Solr no longer uses the context class loader when resolving
   resources, they are only resolved against Solr's own or "core" class loader
   by default.  (Uwe Schindler)
+
+* SOLR-10915: Make builder based SolrClient constructors to be the only valid way to construct client objects and
+  increase the visibility of builder elements to be protected so extending the builder, and the clients is possible.
+  (Jason Gerlowski, Anshum Gupta)
 
 ==================  6.7.0 ==================
 
