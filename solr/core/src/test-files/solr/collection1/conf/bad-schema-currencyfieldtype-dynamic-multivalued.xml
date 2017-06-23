@@ -16,16 +16,20 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currency-ft-oer-norates" version="1.4">
+<schema name="bad-schema-currencyfieldtype-dynamic-multivalued" version="1.6">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
-  <!-- BEGIN BAD STUFF: no rates-->
-  <fieldType name="currency"
-             class="solr.CurrencyField"
-             providerClass="solr.OpenExchangeRatesOrgProvider"
-             multiValued="false"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" currencyConfig="currency.xml" multiValued="false"
+             amountLongSuffix="_l" codeStrSuffix="_s"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
-  <field name="money" type="currency" indexed="true" stored="true"/>
+  
+  <!-- BEGIN BAD STUFF: multiValued="true" -->
+  <dynamicField name="*_c" type="currency" indexed="true" stored="true" multiValued="true"/>
+  <!-- END BAD STUFF -->
+
+  <dynamicField name="*_s" type="string" multiValued="false"/>
+  <dynamicField name="*_l" type="plong" multiValued="false"/>
 
   <uniqueKey>id</uniqueKey>
 

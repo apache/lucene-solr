@@ -14,12 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.schema;
+
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
@@ -29,13 +33,28 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * Tests currency field type.
- * @see #field
- */
-@Ignore("Abstract base class with test methods")
-public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
+/** Tests CurrencyField and CurrencyFieldType. */
+public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
+  private final String fieldName;
+  private final Class<? extends ExchangeRateProvider> expectedProviderClass;
+  
+  public CurrencyFieldTypeTest(String fieldName, Class<? extends ExchangeRateProvider> expectedProviderClass) {
+    this.fieldName = fieldName;
+    this.expectedProviderClass = expectedProviderClass;
+  }
 
+  @ParametersFactory
+  public static Iterable<Object[]> parameters() {
+    return Arrays.asList(new Object[][] {
+        {"amount", FileExchangeRateProvider.class},    // CurrencyField
+        {"mock_amount", MockExchangeRateProvider.class},                 // CurrencyField
+        {"oer_amount", OpenExchangeRatesOrgProvider.class},              // CurrencyField
+        {"amount_CFT", FileExchangeRateProvider.class},  // CurrencyFieldType
+        {"mock_amount_CFT", MockExchangeRateProvider.class},               // CurrencyFieldType
+        {"oer_amount_CFT", OpenExchangeRatesOrgProvider.class}             // CurrencyFieldType
+      });
+  }
+  
   /**
    * "Assumes" that the specified list of currency codes are
    * supported in this JVM
@@ -59,44 +78,50 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  /** The field name to use in all tests */
-  public abstract String field();
-
   @Test
   public void testCurrencySchema() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
 
-    SchemaField amount = schema.getField(field());
+    SchemaField amount = schema.getField(fieldName);
     assertNotNull(amount);
     assertTrue(amount.isPolyField());
+
+    CurrencyFieldType type = (CurrencyFieldType)amount.getType();
+    String currencyDynamicField
+        = "*" + (type instanceof CurrencyField ? FieldType.POLY_FIELD_SEPARATOR : "") + type.fieldSuffixCurrency;
+    String amountDynamicField 
+        = "*" + (type instanceof CurrencyField ? FieldType.POLY_FIELD_SEPARATOR : "") + type.fieldSuffixAmountRaw;
 
     SchemaField[] dynFields = schema.getDynamicFieldPrototypes();
     boolean seenCurrency = false;
     boolean seenAmount = false;
 
     for (SchemaField dynField : dynFields) {
-      if (dynField.getName().equals("*" + FieldType.POLY_FIELD_SEPARATOR + CurrencyField.FIELD_SUFFIX_CURRENCY)) {
-        seenCurrency = true;
+      if (dynField.getName().equals(amountDynamicField)) {
+        seenAmount = true;
       }
 
-      if (dynField.getName().equals("*" + FieldType.POLY_FIELD_SEPARATOR + CurrencyField.FIELD_SUFFIX_AMOUNT_RAW)) {
-        seenAmount = true;
+      if (dynField.getName().equals(currencyDynamicField)) {
+        seenCurrency = true;
       }
     }
 
-    assertTrue("Didn't find the expected currency code dynamic field", seenCurrency);
-    assertTrue("Didn't find the expected value dynamic field", seenAmount);
+    assertTrue("Didn't find the expected currency code dynamic field " + currencyDynamicField, seenCurrency);
+    assertTrue("Didn't find the expected value dynamic field " + amountDynamicField, seenAmount);
   }
 
   @Test
   public void testCurrencyFieldType() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+        expectedProviderClass.equals(FileExchangeRateProvider.class));
+
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    SchemaField amount = schema.getField(field());
+    SchemaField amount = schema.getField(fieldName);
     assertNotNull(amount);
-    assertTrue(field() + " is not a poly field", amount.isPolyField());
+    assertTrue(fieldName + " is not a poly field", amount.isPolyField());
     FieldType tmp = amount.getType();
-    assertTrue(tmp instanceof CurrencyField);
+    assertTrue(fieldName + " is not an instance of CurrencyFieldType", tmp instanceof CurrencyFieldType);
     String currencyValue = "1.50,EUR";
     List<IndexableField> fields = amount.createFields(currencyValue, 2);
     assertEquals(fields.size(), 3);
@@ -112,41 +137,47 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertEquals(schema.getFieldTypeByName("string").toExternal(fields.get(2)), "1.50,EUR");
     
     // A few tests on the provider directly
-    ExchangeRateProvider p = ((CurrencyField) tmp).getProvider();
+    ExchangeRateProvider p = ((CurrencyFieldType)tmp).getProvider();
     Set<String> availableCurrencies = p.listAvailableCurrencies();
     assertEquals(5, availableCurrencies.size());
-    assert(p.reload() == true);
-    assert(p.getExchangeRate("USD", "EUR") == 2.5);
+    assertTrue(p.reload());
+    assertEquals(2.5, p.getExchangeRate("USD", "EUR"), 0.00000000001);
   }
 
   @Test
   public void testMockExchangeRateProvider() throws Exception {
+    assumeTrue("This test is only applicable to the mock exchange rate provider",
+        expectedProviderClass.equals(MockExchangeRateProvider.class));
+    
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    SchemaField amount = schema.getField("mock_amount");
+    SchemaField field = schema.getField(fieldName);
+    FieldType fieldType = field.getType();
+    ExchangeRateProvider provider = ((CurrencyFieldType)fieldType).getProvider();
 
     // A few tests on the provider directly
-    ExchangeRateProvider p = ((CurrencyField)amount.getType()).getProvider();
-    Set<String> availableCurrencies = p.listAvailableCurrencies();
-    assert(availableCurrencies.size() == 3);
-    assert(p.reload() == true);
-    assert(p.getExchangeRate("USD", "EUR") == 0.8);
+    assertEquals(3, provider.listAvailableCurrencies().size());
+    assertTrue(provider.reload());
+    assertEquals(0.8, provider.getExchangeRate("USD", "EUR"), 0.00000000001);
   }
 
   @Test
   public void testCurrencyRangeSearch() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+        expectedProviderClass.equals(FileExchangeRateProvider.class));
+    
     clearIndex();
     final int emptyDocs = atLeast(50); // times 2
     final int negDocs = atLeast(5);
     
-    assertU(adoc("id", "0", field(), "0,USD")); // 0
+    assertU(adoc("id", "0", fieldName, "0,USD")); // 0
     // lots of docs w/o values
     for (int i = 100; i <= 100 + emptyDocs; i++) {
       assertU(adoc("id", "" + i));
     }
     // docs with values in ranges we'll query
     for (int i = 1; i <= 10; i++) {
-      assertU(adoc("id", "" + i, field(), i + ",USD"));
+      assertU(adoc("id", "" + i, fieldName, i + ",USD"));
     }
     // more docs w/o values
     for (int i = 500; i <= 500 + emptyDocs; i++) {
@@ -154,62 +185,62 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     }
     // some negative values
     for (int i = -100; i > -100 - negDocs; i--) {
-      assertU(adoc("id", "" + i, field(), i + ",USD"));
+      assertU(adoc("id", "" + i, fieldName, i + ",USD"));
     }
-    assertU(adoc("id", "40", field(), "0,USD")); // 0
+    assertU(adoc("id", "40", fieldName, "0,USD")); // 0
 
     assertU(commit());
 
     assertQ(req("fl", "*,score", "q",
-            field()+":[2.00,USD TO 5.00,USD]"),
+            fieldName+":[2.00,USD TO 5.00,USD]"),
             "//*[@numFound='4']");
 
     assertQ(req("fl", "*,score", "q",
-            field()+":[0.50,USD TO 1.00,USD]"),
+            fieldName+":[0.50,USD TO 1.00,USD]"),
             "//*[@numFound='1']");
 
     assertQ(req("fl", "*,score", "q",
-            field()+":[24.00,USD TO 25.00,USD]"),
+            fieldName+":[24.00,USD TO 25.00,USD]"),
             "//*[@numFound='0']");
 
     // "GBP" currency code is 1/2 of a USD dollar, for testing.
     assertQ(req("fl", "*,score", "q",
-            field()+":[0.50,GBP TO 1.00,GBP]"),
+            fieldName+":[0.50,GBP TO 1.00,GBP]"),
             "//*[@numFound='2']");
 
     // "EUR" currency code is 2.5X of a USD dollar, for testing.
     assertQ(req("fl", "*,score", "q",
-            field()+":[24.00,EUR TO 25.00,EUR]"),
+            fieldName+":[24.00,EUR TO 25.00,EUR]"),
             "//*[@numFound='1']");
 
     // Slight asymmetric rate should work.
     assertQ(req("fl", "*,score", "q",
-            field()+":[24.99,EUR TO 25.01,EUR]"),
+            fieldName+":[24.99,EUR TO 25.01,EUR]"),
             "//*[@numFound='1']");
     
     // Open ended ranges without currency
     assertQ(req("fl", "*,score", "q",
-            field()+":[* TO *]"),
+            fieldName+":[* TO *]"),
             "//*[@numFound='" + (2 + 10 + negDocs) + "']");
     
     // Open ended ranges with currency
     assertQ(req("fl", "*,score", "q",
-            field()+":[*,EUR TO *,EUR]"),
+            fieldName+":[*,EUR TO *,EUR]"),
             "//*[@numFound='" + (2 + 10 + negDocs) + "']");
 
     // Open ended start range without currency
     assertQ(req("fl", "*,score", "q",
-            field()+":[* TO 5,USD]"),
+            fieldName+":[* TO 5,USD]"),
             "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
     // Open ended start range with currency (currency for the * won't matter)
     assertQ(req("fl", "*,score", "q",
-            field()+":[*,USD TO 5,USD]"),
+            fieldName+":[*,USD TO 5,USD]"),
             "//*[@numFound='" + (2 + 5 + negDocs) + "']");
 
     // Open ended end range
     assertQ(req("fl", "*,score", "q",
-            field()+":[3 TO *]"),
+            fieldName+":[3 TO *]"),
             "//*[@numFound='8']");
   }
 
@@ -220,23 +251,26 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     // bogus currency
     assertQEx("Expected exception for invalid currency",
               req("fl", "*,score", "q",
-                  field()+":[3,HOSS TO *]"),
+                  fieldName+":[3,HOSS TO *]"),
               400);
   }
 
   @Test
   public void testCurrencyPointQuery() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+        expectedProviderClass.equals(FileExchangeRateProvider.class));
+
     clearIndex();
-    assertU(adoc("id", "" + 1, field(), "10.00,USD"));
-    assertU(adoc("id", "" + 2, field(), "15.00,MXN"));
+    assertU(adoc("id", "" + 1, fieldName, "10.00,USD"));
+    assertU(adoc("id", "" + 2, fieldName, "15.00,MXN"));
     assertU(commit());
-    assertQ(req("fl", "*,score", "q", field()+":10.00,USD"), "//str[@name='id']='1'");
-    assertQ(req("fl", "*,score", "q", field()+":9.99,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", field()+":10.01,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", field()+":15.00,MXN"), "//str[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", field()+":7.50,USD"), "//str[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", field()+":7.49,USD"), "//*[@numFound='0']");
-    assertQ(req("fl", "*,score", "q", field()+":7.51,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", fieldName+":10.00,USD"), "//str[@name='id']='1'");
+    assertQ(req("fl", "*,score", "q", fieldName+":9.99,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", fieldName+":10.01,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", fieldName+":15.00,MXN"), "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", fieldName+":7.50,USD"), "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", fieldName+":7.49,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", fieldName+":7.51,USD"), "//*[@numFound='0']");
   }
 
   @Ignore
@@ -247,7 +281,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     int initDocs = 200000;
 
     for (int i = 1; i <= initDocs; i++) {
-      assertU(adoc("id", "" + i, field(), (r.nextInt(10) + 1.00) + ",USD"));
+      assertU(adoc("id", "" + i, fieldName, (r.nextInt(10) + 1.00) + ",USD"));
       if (i % 1000 == 0)
         System.out.println(i);
     }
@@ -255,15 +289,15 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     assertU(commit());
     for (int i = 0; i < 1000; i++) {
       double lower = r.nextInt(10) + 1.00;
-      assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",USD TO " + (lower + 10.00) + ",USD]"), "//*");
-      assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",EUR TO " + (lower + 10.00) + ",EUR]"), "//*");
+      assertQ(req("fl", "*,score", "q", fieldName+":[" +  lower + ",USD TO " + (lower + 10.00) + ",USD]"), "//*");
+      assertQ(req("fl", "*,score", "q", fieldName+":[" +  lower + ",EUR TO " + (lower + 10.00) + ",EUR]"), "//*");
     }
 
     for (int j = 0; j < 3; j++) {
       final RTimer timer = new RTimer();
       for (int i = 0; i < 1000; i++) {
         double lower = r.nextInt(10) + 1.00;
-        assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",USD TO " + (lower + (9.99 - (j * 0.01))) + ",USD]"), "//*");
+        assertQ(req("fl", "*,score", "q", fieldName+":[" +  lower + ",USD TO " + (lower + (9.99 - (j * 0.01))) + ",USD]"), "//*");
       }
 
       System.out.println(timer.getTime());
@@ -275,7 +309,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
       final RTimer timer = new RTimer();
       for (int i = 0; i < 1000; i++) {
         double lower = r.nextInt(10) + 1.00;
-        assertQ(req("fl", "*,score", "q", field()+":[" +  lower + ",EUR TO " + (lower + (9.99 - (j * 0.01))) + ",EUR]"), "//*");
+        assertQ(req("fl", "*,score", "q", fieldName+":[" +  lower + ",EUR TO " + (lower + (9.99 - (j * 0.01))) + ",EUR]"), "//*");
       }
 
       System.out.println(timer.getTime());
@@ -284,27 +318,42 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencySort() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+        expectedProviderClass.equals(FileExchangeRateProvider.class));
+
     clearIndex();
 
-    assertU(adoc("id", "" + 1, field(), "10.00,USD"));
-    assertU(adoc("id", "" + 2, field(), "15.00,EUR"));
-    assertU(adoc("id", "" + 3, field(), "7.00,EUR"));
-    assertU(adoc("id", "" + 4, field(), "6.00,GBP"));
-    assertU(adoc("id", "" + 5, field(), "2.00,GBP"));
+    assertU(adoc("id", "" + 1, fieldName, "10.00,USD"));
+    assertU(adoc("id", "" + 2, fieldName, "15.00,EUR"));
+    assertU(adoc("id", "" + 3, fieldName, "7.00,EUR"));
+    assertU(adoc("id", "" + 4, fieldName, "6.00,GBP"));
+    assertU(adoc("id", "" + 5, fieldName, "2.00,GBP"));
     assertU(commit());
 
-    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" desc", "limit", "1"), "//str[@name='id']='4'");
-    assertQ(req("fl", "*,score", "q", "*:*", "sort", field()+" asc", "limit", "1"), "//str[@name='id']='3'");
+    assertQ(req("fl", "*,score", "q", "*:*", "sort", fieldName+" desc", "limit", "1"), "//str[@name='id']='4'");
+    assertQ(req("fl", "*,score", "q", "*:*", "sort", fieldName+" asc", "limit", "1"), "//str[@name='id']='3'");
   }
 
+  public void testExpectedProvider() {
+      SolrCore core = h.getCore();
+      IndexSchema schema = core.getLatestSchema();
+      SchemaField field = schema.getField(fieldName);
+      FieldType fieldType = field.getType();
+      ExchangeRateProvider provider = ((CurrencyFieldType)fieldType).getProvider();
+      assertEquals(expectedProviderClass, provider.getClass());
+    }
+  
   public void testFunctionUsage() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+        expectedProviderClass.equals(FileExchangeRateProvider.class));
+
     clearIndex();
     for (int i = 1; i <= 8; i++) {
       // "GBP" currency code is 1/2 of a USD dollar, for testing.
-      assertU(adoc("id", "" + i, field(), (((float)i)/2) + ",GBP"));
+      assertU(adoc("id", "" + i, fieldName, (((float)i)/2) + ",GBP"));
     }
     for (int i = 9; i <= 11; i++) {
-      assertU(adoc("id", "" + i, field(), i + ",USD"));
+      assertU(adoc("id", "" + i, fieldName, i + ",USD"));
     }
 
     assertU(commit());
@@ -312,17 +361,17 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     // direct value source usage, gets "raw" form od default currency
     // default==USD, so raw==penies
     assertQ(req("fl", "id,func:field($f)",
-                "f", field(),
+                "f", fieldName,
                 "q", "id:5"),
             "//*[@numFound='1']",
             "//doc/float[@name='func' and .=500]");
     assertQ(req("fl", "id,func:field($f)",
-                "f", field(),
+                "f", fieldName,
                 "q", "id:10"),
             "//*[@numFound='1']",
             "//doc/float[@name='func' and .=1000]");
-    assertQ(req("fl", "id,score,"+field(), 
-                "q", "{!frange u=500}"+field())
+    assertQ(req("fl", "id,score,"+fieldName, 
+                "q", "{!frange u=500}"+fieldName)
             ,"//*[@numFound='5']"
             ,"//str[@name='id']='1'"
             ,"//str[@name='id']='2'"
@@ -330,8 +379,8 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
             ,"//str[@name='id']='4'"
             ,"//str[@name='id']='5'"
             );
-    assertQ(req("fl", "id,score,"+field(), 
-                "q", "{!frange l=500 u=1000}"+field())
+    assertQ(req("fl", "id,score,"+fieldName, 
+                "q", "{!frange l=500 u=1000}"+fieldName)
             ,"//*[@numFound='6']"
             ,"//str[@name='id']='5'"
             ,"//str[@name='id']='6'"
@@ -343,17 +392,17 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
 
     // use the currency function to convert to default (USD)
     assertQ(req("fl", "id,func:currency($f)",
-                "f", field(),
+                "f", fieldName,
                 "q", "id:10"),
             "//*[@numFound='1']",
             "//doc/float[@name='func' and .=10]");
     assertQ(req("fl", "id,func:currency($f)",
-                "f", field(),
+                "f", fieldName,
                 "q", "id:5"),
             "//*[@numFound='1']",
             "//doc/float[@name='func' and .=5]");
-    assertQ(req("fl", "id,score"+field(), 
-                "f", field(),
+    assertQ(req("fl", "id,score"+fieldName, 
+                "f", fieldName,
                 "q", "{!frange u=5}currency($f)")
             ,"//*[@numFound='5']"
             ,"//str[@name='id']='1'"
@@ -362,8 +411,8 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
             ,"//str[@name='id']='4'"
             ,"//str[@name='id']='5'"
             );
-    assertQ(req("fl", "id,score"+field(), 
-                "f", field(),
+    assertQ(req("fl", "id,score"+fieldName, 
+                "f", fieldName,
                 "q", "{!frange l=5 u=10}currency($f)")
             ,"//*[@numFound='6']"
             ,"//str[@name='id']='5'"
@@ -376,17 +425,17 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
     
     // use the currency function to convert to MXN
     assertQ(req("fl", "id,func:currency($f,MXN)",
-                "f", field(),
+                "f", fieldName,
                 "q", "id:5"),
             "//*[@numFound='1']",
             "//doc/float[@name='func' and .=10]");
     assertQ(req("fl", "id,func:currency($f,MXN)",
-                "f", field(),
+                "f", fieldName,
                 "q", "id:10"),
             "//*[@numFound='1']",
             "//doc/float[@name='func' and .=20]");
-    assertQ(req("fl", "*,score,"+field(), 
-                "f", field(),
+    assertQ(req("fl", "*,score,"+fieldName, 
+                "f", fieldName,
                 "q", "{!frange u=10}currency($f,MXN)")
             ,"//*[@numFound='5']"
             ,"//str[@name='id']='1'"
@@ -395,8 +444,8 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
             ,"//str[@name='id']='4'"
             ,"//str[@name='id']='5'"
             );
-    assertQ(req("fl", "*,score,"+field(), 
-                "f", field(),
+    assertQ(req("fl", "*,score,"+fieldName, 
+                "f", fieldName,
                 "q", "{!frange l=10 u=20}currency($f,MXN)")
             ,"//*[@numFound='6']"
             ,"//str[@name='id']='5'"
@@ -411,16 +460,35 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMockFieldType() throws Exception {
+    assumeTrue("This test is only applicable to the mock exchange rate provider",
+        expectedProviderClass.equals(MockExchangeRateProvider.class));
+
     clearIndex();
 
-    assertU(adoc("id", "1", "mock_amount", "1.00,USD"));
-    assertU(adoc("id", "2", "mock_amount", "1.00,EUR"));
-    assertU(adoc("id", "3", "mock_amount", "1.00,NOK"));
+    assertU(adoc("id", "1", fieldName, "1.00,USD"));
+    assertU(adoc("id", "2", fieldName, "1.00,EUR"));
+    assertU(adoc("id", "3", fieldName, "1.00,NOK"));
     assertU(commit());
 
-    assertQ(req("fl", "*,score", "q", "mock_amount:5.0,NOK"),   "//*[@numFound='1']", "//str[@name='id']='1'");
-    assertQ(req("fl", "*,score", "q", "mock_amount:1.2,USD"), "//*[@numFound='1']",   "//str[@name='id']='2'");
-    assertQ(req("fl", "*,score", "q", "mock_amount:0.2,USD"), "//*[@numFound='1']",   "//str[@name='id']='3'");
-    assertQ(req("fl", "*,score", "q", "mock_amount:99,USD"),  "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", fieldName+":5.0,NOK"),   "//*[@numFound='1']", "//str[@name='id']='1'");
+    assertQ(req("fl", "*,score", "q", fieldName+":1.2,USD"), "//*[@numFound='1']",   "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", fieldName+":0.2,USD"), "//*[@numFound='1']",   "//str[@name='id']='3'");
+    assertQ(req("fl", "*,score", "q", fieldName+":99,USD"),  "//*[@numFound='0']");
+  }
+
+  @Test
+  public void testAsymmetricPointQuery() throws Exception {
+    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+        expectedProviderClass.equals(FileExchangeRateProvider.class));
+
+    clearIndex();
+    assertU(adoc("id", "" + 1, fieldName, "10.00,USD"));
+    assertU(adoc("id", "" + 2, fieldName, "15.00,EUR"));
+    assertU(commit());
+
+    assertQ(req("fl", "*,score", "q", fieldName+":15.00,EUR"), "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", fieldName+":7.50,USD"), "//str[@name='id']='2'");
+    assertQ(req("fl", "*,score", "q", fieldName+":7.49,USD"), "//*[@numFound='0']");
+    assertQ(req("fl", "*,score", "q", fieldName+":7.51,USD"), "//*[@numFound='0']");
   }
 }
