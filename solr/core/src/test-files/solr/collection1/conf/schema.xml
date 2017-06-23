@@ -451,6 +451,17 @@
              multiValued="false"
              providerClass="solr.OpenExchangeRatesOrgProvider"
              ratesFileLocation="open-exchange-rates.json"/>
+  <fieldType name="currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
+             currencyConfig="currency.xml" multiValued="false"/>
+  <fieldType name="mock_currency_CFT" class="solr.CurrencyFieldType" amountLongSuffix="_l1_ns" codeStrSuffix="_s1"
+             providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false"/>
+  <fieldType name="oer_currency_CFT"
+             class="solr.CurrencyFieldType"
+             amountLongSuffix="_l1_ns"
+             codeStrSuffix="_s1_ns"
+             multiValued="false"
+             providerClass="solr.OpenExchangeRatesOrgProvider"
+             ratesFileLocation="open-exchange-rates.json"/>
 
   <!-- omitPositions example -->
   <fieldType name="nopositions" class="solr.TextField" omitPositions="true">
@@ -539,6 +550,9 @@
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
   <field name="mock_amount" type="mock_currency" indexed="true" stored="true"/>
   <field name="oer_amount" type="oer_currency" indexed="true" stored="true"/>
+  <field name="amount_CFT" type="currency_CFT" indexed="true" stored="true" multiValued="false"/>
+  <field name="mock_amount_CFT" type="mock_currency_CFT" indexed="true" stored="true"/>
+  <field name="oer_amount_CFT" type="oer_currency_CFT" indexed="true" stored="true"/>
 
   <!-- test different combinations of indexed and stored -->
   <field name="bind" type="boolean" indexed="true" stored="false"/>
@@ -652,8 +666,10 @@
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_s1_ns" type="string" indexed="true" stored="false" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_l1" type="long" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_l1_ns" type="long" indexed="true" stored="false" multiValued="false"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_b1" type="boolean" indexed="true" stored="true" multiValued="false"/>

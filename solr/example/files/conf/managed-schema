@@ -13,7 +13,7 @@
   <fieldType name="binary" class="solr.BinaryField"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" defaultCurrency="USD" precisionStep="8"/>
+  <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l_ns" codeStrSuffix="_s_ns" defaultCurrency="USD" currencyConfig="currency.xml" />
   <fieldType name="date" class="solr.TrieDateField" positionIncrementGap="0" precisionStep="0"/>
   <fieldType name="dates" class="solr.TrieDateField" positionIncrementGap="0" multiValued="true" precisionStep="0"/>
   <fieldType name="descendent_path" class="solr.TextField">
@@ -504,6 +504,8 @@
   <dynamicField name="*_tdts" type="tdates" indexed="true" stored="true"/>
   <dynamicField name="attr_*" type="text_general" multiValued="true" indexed="true" stored="true"/>
   <dynamicField name="*_pdts" type="pdates"  indexed="true"  stored="true"/>
+  <dynamicField name="*_l_ns" type="long" indexed="true" stored="false"/>
+  <dynamicField name="*_s_ns" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
   <dynamicField name="*_dts" type="date" multiValued="true" indexed="true" stored="true"/>
   <dynamicField name="*_tis" type="tints" indexed="true" stored="true"/>

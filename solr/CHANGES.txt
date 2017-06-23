@@ -343,6 +343,8 @@ Upgrade Notes
 
 * SOLR-10379: ManagedSynonymFilterFactory has been deprecated in favor of ManagedSynonymGraphFilterFactory.
 
+* SOLR-10503: CurrencyField has been deprecated in favor of new CurrencyFieldType.
+
 New Features
 ----------------------
 
@@ -489,6 +491,10 @@ Other Changes
 * SOLR-10883: Ref guide: Escape replacement substitutions, e.g. => to right arrow, so that they are
   rendered visibly in the PDF.  Also add .adoc file checks to the top-level validate target, including
   for the invisible substitutions PDF problem.  (Steve Rowe)
+
+* SOLR-10503,SOLR-10502: Deprecate CurrencyField in favor of new CurrencyFieldType, which works
+  with point fields and provides control over dynamic fields used for the raw amount and currency
+  code sub-fields.  (hossman, Steve Rowe)
 
 ==================  6.6.1 ==================
 
