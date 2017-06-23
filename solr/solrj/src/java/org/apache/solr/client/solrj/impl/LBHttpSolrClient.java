@@ -955,9 +955,11 @@ public class LBHttpSolrClient extends SolrClient {
     public LBHttpSolrClient build() {
       final String[] baseUrlArray = new String[baseSolrUrls.size()];
       String[] solrServerUrls = baseSolrUrls.toArray(baseUrlArray);
-      return httpSolrClientBuilder != null ?
-          new LBHttpSolrClient(httpSolrClientBuilder, httpClient, solrServerUrls) :
-          new LBHttpSolrClient(httpClient, responseParser, solrServerUrls);
+      if (httpSolrClientBuilder != null) {
+        return new LBHttpSolrClient(httpSolrClientBuilder, httpClient, solrServerUrls);
+      } else {
+        return new LBHttpSolrClient(httpClient, responseParser, solrServerUrls);
+      }
     }
   }
 }
