@@ -175,27 +175,27 @@ public class Tests {
 
 			if (nodes == 2 && shards == "1" && replicas == "2") {
 
-/*				String collectionName1 = "" + UUID.randomUUID();
+				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, numDocuments, 1,
+						cloud.getuRL(), collectionName1, 1, 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
-*/
+
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 1,
+						cloud.getuRL(), collectionName2, 1, 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
-/*
+
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, numDocuments, 3,
+						cloud.getuRL(), collectionName3, 1, 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
-*/
+
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
 
 				String collectionName1 = "" + UUID.randomUUID();
@@ -279,12 +279,13 @@ public class Tests {
 		return true;
 	}
 
-	private static Map<String, String> numericQueryTests(String commitID, QueryType queryType, int numberOfThreads,
-			int secondsToWait, long delayEstimationBySeconds, ConfigurationType confType, String baseURL,
+	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType, int numberOfThreads,
+			int estimationDuration, long delayEstimationBySeconds, String baseURL,
 			String collectionName) {
 
 		try {
 			QueryClient.reset();
+			QueryClient.prepare();
 
 			ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 			LinkedList<QueryClient> list = new LinkedList<QueryClient>();
@@ -301,7 +302,7 @@ public class Tests {
 				executorService.execute(list.get(i));
 			}
 
-			Thread.sleep(secondsToWait * 1000);
+			Thread.sleep(estimationDuration * 1000);
 
 			QueryClient.running = false;
 
@@ -318,10 +319,11 @@ public class Tests {
 			returnMap.put("CommitID", commitID);
 			returnMap.put("TotalQueriesExecuted", "" + QueryClient.queryCount);
 			returnMap.put("QueriesPerSecond",
-					"" + (double) (QueryClient.queryCount / (secondsToWait - delayEstimationBySeconds)));
+					"" + (double) (QueryClient.queryCount / (QueryClient.totalQTime/1000d)));
 			returnMap.put("MinQTime", "" + QueryClient.minQtime);
 			returnMap.put("MaxQTime", "" + QueryClient.maxQtime);
 			returnMap.put("QueryFailureCount", "" + QueryClient.queryFailureCount);
+			returnMap.put("TotalQTime", "" + QueryClient.totalQTime);
 			returnMap.put("75thQtime", "" + QueryClient.getNthPercentileQTime(75));
 			returnMap.put("95thQtime", "" + QueryClient.getNthPercentileQTime(95));
 			returnMap.put("99thQtime", "" + QueryClient.getNthPercentileQTime(99));
@@ -338,6 +340,7 @@ public class Tests {
 
 		return null;
 	}
+
 
 	private static String setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
 			String replicas, int queueSize) throws InterruptedException {
@@ -385,7 +388,7 @@ public class Tests {
 	private static void shutDownStandalone() throws IOException, InterruptedException {
 
 		Util.postMessage("** Shutting down standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
-
+		node.deleteCollection(node.collectionName);
 		node.doAction(SolrNodeAction.NODE_STOP);
 		node.cleanup();
 	}
@@ -395,14 +398,14 @@ public class Tests {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on cloud ...", MessageType.PURPLE_TEXT, false);
 
-		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 50000, 2, "2", "1", 5000);
+		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 10000, 2, "2", "1", 5000);
 
 		Thread numericQueryTNQMetricC = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_CLOUD, port));
 		numericQueryTNQMetricC.start();
 
 		BenchmarkReportData.numericQueryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
+				QueryClient.QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30,Tests.cloud.getuRL(),  
 				Tests.cloud.collectionName);
 
 		numericQueryTNQMetricC.stop();
@@ -412,8 +415,8 @@ public class Tests {
 		numericQueryRNQMetricC.start();
 
 		BenchmarkReportData.numericQueryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD,
-				Tests.cloud.getuRL(), Tests.cloud.collectionName);
+				QueryClient.QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30,
+				Tests.cloud.getuRL(),  Tests.cloud.collectionName);
 
 		numericQueryRNQMetricC.stop();
 
@@ -422,7 +425,7 @@ public class Tests {
 		numericQueryLNQMetricC.start();
 
 		BenchmarkReportData.numericQueryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD,
+				QueryClient.QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30,
 				Tests.cloud.getuRL(), Tests.cloud.collectionName);
 
 		numericQueryLNQMetricC.stop();
@@ -432,7 +435,7 @@ public class Tests {
 		numericQueryGNQMetricC.start();
 
 		BenchmarkReportData.numericQueryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD,
+				QueryClient.QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30,
 				Tests.cloud.getuRL(), Tests.cloud.collectionName);
 
 		numericQueryGNQMetricC.stop();
@@ -442,8 +445,8 @@ public class Tests {
 		numericQueryANQMetricC.start();
 
 		BenchmarkReportData.numericQueryANQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.AND_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(),
-				Tests.cloud.collectionName);
+				QueryClient.QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30, 
+				Tests.cloud.getuRL(), Tests.cloud.collectionName);
 
 		numericQueryANQMetricC.stop();
 
@@ -451,8 +454,8 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.OR_NUMERIC_QUERY_CLOUD, port));
 		numericQueryONQMetricC.start();
 
-		BenchmarkReportData.numericQueryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				queryThreadCount, 180, 120, ConfigurationType.CLOUD, Tests.cloud.getuRL(), Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryClient.QueryType.OR_NUMERIC_QUERY,
+				queryThreadCount, 120, 30, Tests.cloud.getuRL(), Tests.cloud.collectionName);
 
 		numericQueryONQMetricC.stop();
 
@@ -465,15 +468,14 @@ public class Tests {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on standalone node ...", MessageType.PURPLE_TEXT, false);
 
-		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 50000);
+		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
 
 		Thread numericQueryTNQMetricS = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryTNQMetricS.start();
 
 		BenchmarkReportData.numericQueryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.STANDALONE,
-				Tests.node.getBaseUrl(), Tests.node.collectionName);
+				QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryTNQMetricS.stop();
 
@@ -482,7 +484,7 @@ public class Tests {
 		numericQueryRNQMetricS.start();
 
 		BenchmarkReportData.numericQueryRNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.STANDALONE,
+				QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30, 
 				Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryRNQMetricS.stop();
@@ -492,7 +494,7 @@ public class Tests {
 		numericQueryLNQMetricS.start();
 
 		BenchmarkReportData.numericQueryLNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.STANDALONE,
+				QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, 
 				Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryLNQMetricS.stop();
@@ -502,7 +504,7 @@ public class Tests {
 		numericQueryGNQMetricS.start();
 
 		BenchmarkReportData.numericQueryGNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.STANDALONE,
+				QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, 
 				Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryGNQMetricS.stop();
@@ -512,7 +514,7 @@ public class Tests {
 		numericQueryANQMetricS.start();
 
 		BenchmarkReportData.numericQueryANQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.AND_NUMERIC_QUERY, queryThreadCount, 180, 120, ConfigurationType.STANDALONE,
+				QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30,
 				Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryANQMetricS.stop();
@@ -522,7 +524,7 @@ public class Tests {
 		numericQueryONQMetricS.start();
 
 		BenchmarkReportData.numericQueryONQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				queryThreadCount, 180, 120, ConfigurationType.STANDALONE, Tests.node.getBaseUrl(),
+				queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
 		numericQueryONQMetricS.stop();

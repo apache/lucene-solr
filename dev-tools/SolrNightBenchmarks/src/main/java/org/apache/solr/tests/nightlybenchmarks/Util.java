@@ -793,7 +793,7 @@ public class Util {
 				
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
 				
-				for (int i = 0; i < currentCommits.length; i++) {
+				for (int i = 0; i < 1; i++) {
 					
 						String commitIDFromQueue = currentCommits[i].getName();
 						Util.COMMIT_ID = commitIDFromQueue;

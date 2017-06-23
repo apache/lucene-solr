@@ -1,5 +1,8 @@
 package org.apache.solr.tests.nightlybenchmarks;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +23,7 @@ package org.apache.solr.tests.nightlybenchmarks;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -54,6 +58,7 @@ public class QueryClient implements Runnable {
 
 	public static boolean running;
 	public static long queryCount = 0;
+	public static long totalQTime = 0;
 	public static long minQtime = Long.MAX_VALUE;
 	public static long maxQtime = Long.MIN_VALUE;
 	public static long queryFailureCount = 0;
@@ -63,9 +68,16 @@ public class QueryClient implements Runnable {
 	public static long[] qTimePercentileList = new long[10000000];
 	public static int qTimePercentileListPointer = 0;
 
+	public static ConcurrentLinkedQueue<String> termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> lesserNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+
+
 	Random random = new Random();
 
-	@SuppressWarnings("deprecation")
 	public QueryClient(String urlString, String collectionName, QueryType queryType,
 			long numberOfThreads, long delayEstimationBySeconds) {
 		super();
@@ -75,13 +87,58 @@ public class QueryClient implements Runnable {
 		this.numberOfThreads = numberOfThreads;
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
 
-		solrClient = new HttpSolrClient(urlString);
+		solrClient = new HttpSolrClient.Builder(urlString).build();
 		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ...", MessageType.GREEN_TEXT, false);
+	}
+	
+	public static void prepare() {
+		Util.postMessage("** Preparing Term Query queue ...", MessageType.CYAN_TEXT, false);
+		
+		termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		lesserNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		
+		String line = "";
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + "Numeric-Term-Query.txt"))) {
+
+			while ((line = br.readLine()) != null) {
+								termNumericQueryParameterList.add(line.trim());
+								greaterNumericQueryParameterList.add(line.trim());
+								lesserNumericQueryParameterList.add(line.trim());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		Util.postMessage("** Preparing query pair data queue ...", MessageType.CYAN_TEXT, false);
+		
+		line = "";
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + "Numeric-Pair-Query-Data.txt"))) {
+
+			while ((line = br.readLine()) != null) {
+								rangeNumericQueryParameterList.add(line.trim());
+								andNumericQueryParameterList.add(line.trim());
+								orNumericQueryParameterList.add(line.trim());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+	
 	}
 
 	public void run() {
 
 		long elapsedTime;
+
+		NamedList<String> requestParams = new NamedList<>();
+		requestParams.add("defType", "edismax");
+		requestParams.add("wt", "json");
 
 		startTime = System.currentTimeMillis();
 		while (true) {
@@ -95,56 +152,66 @@ public class QueryClient implements Runnable {
 				// Critical Section ....
 				SolrResponse response = null;
 				try {
-					NamedList<String> list = new NamedList<>();
-					list.add("defType", "edismax");
-					list.add("wt", "json");
+					requestParams.remove("q");
 					
 					if (this.queryType == QueryType.TERM_NUMERIC_QUERY) {
-						list.add("q", "Int1:"
-								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount)));
+						requestParams.add("q", "Int1:"+ termNumericQueryParameterList.poll());
 					} else if (this.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
-						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
-						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+						String pairData[] = rangeNumericQueryParameterList.poll().trim().split(",");
+						
+						int ft_1 = Integer.parseInt(pairData[0]);
+						int ft_2 = Integer.parseInt(pairData[1]);
 
 						if (ft_2 > ft_1) {
-							list.add("q", "Int1:[" + ft_1 + " TO " + ft_2 + "]");
+							requestParams.add("q", "Int1:[" + ft_1 + " TO " + ft_2 + "]");
 						} else {
-							list.add("q", "Int1:[" + ft_2 + " TO " + ft_1 + "]");
+							requestParams.add("q", "Int1:[" + ft_2 + " TO " + ft_1 + "]");
 						}
 
 					} else if (this.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
-						list.add("q", "Int1:["
-								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount))
+						requestParams.add("q", "Int1:["
+								+ greaterNumericQueryParameterList.poll()
 								+ " TO *]");
 					} else if (this.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
-						list.add("q", "Int1:[* TO "
-								+ SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount))
+						requestParams.add("q", "Int1:[* TO "
+								+ lesserNumericQueryParameterList.poll()
 								+ "]");
 					} else if (this.queryType == QueryType.AND_NUMERIC_QUERY) {
 
-						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
-						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+						String pairData[] = andNumericQueryParameterList.poll().trim().split(",");
+						
+						int ft_1 = Integer.parseInt(pairData[0]);
+						int ft_2 = Integer.parseInt(pairData[1]);
 
-						list.add("q", "Int1:" + ft_1 + " AND Int1:" + ft_2);
+						requestParams.add("q", "Int1:" + ft_1 + " AND Int1:" + ft_2);
 
 					} else if (this.queryType == QueryType.OR_NUMERIC_QUERY) {
 
-						int ft_1 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
-						int ft_2 = SolrIndexingClient.intList.get(random.nextInt(SolrIndexingClient.documentCount));
+						String pairData[] = orNumericQueryParameterList.poll().trim().split(",");
+						
+						int ft_1 = Integer.parseInt(pairData[0]);
+						int ft_2 = Integer.parseInt(pairData[1]);
 
-						list.add("q", "Int1:" + ft_1 + " OR Int1:" + ft_2);
+						requestParams.add("q", "Int1:" + ft_1 + " OR Int1:" + ft_2);
 
 					} 
 
-					params = SolrParams.toSolrParams(list);
+					params = SolrParams.toSolrParams(requestParams);
 
 					response = this.fireQuery(collectionName, params);
 
 					if ((System.currentTimeMillis() - startTime) >= (delayEstimationBySeconds * 1000)) {
 						setQueryCounter();
 						elapsedTime = response.getElapsedTime();
+						setTotalQTime(elapsedTime);
 						setMinMaxQTime(elapsedTime);
+					} else {
+						// This is deliberately done to warm up document cache ...
+						requestParams.remove("q");
+						requestParams.add("q", "*:*");
+						params = SolrParams.toSolrParams(requestParams);
+						response = solrClient.query(collectionName, params);
 					}
 
 				} catch (SolrServerException | IOException e) {
@@ -179,6 +246,15 @@ public class QueryClient implements Runnable {
 		queryCount++;
 	}
 
+	private synchronized void setTotalQTime(long qTime) {
+
+		if (running == false) {
+			return;
+		}
+
+		totalQTime += qTime;
+	}
+	
 	private synchronized void setQueryFailureCount() {
 
 		queryFailureCount++;
@@ -237,6 +313,16 @@ public class QueryClient implements Runnable {
 		percentilesObjectCreated = false;
 		qTimePercentileList = new long[10000000];
 		qTimePercentileListPointer = 0;
+		totalQTime = 0;
+
+		
+		termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		lesserNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+
 	}
 
 }

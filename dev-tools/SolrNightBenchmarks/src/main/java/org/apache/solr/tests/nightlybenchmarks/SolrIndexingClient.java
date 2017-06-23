@@ -100,6 +100,7 @@ public class SolrIndexingClient {
 				
 				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				
+				
 				solrClient.add(document);
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
@@ -110,7 +111,7 @@ public class SolrIndexingClient {
 
 			solrClient.commit();
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
-
+			
 			if (deleteData) {
 			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
 			solrClient.deleteByQuery("*:*");
@@ -126,9 +127,9 @@ public class SolrIndexingClient {
 			br.close();
 
 
-		} catch (SolrServerException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (SolrServerException e) {
 			e.printStackTrace();
 		}
 
@@ -307,7 +308,6 @@ public class SolrIndexingClient {
 			start = System.currentTimeMillis();
 			for (int i = 0 ; i < length; i ++) {
 				solrClient.add(collectionName, docList.get(i));
-				Util.postMessageOnLine("\r" + i);
 			}
 			//solrClient.blockUntilFinished();
 			end =  System.currentTimeMillis();

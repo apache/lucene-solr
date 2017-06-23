@@ -27,22 +27,23 @@ public class TestPlans {
 		
 		Util.COMMIT_ID = commitID;
 		
-//		Tests.indexingTestsStandalone(Util.COMMIT_ID, 10000);
-//		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
+//		Tests.indexingTestsStandalone(Util.COMMIT_ID, 100000);
 		
-//		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 50000);
+		//Tests.createCollectionTestStandalone(Util.COMMIT_ID);
 		
-//     	Tests.runNumericQueryTestsStandalone();
+//		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 100000);
+		
+     	Tests.runNumericQueryTestsStandalone();
 
 /*		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000, 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000, 2, "2", "1");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000, 3, "1", "3");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 10000, 4, "2", "2");
-*/
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 5000, 2, "1", "2");
-/*		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 50000, 2, "2", "1");
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 50000, 3, "1", "3");
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 50000, 4, "2", "2");
+
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 10000, 2, "1", "2");
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 10000, 2, "2", "1");
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 10000, 3, "1", "3");
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 10000, 4, "2", "2");
 		
 		Tests.runNumericTestsCloud();
 */
