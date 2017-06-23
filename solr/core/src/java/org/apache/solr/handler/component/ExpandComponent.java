@@ -216,8 +216,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
-        values = uninvertingReader.getSortedDocValues(field);
+        try (UninvertingReader uninvertingReader = new UninvertingReader(
+            new ReaderWrapper(
+                searcher.getSlowAtomicReader(),
+                field),
+            mapping)) {
+          values = uninvertingReader.getSortedDocValues(field);
+        }
       } else {
         values = DocValues.getSorted(reader, field);
       }

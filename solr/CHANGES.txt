@@ -199,6 +199,8 @@ Bug Fixes
   thus disabling the global check, and replaces it with specific checks where desired via
   QueryUtils.build().  (yonik)
 
+* SOLR-10907: Fix Resource Leak warning in ExpandComponent. (Christine Poerschke)
+
 Optimizations
 ----------------------
 
