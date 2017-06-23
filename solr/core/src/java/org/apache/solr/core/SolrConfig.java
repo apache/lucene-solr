@@ -375,6 +375,14 @@ public class SolrConfig extends Config implements MapSerializable {
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
 
+  {
+    // non-static setMaxClauseCount because the test framework sometimes reverts the value on us and
+    // the static setting above is only executed once.  This re-sets the value every time a SolrConfig
+    // obect is created. See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+  }
+
+
   public static class SolrPluginInfo {
 
     public final Class clazz;
