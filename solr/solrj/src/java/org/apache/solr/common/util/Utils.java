@@ -213,13 +213,72 @@ public class Utils {
   }
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
-    if(root == null) return null;
-    if(!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
     List<String> parts = StrUtils.splitSmart(hierarchy, '/');
     if (parts.get(0).isEmpty()) parts.remove(0);
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
+  public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
+    List<String> parts = StrUtils.splitSmart(hierarchy, '/');
+    if (parts.get(0).isEmpty()) parts.remove(0);
+    return setObjectByPath(root, parts, value);
+  }
+
+  public static boolean setObjectByPath(Object root, List<String> hierarchy, Object value) {
+    if (root == null) return false;
+    if (!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
+    Object obj = root;
+    for (int i = 0; i < hierarchy.size(); i++) {
+      int idx = -2; //-1 means append to list, -2 means not found
+      String s = hierarchy.get(i);
+      if (s.endsWith("]")) {
+        Matcher matcher = ARRAY_ELEMENT_INDEX.matcher(s);
+        if (matcher.find()) {
+          s = matcher.group(1);
+          idx = Integer.parseInt(matcher.group(2));
+        }
+      }
+      if (i < hierarchy.size() - 1) {
+        Object o = getVal(obj, s);
+        if (o == null) return false;
+        if (idx > -1) {
+          List l = (List) o;
+          o = idx < l.size() ? l.get(idx) : null;
+        }
+        if (!isMapLike(o)) return false;
+        obj = o;
+      } else {
+        if (idx == -2) {
+          if (obj instanceof NamedList) {
+            NamedList namedList = (NamedList) obj;
+            int location = namedList.indexOf(s, 0);
+            if (location == -1) namedList.add(s, value);
+            else namedList.setVal(location, value);
+          } else if (obj instanceof Map) {
+            ((Map) obj).put(s, value);
+          }
+          return true;
+        } else {
+          Object v = getVal(obj, s);
+          if (v instanceof List) {
+            List list = (List) v;
+            if (idx == -1) {
+              list.add(value);
+            } else {
+              if (idx < list.size()) list.set(idx, value);
+              else return false;
+            }
+            return true;
+          } else {
+            return false;
+          }
+        }
+      }
+    }
+
+    return false;
+
+  }
 
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, List<String> hierarchy) {
@@ -326,7 +385,7 @@ public class Utils {
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
-      .compile("(\\S*?)\\[(\\d+)\\]");
+      .compile("(\\S*?)\\[([-]?\\d+)\\]");
 
   public static SpecProvider getSpec(final String name) {
     return () -> {
