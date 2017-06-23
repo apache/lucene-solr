@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +40,15 @@ class Row implements MapWriter {
   Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
   List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
+  boolean isLive = true;
 
   Row(String node, List<String> params, ClusterDataProvider dataProvider) {
     collectionVsShardVsReplicas = dataProvider.getReplicaInfo(node, params);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    Map<String, Object> vals = dataProvider.getNodeValues(node, params);
+    isLive = dataProvider.getNodes().contains(node);
+    Map<String, Object> vals = isLive ? dataProvider.getNodeValues(node, params) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
       cells[i] = new Cell(i, s, Clause.validate(s,vals.get(s), false));
@@ -54,8 +57,10 @@ class Row implements MapWriter {
     }
   }
 
-  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, List<Clause> violations) {
+  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
+      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, List<Clause> violations, boolean isLive) {
     this.node = node;
+    this.isLive = isLive;
     this.cells = new Cell[cells.length];
     for (int i = 0; i < this.cells.length; i++) {
       this.cells[i] = cells[i].copy();
@@ -75,7 +80,7 @@ class Row implements MapWriter {
   }
 
   Row copy() {
-    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), new ArrayList<>(violations));
+    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), new ArrayList<>(violations), isLive);
   }
 
   Object getVal(String name) {
@@ -95,7 +100,9 @@ class Row implements MapWriter {
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
     replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
     for (Cell cell : row.cells) {
-      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() + 1;
+      if (cell.name.equals("cores")) {
+        cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() + 1;
+      }
     }
     return row;
 
@@ -108,7 +115,9 @@ class Row implements MapWriter {
     List<ReplicaInfo> s = c.get(shard);
     if (s == null || s.isEmpty()) return null;
     for (Cell cell : row.cells) {
-      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() -1;
+      if (cell.name.equals("cores")) {
+        cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() - 1;
+      }
     }
     return new Pair(row, s.remove(0));
 

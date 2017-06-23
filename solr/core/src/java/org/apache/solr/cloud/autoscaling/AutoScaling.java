@@ -129,7 +129,7 @@ public class AutoScaling {
      * Called before a trigger is scheduled. Any heavy object creation or initialisation should
      * be done in this method instead of the Trigger's constructor.
      */
-    public void init();
+    void init();
   }
 
   public static class TriggerFactory implements Closeable {

@@ -40,12 +40,7 @@ public class LogPlanAction implements TriggerAction {
   }
 
   @Override
-  public String getClassName() {
-    return null;
-  }
-
-  @Override
-  public void process(TriggerEvent event) {
+  public void process(TriggerEvent event, ActionContext actionContext) {
 
   }
 }

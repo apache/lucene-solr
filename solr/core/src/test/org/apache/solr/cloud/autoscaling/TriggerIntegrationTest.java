@@ -252,7 +252,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     private final AtomicBoolean onlyOnce = new AtomicBoolean(false);
 
     @Override
-    public void process(TriggerEvent event) {
+    public void process(TriggerEvent event, ActionContext actionContext) {
       boolean locked = lock.tryLock();
       if (!locked)  {
         log.info("We should never have a tryLock fail because actions are never supposed to be executed concurrently");
@@ -584,12 +584,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public String getClassName() {
-      return this.getClass().getName();
-    }
-
-    @Override
-    public void process(TriggerEvent event) {
+    public void process(TriggerEvent event, ActionContext actionContext) {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
@@ -630,12 +625,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public String getClassName() {
-      return this.getClass().getName();
-    }
-
-    @Override
-    public void process(TriggerEvent event) {
+    public void process(TriggerEvent event, ActionContext actionContext) {
       log.info("-- event: " + event);
       events.add(event);
       getActionStarted().countDown();
@@ -816,12 +806,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public String getClassName() {
-      return this.getClass().getName();
-    }
-
-    @Override
-    public void process(TriggerEvent event) {
+    public void process(TriggerEvent event, ActionContext actionContext) {
       boolean locked = lock.tryLock();
       if (!locked)  {
         log.info("We should never have a tryLock fail because actions are never supposed to be executed concurrently");

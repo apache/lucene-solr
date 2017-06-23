@@ -42,6 +42,7 @@ class AddReplicaSuggester extends Suggester {
     Integer targetNodeIndex = null;
     for (int i = getMatrix().size() - 1; i >= 0; i--) {
       Row row = getMatrix().get(i);
+      if(!row.isLive) continue;
       if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
       Row tmpRow = row.addReplica(coll, shard);
       tmpRow.violations.clear();

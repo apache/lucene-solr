@@ -103,7 +103,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    return data.getOrDefault(node, Collections.emptyMap());//todo fill other details
+    return data.computeIfAbsent(node, s -> Collections.emptyMap());//todo fill other details
   }
 
   @Override

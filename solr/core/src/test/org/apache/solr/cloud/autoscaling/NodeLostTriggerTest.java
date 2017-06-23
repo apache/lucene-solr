@@ -190,12 +190,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public String getClassName() {
-      return getClass().getName();
-    }
-
-    @Override
-    public void process(TriggerEvent event) {
+    public void process(TriggerEvent event, ActionContext actionContext) {
 
     }
 

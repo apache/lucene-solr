@@ -79,7 +79,7 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     this.zkController = zkController;
     zkStateReader = zkController.getZkStateReader();
     zkClient = zkController.getZkClient();
-    scheduledTriggers = new ScheduledTriggers(zkClient);
+    scheduledTriggers = new ScheduledTriggers(zkController);
     triggerFactory = new AutoScaling.TriggerFactory(zkController.getCoreContainer());
   }
 

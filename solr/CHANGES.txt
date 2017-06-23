@@ -164,6 +164,9 @@ New Features
 
 * SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
 
+* SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
+  operations upon a trigger fire. (Noble Paul, shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.

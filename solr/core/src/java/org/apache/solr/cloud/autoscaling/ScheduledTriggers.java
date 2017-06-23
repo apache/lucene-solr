@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +38,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -80,7 +83,9 @@ public class ScheduledTriggers implements Closeable {
 
   private final Overseer.Stats queueStats;
 
-  public ScheduledTriggers(SolrZkClient zkClient) {
+  private final CoreContainer coreContainer;
+
+  public ScheduledTriggers(ZkController zkController) {
     // todo make the core pool size configurable
     // it is important to use more than one because a time taking trigger can starve other scheduled triggers
     // ideally we should have as many core threads as the number of triggers but firstly, we don't know beforehand
@@ -93,7 +98,8 @@ public class ScheduledTriggers implements Closeable {
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
     // todo make the wait time configurable
     actionThrottle = new ActionThrottle("action", DEFAULT_MIN_MS_BETWEEN_ACTIONS);
-    this.zkClient = zkClient;
+    this.coreContainer = zkController.getCoreContainer();
+    this.zkClient = zkController.getZkClient();
     queueStats = new Overseer.Stats();
   }
 
@@ -150,9 +156,10 @@ public class ScheduledTriggers implements Closeable {
               // let the action executor thread wait instead of the trigger thread so we use the throttle here
               actionThrottle.minimumWaitBetweenActions();
               actionThrottle.markAttemptingAction();
+              ActionContext actionContext = new ActionContext(coreContainer, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
                 try {
-                  action.process(event);
+                  action.process(event, actionContext);
                 } catch (Exception e) {
                   log.error("Error executing action: " + action.getName() + " for trigger event: " + event, e);
                   throw e;
