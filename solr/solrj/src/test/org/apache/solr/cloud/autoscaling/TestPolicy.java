@@ -34,6 +34,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
@@ -99,11 +101,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
           ValidatingJsonMap r = (ValidatingJsonMap) o2;
           String node_name = (String) r.get("node_name");
           if (!node_name.equals(node)) return;
-          Map<String, List<Policy.ReplicaInfo>> shardVsReplicaStats = result.get(collName);
-          if (shardVsReplicaStats == null) result.put(collName, shardVsReplicaStats = new HashMap<>());
-          List<Policy.ReplicaInfo> replicaInfos = shardVsReplicaStats.get(shard);
-          if (replicaInfos == null) shardVsReplicaStats.put(shard, replicaInfos = new ArrayList<>());
-          replicaInfos.add(new Policy.ReplicaInfo(replicaName, collName, shard, new HashMap<>()));
+          Map<String, List<Policy.ReplicaInfo>> shardVsReplicaStats = result.computeIfAbsent(collName, k -> new HashMap<>());
+          List<Policy.ReplicaInfo> replicaInfos = shardVsReplicaStats.computeIfAbsent(shard, k -> new ArrayList<>());
+          replicaInfos.add(new Policy.ReplicaInfo(replicaName, collName, shard, Replica.Type.get((String) r.get(ZkStateReader.REPLICA_TYPE)), new HashMap<>()));
         });
       });
     });
@@ -194,8 +194,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    '127.0.0.1:65417_solr'," +
         "    '127.0.0.1:65434_solr']," +
         "  'replicaInfo':{" +
-        "    '127.0.0.1:65427_solr':{'testNodeLost':{'shard1':[{'core_node2':{}}]}}," +
-        "    '127.0.0.1:65417_solr':{'testNodeLost':{'shard1':[{'core_node1':{}}]}}," +
+        "    '127.0.0.1:65427_solr':{'testNodeLost':{'shard1':[{'core_node2':{type: NRT}}]}}," +
+        "    '127.0.0.1:65417_solr':{'testNodeLost':{'shard1':[{'core_node1':{type: NRT}}]}}," +
         "    '127.0.0.1:65434_solr':{}}," +
         "  'nodeValues':{" +
         "    '127.0.0.1:65417_solr':{" +
@@ -272,7 +272,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
             Object o = l3.get(i);
             Map m3 = (Map) o;
             l3.set(i, new Policy.ReplicaInfo(m3.keySet().iterator().next().toString()
-                ,coll.toString(), shard.toString(),new HashMap<>()));
+                ,coll.toString(), shard.toString(), Replica.Type.get((String)m3.get("type")), new HashMap<>()));
           }
         });
 
@@ -304,10 +304,80 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+  public void testPolicyWithReplicaType() {
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!ssd',  type : TLOG }" +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!slowdisk' ,  type : PULL }" +
+        "  ]" +
+        "}");
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "}");
+    Policy policy = new Policy(policies);
+    Policy.Suggester suggester = policy.createSession(getClusterDataProvider(nodeValues, clusterState))
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL)
+        .hint(Hint.SHARD, "shard1");
+    SolrRequest op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
+    assertEquals("PULL type node must be in 'slowdisk' node","node1", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL)
+        .hint(Hint.SHARD, "shard2");
+    op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
+    assertEquals("PULL type node must be in 'slowdisk' node","node1", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
+        .hint(Hint.SHARD, "shard1");
+    op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
+    assertEquals("TLOG type node must be in 'ssd' node","node3", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
+        .hint(Hint.SHARD, "shard2");
+    op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
+    assertEquals("TLOG type node must be in 'ssd' node","node3", op.getParams().get("node"));
+
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
+        .hint(Hint.SHARD, "shard2");
+    op = suggester.getOperation();
+    assertNull("No node should qualify for this" ,op);
+
+  }
+
   public void testRow() {
     Row row = new Row("nodex", new Cell[]{new Cell(0, "node", "nodex")}, false, new HashMap<>(), new ArrayList<>(), true);
-    Row r1 = row.addReplica("c1", "s1");
-    Row r2 = r1.addReplica("c1", "s1");
+    Row r1 = row.addReplica("c1", "s1", null);
+    Row r2 = r1.addReplica("c1", "s1",null);
     assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
     assertEquals(2, r2.collectionVsShardVsReplicas.get("c1").get("s1").size());
     assertTrue(r2.collectionVsShardVsReplicas.get("c1").get("s1").get(0) instanceof Policy.ReplicaInfo);
@@ -532,8 +602,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      {'core_node2':{}}]}}}");
     Map m = (Map) Utils.getObjectByPath(replicaInfoMap, false, "127.0.0.1:60089_solr/compute_plan_action_test");
     m.put("shard1", Arrays.asList(
-        new Policy.ReplicaInfo("core_node1", "compute_plan_action_test", "shard1", Collections.emptyMap()),
-        new Policy.ReplicaInfo("core_node2", "compute_plan_action_test", "shard1", Collections.emptyMap())
+        new Policy.ReplicaInfo("core_node1", "compute_plan_action_test", "shard1", Replica.Type.NRT, Collections.emptyMap()),
+        new Policy.ReplicaInfo("core_node2", "compute_plan_action_test", "shard1", Replica.Type.NRT, Collections.emptyMap())
     ));
 
     Map<String, Map<String, Object>> tagsMap = (Map) Utils.fromJSONString("{" +

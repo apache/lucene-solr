@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.util.Objects;
 
 import org.apache.solr.cloud.autoscaling.Clause.TestStatus;
+import org.apache.solr.common.params.CoreAdminParams;
 
 import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.FAIL;
 import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
@@ -37,7 +38,7 @@ public enum Operand {
   },
   EQUAL("", 0) {
     @Override
-    public int _delta(int expected, int actual) {
+    public long _delta(long expected, long actual) {
       return expected - actual;
     }
   },
@@ -48,7 +49,7 @@ public enum Operand {
     }
 
     @Override
-    public int _delta(int expected, int actual) {
+    public long _delta(long expected, long actual) {
       return expected - actual;
     }
 
@@ -64,7 +65,7 @@ public enum Operand {
     }
 
     @Override
-    protected int _delta(int expected, int actual) {
+    protected long _delta(long expected, long actual) {
       return actual > expected ? 0 : (expected + 1) - actual;
     }
   },
@@ -79,7 +80,7 @@ public enum Operand {
     }
 
     @Override
-    protected int _delta(int expected, int actual) {
+    protected long _delta(long expected, long actual) {
       return actual < expected ? 0 : (expected ) - actual;
     }
 
@@ -107,17 +108,17 @@ public enum Operand {
 
   }
 
-  public Integer delta(Object expected, Object actual) {
+  public Long delta(Object expected, Object actual) {
     try {
-      Integer expectedInt = Integer.parseInt(String.valueOf(expected));
-      Integer actualInt = Integer.parseInt(String.valueOf(actual));
+      Long expectedInt = (Long) Clause.validate(CoreAdminParams.REPLICA, expected, false);
+      Long actualInt = (Long) Clause.validate(CoreAdminParams.REPLICA, actual, false);
       return _delta(expectedInt, actualInt);
     } catch (Exception e) {
       return null;
     }
   }
 
-  protected int _delta(int expected, int actual) {
+  protected long _delta(long expected, long actual) {
     return 0;
   }
 }

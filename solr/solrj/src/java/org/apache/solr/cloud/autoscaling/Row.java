@@ -27,6 +27,7 @@ import java.util.Random;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
@@ -94,11 +95,11 @@ class Row implements MapWriter {
   }
 
   // this adds a replica to the replica info
-  Row addReplica(String coll, String shard) {
+  Row addReplica(String coll, String shard, Replica.Type type) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
-    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
+    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, type, new HashMap<>()));
     for (Cell cell : row.cells) {
       if (cell.name.equals("cores")) {
         cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() + 1;
@@ -108,18 +109,28 @@ class Row implements MapWriter {
 
   }
 
-  Pair<Row, ReplicaInfo> removeReplica(String coll, String shard) {
+  Pair<Row, ReplicaInfo> removeReplica(String coll, String shard, Replica.Type type) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
-    List<ReplicaInfo> s = c.get(shard);
-    if (s == null || s.isEmpty()) return null;
+    List<ReplicaInfo> r = c.get(shard);
+    if (r == null) return null;
+    int idx = -1;
+    for (int i = 0; i < r.size(); i++) {
+      ReplicaInfo info = r.get(i);
+      if (type == null || info.type == type) {
+        idx = i;
+        break;
+      }
+    }
+    if(idx == -1) return null;
+
     for (Cell cell : row.cells) {
       if (cell.name.equals("cores")) {
         cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() - 1;
       }
     }
-    return new Pair(row, s.remove(0));
+    return new Pair(row, r.remove(idx));
 
   }
 }

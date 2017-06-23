@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
@@ -302,18 +303,27 @@ public class Policy implements MapWriter {
   public static class ReplicaInfo implements MapWriter {
     final String name;
     String core, collection, shard;
+    Replica.Type type;
     Map<String, Object> variables;
 
-    public ReplicaInfo(String name, String coll, String shard, Map<String, Object> vals) {
+    public ReplicaInfo(String name, String coll, String shard, Replica.Type type, Map<String, Object> vals) {
       this.name = name;
       this.variables = vals;
       this.collection = coll;
       this.shard = shard;
+      this.type = type;
     }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(name, variables);
+      ew.put(name, (MapWriter) ew1 -> {
+        if(variables !=null){
+          for (Map.Entry<String, Object> e : variables.entrySet()) {
+            ew1.put(e.getKey(), e.getValue());
+          }
+        }
+        if(type != null) ew1.put("type", type.toString());
+      });
     }
 
     public String getCore() {
@@ -352,7 +362,7 @@ public class Policy implements MapWriter {
       if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
         ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).add(value);
       } else {
-        hints.put(hint, value);
+        hints.put(hint, value == null ? null : String.valueOf(value));
       }
       return this;
     }
@@ -447,7 +457,7 @@ public class Policy implements MapWriter {
       for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
         if (!isAllowed(e.getKey(), Hint.COLL)) continue;
         for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
-          if (!isAllowed(e.getKey(), Hint.SHARD)) continue;
+          if (!isAllowed(e.getKey(), Hint.SHARD)) continue;//todo fix
           replicaList.add(new Pair<>(shard.getValue().get(0), r));
         }
       }
@@ -483,7 +493,7 @@ public class Policy implements MapWriter {
     }
 
     public enum Hint {
-      COLL, SHARD, SRC_NODE, TARGET_NODE
+      COLL, SHARD, SRC_NODE, TARGET_NODE, REPLICATYPE
     }
 
 

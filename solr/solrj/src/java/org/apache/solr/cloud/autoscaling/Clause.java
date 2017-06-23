@@ -23,15 +23,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -52,11 +54,14 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 public class Clause implements MapWriter, Comparable<Clause> {
   Map<String, Object> original;
   Condition collection, shard, replica, tag, globalTag;
+  final Replica.Type type;
 
   boolean strict = true;
 
   Clause(Map<String, Object> m) {
     this.original = m;
+    String type = (String) m.get("type");
+    this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
     if (globalTagName.isPresent()) {
@@ -100,24 +105,29 @@ public class Clause implements MapWriter, Comparable<Clause> {
     tag = parse(s, singletonMap(s, o));
   }
 
+  private int compareTypes(Replica.Type t1, Replica.Type t2) {
+    if (t1 == null && t2 == null) return 0;
+    if (t1 != null && t2 == null) return -1;
+    if (t1 == null) return 1;
+    return 0;
+  }
+
   @Override
   public int compareTo(Clause that) {
-    try {
-      int v = Integer.compare(this.tag.op.priority, that.tag.op.priority);
-      if (v != 0) return v;
-      if (this.isPerCollectiontag() && that.isPerCollectiontag()) {
-        v = Integer.compare(this.replica.op.priority, that.replica.op.priority);
-        if (v == 0) {
-          v = Long.compare((Long) this.replica.val, (Long) that.replica.val);
-          v = this.replica.op == LESS_THAN ? v : v * -1;
-        }
-        return v;
-      } else {
-        return 0;
+    int v = Integer.compare(this.tag.op.priority, that.tag.op.priority);
+    if (v != 0) return v;
+    if (this.isPerCollectiontag() && that.isPerCollectiontag()) {
+      v = Integer.compare(this.replica.op.priority, that.replica.op.priority);
+      if (v == 0) {// higher the number of replicas , harder to satisfy
+        v = Long.compare((Long) this.replica.val, (Long) that.replica.val);
+        v = this.replica.op == LESS_THAN ? v : v * -1;
       }
-    } catch (NullPointerException e) {
-      throw e;
+      if (v == 0) v = compareTypes(this.type, that.type);
+      return v;
+    } else {
+      return 0;
     }
+
   }
 
   void addTags(List<String> params) {
@@ -125,7 +135,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (tag != null && !params.contains(tag.name)) params.add(tag.name);
   }
 
-  static class Condition {
+  class Condition {
     final String name;
     final Object val;
     final Operand op;
@@ -136,15 +146,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
       this.op = op;
     }
 
-    TestStatus match(Row row) {
-      return op.match(val, row.getVal(name));
-    }
-
-    TestStatus match(Object testVal) {
-      return op.match(this.val, testVal);
-    }
-
     boolean isPass(Object inputVal) {
+      if (inputVal instanceof ReplicaCount) inputVal = ((ReplicaCount) inputVal).getVal(type);
       return op.match(val, validate(name, inputVal, false)) == PASS;
     }
 
@@ -161,12 +164,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
       return false;
     }
 
-    public Integer delta(Object val) {
+    public Long delta(Object val) {
       return op.delta(this.val, val);
     }
   }
 
-  static Condition parse(String s, Map m) {
+  Condition parse(String s, Map m) {
     Object expectedVal = null;
     Object val = m.get(s);
     try {
@@ -197,12 +200,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public class Violation implements MapWriter {
     final String shard, coll, node;
     final Object actualVal;
-    final Integer delta;//how far is the actual value from the expected value
+    final Long delta;//how far is the actual value from the expected value
     final Object tagKey;
     private final int hash;
 
 
-    private Violation(String coll, String shard, String node, Object actualVal, Integer delta, Object tagKey) {
+    private Violation(String coll, String shard, String node, Object actualVal, Long delta, Object tagKey) {
       this.shard = shard;
       this.coll = coll;
       this.node = node;
@@ -240,14 +243,19 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
 
     @Override
+    public String toString() {
+      return Utils.toJSONString(Utils.getDeepCopy(toMap(new LinkedHashMap<>()), 5));
+    }
+
+    @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.putIfNotNull("collection", coll);
       ew.putIfNotNull("shard", shard);
       ew.putIfNotNull("node", node);
       ew.putIfNotNull("tagKey", String.valueOf(tagKey));
       ew.putIfNotNull("violation", (MapWriter) ew1 -> {
-        ew1.put(getClause().isPerCollectiontag() ? "replica" : tag.name,
-            String.valueOf(actualVal));
+        if (getClause().isPerCollectiontag()) ew1.put("replica", actualVal);
+        else ew1.put(tag.name, String.valueOf(actualVal));
         ew1.putIfNotNull("delta", delta);
       });
       ew.put("clause", getClause());
@@ -258,12 +266,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public List<Violation> test(List<Row> allRows) {
     List<Violation> violations = new ArrayList<>();
     if (isPerCollectiontag()) {
-      Map<String, Map<String, Map<String, AtomicInteger>>> replicaCount = computeReplicaCounts(allRows);
-      for (Map.Entry<String, Map<String, Map<String, AtomicInteger>>> e : replicaCount.entrySet()) {
+      Map<String, Map<String, Map<String, ReplicaCount>>> replicaCount = computeReplicaCounts(allRows);
+      for (Map.Entry<String, Map<String, Map<String, ReplicaCount>>> e : replicaCount.entrySet()) {
         if (!collection.isPass(e.getKey())) continue;
-        for (Map.Entry<String, Map<String, AtomicInteger>> shardVsCount : e.getValue().entrySet()) {
+        for (Map.Entry<String, Map<String, ReplicaCount>> shardVsCount : e.getValue().entrySet()) {
           if (!shard.isPass(shardVsCount.getKey())) continue;
-          for (Map.Entry<String, AtomicInteger> counts : shardVsCount.getValue().entrySet()) {
+          for (Map.Entry<String, ReplicaCount> counts : shardVsCount.getValue().entrySet()) {
             if (!replica.isPass(counts.getValue())) {
               violations.add(new Violation(
                   e.getKey(),
@@ -289,24 +297,23 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
 
-  private Map<String, Map<String, Map<String, AtomicInteger>>> computeReplicaCounts(List<Row> allRows) {
-    Map<String, Map<String, Map<String, AtomicInteger>>> collVsShardVsTagVsCount = new HashMap<>();
-    for (Row row : allRows)
+  private Map<String, Map<String, Map<String, ReplicaCount>>> computeReplicaCounts(List<Row> allRows) {
+    Map<String, Map<String, Map<String, ReplicaCount>>> collVsShardVsTagVsCount = new HashMap<>();
+    for (Row row : allRows) {
       for (Map.Entry<String, Map<String, List<ReplicaInfo>>> colls : row.collectionVsShardVsReplicas.entrySet()) {
         String collectionName = colls.getKey();
         if (!collection.isPass(collectionName)) continue;
-        collVsShardVsTagVsCount.putIfAbsent(collectionName, new HashMap<>());
-        Map<String, Map<String, AtomicInteger>> collMap = collVsShardVsTagVsCount.get(collectionName);
+        Map<String, Map<String, ReplicaCount>> collMap = collVsShardVsTagVsCount.computeIfAbsent(collectionName, s -> new HashMap<>());
         for (Map.Entry<String, List<ReplicaInfo>> shards : colls.getValue().entrySet()) {
           String shardName = shards.getKey();
           if (ANY.equals(shard.val)) shardName = ANY;
           if (!shard.isPass(shardName)) break;
-          collMap.putIfAbsent(shardName, new HashMap<>());
-          Map<String, AtomicInteger> tagVsCount = collMap.get(shardName);
+          Map<String, ReplicaCount> tagVsCount = collMap.computeIfAbsent(shardName, s -> new HashMap<>());
           Object tagVal = row.getVal(tag.name);
-          tagVsCount.putIfAbsent(tag.isPass(tagVal) ? String.valueOf(tagVal) : "", new AtomicInteger());
+          tagVsCount.computeIfAbsent(tag.isPass(tagVal) ? String.valueOf(tagVal) : "", s -> new ReplicaCount());
           if (tag.isPass(tagVal)) {
-            tagVsCount.get(String.valueOf(tagVal)).addAndGet(shards.getValue().size());
+            tagVsCount.get(String.valueOf(tagVal)).increment(shards.getValue());
+          }
           }
         }
       }
@@ -331,7 +338,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     NOT_APPLICABLE, FAIL, PASS
   }
 
-  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict"));
+  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
 
   static class ValidateInfo {
     final Class type;
@@ -344,17 +351,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
       this.type = type;
       this.vals = vals;
       this.min = min;
-      if(min != null && !type.isInstance(min)) throw new RuntimeException("wrong min value type, expected: " + type.getName() + " actual: " + min.getClass().getName());
+      if (min != null && !type.isInstance(min))
+        throw new RuntimeException("wrong min value type, expected: " + type.getName() + " actual: " + min.getClass().getName());
       this.max = max;
-      if(max != null && !type.isInstance(max)) throw new RuntimeException("wrong max value type, expected: " + type.getName() + " actual: " + max.getClass().getName());
+      if (max != null && !type.isInstance(max))
+        throw new RuntimeException("wrong max value type, expected: " + type.getName() + " actual: " + max.getClass().getName());
     }
   }
 
 
   /**
-   *
-   * @param name name of the condition
-   * @param val value of the condition
+   * @param name      name of the condition
+   * @param val       value of the condition
    * @param isRuleVal is this provided in the rule
    * @return actual validated value
    */
@@ -413,7 +421,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       num = (Number) val;
     }
 
-    if (num != null)  {
+    if (num != null) {
       return num.longValue();
     }
     throw new RuntimeException(name + ": " + val + "not a valid number");
@@ -434,7 +442,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       num = (Number) val;
     }
 
-    if (num != null)  {
+    if (num != null) {
       return num.doubleValue();
     }
     throw new RuntimeException(name + ": " + val + "not a valid number");

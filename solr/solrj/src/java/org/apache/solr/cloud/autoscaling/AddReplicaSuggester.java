@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.autoscaling.Policy.Suggester;
+import org.apache.solr.common.cloud.Replica;
 
 class AddReplicaSuggester extends Suggester {
 
@@ -34,6 +35,7 @@ class AddReplicaSuggester extends Suggester {
   SolrRequest tryEachNode(boolean strict) {
     String coll = (String) hints.get(Hint.COLL);
     String shard = (String) hints.get(Hint.SHARD);
+    Replica.Type type = Replica.Type.get((String) hints.get(Hint.REPLICATYPE));
     if (coll == null || shard == null)
       throw new RuntimeException("add-replica requires 'collection' and 'shard'");
     //iterate through elements and identify the least loaded
@@ -44,7 +46,7 @@ class AddReplicaSuggester extends Suggester {
       Row row = getMatrix().get(i);
       if(!row.isLive) continue;
       if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
-      Row tmpRow = row.addReplica(coll, shard);
+      Row tmpRow = row.addReplica(coll, shard, type);
       tmpRow.violations.clear();
 
       List<Clause.Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
@@ -57,9 +59,10 @@ class AddReplicaSuggester extends Suggester {
     }
 
     if (targetNodeIndex != null) {// there are no rule violations
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(coll, shard));
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(coll, shard, type));
       return CollectionAdminRequest
           .addReplicaToShard(coll, shard)
+          .setType(type)
           .setNode(getMatrix().get(targetNodeIndex).node);
     }
 

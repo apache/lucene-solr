@@ -46,7 +46,7 @@ public class MoveReplicaSuggester extends Suggester {
       ReplicaInfo replicaInfo = fromReplica.first();
       String coll = replicaInfo.collection;
       String shard = replicaInfo.shard;
-      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
+      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard, replicaInfo.type);
       Row tmpRow = pair.first();
       if (tmpRow == null) {
         //no such replica available
@@ -59,7 +59,7 @@ public class MoveReplicaSuggester extends Suggester {
         Row targetRow = getMatrix().get(j);
         if(!targetRow.isLive) continue;
         if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
-        targetRow = targetRow.addReplica(coll, shard);
+        targetRow = targetRow.addReplica(coll, shard, replicaInfo.type);
         targetRow.violations.clear();
         List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
@@ -71,8 +71,8 @@ public class MoveReplicaSuggester extends Suggester {
       }
     }
     if (targetNodeIndex != null && fromNodeIndex != null) {
-      getMatrix().set(fromNodeIndex, getMatrix().get(fromNodeIndex).removeReplica(fromReplicaInfo.collection, fromReplicaInfo.shard).first());
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(fromReplicaInfo.collection, fromReplicaInfo.shard));
+      getMatrix().set(fromNodeIndex, getMatrix().get(fromNodeIndex).removeReplica(fromReplicaInfo.collection, fromReplicaInfo.shard, fromReplicaInfo.type).first());
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(fromReplicaInfo.collection, fromReplicaInfo.shard, fromReplicaInfo.type));
       return new CollectionAdminRequest.MoveReplica(
           fromReplicaInfo.collection,
           fromReplicaInfo.name,

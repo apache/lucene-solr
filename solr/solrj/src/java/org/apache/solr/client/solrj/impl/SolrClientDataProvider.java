@@ -75,13 +75,10 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
       DocCollection coll = ref.get();
       if (coll == null) return;
       coll.forEachReplica((shard, replica) -> {
-        Map<String, Map<String, List<ReplicaInfo>>> nodeData = data.get(replica.getNodeName());
-        if (nodeData == null) data.put(replica.getNodeName(), nodeData = new HashMap<>());
-        Map<String, List<ReplicaInfo>> collData = nodeData.get(collName);
-        if (collData == null) nodeData.put(collName, collData = new HashMap<>());
-        List<ReplicaInfo> replicas = collData.get(shard);
-        if (replicas == null) collData.put(shard, replicas = new ArrayList<>());
-        replicas.add(new ReplicaInfo(replica.getName(), collName, shard, new HashMap<>()));
+        Map<String, Map<String, List<ReplicaInfo>>> nodeData = data.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
+        Map<String, List<ReplicaInfo>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
+        List<ReplicaInfo> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
+        replicas.add(new ReplicaInfo(replica.getName(), collName, shard,replica.getType(), new HashMap<>()));
       });
     });
   }

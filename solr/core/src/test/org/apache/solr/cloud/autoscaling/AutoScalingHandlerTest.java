@@ -46,6 +46,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * Test for AutoScalingHandler
@@ -688,7 +689,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (Map<String, Object> violation : violations) {
       assertEquals("readApiTestViolations", violation.get("collection"));
       assertEquals("shard1", violation.get("shard"));
-      assertEquals(Utils.makeMap("replica", "3", "delta", -1), violation.get("violation"));
+      assertEquals(-1l, getObjectByPath(violation, true, "violation/delta"));
+      assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
   }
