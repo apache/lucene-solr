@@ -792,8 +792,9 @@ public class Util {
 				Util.postMessage("** Initiating processing from commit queueu ...", MessageType.BLUE_TEXT, false);
 				
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
+				int length = currentCommits.length;
 				
-				for (int i = 0; i < 1; i++) {
+				for (int i = 0; i < length; i++) {
 					
 						String commitIDFromQueue = currentCommits[i].getName();
 						Util.COMMIT_ID = commitIDFromQueue;
