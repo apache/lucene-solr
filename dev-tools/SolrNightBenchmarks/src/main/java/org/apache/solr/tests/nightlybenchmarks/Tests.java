@@ -95,17 +95,17 @@ public class Tests {
 			String collectionName1 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
 			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName1, 1, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true);
+					collectionName1, 50, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true);
 			node.deleteCollection(collectionName1);
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
 			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName2, 1, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true);
+					collectionName2, 50, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true);
 			node.deleteCollection(collectionName2);
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
 			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName3, 1, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true);
+					collectionName3, 50, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true);
 			node.deleteCollection(collectionName3);
 
 			node.doAction(SolrNodeAction.NODE_STOP);
@@ -398,7 +398,7 @@ public class Tests {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on cloud ...", MessageType.PURPLE_TEXT, false);
 
-		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 10000, 2, "2", "1", 5000);
+		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 100000, 2, "2", "1", 5000);
 
 		Thread numericQueryTNQMetricC = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_CLOUD, port));
@@ -468,7 +468,7 @@ public class Tests {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on standalone node ...", MessageType.PURPLE_TEXT, false);
 
-		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 10000);
+		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 100000);
 
 		Thread numericQueryTNQMetricS = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE, port));
