@@ -30,7 +30,7 @@ public class TestPlans {
 		Tests.indexingTestsStandalone(Util.COMMIT_ID, 100000);
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 100000);
-     	Tests.runNumericQueryTestsStandalone();
+     		Tests.runNumericQueryTestsStandalone();
 
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 100000, 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 100000, 2, "2", "1");
