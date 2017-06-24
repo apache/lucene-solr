@@ -24,7 +24,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -49,7 +48,6 @@ public class SolrIndexingClient {
 	private String commitId;
 	Random r = new Random();
 
-	public static List<Integer> intList = new LinkedList<Integer>();
 	public static int documentCount;
 
 	public SolrIndexingClient(String host, String port, String commitId) {
@@ -63,7 +61,6 @@ public class SolrIndexingClient {
 	public Map<String, String> indexData(int numDocuments, String urlString, boolean captureMetrics, boolean deleteData) {
 
 		documentCount = numDocuments;
-		intList = new LinkedList<Integer>();
 		
 		Util.postMessage("** Indexing documents through HTTP client ..." + urlString , MessageType.CYAN_TEXT, false);
 
@@ -97,9 +94,6 @@ public class SolrIndexingClient {
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				
-				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				
 				
 				solrClient.add(document);
 				numberOfDocuments++;
@@ -162,7 +156,6 @@ public class SolrIndexingClient {
 		Util.postMessage("** Indexing documents through cloud client ..." + urlString + " | " + collectionName , MessageType.CYAN_TEXT, false);
 
 		documentCount = numDocuments;
-		intList = new LinkedList<Integer>();
 
 		CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperIp + ":" + zookeeperPort)
 				.build();
@@ -197,8 +190,6 @@ public class SolrIndexingClient {
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				
-				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				
 				solrClient.add(collectionName, document);
 				numberOfDocuments++;
@@ -257,7 +248,6 @@ public class SolrIndexingClient {
 	public Map<String, String> indexData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) throws InterruptedException {
 		
 		documentCount = numDocuments;
-		intList = new LinkedList<Integer>();
 		LinkedList<SolrInputDocument> docList = new LinkedList<SolrInputDocument>();
 
 		Util.postMessage("** Indexing documents through concurrent client ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.CYAN_TEXT, false);
@@ -294,8 +284,6 @@ public class SolrIndexingClient {
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				
-				intList.add(Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				
 				docList.add(document);
 				numberOfDocuments++;

@@ -178,21 +178,21 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 1,
+						cloud.getuRL(), collectionName1, 50, 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 2,
+						cloud.getuRL(), collectionName2, 50, 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 3,
+						cloud.getuRL(), collectionName3, 50, 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true);
 				cloud.deleteCollection(collectionName3);
 
@@ -201,21 +201,21 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T,
+						cloud.getuRL(), collectionName1, 50, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T,
 						true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T,
+						cloud.getuRL(), collectionName2, 50, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T,
 						true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T,
+						cloud.getuRL(), collectionName3, 50, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T,
 						true, true);
 				cloud.deleteCollection(collectionName3);
 
@@ -224,21 +224,21 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T,
+						cloud.getuRL(), collectionName1, 50, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T,
 						true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T,
+						cloud.getuRL(), collectionName2, 50, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T,
 						true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T,
+						cloud.getuRL(), collectionName3, 50, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T,
 						true, true);
 				cloud.deleteCollection(collectionName3);
 
@@ -247,21 +247,21 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T,
+						cloud.getuRL(), collectionName1, 50, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T,
 						true, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T,
+						cloud.getuRL(), collectionName2, 50, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T,
 						true, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T,
+						cloud.getuRL(), collectionName3, 50, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T,
 						true, true);
 				cloud.deleteCollection(collectionName3);
 
