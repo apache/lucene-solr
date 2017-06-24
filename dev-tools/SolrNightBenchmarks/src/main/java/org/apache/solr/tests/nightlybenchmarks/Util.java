@@ -85,6 +85,9 @@ public class Util {
 	public static String QUERY_THREAD_COUNT = "1";
 	public static String TEST_DATA_DIRECTORY = "";
 	public static String ONEM_TEST_DATA = "test-data-file-1M.csv";
+	public static String NUMERIC_QUERY_TERM_DATA = "Numeric-Term-Query.txt";
+	public static String NUMERIC_QUERY_PAIR_DATA = "Numeric-Pair-Query-Data.txt";
+	
 	
 	public static boolean SILENT = false;
 
@@ -485,6 +488,12 @@ public class Util {
 			Util.ONEM_TEST_DATA = prop.getProperty("SolrNightlyBenchmarks.1MTestData");
 			Util.postMessage("Getting Property Value for 1MTestData: " + Util.ONEM_TEST_DATA,
 					MessageType.YELLOW_TEXT, false);
+			Util.NUMERIC_QUERY_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryTermsData");
+			Util.postMessage("Getting Property Value for staticNumericQueryTermsData: " + Util.NUMERIC_QUERY_TERM_DATA,
+					MessageType.YELLOW_TEXT, false);
+			Util.NUMERIC_QUERY_PAIR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryPairsData");
+			Util.postMessage("Getting Property Value for staticNumericQueryPairsData: " + Util.NUMERIC_QUERY_PAIR_DATA,
+					MessageType.YELLOW_TEXT, false);
 			
 			
 			if (BenchmarkAppConnector.benchmarkAppDirectory
@@ -806,7 +815,7 @@ public class Util {
 						} else {						
 							Util.createIsRunningFile();
 							Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.GREEN_TEXT, false);
-							TestPlans.execute(commitIDFromQueue);
+							TestPlans.execute();
 							BenchmarkAppConnector.publishDataForWebApp();
 							BenchmarkReportData.reset();
 							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
@@ -820,14 +829,14 @@ public class Util {
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
 
-				TestPlans.execute(Util.COMMIT_ID);
+				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();	
 				BenchmarkReportData.reset();
 			} else if (argM.containsKey("-ProcessWithCommitID")) {
 				
 				Util.COMMIT_ID = argM.get("-ProcessWithCommitID");
 				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT, false);
-				TestPlans.execute(Util.COMMIT_ID);
+				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();	
 				BenchmarkReportData.reset();
 			} 

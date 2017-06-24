@@ -102,7 +102,7 @@ public class QueryClient implements Runnable {
 		orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		
 		String line = "";
-		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + "Numeric-Term-Query.txt"))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA))) {
 
 			while ((line = br.readLine()) != null) {
 								termNumericQueryParameterList.add(line.trim());
@@ -117,7 +117,7 @@ public class QueryClient implements Runnable {
 		Util.postMessage("** Preparing query pair data queue ...", MessageType.CYAN_TEXT, false);
 		
 		line = "";
-		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + "Numeric-Pair-Query-Data.txt"))) {
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA))) {
 
 			while ((line = br.readLine()) != null) {
 								rangeNumericQueryParameterList.add(line.trim());

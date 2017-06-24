@@ -21,11 +21,9 @@ import java.io.IOException;
 
 public class TestPlans {
 	
-	public static void execute(String commitID) throws IOException, InterruptedException {
+	public static void execute() throws IOException, InterruptedException {
 
 		Util.postMessage("** Executing the benchmark test plan ...", MessageType.BLUE_TEXT, false);
-		
-		Util.COMMIT_ID = commitID;
 		
 		Tests.indexingTestsStandalone(Util.COMMIT_ID, 100000);
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
