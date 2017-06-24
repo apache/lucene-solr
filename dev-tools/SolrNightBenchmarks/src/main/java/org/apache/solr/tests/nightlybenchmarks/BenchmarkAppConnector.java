@@ -112,12 +112,8 @@ public class BenchmarkAppConnector {
 
 		File[] files = directory.listFiles();
 		
-		if (files.length == 0) {
-			return null;
-		}
-		
         Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-        Util.postMessage("** Number of registered commits in the history: " + files.length, MessageType.RED_TEXT, false);
+        Util.postMessage("** Number of registered commits in the queue: " + files.length, MessageType.RED_TEXT, false);
 
         return files;
 	}

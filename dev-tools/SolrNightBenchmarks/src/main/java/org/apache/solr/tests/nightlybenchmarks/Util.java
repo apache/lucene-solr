@@ -798,32 +798,36 @@ public class Util {
 			}
 
 			if (argM.containsKey("-ProcessCommitsFromQueue")) {
-				Util.postMessage("** Initiating processing from commit queueu ...", MessageType.BLUE_TEXT, false);
+				Util.postMessage("** Initiating processing from commit queue ...", MessageType.BLUE_TEXT, false);
 				
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
 				int length = currentCommits.length;
 				
-				for (int i = 0; i < length; i++) {
-					
-						String commitIDFromQueue = currentCommits[i].getName();
-						Util.COMMIT_ID = commitIDFromQueue;
-						String lastRun = BenchmarkAppConnector.getLastRunCommitID();
+				if (length == 0) {
+					Util.postMessage("** Commit queue empty! [EXIT] ...", MessageType.BLUE_TEXT, false);
+				} else {
+					for (int i = 0; i < length; i++) {
 						
-						if (commitIDFromQueue.equals(lastRun)) {
-							Util.postMessage("** The commit: " + commitIDFromQueue + " has already been processed skipping ...", MessageType.RED_TEXT, false);
-							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
-						} else {						
-							Util.createIsRunningFile();
-							Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.GREEN_TEXT, false);
-							TestPlans.execute();
-							BenchmarkAppConnector.publishDataForWebApp();
-							BenchmarkReportData.reset();
-							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
-							System.gc();
-						}
-						
+							String commitIDFromQueue = currentCommits[i].getName();
+							Util.COMMIT_ID = commitIDFromQueue;
+							String lastRun = BenchmarkAppConnector.getLastRunCommitID();
+							
+							if (commitIDFromQueue.equals(lastRun)) {
+								Util.postMessage("** The commit: " + commitIDFromQueue + " has already been processed skipping ...", MessageType.RED_TEXT, false);
+								BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+							} else {						
+								Util.createIsRunningFile();
+								Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.GREEN_TEXT, false);
+								TestPlans.execute();
+								BenchmarkAppConnector.publishDataForWebApp();
+								BenchmarkReportData.reset();
+								BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+								System.gc();
+							}
+							
+					}
+					Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 				}
-				Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 			} else if (argM.containsKey("-ProcessLatestCommit")) {
 
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
