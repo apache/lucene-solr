@@ -61,7 +61,7 @@ public class Tests {
 		return true;
 	}
 
-	public static boolean indexingTestsStandalone(String commitID, int numDocuments) {
+	public static boolean indexingTestsStandalone(String commitID, long numDocuments) {
 
 		try {
 			SolrNode node = new SolrNode(commitID, "", "", false);
@@ -72,7 +72,8 @@ public class Tests {
 
 			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
 			BenchmarkReportData.metricMapStandalone = client.indexData(numDocuments,
-					node.getBaseUrl() + node.collectionName, true, true);
+					node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
+					true, true, SolrClientType.HTTP_SOLR_CLIENT, null, null);
 
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
@@ -84,7 +85,7 @@ public class Tests {
 		return true;
 	}
 
-	public static boolean indexingTestsStandaloneConcurrent(String commitID, int numDocuments) {
+	public static boolean indexingTestsStandaloneConcurrent(String commitID, long numDocuments) {
 
 		try {
 			SolrNode node = new SolrNode(commitID, "", "", false);
@@ -95,17 +96,20 @@ public class Tests {
 			String collectionName1 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
 			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName1, 50, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true);
+					collectionName1, 1000, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true,
+					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 			node.deleteCollection(collectionName1);
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
 			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName2, 50, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true);
+					collectionName2, 1000, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true,
+					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 			node.deleteCollection(collectionName2);
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
 			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName3, 50, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true);
+					collectionName3, 1000, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true,
+					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 			node.deleteCollection(collectionName3);
 
 			node.doAction(SolrNodeAction.NODE_STOP);
@@ -118,7 +122,7 @@ public class Tests {
 		return true;
 	}
 
-	public static boolean indexingTestsCloudSerial(String commitID, int numDocuments, int nodes, String shards,
+	public static boolean indexingTestsCloudSerial(String commitID, long numDocuments, int nodes, String shards,
 			String replicas) {
 
 		Util.postMessage("** INITIATING TEST: Indexing Cloud Serial Nodes:" + nodes + " Shards:" + shards + " Replicas:"
@@ -132,20 +136,20 @@ public class Tests {
 
 			if (nodes == 2 && shards == "1" && replicas == "2") {
 				BenchmarkReportData.metricMapCloudSerial_2N1S2R = cloudClient.indexData(numDocuments, cloud.getuRL(),
-						cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R, true);
+						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R, true, true,
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
 				BenchmarkReportData.metricMapCloudSerial_2N2S1R = cloudClient.indexData(numDocuments, cloud.getuRL(),
-						cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R, true);
+						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R, true, true,
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
 				BenchmarkReportData.metricMapCloudSerial_3N1S3R = cloudClient.indexData(numDocuments, cloud.getuRL(),
-						cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R, true);
+						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R, true, true,
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
 				BenchmarkReportData.metricMapCloudSerial_4N2S2R = cloudClient.indexData(numDocuments, cloud.getuRL(),
-						cloud.zookeeperIp, cloud.zookeeperPort, cloud.collectionName, true,
-						TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R, true);
+						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R, true, true,
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
 			}
 
 			cloud.shutdown();
@@ -161,7 +165,7 @@ public class Tests {
 		return true;
 	}
 
-	public static boolean indexingTestsCloudConcurrent(String commitID, int numDocuments, int nodes, String shards,
+	public static boolean indexingTestsCloudConcurrent(String commitID, long numDocuments, int nodes, String shards,
 			String replicas) {
 
 		Util.postMessage("** INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
@@ -177,23 +181,27 @@ public class Tests {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
+
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 50, 1,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true);
+						cloud.getuRL(), collectionName1, 1000, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 50, 2,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true);
+						cloud.getuRL(), collectionName2, 1000, 2,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 50, 3,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true);
+						cloud.getuRL(), collectionName3, 1000, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
@@ -201,22 +209,25 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 50, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T,
-						true, true);
+						cloud.getuRL(), collectionName1, 1000, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 50, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T,
-						true, true);
+						cloud.getuRL(), collectionName2, 1000, 2,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 50, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T,
-						true, true);
+						cloud.getuRL(), collectionName3, 1000, 3,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
@@ -224,22 +235,25 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 50, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T,
-						true, true);
+						cloud.getuRL(), collectionName1, 1000, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 50, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T,
-						true, true);
+						cloud.getuRL(), collectionName2, 1000, 2,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 50, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T,
-						true, true);
+						cloud.getuRL(), collectionName3, 1000, 3,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
@@ -247,22 +261,25 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 50, 1, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T,
-						true, true);
+						cloud.getuRL(), collectionName1, 1000, 1,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 50, 2, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T,
-						true, true);
+						cloud.getuRL(), collectionName2, 1000, 2,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 50, 3, TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T,
-						true, true);
+						cloud.getuRL(), collectionName3, 1000, 3,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
 
 			}
@@ -279,8 +296,8 @@ public class Tests {
 		return true;
 	}
 
-	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType, int numberOfThreads,
-			int estimationDuration, long delayEstimationBySeconds, String baseURL,
+	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType,
+			int numberOfThreads, int estimationDuration, long delayEstimationBySeconds, String baseURL,
 			String collectionName) {
 
 		try {
@@ -319,7 +336,7 @@ public class Tests {
 			returnMap.put("CommitID", commitID);
 			returnMap.put("TotalQueriesExecuted", "" + QueryClient.queryCount);
 			returnMap.put("QueriesPerSecond",
-					"" + (double) (QueryClient.queryCount / (QueryClient.totalQTime/1000d)));
+					"" + (double) (QueryClient.queryCount / (QueryClient.totalQTime / 1000d)));
 			returnMap.put("MinQTime", "" + QueryClient.minQtime);
 			returnMap.put("MaxQTime", "" + QueryClient.maxQtime);
 			returnMap.put("QueryFailureCount", "" + QueryClient.queryFailureCount);
@@ -341,8 +358,7 @@ public class Tests {
 		return null;
 	}
 
-
-	private static String setUpCloudForFeatureTests(String commitID, int documentCount, int solrNodes, String shards,
+	private static String setUpCloudForFeatureTests(String commitID, long documentCount, int solrNodes, String shards,
 			String replicas, int queueSize) throws InterruptedException {
 
 		Util.postMessage("** Setting up cloud for feature tests ...", MessageType.PURPLE_TEXT, false);
@@ -350,12 +366,14 @@ public class Tests {
 		SolrCloud cloud = new SolrCloud(solrNodes, shards, replicas, commitID, null, "localhost", true);
 		Tests.cloud = cloud;
 		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, commitID);
-		cloudClient.indexData(documentCount, cloud.getuRL(), cloud.collectionName, queueSize, 2, null, false, false);
+
+		cloudClient.indexData(documentCount, cloud.getuRL(), cloud.collectionName, queueSize, 2, null, false, false,
+				SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 
 		return cloud.port;
 	}
 
-	private static String setUpStandaloneNodeForFeatureTests(String commitID, int numDocuments) {
+	private static String setUpStandaloneNodeForFeatureTests(String commitID, long numDocuments) {
 
 		Util.postMessage("** Setting up standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
 
@@ -365,7 +383,9 @@ public class Tests {
 			snode.createCollection("Core-" + UUID.randomUUID(), "Collection-" + UUID.randomUUID());
 
 			SolrIndexingClient client = new SolrIndexingClient("localhost", snode.port, commitID);
-			client.indexData(numDocuments, snode.getBaseUrl() + snode.collectionName, false, false);
+
+			client.indexData(numDocuments, snode.getBaseUrl() + snode.collectionName, null, 0, 0, null, false, false,
+					SolrClientType.HTTP_SOLR_CLIENT, null, null);
 
 			node = snode;
 
@@ -394,18 +414,18 @@ public class Tests {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static void runNumericTestsCloud() throws IOException, InterruptedException {
+	public static void runNumericTestsCloud(long numDocuments) throws IOException, InterruptedException {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on cloud ...", MessageType.PURPLE_TEXT, false);
 
-		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, 100000, 2, "2", "1", 5000);
+		String port = Tests.setUpCloudForFeatureTests(Util.COMMIT_ID, numDocuments, 2, "2", "1", 5000);
 
 		Thread numericQueryTNQMetricC = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_CLOUD, port));
 		numericQueryTNQMetricC.start();
 
 		BenchmarkReportData.numericQueryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryClient.QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30,Tests.cloud.getuRL(),  
+				QueryClient.QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
 		numericQueryTNQMetricC.stop();
@@ -415,8 +435,8 @@ public class Tests {
 		numericQueryRNQMetricC.start();
 
 		BenchmarkReportData.numericQueryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryClient.QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30,
-				Tests.cloud.getuRL(),  Tests.cloud.collectionName);
+				QueryClient.QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryRNQMetricC.stop();
 
@@ -425,8 +445,8 @@ public class Tests {
 		numericQueryLNQMetricC.start();
 
 		BenchmarkReportData.numericQueryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryClient.QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30,
-				Tests.cloud.getuRL(), Tests.cloud.collectionName);
+				QueryClient.QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryLNQMetricC.stop();
 
@@ -435,8 +455,8 @@ public class Tests {
 		numericQueryGNQMetricC.start();
 
 		BenchmarkReportData.numericQueryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryClient.QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30,
-				Tests.cloud.getuRL(), Tests.cloud.collectionName);
+				QueryClient.QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryGNQMetricC.stop();
 
@@ -445,8 +465,8 @@ public class Tests {
 		numericQueryANQMetricC.start();
 
 		BenchmarkReportData.numericQueryANQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryClient.QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30, 
-				Tests.cloud.getuRL(), Tests.cloud.collectionName);
+				QueryClient.QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryANQMetricC.stop();
 
@@ -454,8 +474,9 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.OR_NUMERIC_QUERY_CLOUD, port));
 		numericQueryONQMetricC.start();
 
-		BenchmarkReportData.numericQueryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryClient.QueryType.OR_NUMERIC_QUERY,
-				queryThreadCount, 120, 30, Tests.cloud.getuRL(), Tests.cloud.collectionName);
+		BenchmarkReportData.numericQueryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryClient.QueryType.OR_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryONQMetricC.stop();
 
@@ -464,18 +485,19 @@ public class Tests {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static void runNumericQueryTestsStandalone() throws IOException, InterruptedException {
+	public static void runNumericQueryTestsStandalone(long numDocuments) throws IOException, InterruptedException {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on standalone node ...", MessageType.PURPLE_TEXT, false);
 
-		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, 100000);
+		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, numDocuments);
 
 		Thread numericQueryTNQMetricS = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryTNQMetricS.start();
 
 		BenchmarkReportData.numericQueryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
+				QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryTNQMetricS.stop();
 
@@ -484,8 +506,8 @@ public class Tests {
 		numericQueryRNQMetricS.start();
 
 		BenchmarkReportData.numericQueryRNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30, 
-				Tests.node.getBaseUrl(), Tests.node.collectionName);
+				QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryRNQMetricS.stop();
 
@@ -494,8 +516,8 @@ public class Tests {
 		numericQueryLNQMetricS.start();
 
 		BenchmarkReportData.numericQueryLNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, 
-				Tests.node.getBaseUrl(), Tests.node.collectionName);
+				QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryLNQMetricS.stop();
 
@@ -504,8 +526,8 @@ public class Tests {
 		numericQueryGNQMetricS.start();
 
 		BenchmarkReportData.numericQueryGNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, 
-				Tests.node.getBaseUrl(), Tests.node.collectionName);
+				QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryGNQMetricS.stop();
 
@@ -514,8 +536,8 @@ public class Tests {
 		numericQueryANQMetricS.start();
 
 		BenchmarkReportData.numericQueryANQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30,
-				Tests.node.getBaseUrl(), Tests.node.collectionName);
+				QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryANQMetricS.stop();
 
@@ -524,8 +546,7 @@ public class Tests {
 		numericQueryONQMetricS.start();
 
 		BenchmarkReportData.numericQueryONQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
-				Tests.node.collectionName);
+				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryONQMetricS.stop();
 

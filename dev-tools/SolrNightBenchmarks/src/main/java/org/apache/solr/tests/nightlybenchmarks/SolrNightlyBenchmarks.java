@@ -22,11 +22,11 @@ import java.io.IOException;
 public class SolrNightlyBenchmarks {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-		
+
 		Util.init(args);
-		
+
 		Util.destroy();
-		
+
 	}
-	
+
 }

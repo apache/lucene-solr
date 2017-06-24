@@ -87,8 +87,8 @@ public class Util {
 	public static String ONEM_TEST_DATA = "test-data-file-1M.csv";
 	public static String NUMERIC_QUERY_TERM_DATA = "Numeric-Term-Query.txt";
 	public static String NUMERIC_QUERY_PAIR_DATA = "Numeric-Pair-Query-Data.txt";
-	
-	
+	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
+
 	public static boolean SILENT = false;
 
 	final static Logger logger = Logger.getLogger(Util.class);
@@ -173,12 +173,12 @@ public class Util {
 		if (!webAppDir.exists()) {
 			webAppDir.mkdirs();
 		}
-		
+
 		File dataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/");
 		if (!dataWebAppDir.exists()) {
 			dataWebAppDir.mkdirs();
 		}
-		
+
 		File cloningDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/cloning/");
 		if (!cloningDataWebAppDir.exists()) {
 			cloningDataWebAppDir.mkdirs();
@@ -188,17 +188,17 @@ public class Util {
 		if (!commitQueueDataWebAppDir.exists()) {
 			commitQueueDataWebAppDir.mkdirs();
 		}
-		
+
 		File lastrunDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/lastrun/");
 		if (!lastrunDataWebAppDir.exists()) {
 			lastrunDataWebAppDir.mkdirs();
 		}
-		
+
 		File runningDataWebAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data/running/");
 		if (!runningDataWebAppDir.exists()) {
 			runningDataWebAppDir.mkdirs();
-		}		
-		
+		}
+
 		BasicConfigurator.configure();
 		File baseDirectory = new File(BASE_DIR);
 		baseDirectory.mkdir();
@@ -337,21 +337,23 @@ public class Util {
 				Runtime.getRuntime().exec("git ls-remote " + repositoryURL + " HEAD").getInputStream())).readLine()
 						.split("HEAD")[0].trim();
 	}
-	
+
 	public static String getLocalRepoPath() {
 		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + Util.COMMIT_ID;
 		return Util.GIT_REPOSITORY_PATH;
 	}
-	
+
 	public static String getLocalLastRepoPath() {
 		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + BenchmarkAppConnector.getLastRunCommitID();
 		return Util.GIT_REPOSITORY_PATH;
 	}
-	
+
 	public static void getAndPublishCommitInformation() {
-		BenchmarkAppConnector.writeToWebAppDataFile(Util.TEST_ID + "_" + Util.COMMIT_ID + "_COMMIT_INFORMATION_dump.csv", Util.getCommitInformation(), true, FileType.COMMIT_INFORMATION_FILE);
+		BenchmarkAppConnector.writeToWebAppDataFile(
+				Util.TEST_ID + "_" + Util.COMMIT_ID + "_COMMIT_INFORMATION_dump.csv", Util.getCommitInformation(), true,
+				FileType.COMMIT_INFORMATION_FILE);
 	}
-	
+
 	public static String getCommitInformation() {
 		Util.postMessage("** Getting the latest commit Information from local repository", MessageType.BLUE_TEXT,
 				false);
@@ -453,10 +455,8 @@ public class Util {
 			Util.postMessage(
 					"Getting Property Value for solrCommitHistoryData: " + SolrIndexingClient.solrCommitHistoryData,
 					MessageType.YELLOW_TEXT, false);
-			SolrIndexingClient.amazonFoodData = prop
-					.getProperty("SolrNightlyBenchmarks.amazonFoodData");
-			Util.postMessage(
-					"Getting Property Value for amazonFoodData: " + SolrIndexingClient.amazonFoodData,
+			SolrIndexingClient.amazonFoodData = prop.getProperty("SolrNightlyBenchmarks.amazonFoodData");
+			Util.postMessage("Getting Property Value for amazonFoodData: " + SolrIndexingClient.amazonFoodData,
 					MessageType.YELLOW_TEXT, false);
 			MetricCollector.metricsURL = prop.getProperty("SolrNightlyBenchmarks.metricsURL");
 			Util.postMessage("Getting Property Value for metricsURL: " + MetricCollector.metricsURL,
@@ -486,16 +486,20 @@ public class Util {
 			Util.postMessage("Getting Property Value for testDataDirectory: " + Util.TEST_DATA_DIRECTORY,
 					MessageType.YELLOW_TEXT, false);
 			Util.ONEM_TEST_DATA = prop.getProperty("SolrNightlyBenchmarks.1MTestData");
-			Util.postMessage("Getting Property Value for 1MTestData: " + Util.ONEM_TEST_DATA,
-					MessageType.YELLOW_TEXT, false);
+			Util.postMessage("Getting Property Value for 1MTestData: " + Util.ONEM_TEST_DATA, MessageType.YELLOW_TEXT,
+					false);
 			Util.NUMERIC_QUERY_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryTermsData");
 			Util.postMessage("Getting Property Value for staticNumericQueryTermsData: " + Util.NUMERIC_QUERY_TERM_DATA,
 					MessageType.YELLOW_TEXT, false);
 			Util.NUMERIC_QUERY_PAIR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryPairsData");
 			Util.postMessage("Getting Property Value for staticNumericQueryPairsData: " + Util.NUMERIC_QUERY_PAIR_DATA,
 					MessageType.YELLOW_TEXT, false);
-			
-			
+			Util.TEST_WITH_NUMBER_OF_DOCUMENTS = Long
+					.parseLong(prop.getProperty("SolrNightlyBenchmarks.testWithNumberOfDocuments"));
+			Util.postMessage(
+					"Getting Property Value for testWithNumberOfDocuments: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
+					MessageType.YELLOW_TEXT, false);
+
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
 				Util.postMessage("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...",
@@ -592,7 +596,7 @@ public class Util {
 		printString += "<tr><td>Total Swap Space:</td><td>"
 				+ ((JSONObject) ((JSONObject) jsonObject.get("metrics")).get("solr.jvm")).get("os.totalSwapSpaceSize")
 				+ " Bytes</td></tr>\n";
-		
+
 		printString += "</tbody></table>";
 
 		BenchmarkAppConnector.writeToWebAppDataFile(
@@ -610,7 +614,7 @@ public class Util {
 
 		File webAppSourceDir = new File("WebAppSource");
 		File webAppTargetDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
-		
+
 		if (!webAppTargetDir.exists()) {
 			webAppTargetDir.mkdir();
 		}
@@ -704,7 +708,7 @@ public class Util {
 	public static void setAliveFlag() throws IOException {
 
 		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
-		
+
 		if (!statusFile.exists()) {
 			statusFile.createNewFile();
 		}
@@ -735,45 +739,62 @@ public class Util {
 	public static void init(String[] args) {
 
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
-		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT, false);
-		Util.postMessage("          	*** Solr Nightly Benchmarks ***  HOLA !!!             ", MessageType.RED_TEXT, false);
-		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT, false);
+		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT,
+				false);
+		Util.postMessage("          	*** Solr Nightly Benchmarks ***  HOLA !!!             ", MessageType.RED_TEXT,
+				false);
+		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT,
+				false);
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
-		
+
 		try {
 			argM = Util.getArgs(args);
 			Util.getPropertyValues();
 
 			if (argM.containsKey("-Generate1MDataFile")) {
-				createTestDataFile("test-data-file-1M.csv",1000000);
+				createTestDataFile("test-data-file-1M.csv", 1000000);
 				System.exit(0);
 			}
-			
+
 			if (argM.containsKey("-RegisterLatestCommit")) {
 				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
 				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
-				
+
 				if (!BenchmarkAppConnector.isCommitInQueue(commit)) {
-						Util.postMessage("** Registering the latest commit in the queue ...", MessageType.RED_TEXT, false);
-						BenchmarkAppConnector.writeToWebAppDataFile(commit, "", true, FileType.COMMIT_QUEUE);
+					Util.postMessage("** Registering the latest commit in the queue ...", MessageType.RED_TEXT, false);
+					BenchmarkAppConnector.writeToWebAppDataFile(commit, "", true, FileType.COMMIT_QUEUE);
 				} else {
-						Util.postMessage("** Skipping Registering the latest commit in the queue since it already exists ...", MessageType.GREEN_TEXT, false);
+					Util.postMessage(
+							"** Skipping Registering the latest commit in the queue since it already exists ...",
+							MessageType.GREEN_TEXT, false);
 				}
-				
-				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...", MessageType.WHITE_TEXT, false);
+
+				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...",
+						MessageType.WHITE_TEXT, false);
 				System.exit(0);
-				
+
 			}
-			
+
+			if (argM.containsKey("-TestWithNumberOfDocuments")) {
+				long numDocuments = Long.parseLong(argM.get("-TestWithNumberOfDocuments"));
+
+				if (numDocuments > 0 && numDocuments <= 1000000) {
+					Util.TEST_WITH_NUMBER_OF_DOCUMENTS = numDocuments;
+					Util.postMessage("** Number of Documents to test with: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
+							MessageType.CYAN_TEXT, false);
+				}
+			}
+
 			if (argM.containsKey("-RunSilently")) {
-				Util.postMessage("** Running silently since -RunSilently parameter is set ...", MessageType.BLUE_TEXT, false);
+				Util.postMessage("** Running silently since -RunSilently parameter is set ...", MessageType.BLUE_TEXT,
+						false);
 				Util.SILENT = true;
 			}
-			
+
 			Util.checkWebAppFiles();
-			
+
 			Util.checkBaseAndTempDir();
-						
+
 			Util.setAliveFlag();
 
 			Util.getSystemEnvironmentInformation();
@@ -784,13 +805,13 @@ public class Util {
 
 				Util.killProcesses("zookeeper");
 				Util.killProcesses("Dsolr.jetty.https.port");
-				
+
 				if (!BenchmarkAppConnector.isCloningFolderEmpty()) {
-					Util.postMessage("** Looks like a broken clone exists removing it ...",
-							MessageType.RED_TEXT, false);
+					Util.postMessage("** Looks like a broken clone exists removing it ...", MessageType.RED_TEXT,
+							false);
 					Util.execute("rm -r -f " + Util.getLocalRepoPath(), Util.getLocalRepoPath());
 				}
-				
+
 				Thread.sleep(5000);
 
 				Util.cleanRunDirectory();
@@ -799,32 +820,35 @@ public class Util {
 
 			if (argM.containsKey("-ProcessCommitsFromQueue")) {
 				Util.postMessage("** Initiating processing from commit queue ...", MessageType.BLUE_TEXT, false);
-				
+
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
 				int length = currentCommits.length;
-				
+
 				if (length == 0) {
 					Util.postMessage("** Commit queue empty! [EXIT] ...", MessageType.BLUE_TEXT, false);
 				} else {
 					for (int i = 0; i < length; i++) {
-						
-							String commitIDFromQueue = currentCommits[i].getName();
-							Util.COMMIT_ID = commitIDFromQueue;
-							String lastRun = BenchmarkAppConnector.getLastRunCommitID();
-							
-							if (commitIDFromQueue.equals(lastRun)) {
-								Util.postMessage("** The commit: " + commitIDFromQueue + " has already been processed skipping ...", MessageType.RED_TEXT, false);
-								BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
-							} else {						
-								Util.createIsRunningFile();
-								Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue, MessageType.GREEN_TEXT, false);
-								TestPlans.execute();
-								BenchmarkAppConnector.publishDataForWebApp();
-								BenchmarkReportData.reset();
-								BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
-								System.gc();
-							}
-							
+
+						String commitIDFromQueue = currentCommits[i].getName();
+						Util.COMMIT_ID = commitIDFromQueue;
+						String lastRun = BenchmarkAppConnector.getLastRunCommitID();
+
+						if (commitIDFromQueue.equals(lastRun)) {
+							Util.postMessage(
+									"** The commit: " + commitIDFromQueue + " has already been processed skipping ...",
+									MessageType.RED_TEXT, false);
+							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+						} else {
+							Util.createIsRunningFile();
+							Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue,
+									MessageType.GREEN_TEXT, false);
+							TestPlans.execute();
+							BenchmarkAppConnector.publishDataForWebApp();
+							BenchmarkReportData.reset();
+							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
+							System.gc();
+						}
+
 					}
 					Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 				}
@@ -834,17 +858,18 @@ public class Util {
 				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
 
 				TestPlans.execute();
-				BenchmarkAppConnector.publishDataForWebApp();	
+				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
 			} else if (argM.containsKey("-ProcessWithCommitID")) {
-				
+
 				Util.COMMIT_ID = argM.get("-ProcessWithCommitID");
-				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT, false);
+				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT,
+						false);
 				TestPlans.execute();
-				BenchmarkAppConnector.publishDataForWebApp();	
+				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-			} 
-		
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -890,27 +915,29 @@ public class Util {
 	public static void cleanRunDirectory() {
 		Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
 	}
-	
+
 	public static String getSentence(Random r, int words) {
 		StringBuilder sb = new StringBuilder();
-		for (int i=0; i<words; i++) {
+		for (int i = 0; i < words; i++) {
 			sb.append(TestUtil.randomSimpleString(r, 4 + r.nextInt(10)) + " ");
 		}
 		return sb.toString().trim();
 	}
-	
+
 	public static void createTestDataFile(String fileName, int numberOfDocuments) {
-		Util.postMessage("** Preparing 4k text documents" , MessageType.WHITE_TEXT, false);
-		for (int i = 0 ; i < numberOfDocuments; i++) {
-				if (i % 100 == 0) {
-					Util.postMessageOnLine("|");
-				}
-				
-				Random r = new Random();
-				
-				String line = i + "," + getSentence(r, 400) + "," + (new Random().nextInt()) + "," + (new Random().nextLong()) + "," + "Category" + (new Random().nextInt(10)) + "," + getSentence(r, 350);
-				BenchmarkAppConnector.writeToWebAppDataFile(fileName, line , false, FileType.TEST_ENV_FILE);
-		}		
+		Util.postMessage("** Preparing 4k text documents", MessageType.WHITE_TEXT, false);
+		for (int i = 0; i < numberOfDocuments; i++) {
+			if (i % 100 == 0) {
+				Util.postMessageOnLine("|");
+			}
+
+			Random r = new Random();
+
+			String line = i + "," + getSentence(r, 400) + "," + (new Random().nextInt()) + ","
+					+ (new Random().nextLong()) + "," + "Category" + (new Random().nextInt(10)) + ","
+					+ getSentence(r, 350);
+			BenchmarkAppConnector.writeToWebAppDataFile(fileName, line, false, FileType.TEST_ENV_FILE);
+		}
 	}
 
 	public static void killProcesses(String lookFor) {

@@ -113,13 +113,13 @@ public class SolrCloud {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public String getuRL() {
-			return "http://" + this.host + ":" + this.port + "/solr/";
+		return "http://" + this.host + ":" + this.port + "/solr/";
 	}
-	
+
 	public String getZookeeperUrl() {
-			return this.zookeeperIp + ":" + this.zookeeperPort;
+		return this.zookeeperIp + ":" + this.zookeeperPort;
 	}
 
 	public void shutdown() throws IOException, InterruptedException {

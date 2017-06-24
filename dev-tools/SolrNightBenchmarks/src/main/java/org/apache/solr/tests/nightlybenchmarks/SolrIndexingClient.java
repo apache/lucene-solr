@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
@@ -33,11 +32,11 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
-public class SolrIndexingClient {
+enum SolrClientType {
+	HTTP_SOLR_CLIENT, CLOUD_SOLR_CLIENT, CONCURRENT_UPDATE_SOLR_CLIENT
+};
 
-	public enum SolrClientType {
-		HTTP_SOLR_CLIENT, CLOUD_SOLR_CLIENT, CONCURRENT_UPDATE_SOLR_CLIENT
-	};
+public class SolrIndexingClient {
 
 	@SuppressWarnings("unused")
 	private String host;
@@ -48,7 +47,7 @@ public class SolrIndexingClient {
 	private String commitId;
 	Random r = new Random();
 
-	public static int documentCount;
+	public static long documentCount;
 
 	public SolrIndexingClient(String host, String port, String commitId) {
 		super();
@@ -58,13 +57,32 @@ public class SolrIndexingClient {
 	}
 
 	@SuppressWarnings("deprecation")
-	public Map<String, String> indexData(int numDocuments, String urlString, boolean captureMetrics, boolean deleteData) {
+	public Map<String, String> indexData(long numDocuments, String urlString, String collectionName, int queueSize,
+			int threadCount, TestType type, boolean captureMetrics, boolean deleteData, SolrClientType clientType,
+			String zookeeperIp, String zookeeperPort) {
 
 		documentCount = numDocuments;
-		
-		Util.postMessage("** Indexing documents through HTTP client ..." + urlString , MessageType.CYAN_TEXT, false);
 
-		HttpSolrClient solrClient = new HttpSolrClient.Builder(urlString).build();
+		Util.postMessage("** Indexing documents through " + clientType + " with following parameters: Document Count:"
+				+ numDocuments + ", Url:" + urlString + ", collectionName:" + collectionName + ", QueueSize:"
+				+ queueSize + ", Threadcount:" + threadCount + ", TestType:" + type + ", Capture Metrics: "
+				+ captureMetrics + ", Delete Data:" + deleteData + ", Zookeeper IP:" + zookeeperIp + ", Zookeeper Port:"
+				+ zookeeperPort, MessageType.CYAN_TEXT, false);
+
+		HttpSolrClient httpSolrClient = null;
+		CloudSolrClient cloudSolrClient = null;
+		ConcurrentUpdateSolrClient concurrentUpdateSolrClient = null;
+
+		if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
+			httpSolrClient = new HttpSolrClient.Builder(urlString).build();
+		} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
+			cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zookeeperIp + ":" + zookeeperPort).build();
+			cloudSolrClient.connect();
+			cloudSolrClient.setDefaultCollection(collectionName);
+		} else if (clientType == SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT) {
+			concurrentUpdateSolrClient = new ConcurrentUpdateSolrClient.Builder(urlString).withQueueSize(queueSize)
+					.withThreadCount(threadCount).build();
+		}
 
 		int numberOfDocuments = 0;
 		String line = "";
@@ -72,20 +90,20 @@ public class SolrIndexingClient {
 
 		Thread thread = null;
 		if (captureMetrics) {
-			thread = new Thread(new MetricCollector(this.commitId, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL, this.port));
+			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
 			thread.start();
 		}
 
 		long end = 0;
 		long start = System.currentTimeMillis();
-		
+
 		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
 			while ((line = br.readLine()) != null) {
-	
-				SolrInputDocument document = new SolrInputDocument();				
+
+				SolrInputDocument document = new SolrInputDocument();
 				line.trim();
-				
+
 				String[] data = line.split(cvsSplitBy);
 
 				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
@@ -94,8 +112,15 @@ public class SolrIndexingClient {
 				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				
-				solrClient.add(document);
+
+				if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
+					httpSolrClient.add(document);
+				} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
+					cloudSolrClient.add(collectionName, document);
+				} else if (clientType == SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT) {
+					concurrentUpdateSolrClient.add(collectionName, document);
+				}
+
 				numberOfDocuments++;
 				if (numDocuments == numberOfDocuments) {
 					break;
@@ -103,24 +128,49 @@ public class SolrIndexingClient {
 			}
 			end = System.currentTimeMillis();
 
-			solrClient.commit();
-			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
-			
-			if (deleteData) {
-			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
-			solrClient.deleteByQuery("*:*");
-			solrClient.commit();
-			Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
+			if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
+				httpSolrClient.commit(collectionName);
+			} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
+				cloudSolrClient.commit(collectionName);
+			} else if (clientType == SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT) {
+				concurrentUpdateSolrClient.commit(collectionName);
 			}
-			
+
+			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
+
+			if (deleteData) {
+				Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
+
+				if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
+					httpSolrClient.deleteByQuery("*:*");
+					httpSolrClient.commit(collectionName);
+				} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
+					cloudSolrClient.deleteByQuery(collectionName, "*:*");
+					cloudSolrClient.commit(collectionName);
+				} else if (clientType == SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT) {
+					concurrentUpdateSolrClient.deleteByQuery(collectionName, "*:*");
+					concurrentUpdateSolrClient.commit(collectionName);
+				}
+
+				Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
+			}
+
 			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
-			solrClient.close();
+
+			if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
+				httpSolrClient.close();
+			} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
+				cloudSolrClient.close();
+			} else if (clientType == SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT) {
+				concurrentUpdateSolrClient.shutdownNow();
+				concurrentUpdateSolrClient.close();
+			}
+
 			Util.postMessage("** Time taken to index " + numberOfDocuments + " documents is: " + (double) (end - start)
 					+ " millisecond(s)", MessageType.RED_TEXT, false);
-			
+
 			br.close();
 
-
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SolrServerException e) {
@@ -131,219 +181,19 @@ public class SolrIndexingClient {
 
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		
+
 		returnMetricMap.put("TimeStamp", ft.format(dNow));
 		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 		returnMetricMap.put("IndexingTime", "" + (end - start));
-		returnMetricMap.put("IndexingThroughput",
-				"" + (double) numberOfDocuments / ((double) ((end - start)/1000d)));
+		returnMetricMap.put("IndexingThroughput", "" + (double) numberOfDocuments / ((double) ((end - start) / 1000d)));
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
 		if (captureMetrics) {
 			thread.stop();
 		}
-		
-		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT,
-				false);
+
+		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT, false);
 		return returnMetricMap;
 	}
-
-	@SuppressWarnings("deprecation")
-	public Map<String, String> indexData(int numDocuments, String urlString, String zookeeperIp,
-			String zookeeperPort, String collectionName, boolean captureMetrics, TestType type, boolean deleteData) {
-
-		Util.postMessage("** Indexing documents through cloud client ..." + urlString + " | " + collectionName , MessageType.CYAN_TEXT, false);
-
-		documentCount = numDocuments;
-
-		CloudSolrClient solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperIp + ":" + zookeeperPort)
-				.build();
-		solrClient.connect();
-		solrClient.setDefaultCollection(collectionName);
-
-		int numberOfDocuments = 0;
-		String line = "";
-		String cvsSplitBy = ",";
-
-		Thread thread = null;
-		if (captureMetrics) {
-			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
-			thread.start();
-		}
-
-		long end = 0;
-		long start = System.currentTimeMillis();
-		
-		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				
-				SolrInputDocument document = new SolrInputDocument();				
-				line.trim();
-				
-				String[] data = line.split(cvsSplitBy);
-
-				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				
-				solrClient.add(collectionName, document);
-				numberOfDocuments++;
-				if (numDocuments == numberOfDocuments) {
-					break;
-				}
-			}
-			end = System.currentTimeMillis();
-			
-			solrClient.commit();
-			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
-
-			if (deleteData) {
-			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
-			solrClient.deleteByQuery(collectionName,"*:*");
-			solrClient.commit(collectionName);
-			Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
-			}
-			
-			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
-			solrClient.close();
-			Util.postMessage("** Time taken to index " + numberOfDocuments + " documents is: " + (double) (end - start)
-					+ " millisecond(s)", MessageType.RED_TEXT, false);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		}
-
-		Map<String, String> returnMetricMap = new HashMap<String, String>();
-
-		Date dNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		
-		returnMetricMap.put("TimeStamp", ft.format(dNow));
-		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
-		returnMetricMap.put("IndexingTime", "" + (double)(end - start));
-		returnMetricMap.put("IndexingThroughput",
-				"" + (double) numberOfDocuments / ((double)((end - start)/1000d)));
-		returnMetricMap.put("ThroughputUnit", "doc/sec");
-		returnMetricMap.put("CommitID", this.commitId);
-
-		if (captureMetrics) {
-			thread.stop();
-		}
-		
-		Util.postMessage(returnMetricMap.toString(), MessageType.YELLOW_TEXT, false);
-		
-		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT,
-				false);
-		return returnMetricMap;
-	}
-
-	@SuppressWarnings("deprecation")
-	public Map<String, String> indexData(int numDocuments, String urlString, String collectionName, int queueSize, int threadCount, TestType type, boolean captureMetrics, boolean deleteData) throws InterruptedException {
-		
-		documentCount = numDocuments;
-		LinkedList<SolrInputDocument> docList = new LinkedList<SolrInputDocument>();
-
-		Util.postMessage("** Indexing documents through concurrent client ..." + urlString + " | " + collectionName + " | " + queueSize + " | " + threadCount , MessageType.CYAN_TEXT, false);
-		
-		ConcurrentUpdateSolrClient solrClient = new ConcurrentUpdateSolrClient.Builder(urlString).withQueueSize(queueSize).withThreadCount(threadCount).build();
-
-		int numberOfDocuments = 0;
-		String line = "";
-		String cvsSplitBy = ",";
-
-		Thread thread = null;
-		if (captureMetrics) {
-			thread = new Thread(new MetricCollector(this.commitId, type, this.port));
-			thread.start();
-		}
-		
-		long end = 0;
-		long start = 0;
-
-		Util.postMessage("** Indexing the documents ...", MessageType.WHITE_TEXT, false);
-
-		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				
-				SolrInputDocument document = new SolrInputDocument();				
-				line.trim();
-				
-				String[] data = line.split(cvsSplitBy);
-
-				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				
-				docList.add(document);
-				numberOfDocuments++;
-				if (numDocuments == numberOfDocuments) {
-					break;
-				}
-			}
-			
-			int length  = docList.size();
-			start = System.currentTimeMillis();
-			for (int i = 0 ; i < length; i ++) {
-				solrClient.add(collectionName, docList.get(i));
-			}
-			//solrClient.blockUntilFinished();
-			end =  System.currentTimeMillis();
-
-			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
-			solrClient.commit(collectionName);
-
-			
-			if (deleteData) {
-			Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
-			solrClient.deleteByQuery(collectionName,"*:*");
-			solrClient.commit(collectionName);
-			Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
-			}
-			
-			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
-			solrClient.shutdownNow();
-			solrClient.close();
-			Util.postMessage("** Time taken to index " + numberOfDocuments + " documents is: " + (end - start)
-					+ " millisecond(s)", MessageType.RED_TEXT, false);
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (SolrServerException e) {
-			e.printStackTrace();
-		}
-
-		Map<String, String> returnMetricMap = new HashMap<String, String>();
-
-		Date dNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		
-		returnMetricMap.put("TimeStamp", ft.format(dNow));
-		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
-		returnMetricMap.put("IndexingTime", "" + (end - start));
-		returnMetricMap.put("IndexingThroughput",
-				"" + (double)numberOfDocuments /((double)(end - start)/1000d));
-		returnMetricMap.put("ThroughputUnit", "doc/sec");
-		returnMetricMap.put("CommitID", this.commitId);
-
-		if (captureMetrics) {
-			thread.stop();
-		}
-		Util.postMessage(returnMetricMap.toString(), MessageType.YELLOW_TEXT, false);
-
-		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT,
-				false);
-		return returnMetricMap;
-	}
-	
 }

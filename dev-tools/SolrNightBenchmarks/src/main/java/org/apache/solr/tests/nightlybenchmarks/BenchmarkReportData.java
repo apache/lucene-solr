@@ -23,19 +23,19 @@ public class BenchmarkReportData {
 
 	public static Map<String, String> returnStandaloneCreateCollectionMap;
 	public static Map<String, String> returnCloudCreateCollectionMap;
-	
+
 	public static Map<String, String> metricMapStandalone;
 
 	public static Map<String, String> metricMapCloudSerial_2N1S2R;
 	public static Map<String, String> metricMapCloudSerial_2N2S1R;
 	public static Map<String, String> metricMapCloudSerial_3N1S3R;
 	public static Map<String, String> metricMapCloudSerial_4N2S2R;
-	
+
 	public static Map<String, String> metricMapCloudConcurrent1_2N1S2R;
 	public static Map<String, String> metricMapCloudConcurrent1_2N2S1R;
 	public static Map<String, String> metricMapCloudConcurrent1_3N1S3R;
 	public static Map<String, String> metricMapCloudConcurrent1_4N2S2R;
-	
+
 	public static Map<String, String> metricMapCloudConcurrent2_2N1S2R;
 	public static Map<String, String> metricMapCloudConcurrent2_2N2S1R;
 	public static Map<String, String> metricMapCloudConcurrent2_3N1S3R;
@@ -49,7 +49,7 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapStandaloneConcurrent1;
 	public static Map<String, String> metricMapStandaloneConcurrent2;
 	public static Map<String, String> metricMapStandaloneConcurrent3;
-	
+
 	public static Map<String, String> numericQueryTNQMetricC;
 	public static Map<String, String> numericQueryRNQMetricC;
 	public static Map<String, String> numericQueryLNQMetricC;
@@ -63,24 +63,24 @@ public class BenchmarkReportData {
 	public static Map<String, String> numericQueryGNQMetricS;
 	public static Map<String, String> numericQueryANQMetricS;
 	public static Map<String, String> numericQueryONQMetricS;
-	
+
 	public static void reset() {
-		
+
 		returnStandaloneCreateCollectionMap = null;
 		returnCloudCreateCollectionMap = null;
-		
+
 		metricMapStandalone = null;
 
 		metricMapCloudSerial_2N1S2R = null;
 		metricMapCloudSerial_2N2S1R = null;
 		metricMapCloudSerial_3N1S3R = null;
 		metricMapCloudSerial_4N2S2R = null;
-		
+
 		metricMapCloudConcurrent1_2N1S2R = null;
 		metricMapCloudConcurrent1_2N2S1R = null;
 		metricMapCloudConcurrent1_3N1S3R = null;
 		metricMapCloudConcurrent1_4N2S2R = null;
-		
+
 		metricMapCloudConcurrent2_2N1S2R = null;
 		metricMapCloudConcurrent2_2N2S1R = null;
 		metricMapCloudConcurrent2_3N1S3R = null;
@@ -90,11 +90,11 @@ public class BenchmarkReportData {
 		metricMapCloudConcurrent3_2N2S1R = null;
 		metricMapCloudConcurrent3_3N1S3R = null;
 		metricMapCloudConcurrent3_4N2S2R = null;
-		
+
 		metricMapStandaloneConcurrent1 = null;
 		metricMapStandaloneConcurrent2 = null;
 		metricMapStandaloneConcurrent3 = null;
-		
+
 		numericQueryTNQMetricC = null;
 		numericQueryRNQMetricC = null;
 		numericQueryLNQMetricC = null;
@@ -108,7 +108,7 @@ public class BenchmarkReportData {
 		numericQueryGNQMetricS = null;
 		numericQueryANQMetricS = null;
 		numericQueryONQMetricS = null;
-		
+
 	}
 
 }

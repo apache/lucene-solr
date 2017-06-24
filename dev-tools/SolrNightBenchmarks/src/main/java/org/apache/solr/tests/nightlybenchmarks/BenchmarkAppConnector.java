@@ -1,5 +1,22 @@
 package org.apache.solr.tests.nightlybenchmarks;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -17,14 +34,31 @@ public class BenchmarkAppConnector {
 
 	public enum FileType {
 
-		MEMORY_HEAP_USED, PROCESS_CPU_LOAD, TEST_ENV_FILE, STANDALONE_INDEXING_MAIN, STANDALONE_CREATE_COLLECTION_MAIN, STANDALONE_INDEXING_THROUGHPUT, CLOUD_CREATE_COLLECTION_MAIN, CLOUD_SERIAL_INDEXING_THROUGHPUT, CLOUD_CONCURRENT_INDEXING_THROUGHPUT, CLOUD_INDEXING_SERIAL, CLOUD_INDEXING_CONCURRENT, NUMERIC_QUERY_STANDALONE, NUMERIC_QUERY_CLOUD, LAST_RUN_COMMIT, IS_RUNNING_FILE, COMMIT_INFORMATION_FILE, IS_CLONING_FILE, COMMIT_QUEUE
+		MEMORY_HEAP_USED, 
+		PROCESS_CPU_LOAD, 
+		TEST_ENV_FILE, 
+		STANDALONE_INDEXING_MAIN, 
+		STANDALONE_CREATE_COLLECTION_MAIN, 
+		STANDALONE_INDEXING_THROUGHPUT, 
+		CLOUD_CREATE_COLLECTION_MAIN, 
+		CLOUD_SERIAL_INDEXING_THROUGHPUT, 
+		CLOUD_CONCURRENT_INDEXING_THROUGHPUT, 
+		CLOUD_INDEXING_SERIAL, 
+		CLOUD_INDEXING_CONCURRENT, 
+		NUMERIC_QUERY_STANDALONE, 
+		NUMERIC_QUERY_CLOUD, 
+		LAST_RUN_COMMIT, 
+		IS_RUNNING_FILE, 
+		COMMIT_INFORMATION_FILE, 
+		IS_CLONING_FILE, 
+		COMMIT_QUEUE
 
 	}
 
 	public static String getLastRunCommitID() {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
-		
+
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
@@ -34,76 +68,78 @@ public class BenchmarkAppConnector {
 			return dataDir.listFiles()[0].getName().trim();
 		} else {
 			return null;
-		}			
+		}
 	}
 
 	public static boolean isRunningFolderEmpty() {
-		
+
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
-		
+
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
-		
+
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
 	public static boolean isCloningFolderEmpty() {
-		
+
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
-		
+
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
-		
+
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
 	public static boolean isCommitQueueEmpty() {
-		
+
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-		
+
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
-		
+
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
 	public static boolean deleteCommitFromQueue(String commit) {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-		
+
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
-		
-		Util.postMessage("** Deleting registered commit " + commit + " from the queue ...", MessageType.RED_TEXT, false);
-		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
+
+		Util.postMessage("** Deleting registered commit " + commit + " from the queue ...", MessageType.RED_TEXT,
+				false);
+		File file = new File(
+				benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
 		return file.delete();
-	
+
 	}
-	
+
 	public static String getOldestCommitFromQueue() {
-		
+
 		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 
 		if (!directory.exists()) {
 			directory.mkdirs();
 		}
-		
+
 		File[] files = directory.listFiles();
-		
+
 		if (files.length == 0) {
 			return null;
 		}
-		
-        Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-        return files[0].getName();
+
+		Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
+		return files[0].getName();
 	}
 
 	public static File[] getRegisteredCommitsFromQueue() {
-		
+
 		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
 
 		if (!directory.exists()) {
@@ -111,78 +147,86 @@ public class BenchmarkAppConnector {
 		}
 
 		File[] files = directory.listFiles();
-		
-        Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-        Util.postMessage("** Number of registered commits in the queue: " + files.length, MessageType.RED_TEXT, false);
 
-        return files;
+		Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
+		Util.postMessage("** Number of registered commits in the queue: " + files.length, MessageType.RED_TEXT, false);
+
+		return files;
 	}
 
 	public static boolean isCommitInQueue(String commit) {
-		
-		File file = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
+
+		File file = new File(
+				benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
 
 		if (!file.exists()) {
 			file.mkdirs();
 		}
-		
+
 		return file.exists();
-	
+
 	}
-	
+
 	public static void deleteFolder(FileType type) {
 
 		if (type == FileType.LAST_RUN_COMMIT) {
-			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
-			 
-			 if (!dir.exists()) {
-				 dir.mkdirs();
-			 } else {
-						 for (File file: dir.listFiles()) {
-						        if (!file.isDirectory()) file.delete();
-						    }
-			 }
+			File dir = new File(
+					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
+
+			if (!dir.exists()) {
+				dir.mkdirs();
+			} else {
+				for (File file : dir.listFiles()) {
+					if (!file.isDirectory())
+						file.delete();
+				}
+			}
 		} else if (type == FileType.IS_RUNNING_FILE) {
-			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
-			 
-			 if (!dir.exists()) {
-				 dir.mkdirs();
-			 } else {
-						 for (File file: dir.listFiles()) {
-						        if (!file.isDirectory()) file.delete();
-						    }
-			 }
+			File dir = new File(
+					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
+
+			if (!dir.exists()) {
+				dir.mkdirs();
+			} else {
+				for (File file : dir.listFiles()) {
+					if (!file.isDirectory())
+						file.delete();
+				}
+			}
 		} else if (type == FileType.IS_CLONING_FILE) {
-			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
-			 
-			 if (!dir.exists()) {
-				 dir.mkdirs();
-			 } else {
-						 for (File file: dir.listFiles()) {
-						        if (!file.isDirectory()) file.delete();
-						    }
-			 }
+			File dir = new File(
+					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
+
+			if (!dir.exists()) {
+				dir.mkdirs();
+			} else {
+				for (File file : dir.listFiles()) {
+					if (!file.isDirectory())
+						file.delete();
+				}
+			}
 		} else if (type == FileType.COMMIT_QUEUE) {
-			 File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-			 
-			 if (!dir.exists()) {
-				 dir.mkdirs();
-			 } else {
-						 for (File file: dir.listFiles()) {
-						        if (!file.isDirectory()) file.delete();
-						    }
-			 }
+			File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "commit_queue"
+					+ File.separator);
+
+			if (!dir.exists()) {
+				dir.mkdirs();
+			} else {
+				for (File file : dir.listFiles()) {
+					if (!file.isDirectory())
+						file.delete();
+				}
+			}
 		}
 	}
 
 	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) {
-		
+
 		File dataDir = null;
 		File file = null;
 		FileWriter fw = null;
-		
-		try
-		{
+
+		try {
 
 			if (type == FileType.IS_RUNNING_FILE) {
 				dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
@@ -215,7 +259,7 @@ public class BenchmarkAppConnector {
 			} else {
 				file = new File(benchmarkAppDirectory + "data" + File.separator + fileName);
 			}
-			
+
 			if (file.exists() && createNewFile) {
 				file.delete();
 				file.createNewFile();
@@ -225,8 +269,8 @@ public class BenchmarkAppConnector {
 				file.createNewFile();
 			}
 
-		    fw = new FileWriter(file, true); 
-			
+			fw = new FileWriter(file, true);
+
 			if (file.length() == 0) {
 
 				file.setReadable(true);
@@ -240,7 +284,8 @@ public class BenchmarkAppConnector {
 					fw.write("Date, Test_ID, Seconds, CommitID\n");
 				} else if (type == FileType.STANDALONE_INDEXING_MAIN || type == FileType.CLOUD_INDEXING_SERIAL) {
 					fw.write("Date, Test_ID, Seconds, CommitID\n");
-				} else if (type == FileType.TEST_ENV_FILE || type == FileType.COMMIT_INFORMATION_FILE || type == FileType.COMMIT_QUEUE) {
+				} else if (type == FileType.TEST_ENV_FILE || type == FileType.COMMIT_INFORMATION_FILE
+						|| type == FileType.COMMIT_QUEUE) {
 					// Don't add any header
 				} else if (type == FileType.STANDALONE_INDEXING_THROUGHPUT
 						|| type == FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT) {
@@ -256,23 +301,21 @@ public class BenchmarkAppConnector {
 							"Date, Test_ID, CommitID, QPS(Term), QTime-Min(Term), QTime-Max(Term), QTime-75th-Percentile(Term), QTime-95th-Percentile(Term), QTime-99th-Percentile(Term), QTime-99.9th-Percentile(Term), QPS(Range), QTime-Min(Range), QTime-Max(Range), QTime-75th-Percentile(Range), QTime-95th-Percentile(Range), QTime-99th-Percentile(Range), QTime-99.9th-Percentile(Range), QPS(Less Than), QTime-Min(Less Than), QTime-Max(Less Than), QTime-75th-Percentile(Less Than), QTime-95th-Percentile(Less Than), QTime-99th-Percentile(Less Than), QTime-99.9th-Percentile(Less Than), QPS(Greater Than), QTime-Min(Greater Than), QTime-Max(Greater Than), QTime-75th-Percentile(Greater Than), QTime-95th-Percentile(Greater Than), QTime-99th-Percentile(Greater Than), QTime-99.9th-Percentile(Greater Than), QPS(AND), QTime-Min(AND), QTime-Max(AND), QTime-75th-Percentile(And), QTime-95th-Percentile(And), QTime-99th-Percentile(And), QTime-99.9th-Percentile(And), QPS(OR), QTime-Min(OR), QTime-Max(OR), QTime-75th-Percentile(OR), QTime-95th-Percentile(OR), QTime-99th-Percentile(OR), QTime-99.9th-Percentile(OR)\n");
 				}
 			}
-			
-		    fw.write(data + "\n");
-		    
-		}
-		catch(IOException ioe)
-		{
-		    Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
+
+			fw.write(data + "\n");
+
+		} catch (IOException ioe) {
+			Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
 		} finally {
 			if (fw != null) {
-					try {
-						fw.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+				try {
+					fw.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
-		
+
 	}
 
 	public static void publishDataForWebApp() {
@@ -322,7 +365,7 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("CommitID") + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R.get("IndexingThroughput"), 
+							+ BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 		if (BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R != null) {
@@ -362,7 +405,7 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.metricMapStandaloneConcurrent3.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		
+
 		if (BenchmarkReportData.returnStandaloneCreateCollectionMap != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("create_collection_data_standalone_regular.csv",
 					BenchmarkReportData.returnStandaloneCreateCollectionMap.get("TimeStamp") + ", " + Util.TEST_ID
@@ -425,8 +468,7 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.numericQueryONQMetricC.get("95thQtime") + ", "
 							+ BenchmarkReportData.numericQueryONQMetricC.get("99thQtime") + ", "
 							+ BenchmarkReportData.numericQueryONQMetricC.get("99.9thQtime"),
-							
-							
+
 					false, FileType.NUMERIC_QUERY_CLOUD);
 		}
 
@@ -476,7 +518,7 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.numericQueryONQMetricS.get("95thQtime") + ", "
 							+ BenchmarkReportData.numericQueryONQMetricS.get("99thQtime") + ", "
 							+ BenchmarkReportData.numericQueryONQMetricS.get("99.9thQtime"),
-							
+
 					false, FileType.NUMERIC_QUERY_STANDALONE);
 		}
 

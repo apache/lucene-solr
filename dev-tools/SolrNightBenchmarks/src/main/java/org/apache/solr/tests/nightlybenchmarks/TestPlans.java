@@ -20,30 +20,31 @@ package org.apache.solr.tests.nightlybenchmarks;
 import java.io.IOException;
 
 public class TestPlans {
-	
+
 	public static void execute() throws IOException, InterruptedException {
 
 		Util.postMessage("** Executing the benchmark test plan ...", MessageType.BLUE_TEXT, false);
-		
-		Tests.indexingTestsStandalone(Util.COMMIT_ID, 100000);
+
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
-		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, 100000);
-     		Tests.runNumericQueryTestsStandalone();
+		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 
-		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 100000, 2, "1", "2");
-		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 100000, 2, "2", "1");
-		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 100000, 3, "1", "3");
-		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, 100000, 4, "2", "2");
+		Tests.runNumericQueryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 100000, 2, "1", "2");
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 100000, 2, "2", "1");
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 100000, 3, "1", "3");
-		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, 100000, 4, "2", "2");
-		
-		Tests.runNumericTestsCloud();
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 3, "1", "3");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
+
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1");
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 3, "1", "3");
+		Tests.indexingTestsCloudConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
+
+		Tests.runNumericTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 
 		Util.postMessage("** Executing the benchmark test plan [COMPLETE]...", MessageType.BLUE_TEXT, false);
-		
+
 	}
 
 }

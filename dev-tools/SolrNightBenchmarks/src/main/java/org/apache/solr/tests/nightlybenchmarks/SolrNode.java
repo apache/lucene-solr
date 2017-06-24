@@ -108,9 +108,9 @@ public class SolrNode {
 			repository.checkout().setName(commitId).call();
 		} else {
 			BenchmarkAppConnector.writeToWebAppDataFile("iamcloning.txt", "", true, FileType.IS_CLONING_FILE);
-					repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL)
-							.setDirectory(gitDirectory).call();
-					repository.checkout().setName(commitId).call();
+			repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL).setDirectory(gitDirectory)
+					.call();
+			repository.checkout().setName(commitId).call();
 			BenchmarkAppConnector.deleteFolder(FileType.IS_CLONING_FILE);
 		}
 
@@ -199,9 +199,8 @@ public class SolrNode {
 				nodeDirectory);
 		end = System.currentTimeMillis();
 
-
-		Util.postMessage("** Time for creating the core is: " + (end - start) + " millisecond(s)", MessageType.GREEN_TEXT,
-				false);
+		Util.postMessage("** Time for creating the core is: " + (end - start) + " millisecond(s)",
+				MessageType.GREEN_TEXT, false);
 
 		thread.stop();
 
@@ -209,10 +208,10 @@ public class SolrNode {
 
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		
+
 		returnMap.put("ProcessExitValue", "" + returnVal);
 		returnMap.put("TimeStamp", "" + ft.format(dNow));
-		returnMap.put("CreateCollectionTime", "" + ((double) (end - start)/1000d));
+		returnMap.put("CreateCollectionTime", "" + ((double) (end - start) / 1000d));
 		returnMap.put("CommitID", this.commitId);
 
 		return returnMap;
@@ -253,25 +252,23 @@ public class SolrNode {
 
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		
+
 		returnMap.put("ProcessExitValue", "" + returnVal);
 		returnMap.put("TimeStamp", "" + ft.format(dNow));
-		returnMap.put("CreateCollectionTime", "" + ((double) (end - start)/1000d));
+		returnMap.put("CreateCollectionTime", "" + ((double) (end - start) / 1000d));
 		returnMap.put("CommitID", this.commitId);
 
 		return returnMap;
 	}
-	
-	
+
 	public int deleteCollection(String collectionName) throws IOException, InterruptedException {
 
 		this.collectionName = collectionName;
 		Util.postMessage("** Deleting collection ... ", MessageType.CYAN_TEXT, true);
-		
+
 		return Util.execute("./solr delete -c " + collectionName + " -deleteConfig true", nodeDirectory);
 
 	}
-
 
 	public String getNodeDirectory() {
 		return nodeDirectory;
