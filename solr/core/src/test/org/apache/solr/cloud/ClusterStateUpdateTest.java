@@ -101,7 +101,8 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
 
     assertEquals(host + ":" +cluster.getJettySolrRunner(0).getLocalPort()+"_solr", zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
 
-    assertEquals("http://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr", zkProps.getStr(ZkStateReader.BASE_URL_PROP));
+    assertTrue(zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("http://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr")
+      || zkProps.getStr(ZkStateReader.BASE_URL_PROP).contains("https://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr") );
 
     // assert there are 3 live nodes
     Set<String> liveNodes = clusterState2.getLiveNodes();

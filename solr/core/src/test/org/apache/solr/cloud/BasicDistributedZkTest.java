@@ -584,10 +584,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     String nodeName = null;
     for (JettySolrRunner jetty : jettys) {
-      if (client.getBaseURL().startsWith(jetty.getBaseUrl().toString())) {
+      if (client.getBaseURL().contains(":"+jetty.getLocalPort())) {
         nodeName = jetty.getNodeName();
+        break;
       }
     }
+    assertNotNull(nodeName);
     for (int i = 0; i < cnt; i++) {
       final int freezeI = i;
       final String freezeNodename = nodeName;

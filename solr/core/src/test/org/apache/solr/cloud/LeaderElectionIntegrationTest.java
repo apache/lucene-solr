@@ -17,6 +17,8 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -62,6 +64,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     String collection = "collection1";
     createCollection(collection);
 
+    List<JettySolrRunner> stoppedRunners = new ArrayList<>();
     for (int i = 0; i < 4; i++) {
       // who is the leader?
       String leader = getLeader(collection);
@@ -70,6 +73,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
       assertTrue("shard1".equals(jetty.getCoreContainer().getCores().iterator().next()
           .getCoreDescriptor().getCloudDescriptor().getShardId()));
       jetty.stop();
+      stoppedRunners.add(jetty);
 
       // poll until leader change is visible
       for (int j = 0; j < 90; j++) {
@@ -98,14 +102,9 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
           .getCoreDescriptor().getCloudDescriptor().getShardId()));
     }
 
-    cluster.getJettySolrRunners().parallelStream().forEach(jetty -> {
-      if (jetty.isStopped())
-        try {
-          jetty.start();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-    });
+    for (JettySolrRunner runner : stoppedRunners) {
+      runner.start();
+    }
     waitForState("Expected to see nodes come back " + collection, collection,
         (n, c) -> {
           return n.size() == 6;

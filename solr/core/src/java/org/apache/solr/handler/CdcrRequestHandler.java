@@ -108,6 +108,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   private SolrCore core;
   private String collection;
+  private String shard;
   private String path;
 
   private SolrParams updateLogSynchronizerConfiguration;
@@ -242,6 +243,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   public void inform(SolrCore core) {
     this.core = core;
     collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 
     // Make sure that the core is ZKAware
     if (!core.getCoreContainer().isZooKeeperAware()) {
@@ -321,9 +323,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       @Override
       public void preClose(SolrCore core) {
-        String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-        String shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
-        log.info("Solr core is being closed - shutting down CDCR handler @ {}:{}", collectionName, shard);
+        log.info("Solr core is being closed - shutting down CDCR handler @ {}:{}", collection, shard);
 
         updateLogSynchronizer.shutdown();
         replicatorManager.shutdown();

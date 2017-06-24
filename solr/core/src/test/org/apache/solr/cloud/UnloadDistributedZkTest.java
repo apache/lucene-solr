@@ -182,6 +182,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     assertTrue(CollectionAdminRequest
         .addReplicaToShard("unloadcollection", "shard1")
+        .setCoreName("unloadcollection_shard1_replica2")
         .setNode(jettys.get(1).getNodeName())
         .process(cloudClient).isSuccess());
     zkStateReader.forceUpdateCollection("unloadcollection");
@@ -212,6 +213,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     assertTrue(CollectionAdminRequest
         .addReplicaToShard("unloadcollection", "shard1")
+        .setCoreName("unloadcollection_shard1_replica3")
         .setNode(jettys.get(2).getNodeName())
         .process(cloudClient).isSuccess());
 
@@ -220,7 +222,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // so that we start with some versions when we reload...
     DirectUpdateHandler2.commitOnClose = false;
 
-    try (HttpSolrClient addClient = getHttpSolrClient(jettys.get(2).getBaseUrl() + "/" + getFirstCore("unloadcollection", jettys.get(2)).getName())) {
+    try (HttpSolrClient addClient = getHttpSolrClient(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")) {
       addClient.setConnectionTimeout(30000);
 
       // add a few docs
@@ -258,7 +260,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     // ensure there is a leader
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
-    try (HttpSolrClient addClient = getHttpSolrClient(jettys.get(1).getBaseUrl() + "/" + getFirstCore("unloadcollection", jettys.get(1)).getName())) {
+    try (HttpSolrClient addClient = getHttpSolrClient(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2")) {
       addClient.setConnectionTimeout(30000);
       addClient.setSoTimeout(90000);
 
@@ -272,6 +274,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     assertTrue(CollectionAdminRequest
         .addReplicaToShard("unloadcollection", "shard1")
+        .setCoreName("unloadcollection_shard1_replica4")
         .setNode(jettys.get(3).getNodeName())
         .process(cloudClient).isSuccess());
 
@@ -302,6 +305,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     DirectUpdateHandler2.commitOnClose = true;
     assertTrue(CollectionAdminRequest
         .addReplicaToShard("unloadcollection", "shard1")
+        .setCoreName(leaderProps.getCoreName())
         .setDataDir(core1DataDir)
         .setNode(leaderProps.getNodeName())
         .process(cloudClient).isSuccess());
@@ -310,7 +314,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
 
     long found1, found3;
 
-    try (HttpSolrClient adminClient = getHttpSolrClient(jettys.get(1).getBaseUrl() + "/" + getFirstCore("unloadcollection", jettys.get(1)).getName())) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2")) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
       adminClient.commit();
@@ -318,7 +322,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       q.set("distrib", false);
       found1 = adminClient.query(q).getResults().getNumFound();
     }
-    try (HttpSolrClient adminClient = getHttpSolrClient(jettys.get(2).getBaseUrl() + "/" + getFirstCore("unloadcollection", jettys.get(2)).getName())) {
+
+    try (HttpSolrClient adminClient = getHttpSolrClient(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
       adminClient.commit();
@@ -327,7 +332,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       found3 = adminClient.query(q).getResults().getNumFound();
     }
 
-    try (HttpSolrClient adminClient = getHttpSolrClient(jettys.get(3).getBaseUrl() + "/" + getFirstCore("unloadcollection", jettys.get(3)).getName())) {
+    try (HttpSolrClient adminClient = getHttpSolrClient(jettys.get(3).getBaseUrl() + "/unloadcollection_shard1_replica4")) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(30000);
       adminClient.commit();

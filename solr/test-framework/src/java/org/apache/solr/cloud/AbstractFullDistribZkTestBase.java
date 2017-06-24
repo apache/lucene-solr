@@ -124,6 +124,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected CloudSolrClient controlClientCloud;  // cloud version of the control client
   protected volatile CloudSolrClient cloudClient;
+  protected List<SolrClient> coreClients = new ArrayList<>();
   
   protected List<CloudJettyRunner> cloudJettys = new ArrayList<>();
   protected Map<String,List<CloudJettyRunner>> shardToJetty = new HashMap<>();
@@ -395,38 +396,42 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       setupJettySolrHome(jettyDir);
       JettySolrRunner j;
 
+      CollectionAdminResponse response;
       if (numOtherReplicas > 0) {
         numOtherReplicas--;
         if (useTlogReplicas()) {
           log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.TLOG);
           j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
               + cnt) : null, null, "solrconfig.xml", null, Replica.Type.TLOG);
-          assertTrue(CollectionAdminRequest
+          response = CollectionAdminRequest
               .addReplicaToShard(DEFAULT_COLLECTION, "shard"+((i%sliceCount)+1))
               .setNode(j.getNodeName())
               .setType(Replica.Type.TLOG)
-              .process(cloudClient).isSuccess());
+              .process(cloudClient);
         } else {
           log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.NRT);
           j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
               + cnt) : null, null, "solrconfig.xml", null, null);
-          assertTrue(CollectionAdminRequest
+          response = CollectionAdminRequest
               .addReplicaToShard(DEFAULT_COLLECTION, "shard"+((i%sliceCount)+1))
               .setNode(j.getNodeName())
               .setType(Replica.Type.NRT)
-              .process(cloudClient).isSuccess());
+              .process(cloudClient);
         }
       } else {
         log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PULL);
         j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
             + cnt) : null, null, "solrconfig.xml", null, Replica.Type.PULL);
-        assertTrue(CollectionAdminRequest
+        response = CollectionAdminRequest
             .addReplicaToShard(DEFAULT_COLLECTION, "shard"+((i%sliceCount)+1))
             .setNode(j.getNodeName())
             .setType(Replica.Type.PULL)
-            .process(cloudClient).isSuccess());
+            .process(cloudClient);
       }
       jettys.add(j);
+      assertTrue(response.isSuccess());
+      String coreName = response.getCollectionCoresStatus().keySet().iterator().next();
+      coreClients.add(createNewSolrClient(coreName, j.getLocalPort()));
       SolrClient client = createNewSolrClient(j.getLocalPort());
       clients.add(client);
     }
@@ -1304,7 +1309,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void checkShardConsistency(boolean checkVsControl, boolean verbose, Set<String> addFails, Set<String> deleteFails)
       throws Exception {
 
-    updateMappingsFromZk(jettys, clients, true);
+    updateMappingsFromZk(jettys, coreClients, true);
 
     Set<String> theShards = shardToJetty.keySet();
     String failMessage = null;
@@ -1590,6 +1595,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         log.error("", e);
       }
     }
+    for (SolrClient client : coreClients) client.close();
+    coreClients.clear();
     super.destroyServers();
   }
 
@@ -1697,10 +1704,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @Override
   protected SolrClient createNewSolrClient(int port) {
+    return createNewSolrClient(DEFAULT_COLLECTION, port);
+  }
+
+  protected SolrClient createNewSolrClient(String coreName, int port) {
     try {
       // setup the server...
       String baseUrl = buildUrl(port);
-      String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + DEFAULT_COLLECTION;
+      String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
       HttpSolrClient client = getHttpSolrClient(url);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(60000);
