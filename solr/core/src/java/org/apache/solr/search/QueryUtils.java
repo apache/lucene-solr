@@ -22,6 +22,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 
 import java.util.Collection;
 
@@ -129,4 +130,14 @@ public class QueryUtils {
     return new BoostQuery(newBq, boost);
   }
 
+  /** @lucene.experimental throw exception if max boolean clauses are exceeded */
+  public static BooleanQuery build(BooleanQuery.Builder builder, QParser parser) {
+    int configuredMax = parser != null ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount : BooleanQuery.getMaxClauseCount();
+    BooleanQuery bq = builder.build();
+    if (bq.clauses().size() > configuredMax) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Too many clauses in boolean query: encountered=" + bq.clauses().size() + " configured in solrconfig.xml via maxBooleanClauses=" + configuredMax);
+    }
+    return bq;
+  }
 }

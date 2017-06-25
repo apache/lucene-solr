@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.HashMap;
 
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.LeafReaderContext;
@@ -98,7 +98,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
     List<RangeFacetRequest> rangeFreqs = request.getRangeFacets();
     List<QueryFacetRequest> queryFreqs = request.getQueryFacets();
 
-    this.fieldFacetExpressions = new TreeMap<>();
+    this.fieldFacetExpressions = new HashMap<>();
     this.rangeFacetExpressions = new LinkedHashMap<>(rangeFreqs.size());
     this.queryFacetExpressions = new LinkedHashMap<>(queryFreqs.size());
     this.fieldFacetCollectors = new LinkedHashMap<>(fieldFreqs.size());
@@ -120,8 +120,8 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
       final SchemaField ff = fr.getField();
       final FieldFacetAccumulator facc = FieldFacetAccumulator.create(searcher, this, ff);
       facetAccumulators.add(facc);
-      fieldFacetExpressions.put(freq.getName(), new TreeMap<String, Expression[]>() );
-      fieldFacetCollectors.put(freq.getName(), new TreeMap<String,StatsCollector[]>());
+      fieldFacetExpressions.put(freq.getName(), new HashMap<String, Expression[]>() );
+      fieldFacetCollectors.put(freq.getName(), new HashMap<String,StatsCollector[]>());
     }
     /**
      * For each range and query facet request add a bucket to the corresponding
@@ -299,6 +299,22 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
 
     @Override
     public int compare(Entry<String,Expression[]> o1, Entry<String,Expression[]> o2) {
+      
+      // Handle nulls. Null is treated as an infinitely big number so that in case of ASCENDING sorts, 
+      // Nulls will appear last. In case of DESC sorts, Nulls will appear last. 
+      boolean firstIsNull = false;
+      if (o1 == null || o1.getValue() == null || o1.getValue()[comparatorExpressionPlace] == null) 
+        firstIsNull = true;
+      boolean secondIsNull = false;
+      if (o2 == null || o2.getValue() == null || o2.getValue()[comparatorExpressionPlace] == null) 
+        secondIsNull  = true;
+      if (firstIsNull && secondIsNull)
+        return 0;
+      else if (firstIsNull)
+        return 1;
+      else if (secondIsNull)
+        return -1;
+      
       return comp.compare(o1.getValue()[comparatorExpressionPlace], o2.getValue()[comparatorExpressionPlace]);
     }
   }

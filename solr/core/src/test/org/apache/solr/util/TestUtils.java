@@ -201,6 +201,29 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals( "v1" ,Utils.getObjectByPath(m, true, "/a/d[0]/k1"));
     assertEquals( "v2" ,Utils.getObjectByPath(m, true, "/a/d[1]/k2"));
   }
+  public void testSetObjectByPath(){
+    String json = "{\n" +
+        "  'authorization':{\n" +
+        "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
+        "    'user-role':{\n" +
+        "      'solr':'admin',\n" +
+        "      'harry':'admin'},\n" +
+        "    'permissions':[{\n" +
+        "        'name':'security-edit',\n" +
+        "        'role':['admin']},\n" +
+        "      {\n" +
+        "        'name':'x-update',\n" +
+        "        'collection':'x',\n" +
+        "        'path':'/update/*',\n" +
+        "        'role':'dev'}],\n" +
+        "    '':{'v':4}}}";
+    Map m = (Map) fromJSONString(json);
+    Utils.setObjectByPath(m,"authorization/permissions[1]/role","guest");
+    Utils.setObjectByPath(m,"authorization/permissions[0]/role[-1]","dev");
+    assertEquals("guest", Utils.getObjectByPath(m,true,"authorization/permissions[1]/role"));
+    assertEquals("dev", Utils.getObjectByPath(m,true,"authorization/permissions[0]/role[1]"));
+
+  }
 
   public void testUtilsJSPath(){
     

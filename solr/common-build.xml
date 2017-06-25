@@ -155,7 +155,10 @@
     Cygwin users can explicitly set -Dtests.disableHdfs=false to enable Hdfs related testing.
   -->
   <condition property="tests.disableHdfs" value="true">
-    <os family="windows"/>
+    <or>
+      <os family="windows"/>
+      <equals arg1="${build.java.runtime}" arg2="9"/>
+    </or>
   </condition>
 
   <target name="validate" depends="compile-tools">

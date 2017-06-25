@@ -138,7 +138,7 @@
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
         'properties', 'mdtext',
-        'template',
+        'template', 'adoc',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -170,10 +170,15 @@
       def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
       def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
       def lineSplitter = ~$/[\r\n]+/$;
+      def singleLineSplitter = ~$/\n\r?/$;
       def licenseMatcher = Defaults.createDefaultMatcher();
       def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
       def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
       def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
+      def sourceHeaderPattern = ~$/\[source\b.*/$;
+      def blockBoundaryPattern = ~$/----\s*/$;
+      def blockTitlePattern = ~$/\..*/$;
+      def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
       
       def isLicense = { matcher, ratDocument ->
         licenseMatcher.reset();
@@ -195,6 +200,33 @@
               }
             }
           }
+      }
+
+      def checkForUnescapedSymbolSubstitutions = { f, text ->
+        def inCodeBlock = false;
+        def underSourceHeader = false;
+        def lineNumber = 0;
+        singleLineSplitter.split(text).each {
+          ++lineNumber;
+          if (underSourceHeader) { // This line is either a single source line, or the boundary of a code block
+            inCodeBlock = blockBoundaryPattern.matcher(it).matches();
+            if ( ! blockTitlePattern.matcher(it).matches()) { // Keep underSourceHeader=true
+              underSourceHeader = false;
+            }
+          } else {
+            if (inCodeBlock) {
+              inCodeBlock = ! blockBoundaryPattern.matcher(it).matches();
+            } else {
+              underSourceHeader = sourceHeaderPattern.matcher(it).matches();
+              if ( ! underSourceHeader) {
+                def unescapedSymbolMatcher = unescapedSymbolPattern.matcher(it);
+                if (unescapedSymbolMatcher.find()) {
+                  reportViolation(f, 'Unescaped symbol "' + unescapedSymbolMatcher.group(1) + '" on line #' + lineNumber);
+                }
+              }
+            }
+          }
+        }
       }
 
       ant.fileScanner{
@@ -243,6 +275,9 @@
         }
         if (f.toString().endsWith('.xml') || f.toString().endsWith('.xml.template')) {
           checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
+        }
+        if (f.toString().endsWith('.adoc')) {
+          checkForUnescapedSymbolSubstitutions(f, text);
         }
       };
       

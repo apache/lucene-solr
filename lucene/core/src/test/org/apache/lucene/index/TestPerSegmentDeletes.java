@@ -68,10 +68,11 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     writer.deleteDocuments(new Term("id", "11"));
 
-    // flushing without applying deletes means
-    // there will still be deletes in the segment infos
     writer.flush(false, false);
-    assertTrue(writer.bufferedUpdatesStream.any());
+
+    // deletes are now resolved on flush, so there shouldn't be
+    // any deletes after flush
+    assertFalse(writer.bufferedUpdatesStream.any());
 
     // get reader flushes pending deletes
     // so there should not be anymore

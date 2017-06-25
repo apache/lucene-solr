@@ -24,6 +24,10 @@ New Features
   the term frequency to this value.  (Uwe Schindler, Robert Muir, Mike
   McCandless)
 
+* LUCENE-7868: Multiple threads can now resolve deletes and doc values
+  updates concurrently, giving sizable speedups in update-heavy
+  indexing use cases (Simon Willnauer, Mike McCandless)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
@@ -73,6 +77,17 @@ API Changes
   has been made abstract, fomerly was final.  Also, MultiFields.getTerms
   was optimized to work directly instead of being implemented on getFields.
   (David Smiley)
+
+* LUCENE-7872: TopDocs.totalHits is now a long. (Adrien Grand, hossman)
+
+* LUCENE-7868: IndexWriterConfig.setMaxBufferedDeleteTerms is
+  removed. (Simon Willnauer, Mike McCandless)
+
+* LUCENE-7877: PrefixAwareTokenStream is replaced with ConcatenatingTokenStream
+  (Alan Woodward, Uwe Schindler, Adrien Grand)
+
+* LUCENE-7867: The deprecated Token class is now only available in the test
+  framework (Alan Woodward, Adrien Grand)
 
 Bug Fixes
 
@@ -138,6 +153,11 @@ Other
   DocValuesFormats and all analysis factories was changed to only inspect the
   current classloader that defined the interface class (lucene-core.jar).
   See MIGRATE.txt for more information!  (Uwe Schindler, Dawid Weiss)
+
+* LUCENE-7883: Lucene no longer uses the context class loader when resolving
+  resources in CustomAnalyzer or ClassPathResourceLoader. Resources are only
+  resolved against Lucene's class loader by default. Please use another builder
+  method to change to a custom classloader.  (Uwe Schindler)
 
 ======================= Lucene 6.7.0 =======================
 

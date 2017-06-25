@@ -34,11 +34,10 @@ final class FreqProxTermsWriter extends TermsHash {
   }
 
   private void applyDeletes(SegmentWriteState state, Fields fields) throws IOException {
-
     // Process any pending Term deletes for this newly
     // flushed segment:
-    if (state.segUpdates != null && state.segUpdates.terms.size() > 0) {
-      Map<Term,Integer> segDeletes = state.segUpdates.terms;
+    if (state.segUpdates != null && state.segUpdates.deleteTerms.size() > 0) {
+      Map<Term,Integer> segDeletes = state.segUpdates.deleteTerms;
       List<Term> deleteTerms = new ArrayList<>(segDeletes.keySet());
       Collections.sort(deleteTerms);
       String lastField = null;

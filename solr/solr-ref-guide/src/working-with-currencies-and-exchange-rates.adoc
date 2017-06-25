@@ -30,11 +30,18 @@ The `currency` FieldType provides support for monetary values to Solr/Lucene wit
 [[WorkingwithCurrenciesandExchangeRates-ConfiguringCurrencies]]
 == Configuring Currencies
 
-The `currency` field type is defined in `schema.xml`. This is the default configuration of this type:
+.CurrencyField has been Deprecated
+[WARNING]
+====
+CurrencyField has been deprecated in favor of CurrencyFieldType; all configuration examples below use CurrencyFieldType.
+====
+
+The `currency` field type is defined in `schema.xml`. This is the default configuration of this type.
 
 [source,xml]
 ----
-<fieldType name="currency" class="solr.CurrencyField" precisionStep="8" 
+<fieldType name="currency" class="solr.CurrencyFieldType" 
+           amountLongSuffix="_l_ns" codeStrSuffix="_s_ns"
            defaultCurrency="USD" currencyConfig="currency.xml" />
 ----
 
@@ -52,6 +59,26 @@ This dynamic field would match any field that ends in `_c` and make it a currenc
 At indexing time, money fields can be indexed in a native currency. For example, if a product on an e-commerce site is listed in Euros, indexing the price field as "1000,EUR" will index it appropriately. The price should be separated from the currency by a comma, and the price must be encoded with a floating point value (a decimal point).
 
 During query processing, range and point queries are both supported.
+
+[[WorkingwithCurrenciesandExchangeRates-Sub-fieldSuffixes]]
+=== Sub-field Suffixes
+
+You must specify parameters `amountLongSuffix` and `codeStrSuffix`, corresponding to dynamic fields to be used for the raw amount and the currency dynamic sub-fields, e.g.: 
+
+[source,xml]
+----
+<fieldType name="currency" class="solr.CurrencyFieldType"
+           amountLongSuffix="_l_ns" codeStrSuffix="_s_ns"
+           defaultCurrency="USD" currencyConfig="currency.xml" />
+----
+
+In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e. one that extends `LongValueFieldType`.  The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e. one that is or extends `StrField`.
+
+.Atomic Updates won't work if dynamic sub-fields are stored
+[NOTE]
+====
+As noted on <<updating-parts-of-documents.adoc#UpdatingPartsofDocuments-FieldStorage,Updating Parts of Documents>>, stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates. To avoid this problem, specify `stored="false"` on those dynamic fields.
+====
 
 [[WorkingwithCurrenciesandExchangeRates-ExchangeRates]]
 == Exchange Rates
@@ -95,7 +122,8 @@ In this case, you need to specify the `providerClass` in the definitions for the
 
 [source,xml]
 ----
-<fieldType name="currency" class="solr.CurrencyField" precisionStep="8" 
+<fieldType name="currency" class="solr.CurrencyFieldType" 
+           amountLongSuffix="_l_ns" codeStrSuffix="_s_ns"
            providerClass="solr.OpenExchangeRatesOrgProvider"
            refreshInterval="60" 
            ratesFileLocation="http://www.openexchangerates.org/api/latest.json?app_id=yourPersonalAppIdKey"/>

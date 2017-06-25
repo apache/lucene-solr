@@ -20,7 +20,6 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
@@ -44,14 +43,6 @@ import org.apache.lucene.util.BytesRef;
   A Token can optionally have metadata (a.k.a. payload) in the form of a variable
   length byte array. Use {@link org.apache.lucene.index.PostingsEnum#getPayload()} to retrieve the
   payloads from the index.
-  
-  <br><br>
-  
-  <p><b>NOTE:</b> As of 2.9, Token implements all {@link Attribute} interfaces
-  that are part of core Lucene and can be found in the {@code tokenattributes} subpackage.
-  Even though it is not necessary to use Token anymore, with the new TokenStream API it can
-  be used as convenience class that implements all {@link Attribute}s, which is especially useful
-  to easily switch from the old to the new TokenStream API.
  
   A few things to note:
   <ul>
@@ -60,13 +51,7 @@ import org.apache.lucene.util.BytesRef;
   <li>The startOffset and endOffset represent the start and offset in the source text, so be careful in adjusting them.</li>
   <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
   </ul>
-  <p>
-  <b>Please note:</b> With Lucene 3.1, the <code>{@linkplain #toString toString()}</code> method had to be changed to match the
-  {@link CharSequence} interface introduced by the interface {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}.
-  This method now only prints the term text, no additional information anymore.
-  @deprecated This class is outdated and no longer used since Lucene 2.9. Nuke it finally!
 */
-@Deprecated
 public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, PayloadAttribute {
 
   private int flags;
@@ -166,7 +151,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   public Token clone() {
     final Token t = (Token) super.clone();
     if (payload != null) {
-      t.payload = payload.clone();
+      t.payload = BytesRef.deepCopyOf(payload);
     }
     return t;
   }
@@ -190,7 +175,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   public void copyTo(AttributeImpl target) {
     super.copyTo(target);
     ((FlagsAttribute) target).setFlags(flags);
-    ((PayloadAttribute) target).setPayload((payload == null) ? null : payload.clone());
+    ((PayloadAttribute) target).setPayload((payload == null) ? null : BytesRef.deepCopyOf(payload));
   }
 
   @Override

@@ -142,7 +142,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
                 TotalHitCountCollector collector = new TotalHitCountCollector();
                 searcher.search(q, collector); // will use the cache
                 final int totalHits1 = collector.getTotalHits();
-                final int totalHits2 = searcher.search(q, 1).totalHits; // will not use the cache because of scores
+                final long totalHits2 = searcher.search(q, 1).totalHits; // will not use the cache because of scores
                 assertEquals(totalHits2, totalHits1);
               } finally {
                 mgr.release(searcher);

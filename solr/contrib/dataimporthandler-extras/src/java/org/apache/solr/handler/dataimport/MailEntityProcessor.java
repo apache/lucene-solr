@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import com.sun.mail.imap.IMAPMessage;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.util.RTimer;
 import org.apache.tika.Tika;
@@ -37,6 +38,7 @@ import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Supplier;
 
 import com.sun.mail.gimap.GmailFolder;
 import com.sun.mail.gimap.GmailRawSearchTerm;
@@ -213,7 +215,14 @@ public class MailEntityProcessor extends EntityProcessorBase {
   
   private Message getNextMail() {
     if (!connected) {
-      if (!connectToMailBox()) return null;
+      // this is needed to load the activation mail stuff correctly
+      // otherwise, the JavaMail multipart support doesn't get configured
+      // correctly, which leads to a class cast exception when processing
+      // multipart messages: IMAPInputStream cannot be cast to
+      // javax.mail.Multipart    
+      if (false == withContextClassLoader(getClass().getClassLoader(), this::connectToMailBox)) {
+        return null;
+      }
       connected = true;
     }
     if (folderIter == null) {
@@ -358,13 +367,6 @@ public class MailEntityProcessor extends EntityProcessorBase {
   }
   
   private boolean connectToMailBox() {
-    // this is needed to load the activation mail stuff correctly
-    // otherwise, the JavaMail multipart support doesn't get configured
-    // correctly, which leads to a class cast exception when processing
-    // multipart messages: IMAPInputStream cannot be cast to
-    // javax.mail.Multipart
-    Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-    
     try {
       Properties props = new Properties();
       if (System.getProperty("mail.debug") != null) 
@@ -870,4 +872,17 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     return v;
   }
+
+  @SuppressForbidden(reason = "Uses context class loader as a workaround to inject correct classloader to 3rd party libs")
+  private static <T> T withContextClassLoader(ClassLoader loader, Supplier<T> action) {
+    Thread ct = Thread.currentThread();
+    ClassLoader prev = ct.getContextClassLoader();
+    try {
+      ct.setContextClassLoader(loader);
+      return action.get();
+    } finally {
+      ct.setContextClassLoader(prev);
+    }
+  }
+  
 }

@@ -46,6 +46,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.index.TieredMergePolicyFactory;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,6 +75,15 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     REPLICATION_FACTOR = 2;
   }
   
+  @BeforeClass
+  public static void setupHackNumerics() { // SOLR-10916
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
+  }
+  @AfterClass
+  public static void clearHackNumerics() { // SOLR-10916
+    SolrTestCaseJ4.clearNumericTypesProperties();
+  }
+
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());

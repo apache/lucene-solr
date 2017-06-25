@@ -59,7 +59,7 @@ The core functionality of atomically updating a document requires that all field
 
 If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields. If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
 
-There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types use derived fields. Examples of this are solr.BBoxField and solr.LatLonType. These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
+There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types use derived fields. Examples of this are solr.BBoxField and solr.LatLonType. CurrencyFieldType also uses derived fields.  These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
 
 [[UpdatingPartsofDocuments-Example]]
 === Example

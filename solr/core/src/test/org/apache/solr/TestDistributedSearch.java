@@ -101,6 +101,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // server so that we don't use a bad one
     System.setProperty("validateAfterInactivity", "200");
   }
+
+  public TestDistributedSearch() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
   
   @Test
   public void test() throws Exception {

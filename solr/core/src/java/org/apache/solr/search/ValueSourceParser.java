@@ -47,7 +47,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.schema.CurrencyField;
+import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
@@ -444,11 +444,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         String fieldName = fp.parseArg();
         SchemaField f = fp.getReq().getSchema().getField(fieldName);
-        if (! (f.getType() instanceof CurrencyField)) {
+        if (! (f.getType() instanceof CurrencyFieldType)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  "Currency function input must be the name of a CurrencyField: " + fieldName);
+                                  "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
         }
-        CurrencyField ft = (CurrencyField) f.getType();
+        CurrencyFieldType ft = (CurrencyFieldType) f.getType();
         String code = fp.hasMoreArguments() ? fp.parseArg() : null;
         return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
       }

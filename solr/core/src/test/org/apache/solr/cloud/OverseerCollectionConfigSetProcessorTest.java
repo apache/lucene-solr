@@ -27,7 +27,10 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -70,7 +73,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static ClusterState clusterStateMock;
   private static SolrZkClient solrZkClientMock;
   private final Map zkMap = new HashMap();
-  private final Set collectionsSet = new HashSet();
+  private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
+  private final List<ZkNodeProps> replicas = new ArrayList<>();
   private SolrResponse lastProcessMessageResult;
 
 
@@ -141,6 +145,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     zkMap.clear();
     collectionsSet.clear();
+    replicas.clear();
   }
   
   @After
@@ -193,7 +198,27 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
 
-    when(clusterStateMock.getCollections()).thenReturn(collectionsSet);
+    when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
+      String key = invocation.getArgument(0);
+      if (!collectionsSet.containsKey(key)) return null;
+      DocCollection docCollection = collectionsSet.get(key).get();
+      Map<String, Map<String, Replica>> slices = new HashMap<>();
+      for (ZkNodeProps replica : replicas) {
+        if (!key.equals(replica.getStr(ZkStateReader.COLLECTION_PROP))) continue;
+
+        String slice = replica.getStr(ZkStateReader.SHARD_ID_PROP);
+        if (!slices.containsKey(slice)) slices.put(slice, new HashMap<>());
+        String replicaName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties()));
+      }
+
+      Map<String, Slice> slicesMap = new HashMap<>();
+      for (Map.Entry<String, Map<String, Replica>> entry : slices.entrySet()) {
+        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null));
+      }
+
+      return docCollection.copyWithSlices(slicesMap);
+    });
     final Set<String> liveNodes = new HashSet<>();
     for (int i = 0; i < liveNodesCount; i++) {
       final String address = "localhost:" + (8963 + i) + "_solr";
@@ -202,13 +227,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       when(zkStateReaderMock.getBaseUrlForNodeName(address)).thenAnswer(invocation -> address.replaceAll("_", "/"));
     }
 
-    when(zkStateReaderMock.getClusterProperty("legacyCloud", "true")).thenReturn("true");
+    when(zkStateReaderMock.getClusterProperty("legacyCloud", "false")).thenReturn("false");
 
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
     
     when(clusterStateMock.hasCollection(anyString())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
-      return collectionsSet.contains(key);
+      return collectionsSet.containsKey(key);
     });
 
     when(clusterStateMock.getLiveNodes()).thenReturn(liveNodes);
@@ -234,7 +259,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       ZkNodeProps props = ZkNodeProps.load(bytes);
       if(CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))){
         String collName = props.getStr("name") ;
-        if(collName != null) collectionsSet.add(collName);
+        if(collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
+            new DocCollection(collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
+      }
+      if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
+        replicas.add(props);
       }
     } catch (Exception e) { }
   }
@@ -297,7 +326,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     ArgumentCaptor<ModifiableSolrParams> paramsCaptor = ArgumentCaptor.forClass(ModifiableSolrParams.class);
     verify(shardHandlerMock, times(numberOfReplica * numberOfSlices))
         .submit(shardRequestCaptor.capture(), nodeUrlsWithoutProtocolPartCaptor.capture(), paramsCaptor.capture());
-    log.info("Datcmzz " + shardRequestCaptor.getAllValues().size());
+
     for (int i = 0; i < shardRequestCaptor.getAllValues().size(); i++) {
       ShardRequest shardRequest = shardRequestCaptor.getAllValues().get(i);
       String nodeUrlsWithoutProtocolPartCapture = nodeUrlsWithoutProtocolPartCaptor.getAllValues().get(i);

@@ -46,6 +46,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.util.SolrPluginUtils;
 
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -161,7 +162,7 @@ public class CloudMLTQParser extends QParser {
           newQ.add(q, clause.getOccur());
         }
 
-        boostedMLTQuery = newQ.build();
+        boostedMLTQuery = QueryUtils.build(newQ, this);
       }
 
       // exclude current document from results

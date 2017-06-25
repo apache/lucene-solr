@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analyticsRequestEnvelope stats="true" olap="true">
+   <analyticsRequest>
+     <name>MinMax Request</name>
+     <statistic>
+       <expression>min(double(double_dd))</expression>
+       <name>min</name>
+     </statistic>
+     <statistic>
+       <expression>max(long(long_ld))</expression>
+       <name>max</name>
+     </statistic>
+    </analyticsRequest>
+ </analyticsRequestEnvelope>

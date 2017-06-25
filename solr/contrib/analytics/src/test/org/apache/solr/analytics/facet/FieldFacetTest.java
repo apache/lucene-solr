@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.w3c.dom.Node;
 
 
 public class FieldFacetTest extends AbstractAnalyticsFacetTest{
@@ -87,7 +88,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
     
     defaults.put("int", new Integer(0));
@@ -1037,31 +1038,33 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   public void missingFacetTest() throws Exception { 
     //int MultiDate
     String xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='date_dtdm']/lst[@name='(MISSING)']";
-    assertNotNull(getRawResponse(), getNode(xPath));
+    Node missingNodeXPath = getNode(xPath);
+    assertNotNull(getRawResponse(), missingNodeXPath);
 
     ArrayList<Double> string = getDoubleList("missingf", "fieldFacets", "date_dtdm", "double", "mean");
-    string.remove(0);
+    super.removeNodes(xPath, string);
     ArrayList<Double> stringTest = calculateNumberStat(multiDateTestStart, "mean");
     assertEquals(getRawResponse(), string,stringTest);
-    
+
     //Int String
     xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='(MISSING)']";
-    assertNotNull(getRawResponse(), getNode(xPath));
+    missingNodeXPath = getNode(xPath);
+    String missingNodeXPathStr = xPath;
+    assertNotNull(getRawResponse(), missingNodeXPath);
 
     xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='str0']";
     assertNull(getRawResponse(), getNode(xPath));
+
     List<Double> intString = getDoubleList("missingf", "fieldFacets", "string_sd", "double", "mean");
-    intString.remove(0);
+    removeNodes(missingNodeXPathStr, intString);
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "mean");
     assertEquals(getRawResponse(), intString,intStringTest);
-    
+
     //Int Date
     Collection<Double> intDate = getDoubleList("missingf", "fieldFacets", "date_dtd", "double", "mean");
     ArrayList<ArrayList<Double>> intDateMissingTestStart = (ArrayList<ArrayList<Double>>) intDateTestStart.clone();
     ArrayList<Double> intDateTest = calculateNumberStat(intDateMissingTestStart, "mean");
     assertEquals(getRawResponse(),intDate,intDateTest);
-    
-    
   }
 
   private void checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {

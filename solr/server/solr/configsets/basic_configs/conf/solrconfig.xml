@@ -389,18 +389,11 @@
        Query section - these settings control query time things like caches
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
   <query>
-    <!-- Max Boolean Clauses
 
-         Maximum number of clauses in each BooleanQuery,  an exception
-         is thrown if exceeded.
-
-         ** WARNING **
-         
-         This option actually modifies a global Lucene property that
-         will affect all SolrCores.  If multiple solrconfig.xml files
-         disagree on this property, the value at any given moment will
-         be based on the last SolrCore to be initialized.
-         
+    <!-- Maximum number of clauses in each BooleanQuery,  an exception
+         is thrown if exceeded.  It is safe to increase or remove this setting,
+         since it is purely an arbitrary limit to try and catch user errors where
+         large boolean queries may not be the best implementation choice.
       -->
     <maxBooleanClauses>1024</maxBooleanClauses>
 
