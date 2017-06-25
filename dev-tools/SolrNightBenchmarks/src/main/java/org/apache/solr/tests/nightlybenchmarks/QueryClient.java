@@ -111,7 +111,6 @@ public class QueryClient implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 		Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 		Util.postMessage("** Preparing query pair data queue ...", MessageType.CYAN_TEXT, false);
 
@@ -127,7 +126,6 @@ public class QueryClient implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 
 	}
