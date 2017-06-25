@@ -26,7 +26,14 @@ A comprehensive Solr performance benchmark framework.
      9. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessLatestCommit true -Housekeeping true 
      
 [Download Data Files From This Link](http://212.47.227.9/data/) 
-     
+
+## Data structure and data file details
+
+     The data currently being used has the following data structure.     
+               * { Int(ID), String(Text), Int(Numeric), Long(Numeric), Alphanumeric(Catgory), String(Text) }
+     The record size averages around ~3.8KB
+     The data file name is "test-data-file-1M.csv" and the file is around 3.8GB in size.
+
 ## Possible parameters
 
      * -RunSilently true                       Use this parameter if you do not want any output on console.
