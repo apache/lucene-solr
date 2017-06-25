@@ -993,7 +993,7 @@ public class SolrCLI {
     }
   } // end ApiTool class
 
-  private static final String DEFAULT_CONFIG_SET = "data_driven_schema_configs";
+  private static final String DEFAULT_CONFIG_SET = "_default";
 
   private static final long MS_IN_MIN = 60 * 1000L;
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
@@ -2681,7 +2681,7 @@ public class SolrCLI {
       File exDir = setupExampleDir(serverDir, exampleDir, exampleName);
       String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
       String configSet =
-          "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "data_driven_schema_configs";
+          "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
       boolean isCloudMode = cli.hasOption('c');
       String zkHost = cli.getOptionValue('z');
@@ -3054,7 +3054,7 @@ public class SolrCLI {
       // yay! numNodes SolrCloud nodes running
       int numShards = 2;
       int replicationFactor = 2;
-      String cloudConfig = "data_driven_schema_configs";
+      String cloudConfig = "_default";
       String collectionName = "gettingstarted";
 
       File configsetsDir = new File(serverDir, "solr/configsets");
@@ -3089,7 +3089,7 @@ public class SolrCLI {
             "How many replicas per shard would you like to create? [2] ", "a replication factor", 2, 1, 4);
 
         echo("Please choose a configuration for the "+collectionName+" collection, available options are:");
-        String validConfigs = "basic_configs, data_driven_schema_configs, or sample_techproducts_configs ["+cloudConfig+"] ";
+        String validConfigs = "_default or sample_techproducts_configs ["+cloudConfig+"] ";
         cloudConfig = prompt(readInput, validConfigs, cloudConfig);
 
         // validate the cloudConfig name

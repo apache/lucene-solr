@@ -404,12 +404,11 @@ echo   -c name     Name of core to create
 echo.
 echo   -d confdir  Configuration directory to copy when creating the new core, built-in options are:
 echo.
-echo       basic_configs: Minimal Solr configuration
-echo       data_driven_schema_configs: Managed schema with field-guessing support enabled
+echo       _default: Minimal configuration, which supports enabling/disabling field-guessing support
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
 echo          demonstrate the full power of Solr
 echo.
-echo       If not specified, default is: data_driven_schema_configs
+echo       If not specified, default is: _default
 echo.
 echo       Alternatively, you can pass the path to your own configuration directory instead of using
 echo       one of the built-in configurations, such as: bin\solr create_core -c mycore -d c:/tmp/myconfig
@@ -428,12 +427,11 @@ echo   -c name               Name of collection to create
 echo.
 echo   -d confdir            Configuration directory to copy when creating the new collection, built-in options are:
 echo.
-echo       basic_configs: Minimal Solr configuration
-echo       data_driven_schema_configs: Managed schema with field-guessing support enabled
+echo       _default: Minimal configuration, which supports enabling/disabling field-guessing support
 echo       sample_techproducts_configs: Example configuration with many optional features enabled to
 echo          demonstrate the full power of Solr
 echo.
-echo       If not specified, default is: data_driven_schema_configs
+echo       If not specified, default is: _default
 echo.
 echo       Alternatively, you can pass the path to your own configuration directory instead of using
 echo       one of the built-in configurations, such as: bin\solr create_collection -c mycoll -d c:/tmp/myconfig
@@ -1404,7 +1402,7 @@ IF "!CREATE_NAME!"=="" (
   set "SCRIPT_ERROR=Name (-c) is a required parameter for %SCRIPT_CMD%"
   goto invalid_cmd_line
 )
-IF "!CREATE_CONFDIR!"=="" set CREATE_CONFDIR=data_driven_schema_configs
+IF "!CREATE_CONFDIR!"=="" set CREATE_CONFDIR=_default
 IF "!CREATE_NUM_SHARDS!"=="" set CREATE_NUM_SHARDS=1
 IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
 IF "!CREATE_CONFNAME!"=="" set CREATE_CONFNAME=!CREATE_NAME!

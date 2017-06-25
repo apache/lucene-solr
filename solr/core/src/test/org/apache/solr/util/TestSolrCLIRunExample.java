@@ -418,7 +418,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // sthis test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
     // and the need for setting the host and port system properties ...
-    String userInput = "1\n"+bindPort+"\n"+collectionName+"\n2\n2\ndata_driven_schema_configs\n";
+    String userInput = "1\n"+bindPort+"\n"+collectionName+"\n2\n2\n_default\n";
 
     // simulate user input from stdin
     InputStream userInputSim = new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8));

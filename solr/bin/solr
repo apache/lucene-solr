@@ -419,12 +419,11 @@ function print_usage() {
     echo ""
     echo "  -d <confdir>  Configuration directory to copy when creating the new core, built-in options are:"
     echo ""
-    echo "      basic_configs: Minimal Solr configuration"
-    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
+    echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo ""
-    echo "      If not specified, default is: data_driven_schema_configs"
+    echo "      If not specified, default is: _default"
     echo ""
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_core -c mycore -d /tmp/myconfig"
@@ -441,12 +440,11 @@ function print_usage() {
     echo ""
     echo "  -d <confdir>            Configuration directory to copy when creating the new collection, built-in options are:"
     echo ""
-    echo "      basic_configs: Minimal Solr configuration"
-    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
+    echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo ""
-    echo "      If not specified, default is: data_driven_schema_configs"
+    echo "      If not specified, default is: _default"
     echo ""
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_collection -c mycoll -d /tmp/myconfig"
@@ -935,7 +933,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ -z "$CREATE_CONFDIR" ]; then
-    CREATE_CONFDIR='data_driven_schema_configs'
+    CREATE_CONFDIR='_default'
   fi
 
   # validate the confdir arg

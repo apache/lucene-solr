@@ -62,12 +62,11 @@ server/solr/configsets
 
   Directories containing different configuration options for running Solr.
 
-    basic_configs               : Bare minimum configuration settings needed to run Solr.
-
-    data_driven_schema_configs  : Field-guessing and managed schema mode; use this configuration if you want
-                                  to start indexing data in Solr without having to design a schema upfront.
-                                  You can use the REST API to manage your schema as you refine your index
-                                  requirements.
+    _default                    : Bare minimum configurations with field-guessing and managed schema turned
+                                  on by default, so as to start indexing data in Solr without having to design
+                                  a schema upfront. You can use the REST API to manage your schema as you refine your index
+                                  requirements. You can turn off the field (for a collection, say mycollection) guessing by:
+                                  curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 
     sample_techproducts_configs : Comprehensive example configuration that demonstrates many of the powerful
                                   features of Solr, based on the use case of building a search solution for
