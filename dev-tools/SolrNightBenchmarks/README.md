@@ -32,7 +32,7 @@ A comprehensive Solr performance benchmark framework.
      The data currently being used has the following data structure.     
                * { Int(ID), String(Text), Int(Numeric), Long(Numeric), Alphanumeric(Catgory), String(Text) }
      The record size averages around ~3.8KB
-     The data file name currently used is "test-data-file-1M.csv" and the file is around 3.8GB.
+     The data file name is "test-data-file-1M.csv" and the file is around 3.8GB in size.
 
 ## Possible parameters
 
