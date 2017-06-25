@@ -37,6 +37,7 @@ A comprehensive Solr performance benchmark framework.
      * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
      * -Generate1MDataFile true                Generates a fresh test data file with 1 million records ~3.7GB size. in the webapp/data directory.     
      * -Housekeeping true                      Use this parameter to instruct the system to clean up at the end of the work cycle.
+     * -TestWithNumberOfDocuments XXXX         Use this parameter to specify the subset of the available documents to test with. Valid value lies in (with test-data-file-1M.csv data) between 1 and 1000000.
      
 ## Running benchmarks in queue mode
 
