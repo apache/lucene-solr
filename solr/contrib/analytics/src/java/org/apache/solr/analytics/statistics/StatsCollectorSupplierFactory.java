@@ -33,6 +33,7 @@ import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.solr.analytics.expression.ExpressionFactory;
 import org.apache.solr.analytics.request.ExpressionRequest;
+import org.apache.solr.analytics.statistics.MinMaxStatsCollector.CollectorState;
 import org.apache.solr.analytics.util.AnalyticsParams;
 import org.apache.solr.analytics.util.valuesource.AbsoluteValueDoubleFunction;
 import org.apache.solr.analytics.util.valuesource.AddDoubleFunction;
@@ -213,25 +214,32 @@ public class StatsCollectorSupplierFactory {
         }
       }
     }
+
+    final CollectorState states[] = new CollectorState[statsArr.length];
+    for (int count = 0; count < statsArr.length; count++) {
+      states[count] = new CollectorState();
+    }
     // Making the Supplier
     return new Supplier<StatsCollector[]>() {
+      private final CollectorState collectorState[] = states;
+
       public StatsCollector[] get() {
         StatsCollector[] collectors = new StatsCollector[statsArr.length];
         for (int count = 0; count < statsArr.length; count++) {
           if(numericBools[count]){
-            StatsCollector sc = new NumericStatsCollector(sourceArr[count], statsArr[count]);
+            StatsCollector sc = new NumericStatsCollector(sourceArr[count], statsArr[count], collectorState[count]);
             if(uniqueBools[count]) sc = new UniqueStatsCollector(sc);
             if(medianBools[count]) sc = new MedianStatsCollector(sc);
             if(percsArr[count]!=null) sc = new PercentileStatsCollector(sc,percsArr[count],percsNames[count]);
             collectors[count]=sc;
           } else if (dateBools[count]) {
-            StatsCollector sc = new MinMaxStatsCollector(sourceArr[count], statsArr[count]);
+            StatsCollector sc = new MinMaxStatsCollector(sourceArr[count], statsArr[count], collectorState[count]);
             if(uniqueBools[count]) sc = new UniqueStatsCollector(sc);
             if(medianBools[count]) sc = new DateMedianStatsCollector(sc);
             if(percsArr[count]!=null) sc = new PercentileStatsCollector(sc,percsArr[count],percsNames[count]);
            collectors[count]=sc;
           } else {
-            StatsCollector sc = new MinMaxStatsCollector(sourceArr[count], statsArr[count]);
+            StatsCollector sc = new MinMaxStatsCollector(sourceArr[count], statsArr[count], collectorState[count]);
             if(uniqueBools[count]) sc = new UniqueStatsCollector(sc);
             if(medianBools[count]) sc = new MedianStatsCollector(sc);
             if(percsArr[count]!=null) sc = new PercentileStatsCollector(sc,percsArr[count],percsNames[count]);

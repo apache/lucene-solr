@@ -37,18 +37,31 @@ public class MinMaxStatsCollector implements StatsCollector{
   protected MutableValue value;
   protected final Set<String> statsList;
   protected final ValueSource source;
-  protected FunctionValues function;
   protected ValueFiller valueFiller;
+  private CollectorState state;
   
-  public MinMaxStatsCollector(ValueSource source, Set<String> statsList) {
+  public MinMaxStatsCollector(ValueSource source, Set<String> statsList, CollectorState state) {
     this.source = source;
     this.statsList = statsList;
+    this.state = state;
   }
   
   public void setNextReader(LeafReaderContext context) throws IOException {
-    function = source.getValues(null, context);
-    valueFiller = function.getValueFiller();
+    state.setNextReader(source, context);
+    valueFiller = state.function.getValueFiller();
     value = valueFiller.getValue();
+  }
+
+  public static class CollectorState {
+    FunctionValues function;
+    LeafReaderContext context = null;
+
+    public void setNextReader(ValueSource source, LeafReaderContext context) throws IOException {
+      if (this.context != context) {
+        this.context = context;
+        this.function = source.getValues(null, context);
+      }
+    }
   }
   
   public void collect(int doc) throws IOException {
@@ -101,7 +114,7 @@ public class MinMaxStatsCollector implements StatsCollector{
   
   @Override 
   public FunctionValues getFunction() {
-    return function;
+    return state.function;
   }
   
   public String valueSourceString() {

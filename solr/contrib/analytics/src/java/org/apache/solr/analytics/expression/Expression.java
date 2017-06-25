@@ -29,10 +29,19 @@ public abstract class Expression {
 
   public Comparator<Expression> comparator(final FacetSortDirection direction) {
     return (a, b) -> {
-      if( direction == FacetSortDirection.ASCENDING ){
-        return a.getValue().compareTo(b.getValue());
+      boolean aIsNull = a.getValue() == null;
+      boolean bIsNull = b.getValue() == null;
+
+      if (aIsNull && bIsNull) return 0;
+
+      if( direction == FacetSortDirection.ASCENDING ){ // nulls are last for ASC sort
+        return aIsNull ? 1
+          : bIsNull ? -1
+          : a.getValue().compareTo(b.getValue());
       } else {
-        return b.getValue().compareTo(a.getValue());
+        return aIsNull ? -1
+          : bIsNull ? 1
+          : b.getValue().compareTo(a.getValue());
       }
     };
   }

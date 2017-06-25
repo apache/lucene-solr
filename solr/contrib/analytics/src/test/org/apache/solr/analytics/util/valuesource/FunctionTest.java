@@ -35,7 +35,7 @@ public class FunctionTest extends AbstractAnalyticsStatsTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
     
     for (int j = 0; j < NUM_LOOPS; ++j) {

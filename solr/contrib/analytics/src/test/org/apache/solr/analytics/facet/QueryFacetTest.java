@@ -35,7 +35,7 @@ public class QueryFacetTest extends AbstractAnalyticsFacetTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml","schema-analytics.xml");
   }
 
   @SuppressWarnings("unchecked")

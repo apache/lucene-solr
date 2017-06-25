@@ -29,14 +29,16 @@ public class NumericStatsCollector extends MinMaxStatsCollector {
   protected double sumOfSquares = 0;
   protected double mean = 0;
   protected double stddev = 0;
+  protected CollectorState state;
   
-  public NumericStatsCollector(ValueSource source, Set<String> statsList) {
-    super(source, statsList);
+  public NumericStatsCollector(ValueSource source, Set<String> statsList, CollectorState state) {
+    super(source, statsList, state);
+    this.state = state;
   }
   
   public void collect(int doc) throws IOException {
     super.collect(doc);
-    double value = function.doubleVal(doc);
+    double value = state.function.doubleVal(doc);
     sum += value;
     sumOfSquares += (value * value);
   }
