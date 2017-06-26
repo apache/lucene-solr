@@ -227,12 +227,6 @@ Optimizations
 * SOLR-10727: Avoid polluting the filter cache for certain types of faceting (typically ranges) when
   the base docset is empty. (David Smiley)
 
-* SOLR-9981: Performance improvements and bug fixes for the Analytics component. Performance fix that 
-  stops the reading of ALL lucene segments over and again for each stats collector. The AtomicReaderContext 
-  that refers to the "current " segment is reused. This fix shows an improvement of about 25% in query 
-  time for a dataset of ~10M (=9.8M) records. Given the nature of the fix, the improvement should get 
-  better as the dataset increases. Fix for the NPE during comparison (Houston Putman)
-
 Other Changes
 ----------------------
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)

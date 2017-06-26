@@ -1,4 +1,0 @@
-o.ar.s.min=min(double_dd)
-o.ar.s.max=max(long_ld)
-o.ar.ff=string_sd
-o.ar.ff.string_sd.sortstatistic=min
