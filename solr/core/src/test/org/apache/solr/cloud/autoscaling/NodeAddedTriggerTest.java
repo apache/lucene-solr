@@ -232,8 +232,6 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
     // add a new node but update the trigger before the waitFor period expires
     // and assert that the new trigger still fires
     NodeAddedTrigger trigger = new NodeAddedTrigger("node_added_trigger", props, container);
-    final long waitTime = 2;
-    props.put("waitFor", waitTime);
     trigger.setListener(noFirstRunListener);
     trigger.run();
 
@@ -258,12 +256,9 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
           eventRef.set(event);
           long currentTimeNanos = timeSource.getTime();
           long eventTimeNanos = event.getEventTime();
-          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS) + WAIT_FOR_DELTA_NANOS;
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
             fail("NodeAddedListener was fired before the configured waitFor period: currentTimeNanos=" + currentTimeNanos + ", eventTimeNanos=" +  eventTimeNanos + ",waitForNanos=" + waitForNanos);
-          }
-          if (timeSource.getTime() - event.getEventTime() <= TimeUnit.NANOSECONDS.convert(waitTime, TimeUnit.SECONDS)) {
-            fail("NodeAddedListener was fired before the configured waitFor period");
           }
         } else {
           fail("NodeAddedTrigger was fired more than once!");
