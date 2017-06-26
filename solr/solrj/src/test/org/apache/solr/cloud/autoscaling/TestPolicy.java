@@ -88,9 +88,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       "            'node_name':'node1'," +
       "            'state':'active'}}}}}}";
 
-  public static Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaDetails(String node, String s) {
+  public static Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaDetails(String node, String clusterState) {
     ValidatingJsonMap m = ValidatingJsonMap
-        .getDeepCopy((Map) Utils.fromJSONString(s), 6, true);
+        .getDeepCopy((Map) Utils.fromJSONString(clusterState), 6, true);
     Map<String, Map<String, List<Policy.ReplicaInfo>>> result = new LinkedHashMap<>();
 
     m.forEach((collName, o) -> {
@@ -257,6 +257,139 @@ public class TestPolicy extends SolrTestCaseJ4 {
     SolrRequest op = session.getSuggester(MOVEREPLICA).hint(Hint.SRC_NODE, "127.0.0.1:65427_solr").getOperation();
     assertNotNull(op);
     assertEquals( "127.0.0.1:65434_solr",op.getParams().get("targetNode") );
+  }
+
+  public void testNodeLostMultipleReplica() {
+    String nodeValues = " {" +
+        "    'node4':{" +
+        "      'node':'10.0.0.4:8987_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node3':{" +
+        "      'node':'10.0.0.4:8989_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node2':{" +
+        "      'node':'10.0.0.4:7574_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "}";
+
+    ClusterDataProvider provider = getClusterDataProvider((Map<String, Map>) Utils.fromJSONString(nodeValues), clusterState);
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+    Policy policy = config.getPolicy();
+    Policy.Session session = policy.createSession(provider);
+    Policy.Suggester suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+
+    SolrRequest operation = suggester.getOperation();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertNotNull(operation);
+    assertEquals("node3", operation.getParams().get("targetNode"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertNull(operation);
+
+    // lets change the policy such that all replicas that were on node1
+    // can now fit on node2
+    policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    config = new AutoScalingConfig(policies);
+    policy = config.getPolicy();
+    session = policy.createSession(provider);
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+
+    operation = suggester.getOperation();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r3", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r5", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r1", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertNull(operation);
+
+    // now lets change the policy such that a node can have 2 shard2 replicas
+    policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': 'shard1', 'node': '#ANY'}," +
+        "    { 'replica': '<3', 'shard': 'shard2', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    config = new AutoScalingConfig(policies);
+    policy = config.getPolicy();
+    session = policy.createSession(provider);
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+
+    operation = suggester.getOperation();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r3", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertNotNull(operation);
+    assertEquals("node2", operation.getParams().get("targetNode"));
+    assertEquals("r5", operation.getParams().get("replica"));
+
+    session = suggester.getSession();
+    suggester = session.getSuggester(MOVEREPLICA)
+        .hint(Hint.SRC_NODE, "node1");
+    operation = suggester.getOperation();
+    assertEquals("node3", operation.getParams().get("targetNode"));
+    assertEquals("r1", operation.getParams().get("replica"));
   }
 
   private static ClusterDataProvider dataProviderWithData(String data){
