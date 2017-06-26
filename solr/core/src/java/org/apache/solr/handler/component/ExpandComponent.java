@@ -216,6 +216,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
+        @SuppressWarnings("resource")
         UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -386,6 +387,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
+        @SuppressWarnings("resource")
         UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
