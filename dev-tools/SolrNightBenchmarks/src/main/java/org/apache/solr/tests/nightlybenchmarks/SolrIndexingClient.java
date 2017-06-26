@@ -106,10 +106,10 @@ public class SolrIndexingClient {
 
 				String[] data = line.split(cvsSplitBy);
 
-				document.addField("ID", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Int1", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Long1", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Int1_pi", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Long1_pl", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 

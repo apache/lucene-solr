@@ -40,7 +40,8 @@ public class QueryClient implements Runnable {
 		GREATER_THAN_NUMERIC_QUERY, 
 		LESS_THAN_NUMERIC_QUERY, 
 		AND_NUMERIC_QUERY, 
-		OR_NUMERIC_QUERY
+		OR_NUMERIC_QUERY,
+		SORTED_NUMERIC_QUERY
 
 	}
 
@@ -73,6 +74,7 @@ public class QueryClient implements Runnable {
 	public static ConcurrentLinkedQueue<String> rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 
 	Random random = new Random();
 
@@ -86,7 +88,7 @@ public class QueryClient implements Runnable {
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
 
 		solrClient = new HttpSolrClient.Builder(urlString).build();
-		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ...", MessageType.GREEN_TEXT, false);
+		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ... Testing Type: " + queryType, MessageType.GREEN_TEXT, false);
 	}
 
 	public static void prepare() {
@@ -98,6 +100,7 @@ public class QueryClient implements Runnable {
 		rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 
 		String line = "";
 		try (BufferedReader br = new BufferedReader(
@@ -127,6 +130,20 @@ public class QueryClient implements Runnable {
 			e.printStackTrace();
 		}
 		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		Util.postMessage("** Preparing sorted query pair data queue ...", MessageType.CYAN_TEXT, false);
+
+		line = "";
+		try (BufferedReader br = new BufferedReader(
+				new FileReader(Util.TEST_DATA_DIRECTORY + Util.SORTED_NUMERIC_QUERY_PAIR_DATA))) {
+
+			while ((line = br.readLine()) != null) {
+				sortedNumericQueryParameterList.add(line.trim());
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 
 	}
 
@@ -151,9 +168,10 @@ public class QueryClient implements Runnable {
 				SolrResponse response = null;
 				try {
 					requestParams.remove("q");
+					requestParams.remove("sort");
 
 					if (this.queryType == QueryType.TERM_NUMERIC_QUERY) {
-						requestParams.add("q", "Int1:" + termNumericQueryParameterList.poll());
+						requestParams.add("q", "Int1_pi:" + termNumericQueryParameterList.poll());
 					} else if (this.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
 						String pairData[] = rangeNumericQueryParameterList.poll().trim().split(",");
@@ -162,15 +180,30 @@ public class QueryClient implements Runnable {
 						int ft_2 = Integer.parseInt(pairData[1]);
 
 						if (ft_2 > ft_1) {
-							requestParams.add("q", "Int1:[" + ft_1 + " TO " + ft_2 + "]");
+							requestParams.add("q", "Int1_pi:[" + ft_1 + " TO " + ft_2 + "]");
 						} else {
-							requestParams.add("q", "Int1:[" + ft_2 + " TO " + ft_1 + "]");
+							requestParams.add("q", "Int1_pi:[" + ft_2 + " TO " + ft_1 + "]");
 						}
 
+					} else if (this.queryType == QueryType.SORTED_NUMERIC_QUERY) {
+
+						String pairData[] = sortedNumericQueryParameterList.poll().trim().split(",");
+
+						int ft_1 = Integer.parseInt(pairData[0]);
+						int ft_2 = Integer.parseInt(pairData[1]);
+
+						if (ft_2 > ft_1) {
+							requestParams.add("q", "id:[" + ft_1 + " TO " + ft_2 + "]");
+						} else {
+							requestParams.add("q", "id:[" + ft_2 + " TO " + ft_1 + "]");
+						}
+						
+						requestParams.add("sort", "Int1_pi asc");
+
 					} else if (this.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
-						requestParams.add("q", "Int1:[" + greaterNumericQueryParameterList.poll() + " TO *]");
+						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 					} else if (this.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
-						requestParams.add("q", "Int1:[* TO " + lesserNumericQueryParameterList.poll() + "]");
+						requestParams.add("q", "Int1_pi:[* TO " + lesserNumericQueryParameterList.poll() + "]");
 					} else if (this.queryType == QueryType.AND_NUMERIC_QUERY) {
 
 						String pairData[] = andNumericQueryParameterList.poll().trim().split(",");
@@ -178,7 +211,7 @@ public class QueryClient implements Runnable {
 						int ft_1 = Integer.parseInt(pairData[0]);
 						int ft_2 = Integer.parseInt(pairData[1]);
 
-						requestParams.add("q", "Int1:" + ft_1 + " AND Int1:" + ft_2);
+						requestParams.add("q", "Int1_pi:" + ft_1 + " AND Int1_pi:" + ft_2);
 
 					} else if (this.queryType == QueryType.OR_NUMERIC_QUERY) {
 
@@ -187,7 +220,7 @@ public class QueryClient implements Runnable {
 						int ft_1 = Integer.parseInt(pairData[0]);
 						int ft_2 = Integer.parseInt(pairData[1]);
 
-						requestParams.add("q", "Int1:" + ft_1 + " OR Int1:" + ft_2);
+						requestParams.add("q", "Int1_pi:" + ft_1 + " OR Int1_pi:" + ft_2);
 
 					}
 
@@ -315,6 +348,7 @@ public class QueryClient implements Runnable {
 		rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+		sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 
 	}
 

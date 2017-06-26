@@ -47,6 +47,8 @@ public class BenchmarkAppConnector {
 		CLOUD_INDEXING_CONCURRENT, 
 		NUMERIC_QUERY_STANDALONE, 
 		NUMERIC_QUERY_CLOUD, 
+		SORTING_NUMERIC_QUERY_STANDALONE, 
+		SORTING_NUMERIC_QUERY_CLOUD, 
 		LAST_RUN_COMMIT, 
 		IS_RUNNING_FILE, 
 		COMMIT_INFORMATION_FILE, 
@@ -299,6 +301,10 @@ public class BenchmarkAppConnector {
 				} else if (type == FileType.NUMERIC_QUERY_CLOUD || type == FileType.NUMERIC_QUERY_STANDALONE) {
 					fw.write(
 							"Date, Test_ID, CommitID, QPS(Term), QTime-Min(Term), QTime-Max(Term), QTime-75th-Percentile(Term), QTime-95th-Percentile(Term), QTime-99th-Percentile(Term), QTime-99.9th-Percentile(Term), QPS(Range), QTime-Min(Range), QTime-Max(Range), QTime-75th-Percentile(Range), QTime-95th-Percentile(Range), QTime-99th-Percentile(Range), QTime-99.9th-Percentile(Range), QPS(Less Than), QTime-Min(Less Than), QTime-Max(Less Than), QTime-75th-Percentile(Less Than), QTime-95th-Percentile(Less Than), QTime-99th-Percentile(Less Than), QTime-99.9th-Percentile(Less Than), QPS(Greater Than), QTime-Min(Greater Than), QTime-Max(Greater Than), QTime-75th-Percentile(Greater Than), QTime-95th-Percentile(Greater Than), QTime-99th-Percentile(Greater Than), QTime-99.9th-Percentile(Greater Than), QPS(AND), QTime-Min(AND), QTime-Max(AND), QTime-75th-Percentile(And), QTime-95th-Percentile(And), QTime-99th-Percentile(And), QTime-99.9th-Percentile(And), QPS(OR), QTime-Min(OR), QTime-Max(OR), QTime-75th-Percentile(OR), QTime-95th-Percentile(OR), QTime-99th-Percentile(OR), QTime-99.9th-Percentile(OR)\n");
+				} else if (type == FileType.SORTING_NUMERIC_QUERY_STANDALONE
+						|| type == FileType.SORTING_NUMERIC_QUERY_CLOUD) {
+					fw.write(
+							"Date, Test_ID, CommitID, QPS, QTime-Min, QTime-Max, QTime-75th-Percentile, QTime-95th-Percentile, QTime-99th-Percentile, QTime-99.9th-Percentile\n");
 				}
 			}
 
@@ -520,6 +526,38 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.numericQueryONQMetricS.get("99.9thQtime"),
 
 					false, FileType.NUMERIC_QUERY_STANDALONE);
+		}
+
+		if (BenchmarkReportData.numericQuerySNQMetricS != null) {
+
+			BenchmarkAppConnector.writeToWebAppDataFile("sorting_numeric_query_benchmark_standalone.csv",
+					BenchmarkReportData.numericQuerySNQMetricS.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("CommitID") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("75thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("95thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("99thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricS.get("99.9thQtime"),
+
+					false, FileType.SORTING_NUMERIC_QUERY_STANDALONE);
+		}
+
+		if (BenchmarkReportData.numericQuerySNQMetricC != null) {
+
+			BenchmarkAppConnector.writeToWebAppDataFile("sorting_numeric_query_benchmark_cloud.csv",
+					BenchmarkReportData.numericQuerySNQMetricC.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("CommitID") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("75thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("95thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("99thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySNQMetricC.get("99.9thQtime"),
+
+					false, FileType.SORTING_NUMERIC_QUERY_CLOUD);
 		}
 
 		Util.getAndPublishCommitInformation();

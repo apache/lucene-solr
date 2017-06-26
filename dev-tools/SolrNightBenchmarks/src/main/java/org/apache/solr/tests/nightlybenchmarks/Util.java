@@ -35,8 +35,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
@@ -87,13 +87,15 @@ public class Util {
 	public static String ONEM_TEST_DATA = "test-data-file-1M.csv";
 	public static String NUMERIC_QUERY_TERM_DATA = "Numeric-Term-Query.txt";
 	public static String NUMERIC_QUERY_PAIR_DATA = "Numeric-Pair-Query-Data.txt";
+	public static String SORTED_NUMERIC_QUERY_PAIR_DATA = "Numeric-Pair-Sorted-Query-Data.txt";
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
+	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
 
 	public static boolean SILENT = false;
 
 	final static Logger logger = Logger.getLogger(Util.class);
 
-	static Map<String, String> argM;
+	static List<String> argsList;
 
 	public static void postMessage(String message, MessageType type, boolean printInLog) {
 
@@ -107,7 +109,7 @@ public class Util {
 		String ANSI_CYAN = "\u001B[36m";
 		String ANSI_WHITE = "\u001B[37m";
 
-		if (!SILENT) {
+		if (!SILENT && USE_COLORED_TEXT_ON_CONSOLE) {
 			if (type.equals(MessageType.WHITE_TEXT)) {
 				System.out.println(ANSI_WHITE + message + ANSI_RESET);
 			} else if (type.equals(MessageType.BLUE_TEXT)) {
@@ -125,6 +127,8 @@ public class Util {
 			} else if (type.equals(MessageType.CYAN_TEXT)) {
 				System.out.println(ANSI_CYAN + message + ANSI_RESET);
 			}
+		} else {
+			System.out.println(message);
 		}
 
 		if (printInLog) {
@@ -499,7 +503,15 @@ public class Util {
 			Util.postMessage(
 					"Getting Property Value for testWithNumberOfDocuments: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
 					MessageType.YELLOW_TEXT, false);
-
+			Util.SORTED_NUMERIC_QUERY_PAIR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericSortedQueryPairsData");
+			Util.postMessage(
+					"Getting Property Value for staticNumericSortedQueryPairsData: " + Util.SORTED_NUMERIC_QUERY_PAIR_DATA,
+					MessageType.YELLOW_TEXT, false);
+			Util.USE_COLORED_TEXT_ON_CONSOLE = new Boolean(prop.getProperty("SolrNightlyBenchmarks.useColoredTextOnConsole"));
+			Util.postMessage(
+					"Getting Property Value for useColoredTextOnConsole: " + Util.USE_COLORED_TEXT_ON_CONSOLE,
+					MessageType.YELLOW_TEXT, false);
+			
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
 				Util.postMessage("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...",
@@ -726,14 +738,13 @@ public class Util {
 		statusFile = null;
 	}
 
-	public static Map<String, String> getArgs(String[] args) {
+	public static List<String> getArgs(String[] args) {
 
-		Map<String, String> argM = new HashMap<String, String>();
-		for (int i = 0; i < args.length; i += 2) {
-			argM.put(args[i], args[i + 1]);
+		List<String> argsList = new LinkedList<String>();
+		for (int i = 0; i < args.length; i++) {
+			argsList.add(args[i]);		
 		}
-
-		return argM;
+		return argsList;
 	}
 
 	public static void init(String[] args) {
@@ -747,16 +758,93 @@ public class Util {
 				false);
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
 
+		Util.getPropertyValues();
+		
 		try {
-			argM = Util.getArgs(args);
-			Util.getPropertyValues();
+			argsList = Util.getArgs(args);
+			
+			if (argsList.size() == 0) {
+				Util.postMessage("** No Parameters defined! [EXITING] ...", MessageType.RED_TEXT, false);
+				Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
+				System.exit(0);
+			} else {
+				
+				int atleastOne = 0;
+				
+				if (argsList.contains("-Generate1MDataFile")) {
+					atleastOne++;
+				}
+				if (argsList.contains("-RegisterLatestCommit")) {
+					atleastOne++;
+				}
+				if (argsList.contains("-TestWithNumberOfDocuments")) {
 
-			if (argM.containsKey("-Generate1MDataFile")) {
+					try {
+						Long.parseLong(argsList.get(argsList.indexOf("-TestWithNumberOfDocuments") + 1));
+						atleastOne++;
+					} catch (Exception e) {
+						Util.postMessage("** Parameter value for -TestWithNumberOfDocuments should be a number! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+						System.exit(0);
+					}
+					
+				}
+				if (argsList.contains("-RunSilently")) {
+					atleastOne++;
+				}
+				if (argsList.contains("-ProcessCommitsFromQueue")) {
+					atleastOne++;
+				}
+				if (argsList.contains("-ProcessLatestCommit")) {
+					atleastOne++;
+				}
+				if (argsList.contains("-ProcessWithCommitID")) {
+					
+					try {
+						argsList.get(argsList.indexOf("-ProcessWithCommitID") + 1);
+						atleastOne++;
+					} catch (Exception e) {
+						Util.postMessage("** Parameter value for -ProcessWithCommitID not defined! [EXITING] ...", MessageType.RED_TEXT, false);
+						Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
+						System.exit(0);
+					}
+					
+				}
+				
+				if (atleastOne == 0) {
+					Util.postMessage("** No Valid Parameters defined! [EXITING] ...", MessageType.RED_TEXT, false);
+					Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
+					System.exit(0);
+				}
+				
+			}
+			
+			File datafile = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
+			if (!datafile.exists()) {
+				Util.postMessage("** Data File "+ Util.ONEM_TEST_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				System.exit(0);
+			}
+			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
+			if (!datafile.exists()) {
+				Util.postMessage("** Data File "+ Util.NUMERIC_QUERY_TERM_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				System.exit(0);
+			}
+			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
+			if (!datafile.exists()) {
+				Util.postMessage("** Data File "+ Util.NUMERIC_QUERY_PAIR_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				System.exit(0);
+			}
+			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.SORTED_NUMERIC_QUERY_PAIR_DATA);
+			if (!datafile.exists()) {
+				Util.postMessage("** Data File "+ Util.SORTED_NUMERIC_QUERY_PAIR_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				System.exit(0);
+			}
+			
+			if (argsList.contains("-Generate1MDataFile")) {
 				createTestDataFile("test-data-file-1M.csv", 1000000);
 				System.exit(0);
 			}
 
-			if (argM.containsKey("-RegisterLatestCommit")) {
+			if (argsList.contains("-RegisterLatestCommit")) {
 				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
 				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 
@@ -775,8 +863,8 @@ public class Util {
 
 			}
 
-			if (argM.containsKey("-TestWithNumberOfDocuments")) {
-				long numDocuments = Long.parseLong(argM.get("-TestWithNumberOfDocuments"));
+			if (argsList.contains("-TestWithNumberOfDocuments")) {
+				long numDocuments = Long.parseLong(argsList.get(argsList.indexOf("-TestWithNumberOfDocuments") + 1));
 
 				if (numDocuments > 0 && numDocuments <= 1000000) {
 					Util.TEST_WITH_NUMBER_OF_DOCUMENTS = numDocuments;
@@ -785,7 +873,7 @@ public class Util {
 				}
 			}
 
-			if (argM.containsKey("-RunSilently")) {
+			if (argsList.contains("-RunSilently")) {
 				Util.postMessage("** Running silently since -RunSilently parameter is set ...", MessageType.BLUE_TEXT,
 						false);
 				Util.SILENT = true;
@@ -818,7 +906,7 @@ public class Util {
 				Util.deleteRunningFile();
 			}
 
-			if (argM.containsKey("-ProcessCommitsFromQueue")) {
+			if (argsList.contains("-ProcessCommitsFromQueue")) {
 				Util.postMessage("** Initiating processing from commit queue ...", MessageType.BLUE_TEXT, false);
 
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
@@ -852,7 +940,7 @@ public class Util {
 					}
 					Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 				}
-			} else if (argM.containsKey("-ProcessLatestCommit")) {
+			} else if (argsList.contains("-ProcessLatestCommit")) {
 
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
@@ -860,9 +948,9 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-			} else if (argM.containsKey("-ProcessWithCommitID")) {
+			} else if (argsList.contains("-ProcessWithCommitID")) {
 
-				Util.COMMIT_ID = argM.get("-ProcessWithCommitID");
+				Util.COMMIT_ID = argsList.get(argsList.indexOf("-ProcessWithCommitID") + 1);
 				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT,
 						false);
 				TestPlans.execute();
@@ -880,7 +968,7 @@ public class Util {
 
 		try {
 
-			if (argM.containsKey("-Housekeeping")) {
+			if (argsList.contains("-Housekeeping")) {
 				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
 				Util.execute("rm -r -f " + Util.DOWNLOAD_DIR, Util.DOWNLOAD_DIR);
 			}
@@ -940,6 +1028,23 @@ public class Util {
 		}
 	}
 
+	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) {
+		Util.postMessage("** Preparing sorted numeric query data ...", MessageType.WHITE_TEXT, false);
+		for (int i = 0; i < numberOfDocuments; i++) {
+			if (i % 100 == 0) {
+				Util.postMessageOnLine("|");
+			}
+
+			Random r = new Random();
+			int number = r.nextInt((1000000 - 100));
+
+			String line = number + "," + (number + 100);
+			
+			BenchmarkAppConnector.writeToWebAppDataFile(fileName, line, false, FileType.TEST_ENV_FILE);
+		}
+		Util.postMessage("** Preparation [COMPLETE] ...", MessageType.WHITE_TEXT, false);
+	}
+	
 	public static void killProcesses(String lookFor) {
 
 		Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
