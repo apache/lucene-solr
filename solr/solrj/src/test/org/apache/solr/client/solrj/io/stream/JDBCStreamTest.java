@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -49,6 +50,7 @@ import org.junit.Test;
 /**
 */
 
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10960")
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class JDBCStreamTest extends SolrCloudTestCase {
 

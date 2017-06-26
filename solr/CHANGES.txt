@@ -332,6 +332,9 @@ Other Changes
 
 * SOLR-10823: Add reporting period to SolrMetricReporter base class. (Christine Poerschke)
 
+* SOLR-10807: Randomize Points based numeric field types in (more) test schemas
+  - SOLR-10946: Randomize the usage of Points based numerics in solrj test schemas (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
