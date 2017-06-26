@@ -84,7 +84,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       "            'state':'active'}," +
       "          'r5':{" +
       "            'core':r5," +
-      "            'base_url':'http://10.0.0.4:7574/solr'," +
+      "            'base_url':'http://10.0.0.4:8983/solr'," +
       "            'node_name':'node1'," +
       "            'state':'active'}}}}}}";
 
