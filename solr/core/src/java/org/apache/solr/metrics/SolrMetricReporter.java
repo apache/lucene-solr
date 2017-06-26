@@ -36,6 +36,7 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
   protected final SolrMetricManager metricManager;
   protected PluginInfo pluginInfo;
   protected boolean enabled = true;
+  protected int period = SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD;
 
   /**
    * Create a reporter for metrics managed in a named registry.
@@ -83,6 +84,20 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
     if (enabled != null) {
       this.enabled = enabled;
     }
+  }
+
+  /**
+   * @param period - in seconds
+   */
+  public void setPeriod(int period) {
+    this.period = period;
+  }
+
+  /**
+   * @return period, in seconds
+   */
+  public int getPeriod() {
+    return period;
   }
 
   /**

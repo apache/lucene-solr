@@ -53,6 +53,9 @@ public class MockMetricReporter extends SolrMetricReporter {
     if (configurable == null) {
       throw new IllegalStateException("MockMetricReporter::configurable not defined.");
     }
+    if (period < 1) {
+      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
+    }
   }
 
   public void setConfigurable(String configurable) {

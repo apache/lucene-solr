@@ -517,6 +517,8 @@ Other Changes
   with point fields and provides control over dynamic fields used for the raw amount and currency
   code sub-fields.  (hossman, Steve Rowe)
 
+* SOLR-10823: Add reporting period to SolrMetricReporter base class. (Christine Poerschke)
+
 ==================  6.6.1 ==================
 
 Bug Fixes
