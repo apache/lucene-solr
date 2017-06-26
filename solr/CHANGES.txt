@@ -336,6 +336,8 @@ Other Changes
   increase the visibility of builder elements to be protected so extending the builder, and the clients is possible.
   (Jason Gerlowski, Anshum Gupta)
 
+* SOLR-10823: Add reporting period to SolrMetricReporter base class. (Christine Poerschke)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -516,8 +518,6 @@ Other Changes
 * SOLR-10503,SOLR-10502: Deprecate CurrencyField in favor of new CurrencyFieldType, which works
   with point fields and provides control over dynamic fields used for the raw amount and currency
   code sub-fields.  (hossman, Steve Rowe)
-
-* SOLR-10823: Add reporting period to SolrMetricReporter base class. (Christine Poerschke)
 
 ==================  6.6.1 ==================
 
