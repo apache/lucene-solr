@@ -458,6 +458,7 @@ public class Policy implements MapWriter {
         if (!isAllowed(e.getKey(), Hint.COLL)) continue;
         for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
           if (!isAllowed(e.getKey(), Hint.SHARD)) continue;//todo fix
+          if(shard.getValue() == null || shard.getValue().isEmpty()) continue;
           replicaList.add(new Pair<>(shard.getValue().get(0), r));
         }
       }
