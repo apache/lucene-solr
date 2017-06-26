@@ -73,7 +73,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     commit();
 
     if (aDocId != null) {
-      dfQuery("q", "id:"+aDocId,"debugQuery", "true", "fl", "*,score");
+      dfQuery("q", "{!cache=false}id:"+aDocId,"debugQuery", "true", "fl", "*,score");
     }
     dfQuery("q", "a_t:one a_t:four", "debugQuery", "true", "fl", "*,score");
   }
