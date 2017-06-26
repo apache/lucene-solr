@@ -30,20 +30,19 @@ A comprehensive Solr performance benchmark framework.
 ## Data structure and data file details
 
      The data currently being used has the following data structure.     
-               * { Int(ID), String(Text), Int(Numeric), Long(Numeric), Alphanumeric(Catgory), String(Text) }
+               * { Int(id), String(Text), Int(Numeric), Long(Numeric), Alphanumeric(Catgory), String(Text) }
      The record size averages around ~3.8KB
      The data file name is "test-data-file-1M.csv" and the file is around 3.8GB in size.
 
 ## Possible parameters
 
-     * -RunSilently true                       Use this parameter if you do not want any output on console.
-     * -ProcessLatestCommit true               Use this parameter if you want the system to look for the latest commit to work on.
+     * -RunSilently                            Use this parameter if you do not want any output on console.
+     * -ProcessLatestCommit                    Use this parameter if you want the system to look for the latest commit to work on.
      * -ProcessWithCommitID XXXXXXXXXXXX       Use this parameter if you want the system to use the commit hash to work on.
-     
-     * -ProcessCommitsFromQueue true           Use this parameter if you want the system to work on the commit hash present in the queue.
-     * -RegisterLatestCommit true              This parameter is used in conjunction with the last parameter. 
-     * -Generate1MDataFile true                Generates a fresh test data file with 1 million records ~3.7GB size. in the webapp/data directory.     
-     * -Housekeeping true                      Use this parameter to instruct the system to clean up at the end of the work cycle.
+     * -ProcessCommitsFromQueue                Use this parameter if you want the system to work on the commit hash present in the queue.
+     * -RegisterLatestCommit                   This parameter is used in conjunction with the last parameter. 
+     * -Generate1MDataFile                     Generates a fresh test data file with 1 million records ~3.7GB size. in the webapp/data directory.     
+     * -Housekeeping                           Use this parameter to instruct the system to clean up at the end of the work cycle.
      * -TestWithNumberOfDocuments XXXX         Use this parameter to specify the subset of the available documents to test with. Valid value lies in (with test-data-file-1M.csv data) between 1 and 1000000.
      
 ## Running benchmarks in queue mode
