@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
@@ -716,10 +715,8 @@ public class ZkController {
     return configDirPath;
   }
 
-  @SuppressForbidden(reason = "This will be loaded for unit tests, and hence an exception can be made. "
-      + "In regular server operation, there shouldn't be a situation where we reach this point.")
   private static String getDefaultConfigDirFromClasspath(String serverSubPath) {
-    URL classpathUrl = Thread.currentThread().getContextClassLoader().getResource(serverSubPath);
+    URL classpathUrl = ZkController.class.getClassLoader().getResource(serverSubPath);
     try {
       if (classpathUrl != null && new File(classpathUrl.toURI()).exists()) {
         return new File(classpathUrl.toURI()).getAbsolutePath();
