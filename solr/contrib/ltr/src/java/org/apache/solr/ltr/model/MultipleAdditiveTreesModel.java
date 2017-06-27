@@ -42,29 +42,29 @@ import org.apache.solr.util.SolrPluginUtils;
    "params" : {
        "trees" : [
            {
-               "weight" : 1,
+               "weight" : "1",
                "root": {
                    "feature" : "userTextTitleMatch",
-                   "threshold" : 0.5,
+                   "threshold" : "0.5",
                    "left" : {
-                       "value" : -100
+                       "value" : "-100"
                    },
                    "right" : {
                        "feature" : "originalScore",
-                       "threshold" : 10.0,
+                       "threshold" : "10.0",
                        "left" : {
-                           "value" : 50
+                           "value" : "50"
                        },
                        "right" : {
-                           "value" : 75
+                           "value" : "75"
                        }
                    }
                }
            },
            {
-               "weight" : 2,
+               "weight" : "2",
                "root" : {
-                   "value" : -10
+                   "value" : "-10"
                }
            }
        ]
