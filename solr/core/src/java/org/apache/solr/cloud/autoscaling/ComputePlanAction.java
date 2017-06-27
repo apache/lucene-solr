@@ -79,7 +79,7 @@ public class ComputePlanAction implements TriggerAction {
         while (true) {
           SolrRequest operation = suggester.getOperation();
           if (operation == null) break;
-          log.info("Computed Plan: {}", operation);
+          log.info("Computed Plan: {}", operation.getParams());
           Map<String, Object> props = context.getProperties();
           props.compute("operations", (k, v) -> {
             List<SolrRequest> operations = (List<SolrRequest>) v;
