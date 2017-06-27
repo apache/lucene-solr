@@ -30,8 +30,8 @@ Apache ZooKeeper 3.4.10
 Jetty 9.3.14.v20161028
 
 
-(No Changes)
-
+* SOLR-10506: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
+  (Torsten Bøgh Köster, Christine Poerschke, Jörg Rathlev, Mike Drob)
 
 ==================  6.6.5 ==================
 
