@@ -32,6 +32,7 @@ Jetty 9.3.14.v20161028
 Detailed Change List
 ----------------------
 
+<<<<<<< HEAD
 Upgrade Notes
 ----------------------
 
@@ -220,6 +221,10 @@ Other Changes
 
  * SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
    (Erick Erickson)
+=======
+* SOLR-10506: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
+  (Torsten Bøgh Köster, Christine Poerschke, Jörg Rathlev, Mike Drob)
+>>>>>>> 386b22203e... SOLR-10506: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
 
 ==================  6.6.5 ==================
 
