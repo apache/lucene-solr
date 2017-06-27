@@ -69,7 +69,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   public void testAutoAddReplicas() throws Exception {
     String collection = "test-collection";
     CollectionAdminRequest
-        .createCollection(collection, 1, 1)
+        .createCollection(collection, CONFIGSET_NAME,1, 1)
         .setAutoAddReplicas(true)
         .process(cluster.getSolrClient());
     byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
