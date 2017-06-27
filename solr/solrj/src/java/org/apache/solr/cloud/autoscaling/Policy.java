@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -40,7 +39,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
@@ -300,46 +298,6 @@ public class Policy implements MapWriter {
   }
 
 
-  public static class ReplicaInfo implements MapWriter {
-    final String name;
-    String core, collection, shard;
-    Replica.Type type;
-    Map<String, Object> variables;
-
-    public ReplicaInfo(String name, String coll, String shard, Replica.Type type, Map<String, Object> vals) {
-      this.name = name;
-      this.variables = vals;
-      this.collection = coll;
-      this.shard = shard;
-      this.type = type;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(name, (MapWriter) ew1 -> {
-        if(variables !=null){
-          for (Map.Entry<String, Object> e : variables.entrySet()) {
-            ew1.put(e.getKey(), e.getValue());
-          }
-        }
-        if(type != null) ew1.put("type", type.toString());
-      });
-    }
-
-    public String getCore() {
-      return core;
-    }
-
-    public String getCollection() {
-      return collection;
-    }
-
-    public String getShard() {
-      return shard;
-    }
-  }
-
-
   /* A suggester is capable of suggesting a collection operation
    * given a particular session. Before it suggests a new operation,
    * it ensures that ,
@@ -439,7 +397,7 @@ public class Policy implements MapWriter {
     }
 
     List<Pair<ReplicaInfo, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
-      List<Pair<Policy.ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
+      List<Pair<ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
 
       if (sortDesc) {
         if (until == -1) until = getMatrix().size();
@@ -452,11 +410,11 @@ public class Policy implements MapWriter {
       return allPossibleReplicas;
     }
 
-    void addReplicaToList(Row r, boolean isSource, List<Pair<Policy.ReplicaInfo, Row>> replicaList) {
+    void addReplicaToList(Row r, boolean isSource, List<Pair<ReplicaInfo, Row>> replicaList) {
       if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
-      for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
+      for (Map.Entry<String, Map<String, List<ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
         if (!isAllowed(e.getKey(), Hint.COLL)) continue;
-        for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
+        for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
           if (!isAllowed(e.getKey(), Hint.SHARD)) continue;//todo fix
           if(shard.getValue() == null || shard.getValue().isEmpty()) continue;
           replicaList.add(new Pair<>(shard.getValue().get(0), r));

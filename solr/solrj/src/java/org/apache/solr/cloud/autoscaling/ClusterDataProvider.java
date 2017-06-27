@@ -38,7 +38,7 @@ public interface ClusterDataProvider extends Closeable {
    * <p>
    * the format is {collection:shard :[{replicadetails}]}
    */
-  Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
+  Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
 
   Collection<String> getNodes();
 

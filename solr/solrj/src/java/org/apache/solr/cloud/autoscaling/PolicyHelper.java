@@ -50,7 +50,7 @@ public class PolicyHelper {
         }
 
         @Override
-        public Map<String, Map<String, List<Policy.ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+        public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
           return delegate.getReplicaInfo(node, keys);
         }
 

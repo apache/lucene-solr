@@ -30,7 +30,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
 
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 

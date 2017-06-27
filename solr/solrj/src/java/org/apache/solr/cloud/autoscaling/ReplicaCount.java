@@ -71,9 +71,9 @@ class ReplicaCount extends Number implements MapWriter {
     return total();
   }
 
-  public void increment(List<Policy.ReplicaInfo> infos) {
+  public void increment(List<ReplicaInfo> infos) {
     if (infos == null) return;
-    for (Policy.ReplicaInfo info : infos) {
+    for (ReplicaInfo info : infos) {
       switch (info.type) {
         case NRT:
           nrt++;
