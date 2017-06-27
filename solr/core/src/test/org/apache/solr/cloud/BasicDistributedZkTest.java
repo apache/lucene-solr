@@ -576,7 +576,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   protected void createCores(final HttpSolrClient client,
       ThreadPoolExecutor executor, final String collection, final int numShards, int cnt) {
     try {
-      assertEquals(0, CollectionAdminRequest.createCollection(collection, numShards, 1)
+      assertEquals(0, CollectionAdminRequest.createCollection(collection, "conf1", numShards, 1)
           .setCreateNodeSet("")
           .process(client).getStatus());
     } catch (SolrServerException | IOException e) {
@@ -614,8 +614,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     return url2;
   }
 
+  @Override
   protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
-                                                     String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
+                                                     String collectionName, String configSetName, int numShards, int numReplicas, int maxShardsPerNode, SolrClient client, String createNodeSetStr) throws SolrServerException, IOException {
     // TODO: Use CollectionAdminRequest for this test
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
@@ -633,6 +634,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       collectionInfos.put(collectionName, list);
     }
     params.set("name", collectionName);
+    params.set("collection.configName", configSetName);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
@@ -795,7 +797,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
     log.info("### STARTING testANewCollectionInOneInstanceWithManualShardAssignement");
-    assertEquals(0, CollectionAdminRequest.createCollection(oneInstanceCollection2, 2, 2)
+    assertEquals(0, CollectionAdminRequest.createCollection(oneInstanceCollection2, "conf1", 2, 2)
         .setCreateNodeSet("")
         .setMaxShardsPerNode(4)
         .process(cloudClient).getStatus());
@@ -921,7 +923,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testANewCollectionInOneInstance() throws Exception {
     log.info("### STARTING testANewCollectionInOneInstance");
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection(oneInstanceCollection, 2, 2)
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(oneInstanceCollection, "conf1", 2, 2)
         .setCreateNodeSet(jettys.get(0).getNodeName())
         .setMaxShardsPerNode(4)
         .process(cloudClient);
@@ -1087,7 +1089,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void createNewCollection(final String collection) throws InterruptedException {
     try {
       assertEquals(0, CollectionAdminRequest
-          .createCollection(collection, 2, 1)
+          .createCollection(collection, "conf1", 2, 1)
           .setCreateNodeSet("")
           .process(cloudClient).getStatus());
     } catch (Exception e) {

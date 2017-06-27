@@ -65,7 +65,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       assertSame(trackingQueue, trackingShardHandlerFactory.getTrackingQueue());
     }
 
-    createCollection(collectionName, 2, 1, 1);
+    createCollection(collectionName, "conf1", 2, 1, 1);
 
     waitForRecoveriesToFinish(collectionName, true);
 

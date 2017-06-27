@@ -932,25 +932,18 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     done
   fi
 
-  if [ -z "$CREATE_CONFDIR" ]; then
-    CREATE_CONFDIR='_default'
-  fi
-
-  # validate the confdir arg
-  if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
-    echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
-    exit 1
+  # validate the confdir arg (if provided)
+  if ! [ -z "$CREATE_CONFDIR" ]; then
+    if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
+      echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
+      exit 1
+    fi
   fi
 
   if [ -z "$CREATE_NAME" ]; then
     echo "Name (-c) argument is required!"
     print_usage "$SCRIPT_CMD"
     exit 1
-  fi
-
-  # If not defined, use the collection name for the name of the configuration in Zookeeper
-  if [ -z "$CREATE_CONFNAME" ]; then
-    CREATE_CONFNAME="$CREATE_NAME"
   fi
 
   if [ -z "$CREATE_PORT" ]; then
@@ -1661,6 +1654,11 @@ else
   fi
 fi
 
+# Set the default configset dir to be bootstrapped as _default
+if [ -z "$DEFAULT_CONFDIR" ]; then
+  DEFAULT_CONFDIR="$SOLR_SERVER_DIR/solr/configsets/_default/conf"
+fi
+
 # This is quite hacky, but examples rely on a different log4j.properties
 # so that we can write logs for examples to $SOLR_HOME/../logs
 if [ -z "$SOLR_LOGS_DIR" ]; then
@@ -1911,7 +1909,7 @@ function launch_solr() {
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"

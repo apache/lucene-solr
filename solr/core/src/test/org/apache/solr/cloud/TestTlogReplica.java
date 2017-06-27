@@ -157,9 +157,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
           break;
         case 1:
           // Sometimes don't use SolrJ
-          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s",
+          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s",
               cluster.getRandomJetty(random()).getBaseUrl(),
-              collectionName,
+              collectionName, "conf",
               2,    // numShards
               4,    // tlogReplicas
               100); // maxShardsPerNode
@@ -170,8 +170,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
         case 2:
           // Sometimes use V2 API
           url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
-          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, numShards:%s, tlogReplicas:%s, maxShardsPerNode:%s}}",
-              collectionName,
+          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s, maxShardsPerNode:%s}}",
+              collectionName, "conf",
               2,    // numShards
               4,    // tlogReplicas
               100); // maxShardsPerNode

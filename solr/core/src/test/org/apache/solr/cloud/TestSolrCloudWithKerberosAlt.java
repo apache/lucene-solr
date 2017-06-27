@@ -174,7 +174,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
-      CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName,NUM_SHARDS,REPLICATION_FACTOR);
+      CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS,REPLICATION_FACTOR);
       Properties properties = new Properties();
       properties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
       properties.put("solr.tests.maxBufferedDocs", "100000");

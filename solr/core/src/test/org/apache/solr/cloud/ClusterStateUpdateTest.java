@@ -61,7 +61,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
   public void testCoreRegistration() throws Exception {
     System.setProperty("solrcloud.update.delay", "1");
 
-    assertEquals(0, CollectionAdminRequest.createCollection("testcore", 1,1)
+    assertEquals(0, CollectionAdminRequest.createCollection("testcore", "conf", 1, 1)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient()).getStatus());
 

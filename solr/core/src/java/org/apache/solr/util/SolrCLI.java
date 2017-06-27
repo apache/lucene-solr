@@ -1503,17 +1503,23 @@ public class SolrCLI {
         maxShardsPerNode = ((numShards*replicationFactor)+numNodes-1)/numNodes;
       }
 
-      String confname = cli.getOptionValue("confname", collectionName);
-      boolean configExistsInZk =
+      String confname = cli.getOptionValue("confname");
+      String confdir = cli.getOptionValue("confdir");
+      String configsetsDir = cli.getOptionValue("configsetsDir");
+
+      boolean configExistsInZk = confname != null && !"".equals(confname.trim()) &&
           cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/" + confname, true);
 
       if (".system".equals(collectionName)) {
         //do nothing
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory "+confname);
-      } else {
-        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir", DEFAULT_CONFIG_SET),
-            cli.getOptionValue("configsetsDir"));
+      } else if (confdir != null && !"".equals(confdir.trim())){
+        if (confname == null || "".equals(confname.trim())) {
+          confname = collectionName;
+        }
+        Path confPath = ZkConfigManager.getConfigsetPath(confdir,
+            configsetsDir);
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost());
@@ -1531,13 +1537,15 @@ public class SolrCLI {
       // doesn't seem to exist ... try to create
       String createCollectionUrl =
           String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&collection.configName=%s",
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d",
               baseUrl,
               collectionName,
               numShards,
               replicationFactor,
-              maxShardsPerNode,
-              confname);
+              maxShardsPerNode);
+      if (confname != null && !"".equals(confname.trim())) {
+        createCollectionUrl = createCollectionUrl + String.format(Locale.ROOT, "&collection.configName=%s", confname);
+      }
 
       echo("\nCreating new collection '"+collectionName+"' using command:\n"+createCollectionUrl+"\n");
 

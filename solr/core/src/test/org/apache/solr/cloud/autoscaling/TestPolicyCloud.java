@@ -73,7 +73,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
-    CollectionAdminRequest.createCollection(collectionName, 1, 1)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
         .setPolicy("c1")
         .process(cluster.getSolrClient());
 
@@ -102,7 +102,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     assertEquals("success", response.get("result"));
 
     String collectionName = "testCreateCollectionSplitShard";
-    CollectionAdminRequest.createCollection(collectionName, 1, 2)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPolicy("c1")
         .setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
@@ -140,7 +140,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));
-    CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", null, "s1,s2", 1)
+    CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1,s2", 1)
         .setPolicy("c1")
         .process(cluster.getSolrClient());
 

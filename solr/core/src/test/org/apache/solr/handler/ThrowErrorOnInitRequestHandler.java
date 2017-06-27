@@ -42,6 +42,10 @@ public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
 
   @Override
   public void init(NamedList args) {
+    String errorMessage = (String) args.get("error");
+    if (errorMessage != null) {
+      throw new Error(errorMessage);
+    }
     throw new Error("Doing my job, throwing a java.lang.Error");
   }
 }
