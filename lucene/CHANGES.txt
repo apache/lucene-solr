@@ -167,6 +167,8 @@ Other
   resolved against Lucene's class loader by default. Please use another builder
   method to change to a custom classloader.  (Uwe Schindler)
 
+* LUCENE-5822: Convert README to Markdown (Jason Gerlowski via Mike Drob)
+
 ======================= Lucene 6.7.0 =======================
 
 New Features
