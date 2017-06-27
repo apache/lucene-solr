@@ -43,15 +43,14 @@ Three rank queries are currently included in the Solr distribution. You can also
 
 The `rerank` parser wraps a query specified by an local parameter, along with additional parameters indicating how many documents should be re-ranked, and how the final scores should be computed:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`reRankQuery`::
+The query string for your complex ranking query - in most cases <<local-parameters-in-queries.adoc#local-parameters-in-queries,a variable>> will be used to refer to another request parameter. This parameter is required.
 
-[cols="20,15,65",options="header"]
-|===
-|Parameter |Default |Description
-|`reRankQuery` |(Mandatory) |The query string for your complex ranking query - in most cases <<local-parameters-in-queries.adoc#local-parameters-in-queries,a variable>> will be used to refer to another request parameter.
-|`reRankDocs` |200 |The number of top N documents from the original query that should be re-ranked. This number will be treated as a minimum, and may be increased internally automatically in order to rank enough documents to satisfy the query (ie: start+rows)
-|`reRankWeight` |2.0 |A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is added to the original score
-|===
+`reRankDocs`::
+The number of top N documents from the original query that should be re-ranked. This number will be treated as a minimum, and may be increased internally automatically in order to rank enough documents to satisfy the query (i.e., start+rows). The default is `200`.
+
+`reRankWeight`::
+A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is added to the original score. The default is `2.0`.
 
 In the example below, the top 1000 documents matching the query "greetings" will be re-ranked using the query "(hi hello hey hiya)". The resulting scores for each of those 1000 documents will be 3 times their score from the "(hi hello hey hiya)", plus the score from the original "greetings" query:
 
