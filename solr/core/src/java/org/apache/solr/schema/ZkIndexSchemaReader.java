@@ -42,7 +42,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   private SolrZkClient zkClient;
   private String managedSchemaPath;
   private final String uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
-  private boolean isRemoved = false;
+  private SchemaWatcher schemaWatcher;
 
   public ZkIndexSchemaReader(ManagedIndexSchemaFactory managedIndexSchemaFactory, SolrCore solrCore) {
     this.managedIndexSchemaFactory = managedIndexSchemaFactory;
@@ -58,16 +58,20 @@ public class ZkIndexSchemaReader implements OnReconnect {
         CoreContainer cc = core.getCoreContainer();
         if (cc.isZooKeeperAware()) {
           log.debug("Removing ZkIndexSchemaReader OnReconnect listener as core "+core.getName()+" is shutting down.");
-          ZkIndexSchemaReader.this.isRemoved = true;
           cc.getZkController().removeOnReconnectListener(ZkIndexSchemaReader.this);
         }
       }
 
       @Override
-      public void postClose(SolrCore core) {}
+      public void postClose(SolrCore core) {
+        // The watcher is still registered with Zookeeper, and holds a
+        // reference to the schema reader, which indirectly references the
+        // SolrCore and would prevent it from being garbage collected.
+        schemaWatcher.discardReaderReference();
+      }
     });
 
-    createSchemaWatcher();
+    this.schemaWatcher = createSchemaWatcher();
 
     zkLoader.getZkController().addOnReconnectListener(this);
   }
@@ -76,39 +80,17 @@ public class ZkIndexSchemaReader implements OnReconnect {
     return managedIndexSchemaFactory.getSchemaUpdateLock(); 
   }
 
-  public void createSchemaWatcher() {
+  /**
+   * Creates a schema watcher and returns it for controlling purposes.
+   * 
+   * @return the registered {@linkplain SchemaWatcher}.
+   */
+  public SchemaWatcher createSchemaWatcher() {
     log.info("Creating ZooKeeper watch for the managed schema at " + managedSchemaPath);
 
+    SchemaWatcher watcher = new SchemaWatcher(this);
     try {
-      zkClient.exists(managedSchemaPath, new Watcher() {
-        @Override
-        public void process(WatchedEvent event) {
-
-          if (ZkIndexSchemaReader.this.isRemoved) {
-            return; // the core for this reader has already been removed, don't process this event
-          }
-
-          // session events are not change events, and do not remove the watcher
-          if (Event.EventType.None.equals(event.getType())) {
-            return;
-          }
-          log.info("A schema change: {}, has occurred - updating schema from ZooKeeper ...", event);
-          try {
-            updateSchema(this, -1);
-          } catch (KeeperException e) {
-            if (e.code() == KeeperException.Code.SESSIONEXPIRED || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
-              return;
-            }
-            log.error("", e);
-            throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
-          } catch (InterruptedException e) {
-            // Restore the interrupted status
-            Thread.currentThread().interrupt();
-            log.warn("", e);
-          }
-        }
-      }, true);
+      zkClient.exists(managedSchemaPath, watcher, true);
     } catch (KeeperException e) {
       final String msg = "Error creating ZooKeeper watch for the managed schema";
       log.error(msg, e);
@@ -118,6 +100,56 @@ public class ZkIndexSchemaReader implements OnReconnect {
       Thread.currentThread().interrupt();
       log.warn("", e);
     }
+    
+    return watcher;
+  }
+  
+  /**
+   * Watches for schema changes and triggers updates in the {@linkplain ZkIndexSchemaReader}.
+   */
+  public static class SchemaWatcher implements Watcher {
+
+    private ZkIndexSchemaReader schemaReader;
+
+    public SchemaWatcher(ZkIndexSchemaReader reader) {
+      this.schemaReader = reader;
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      ZkIndexSchemaReader indexSchemaReader = schemaReader;
+
+      if (indexSchemaReader == null) {
+        return; // the core for this reader has already been removed, don't process this event
+      }
+
+      // session events are not change events, and do not remove the watcher
+      if (Event.EventType.None.equals(event.getType())) {
+        return;
+      }
+      log.info("A schema change: {}, has occurred - updating schema from ZooKeeper ...", event);
+      try {
+        indexSchemaReader.updateSchema(this, -1);
+      } catch (KeeperException e) {
+        if (e.code() == KeeperException.Code.SESSIONEXPIRED || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+          log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+          return;
+        }
+        log.error("", e);
+        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.warn("", e);
+      }
+    }
+
+    /**
+     * Discard the reference to the {@code ZkIndexSchemaReader}.
+     */
+    public void discardReaderReference() {
+      schemaReader = null;
+    }
   }
 
   public ManagedIndexSchema refreshSchemaFromZk(int expectedZkVersion) throws KeeperException, InterruptedException {
@@ -125,7 +157,8 @@ public class ZkIndexSchemaReader implements OnReconnect {
     return managedIndexSchemaFactory.getSchema();
   }
 
-  private void updateSchema(Watcher watcher, int expectedZkVersion) throws KeeperException, InterruptedException {
+  // package visibility for test purposes
+  void updateSchema(Watcher watcher, int expectedZkVersion) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
     synchronized (getSchemaUpdateLock()) {
       final ManagedIndexSchema oldSchema = managedIndexSchemaFactory.getSchema();
@@ -157,7 +190,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   public void command() {
     try {
       // setup a new watcher to get notified when the managed schema changes
-      createSchemaWatcher();
+      schemaWatcher = createSchemaWatcher();
       // force update now as the schema may have changed while our zk session was expired
       updateSchema(null, -1);
     } catch (Exception exc) {

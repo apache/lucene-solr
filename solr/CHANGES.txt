@@ -211,6 +211,9 @@ Bug Fixes
 
 * SOLR-10948: Fix extraction component to treat DatePointField the same as TrieDateField (hossman)
 
+* SOLR-10506: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
+  (Torsten Bøgh Köster, Christine Poerschke, Jörg Rathlev, Mike Drob)
+
 Optimizations
 ----------------------
 
