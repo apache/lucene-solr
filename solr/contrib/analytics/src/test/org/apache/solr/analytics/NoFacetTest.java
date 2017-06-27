@@ -16,7 +16,6 @@
  */
 package org.apache.solr.analytics;
 
-
 import java.util.ArrayList;
 import java.util.List;
 

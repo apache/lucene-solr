@@ -48,6 +48,7 @@ import org.xml.sax.SAXException;
 
 import com.google.common.collect.ObjectArrays;
 
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10949")
 public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };

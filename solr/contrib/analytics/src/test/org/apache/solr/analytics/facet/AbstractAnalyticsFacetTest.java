@@ -52,6 +52,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10949")
 public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
   

@@ -207,6 +207,8 @@ Bug Fixes
   thus disabling the global check, and replaces it with specific checks where desired via
   QueryUtils.build().  (yonik)
 
+* SOLR-10948: Fix extraction component to treat DatePointField the same as TrieDateField (hossman)
+
 Optimizations
 ----------------------
 
@@ -334,6 +336,7 @@ Other Changes
 
 * SOLR-10807: Randomize Points based numeric field types in (more) test schemas
   - SOLR-10946: Randomize the usage of Points based numerics in solrj test schemas (hossman)
+  - SOLR-10947: Randomize the usage of Points based numerics in contrib test schemas (hossman)
 
 ==================  6.7.0 ==================
 
