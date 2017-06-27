@@ -81,6 +81,18 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(Charsets.UTF_8), true);
 
     CloudSolrClient solrClient = cluster.getSolrClient();
+
+    try {
+      CollectionAdminRequest.deleteCollection("testNodeLost").process(solrClient);
+    } catch (Exception e) {
+      // expected if testNodeLost hasn't run already
+    }
+    try {
+      CollectionAdminRequest.deleteCollection("testNodeAdded").process(solrClient);
+    } catch (Exception e) {
+      // expected if testNodeAdded hasn't run already
+    }
+
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
