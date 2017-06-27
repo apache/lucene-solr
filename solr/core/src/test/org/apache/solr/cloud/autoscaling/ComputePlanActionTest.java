@@ -123,7 +123,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeLost",
-        1, 2);
+        "conf",1, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
@@ -181,7 +181,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
-        1, 2);
+        "conf",1, 2);
     create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
