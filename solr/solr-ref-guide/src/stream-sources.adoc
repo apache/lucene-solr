@@ -213,9 +213,9 @@ features(collection1,
          numTerms=250)
 ----
 
-== gatherNodes
+== nodes
 
-The `gatherNodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
+The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
 
 == knn
 
