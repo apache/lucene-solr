@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -82,20 +81,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("Adding a policy with 'cores' attribute should not have succeeded.");
-    } catch (SolrServerException e) {
-      // todo one of these catch blocks should not be needed after SOLR-10768
-      if (e.getRootCause() instanceof HttpSolrClient.RemoteSolrException) {
-        HttpSolrClient.RemoteSolrException rootCause = (HttpSolrClient.RemoteSolrException) e.getRootCause();
-        // expected
-        assertTrue(rootCause.getMessage().contains("cores is only allowed in 'cluster-policy'"));
-      } else  {
-        throw e;
-      }
     } catch (HttpSolrClient.RemoteSolrException e)  {
       // expected
       assertTrue(e.getMessage().contains("cores is only allowed in 'cluster-policy'"));
-    } catch (Exception e) {
-      throw e;
     }
 
     setPolicyCommand =  "{'set-policy': {" +
