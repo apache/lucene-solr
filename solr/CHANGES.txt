@@ -140,6 +140,9 @@ Bug Fixes
 * SOLR-10824: fix NPE ExactSharedStatsCache, fixing maxdocs skew for terms which are absent at one of shards
 when using one of Exact*StatsCache (Mikhail Khludnev)
 
+* SOLR-10963: Fix example json in MultipleAdditiveTreesModel javadocs.
+  (Stefan Langenmaier via Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
