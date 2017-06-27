@@ -157,7 +157,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
   private void testNodeWithoutCollectionForwarding() throws Exception {
     assertEquals(0, CollectionAdminRequest
-        .createCollection(ONE_NODE_COLLECTION, 1, 1)
+        .createCollection(ONE_NODE_COLLECTION, "conf1", 1, 1)
         .setCreateNodeSet("")
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest

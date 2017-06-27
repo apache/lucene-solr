@@ -70,6 +70,7 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   public SolrJmxReporter(SolrMetricManager metricManager, String registryName) {
     super(metricManager, registryName);
+    period = 0; // setting to zero to indicate not applicable
     setDomain(registryName);
   }
 
@@ -151,7 +152,9 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   @Override
   protected void validate() throws IllegalStateException {
-    // Nothing to validate
+    if (period != 0) {
+      throw new IllegalStateException("Init argument 'period' is not supported for "+getClass().getCanonicalName());
+    }
   }
 
 

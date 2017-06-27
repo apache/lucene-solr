@@ -45,7 +45,7 @@
     that avoids logging every request
 -->
 
-<schema name="example-data-driven-schema" version="1.6">
+<schema name="default-config" version="1.6">
     <!-- attribute "name" is the name of this schema and is only used for display purposes.
        version="x.y" is Solr's version number for the schema syntax and 
        semantics.  It should not normally be changed by applications.
@@ -106,7 +106,7 @@
       trailing underscores (e.g. _version_) are reserved.
     -->
 
-    <!-- In this data_driven_schema_configs configset, only three fields are pre-declared: 
+    <!-- In this _default configset, only three fields are pre-declared: 
          id, _version_, and _text_.  All other fields will be type guessed and added via the
          "add-unknown-fields-to-the-schema" update request processor chain declared 
          in solrconfig.xml.
@@ -123,9 +123,9 @@
     <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
 
-    <!-- Only enabled in the "schemaless" data-driven example (assuming the client
-         does not know what fields may be searched) because it's very expensive to index everything twice. -->
-    <copyField source="*" dest="_text_"/>
+    <!-- This can be enabled, in case the client does not know what fields may be searched. It isn't enabled by default
+         because it's very expensive to index everything twice. -->
+    <!-- <copyField source="*" dest="_text_"/> -->
 
     <!-- Dynamic field definitions allow using convention over configuration
        for fields via the specification of patterns to match field names. 

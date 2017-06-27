@@ -55,6 +55,25 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .configure();
   }
 
+  /**
+   * When a config name is not specified during collection creation, the _default should
+   * be used.
+   */
+  @Test
+  public void testCreateWithDefaultConfigSet() throws Exception {
+    String collectionName = "solrj_default_configset";
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2) // no configset specified
+        .process(cluster.getSolrClient());
+
+    // The _default configset (for the tests) is designed to error out upon collection creation,
+    // so we just ensure that the correct error message was obtained.
+    assertFalse(response.isSuccess());
+    System.out.println("Errors are: "+response.getErrorMessages());
+    assertTrue(response.getErrorMessages() != null && response.getErrorMessages().size() > 0);
+    assertTrue(response.getErrorMessages().getVal(0).contains("This is the _default configset, which is designed"
+        + " to throw error upon collection creation."));
+  }
+
   @Test
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";

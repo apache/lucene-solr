@@ -52,6 +52,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10949")
 public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
   
@@ -312,19 +313,4 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
       IOUtils.closeWhileHandlingException(file, in);
     }
   }
-  
-  protected void removeNodes(String xPath, List<Double> string) throws XPathExpressionException {
-    NodeList missingNodes = getNodes(xPath);
-    List<Double> result = new ArrayList<Double>();
-    for (int idx = 0; idx < missingNodes.getLength(); ++idx) {
-      result.add(Double.parseDouble(missingNodes.item(idx).getTextContent()));
-    }
-    string.removeAll(result);
-  }
-
-  protected NodeList getNodes(String xPath) throws XPathExpressionException {
-    StringBuilder sb = new StringBuilder(xPath);
-    return (NodeList) xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
-  }
-  
 }

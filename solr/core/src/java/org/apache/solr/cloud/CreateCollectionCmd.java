@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -306,20 +308,49 @@ public class CreateCollectionCmd implements Cmd {
       List<String> configNames = null;
       try {
         configNames = ocmh.zkStateReader.getZkClient().getChildren(ZkConfigManager.CONFIGS_ZKNODE, null, true);
-        if (configNames != null && configNames.size() == 1) {
+        if (configNames.contains(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME)) {
+          if (!".system".equals(coll)) {
+            copyDefaultConfigSetTo(configNames, coll);
+          }
+          return coll;
+        } else if (configNames != null && configNames.size() == 1) {
           configName = configNames.get(0);
           // no config set named, but there is only 1 - use it
           log.info("Only one config set found in zk - using it:" + configName);
-        } else if (configNames.contains(coll)) {
-          configName = coll;
         }
       } catch (KeeperException.NoNodeException e) {
 
       }
     }
-    return configName;
+    return "".equals(configName)? null: configName;
   }
   
+  /**
+   * Copies the _default configset to the specified configset name (overwrites if pre-existing)
+   */
+  private void copyDefaultConfigSetTo(List<String> configNames, String targetConfig) {
+    ZkConfigManager configManager = new ZkConfigManager(ocmh.zkStateReader.getZkClient());
+
+    // if a configset named coll exists, delete the configset so that _default can be copied over
+    if (configNames.contains(targetConfig)) {
+      log.info("There exists a configset by the same name as the collection we're trying to create: " + targetConfig +
+          ", deleting it so that we can copy the _default configs over and create the collection.");
+      try {
+        configManager.deleteConfigDir(targetConfig);
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.INVALID_STATE, "Error while deleting configset: " + targetConfig, e);
+      }
+    } else {
+      log.info("Only _default config set found, using it.");
+    }
+    // Copy _default into targetConfig
+    try {
+      configManager.copyConfigDir(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME, targetConfig, new HashSet<>());
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.INVALID_STATE, "Error while copying _default to " + targetConfig, e);
+    }
+  }
+
   public static void createCollectionZkNode(SolrZkClient zkClient, String collection, Map<String,String> params) {
     log.debug("Check for collection zkNode:" + collection);
     String collectionPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
@@ -394,14 +425,14 @@ public class CreateCollectionCmd implements Cmd {
   }
   
   private static void getConfName(SolrZkClient zkClient, String collection, String collectionPath, Map<String,Object> collectionProps) throws KeeperException,
-      InterruptedException {
+  InterruptedException {
     // check for configName
     log.debug("Looking for collection configName");
     if (collectionProps.containsKey("configName")) {
       log.info("configName was passed as a param {}", collectionProps.get("configName"));
       return;
     }
-    
+
     List<String> configNames = null;
     int retry = 1;
     int retryLimt = 6;
@@ -413,24 +444,32 @@ public class CreateCollectionCmd implements Cmd {
         }
       }
 
-      // if there is only one conf, use that
       try {
         configNames = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE, null,
             true);
       } catch (NoNodeException e) {
         // just keep trying
       }
-      if (configNames != null && configNames.size() == 1) {
-        // no config set named, but there is only 1 - use it
-        log.info("Only one config set found in zk - using it:" + configNames.get(0));
-        collectionProps.put(ZkController.CONFIGNAME_PROP, configNames.get(0));
-        break;
-      }
 
+      // check if there's a config set with the same name as the collection
       if (configNames != null && configNames.contains(collection)) {
         log.info(
             "Could not find explicit collection configName, but found config name matching collection name - using that set.");
         collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
+        break;
+      }
+      // if _default exists, use that
+      if (configNames != null && configNames.contains(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME)) {
+        log.info(
+            "Could not find explicit collection configName, but found _default config set - using that set.");
+        collectionProps.put(ZkController.CONFIGNAME_PROP, ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
+        break;
+      }
+      // if there is only one conf, use that
+      if (configNames != null && configNames.size() == 1) {
+        // no config set named, but there is only 1 - use it
+        log.info("Only one config set found in zk - using it:" + configNames.get(0));
+        collectionProps.put(ZkController.CONFIGNAME_PROP, configNames.get(0));
         break;
       }
 

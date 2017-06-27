@@ -109,7 +109,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     final String coreName1 = collection+"_1";
     final String coreName2 = collection+"_2";
 
-    assertEquals(0, CollectionAdminRequest.createCollection(collection, numShards, 1)
+    assertEquals(0, CollectionAdminRequest.createCollection(collection, "conf1", numShards, 1)
         .setCreateNodeSet("")
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest.addReplicaToShard(collection, "shard1")
@@ -168,7 +168,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     JettySolrRunner jetty1 = jettys.get(0);
 
     assertEquals(0, CollectionAdminRequest
-        .createCollection("unloadcollection", 1,1)
+        .createCollection("unloadcollection", "conf1", 1,1)
         .setCreateNodeSet(jetty1.getNodeName())
         .process(cloudClient).getStatus());
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();

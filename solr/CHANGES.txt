@@ -111,6 +111,11 @@ Upgrading from Solr 6.x
 * The unused 'valType' option has been removed from ExternalFileField, if you have this in your schema you
   can safely remove it. see SOLR-10929 for more details.
 
+* SOLR-10574: basic_configs and data_driven_schema_configs have now been merged into _default. It has data driven nature
+  enabled by default, and can be turned off (after creating a collection) with:
+     curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+  Please see SOLR-10574 for details.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -175,6 +180,11 @@ New Features
 
 * SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
 
+* SOLR-10574: New _default config set replacing basic_configs and data_driven_schema_configs.
+  (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, Jan Hoydahl, Alexandre Rafalovich)
+
+* SOLR-10272: Use _default config set if no collection.configName is specified with CREATE (Ishan Chattopadhyaya)
+
 * SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
   operations upon a trigger fire. (Noble Paul, shalin)
 
@@ -212,6 +222,8 @@ Bug Fixes
   thus disabling the global check, and replaces it with specific checks where desired via
   QueryUtils.build().  (yonik)
 
+* SOLR-10948: Fix extraction component to treat DatePointField the same as TrieDateField (hossman)
+
 * SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
 
 * SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling
@@ -238,12 +250,6 @@ Optimizations
 
 * SOLR-10727: Avoid polluting the filter cache for certain types of faceting (typically ranges) when
   the base docset is empty. (David Smiley)
-
-* SOLR-9981: Performance improvements and bug fixes for the Analytics component. Performance fix that
-  stops the reading of ALL lucene segments over and again for each stats collector. The AtomicReaderContext
-  that refers to the "current " segment is reused. This fix shows an improvement of about 25% in query
-  time for a dataset of ~10M (=9.8M) records. Given the nature of the fix, the improvement should get
-  better as the dataset increases. Fix for the NPE during comparison (Houston Putman)
 
 Other Changes
 ----------------------
@@ -349,6 +355,12 @@ Other Changes
 * SOLR-10915: Make builder based SolrClient constructors to be the only valid way to construct client objects and
   increase the visibility of builder elements to be protected so extending the builder, and the clients is possible.
   (Jason Gerlowski, Anshum Gupta)
+
+* SOLR-10823: Add reporting period to SolrMetricReporter base class. (Christine Poerschke)
+
+* SOLR-10807: Randomize Points based numeric field types in (more) test schemas
+  - SOLR-10946: Randomize the usage of Points based numerics in solrj test schemas (hossman)
+  - SOLR-10947: Randomize the usage of Points based numerics in contrib test schemas (hossman)
 
 ==================  6.7.0 ==================
 

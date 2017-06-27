@@ -636,8 +636,7 @@ public class SchemaTest extends RestTestBase {
   public void addFieldTypeShouldntBeCalledTwiceWithTheSameName() throws Exception {
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
     fieldTypeAttributes.put("name", "failureInt");
-    fieldTypeAttributes.put("class", "solr.TrieIntField");
-    fieldTypeAttributes.put("precisionStep", 0);
+    fieldTypeAttributes.put("class",  RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
     fieldTypeAttributes.put("omitNorms", true);
     fieldTypeAttributes.put("positionIncrementGap", 0);
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
@@ -657,8 +656,7 @@ public class SchemaTest extends RestTestBase {
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
     String fieldTypeName = "delInt";
     fieldTypeAttributes.put("name", fieldTypeName);
-    fieldTypeAttributes.put("class", "solr.TrieIntField");
-    fieldTypeAttributes.put("precisionStep", 0);
+    fieldTypeAttributes.put("class",  RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
     fieldTypeAttributes.put("omitNorms", true);
     fieldTypeAttributes.put("positionIncrementGap", 0);
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
@@ -699,12 +697,15 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testReplaceFieldTypeAccuracy() throws Exception {
+    // a fixed value for comparison after update, be contraian from the randomized 'default'
+    final boolean useDv = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
+    
     // Given
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
     String fieldTypeName = "replaceInt";
     fieldTypeAttributes.put("name", fieldTypeName);
-    fieldTypeAttributes.put("class", "solr.TrieIntField");
-    fieldTypeAttributes.put("precisionStep", 0);
+    fieldTypeAttributes.put("class",  RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
+    fieldTypeAttributes.put("docValues", useDv);
     fieldTypeAttributes.put("omitNorms", true);
     fieldTypeAttributes.put("positionIncrementGap", 0);
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
@@ -715,7 +716,7 @@ public class SchemaTest extends RestTestBase {
     assertValidSchemaResponse(addFieldTypeResponse);
 
     // When : update the field definition
-    fieldTypeAttributes.put("precisionStep", 1);
+    fieldTypeAttributes.put("positionIncrementGap", 42);
     fieldTypeAttributes.put("omitNorms", false);
     FieldTypeDefinition replaceFieldTypeDefinition = new FieldTypeDefinition();
     replaceFieldTypeDefinition.setAttributes(fieldTypeAttributes);
@@ -731,10 +732,12 @@ public class SchemaTest extends RestTestBase {
     FieldTypeRepresentation replacedFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
     Map<String, Object> replacedFieldTypeAttributes = replacedFieldTypeRepresentation.getAttributes();
     assertThat(fieldTypeName, is(equalTo(replacedFieldTypeAttributes.get("name"))));
-    assertThat("solr.TrieIntField", is(equalTo(replacedFieldTypeAttributes.get("class"))));
+    assertThat( RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class),
+                is(equalTo(replacedFieldTypeAttributes.get("class"))));
     assertThat(false, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
-    assertThat("1", is(equalTo(replacedFieldTypeAttributes.get("precisionStep"))));
-    assertThat("0", is(equalTo(replacedFieldTypeAttributes.get("positionIncrementGap"))));
+    assertThat("42", is(equalTo(replacedFieldTypeAttributes.get("positionIncrementGap"))));
+    // should be unchanged...
+    assertThat(useDv, is(equalTo(replacedFieldTypeAttributes.get("docValues"))));
   }
 
   @Test

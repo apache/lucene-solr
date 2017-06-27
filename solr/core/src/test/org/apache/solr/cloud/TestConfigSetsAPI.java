@@ -695,7 +695,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
       ConfigSetAdminResponse.List response = list.process(solrClient);
       Collection<String> actualConfigSets = response.getConfigSets();
-      assertEquals(0, actualConfigSets.size());
+      assertEquals(1, actualConfigSets.size()); // only the _default configset
 
       // test multiple
       Set<String> configSets = new HashSet<String>();
@@ -706,8 +706,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       }
       response = list.process(solrClient);
       actualConfigSets = response.getConfigSets();
-      assertEquals(configSets.size(), actualConfigSets.size());
-      assertTrue(configSets.containsAll(actualConfigSets));
+      assertEquals(configSets.size() + 1, actualConfigSets.size());
+      assertTrue(actualConfigSets.containsAll(configSets));
     } finally {
       zkClient.close();
     }

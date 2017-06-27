@@ -432,7 +432,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
             REPLICATION_FACTOR, replicationFactor,
             CREATE_NODE_SET, createNodeSetStr,
             MAX_SHARDS_PER_NODE, maxShardsPerNode),
-        client, null);
+        client, "conf1");
   }
 
   private CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos, String collectionName,
@@ -588,7 +588,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
     try (SolrClient client = createCloudClient(temporaryCollection)) {
       assertEquals(0, CollectionAdminRequest
-          .createCollection(temporaryCollection, shardCount, 1)
+          .createCollection(temporaryCollection, "conf1", shardCount, 1)
           .setCreateNodeSet("")
           .process(client).getStatus());
       for (int i = 0; i < jettys.size(); i++) {

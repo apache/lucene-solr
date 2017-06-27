@@ -107,7 +107,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       Timer timer = new Timer();
       
       try {
-        createCollection(DELETE_DATA_DIR_COLLECTION, 1, 1, 1);
+        createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", 1, 1, 1);
         
         waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
 
@@ -154,7 +154,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       if (nShards == 0) nShards = 1;
     }
     
-    createCollection(DELETE_DATA_DIR_COLLECTION, nShards, rep, maxReplicasPerNode);
+    createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", nShards, rep, maxReplicasPerNode);
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     

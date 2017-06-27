@@ -66,7 +66,7 @@ public class HdfsNNFailoverTest extends BasicDistributedZkTest {
 
   @Test
   public void test() throws Exception {
-    createCollection(COLLECTION, 1, 1, 1);
+    createCollection(COLLECTION, "conf1", 1, 1, 1);
     
     waitForRecoveriesToFinish(COLLECTION, false);
     
