@@ -52,7 +52,6 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
-    assumeFalse("SOLR-10951: Hadoop does not work on Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
 
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
