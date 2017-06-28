@@ -24,7 +24,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <arr name="components">
       <str>query</str>
       <str>facet</str>

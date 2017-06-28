@@ -43,8 +43,7 @@
    <processor class="solr.RunUpdateProcessorFactory" />
  </updateRequestProcessorChain>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-  </requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"/>
 
   <requestHandler name="/get" class="solr.RealTimeGetHandler">
     <lst name="defaults">

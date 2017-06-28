@@ -118,7 +118,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(commit()));
   }
 
-  static String tv = "tvrh";
+  static String tv = "/tvrh";
 
   @Test
   public void testBasics() throws Exception {

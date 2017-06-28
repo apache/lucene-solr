@@ -35,7 +35,7 @@
     </updateLog>
   </updateHandler>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
 

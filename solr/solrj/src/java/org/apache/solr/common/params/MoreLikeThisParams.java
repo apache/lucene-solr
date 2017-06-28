@@ -19,11 +19,10 @@ package org.apache.solr.common.params;
 import java.util.Locale;
 
 /**
- * @since solr 1.3
+ * Params for {@code MoreLikeThisHandler}.
  */
 public interface MoreLikeThisParams 
 {
-  // enable more like this -- this only applies to 'StandardRequestHandler' maybe DismaxRequestHandler
   public final static String MLT = "mlt";
   
   public final static String PREFIX = "mlt.";

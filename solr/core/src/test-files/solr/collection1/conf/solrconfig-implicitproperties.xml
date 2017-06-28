@@ -49,7 +49,7 @@
 
   </query>
 
-  <requestDispatcher handleSelect="false">
+  <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
 

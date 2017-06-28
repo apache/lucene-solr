@@ -42,7 +42,7 @@
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
   </requestHandler>
 
   <updateHandler class="solr.DirectUpdateHandler2">

@@ -326,7 +326,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     SolrQueryRequest req = req(params);
     try {
-      SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+      SolrQueryResponse rsp = h.queryAndResponse("", req);
       NamedList<Object> facetQueries = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_queries");
       NamedList<Object> facetIntervals = (NamedList<Object>) ((NamedList<Object>) (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts"))
           .get("facet_intervals")).get(field);

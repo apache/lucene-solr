@@ -43,7 +43,7 @@ import org.junit.Test;
 @Slow
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
-  static String rh = "spellCheckCompRH";
+  static String rh = "/spellCheckCompRH";
 
 
   @BeforeClass
@@ -254,7 +254,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   public void testReloadOnStart() throws Exception {
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU(commit());
-    SolrQueryRequest request = req("qt", "spellCheckCompRH", "q", "*:*",
+    SolrQueryRequest request = req("qt", "/spellCheckCompRH", "q", "*:*",
         "spellcheck.q", "ttle", "spellcheck", "true", "spellcheck.dictionary",
         "default", "spellcheck.build", "true");
     assertQ(request, "//arr[@name='suggestion'][.='title']");
@@ -271,7 +271,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     checker.init(args);
     checker.inform(h.getCore());
 
-    request = req("qt", "spellCheckCompRH", "q", "*:*", "spellcheck.q", "ttle",
+    request = req("qt", "/spellCheckCompRH", "q", "*:*", "spellcheck.q", "ttle",
         "spellcheck", "true", "spellcheck.dictionary", "default",
         "spellcheck.reload", "true");
     List<SearchComponent> components = new ArrayList<>();
@@ -293,7 +293,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     @SuppressWarnings("unchecked")
     @Test
   public void testRebuildOnCommit() throws Exception {
-    SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "spellCheckCompRH", "spellcheck", "true");
+    SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
     String response = h.query(req);
     assertFalse("No suggestions should be returned", response.contains("lucenejava"));
     
@@ -330,7 +330,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         params.add(SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true");
         params.add(CommonParams.Q, "anotheq");
 
-        SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+        SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
         SolrQueryResponse rsp = new SolrQueryResponse();
         rsp.addResponseHeader(new SimpleOrderedMap());
         SolrQueryRequest req = new LocalSolrQueryRequest(core, params);

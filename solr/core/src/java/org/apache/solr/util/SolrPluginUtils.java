@@ -88,17 +88,7 @@ import static org.apache.solr.core.PluginInfo.INVARIANTS;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
- * <p>Utilities that may be of use to RequestHandlers.</p>
- *
- * <p>
- * Many of these functions have code that was stolen/mutated from
- * StandardRequestHandler.
- * </p>
- *
- * <p>:TODO: refactor StandardRequestHandler to use these utilities</p>
- *
- * <p>:TODO: Many "standard" functionality methods are not cognisant of
- * default parameter settings.
+ * Utilities that may be of use to RequestHandlers.
  */
 public class SolrPluginUtils {
 

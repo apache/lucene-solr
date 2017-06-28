@@ -308,9 +308,8 @@ public class SolrConfig extends Config implements MapSerializable {
     enableRemoteStreams = getBool(
         "requestDispatcher/requestParsers/@enableRemoteStreaming", false);
 
-    // Let this filter take care of /select?xxx format
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", true);
+        "requestDispatcher/@handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
 
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);

@@ -28,7 +28,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler"/>
+  <requestHandler name="/select" class="solr.SearchHandler"/>
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
 
@@ -39,7 +39,7 @@
   <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
     <float name="nvlFloatValue">0.0</float>
   </valueSourceParser>
-  <initParams path="standard">
+  <initParams path="/select">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

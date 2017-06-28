@@ -16,28 +16,20 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 
 /**
- * Most of the tests for StandardRequestHandler are in ConvertedLegacyTest
- * 
+ * Most of the tests for {@link org.apache.solr.handler.component.SearchHandler} are in {@link org.apache.solr.ConvertedLegacyTest}.
  */
-public class StandardRequestHandlerTest extends AbstractSolrTestCase {
+public class SearchHandlerTest extends AbstractSolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
   
-  @Override public void setUp() throws Exception {
-    super.setUp();
-    lrf = h.getRequestFactory("standard", 0, 20 );
-  }
-  
   public void testSorting() throws Exception {
-    SolrCore core = h.getCore();
     assertU(adoc("id", "10", "title", "test", "val_s1", "aaa"));
     assertU(adoc("id", "11", "title", "test", "val_s1", "bbb"));
     assertU(adoc("id", "12", "title", "test", "val_s1", "ccc"));

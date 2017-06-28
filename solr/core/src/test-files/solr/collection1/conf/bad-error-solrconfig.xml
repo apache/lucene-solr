@@ -23,7 +23,7 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
-  <requestHandler name="my_error_handler" class="solr.ThrowErrorOnInitRequestHandler"></requestHandler>
+  <requestHandler name="/my_error_handler" class="solr.ThrowErrorOnInitRequestHandler"></requestHandler>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 

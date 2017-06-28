@@ -69,8 +69,8 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
   @Test
   public void testDisableRequetsHandler() throws Exception {
-    assertNull(h.getCore().getRequestHandler("disabled"));
-    assertNotNull(h.getCore().getRequestHandler("enabled"));
+    assertNull(h.getCore().getRequestHandler("/disabled"));
+    assertNotNull(h.getCore().getRequestHandler("/enabled"));
   }
 
   @Test
