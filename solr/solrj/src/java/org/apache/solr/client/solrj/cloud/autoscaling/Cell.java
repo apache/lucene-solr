@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,18 +23,18 @@ import java.util.HashMap;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 
-class Cell implements MapWriter {
+public class Cell implements MapWriter {
   final int index;
   final String name;
   Object val, approxVal;
 
-  Cell(int index, String name, Object val) {
+  public Cell(int index, String name, Object val) {
     this.index = index;
     this.name = name;
     this.val = val;
   }
 
-  Cell(int index, String name, Object val, Object approxVal) {
+  public Cell(int index, String name, Object val, Object approxVal) {
     this.index = index;
     this.name = name;
     this.val = val;
@@ -53,5 +53,17 @@ class Cell implements MapWriter {
 
   public Cell copy() {
     return new Cell(index, name, val, approxVal);
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public Object getValue() {
+    return val;
+  }
+
+  public Object getApproxValue() {
+    return approxVal;
   }
 }

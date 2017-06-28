@@ -20,14 +20,10 @@ import java.text.ParseException;
 import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.apache.solr.legacy.BBoxStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.legacy.BBoxStrategy;
 import org.apache.solr.schema.BBoxField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -35,6 +31,10 @@ import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * Test Solr 4's new spatial capabilities from the new Lucene spatial module. Don't thoroughly test it here because

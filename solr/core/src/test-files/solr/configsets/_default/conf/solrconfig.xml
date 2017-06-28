@@ -24,7 +24,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <requestHandler name="my_error_handler" class="solr.ThrowErrorOnInitRequestHandler">
-    <str name="error">This is the _default configset, which is designed to throw error upon collection creation.</str>
+    <str name="error">This is the _default configset, which is designed to throw error upon collection creation from unit tests. If you see this error while running a unit test, you might want to explicitly specify the configset (when creating a collection) you intend to use (usually named "conf1" or "conf" etc.).</str>
   </requestHandler>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>

@@ -17,12 +17,18 @@
 
 package org.apache.lucene.queries.function;
 
+import java.io.IOException;
+import java.util.function.DoubleUnaryOperator;
+import java.util.function.ToDoubleBiFunction;
+
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -70,7 +76,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   public void testScoreModifyingSource() throws Exception {
 
     DoubleValuesSource iii = DoubleValuesSource.fromIntField("iii");
-    DoubleValuesSource score = DoubleValuesSource.scoringFunction(iii, "v * s", (v, s) -> v * s);
+    DoubleValuesSource score = scoringFunction(iii, (v, s) -> v * s);
 
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term(TEXT_FIELD, "first")), BooleanClause.Occur.SHOULD)
@@ -95,8 +101,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   // check boosts with non-distributive score source
   public void testBoostsAreAppliedLast() throws Exception {
 
-    DoubleValuesSource scores
-        = DoubleValuesSource.function(DoubleValuesSource.SCORES, "ln(v + 4)", v -> Math.log(v + 4));
+    DoubleValuesSource scores = function(DoubleValuesSource.SCORES, v -> Math.log(v + 4));
 
     Query q1 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "text")), scores);
     TopDocs plain = searcher.search(q1, 5);
@@ -109,6 +114,86 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       assertEquals(plain.scoreDocs[i].score, afterboost.scoreDocs[i].score / 2, 0.0001);
     }
 
+  }
+
+  public static DoubleValuesSource function(DoubleValuesSource in, DoubleUnaryOperator function) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        DoubleValues v = in.getValues(ctx, scores);
+        return new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return function.applyAsDouble(v.doubleValue());
+          }
+
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return v.advanceExact(doc);
+          }
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return in.needsScores();
+      }
+
+      @Override
+      public int hashCode() {
+        return 0;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return false;
+      }
+
+      @Override
+      public String toString() {
+        return "fn";
+      }
+    };
+  }
+
+  private static DoubleValuesSource scoringFunction(DoubleValuesSource in, ToDoubleBiFunction<Double, Double> function) {
+    return new DoubleValuesSource() {
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        DoubleValues v = in.getValues(ctx, scores);
+        return new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return function.applyAsDouble(v.doubleValue(), scores.doubleValue());
+          }
+
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return v.advanceExact(doc);
+          }
+        };
+      }
+
+      @Override
+      public boolean needsScores() {
+        return true;
+      }
+
+      @Override
+      public int hashCode() {
+        return 0;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        return false;
+      }
+
+      @Override
+      public String toString() {
+        return "fn";
+      }
+    };
   }
 
 }

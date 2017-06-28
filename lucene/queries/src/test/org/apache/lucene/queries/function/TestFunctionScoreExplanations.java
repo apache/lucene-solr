@@ -59,19 +59,15 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
 
   public void testExplanationsIncludingScore() throws Exception {
 
-    DoubleValuesSource scores = DoubleValuesSource.function(DoubleValuesSource.SCORES, "v * 2", v -> v * 2);
-
     Query q = new TermQuery(new Term(FIELD, "w1"));
-    FunctionScoreQuery csq = new FunctionScoreQuery(q, scores);
+    FunctionScoreQuery csq = new FunctionScoreQuery(q, DoubleValuesSource.SCORES);
 
     qtest(csq, new int[] { 0, 1, 2, 3 });
 
     Explanation e1 = searcher.explain(q, 0);
     Explanation e = searcher.explain(csq, 0);
 
-    assertEquals(e.getDetails().length, 2);
-
-    assertEquals(e1.getValue() * 2, e.getValue(), 0.00001);
+    assertEquals(e, e1);
   }
 
   public void testSubExplanations() throws IOException {

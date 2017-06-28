@@ -92,6 +92,14 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     assertEquals(vs1.hashCode(), vs2.hashCode());
     DoubleValuesSource v3 = DoubleValuesSource.fromLongField("long");
     assertFalse(vs1.equals(v3));
+
+    assertEquals(DoubleValuesSource.constant(5), DoubleValuesSource.constant(5));
+    assertEquals(DoubleValuesSource.constant(5).hashCode(), DoubleValuesSource.constant(5).hashCode());
+    assertFalse((DoubleValuesSource.constant(5).equals(DoubleValuesSource.constant(6))));
+
+    assertEquals(DoubleValuesSource.SCORES, DoubleValuesSource.SCORES);
+    assertFalse(DoubleValuesSource.constant(5).equals(DoubleValuesSource.SCORES));
+
   }
 
   public void testSimpleFieldSortables() throws Exception {
@@ -184,13 +192,6 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       testExplanations(q, DoubleValuesSource.fromDoubleField("double"));
       testExplanations(q, DoubleValuesSource.fromDoubleField("onefield"));
       testExplanations(q, DoubleValuesSource.constant(5.45));
-      testExplanations(q, DoubleValuesSource.function(
-          DoubleValuesSource.fromDoubleField("double"), "v * 4 + 73",
-          v -> v * 4 + 73
-      ));
-      testExplanations(q, DoubleValuesSource.scoringFunction(
-          DoubleValuesSource.fromDoubleField("double"), "v * score", (v, s) -> v * s
-      ));
     }
   }
 
@@ -227,4 +228,5 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       }
     });
   }
+
 }

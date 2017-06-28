@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
@@ -34,15 +35,15 @@ import org.apache.solr.common.util.Utils;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 
-class Row implements MapWriter {
+public class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
-  Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
+  public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
   List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
   boolean isLive = true;
 
-  Row(String node, List<String> params, ClusterDataProvider dataProvider) {
+  public Row(String node, List<String> params, ClusterDataProvider dataProvider) {
     collectionVsShardVsReplicas = dataProvider.getReplicaInfo(node, params);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
@@ -57,7 +58,7 @@ class Row implements MapWriter {
     }
   }
 
-  Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
+  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
       Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, List<Clause> violations, boolean isLive) {
     this.node = node;
     this.isLive = isLive;
@@ -94,7 +95,7 @@ class Row implements MapWriter {
   }
 
   // this adds a replica to the replica info
-  Row addReplica(String coll, String shard, Replica.Type type) {
+  public Row addReplica(String coll, String shard, Replica.Type type) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
@@ -108,7 +109,7 @@ class Row implements MapWriter {
 
   }
 
-  Pair<Row, ReplicaInfo> removeReplica(String coll, String shard, Replica.Type type) {
+  public Pair<Row, ReplicaInfo> removeReplica(String coll, String shard, Replica.Type type) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
@@ -131,5 +132,9 @@ class Row implements MapWriter {
     }
     return new Pair(row, r.remove(idx));
 
+  }
+
+  public Cell[] getCells() {
+    return cells;
   }
 }

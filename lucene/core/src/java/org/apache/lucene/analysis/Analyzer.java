@@ -235,7 +235,7 @@ public abstract class Analyzer implements Closeable {
         }
         filteredText = builder.toString();
       } catch (IOException e) {
-        throw new IllegalStateException("Normalization threw an unexpected exeption", e);
+        throw new IllegalStateException("Normalization threw an unexpected exception", e);
       }
 
       final AttributeFactory attributeFactory = attributeFactory(fieldName);
@@ -258,7 +258,7 @@ public abstract class Analyzer implements Closeable {
         return term;
       }
     } catch (IOException e) {
-      throw new IllegalStateException("Normalization threw an unexpected exeption", e);
+      throw new IllegalStateException("Normalization threw an unexpected exception", e);
     }
   }
 

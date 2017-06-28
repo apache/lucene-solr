@@ -71,7 +71,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.out.println("Errors are: "+response.getErrorMessages());
     assertTrue(response.getErrorMessages() != null && response.getErrorMessages().size() > 0);
     assertTrue(response.getErrorMessages().getVal(0).contains("This is the _default configset, which is designed"
-        + " to throw error upon collection creation."));
+        + " to throw error upon collection creation"));
   }
 
   @Test

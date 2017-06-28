@@ -703,7 +703,7 @@ public class ZkController {
    * Gets the absolute filesystem path of the _default configset to bootstrap from.
    * First tries the sysprop "solr.default.confdir". If not found, tries to find
    * the _default dir relative to the sysprop "solr.install.dir".
-   * If that fails as well, tries to get the _default from the
+   * If that fails as well (usually for unit tests), tries to get the _default from the
    * classpath. Returns null if not found anywhere.
    */
   private static String getDefaultConfigDirPath() {
@@ -718,14 +718,19 @@ public class ZkController {
         new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
       configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
     } else { // find "_default" in the classpath. This one is used for tests
-      URL classpathUrl = Thread.currentThread().getContextClassLoader().getResource(serverSubPath);
-      try {
-        if (classpathUrl != null && new File(classpathUrl.toURI()).exists()) {
-          configDirPath = new File(classpathUrl.toURI()).getAbsolutePath();
-        }
-      } catch (URISyntaxException ex) {}
+      configDirPath = getDefaultConfigDirFromClasspath(serverSubPath);
     }
     return configDirPath;
+  }
+
+  private static String getDefaultConfigDirFromClasspath(String serverSubPath) {
+    URL classpathUrl = ZkController.class.getClassLoader().getResource(serverSubPath);
+    try {
+      if (classpathUrl != null && new File(classpathUrl.toURI()).exists()) {
+        return new File(classpathUrl.toURI()).getAbsolutePath();
+      }
+    } catch (URISyntaxException ex) {}
+    return null;
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {

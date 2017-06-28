@@ -16,30 +16,29 @@
  */
 package org.apache.lucene.spatial.util;
 
-import org.locationtech.spatial4j.shape.Shape;
+import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.BoolDocValues;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.apache.lucene.spatial.query.SpatialOperation;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A boolean ValueSource that compares a shape from a provided ValueSource with a given Shape and sees
+ * Compares a shape from a provided {@link ShapeValuesSource} with a given Shape and sees
  * if it matches a given {@link SpatialOperation} (the predicate).
+ *
+ * Consumers should call {@link #iterator(LeafReaderContext, DocIdSetIterator)} to obtain a
+ * {@link TwoPhaseIterator} over a particular {@link DocIdSetIterator}.  The initial DocIdSetIterator
+ * will be used as the approximation, and the {@link SpatialOperation} comparison will only be
+ * performed in {@link TwoPhaseIterator#matches()}
  *
  * @lucene.experimental
  */
-public class ShapePredicateValueSource extends ValueSource {
-  private final ValueSource shapeValuesource;//the left hand side
+public class ShapeValuesPredicate {
+  private final ShapeValuesSource shapeValuesource;//the left hand side
   private final SpatialOperation op;
   private final Shape queryShape;//the right hand side (constant)
 
@@ -50,41 +49,28 @@ public class ShapePredicateValueSource extends ValueSource {
    * @param op the predicate
    * @param queryShape The shape on the right-hand (query) side.
    */
-  public ShapePredicateValueSource(ValueSource shapeValuesource, SpatialOperation op, Shape queryShape) {
+  public ShapeValuesPredicate(ShapeValuesSource shapeValuesource, SpatialOperation op, Shape queryShape) {
     this.shapeValuesource = shapeValuesource;
     this.op = op;
     this.queryShape = queryShape;
   }
 
   @Override
-  public String description() {
+  public String toString() {
     return shapeValuesource + " " + op + " " + queryShape;
   }
 
-  @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    shapeValuesource.createWeight(context, searcher);
-  }
-
-  @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final FunctionValues shapeValues = shapeValuesource.getValues(context, readerContext);
-
-    return new BoolDocValues(this) {
+  public TwoPhaseIterator iterator(LeafReaderContext ctx, DocIdSetIterator approximation) throws IOException {
+    final ShapeValues shapeValues = shapeValuesource.getValues(ctx);
+    return new TwoPhaseIterator(approximation) {
       @Override
-      public boolean boolVal(int doc) throws IOException {
-        Shape indexedShape = (Shape) shapeValues.objectVal(doc);
-        if (indexedShape == null)
-          return false;
-        return op.evaluate(indexedShape, queryShape);
+      public boolean matches() throws IOException {
+        return shapeValues.advanceExact(approximation.docID()) && op.evaluate(shapeValues.value(), queryShape);
       }
 
       @Override
-      public Explanation explain(int doc) throws IOException {
-        Explanation exp = super.explain(doc);
-        List<Explanation> details = new ArrayList<>(Arrays.asList(exp.getDetails()));
-        details.add(shapeValues.explain(doc));
-        return Explanation.match(exp.getValue(), exp.getDescription(), details);
+      public float matchCost() {
+        return 100; // is this necessary?
       }
     };
   }
@@ -94,7 +80,7 @@ public class ShapePredicateValueSource extends ValueSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    ShapePredicateValueSource that = (ShapePredicateValueSource) o;
+    ShapeValuesPredicate that = (ShapeValuesPredicate) o;
 
     if (!shapeValuesource.equals(that.shapeValuesource)) return false;
     if (!op.equals(that.op)) return false;

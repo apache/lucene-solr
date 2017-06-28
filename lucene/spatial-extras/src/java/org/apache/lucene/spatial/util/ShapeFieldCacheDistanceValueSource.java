@@ -16,26 +16,25 @@
  */
 package org.apache.lucene.spatial.util;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.shape.Point;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 /**
- * An implementation of the Lucene ValueSource that returns the spatial distance
+ * A DoubleValuesSource that returns the spatial distance
  * between an input point and a document's points in
  * {@link ShapeFieldCacheProvider}. The shortest distance is returned if a
  * document has more than one point.
  *
  * @lucene.internal
  */
-public class ShapeFieldCacheDistanceValueSource extends ValueSource {
+public class ShapeFieldCacheDistanceValueSource extends DoubleValuesSource {
 
   private final SpatialContext ctx;
   private final Point from;
@@ -51,43 +50,43 @@ public class ShapeFieldCacheDistanceValueSource extends ValueSource {
   }
 
   @Override
-  public String description() {
+  public String toString() {
     return getClass().getSimpleName()+"("+provider+", "+from+")";
   }
 
   @Override
-  public FunctionValues getValues(Map context, final LeafReaderContext readerContext) throws IOException {
-    return new FunctionValues() {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+
+    final double nullValue = (ctx.isGeo() ? 180 * multiplier : Double.MAX_VALUE);
+
+    return DoubleValues.withDefault(new DoubleValues() {
       private final ShapeFieldCache<Point> cache =
           provider.getCache(readerContext.reader());
       private final Point from = ShapeFieldCacheDistanceValueSource.this.from;
       private final DistanceCalculator calculator = ctx.getDistCalc();
-      private final double nullValue = (ctx.isGeo() ? 180 * multiplier : Double.MAX_VALUE);
+
+      private List<Point> currentVals;
 
       @Override
-      public float floatVal(int doc) {
-        return (float) doubleVal(doc);
-      }
-
-      @Override
-      public double doubleVal(int doc) {
-
-        List<Point> vals = cache.getShapes( doc );
-        if( vals != null ) {
-          double v = calculator.distance(from, vals.get(0));
-          for( int i=1; i<vals.size(); i++ ) {
-            v = Math.min(v, calculator.distance(from, vals.get(i)));
-          }
-          return v * multiplier;
+      public double doubleValue() throws IOException {
+        double v = calculator.distance(from, currentVals.get(0));
+        for (int i = 1; i < currentVals.size(); i++) {
+          v = Math.min(v, calculator.distance(from, currentVals.get(i)));
         }
-        return nullValue;
+        return v * multiplier;
       }
 
       @Override
-      public String toString(int doc) {
-        return description() + "=" + floatVal(doc);
+      public boolean advanceExact(int doc) throws IOException {
+        currentVals = cache.getShapes(doc);
+        return currentVals != null;
       }
-    };
+    }, nullValue);
+  }
+
+  @Override
+  public boolean needsScores() {
+    return false;
   }
 
   @Override

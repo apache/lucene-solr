@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
+
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.FAIL;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 
 import java.util.Objects;
 
-import org.apache.solr.cloud.autoscaling.Clause.TestStatus;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
 import org.apache.solr.common.params.CoreAdminParams;
-
-import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.FAIL;
-import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
-import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.PASS;
-import static org.apache.solr.cloud.autoscaling.Policy.ANY;
 
 
 public enum Operand {

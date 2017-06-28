@@ -1032,7 +1032,7 @@ public class CoreContainer {
       }
     }
     
-    // If no CorruptIndexExeption, nothing we can try here
+    // If no CorruptIndexException, nothing we can try here
     if (cause == null) throw original;
     
     CoreInitFailedAction action = CoreInitFailedAction.valueOf(System.getProperty(CoreInitFailedAction.class.getSimpleName(), "none"));

@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.DocValuesType;
-import org.apache.solr.legacy.LegacyFieldType;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.spatial.bbox.BBoxOverlapRatioValueSource;
-import org.apache.solr.legacy.BBoxStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.legacy.BBoxStrategy;
+import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.search.QParser;
 import org.locationtech.spatial4j.shape.Rectangle;
 
@@ -156,7 +156,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   }
 
   @Override
-  protected ValueSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String scoreParam, BBoxStrategy strategy) {
+  protected DoubleValuesSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String scoreParam, BBoxStrategy strategy) {
     if (scoreParam == null) {
       return null;
     }

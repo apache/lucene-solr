@@ -35,4 +35,25 @@ public abstract class DoubleValues {
    */
   public abstract boolean advanceExact(int doc) throws IOException;
 
+  /**
+   * Wrap a DoubleValues instance, returning a default if the wrapped instance has no value
+   */
+  public static DoubleValues withDefault(DoubleValues in, double missingValue) {
+    return new DoubleValues() {
+
+      boolean hasValue = false;
+
+      @Override
+      public double doubleValue() throws IOException {
+        return hasValue ? in.doubleValue() : missingValue;
+      }
+
+      @Override
+      public boolean advanceExact(int doc) throws IOException {
+        hasValue = in.advanceExact(doc);
+        return true;
+      }
+    };
+  }
+
 }
