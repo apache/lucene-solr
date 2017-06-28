@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
@@ -31,13 +31,6 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
-import org.apache.solr.client.solrj.cloud.autoscaling.Operand;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
