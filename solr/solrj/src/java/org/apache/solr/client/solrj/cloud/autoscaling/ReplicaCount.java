@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.List;

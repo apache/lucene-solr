@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Utils;
 

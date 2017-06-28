@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
@@ -135,7 +134,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (tag != null && !params.contains(tag.name)) params.add(tag.name);
   }
 
-  public static class Condition {
+  class Condition {
     final String name;
     final Object val;
     final Operand op;
@@ -181,7 +180,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
-  static Condition parse(String s, Map m) {
+  Condition parse(String s, Map m) {
     Object expectedVal = null;
     Object val = m.get(s);
     try {
