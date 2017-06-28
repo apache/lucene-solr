@@ -56,14 +56,16 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final AtomicBoolean fired = new AtomicBoolean(false);
+  private static final int NODE_COUNT = 1;
   private static CountDownLatch triggerFiredLatch = new CountDownLatch(1);
-  private static final AtomicReference<Object> eventContextRef = new AtomicReference<>();
+  private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
+  private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
 
   private String path = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
+    configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
@@ -74,11 +76,27 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     fired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
-    eventContextRef.set(null);
+    actionContextPropsRef.set(null);
     this.path = "/admin/autoscaling";
 
     // remove everything from autoscaling.json in ZK
     zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(Charsets.UTF_8), true);
+
+    if (cluster.getJettySolrRunners().size() > NODE_COUNT) {
+      // stop some to get to original state
+      int numJetties = cluster.getJettySolrRunners().size();
+      for (int i = 0; i < numJetties - NODE_COUNT; i++) {
+        JettySolrRunner randomJetty = cluster.getRandomJetty(random());
+        List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
+        for (int i1 = 0; i1 < jettySolrRunners.size(); i1++) {
+          JettySolrRunner jettySolrRunner = jettySolrRunners.get(i1);
+          if (jettySolrRunner == randomJetty) {
+            cluster.stopJettySolrRunner(i1);
+            break;
+          }
+        }
+      }
+    }
 
     CloudSolrClient solrClient = cluster.getSolrClient();
 
@@ -91,6 +109,11 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
       CollectionAdminRequest.deleteCollection("testNodeAdded").process(solrClient);
     } catch (Exception e) {
       // expected if testNodeAdded hasn't run already
+    }
+    try {
+      CollectionAdminRequest.deleteCollection("testNodeWithMultipleReplicasLost").process(solrClient);
+    } catch (Exception e) {
+      // expected if testNodeWithMultipleReplicasLost hasn't run already
     }
 
     String setClusterPolicyCommand = "{" +
@@ -140,7 +163,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "testNodeLost", (liveNodes, collectionState) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+        "testNodeLost", clusterShape(1, 2));
 
     ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
     DocCollection collection = clusterState.getCollection("testNodeLost");
@@ -150,9 +173,10 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     // start another node because because when the other node goes away, the cluster policy requires only
     // 1 replica per node and none on the overseer
-    cluster.startJettySolrRunner();
+    JettySolrRunner node2 = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
 
+    // stop the original node
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       JettySolrRunner jettySolrRunner = cluster.getJettySolrRunners().get(i);
       if (jettySolrRunner == runner)  {
@@ -164,7 +188,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
     assertTrue(fired.get());
-    Map context = (Map) eventContextRef.get();
+    Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null", operations);
@@ -174,6 +198,87 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
     String replicaToBeMoved = params.get("replica");
     assertEquals("Unexpected node in computed operation", replicas.get(0).getName(), replicaToBeMoved);
+
+    // shutdown the extra node that we had started
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      JettySolrRunner jettySolrRunner = cluster.getJettySolrRunners().get(i);
+      if (jettySolrRunner == node2)  {
+        cluster.stopJettySolrRunner(i);
+        break;
+      }
+    }
+  }
+
+  public void testNodeWithMultipleReplicasLost() throws Exception {
+    // start 3 more nodes
+    cluster.startJettySolrRunner();
+    cluster.startJettySolrRunner();
+    cluster.startJettySolrRunner();
+
+    cluster.waitForAllNodes(30);
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_lost_trigger'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '1s'," +
+        "'enabled' : true," +
+        "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
+        "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
+        "}}";
+    SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
+        "conf",2, 3);
+    create.setMaxShardsPerNode(2);
+    create.process(solrClient);
+
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        "testNodeWithMultipleReplicasLost", clusterShape(2, 3));
+
+    ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
+    DocCollection docCollection = clusterState.getCollection("testNodeWithMultipleReplicasLost");
+
+    // lets find a node with at least 2 replicas
+    String stoppedNodeName = null;
+    List<Replica> replicasToBeMoved = null;
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      JettySolrRunner jettySolrRunner = cluster.getJettySolrRunners().get(i);
+      List<Replica> replicas = docCollection.getReplicas(jettySolrRunner.getNodeName());
+      if (replicas != null && replicas.size() == 2) {
+        stoppedNodeName = jettySolrRunner.getNodeName();
+        replicasToBeMoved = replicas;
+        cluster.stopJettySolrRunner(i);
+        break;
+      }
+    }
+    assertNotNull(stoppedNodeName);
+    cluster.waitForAllNodes(30);
+
+    assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
+    assertTrue(fired.get());
+
+    TriggerEvent triggerEvent = eventRef.get();
+    assertNotNull(triggerEvent);
+    assertEquals(AutoScaling.EventType.NODELOST, triggerEvent.getEventType());
+    assertEquals(stoppedNodeName, triggerEvent.getProperty(TriggerEvent.NODE_NAME));
+
+    Map context = actionContextPropsRef.get();
+    assertNotNull(context);
+    List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
+    assertNotNull("The operations computed by ComputePlanAction should not be null", operations);
+    operations.forEach(solrRequest -> log.info(solrRequest.getParams().toString()));
+    assertEquals("ComputePlanAction should have computed exactly 2 operation", 2, operations.size());
+
+    for (SolrRequest solrRequest : operations) {
+      SolrParams params = solrRequest.getParams();
+      assertEquals("Expected MOVEREPLICA action after adding node", MOVEREPLICA, CollectionParams.CollectionAction.get(params.get("action")));
+      String moved = params.get("replica");
+      assertTrue(replicasToBeMoved.stream().anyMatch(replica -> replica.getName().equals(moved)));
+    }
   }
 
   @Test
@@ -203,7 +308,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     JettySolrRunner runner = cluster.startJettySolrRunner();
     assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
     assertTrue(fired.get());
-    Map context = (Map) eventContextRef.get();
+    Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
     assertNotNull("The operations computed by ComputePlanAction should not be null", operations);
@@ -225,7 +330,8 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     @Override
     public void process(TriggerEvent event, ActionContext context) {
       if (fired.compareAndSet(false, true)) {
-        eventContextRef.set(context.getProperties());
+        eventRef.set(event);
+        actionContextPropsRef.set(context.getProperties());
         triggerFiredLatch.countDown();
       }
     }
