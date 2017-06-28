@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import org.apache.solr.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONUtil;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,7 +25,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-class Preference implements MapWriter {
+public class Preference implements MapWriter {
   final Policy.SortParam name;
   Integer precision;
   final Policy.Sort sort;
@@ -81,5 +81,9 @@ class Preference implements MapWriter {
       Map.Entry e = (Map.Entry) o;
       ew.put(String.valueOf(e.getKey()), e.getValue());
     }
+  }
+
+  public Policy.SortParam getName() {
+    return name;
   }
 }

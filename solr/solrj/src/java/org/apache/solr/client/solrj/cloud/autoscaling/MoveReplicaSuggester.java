@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.autoscaling.Clause.Violation;
-import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
-import org.apache.solr.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.common.util.Pair;
 
 public class MoveReplicaSuggester extends Suggester {

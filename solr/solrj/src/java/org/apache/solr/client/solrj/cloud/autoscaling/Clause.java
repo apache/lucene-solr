@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,32 +30,32 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.solr.cloud.autoscaling.Policy.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.cloud.autoscaling.Clause.TestStatus.PASS;
-import static org.apache.solr.cloud.autoscaling.Operand.EQUAL;
-import static org.apache.solr.cloud.autoscaling.Operand.GREATER_THAN;
-import static org.apache.solr.cloud.autoscaling.Operand.LESS_THAN;
-import static org.apache.solr.cloud.autoscaling.Operand.NOT_EQUAL;
-import static org.apache.solr.cloud.autoscaling.Operand.WILDCARD;
-import static org.apache.solr.cloud.autoscaling.Policy.ANY;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.EQUAL;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.GREATER_THAN;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.LESS_THAN;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.NOT_EQUAL;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Operand.WILDCARD;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 // a set of conditions in a policy
 public class Clause implements MapWriter, Comparable<Clause> {
-  Map<String, Object> original;
-  Condition collection, shard, replica, tag, globalTag;
+  public Map<String, Object> original;
+  public Condition collection, shard, replica, tag, globalTag;
 
   boolean strict = true;
 
-  Clause(Map<String, Object> m) {
+  public Clause(Map<String, Object> m) {
     this.original = m;
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
@@ -125,7 +125,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (tag != null && !params.contains(tag.name)) params.add(tag.name);
   }
 
-  static class Condition {
+  public static class Condition {
     final String name;
     final Object val;
     final Operand op;
@@ -144,11 +144,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
       return op.match(this.val, testVal);
     }
 
-    boolean isPass(Object inputVal) {
+    public boolean isPass(Object inputVal) {
       return op.match(val, validate(name, inputVal, false)) == PASS;
     }
 
-    boolean isPass(Row row) {
+    public boolean isPass(Row row) {
       return op.match(val, row.getVal(name)) == PASS;
     }
 
@@ -163,6 +163,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
     public Integer delta(Object val) {
       return op.delta(this.val, val);
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public Object getValue() {
+      return val;
+    }
+    
+    public Operand getOperand() {
+      return op;
     }
   }
 

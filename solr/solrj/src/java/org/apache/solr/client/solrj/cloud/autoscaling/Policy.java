@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.cloud.autoscaling.Clause.Violation;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -263,7 +263,7 @@ public class Policy implements MapWriter {
     return new Session(dataProvider);
   }
 
-  enum SortParam {
+  public enum SortParam {
     freedisk(0, Integer.MAX_VALUE), cores(0, Integer.MAX_VALUE), heapUsage(0, Integer.MAX_VALUE), sysLoadAvg(0, 100);
 
     public final int min,max;
@@ -480,7 +480,7 @@ public class Policy implements MapWriter {
 
   }
 
-  static List<Clause> mergePolicies(String coll,
+  public static List<Clause> mergePolicies(String coll,
                                     List<Clause> collPolicy,
                                     List<Clause> globalPolicy) {
 
@@ -515,5 +515,7 @@ public class Policy implements MapWriter {
     ops.put(CollectionAction.MOVEREPLICA, () -> new MoveReplicaSuggester());
   }
 
-
+  public Map<String, List<Clause>> getPolicies() {
+    return policies;
+  }
 }

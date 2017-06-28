@@ -31,9 +31,16 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
+import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
+import org.apache.solr.client.solrj.cloud.autoscaling.Operand;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
+import org.apache.solr.client.solrj.cloud.autoscaling.Row;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.autoscaling.Clause.Violation;
-import org.apache.solr.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
@@ -219,7 +226,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  }" +
         "}");
     Policy policy = new Policy(map);
-    List<Clause> clauses = Policy.mergePolicies("mycoll", policy.policies.get("policy1"), policy.clusterPolicy);
+    List<Clause> clauses = Policy.mergePolicies("mycoll", policy.getPolicies().get("policy1"), policy.getClusterPolicy());
     Collections.sort(clauses);
     assertEquals(clauses.size(), 4);
     assertEquals("1", String.valueOf(clauses.get(0).original.get("replica")));
@@ -240,8 +247,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy p = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     List<Clause> clauses = new ArrayList<>(p.getClusterPolicy());
     Collections.sort(clauses);
-    assertEquals("nodeRole", clauses.get(1).tag.name);
-    assertEquals("sysprop.rack", clauses.get(0).tag.name);
+    assertEquals("nodeRole", clauses.get(1).tag.getName());
+    assertEquals("sysprop.rack", clauses.get(0).tag.getName());
   }
 
   public void testRules() throws IOException {
@@ -275,9 +282,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     List<Violation> violations = session.getViolations();
     assertEquals(3, violations.size());
-    assertTrue(violations.stream().anyMatch(violation -> "node3".equals(violation.getClause().tag.val)));
-    assertTrue(violations.stream().anyMatch(violation -> "nodeRole".equals(violation.getClause().tag.name)));
-    assertTrue(violations.stream().anyMatch(violation -> (violation.getClause().replica.op == Operand.LESS_THAN && "node".equals(violation.getClause().tag.name))));
+    assertTrue(violations.stream().anyMatch(violation -> "node3".equals(violation.getClause().tag.getValue())));
+    assertTrue(violations.stream().anyMatch(violation -> "nodeRole".equals(violation.getClause().tag.getName())));
+    assertTrue(violations.stream().anyMatch(violation -> (violation.getClause().replica.getOperand() == Operand.LESS_THAN && "node".equals(violation.getClause().tag.getName()))));
 
     Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
         .hint(Hint.COLL, "gettingstarted")

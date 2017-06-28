@@ -19,5 +19,5 @@
  * Common classes for autoscaling parsing filtering nodes and sorting
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
