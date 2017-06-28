@@ -527,9 +527,6 @@ Other Changes
   with point fields and provides control over dynamic fields used for the raw amount and currency
   code sub-fields.  (hossman, Steve Rowe)
 
-* SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
-  (Uwe Schindler)
-
 ==================  6.6.1 ==================
 
 Bug Fixes
