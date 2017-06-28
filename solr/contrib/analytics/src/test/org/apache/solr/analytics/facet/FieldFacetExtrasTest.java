@@ -26,7 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "/analytics/requestFiles/fieldFacetExtras.txt";
+  static String fileName = "fieldFacetExtras.txt";
 
   public static final int INT = 21;
   public static final int LONG = 22;
@@ -44,7 +44,7 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 
     //INT
@@ -104,7 +104,6 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
     setResponse(h.query(request(fileToStringArr(FieldFacetExtrasTest.class, fileName))));
   }
   
-  @SuppressWarnings("unchecked")
   @Test
   public void limitTest() throws Exception { 
 
@@ -118,7 +117,6 @@ public class FieldFacetExtrasTest extends AbstractAnalyticsFacetTest {
     assertEquals(getRawResponse(), string.size(),1);
   }
   
-  @SuppressWarnings("unchecked")
   @Test
   public void offsetTest() throws Exception { 
 

@@ -116,6 +116,10 @@ Upgrading from Solr 6.x
      curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
   Please see SOLR-10574 for details.
 
+* SOLR-10123: The Analytics Component has been upgraded to support distributed collections, expressions over multivalued
+  fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics expression
+  whereas previously docValues was not required. Please see SOLR-10123 for details.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -174,6 +178,10 @@ New Features
   (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, Jan Hoydahl, Alexandre Rafalovich) 
 
 * SOLR-10272: Use _default config set if no collection.configName is specified with CREATE (Ishan Chattopadhyaya)
+
+* SOLR-10123: Upgraded the Analytics Component to version 2.0 which now supports distributed collections, expressions over 
+  multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics 
+  expression  whereas previously docValues was not required. Please see SOLR-10123 for details. (Houston Putman)
 
 Bug Fixes
 ----------------------
