@@ -16,16 +16,17 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currency-ft-oer-norates" version="1.4">
+<schema name="bad-schema-currency-ft-code-suffix" version="1.4">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
-  <!-- BEGIN BAD STUFF: no rates-->
-  <fieldType name="currency"
-             class="solr.CurrencyField"
-             providerClass="solr.OpenExchangeRatesOrgProvider"
-             multiValued="false"/>
+  
+  <!-- BEGIN BAD STUFF: codeStrSuffix not allowed -->
+  <fieldType name="currency" class="solr.CurrencyField" codeStrSuffix="_s" multiValued="false"/>
+  <!-- END BAD STUFF -->
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
   <field name="money" type="currency" indexed="true" stored="true"/>
+  
+  <dyanmicField name="*_s" type="string" multiValued="false"/>
 
   <uniqueKey>id</uniqueKey>
 

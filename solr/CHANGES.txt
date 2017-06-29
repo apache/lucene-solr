@@ -41,13 +41,15 @@ Upgrade Notes
 
 * SOLR-10379: ManagedSynonymFilterFactory has been deprecated in favor of ManagedSynonymGraphFilterFactory.
 
+* SOLR-10503: CurrencyField has been deprecated in favor of new CurrencyFieldType.
+
 New Features
 ----------------------
 
 * SOLR-10849: MoreLikeThisComponent should expose setMaxDocFreqPct (maxDoc 
   frequency percentage). (Dawid Weiss)
 
-* SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs via Mark Miller)
+* SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs, Michael Suzuki via Mark Miller)
 
 * SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
   (Erick Erickson)
@@ -133,6 +135,14 @@ Bug Fixes
 
 * SOLR-10832: Fixed VersionInfo.getMaxVersionFromIndex when using PointsField with indexed="true" (hossman)
 
+* SOLR-10763: Admin UI replication tab sometimes empty when failed replications (janhoy, Bojan Vitnik)
+
+* SOLR-10824: fix NPE ExactSharedStatsCache, fixing maxdocs skew for terms which are absent at one of shards
+when using one of Exact*StatsCache (Mikhail Khludnev)
+
+* SOLR-10963: Fix example json in MultipleAdditiveTreesModel javadocs.
+  (Stefan Langenmaier via Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
@@ -181,6 +191,17 @@ Other Changes
 * SOLR-10891: BBoxField should support point-based number sub-fields. (Steve Rowe)
 
 * SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
+
+* SOLR-10883: Ref guide: Escape replacement substitutions, e.g. => to right arrow, so that they are
+  rendered visibly in the PDF.  Also add .adoc file checks to the top-level validate target, including
+  for the invisible substitutions PDF problem.  (Steve Rowe)
+
+* SOLR-10503,SOLR-10502: Deprecate CurrencyField in favor of new CurrencyFieldType, which works
+  with point fields and provides control over dynamic fields used for the raw amount and currency
+  code sub-fields.  (hossman, Steve Rowe)
+
+* SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
+  (Uwe Schindler)
 
 ==================  6.6.1 ==================
 

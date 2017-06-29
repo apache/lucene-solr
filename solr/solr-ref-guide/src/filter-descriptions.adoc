@@ -76,7 +76,7 @@ This filter converts alphabetic, numeric, and symbolic Unicode characters which 
 
 *Arguments:*
 
-`preserveOriginal`:: (boolean, default false) If true, the original token is preserved: "thé" -> "the", "thé"
+`preserveOriginal`:: (boolean, default false) If true, the original token is preserved: "thé" \-> "the", "thé"
 
 *Example:*
 
@@ -1487,7 +1487,7 @@ There are two ways to specify synonym mappings:
 +
 * A comma-separated list of words. If the token matches any of the words, then all the words in the list are substituted, which will include the original token.
 +
-* Two comma-separated lists of words with the symbol "=>" between them. If the token matches any word on the left, then the list on the right is substituted. The original token will not be included unless it is also in the list on the right.
+* Two comma-separated lists of words with the symbol "\=>" between them. If the token matches any word on the left, then the list on the right is substituted. The original token will not be included unless it is also in the list on the right.
 
 `ignoreCase`:: (optional; default: `false`) If `true`, synonyms will be matched case-insensitively.
 
@@ -1671,41 +1671,41 @@ Note: although this filter produces correct token graphs, it cannot consume an i
 
 The rules for determining delimiters are determined as follows:
 
-* A change in case within a word: "CamelCase" -> "Camel", "Case". This can be disabled by setting `splitOnCaseChange="0"`.
+* A change in case within a word: "CamelCase" \-> "Camel", "Case". This can be disabled by setting `splitOnCaseChange="0"`.
 
-* A transition from alpha to numeric characters or vice versa: "Gonzo5000" -> "Gonzo", "5000" "4500XL" -> "4500", "XL". This can be disabled by setting `splitOnNumerics="0"`.
+* A transition from alpha to numeric characters or vice versa: "Gonzo5000" \-> "Gonzo", "5000" "4500XL" \-> "4500", "XL". This can be disabled by setting `splitOnNumerics="0"`.
 
-* Non-alphanumeric characters (discarded): "hot-spot" -> "hot", "spot"
+* Non-alphanumeric characters (discarded): "hot-spot" \-> "hot", "spot"
 
-* A trailing "'s" is removed: "O'Reilly's" -> "O", "Reilly"
+* A trailing "'s" is removed: "O'Reilly's" \-> "O", "Reilly"
 
-* Any leading or trailing delimiters are discarded: "--hot-spot--" -> "hot", "spot"
+* Any leading or trailing delimiters are discarded: "--hot-spot--" \-> "hot", "spot"
 
 *Factory class:* `solr.WordDelimiterGraphFilterFactory`
 
 *Arguments:*
 
-`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters. For example:"CamelCase", "hot-spot" -> "Camel", "Case", "hot", "spot"
+`generateWordParts`:: (integer, default 1) If non-zero, splits words at delimiters. For example:"CamelCase", "hot-spot" \-> "Camel", "Case", "hot", "spot"
 
-`generateNumberParts`:: (integer, default 1) If non-zero, splits numeric strings at delimiters:"1947-32" ->*"1947", "32"
+`generateNumberParts`:: (integer, default 1) If non-zero, splits numeric strings at delimiters:"1947-32" \->*"1947", "32"
 
-`splitOnCaseChange`:: (integer, default 1) If 0, words are not split on camel-case changes:"BugBlaster-XL" -> "BugBlaster", "XL". Example 1 below illustrates the default (non-zero) splitting behavior.
+`splitOnCaseChange`:: (integer, default 1) If 0, words are not split on camel-case changes:"BugBlaster-XL" \-> "BugBlaster", "XL". Example 1 below illustrates the default (non-zero) splitting behavior.
 
-`splitOnNumerics`:: (integer, default 1) If 0, don't split words on transitions from alpha to numeric:"FemBot3000" -> "Fem", "Bot3000"
+`splitOnNumerics`:: (integer, default 1) If 0, don't split words on transitions from alpha to numeric:"FemBot3000" \-> "Fem", "Bot3000"
 
-`catenateWords`:: (integer, default 0) If non-zero, maximal runs of word parts will be joined: "hot-spot-sensor's" -> "hotspotsensor"
+`catenateWords`:: (integer, default 0) If non-zero, maximal runs of word parts will be joined: "hot-spot-sensor's" \-> "hotspotsensor"
 
-`catenateNumbers`:: (integer, default 0) If non-zero, maximal runs of number parts will be joined: 1947-32" -> "194732"
+`catenateNumbers`:: (integer, default 0) If non-zero, maximal runs of number parts will be joined: 1947-32" \-> "194732"
 
-`catenateAll`:: (0/1, default 0) If non-zero, runs of word and number parts will be joined: "Zap-Master-9000" -> "ZapMaster9000"
+`catenateAll`:: (0/1, default 0) If non-zero, runs of word and number parts will be joined: "Zap-Master-9000" \-> "ZapMaster9000"
 
-`preserveOriginal`:: (integer, default 0) If non-zero, the original token is preserved: "Zap-Master-9000" -> "Zap-Master-9000", "Zap", "Master", "9000"
+`preserveOriginal`:: (integer, default 0) If non-zero, the original token is preserved: "Zap-Master-9000" \-> "Zap-Master-9000", "Zap", "Master", "9000"
 
 `protected`:: (optional) The pathname of a file that contains a list of protected words that should be passed through without splitting.
 
 `stemEnglishPossessive`:: (integer, default 1) If 1, strips the possessive `'s` from each subword.
 
-`types`:: (optional) The pathname of a file that contains *character => type* mappings, which enable customization of this filter's splitting behavior. Recognized character types: `LOWER`, `UPPER`, `ALPHA`, `DIGIT`, `ALPHANUM`, and `SUBWORD_DELIM`.
+`types`:: (optional) The pathname of a file that contains *character \=> type* mappings, which enable customization of this filter's splitting behavior. Recognized character types: `LOWER`, `UPPER`, `ALPHA`, `DIGIT`, `ALPHANUM`, and `SUBWORD_DELIM`.
 +
 The default for any character without a customized mapping is computed from Unicode character properties. Blank lines and comment lines starting with '#' are ignored. An example file:
 +

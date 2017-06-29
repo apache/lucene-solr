@@ -675,9 +675,9 @@ Intervals must begin with either '(' or '[', be followed by the start value, the
 
 For example:
 
-* (1,10) -> will include values greater than 1 and lower than 10
-* [1,10) -> will include values greater or equal to 1 and lower than 10
-* [1,10] -> will include values greater or equal to 1 and lower or equal to 10
+* (1,10) \-> will include values greater than 1 and lower than 10
+* [1,10) \-> will include values greater or equal to 1 and lower than 10
+* [1,10] \-> will include values greater or equal to 1 and lower or equal to 10
 
 The initial and end values cannot be empty.
 
