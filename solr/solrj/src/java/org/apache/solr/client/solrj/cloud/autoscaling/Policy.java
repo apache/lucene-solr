@@ -317,7 +317,7 @@ public class Policy implements MapWriter {
     }
 
     public Suggester hint(Hint hint, Object value) {
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
+      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE || hint == Hint.COLL) {
         ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).add(value);
       } else {
         hints.put(hint, value == null ? null : String.valueOf(value));
@@ -330,22 +330,25 @@ public class Policy implements MapWriter {
 
     public SolrRequest getOperation() {
       if (!isInitialized) {
-        String coll = (String) hints.get(Hint.COLL);
+        Set<String> collections = (Set<String>) hints.get(Hint.COLL);
         String shard = (String) hints.get(Hint.SHARD);
-        // if this is not a known collection from the existing clusterstate,
-        // then add it
-        if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(coll))) {
-          session.addClausesForCollection(session.dataProvider, coll);
-          Collections.sort(session.expandedClauses);
-        }
-        if (coll != null) {
-          for (Row row : session.matrix) {
-            if (!row.collectionVsShardVsReplicas.containsKey(coll)) row.collectionVsShardVsReplicas.put(coll, new HashMap<>());
-            if (shard != null) {
-              Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.get(coll);
-              if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
+        if (collections != null) {
+          for (String coll : collections) {
+            // if this is not a known collection from the existing clusterstate,
+            // then add it
+            if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(coll))) {
+              session.addClausesForCollection(session.dataProvider, coll);
+            }
+            for (Row row : session.matrix) {
+              if (!row.collectionVsShardVsReplicas.containsKey(coll))
+                row.collectionVsShardVsReplicas.put(coll, new HashMap<>());
+              if (shard != null) {
+                Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.get(coll);
+                if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
+              }
             }
           }
+          Collections.sort(session.expandedClauses);
         }
         Set<String> srcNodes = (Set<String>) hints.get(Hint.SRC_NODE);
         if (srcNodes != null && !srcNodes.isEmpty()) {
@@ -443,7 +446,7 @@ public class Policy implements MapWriter {
 
     protected boolean isAllowed(Object v, Hint hint) {
       Object hintVal = hints.get(hint);
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
+      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE || hint == Hint.COLL) {
         Set set = (Set) hintVal;
         return set == null || set.contains(v);
       } else {

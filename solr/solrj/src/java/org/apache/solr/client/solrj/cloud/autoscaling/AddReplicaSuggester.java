@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.List;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester;
@@ -33,37 +34,39 @@ class AddReplicaSuggester extends Suggester {
   }
 
   SolrRequest tryEachNode(boolean strict) {
-    String coll = (String) hints.get(Hint.COLL);
+    Set<String> collections = (Set<String>) hints.get(Hint.COLL);
     String shard = (String) hints.get(Hint.SHARD);
-    Replica.Type type = Replica.Type.get((String) hints.get(Hint.REPLICATYPE));
-    if (coll == null || shard == null)
+    if (collections == null || shard == null) {
       throw new RuntimeException("add-replica requires 'collection' and 'shard'");
-    //iterate through elements and identify the least loaded
+    }
+    for (String coll : collections) {
+      Replica.Type type = Replica.Type.get((String) hints.get(Hint.REPLICATYPE));
+      //iterate through elements and identify the least loaded
+      List<Clause.Violation> leastSeriousViolation = null;
+      Integer targetNodeIndex = null;
+      for (int i = getMatrix().size() - 1; i >= 0; i--) {
+        Row row = getMatrix().get(i);
+        if (!row.isLive) continue;
+        if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
+        Row tmpRow = row.addReplica(coll, shard, type);
+        tmpRow.violations.clear();
 
-    List<Clause.Violation> leastSeriousViolation = null;
-    Integer targetNodeIndex = null;
-    for (int i = getMatrix().size() - 1; i >= 0; i--) {
-      Row row = getMatrix().get(i);
-      if(!row.isLive) continue;
-      if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
-      Row tmpRow = row.addReplica(coll, shard, type);
-      tmpRow.violations.clear();
-
-      List<Clause.Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
-      if(!containsNewErrors(errs)) {
-        if(isLessSerious(errs, leastSeriousViolation)){
-          leastSeriousViolation = errs;
-          targetNodeIndex = i;
+        List<Clause.Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
+        if (!containsNewErrors(errs)) {
+          if (isLessSerious(errs, leastSeriousViolation)) {
+            leastSeriousViolation = errs;
+            targetNodeIndex = i;
+          }
         }
       }
-    }
 
-    if (targetNodeIndex != null) {// there are no rule violations
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(coll, shard, type));
-      return CollectionAdminRequest
-          .addReplicaToShard(coll, shard)
-          .setType(type)
-          .setNode(getMatrix().get(targetNodeIndex).node);
+      if (targetNodeIndex != null) {// there are no rule violations
+        getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(coll, shard, type));
+        return CollectionAdminRequest
+            .addReplicaToShard(coll, shard)
+            .setType(type)
+            .setNode(getMatrix().get(targetNodeIndex).node);
+      }
     }
 
     return null;

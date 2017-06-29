@@ -80,7 +80,7 @@ public class ComputePlanAction implements TriggerAction {
         AutoScalingConfig config = new AutoScalingConfig(autoScalingConf);
         Policy policy = config.getPolicy();
         Policy.Session session = policy.createSession(new SolrClientDataProvider(cloudSolrClient));
-        Policy.Suggester suggester = getSuggester(session, event);
+        Policy.Suggester suggester = getSuggester(session, event, zkStateReader);
         while (true) {
           SolrRequest operation = suggester.getOperation();
           if (operation == null) break;
@@ -93,7 +93,7 @@ public class ComputePlanAction implements TriggerAction {
             return operations;
           });
           session = suggester.getSession();
-          suggester = getSuggester(session, event);
+          suggester = getSuggester(session, event, zkStateReader);
         }
       }
     } catch (KeeperException e) {
@@ -107,7 +107,7 @@ public class ComputePlanAction implements TriggerAction {
     }
   }
 
-  private Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event) {
+  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, ZkStateReader zkStateReader) {
     Policy.Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:
