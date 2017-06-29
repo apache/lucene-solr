@@ -2833,7 +2833,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     CoreDescriptor cd = getCoreDescriptor();
     if (cd != null) {
       if (coreContainer != null) {
-        lst.add("aliases", coreContainer.getCoreNames(this));
+        lst.add("aliases", coreContainer.getNamesForCore(this));
       }
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       if (cloudDesc != null) {
