@@ -327,6 +327,8 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
+        invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
+
         if (usingAliases) {
           processAliases(aliases, collectionsList);
         }
@@ -388,8 +390,6 @@ public class HttpSolrCall {
 
   /**
    * Extract handler from the URL path if not set.
-   * This returns true if the action is set.
-   * 
    */
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
@@ -411,14 +411,12 @@ public class HttpSolrCall {
             return;
           }
         }
-
       }
-      // no handler yet but allowed to handle select; let's check
 
+      // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
           solrReq = parser.parse(core, path, req);
-          invalidStates = checkStateIsValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
           String qt = solrReq.getParams().get(CommonParams.QT);
           handler = core.getRequestHandler(qt);
           if (handler == null) {
@@ -438,7 +436,7 @@ public class HttpSolrCall {
     if (core == null && idx > 0) {
       coreUrl = getRemotCoreUrl(corename, origCorename);
       // don't proxy for internal update requests
-      invalidStates = checkStateIsValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+      invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
       if (coreUrl != null
           && queryParams
           .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
@@ -813,7 +811,8 @@ public class HttpSolrCall {
     }
   }
 
-  private Map<String, Integer> checkStateIsValid(String stateVer) {
+  /** Returns null if the state ({@link CloudSolrClient#STATE_VERSION}) is good; otherwise returns state problems. */
+  private Map<String, Integer> checkStateVersionsAreValid(String stateVer) {
     Map<String, Integer> result = null;
     String[] pairs;
     if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
