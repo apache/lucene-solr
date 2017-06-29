@@ -108,11 +108,10 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public Fields fields() throws IOException {
-    final Fields f = super.fields();
-    return (f == null) ? null : new FieldFilterFields(f);
+  public Terms terms(String field) throws IOException {
+    return hasField(field) ? super.terms(field) : null;
   }
-  
+
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     return hasField(field) ? super.getBinaryDocValues(field) : null;
@@ -145,7 +144,7 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
     if (negate) sb.append('!');
     return sb.append(fields).append(')').toString();
   }
-  
+
   private class FieldFilterFields extends FilterFields {
 
     public FieldFilterFields(Fields in) {

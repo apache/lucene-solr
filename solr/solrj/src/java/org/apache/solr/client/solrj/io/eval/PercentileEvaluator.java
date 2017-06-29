@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.eval;
 
+import java.util.List;
+import java.util.Locale;
 import java.io.IOException;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -26,6 +28,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 public class PercentileEvaluator extends ComplexEvaluator implements Expressible {
 
@@ -33,20 +36,26 @@ public class PercentileEvaluator extends ComplexEvaluator implements Expressible
 
   public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (array and number) but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
+    StreamEvaluator colEval = subEvaluators.get(0);
+    List<Number> column = (List<Number>)colEval.evaluate(tuple);
 
-    if(subEvaluators.size() != 2) {
-      throw new IOException("Percentile expects 2 parameters: a regression result and a number");
+    double[] data = new double[column.size()];
+    for(int i=0; i<data.length; i++) {
+      data[i] = column.get(i).doubleValue();
     }
 
-    StreamEvaluator r = subEvaluators.get(0);
-    StreamEvaluator d = subEvaluators.get(1);
-
-    EmpiricalDistributionEvaluator.EmpiricalDistributionTuple e = (EmpiricalDistributionEvaluator.EmpiricalDistributionTuple)r.evaluate(tuple);
-    Number n = (Number)d.evaluate(tuple);
-    return e.percentile(n.doubleValue());
+    Percentile percentile = new Percentile();
+    percentile.setData(data);
+    StreamEvaluator numEval = subEvaluators.get(1);
+    Number num  = (Number)numEval.evaluate(tuple);
+    return percentile.evaluate(num.doubleValue());
   }
 
   @Override

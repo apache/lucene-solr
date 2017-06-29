@@ -17,36 +17,29 @@
 package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-
 /**
- * The area of a Shape retrieved from a ValueSource via
- * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
+ * The area of a Shape retrieved from an ShapeValuesSource
  *
  * @see Shape#getArea(org.locationtech.spatial4j.context.SpatialContext)
  *
  * @lucene.experimental
  */
-public class ShapeAreaValueSource extends ValueSource {
-  private final ValueSource shapeValueSource;
+public class ShapeAreaValueSource extends DoubleValuesSource {
+  private final ShapeValuesSource shapeValueSource;
   private final SpatialContext ctx;//not part of identity; should be associated with shapeValueSource indirectly
   private final boolean geoArea;
   private double multiplier;
 
-  public ShapeAreaValueSource(ValueSource shapeValueSource, SpatialContext ctx, boolean geoArea, double multiplier) {
+  public ShapeAreaValueSource(ShapeValuesSource shapeValueSource, SpatialContext ctx, boolean geoArea, double multiplier) {
     this.shapeValueSource = shapeValueSource;
     this.ctx = ctx;
     this.geoArea = geoArea;
@@ -54,43 +47,29 @@ public class ShapeAreaValueSource extends ValueSource {
   }
 
   @Override
-  public String description() {
-    return "area(" + shapeValueSource.description() + ",geo=" + geoArea + ")";
+  public String toString() {
+    return "area(" + shapeValueSource.toString() + ",geo=" + geoArea + ")";
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    shapeValueSource.createWeight(context, searcher);
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+    final ShapeValues shapeValues = shapeValueSource.getValues(readerContext);
+    return DoubleValues.withDefault(new DoubleValues() {
+      @Override
+      public double doubleValue() throws IOException {
+        return shapeValues.value().getArea(geoArea ? ctx : null) * multiplier;
+      }
+
+      @Override
+      public boolean advanceExact(int doc) throws IOException {
+        return shapeValues.advanceExact(doc);
+      }
+    }, 0);
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    final FunctionValues shapeValues = shapeValueSource.getValues(context, readerContext);
-
-    return new DoubleDocValues(this) {
-      @Override
-      public double doubleVal(int doc) throws IOException {
-        Shape shape = (Shape) shapeValues.objectVal(doc);
-        if (shape == null || shape.isEmpty())
-          return 0;//or NaN?
-        //This part of Spatial4j API is kinda weird. Passing null means 2D area, otherwise geo
-        //   assuming ctx.isGeo()
-        return shape.getArea( geoArea ? ctx : null ) * multiplier;
-      }
-
-      @Override
-      public boolean exists(int doc) throws IOException {
-        return shapeValues.exists(doc);
-      }
-
-      @Override
-      public Explanation explain(int doc) throws IOException {
-        Explanation exp = super.explain(doc);
-        List<Explanation> details = new ArrayList<>(Arrays.asList(exp.getDetails()));
-        details.add(shapeValues.explain(doc));
-        return Explanation.match(exp.getValue(), exp.getDescription(), details);
-      }
-    };
+  public boolean needsScores() {
+    return false;
   }
 
   @Override

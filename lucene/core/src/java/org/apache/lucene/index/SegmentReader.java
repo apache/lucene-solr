@@ -158,15 +158,22 @@ public final class SegmentReader extends CodecReader {
    * init most recent DocValues for the current commit
    */
   private DocValuesProducer initDocValuesProducer() throws IOException {
-    final Directory dir = core.cfsReader != null ? core.cfsReader : si.info.dir;
 
-    if (!fieldInfos.hasDocValues()) {
+    if (fieldInfos.hasDocValues() == false) {
       return null;
-    } else if (si.hasFieldUpdates()) {
-      return new SegmentDocValuesProducer(si, dir, core.coreFieldInfos, fieldInfos, segDocValues);
     } else {
-      // simple case, no DocValues updates
-      return segDocValues.getDocValuesProducer(-1L, si, dir, fieldInfos);
+      Directory dir;
+      if (core.cfsReader != null) {
+        dir = core.cfsReader;
+      } else {
+        dir = si.info.dir;
+      }
+      if (si.hasFieldUpdates()) {
+        return new SegmentDocValuesProducer(si, dir, core.coreFieldInfos, fieldInfos, segDocValues);
+      } else {
+        // simple case, no DocValues updates
+        return segDocValues.getDocValuesProducer(-1L, si, dir, fieldInfos);
+      }
     }
   }
   

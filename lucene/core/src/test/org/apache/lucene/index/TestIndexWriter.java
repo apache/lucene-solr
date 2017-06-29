@@ -357,67 +357,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  public void testChangingRAMBuffer2() throws IOException {
-    Directory dir = newDirectory();      
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    writer.getConfig().setMaxBufferedDocs(10);
-    writer.getConfig().setMaxBufferedDeleteTerms(10);
-    writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-
-    for(int j=1;j<52;j++) {
-      Document doc = new Document();
-      doc.add(new Field("field", "aaa" + j, storedTextType));
-      writer.addDocument(doc);
-    }
-      
-    int lastFlushCount = -1;
-    for(int j=1;j<52;j++) {
-      writer.deleteDocuments(new Term("field", "aaa" + j));
-      TestUtil.syncConcurrentMerges(writer);
-      int flushCount = writer.getFlushCount();
-       
-      if (j == 1)
-        lastFlushCount = flushCount;
-      else if (j < 10) {
-        // No new files should be created
-        assertEquals(flushCount, lastFlushCount);
-      } else if (10 == j) {
-        assertTrue("" + j, flushCount > lastFlushCount);
-        lastFlushCount = flushCount;
-        writer.getConfig().setRAMBufferSizeMB(0.000001);
-        writer.getConfig().setMaxBufferedDeleteTerms(1);
-      } else if (j < 20) {
-        assertTrue(flushCount > lastFlushCount);
-        lastFlushCount = flushCount;
-      } else if (20 == j) {
-        writer.getConfig().setRAMBufferSizeMB(16);
-        writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        lastFlushCount = flushCount;
-      } else if (j < 30) {
-        assertEquals(flushCount, lastFlushCount);
-      } else if (30 == j) {
-        writer.getConfig().setRAMBufferSizeMB(0.000001);
-        writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        writer.getConfig().setMaxBufferedDeleteTerms(1);
-      } else if (j < 40) {
-        assertTrue(flushCount> lastFlushCount);
-        lastFlushCount = flushCount;
-      } else if (40 == j) {
-        writer.getConfig().setMaxBufferedDeleteTerms(10);
-        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        lastFlushCount = flushCount;
-      } else if (j < 50) {
-        assertEquals(flushCount, lastFlushCount);
-        writer.getConfig().setMaxBufferedDeleteTerms(10);
-        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      } else if (50 == j) {
-        assertTrue(flushCount > lastFlushCount);
-      }
-    }
-    writer.close();
-    dir.close();
-  }
-
   public void testEnablingNorms() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -694,7 +633,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.terms("").iterator();
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
     assertEquals(new BytesRef("c"), te.next());
@@ -715,7 +654,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.terms("").iterator();
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());

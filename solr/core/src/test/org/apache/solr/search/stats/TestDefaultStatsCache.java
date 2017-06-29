@@ -37,14 +37,17 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     System.clearProperty("solr.statsCache");
   }
 
-  @Test
+  @Test 
   public void test() throws Exception {
     del("*:*");
+    String aDocId=null;
     for (int i = 0; i < clients.size(); i++) {
       int shard = i + 1;
       for (int j = 0; j <= i; j++) {
-        index_specific(i, id, docId++, "a_t", "one two three",
+        int currentId = docId++;
+        index_specific(i, id,currentId , "a_t", "one two three",
             "shard_i", shard);
+        aDocId = rarely() ? currentId+"":aDocId;
       }
     }
     commit();
@@ -52,18 +55,26 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     handle.put("QTime", SKIPVAL);   
     handle.put("timestamp", SKIPVAL);
     
+    if (aDocId != null) {
+      dfQuery("q", "id:"+aDocId, "debugQuery", "true", "fl", "*,score");
+    }
     dfQuery("q", "a_t:one", "debugQuery", "true", "fl", "*,score");
     
     // add another document
     for (int i = 0; i < clients.size(); i++) {
       int shard = i + 1;
       for (int j = 0; j <= i; j++) {
-        index_specific(i, id, docId++, "a_t", "one two three four five",
+        int currentId = docId++;
+        index_specific(i, id, currentId, "a_t", "one two three four five",
             "shard_i", shard);
+        aDocId = rarely() ? currentId+"":aDocId;
       }
     }
     commit();
 
+    if (aDocId != null) {
+      dfQuery("q", "{!cache=false}id:"+aDocId,"debugQuery", "true", "fl", "*,score");
+    }
     dfQuery("q", "a_t:one a_t:four", "debugQuery", "true", "fl", "*,score");
   }
   

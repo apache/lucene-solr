@@ -53,89 +53,86 @@ You could add this component to another handler if you wanted to, and pass "term
 
 The parameters below allow you to control what terms are returned. You can also configure any of these with the request handler if you'd like to set them permanently. Or, you can add them to the query request. These parameters are:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,15,15,50",options="header"]
-|===
-|Parameter |Required |Default |Description
-|terms |No |false a|
-If set to true, enables the Terms Component. By default, the Terms Component is off.
-
+`terms`::
+If set to `true`, enables the Terms Component. By default, the Terms Component is off (`false`).
++
 Example: `terms=true`
 
-|terms.fl |Yes |null a|
-Specifies the field from which to retrieve terms.
-
+`terms.fl`::
+Specifies the field from which to retrieve terms. This parameter is required if `terms=true`.
++
 Example: `terms.fl=title`
 
-|terms.list |No |null a|
+`terms.list`::
 Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
-
++
 Example: `terms.list=termA,termB,termC`
 
-|terms.limit |No |10 a|
-Specifies the maximum number of terms to return. The default is 10. If the limit is set to a number less than 0, then no maximum limit is enforced. Although this is not required, either this parameter or `terms.upper` must be defined.
-
+`terms.limit`::
+Specifies the maximum number of terms to return. The default is `10`. If the limit is set to a number less than 0, then no maximum limit is enforced. Although this is not required, either this parameter or `terms.upper` must be defined.
++
 Example: `terms.limit=20`
 
-|terms.lower |No |empty string a|
+`terms.lower`::
 Specifies the term at which to start. If not specified, the empty string is used, causing Solr to start at the beginning of the field.
-
++
 Example: `terms.lower=orange`
 
-|terms.lower.incl |No |true a|
+`terms.lower.incl`::
 If set to true, includes the lower-bound term (specified with `terms.lower` in the result set.
-
++
 Example: `terms.lower.incl=false`
 
-|terms.mincount |No |null a|
+`terms.mincount`::
 Specifies the minimum document frequency to return in order for a term to be included in a query response. Results are inclusive of the mincount (that is, >= mincount).
-
++
 Example: `terms.mincount=5`
 
-|terms.maxcount |No |null a|
-Specifies the maximum document frequency a term must have in order to be included in a query response. The default setting is -1, which sets no upper bound. Results are inclusive of the maxcount (that is, <= maxcount).
-
+`terms.maxcount`::
+Specifies the maximum document frequency a term must have in order to be included in a query response. The default setting is -1, which sets no upper bound. Results are inclusive of the maxcount (that is, \<= maxcount).
++
 Example: `terms.maxcount=25`
 
-|terms.prefix |No |null a|
+`terms.prefix`::
 Restricts matches to terms that begin with the specified string.
-
++
 Example: `terms.prefix=inter`
 
-|terms.raw |No |false a|
+`terms.raw`::
 If set to true, returns the raw characters of the indexed term, regardless of whether it is human-readable. For instance, the indexed form of numeric numbers is not human-readable.
-
++
 Example: `terms.raw=true`
 
-|terms.regex |No |null a|
+`terms.regex`::
 Restricts matches to terms that match the regular expression.
-
++
 Example: `terms.regex=.*pedist`
 
-|terms.regex.flag |No |null a|
+`terms.regex.flag`::
 Defines a Java regex flag to use when evaluating the regular expression defined with `terms.regex`. See http://docs.oracle.com/javase/tutorial/essential/regex/pattern.html for details of each flag. Valid options are:
 
-* case_insensitive
-* comments
-* multiline
-* literal
-* dotall
-* unicode_case
-* canon_eq
-* unix_lines
-
+* `case_insensitive`
+* `comments`
+* `multiline`
+* `literal`
+* `dotall`
+* `unicode_case`
+* `canon_eq`
+* `unix_lines`
++
 Example: `terms.regex.flag=case_insensitive`
 
-|terms.stats |No |null |Include index statistics in the results. Currently returns only the *numDocs* for a collection. When combined with terms.list it provides enough information to compute idf for a list of terms.
-|terms.sort |No |count a|
-Defines how to sort the terms returned. Valid options are *count*, which sorts by the term frequency, with the highest term frequency first, or *index*, which sorts in index order.
+`terms.stats`::
+Include index statistics in the results. Currently returns only the *numDocs* for a collection. When combined with `terms.list` it provides enough information to compute inverse document frequency (IDF) for a list of terms.
 
+`terms.sort`::
+Defines how to sort the terms returned. Valid options are `count`, which sorts by the term frequency, with the highest term frequency first, or `index`, which sorts in index order.
++
 Example: `terms.sort=index`
 
-|terms.ttf |No |false a|
+`terms.ttf`::
 If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics for each requested term in `terms.list`. In this case, the response format is:
-
++
 [source,xml]
 ----
 <lst name="terms">
@@ -148,19 +145,19 @@ If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics
 </lst>
 ----
 
-|terms.upper |No |null a|
+`terms.upper`::
 Specifies the term to stop at. Although this parameter is not required, either this parameter or `terms.limit` must be defined.
-
++
 Example: `terms.upper=plum`
 
-|terms.upper.incl |No |false a|
+`terms.upper.incl`::
 If set to true, the upper bound term is included in the result set. The default is false.
-
++
 Example: `terms.upper.incl=true`
 
-|===
+The response to a terms request is a list of the terms and their document frequency values.
 
-The output is a list of the terms and their document frequency values. See below for examples.
+You may also be interested in the {solr-javadocs}/solr-core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
 
 [[TheTermsComponent-Examples]]
 == Examples
@@ -296,16 +293,8 @@ Result:
 
 The TermsComponent also supports distributed indexes. For the `/terms` request handler, you must provide the following two parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`shards`::
+Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|shards |Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
-|shards.qt |Specifies the request handler Solr uses for requests to shards.
-|===
-
-[[TheTermsComponent-MoreResources]]
-== More Resources
-
-* {solr-javadocs}/solr-core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc]
+`shards.qt`::
+Specifies the request handler Solr uses for requests to shards.

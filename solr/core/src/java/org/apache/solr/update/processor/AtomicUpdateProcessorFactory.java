@@ -61,7 +61,8 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   private final static Set<String> VALID_OPS = new HashSet<>(Arrays.asList(ADD, INC, REMOVE, SET, REMOVEREGEX));
 
   private final static String VERSION = "_version_";
-  private final static String ATOMIC_FIELD_PREFIX = "Atomic.";
+  public static final String NAME = "atomic";
+  public final static String ATOMIC_FIELD_PREFIX = "atomic.";
   private final static int MAX_ATTEMPTS = 5;
 
   private VersionInfo vinfo;

@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -224,8 +223,7 @@ public class TermInSetQuery extends Query implements Accountable {
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
         final LeafReader reader = context.reader();
 
-        final Fields fields = reader.fields();
-        Terms terms = fields.terms(field);
+        Terms terms = reader.terms(field);
         if (terms == null) {
           return null;
         }

@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.math3.stat.correlation.Covariance;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -34,9 +35,14 @@ public class CovarianceEvaluator extends ComplexEvaluator implements Expressible
 
   public CovarianceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
+
     StreamEvaluator colEval1 = subEvaluators.get(0);
     StreamEvaluator colEval2 = subEvaluators.get(1);
 

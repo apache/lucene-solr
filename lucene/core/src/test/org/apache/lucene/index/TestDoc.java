@@ -249,14 +249,16 @@ public class TestDoc extends LuceneTestCase {
     for (int i = 0; i < reader.numDocs(); i++)
       out.println(reader.document(i));
 
-    Fields fields = reader.fields();
-    for (String field : fields)  {
-      Terms terms = fields.terms(field);
+    for (FieldInfo fieldInfo : reader.getFieldInfos()) {
+      if (fieldInfo.getIndexOptions() == IndexOptions.NONE) {
+        continue;
+      }
+      Terms terms = reader.terms(fieldInfo.name);
       assertNotNull(terms);
       TermsEnum tis = terms.iterator();
       while(tis.next() != null) {
 
-        out.print("  term=" + field + ":" + tis.term());
+        out.print("  term=" + fieldInfo.name + ":" + tis.term());
         out.println("    DF=" + tis.docFreq());
 
         PostingsEnum positions = tis.postings(null, PostingsEnum.POSITIONS);

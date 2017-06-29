@@ -86,7 +86,7 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
     
     String testCollectionName = "all_in_lir";
     String shardId = "shard1";
-    createCollection(testCollectionName, 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3, 1);
     
     waitForRecoveriesToFinish(testCollectionName, false);
 

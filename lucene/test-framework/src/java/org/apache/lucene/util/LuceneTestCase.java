@@ -1183,17 +1183,6 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (rarely(r)) {
-      // change buffered deletes parameters
-      boolean limitBufferedDeletes = r.nextBoolean();
-      if (limitBufferedDeletes) {
-        c.setMaxBufferedDeleteTerms(TestUtil.nextInt(r, 1, 1000));
-      } else {
-        c.setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      }
-      didChange = true;
-    }
-    
-    if (rarely(r)) {
       IndexWriter.IndexReaderWarmer curWarmer = c.getMergedSegmentWarmer();
       if (curWarmer == null || curWarmer instanceof SimpleMergedSegmentWarmer) {
         // change warmer parameters
@@ -2676,11 +2665,11 @@ public abstract class LuceneTestCase extends Assert {
       if (expectedType.isInstance(e)) {
         return expectedType.cast(e);
       }
-      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName());
+      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName() + " but got " + e);
       assertion.initCause(e);
       throw assertion;
     }
-    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName());
+    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName() + " but no exception was thrown");
   }
 
   /**

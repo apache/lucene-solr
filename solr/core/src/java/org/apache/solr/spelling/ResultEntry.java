@@ -16,8 +16,6 @@
  */
 package org.apache.solr.spelling;
 
-import org.apache.lucene.analysis.Token;
-
 public class ResultEntry {
   public Token token;
   public String suggestion;

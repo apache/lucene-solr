@@ -172,7 +172,7 @@ public final class SegmentInfo {
   /** Return all files referenced by this SegmentInfo. */
   public Set<String> files() {
     if (setFiles == null) {
-      throw new IllegalStateException("files were not computed yet");
+      throw new IllegalStateException("files were not computed yet; segment=" + name + " maxDoc=" + maxDoc);
     }
     return Collections.unmodifiableSet(setFiles);
   }

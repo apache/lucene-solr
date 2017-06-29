@@ -97,33 +97,52 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   
   /**
    * Uses the supplied HttpClient to send documents to the Solr server.
+   * 
+   * @deprecated use {@link ConcurrentUpdateSolrClient#ConcurrentUpdateSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
+  @Deprecated
   protected ConcurrentUpdateSolrClient(String solrServerUrl,
                                        HttpClient client, int queueSize, int threadCount,
                                        ExecutorService es, boolean streamDeletes) {
-    this.internalHttpClient = (client == null);
-    this.client = new HttpSolrClient.Builder(solrServerUrl)
+    this((streamDeletes) ?
+        new Builder(solrServerUrl)
         .withHttpClient(client)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .withExecutorService(es)
+        .alwaysStreamDeletes() :
+          new Builder(solrServerUrl)
+          .withHttpClient(client)
+          .withQueueSize(queueSize)
+          .withThreadCount(threadCount)
+          .withExecutorService(es)
+          .neverStreamDeletes());
+  }
+  
+  protected ConcurrentUpdateSolrClient(Builder builder) {
+    this.internalHttpClient = (builder.httpClient == null);
+    this.client = new HttpSolrClient.Builder(builder.baseSolrUrl)
+        .withHttpClient(builder.httpClient)
         .build();
     this.client.setFollowRedirects(false);
-    queue = new LinkedBlockingQueue<>(queueSize);
-    this.threadCount = threadCount;
-    runners = new LinkedList<>();
-    this.streamDeletes = streamDeletes;
+    this.queue = new LinkedBlockingQueue<>(builder.queueSize);
+    this.threadCount = builder.threadCount;
+    this.runners = new LinkedList<>();
+    this.streamDeletes = builder.streamDeletes;
     
-    if (es != null) {
-      scheduler = es;
-      shutdownExecutor = false;
+    if (builder.executorService != null) {
+      this.scheduler = builder.executorService;
+      this.shutdownExecutor = false;
     } else {
-      scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
-      shutdownExecutor = true;
+      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
+      this.shutdownExecutor = true;
     }
     
     if (log.isDebugEnabled()) {
-      pollInterrupts = new AtomicInteger();
-      pollExits = new AtomicInteger();
-      blockLoops = new AtomicInteger();
-      emptyQueueLoops = new AtomicInteger();
+      this.pollInterrupts = new AtomicInteger();
+      this.pollExits = new AtomicInteger();
+      this.blockLoops = new AtomicInteger();
+      this.emptyQueueLoops = new AtomicInteger();
     }
   }
 
@@ -743,17 +762,33 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    * Constructs {@link ConcurrentUpdateSolrClient} instances from provided configuration.
    */
   public static class Builder {
-    private String baseSolrUrl;
-    private HttpClient httpClient;
-    private int queueSize;
-    private int threadCount;
-    private ExecutorService executorService;
-    private boolean streamDeletes;
+    protected String baseSolrUrl;
+    protected HttpClient httpClient;
+    protected int queueSize;
+    protected int threadCount;
+    protected ExecutorService executorService;
+    protected boolean streamDeletes;
 
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
-     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created clients.
+     * Two different paths can be specified as a part of this URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core be specified on all requests. 
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
@@ -822,7 +857,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
       
-      return new ConcurrentUpdateSolrClient(baseSolrUrl, httpClient, queueSize, threadCount, executorService, streamDeletes);
+      return new ConcurrentUpdateSolrClient(this);
     }
   }
 }

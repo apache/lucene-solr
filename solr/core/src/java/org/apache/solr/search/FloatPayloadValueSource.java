@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -56,8 +55,7 @@ public class FloatPayloadValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
 
-    Fields fields = readerContext.reader().fields();
-    final Terms terms = fields.terms(indexedField);
+    final Terms terms = readerContext.reader().terms(indexedField);
 
     FunctionValues defaultValues = defaultValueSource.getValues(context, readerContext);
 

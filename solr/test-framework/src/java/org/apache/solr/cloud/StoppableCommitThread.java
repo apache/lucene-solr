@@ -58,7 +58,7 @@ public class StoppableCommitThread extends StoppableThread {
         break;
       }
     }
-    log.debug("StoppableCommitThread finished. Committed {} times. Failed {} times.", numCommits.get(), numFails.get());
+    log.info("StoppableCommitThread finished. Committed {} times. Failed {} times.", numCommits.get(), numFails.get());
   }
 
   @Override

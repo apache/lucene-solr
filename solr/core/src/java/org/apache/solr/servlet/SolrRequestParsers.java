@@ -16,8 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
-
+import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -39,8 +38,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
@@ -53,6 +50,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
@@ -61,9 +59,10 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrFileCleaningTracker;
+
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 public class SolrRequestParsers 
@@ -744,10 +743,6 @@ public class SolrRequestParsers
         boolean restletPath = false;
         int idx = uri.indexOf("/schema");
         if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
-          restletPath = true;
-        }
-        idx = uri.indexOf("/config");
-        if (idx >= 0 && uri.endsWith("/config") || uri.contains("/config/")) {
           restletPath = true;
         }
 

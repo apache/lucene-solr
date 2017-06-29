@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,9 +38,14 @@ public class AnovaEvaluator extends ComplexEvaluator implements Expressible {
 
   public AnovaEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(subEvaluators.size() < 2){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public Tuple evaluate(Tuple tuple) throws IOException {
+
     List<double[]> list = new ArrayList();
     for(StreamEvaluator subEvaluator : subEvaluators) {
       List<Number> nums = (List<Number>)subEvaluator.evaluate(tuple);

@@ -23,7 +23,7 @@
 
 <schema name="test" version="1.0">
   <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>
+    <fieldType name="string" class="solr.StrField" />
     <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -37,7 +37,7 @@
 
 
  <fields>
-   <field name="id" type="int" indexed="true" stored="true" multiValued="false"/>
+   <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
    <field name="subject" type="text" indexed="true" stored="true"/>
  </fields>
 

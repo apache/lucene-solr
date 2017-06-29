@@ -29,8 +29,12 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -145,20 +149,38 @@ public class TestTlogReplica extends SolrCloudTestCase {
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
   public void testCreateDelete() throws Exception {
     try {
-      if (random().nextBoolean()) {
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
-        .setMaxShardsPerNode(100)
-        .process(cluster.getSolrClient());
-      } else {
-        // Sometimes don't use SolrJ
-        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s", 
-            cluster.getRandomJetty(random()).getBaseUrl(), 
-            collectionName,
-            2,    // numShards
-            4,    // tlogReplicas 
-            100); // maxShardsPerNode
-        HttpGet createCollectionRequest = new HttpGet(url);
-        cluster.getSolrClient().getHttpClient().execute(createCollectionRequest);
+      switch (random().nextInt(3)) {
+        case 0:
+          CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
+          .setMaxShardsPerNode(100)
+          .process(cluster.getSolrClient());
+          break;
+        case 1:
+          // Sometimes don't use SolrJ
+          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s",
+              cluster.getRandomJetty(random()).getBaseUrl(),
+              collectionName, "conf",
+              2,    // numShards
+              4,    // tlogReplicas
+              100); // maxShardsPerNode
+          HttpGet createCollectionGet = new HttpGet(url);
+          HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+          assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+          break;
+        case 2:
+          // Sometimes use V2 API
+          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s, maxShardsPerNode:%s}}",
+              collectionName, "conf",
+              2,    // numShards
+              4,    // tlogReplicas
+              100); // maxShardsPerNode
+          HttpPost createCollectionPost = new HttpPost(url);
+          createCollectionPost.setHeader("Content-type", "application/json");
+          createCollectionPost.setEntity(new StringEntity(requestBody));
+          httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+          assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+          break;
       }
       
       boolean reloaded = false;
@@ -244,9 +266,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = createAndWaitForCollection(2, 0, 1, 0);
     assertEquals(2, docCollection.getSlices().size());
     
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG).process(cluster.getSolrClient());
+    addReplicaToShard("shard1", Replica.Type.TLOG);
     docCollection = assertNumberOfReplicas(0, 3, 0, true, false);
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard2", Replica.Type.TLOG).process(cluster.getSolrClient());    
+    addReplicaToShard("shard2", Replica.Type.TLOG);
     docCollection = assertNumberOfReplicas(0, 4, 0, true, false);
     
     waitForState("Expecting collection to have 2 shards and 2 replica each", collectionName, clusterShape(2, 2));
@@ -258,6 +280,38 @@ public class TestTlogReplica extends SolrCloudTestCase {
         docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0).getName())
     .process(cluster.getSolrClient());
     assertNumberOfReplicas(0, 3, 0, true, true);
+  }
+  
+  private void addReplicaToShard(String shardName, Replica.Type type) throws ClientProtocolException, IOException, SolrServerException {
+    switch (random().nextInt(3)) {
+      case 0: // Add replica with SolrJ
+        CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, shardName, type).process(cluster.getSolrClient());
+        assertEquals("Unexpected response status: " + response.getStatus(), 0, response.getStatus());
+        break;
+      case 1: // Add replica with V1 API
+        String url = String.format(Locale.ROOT, "%s/admin/collections?action=ADDREPLICA&collection=%s&shard=%s&type=%s", 
+            cluster.getRandomJetty(random()).getBaseUrl(), 
+            collectionName,
+            shardName,
+            type);
+        HttpGet addReplicaGet = new HttpGet(url);
+        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
+        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        break;
+      case 2:// Add replica with V2 API
+        url = String.format(Locale.ROOT, "%s/____v2/c/%s/shards", 
+            cluster.getRandomJetty(random()).getBaseUrl(), 
+            collectionName);
+        String requestBody = String.format(Locale.ROOT, "{add-replica:{shard:%s, type:%s}}", 
+            shardName,
+            type);
+        HttpPost addReplicaPost = new HttpPost(url);
+        addReplicaPost.setHeader("Content-type", "application/json");
+        addReplicaPost.setEntity(new StringEntity(requestBody));
+        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
+        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        break;
+    }
   }
   
   public void testRemoveLeader() throws Exception {

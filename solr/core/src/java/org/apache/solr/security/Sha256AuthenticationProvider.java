@@ -31,9 +31,9 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 
-import org.apache.solr.api.ApiBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +161,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return ApiBag.getSpec("cluster.security.BasicAuth.Commands").getSpec();
+    return Utils.getSpec("cluster.security.BasicAuth.Commands").getSpec();
   }
 
   static final Set<String> supported_ops = ImmutableSet.of("set-user", "delete-user");

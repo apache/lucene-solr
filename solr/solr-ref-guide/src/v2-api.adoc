@@ -30,9 +30,9 @@ For now the two API styles will coexist, and all the old APIs will continue to w
 
 The old API and the v2 API differ in three principle ways:
 
-1.  Command format: The old API commands and associated parameters are provided through URL request parameters on HTTP GET requests, while in the v2 API most API commands are provided via a JSON body POST'ed to v2 API endpoints. The v2 API also supports HTTP methods GET and DELETE where appropriate.
-2.  Endpoint structure: The v2 API endpoint structure has been rationalized and regularized.
-3.  Documentation: The v2 APIs are self-documenting: append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
+.  Command format: The old API commands and associated parameters are provided through URL request parameters on HTTP GET requests, while in the v2 API most API commands are provided via a JSON body POST'ed to v2 API endpoints. The v2 API also supports HTTP methods GET and DELETE where appropriate.
+.  Endpoint structure: The v2 API endpoint structure has been rationalized and regularized.
+.  Documentation: The v2 APIs are self-documenting: append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
 
 [[v2API-v2APIPathPrefixes]]
 == v2 API Path Prefixes
@@ -43,15 +43,15 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |===
 |Path prefix |Some Supported Operations
 |`/v2/collections` or equivalently: `/v2/c` |Create, alias, backup, and restore a collection.
-|`/v2/c/__collection-name__/update` |Update requests.
-|`/v2/c/__collection-name__/config` |Configuration requests.
-|`/v2/c/__collection-name__/schema` |Schema requests.
-|`/v2/c/__collection-name__/__handler-name__` |Handler-specific requests.
-|`/v2/c/__collection-name__/shards` |Split a shard, create a shard, add a replica.
-|`/v2/c/__collection-name__/shards/___shard-name___` |Delete a shard, force leader election
-|`/v2/c/__collection-name__/shards/___shard-name____/____replica-name___` |Delete a replica.
+|`/v2/c/_collection-name_/update` |Update requests.
+|`/v2/c/_collection-name_/config` |Configuration requests.
+|`/v2/c/_collection-name_/schema` |Schema requests.
+|`/v2/c/_collection-name_/_handler-name_` |Handler-specific requests.
+|`/v2/c/_collection-name_/shards` |Split a shard, create a shard, add a replica.
+|`/v2/c/_collection-name_/shards/_shard-name_` |Delete a shard, force leader election
+|`/v2/c/_collection-name_/shards/_shard-name_/_replica-name_` |Delete a replica.
 |`/v2/cores` |Create a core.
-|`/v2/cores/__core-name__` |Reload, rename, delete, and unload a core.
+|`/v2/cores/_core-name_` |Reload, rename, delete, and unload a core.
 |`/v2/node` |Perform overseer operation, rejoin leader election.
 |`/v2/cluster` |Add role, remove role, set cluster property.
 |`/v2/c/.system/blob` |Upload and download blobs and metadata.
@@ -68,7 +68,7 @@ To limit the introspect output to include just one particular HTTP method, add r
 
 `\http://localhost:8983/v2/c/_introspect?method=POST`
 
-Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=__command-name__` .
+Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_` .
 
 `\http://localhost:8983/v2/c/gettingstarted/_introspect?method=POST&command=modify`
 

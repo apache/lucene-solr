@@ -35,7 +35,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.macro.MacroExpander;
@@ -44,7 +43,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
-@SuppressPointFields
 public class TestJsonFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
@@ -62,6 +60,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // instead of the following, see the constructor
     //FacetField.FacetMethod.DEFAULT_METHOD = rand(FacetField.FacetMethod.values());
 
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
@@ -87,7 +88,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     // wrap each enum val in an Object[] and return as Iterable
-    return () -> Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[]{it}).iterator();
+    return () -> Arrays.stream(FacetField.FacetMethod.values())
+        .map(it -> new Object[]{it}).iterator();
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
@@ -507,6 +509,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
     if (terms_method != null) {
       terms=terms+terms_method;
     }
+    String refine_method = p.get("refine_method");
+    if (refine_method == null && random().nextBoolean()) {
+      refine_method = "refine:true,";
+    }
+    if (refine_method != null) terms = terms + refine_method;
+
     p.set("terms", terms);
     // "${terms}" should be put at the beginning of generic terms facets.
     // It may specify "method=..." or "limit:-1", so should not be used if the facet explicitly specifies.

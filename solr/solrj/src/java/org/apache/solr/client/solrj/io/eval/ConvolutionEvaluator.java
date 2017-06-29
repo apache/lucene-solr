@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.ArrayList;
 
 import org.apache.commons.math3.util.MathArrays;
@@ -35,9 +36,14 @@ public class ConvolutionEvaluator extends ComplexEvaluator implements Expressibl
 
   public ConvolutionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public List<Number> evaluate(Tuple tuple) throws IOException {
+
     StreamEvaluator colEval1 = subEvaluators.get(0);
     StreamEvaluator colEval2 = subEvaluators.get(1);
 

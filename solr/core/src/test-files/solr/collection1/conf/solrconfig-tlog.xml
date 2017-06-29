@@ -44,8 +44,7 @@
    <processor class="solr.RunUpdateProcessorFactory" />
  </updateRequestProcessorChain>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-  </requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler" />
   
   <peerSync>
     <useRangeVersions>${solr.peerSync.useRangeVersions:true}</useRangeVersions>
@@ -158,7 +157,7 @@
 
   </query>
 
-  <initParams path="standard">
+  <initParams path="/select">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

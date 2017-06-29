@@ -94,6 +94,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                       " +apache +solr");
   }
 
+  @Deprecated
   public void testQueryLucenePlusSort() throws Exception {
     assertQueryEquals("lucenePlusSort", 
                       "apache solr", "apache  solr", "apache solr ; score desc");
@@ -856,6 +857,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                        "def(ceil(bar_f),25)",
                        "def(ceil($myField),25)",
                        "def(ceil(field('bar_f')),25)");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testFuncConcat() throws Exception {
+    SolrQueryRequest req = req("myField","bar_f","myOtherField","bar_t");
+
+    try {
+      assertFuncEquals(req,
+          "concat(bar_f,bar_t)",
+          "concat($myField,bar_t)",
+          "concat(bar_f,$myOtherField)",
+          "concat($myField,$myOtherField)");
+
     } finally {
       req.close();
     }

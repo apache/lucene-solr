@@ -72,10 +72,10 @@ public class ReplicateFromLeader {
       }
       LOG.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
 
-      NamedList slaveConfig = new NamedList();
-      slaveConfig.add("fetchFromLeader", true);
+      NamedList<Object> slaveConfig = new NamedList<>();
+      slaveConfig.add("fetchFromLeader", Boolean.TRUE);
       slaveConfig.add("pollInterval", pollIntervalStr);
-      NamedList replicationConfig = new NamedList();
+      NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("slave", slaveConfig);
 
       String lastCommitVersion = getCommitVersion(core);

@@ -31,6 +31,8 @@ import org.apache.solr.response.SolrQueryResponse;
 
 public class ConfigSetsHandlerApi extends BaseHandlerApiSupport {
 
+  final public static String DEFAULT_CONFIGSET_NAME = "_default";
+
   final ConfigSetsHandler configSetHandler;
   static Collection<ApiCommand> apiCommands = createMapping();
 

@@ -94,7 +94,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     return new Term(FN, value);
   }
 
-  private int automatonQueryNrHits(AutomatonQuery query) throws IOException {
+  private long automatonQueryNrHits(AutomatonQuery query) throws IOException {
     return searcher.search(query, 5).totalHits;
   }
 

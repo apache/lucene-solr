@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -238,33 +239,43 @@ public class LBHttpSolrClient extends SolrClient {
 
   /**
    * The provided httpClient should use a multi-threaded connection manager
+   *
+   * @deprecated use {@link LBHttpSolrClient#LBHttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
+  @Deprecated
   protected LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder,
                           HttpClient httpClient, String... solrServerUrl) {
-    clientIsInternal = httpClient == null;
-    this.httpSolrClientBuilder = httpSolrClientBuilder;
-    httpClient = constructClient(null);
-    this.httpClient = httpClient;
-    if (solrServerUrl != null) {
-      for (String s : solrServerUrl) {
-        ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
-        aliveServers.put(wrapper.getKey(), wrapper);
-      }
-    }
-    updateAliveList();
+    this(new Builder()
+        .withHttpSolrClientBuilder(httpSolrClientBuilder)
+        .withHttpClient(httpClient)
+        .withBaseSolrUrls(solrServerUrl));
   }
 
   /**
    * The provided httpClient should use a multi-threaded connection manager
+   *
+   * @deprecated use {@link LBHttpSolrClient#LBHttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
+  @Deprecated
   protected LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
-    clientIsInternal = (httpClient == null);
-    this.httpClient = httpClient == null ? constructClient(solrServerUrl) : httpClient;
-    this.parser = parser;
+    this(new Builder()
+        .withBaseSolrUrls(solrServerUrl)
+        .withResponseParser(parser)
+        .withHttpClient(httpClient));
+  }
+
+  protected LBHttpSolrClient(Builder builder) {
+    this.clientIsInternal = builder.httpClient == null;
+    this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
+    this.httpClient = builder.httpClient == null ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()])) : builder.httpClient;
     
-    for (String s : solrServerUrl) {
-      ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
-      aliveServers.put(wrapper.getKey(), wrapper);
+    this.parser = builder.responseParser;
+
+    if (! builder.baseSolrUrls.isEmpty()) {
+      for (String s : builder.baseSolrUrls) {
+        ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
+        aliveServers.put(wrapper.getKey(), wrapper);
+      }
     }
     updateAliveList();
   }
@@ -460,7 +471,9 @@ public class LBHttpSolrClient extends SolrClient {
       if (isZombie) {
         zombieServers.remove(zombieKey);
       }
-    } catch (SolrException e) {
+    } catch (RemoteExecutionException e){
+      throw e;
+    } catch(SolrException e) {
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
@@ -849,10 +862,10 @@ public class LBHttpSolrClient extends SolrClient {
    * Constructs {@link LBHttpSolrClient} instances from provided configuration.
    */
   public static class Builder {
-    private final List<String> baseSolrUrls;
-    private HttpClient httpClient;
-    private ResponseParser responseParser;
-    private HttpSolrClient.Builder httpSolrClientBuilder;
+    protected final List<String> baseSolrUrls;
+    protected HttpClient httpClient;
+    protected ResponseParser responseParser;
+    protected HttpSolrClient.Builder httpSolrClientBuilder;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -867,16 +880,52 @@ public class LBHttpSolrClient extends SolrClient {
      * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
      * 
      * Method may be called multiple times.  All provided values will be used.
+     * 
+     * Two different paths can be specified as a part of the URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core is specified on all requests.
      */
     public Builder withBaseSolrUrl(String baseSolrUrl) {
       this.baseSolrUrls.add(baseSolrUrl);
       return this;
     }
-    
+ 
     /**
      * Provide Solr endpoints to be used when configuring {@link LBHttpSolrClient} instances.
      * 
      * Method may be called multiple times.  All provided values will be used.
+     * 
+     * Two different paths can be specified as a part of each URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrls("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = builder.withBaseSolrUrls("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core is specified on all requests.
      */
     public Builder withBaseSolrUrls(String... solrUrls) {
       for (String baseSolrUrl : solrUrls) {
@@ -914,11 +963,7 @@ public class LBHttpSolrClient extends SolrClient {
      * Create a {@link HttpSolrClient} based on provided configuration.
      */
     public LBHttpSolrClient build() {
-      final String[] baseUrlArray = new String[baseSolrUrls.size()];
-      String[] solrServerUrls = baseSolrUrls.toArray(baseUrlArray);
-      return httpSolrClientBuilder != null ?
-          new LBHttpSolrClient(httpSolrClientBuilder, httpClient, solrServerUrls) :
-          new LBHttpSolrClient(httpClient, responseParser, solrServerUrls);
+      return new LBHttpSolrClient(this);
     }
   }
 }

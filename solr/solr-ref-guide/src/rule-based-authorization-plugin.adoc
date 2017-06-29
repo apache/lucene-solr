@@ -132,92 +132,89 @@ Permissions need to be created if they are not on the list of pre-defined permis
 
 Several properties can be used to define your custom permission.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`name`::
+The name of the permission. This is required only if it is a predefined permission.
 
-[cols="30,70",options="header"]
-|===
-|Property |Description
-|name |The name of the permission. This is required only if it is a predefined permission.
-|collection a|
+`collection`::
 The collection or collections the permission will apply to.
++
+When the path that will be allowed is collection-specific, such as when setting permissions to allow use of the Schema API, omitting the collection property will allow the defined path and/or method for all collections. However, when the path is one that is non-collection-specific, such as the Collections API, the collection value must be `null`. The default value is * (all collections).
 
-When the path that will be allowed is collection-specific, such as when setting permissions to allow useof the Schema API, omitting the collection property will allow the defined path and/or method for all collections. However, when the path is one that is non-collection-specific, such as the Collections API, the collection value must be `null`. The default value is * (all collections).
+`path`::
+A request handler name, such as `/update` or `/select`. A wild card is supported, to allow for all paths as appropriate (such as, `/update/*`).
 
-|path |A request handler name, such as `/update` or `/select`. A wild card is supported, to allow for all paths as appropriate (such as, `/update/*`).
-|method |HTTP methods that are allowed for this permission. You could allow only GET requests, or have a role that allows PUT and POST requests. The method values that are allowed for this property are GET, POST, PUT,DELETEand HEAD.
-|params a|
+`method`:: HTTP methods that are allowed for this permission. You could allow only GET requests, or have a role that allows PUT and POST requests. The method values that are allowed for this property are GET, POST, PUT,DELETE and HEAD.
+
+`params`::
 The names and values of request parameters. This property can be omitted if all request parameters are to be matched, but will restrict access only to the values provided if defined.
-
++
 For example, this property could be used to limit the actions a role is allowed to perform with the Collections API. If the role should only be allowed to perform the LIST or CLUSTERSTATUS requests, you would define this as follows:
-
++
 [source,json]
 ----
-"params": {
+{"params": {
    "action": ["LIST", "CLUSTERSTATUS"]
+  }
 }
 ----
-
++
 The value of the parameter can be a simple string or it could be a regular expression. Use the prefix `REGEX:` to use a regular expression match instead of a string identity match
-
++
 If the commands LIST and CLUSTERSTATUS are case insensitive, the above example should be as follows
-
++
 [source,json]
 ----
-"params": {
+{"params": {
    "action": ["REGEX:(?i)LIST", "REGEX:(?i)CLUSTERSTATUS"]
+  }
 }
 ----
 
-|before |This property allows ordering of permissions. The value of this property is the index of the permission that this new permission should be placed before in `security.json`. The index is automatically assigned in the order they are created
-|role |The name of the role(s) to give this permission. This name will be used to map user IDs to the role to grant these permissions. The value can be wildcard such as (`*`), which means that any user is OK, but no user is NOT OK.
-|===
+`before`::
+This property allows ordering of permissions. The value of this property is the index of the permission that this new permission should be placed before in `security.json`. The index is automatically assigned in the order they are created.
+
+`role`::
+The name of the role(s) to give this permission. This name will be used to map user IDs to the role to grant these permissions. The value can be wildcard such as (`*`), which means that any user is OK, but no user is NOT OK.
 
 The following creates a new permission named "collection-mgr" that is allowed to create and list collections. The permission will be placed before the "read" permission. Note also that we have defined "collection as `null`, this is because requests to the Collections API are never collection-specific.
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "set-permission": {"collection": null,
                      "path":"/admin/collections",
-                     "params":{"action":[LIST, CREATE]},
+                     "params":{"action":["LIST", "CREATE"]},
                      "before": 3,
                      "role": "admin"}
 }' http://localhost:8983/solr/admin/authorization
-----
 
 Apply an update permission on all collections to a role called `dev` and read permissions to a role called `guest`:
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
-  "set-permission": {"name": "update, "role":"dev"},
-  "set-permission": {"name": "read, "role":"guest"},
+  "set-permission": {"name": "update", "role":"dev"},
+  "set-permission": {"name": "read", "role":"guest"}
 }' http://localhost:8983/solr/admin/authorization
-----
 
 [[Rule-BasedAuthorizationPlugin-UpdateorDeletePermissions]]
 === Update or Delete Permissions
 
 Permissions can be accessed using their index in the list. Use the `/admin/authorization` API to see the existing permissions and their indices.
 
-The following example updates the '`role`' attribute of permission at index '`3`':
+The following example updates the `'role'` attribute of permission at index `3`:
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "update-permission": {"index": 3,
                        "role": ["admin", "dev"]}
 }' http://localhost:8983/solr/admin/authorization
-----
 
-The following example deletes permission at index '`3`':
+The following example deletes permission at index `3`:
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "delete-permission": 3
 }' http://localhost:8983/solr/admin/authorization
-----
+
 
 [[Rule-BasedAuthorizationPlugin-MapRolestoUsers]]
 === Map Roles to Users
@@ -233,9 +230,7 @@ The values supplied to the command are simply a user ID and one or more roles th
 For example, the following would grant a user "solr" the "admin" and "dev" roles, and remove all roles from the user ID "harry":
 
 [source,bash]
-----
 curl -u solr:SolrRocks -H 'Content-type:application/json' -d '{
    "set-user-role" : {"solr": ["admin","dev"],
                       "harry": null}
 }' http://localhost:8983/solr/admin/authorization
-----

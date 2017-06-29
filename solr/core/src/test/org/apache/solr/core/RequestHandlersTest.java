@@ -36,7 +36,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   public void testInitCount() {
     String registry = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
-    Gauge<Number> g = (Gauge<Number>)manager.registry(registry).getMetrics().get("QUERY.mock.initCount");
+    Gauge<Number> g = (Gauge<Number>)manager.registry(registry).getMetrics().get("QUERY./mock.initCount");
     assertEquals("Incorrect init count",
                  1, g.getValue().intValue());
   }
@@ -52,7 +52,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
   @Test
   public void testLazyLoading() {
     SolrCore core = h.getCore();
-    PluginBag.PluginHolder<SolrRequestHandler> handler = core.getRequestHandlers().getRegistry().get("lazy");
+    PluginBag.PluginHolder<SolrRequestHandler> handler = core.getRequestHandlers().getRegistry().get("/lazy");
     assertFalse(handler.isLoaded());
     
     assertU(adoc("id", "42",
@@ -75,12 +75,12 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
 
         // But it should behave just like the 'defaults' request handler above
     assertQ("lazy handler returns fewer matches",
-            req("q", "id:[42 TO 47]", "qt","lazy"),
+            req("q", "id:[42 TO 47]", "qt","/lazy"),
             "*[count(//doc)=4]"
             );
 
     assertQ("lazy handler includes highlighting",
-            req("q", "name:Zapp OR title:General", "qt","lazy"),
+            req("q", "name:Zapp OR title:General", "qt","/lazy"),
             "//lst[@name='highlighting']"
             );
   }

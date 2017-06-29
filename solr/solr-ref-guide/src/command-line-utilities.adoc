@@ -158,7 +158,7 @@ This can be useful to create a chroot path in ZooKeeper before first cluster sta
 [[CommandLineUtilities-Setaclusterproperty]]
 === Set a cluster property
 
-This command will add or modify a single cluster property in `clusterprops.json`. Use this command instead of the usual getfile -> edit -> putfile cycle.
+This command will add or modify a single cluster property in `clusterprops.json`. Use this command instead of the usual getfile \-> edit \-> putfile cycle.
 
 Unlike the CLUSTERPROP command on the <<collections-api.adoc#CollectionsAPI-clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
 

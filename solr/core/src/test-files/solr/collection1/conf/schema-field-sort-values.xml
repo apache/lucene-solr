@@ -17,8 +17,8 @@
 -->
 
 <schema name="test-custom-comparator" version="1.6">
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <fieldType name="text" class="solr.TextField">
     <analyzer>
@@ -26,7 +26,7 @@
     </analyzer>
   </fieldType>
   <fieldType class="org.apache.solr.schema.WrappedIntField" name="wrapped_int"/>
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="payload" type="wrapped_int" indexed="false"

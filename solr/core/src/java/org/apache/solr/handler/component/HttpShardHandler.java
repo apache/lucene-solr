@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
@@ -378,10 +379,11 @@ public class HttpShardHandler extends ShardHandler {
 
 
       for (int i=0; i<rb.shards.length; i++) {
-        final List<String> shardUrls;
         if (rb.shards[i] != null) {
-          shardUrls = StrUtils.splitSmart(rb.shards[i], "|", true);
+          final List<String> shardUrls = StrUtils.splitSmart(rb.shards[i], "|", true);
           replicaListTransformer.transform(shardUrls);
+          // And now recreate the | delimited list of equivalent servers
+          rb.shards[i] = createSliceShardsStr(shardUrls);
         } else {
           if (clusterState == null) {
             clusterState =  zkController.getClusterState();
@@ -398,18 +400,11 @@ public class HttpShardHandler extends ShardHandler {
             continue;
             // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
           }
-          Replica shardLeader = null;
+          final Predicate<Replica> isShardLeader = new Predicate<Replica>() {
+            private Replica shardLeader = null;
 
-          final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
-          final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
-          for (Replica replica : allSliceReplicas) {
-            if (!clusterState.liveNodesContain(replica.getNodeName())
-                || replica.getState() != Replica.State.ACTIVE
-                || (onlyNrtReplicas && replica.getType() == Replica.Type.PULL)) {
-              continue;
-            }
-            
-            if (onlyNrtReplicas && replica.getType() == Replica.Type.TLOG) {
+            @Override
+            public boolean test(Replica replica) {
               if (shardLeader == null) {
                 try {
                   shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());
@@ -424,22 +419,17 @@ public class HttpShardHandler extends ShardHandler {
                   throw e;
                 }
               }
-              if (!replica.getName().equals(shardLeader.getName())) {
-                continue;
-              }
+              return replica.getName().equals(shardLeader.getName());
             }
-            eligibleSliceReplicas.add(replica);
-          }
+          };
 
-          replicaListTransformer.transform(eligibleSliceReplicas);
+          final List<Replica> eligibleSliceReplicas = collectEligibleReplicas(slice, clusterState, onlyNrtReplicas, isShardLeader);
 
-          shardUrls = new ArrayList<>(eligibleSliceReplicas.size());
-          for (Replica replica : eligibleSliceReplicas) {
-            String url = ZkCoreNodeProps.getCoreUrl(replica);
-            shardUrls.add(url);
-          }
+          final List<String> shardUrls = transformReplicasToShardUrls(replicaListTransformer, eligibleSliceReplicas);
 
-          if (shardUrls.isEmpty()) {
+          // And now recreate the | delimited list of equivalent servers
+          final String sliceShardsStr = createSliceShardsStr(shardUrls);
+          if (sliceShardsStr.isEmpty()) {
             boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
             if (!tolerant) {
               // stop the check when there are no replicas available for a shard
@@ -447,9 +437,8 @@ public class HttpShardHandler extends ShardHandler {
                   "no servers hosting shard: " + rb.slices[i]);
             }
           }
+          rb.shards[i] = sliceShardsStr;
         }
-        // And now recreate the | delimited list of equivalent servers
-        rb.shards[i] = createSliceShardsStr(shardUrls);
       }
     }
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);
@@ -460,6 +449,37 @@ public class HttpShardHandler extends ShardHandler {
     if(shards_start != null) {
       rb.shards_start = Integer.parseInt(shards_start);
     }
+  }
+
+  private static List<Replica> collectEligibleReplicas(Slice slice, ClusterState clusterState, boolean onlyNrtReplicas, Predicate<Replica> isShardLeader) {
+    final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
+    final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
+    for (Replica replica : allSliceReplicas) {
+      if (!clusterState.liveNodesContain(replica.getNodeName())
+          || replica.getState() != Replica.State.ACTIVE
+          || (onlyNrtReplicas && replica.getType() == Replica.Type.PULL)) {
+        continue;
+      }
+
+      if (onlyNrtReplicas && replica.getType() == Replica.Type.TLOG) {
+        if (!isShardLeader.test(replica)) {
+          continue;
+        }
+      }
+      eligibleSliceReplicas.add(replica);
+    }
+    return eligibleSliceReplicas;
+  }
+
+  private static List<String> transformReplicasToShardUrls(final ReplicaListTransformer replicaListTransformer, final List<Replica> eligibleSliceReplicas) {
+    replicaListTransformer.transform(eligibleSliceReplicas);
+
+    final List<String> shardUrls = new ArrayList<>(eligibleSliceReplicas.size());
+    for (Replica replica : eligibleSliceReplicas) {
+      String url = ZkCoreNodeProps.getCoreUrl(replica);
+      shardUrls.add(url);
+    }
+    return shardUrls;
   }
 
   private static String createSliceShardsStr(final List<String> shardUrls) {

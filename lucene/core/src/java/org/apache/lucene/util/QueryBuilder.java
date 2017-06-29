@@ -538,11 +538,7 @@ public class QueryBuilder {
         builder.add(queryPos, operator);
       }
     }
-    BooleanQuery bq =  builder.build();
-    if (bq.clauses().size() == 1) {
-      return bq.clauses().get(0).getQuery();
-    }
-    return bq;
+    return builder.build();
   }
 
   /**

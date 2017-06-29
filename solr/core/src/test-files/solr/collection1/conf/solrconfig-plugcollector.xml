@@ -190,12 +190,12 @@ based HashBitset. -->
       The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
 
-  <requestHandler name="dismax" class="solr.SearchHandler" >
+  <requestHandler name="/dismax" class="solr.SearchHandler" >
     <lst name="defaults">
       <str name="defType">dismax</str>
       <str name="q.alt">*:*</str>
@@ -216,10 +216,10 @@ based HashBitset. -->
     </lst>
   </requestHandler>
 
-  <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
+  <requestHandler name="/mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
 
   <!-- test query parameter defaults -->
-  <requestHandler name="defaults" class="solr.StandardRequestHandler">
+  <requestHandler name="/defaults" class="solr.SearchHandler">
     <lst name="defaults">
       <int name="rows">4</int>
       <bool name="hl">true</bool>
@@ -228,7 +228,7 @@ based HashBitset. -->
   </requestHandler>
 
   <!-- test query parameter defaults -->
-  <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
+  <requestHandler name="/lazy" class="solr.SearchHandler" startup="lazy">
     <lst name="defaults">
       <int name="rows">4</int>
       <bool name="hl">true</bool>
@@ -322,7 +322,7 @@ based HashBitset. -->
    -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
-  <requestHandler name="spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -335,7 +335,7 @@ based HashBitset. -->
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -346,7 +346,7 @@ based HashBitset. -->
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">default</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -356,7 +356,7 @@ based HashBitset. -->
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="spellCheckWithWordbreak_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckWithWordbreak_Direct" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -366,7 +366,7 @@ based HashBitset. -->
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="defType">dismax</str>
       <str name="qf">lowerfilt1^1</str>
@@ -376,13 +376,13 @@ based HashBitset. -->
     </arr>
   </requestHandler>
 
-  <requestHandler name="mltrh" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/mltrh" class="org.apache.solr.handler.component.SearchHandler">
 
   </requestHandler>
 
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 
-  <requestHandler name="tvrh" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/tvrh" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
 
     </lst>
@@ -458,9 +458,8 @@ based HashBitset. -->
     </highlighting>
   </searchComponent>
 
-  <!-- enable streaming for testing... -->
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
@@ -550,7 +549,7 @@ based HashBitset. -->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-  <initParams path="standard,dismax,defaults,lazy,spellCheckCompRH,spellCheckWithWordbreak,spellCheckCompRH_Direct,spellCheckCompRH1,mltrh,tvrh,/terms">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/terms">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

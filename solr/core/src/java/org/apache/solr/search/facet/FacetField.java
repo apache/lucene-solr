@@ -98,7 +98,12 @@ public class FacetField extends FacetRequestSorted {
     FieldType ft = sf.getType();
     boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
 
-    NumberType ntype = ft.getNumberType();
+    if (fcontext.facetInfo != null) {
+      // refinement... we will end up either skipping the entire facet, or doing calculating only specific facet buckets
+      return new FacetFieldProcessorByArrayDV(fcontext, this, sf);
+    }
+
+      NumberType ntype = ft.getNumberType();
     // ensure we can support the requested options for numeric faceting:
     if (ntype != null) {
       if (prefix != null) {
@@ -117,7 +122,7 @@ public class FacetField extends FacetRequestSorted {
       method = FacetMethod.STREAM;
     }
     if (method == FacetMethod.STREAM && sf.indexed() &&
-        "index".equals(sortVariable) && sortDirection == SortDirection.asc) {
+        "index".equals(sortVariable) && sortDirection == SortDirection.asc && !ft.isPointField()) {
       return new FacetFieldProcessorByEnumTermsStream(fcontext, this, sf);
     }
 
@@ -135,6 +140,10 @@ public class FacetField extends FacetRequestSorted {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Couldn't pick facet algorithm for field " + sf);
       }
+    }
+
+    if (sf.hasDocValues() && sf.getType().isPointField()) {
+      return new FacetFieldProcessorByHashDV(fcontext, this, sf);
     }
 
     // multi-valued after this point

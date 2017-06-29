@@ -68,6 +68,10 @@ REM Path to a directory for Solr to store cores and their data. By default, Solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 REM set SOLR_HOME=
 
+REM Path to a directory that Solr will use as root for data folders for each core.
+REM If not set, defaults to <instance_dir>/data. Overridable per core through 'dataDir' core property
+REM set SOLR_DATA_HOME=
+
 REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
 REM This is an alternative to changing the rootLogger in log4j.properties
 REM set SOLR_LOG_LEVEL=INFO

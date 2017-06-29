@@ -31,6 +31,6 @@
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
 
 </config>

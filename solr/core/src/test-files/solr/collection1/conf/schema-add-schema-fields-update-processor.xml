@@ -33,6 +33,17 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
+  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="_version_" type="long" indexed="true" stored="true"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -43,6 +54,17 @@
   <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
+
+  <dynamicField name="*_pi" type="pint"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pis" type="pints"    indexed="true"  stored="true"/>
+  <dynamicField name="*_pl" type="plong"   indexed="true"  stored="true"/>
+  <dynamicField name="*_pls" type="plongs"   indexed="true"  stored="true"/>
+  <dynamicField name="*_pf" type="pfloat"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pfs" type="pfloats"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pd" type="pdouble" indexed="true"  stored="true"/>
+  <dynamicField name="*_pds" type="pdoubles" indexed="true"  stored="true"/>
+  <dynamicField name="*_pdt" type="pdate"  indexed="true"  stored="true"/>
+  <dynamicField name="*_pdts" type="pdates"  indexed="true"  stored="true"/>
 
   <uniqueKey>id</uniqueKey>
 

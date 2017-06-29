@@ -17,13 +17,16 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
@@ -59,17 +62,18 @@ public class CommandOperation {
   }
 
   public boolean getBoolean(String key, boolean def) {
-    String v = getStr(key,null);
-    return v == null? def:Boolean.parseBoolean(v);
+    String v = getStr(key, null);
+    return v == null ? def : Boolean.parseBoolean(v);
   }
-  public void setCommandData(Object o){
+
+  public void setCommandData(Object o) {
     commandData = o;
   }
 
-  public Map<String,Object> getDataMap() {
+  public Map<String, Object> getDataMap() {
     if (commandData instanceof Map) {
       //noinspection unchecked
-      return (Map<String,Object>)commandData;
+      return (Map<String, Object>) commandData;
     }
     addError(StrUtils.formatString("The command ''{0}'' should have the values as a json object {key:val} format", name));
     return Collections.emptyMap();
@@ -89,7 +93,7 @@ public class CommandOperation {
   }
 
   private Object getMapVal(String key) {
-    if("".equals(key)){
+    if ("".equals(key)) {
       if (commandData instanceof Map) {
         addError("value of the command is an object should be primitive");
       }
@@ -183,10 +187,10 @@ public class CommandOperation {
    * Get all the values from the metadata for the command
    * without the specified keys
    */
-  public Map<String,Object> getValuesExcluding(String... keys) {
+  public Map<String, Object> getValuesExcluding(String... keys) {
     getMapVal(null);
     if (hasError()) return emptyMap();//just to verify the type is Map
-    @SuppressWarnings("unchecked") 
+    @SuppressWarnings("unchecked")
     LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
     if (keys == null) return cp;
     for (String key : keys) {
@@ -213,12 +217,58 @@ public class CommandOperation {
     return errors;
   }
 
+  public static List<CommandOperation> parse(Reader rdr) throws IOException {
+    return parse(rdr, Collections.emptySet());
+
+  }
 
   /**
-   * Parse the command operations into command objects
+   * Parse the command operations into command objects from javabin payload
+   * * @param singletonCommands commands that cannot be repeated
    */
-  public static List<CommandOperation> parse(Reader rdr) throws IOException {
+  public static List<CommandOperation> parse(InputStream in, Set<String> singletonCommands) throws IOException {
+    List<CommandOperation> operations = new ArrayList<>();
+
+    final HashMap map = new HashMap(0) {
+      @Override
+      public Object put(Object key, Object value) {
+        List vals = null;
+        if (value instanceof List && !singletonCommands.contains(key)) {
+          vals = (List) value;
+        } else {
+          vals = Collections.singletonList(value);
+        }
+        for (Object val : vals) {
+          operations.add(new CommandOperation(String.valueOf(key), val));
+        }
+        return null;
+      }
+    };
+
+    new JavaBinCodec() {
+      int level = 0;
+      @Override
+      protected Map<Object, Object> newMap(int size) {
+        level++;
+        return level == 1 ? map : super.newMap(size);
+      }
+    }.unmarshal(in);
+    return operations;
+  }
+
+  /**
+   * Parse the command operations into command objects from a json payload
+   *
+   * @param rdr               The payload
+   * @param singletonCommands commands that cannot be repeated
+   * @return parsed list of commands
+   */
+  public static List<CommandOperation> parse(Reader rdr, Set<String> singletonCommands) throws IOException {
     JSONParser parser = new JSONParser(rdr);
+    parser.setFlags(parser.getFlags() |
+        JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
+        JSONParser.OPTIONAL_OUTER_BRACES
+    );
 
     ObjectBuilder ob = new ObjectBuilder(parser);
 
@@ -232,7 +282,7 @@ public class CommandOperation {
       Object key = ob.getKey();
       ev = parser.nextEvent();
       Object val = ob.getVal();
-      if (val instanceof List) {
+      if (val instanceof List && !singletonCommands.contains(key)) {
         List list = (List) val;
         for (Object o : list) {
           if (!(o instanceof Map)) {
@@ -270,15 +320,33 @@ public class CommandOperation {
     return new String(toJSON(singletonMap(name, commandData)), StandardCharsets.UTF_8);
   }
 
-  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, NamedList resp)
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, NamedList resp) throws IOException {
+    return readCommands(streams, resp, Collections.emptySet());
+  }
+
+
+  /**
+   * Read commands from request streams
+   *
+   * @param streams           the streams
+   * @param resp              solr query response
+   * @param singletonCommands , commands that cannot be repeated
+   * @return parsed list of commands
+   * @throws IOException if there is an error while parsing the stream
+   */
+  public static List<CommandOperation> readCommands(Iterable<ContentStream> streams, NamedList resp, Set<String> singletonCommands)
       throws IOException {
     if (streams == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
     }
     ArrayList<CommandOperation> ops = new ArrayList<>();
-
-    for (ContentStream stream : streams)
-      ops.addAll(parse(stream.getReader()));
+    for (ContentStream stream : streams) {
+      if ("application/javabin".equals(stream.getContentType())) {
+        ops.addAll(parse(stream.getStream(), singletonCommands));
+      } else {
+        ops.addAll(parse(stream.getReader(), singletonCommands));
+      }
+    }
     List<Map> errList = CommandOperation.captureErrors(ops);
     if (!errList.isEmpty()) {
       resp.add(CommandOperation.ERR_MSGS, errList);
@@ -312,7 +380,7 @@ public class CommandOperation {
 
   public Integer getInt(String name) {
     Object o = getVal(name);
-    if(o == null) return null;
+    if (o == null) return null;
     return getInt(name, null);
   }
 }

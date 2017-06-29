@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -36,13 +37,14 @@ public class DescribeEvaluator extends ComplexEvaluator implements Expressible {
 
   public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(1 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
+    }
+
   }
 
   public Tuple evaluate(Tuple tuple) throws IOException {
-
-    if(subEvaluators.size() != 1) {
-      throw new IOException("describe expects 1 column as a parameters");
-    }
 
     StreamEvaluator colEval = subEvaluators.get(0);
 

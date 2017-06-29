@@ -40,17 +40,17 @@
   -->
 
 
-  <fieldType name="int" docValues="true" class="solr.TrieIntField" precisionStep="0" omitNorms="true"
+  <fieldType name="int" docValues="true" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="float" docValues="true" class="solr.TrieFloatField" precisionStep="0" omitNorms="true"
+  <fieldType name="float" docValues="true" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="long" docValues="true" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" docValues="true" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-  <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- numeric field types that manipulate the value into
      a string value that isn't human readable in it's internal form,
@@ -119,8 +119,8 @@
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
-  <fieldtype name="tdate" class="solr.TrieDateField" precisionStep="6"/>
+  <fieldtype name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0"/>
+  <fieldtype name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="6"/>
 
 
   <!-- solr.TextField allows the specification of custom
@@ -436,7 +436,7 @@
   -->
 
 
-  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
 
   <field name="s_multi" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>

@@ -113,7 +113,7 @@ public class DisMaxQParser extends QParser {
     addBoostQuery(query, solrParams);
     addBoostFunctions(query, solrParams);
 
-    return query.build();
+    return QueryUtils.build(query, this);
   }
 
   protected void addBoostFunctions(BooleanQuery.Builder query, SolrParams solrParams) throws SyntaxError {
@@ -252,7 +252,7 @@ public class DisMaxQParser extends QParser {
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery) dis);
       boolean mmAutoRelax = params.getBool(DisMaxParams.MM_AUTORELAX, false);
       SolrPluginUtils.setMinShouldMatch(t, minShouldMatch, mmAutoRelax);
-      query = t.build();
+      query = QueryUtils.build(t, this);
     }
     return query;
   }

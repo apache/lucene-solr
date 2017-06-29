@@ -58,7 +58,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     SolrCore core = h.getCore();
 
     // test that we got the expected config, not just hardcoded defaults
-    assertNotNull(core.getRequestHandler("mock"));
+    assertNotNull(core.getRequestHandler("/mock"));
 
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", request("qlkciyopsbgzyvkylsjhchghjrdf"),
@@ -70,10 +70,10 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU("does commit work?", commit());
 
     assertQ("backslash escaping semicolon", request("id:42 AND val_s:aa\\;bb"),
-        "//*[@numFound='1']", "//int[@name='id'][.='42']");
+        "//*[@numFound='1']", "//str[@name='id'][.='42']");
 
     assertQ("quote escaping semicolon", request("id:42 AND val_s:\"aa;bb\""),
-        "//*[@numFound='1']", "//int[@name='id'][.='42']");
+        "//*[@numFound='1']", "//str[@name='id'][.='42']");
 
     assertQ("no escaping semicolon", request("id:42 AND val_s:aa"),
         "//*[@numFound='0']");

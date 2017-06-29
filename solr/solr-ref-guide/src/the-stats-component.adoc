@@ -32,18 +32,14 @@ bin/solr -e techproducts
 
 The Stats Component accepts the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`stats`::
+If `true`, then invokes the Stats component.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|stats |If **true**, then invokes the Stats component.
-|stats.field a|
+`stats.field`::
 Specifies a field for which statistics should be generated. This parameter may be invoked multiple times in a query in order to request statistics on multiple fields.
-
++
 <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> may be used to indicate which subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name. See the examples below.
 
-|===
 
 [[TheStatsComponent-Example]]
 === Example
@@ -96,26 +92,47 @@ The query below demonstrates computing stats against two different fields numeri
 [[TheStatsComponent-StatisticsSupported]]
 == Statistics Supported
 
-The table below explains the statistics supported by the Stats component. Not all statistics are supported for all field types, and not all statistics are computed by default (See <<TheStatsComponent-LocalParameters,Local Parameters>> below for details)
+The table below explains the statistics supported by the Stats component. Not all statistics are supported for all field types, and not all statistics are computed by default (see <<TheStatsComponent-LocalParameters,Local Parameters>> below for details)
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`min`::
+The minimum value of the field/function in all documents in the set. This statistic is computed for all field types and is computed by default.
 
-[cols="10,10,50,20,10",options="header"]
-|===
-|Local Param |Sample Input |Description |Supported Types |Computed by Default
-|min |true |The minimum value of the field/function in all documents in the set. |All |Yes
-|max |true |The maximum value of the field/function in all documents in the set. |All |Yes
-|sum |true |The sum of all values of the field/function in all documents in the set. |Numeric & Date |Yes
-|count |true |The number of values found in all documents in the set for this field/function. |All |Yes
-|missing |true |The number of documents in the set which do not have a value for this field/function. |All |Yes
-|sumOfSquares |true |Sum of all values squared (a by product of computing stddev) |Numeric & Date |Yes
-|mean |true |The average `(v1 + v2 .... + vN)/N` |Numeric & Date |Yes
-|stddev |true |Standard deviation, measuring how widely spread the values in the data set are. |Numeric & Date |Yes
-|percentiles |"1,99,99.9" |A list of percentile values based on cut-off points specified by the param value. These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. |Numeric |No
-|distinctValues |true |The set of all distinct values for the field/function in all of the documents in the set. This calculation can be very expensive for fields that do not have a tiny cardinality. |All |No
-|countDistinct |true |The exact number of distinct values in the field/function in all of the documents in the set. This calculation can be very expensive for fields that do not have a tiny cardinality. |All |No
-|cardinality |"true" or"0.3" |A statistical approximation (currently using the https://en.wikipedia.org/wiki/HyperLogLog[HyperLogLog] algorithm) of the number of distinct values in the field/function in all of the documents in the set. This calculation is much more efficient then using the 'countDistinct' option, but may not be 100% accurate. Input for this option can be floating point number between 0.0 and 1.0 indicating how aggressively the algorithm should try to be accurate: 0.0 means use as little memory as possible; 1.0 means use as much memory as needed to be as accurate as possible. 'true' is supported as an alias for "0.3" |All |No
-|===
+`max`::
+The maximum value of the field/function in all documents in the set. This statistic is computed for all field types and is computed by default.
+
+`sum`::
+The sum of all values of the field/function in all documents in the set. This statistic is computed for numeric and date field types and is computed by default.
+
+`count`::
+The number of values found in all documents in the set for this field/function. This statistic is computed for all field types and is computed by default.
+
+`missing`::
+The number of documents in the set which do not have a value for this field/function. This statistic is computed for all field types and is computed by default.
+
+`sumOfSquares`::
+Sum of all values squared (a by product of computing stddev). This statistic is computed for numeric and date field types and is computed by default.
+
+`mean`::
+The average `(v1 + v2 .... + vN)/N`. This statistic is computed for numeric and date field types and is computed by default.
+
+`stddev`::
+Standard deviation, measuring how widely spread the values in the data set are. This statistic is computed for numeric and date field types and is computed by default.
+
+`percentiles`::
+A list of percentile values based on cut-off points specified by the parameter value, such as `1,99,99.9`. These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. This statistic is computed for numeric field types and is not computed by default.
+
+`distinctValues`::
+The set of all distinct values for the field/function in all of the documents in the set. This calculation can be very expensive for fields that do not have a tiny cardinality. This statistic is computed for all field types but is not computed by default.
+
+`countDistinct`::
+The exact number of distinct values in the field/function in all of the documents in the set. This calculation can be very expensive for fields that do not have a tiny cardinality. This statistic is computed for all field types but is not computed by default.
+
+`cardinality`::
+A statistical approximation (currently using the https://en.wikipedia.org/wiki/HyperLogLog[HyperLogLog] algorithm) of the number of distinct values in the field/function in all of the documents in the set. This calculation is much more efficient then using the `countDistinct` option, but may not be 100% accurate.
++
+Input for this option can be floating point number between `0.0` and `1.0` indicating how aggressively the algorithm should try to be accurate: `0.0` means use as little memory as possible; `1.0` means use as much memory as needed to be as accurate as possible. `true` is supported as an alias for `0.3`.
++
+This statistic is computed for all field types but is not computed by default.
 
 [[TheStatsComponent-LocalParameters]]
 == Local Parameters
@@ -179,6 +196,6 @@ Here we compute some statistics for the price field. The min, max, mean, 90th, a
 [[TheStatsComponent-TheStatsComponentandFaceting]]
 == The Stats Component and Faceting
 
-Sets of `stats.field` parameters can be referenced by '`tag`' when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
+Sets of `stats.field` parameters can be referenced by `'tag'` when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.
 
 For more information and a detailed example, please see <<faceting.adoc#Faceting-CombiningStatsComponentWithPivots,Combining Stats Component With Pivots>>.

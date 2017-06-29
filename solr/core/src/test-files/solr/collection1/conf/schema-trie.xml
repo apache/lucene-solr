@@ -253,9 +253,7 @@
    -->
   <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField"/>
 
-  <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField"
-             valType="float"/>
-
+  <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
   <!-- Valid attributes for fields:
     name: mandatory - the name for the field
@@ -273,7 +271,7 @@
   -->
 
   <!-- for testing, a type that does a transform to see if it's correctly done everywhere -->
-  <field name="id" type="tfloat" indexed="true" stored="true" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
 

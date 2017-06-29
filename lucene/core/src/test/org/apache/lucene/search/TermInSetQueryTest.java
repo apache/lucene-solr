@@ -29,7 +29,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
@@ -219,21 +218,16 @@ public class TermInSetQueryTest extends LuceneTestCase {
       }
 
       @Override
-      public Fields fields() throws IOException {
-        return new FilterFields(in.fields()) {
+      public Terms terms(String field) throws IOException {
+        Terms terms = super.terms(field);
+        if (terms == null) {
+          return null;
+        }
+        return new FilterTerms(terms) {
           @Override
-          public Terms terms(String field) throws IOException {
-            final Terms in = this.in.terms(field);
-            if (in == null) {
-              return null;
-            }
-            return new FilterTerms(in) {
-              @Override
-              public TermsEnum iterator() throws IOException {
-                counter.incrementAndGet();
-                return super.iterator();
-              }
-            };
+          public TermsEnum iterator() throws IOException {
+            counter.incrementAndGet();
+            return super.iterator();
           }
         };
       }

@@ -176,13 +176,18 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
   fi
-
+  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+    export SOLR_SSL_KEY_STORE_PASSWORD=$SOLR_SSL_KEY_STORE_PASSWORD
+  fi
   if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.type=$SOLR_SSL_KEY_STORE_TYPE"
   fi
 
   if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE"
+  fi
+  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+    export SOLR_SSL_TRUST_STORE_PASSWORD=$SOLR_SSL_TRUST_STORE_PASSWORD
   fi
   if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
@@ -198,6 +203,9 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
 
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
+      export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD
+    fi
     if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
     fi
@@ -213,6 +221,9 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
 
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
+      export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD
+    fi
     if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
     fi
@@ -299,7 +310,7 @@ function print_usage() {
     echo ""
   elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-a \"additional-options\"] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a \"additional-options\"] [-V]"
     echo ""
     echo "  -f            Start Solr in foreground; default starts Solr in the background"
     echo "                  and sends stdout / stderr to solr-PORT-console.log"
@@ -329,6 +340,9 @@ function print_usage() {
     echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
     echo "                  on which example is run. The default value is server/solr."
     echo ""
+    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store data (index)."
+    echo "                  If not set, Solr uses solr.solr.home for config and data."
+    echo ""
     echo "  -e <example>  Name of the example to run; available examples:"
     echo "      cloud:         SolrCloud example"
     echo "      techproducts:  Comprehensive example illustrating many of Solr's core capabilities"
@@ -338,6 +352,11 @@ function print_usage() {
     echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
     echo "                  Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
     echo "                  you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
+    echo "                  In most cases, you should wrap the additional parameters in double quotes."
+    echo ""
+    echo "  -j            Additional parameters to pass to Jetty when starting Solr."
+    echo "                  For example, to add configuration folder that jetty should read"
+    echo "                  you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
     echo "                  In most cases, you should wrap the additional parameters in double quotes."
     echo ""
     echo "  -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input"
@@ -411,12 +430,11 @@ function print_usage() {
     echo ""
     echo "  -d <confdir>  Configuration directory to copy when creating the new core, built-in options are:"
     echo ""
-    echo "      basic_configs: Minimal Solr configuration"
-    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
+    echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo ""
-    echo "      If not specified, default is: data_driven_schema_configs"
+    echo "      If not specified, default is: _default"
     echo ""
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_core -c mycore -d /tmp/myconfig"
@@ -433,12 +451,11 @@ function print_usage() {
     echo ""
     echo "  -d <confdir>            Configuration directory to copy when creating the new collection, built-in options are:"
     echo ""
-    echo "      basic_configs: Minimal Solr configuration"
-    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
+    echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo ""
-    echo "      If not specified, default is: data_driven_schema_configs"
+    echo "      If not specified, default is: _default"
     echo ""
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_collection -c mycoll -d /tmp/myconfig"
@@ -927,10 +944,10 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ -z "$CREATE_CONFDIR" ]; then
-    CREATE_CONFDIR='data_driven_schema_configs'
+    CREATE_CONFDIR='_default'
   fi
-
-  # validate the confdir arg
+  
+  # validate the confdir arg (if provided)
   if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
     echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
     exit 1
@@ -940,11 +957,6 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     echo "Name (-c) argument is required!"
     print_usage "$SCRIPT_CMD"
     exit 1
-  fi
-
-  # If not defined, use the collection name for the name of the configuration in Zookeeper
-  if [ -z "$CREATE_CONFNAME" ]; then
-    CREATE_CONFNAME="$CREATE_NAME"
   fi
 
   if [ -z "$CREATE_PORT" ]; then
@@ -1383,6 +1395,10 @@ if [ $# -gt 0 ]; then
             SOLR_HOME="$2"
             shift 2
         ;;
+        -t|-data.home)
+            SOLR_DATA_HOME="$2"
+            shift 2
+        ;;
         -e|-example)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Example name is required when using the $1 option!"
@@ -1435,6 +1451,11 @@ if [ $# -gt 0 ]; then
         -a|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
             PASS_TO_RUN_EXAMPLE+=" -a \"$ADDITIONAL_CMD_OPTS\""
+            shift 2
+        ;;
+        -j|-jettyconfig)
+            ADDITIONAL_JETTY_CONFIG="$2"
+            PASS_TO_RUN_EXAMPLE+=" -j \"$ADDITIONAL_JETTY_CONFIG\""
             shift 2
         ;;
         -k|-key)
@@ -1646,6 +1667,11 @@ else
   fi
 fi
 
+# Set the default configset dir to be bootstrapped as _default
+if [ -z "$DEFAULT_CONFDIR" ]; then
+  DEFAULT_CONFDIR="$SOLR_SERVER_DIR/solr/configsets/_default/conf"
+fi
+
 # This is quite hacky, but examples rely on a different log4j.properties
 # so that we can write logs for examples to $SOLR_HOME/../logs
 if [ -z "$SOLR_LOGS_DIR" ]; then
@@ -1671,6 +1697,10 @@ fi
 
 if [ ! -e "$SOLR_HOME" ]; then
   echo -e "\nSolr home directory $SOLR_HOME not found!\n"
+  exit 1
+fi
+if [[ $SOLR_DATA_HOME ]] && [ ! -e "$SOLR_DATA_HOME" ]; then
+  echo -e "\nSolr data home directory $SOLR_DATA_HOME not found!\n"
   exit 1
 fi
 if $verbose ; then
@@ -1803,6 +1833,7 @@ function launch_solr() {
   stop_port="$STOP_PORT"
   
   SOLR_ADDL_ARGS="$2"
+  SOLR_JETTY_ADDL_CONFIG="$3"
 
   # define default GC_TUNE
   if [ -z ${GC_TUNE+x} ]; then
@@ -1872,6 +1903,9 @@ function launch_solr() {
       echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
     fi
 
+    if [ "$SOLR_DATA_HOME" != "" ]; then
+      echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
+    fi
     echo -e "\n"
   fi
     
@@ -1887,8 +1921,8 @@ function launch_solr() {
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
@@ -1911,12 +1945,12 @@ function launch_solr() {
   esac
 
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
+    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
   else
     # run Solr in the background
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
 	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-        -jar start.jar "${SOLR_JETTY_CONFIG[@]}" \
+        -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
     # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
@@ -1960,6 +1994,6 @@ function launch_solr() {
   fi
 }
 
-launch_solr "$FG" "$ADDITIONAL_CMD_OPTS"
+launch_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
 
 exit $?

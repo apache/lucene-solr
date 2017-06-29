@@ -178,32 +178,36 @@ public class TestQueryBuilder extends LuceneTestCase {
           .build();
       Query syn2 = new TermQuery(new Term("field", "cavy"));
 
-      BooleanQuery expectedGraphQuery = new BooleanQuery.Builder()
+      BooleanQuery synQuery = new BooleanQuery.Builder()
           .add(syn1, BooleanClause.Occur.SHOULD)
           .add(syn2, BooleanClause.Occur.SHOULD)
+          .build();
+
+      BooleanQuery expectedGraphQuery = new BooleanQuery.Builder()
+          .add(synQuery, occur)
           .build();
 
       QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
       assertEquals(expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
 
       BooleanQuery expectedBooleanQuery = new BooleanQuery.Builder()
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .add(new TermQuery(new Term("field", "story")), occur)
           .build();
       assertEquals(expectedBooleanQuery, queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
 
       expectedBooleanQuery = new BooleanQuery.Builder()
           .add(new TermQuery(new Term("field", "the")), occur)
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .add(new TermQuery(new Term("field", "story")), occur)
           .build();
       assertEquals(expectedBooleanQuery, queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
 
       expectedBooleanQuery = new BooleanQuery.Builder()
           .add(new TermQuery(new Term("field", "the")), occur)
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .add(new TermQuery(new Term("field", "story")), occur)
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .build();
       assertEquals(expectedBooleanQuery, queryBuilder.createBooleanQuery("field", "the guinea pig story guinea pig", occur));
     }
@@ -217,32 +221,36 @@ public class TestQueryBuilder extends LuceneTestCase {
           .add(new Term("field", "pig"))
           .build();
       Query syn2 = new TermQuery(new Term("field", "cavy"));
-      BooleanQuery expectedGraphQuery = new BooleanQuery.Builder()
+
+      BooleanQuery synQuery = new BooleanQuery.Builder()
           .add(syn1, BooleanClause.Occur.SHOULD)
           .add(syn2, BooleanClause.Occur.SHOULD)
+          .build();
+      BooleanQuery expectedGraphQuery = new BooleanQuery.Builder()
+          .add(synQuery, occur)
           .build();
       QueryBuilder queryBuilder = new QueryBuilder(new MockSynonymAnalyzer());
       queryBuilder.setAutoGenerateMultiTermSynonymsPhraseQuery(true);
       assertEquals(expectedGraphQuery, queryBuilder.createBooleanQuery("field", "guinea pig", occur));
 
       BooleanQuery expectedBooleanQuery = new BooleanQuery.Builder()
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .add(new TermQuery(new Term("field", "story")), occur)
           .build();
       assertEquals(expectedBooleanQuery, queryBuilder.createBooleanQuery("field", "guinea pig story", occur));
 
       expectedBooleanQuery = new BooleanQuery.Builder()
           .add(new TermQuery(new Term("field", "the")), occur)
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .add(new TermQuery(new Term("field", "story")), occur)
           .build();
       assertEquals(expectedBooleanQuery, queryBuilder.createBooleanQuery("field", "the guinea pig story", occur));
 
       expectedBooleanQuery = new BooleanQuery.Builder()
           .add(new TermQuery(new Term("field", "the")), occur)
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .add(new TermQuery(new Term("field", "story")), occur)
-          .add(expectedGraphQuery, occur)
+          .add(synQuery, occur)
           .build();
       assertEquals(expectedBooleanQuery, queryBuilder.createBooleanQuery("field", "the guinea pig story guinea pig", occur));
     }

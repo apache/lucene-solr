@@ -228,7 +228,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
 
   // returns first worksheet as XLSXResponseWriter only returns one sheet
   private XSSFSheet getWSResultForQuery(SolrQueryRequest req) throws IOException, Exception {
-    SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+    SolrQueryResponse rsp = h.queryAndResponse("", req);
     return getWSResultForQuery(req, rsp);
   }
 

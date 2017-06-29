@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.classification.utils.NearestFuzzyQuery;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.queries.FuzzyLikeThisQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,7 +42,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A k-Nearest Neighbor classifier based on {@link FuzzyLikeThisQuery}.
+ * A k-Nearest Neighbor classifier based on {@link NearestFuzzyQuery}.
  *
  * @lucene.experimental
  */
@@ -51,27 +51,27 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
   /**
    * the name of the fields used as the input text
    */
-  protected final String[] textFieldNames;
+  private final String[] textFieldNames;
 
   /**
    * the name of the field used as the output text
    */
-  protected final String classFieldName;
+  private final String classFieldName;
 
   /**
    * an {@link IndexSearcher} used to perform queries
    */
-  protected final IndexSearcher indexSearcher;
+  private final IndexSearcher indexSearcher;
 
   /**
    * the no. of docs to compare in order to find the nearest neighbor to the input text
    */
-  protected final int k;
+  private final int k;
 
   /**
    * a {@link Query} used to filter the documents that should be used from this classifier's underlying {@link LeafReader}
    */
-  protected final Query query;
+  private final Query query;
   private final Analyzer analyzer;
 
   /**
@@ -145,11 +145,11 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
 
   private TopDocs knnSearch(String text) throws IOException {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    FuzzyLikeThisQuery fuzzyLikeThisQuery = new FuzzyLikeThisQuery(300, analyzer);
+    NearestFuzzyQuery nearestFuzzyQuery = new NearestFuzzyQuery(analyzer);
     for (String fieldName : textFieldNames) {
-      fuzzyLikeThisQuery.addTerms(text, fieldName, 1f, 2); // TODO: make this parameters configurable
+      nearestFuzzyQuery.addTerms(text, fieldName);
     }
-    bq.add(fuzzyLikeThisQuery, BooleanClause.Occur.MUST);
+    bq.add(nearestFuzzyQuery, BooleanClause.Occur.MUST);
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     bq.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));
     if (query != null) {
@@ -165,7 +165,7 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
    * @return a {@link List} of {@link ClassificationResult}, one for each existing class
    * @throws IOException if it's not possible to get the stored value of class field
    */
-  protected List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
+  private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.getMaxScore();
@@ -174,12 +174,7 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
       if (storableField != null) {
         BytesRef cl = new BytesRef(storableField.stringValue());
         //update count
-        Integer count = classCounts.get(cl);
-        if (count != null) {
-          classCounts.put(cl, count + 1);
-        } else {
-          classCounts.put(cl, 1);
-        }
+        classCounts.merge(cl, 1, (a, b) -> a + b);
         //update boost, the boost is based on the best score
         Double totalBoost = classBoosts.get(cl);
         double singleBoost = scoreDoc.score / maxScore;

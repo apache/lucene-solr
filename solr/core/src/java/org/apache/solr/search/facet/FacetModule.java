@@ -234,7 +234,7 @@ public class FacetModule extends SearchComponent {
 
       Map<String,Object> finfo = new HashMap<>(1);
       finfo.put(FACET_REFINE, refinement);
-      String finfoStr = JSONUtil.toJSON(finfo);
+      String finfoStr = JSONUtil.toJSON(finfo, -1);
       // System.err.println("##################### REFINE=" + finfoStr);
       shardsRefineRequest.params.add(FACET_INFO, finfoStr);
 
@@ -281,10 +281,8 @@ public class FacetModule extends SearchComponent {
       }
 
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) {
-        System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
+        // System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
         // call merge again with a diff flag set on the context???
-//        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "WORK IN PROGRESS, MERGING FACET REFINEMENT NOT SUPPORTED YET!");
-
         facetState.mcontext.root = facet;
         facetState.mcontext.setShard(shardRsp.getShard());  // TODO: roll newShard into setShard?
         facetState.merger.merge(facet , facetState.mcontext);

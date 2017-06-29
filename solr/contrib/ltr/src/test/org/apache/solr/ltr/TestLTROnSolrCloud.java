@@ -21,6 +21,7 @@ import java.util.SortedMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,6 +32,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
+import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -65,8 +67,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   public void tearDown() throws Exception {
     restTestHarness.close();
     restTestHarness = null;
-    jetty.stop();
-    jetty = null;
     solrCluster.shutdown();
     super.tearDown();
   }
@@ -132,9 +132,13 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     createCollection(COLLECTION, "conf1", numShards, numReplicas, maxShardsPerNode);
     indexDocuments(COLLECTION);
-
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-            "/solr", true, extraServlets);
+    for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {
+      if (!solrRunner.getCoreContainer().getCores().isEmpty()){
+        String coreName = solrRunner.getCoreContainer().getCores().iterator().next().getName();
+        restTestHarness = new RestTestHarness(() -> solrRunner.getBaseUrl().toString() + "/" + coreName);
+        break;
+      }
+    }
     loadModelsAndFeatures();
   }
 

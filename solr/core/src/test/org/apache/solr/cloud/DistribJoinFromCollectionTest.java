@@ -62,7 +62,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   private static String toColl = "to_2x2";
   private static String fromColl = "from_1x4";
 
-  private static Integer toDocId;
+  private static String toDocId;
   
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -140,7 +140,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     log.info("DistribJoinFromCollectionTest succeeded ... shutting down now!");
   }
 
-  private void testJoins(String toColl, String fromColl, Integer toDocId, boolean isScoresTest)
+  private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest)
       throws SolrServerException, IOException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
@@ -219,12 +219,12 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     }
   }
 
-  protected static Integer indexDoc(String collection, int id, String joinField, String matchField, String getField) throws Exception {
+  protected static String indexDoc(String collection, int id, String joinField, String matchField, String getField) throws Exception {
     UpdateRequest up = new UpdateRequest();
     up.setCommitWithin(50);
     up.setParam("collection", collection);
     SolrInputDocument doc = new SolrInputDocument();
-    Integer docId = new Integer(id);
+    String docId = "" + id;
     doc.addField("id", docId);
     doc.addField("join_s", joinField);
     if (matchField != null)

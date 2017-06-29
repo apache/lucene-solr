@@ -59,7 +59,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -75,21 +74,12 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    System.setProperty("solr.tests.intClassName", random().nextBoolean()? "TrieIntField": "IntPointField");
-    System.setProperty("solr.tests.longClassName", random().nextBoolean()? "TrieLongField": "LongPointField");
-    System.setProperty("solr.tests.floatClassName", random().nextBoolean()? "TrieFloatField": "FloatPointField");
-    System.setProperty("solr.tests.doubleClassName", random().nextBoolean()? "TrieDoubleField": "DoublePointField");
-
     schemaString = "schema-inplace-updates.xml";
     configString = "solrconfig-tlog.xml";
 
     // we need consistent segments that aren't re-ordered on merge because we're
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-
-    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
 
     initCore(configString, schemaString);
     
@@ -113,14 +103,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   @Override
   protected boolean useTlogReplicas() {
     return onlyLeaderIndexes;
-  }
-
-  @After
-  public void after() {
-    System.clearProperty("solr.tests.intClassName");
-    System.clearProperty("solr.tests.longClassName");
-    System.clearProperty("solr.tests.floatClassName");
-    System.clearProperty("solr.tests.doubleClassName");
   }
 
   public TestInPlaceUpdatesDistrib() throws Exception {

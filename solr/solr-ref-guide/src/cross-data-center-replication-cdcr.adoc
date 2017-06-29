@@ -181,7 +181,11 @@ Here is a sample of a source configuration file, a section in `solrconfig.xml`. 
 ----
 <requestHandler name="/cdcr" class="solr.CdcrRequestHandler">
   <lst name="replica">
-    <str name="zkHost">10.240.18.211:2181</str>
+    <str name="zkHost">10.240.18.211:2181,10.240.18.212:2181</str>
+    <!--
+    If you have chrooted your Solr information at the target you must include the chroot, for example:
+    <str name="zkHost">10.240.18.211:2181,10.240.18.212:2181/solr</str>
+    -->
     <str name="source">collection1</str>
     <str name="target">collection1</str>
   </lst>
@@ -252,15 +256,15 @@ The configuration details, defaults and options are as follows:
 
 CDCR can be configured to forward update requests to one or more replicas. A replica is defined with a “replica” list as follows:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
-[cols="20,10,15,55",options="header"]
-|===
-|Parameter |Required |Default |Description
-|zkHost |Yes |none |The host address for ZooKeeper of the target SolrCloud. Usually this is a comma-separated list of addresses to each node in the target ZooKeeper ensemble.
-|Source |Yes |none |The name of the collection on the Source SolrCloud to be replicated.
-|Target |Yes |none |The name of the collection on the target SolrCloud to which updates will be forwarded.
-|===
+`zkHost`::
+The host address for ZooKeeper of the target SolrCloud. Usually this is a comma-separated list of addresses to each node in the target ZooKeeper ensemble. This parameter is required.
+
+`Source`::
+The name of the collection on the Source SolrCloud to be replicated. This parameter is required.
+
+`Target`::
+The name of the collection on the target SolrCloud to which updates will be forwarded. This parameter is required.
 
 ==== The Replicator Element
 
@@ -268,39 +272,28 @@ The CDC Replicator is the component in charge of forwarding updates to the repli
 
 The replicator uses a fixed thread pool to forward updates to multiple replicas in parallel. If more than one replica is configured, one thread will forward a batch of updates from one replica at a time in a round-robin fashion. The replicator can be configured with a “replicator” list as follows:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`threadPoolSize`::
+The number of threads to use for forwarding updates. One thread per replica is recommended. The default is `2`.
 
-[cols="20,10,15,55",options="header"]
-|===
-|Parameter |Required |Default |Description
-|threadPoolSize |No |2 |The number of threads to use for forwarding updates. One thread per replica is recommended.
-|schedule |No |10 |The delay in milliseconds for the monitoring the update log(s).
-|batchSize |No |128 |The number of updates to send in one batch. The optimal size depends on the size of the documents. Large batches of large documents can increase your memory usage significantly.
-|===
+`schedule`::
+The delay in milliseconds for the monitoring the update log(s). The default is `10`.
+
+`batchSize`::
+The number of updates to send in one batch. The optimal size depends on the size of the documents. Large batches of large documents can increase your memory usage significantly. The default is `128`.
 
 ==== The updateLogSynchronizer Element
 
 Expert: Non-leader nodes need to synchronize their update logs with their leader node from time to time in order to clean deprecated transaction log files. By default, such a synchronization process is performed every minute. The schedule of the synchronization can be modified with a “updateLogSynchronizer” list as follows:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,10,15,55",options="header"]
-|===
-|Parameter |Required |Default |Description
-|schedule |No |60000 |The delay in milliseconds for synchronizing the updates log.
-|===
+`schedule`::
+ The delay in milliseconds for synchronizing the updates log. The default is `60000`.
 
 ==== The Buffer Element
 
 CDCR is configured by default to buffer any new incoming updates. When buffering updates, the updates log will store all the updates indefinitely. Replicas do not need to buffer updates, and it is recommended to disable buffer on the target SolrCloud. The buffer can be disabled at startup with a “buffer” list and the parameter “defaultState” as follows:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,10,15,55",options="header"]
-|===
-|Parameter |Required |Default |Description
-|defaultState |No |enabled |The state of the buffer at startup.
-|===
+`defaultState`::
+The state of the buffer at startup. The default is `enabled`.
 
 == CDCR API
 

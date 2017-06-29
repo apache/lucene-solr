@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
@@ -38,6 +39,10 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
 
   public HistogramEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+    
+    if(2 != subEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    }
   }
 
   public List<Map> evaluate(Tuple tuple) throws IOException {
@@ -78,8 +83,6 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
 
     return binList;
   }
-
-
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {

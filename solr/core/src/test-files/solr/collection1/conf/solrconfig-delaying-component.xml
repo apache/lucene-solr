@@ -34,8 +34,8 @@
     </arr>
   </requestHandler>
 
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestDispatcher >
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching never304="true" />
   </requestDispatcher>
 

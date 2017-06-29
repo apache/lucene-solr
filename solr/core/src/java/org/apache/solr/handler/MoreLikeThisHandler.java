@@ -249,7 +249,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           dbgQuery = true;
           dbgResults = true;
         }
-        // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
+        // TODO resolve duplicated code with DebugComponent.  Perhaps it should be added to doStandardDebug?
         if (dbg == true) {
           try {
             NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
@@ -335,6 +335,13 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       mlt.setMaxQueryTerms(     params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS,       MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
       mlt.setMaxNumTokensParsed(params.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, MoreLikeThis.DEFAULT_MAX_NUM_TOKENS_PARSED));
       mlt.setBoost(            params.getBool(MoreLikeThisParams.BOOST, false ) );
+      
+      // There is no default for maxDocFreqPct. Also, it's a bit oddly expressed as an integer value 
+      // (percentage of the collection's documents count). We keep Lucene's convention here. 
+      if (params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT) != null) {
+        mlt.setMaxDocFreqPct(params.getInt(MoreLikeThisParams.MAX_DOC_FREQ_PCT));
+      }
+
       boostFields = SolrPluginUtils.parseFieldBoosts(params.getParams(MoreLikeThisParams.QF));
     }
     

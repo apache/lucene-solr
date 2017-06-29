@@ -38,7 +38,7 @@ For standalone Solr instances, there are a few parameters you should be sure to 
 
 * You need to use an `HdfsDirectoryFactory` and a data dir of the form `hdfs://host:port/path`
 * You need to specify an UpdateLog location of the form `hdfs://host:port/path`
-* You should specify a lock factory type of '`hdfs`' or none.
+* You should specify a lock factory type of `'hdfs'` or none.
 
 If you do not modify `solrconfig.xml`, you can instead start Solr on HDFS with the following command:
 
@@ -58,7 +58,7 @@ This example will start Solr in standalone mode, using the defined JVM propertie
 In SolrCloud mode, it's best to leave the data and update log directories as the defaults Solr comes with and simply specify the `solr.hdfs.home`. All dynamically created collections will create the appropriate directories automatically under the `solr.hdfs.home` root directory.
 
 * Set `solr.hdfs.home` in the form `hdfs://host:port/path`
-* You should specify a lock factory type of '`hdfs`' or none.
+* You should specify a lock factory type of `'hdfs'` or none.
 
 [source,bash]
 ----
@@ -103,73 +103,59 @@ The `HdfsDirectoryFactory` has a number of settings that are defined as part of 
 [[RunningSolronHDFS-SolrHDFSSettings]]
 === Solr HDFS Settings
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,30,10,40",options="header"]
-|===
-|Parameter |Example Value |Default |Description
-|`solr.hdfs.home` |`hdfs://host:port/path/solr` |N/A |A root location in HDFS for Solr to write collection data to. Rather than specifying an HDFS location for the data directory or update log directory, use this to specify one root location and have everything automatically created within this HDFS location.
-|===
+`solr.hdfs.home`::
+A root location in HDFS for Solr to write collection data to. Rather than specifying an HDFS location for the data directory or update log directory, use this to specify one root location and have everything automatically created within this HDFS location. The structure of this parameter is `hdfs://host:port/path/solr`.
 
 [[RunningSolronHDFS-BlockCacheSettings]]
 === Block Cache Settings
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`solr.hdfs.blockcache.enabled`::
+Enable the blockcache. The default is `true`.
 
-[cols="30,10,60",options="header"]
-|===
-|Parameter |Default |Description
-|`solr.hdfs.blockcache.enabled` |true |Enable the blockcache
-|`solr.hdfs.blockcache.read.enabled` |true |Enable the read cache
-|`solr.hdfs.blockcache.direct.memory.allocation` |true |Enable direct memory allocation. If this is false, heap is used
-|`solr.hdfs.blockcache.slab.count` |1 |Number of memory slabs to allocate. Each slab is 128 MB in size.
-|`solr.hdfs.blockcache.global` |true |Enable/Disable using one global cache for all SolrCores. The settings used will be from the first HdfsDirectoryFactory created.
-|===
+`solr.hdfs.blockcache.read.enabled`::
+Enable the read cache. The default is `true`.
+
+`solr.hdfs.blockcache.direct.memory.allocation`::
+Enable direct memory allocation. If this is `false`, heap is used. The default is `true`.
+
+`solr.hdfs.blockcache.slab.count`::
+Number of memory slabs to allocate. Each slab is 128 MB in size. The default is `1`.
+
+`solr.hdfs.blockcache.global`::
+Enable/Disable using one global cache for all SolrCores. The settings used will be from the first HdfsDirectoryFactory created. The default is `true`.
 
 [[RunningSolronHDFS-NRTCachingDirectorySettings]]
 === NRTCachingDirectory Settings
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`solr.hdfs.nrtcachingdirectory.enable`:: true |
+Enable the use of NRTCachingDirectory. The default is `true`.
 
-[cols="30,10,60",options="header"]
-|===
-|Parameter |Default |Description
-|`solr.hdfs.nrtcachingdirectory.enable` |true |Enable the use of NRTCachingDirectory
-|`solr.hdfs.nrtcachingdirectory.maxmergesizemb` |16 |NRTCachingDirectory max segment size for merges
-|`solr.hdfs.nrtcachingdirectory.maxcachedmb` |192 |NRTCachingDirectory max cache size
-|===
+`solr.hdfs.nrtcachingdirectory.maxmergesizemb`::
+NRTCachingDirectory max segment size for merges. The default is `16`.
+
+`solr.hdfs.nrtcachingdirectory.maxcachedmb`::
+NRTCachingDirectory max cache size. The default is `192`.
 
 [[RunningSolronHDFS-HDFSClientConfigurationSettings]]
 === HDFS Client Configuration Settings
 
-solr.hdfs.confdir pass the location of HDFS client configuration files - needed for HDFS HA for example.
-
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,10,60",options="header"]
-|===
-|Parameter |Default |Description
-|`solr.hdfs.confdir` |N/A |Pass the location of HDFS client configuration files - needed for HDFS HA for example.
-|===
+`solr.hdfs.confdir`::
+Pass the location of HDFS client configuration files - needed for HDFS HA for example.
 
 [[RunningSolronHDFS-KerberosAuthenticationSettings]]
 === Kerberos Authentication Settings
 
 Hadoop can be configured to use the Kerberos protocol to verify user identity when trying to access core services like HDFS. If your HDFS directories are protected using Kerberos, then you need to configure Solr's HdfsDirectoryFactory to authenticate using Kerberos in order to read and write to HDFS. To enable Kerberos authentication from Solr, you need to set the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`solr.hdfs.security.kerberos.enabled`:: false |Set to `true` to enable Kerberos authentication. The default is `false`.
 
-[cols="30,10,60",options="header"]
-|===
-|Parameter |Default |Description
-|`solr.hdfs.security.kerberos.enabled` |false |Set to true to enable Kerberos authentication
-|`solr.hdfs.security.kerberos.keytabfile` |N/A a|
+`solr.hdfs.security.kerberos.keytabfile`::
 A keytab file contains pairs of Kerberos principals and encrypted keys which allows for password-less authentication when Solr attempts to authenticate with secure Hadoop.
-
++
 This file will need to be present on all Solr servers at the same path provided in this parameter.
 
-|`solr.hdfs.security.kerberos.principal` |N/A |The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`
-|===
+`solr.hdfs.security.kerberos.principal`::
+The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`.
 
 [[RunningSolronHDFS-Example]]
 == Example
@@ -210,20 +196,19 @@ One benefit to running Solr in HDFS is the ability to automatically add new repl
 
 Collections created using `autoAddReplicas=true` on a shared file system have automatic addition of replicas enabled. The following settings can be used to override the defaults in the `<solrcloud>` section of `solr.xml`.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`autoReplicaFailoverWorkLoopDelay`::
+The time (in ms) between clusterstate inspections by the Overseer to detect and possibly act on creation of a replacement replica. The default is `10000`.
 
-[cols="40,10,50",options="header"]
-|===
-|Param |Default |Description
-|autoReplicaFailoverWorkLoopDelay |10000 |The time (in ms) between clusterstate inspections by the Overseer to detect and possibly act on creation of a replacement replica.
-|autoReplicaFailoverWaitAfterExpiration |30000 |The minimum time (in ms) to wait for initiating replacement of a replica after first noticing it not being live. This is important to prevent false positives while stoping or starting the cluster.
-|autoReplicaFailoverBadNodeExpiration |60000 |The delay (in ms) after which a replica marked as down would be unmarked.
-|===
+`autoReplicaFailoverWaitAfterExpiration`::
+The minimum time (in ms) to wait for initiating replacement of a replica after first noticing it not being live. This is important to prevent false positives while stoping or starting the cluster. The default is `30000`.
+
+`autoReplicaFailoverBadNodeExpiration`::
+The delay (in ms) after which a replica marked as down would be unmarked. The default is `60000`.
 
 [[RunningSolronHDFS-TemporarilydisableautoAddReplicasfortheentirecluster]]
-=== Temporarily disable autoAddReplicas for the entire cluster
+=== Temporarily Disable autoAddReplicas for the Entire Cluster
 
-When doing offline maintenance on the cluster and for various other use cases where an admin would like to temporarily disable auto addition of replicas, the following APIs will disable and re-enable autoAddReplicas for **all collections in the cluster**:
+When doing offline maintenance on the cluster and for various other use cases where an admin would like to temporarily disable auto addition of replicas, the following APIs will disable and re-enable autoAddReplicas for *all collections in the cluster*:
 
 Disable auto addition of replicas cluster wide by setting the cluster property `autoAddReplicas` to `false`:
 

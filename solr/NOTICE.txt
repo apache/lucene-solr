@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2014 The Apache Software Foundation
+ Copyright 2006-2017 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -119,7 +119,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2014 The Apache Software Foundation
+Copyright 2001-2017 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).

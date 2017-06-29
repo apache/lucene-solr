@@ -17,20 +17,26 @@
 package org.apache.solr.metrics;
 
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interface for 'pluggable' metric reporters.
  */
 public abstract class SolrMetricReporter implements Closeable, PluginInfoInitialized {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected final String registryName;
   protected final SolrMetricManager metricManager;
   protected PluginInfo pluginInfo;
   protected boolean enabled = true;
+  protected int period = SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD;
 
   /**
    * Create a reporter for metrics managed in a named registry.
@@ -56,17 +62,42 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
       }
     }
     validate();
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
+    log.debug("Initializing for registry " + registryName);
+    doInit();
   }
 
   /**
-   * Enable reporting, defaults to true. Implementations should check this flag in
-   * {@link #validate()} and accordingly enable or disable reporting.
-   * @param enabled enable, defaults to true when null or not set.
+   * Reporter initialization implementation.
+   */
+  protected abstract void doInit();
+
+  /**
+   * Enable reporting, defaults to true. {@link #init(PluginInfo)} checks
+   * this flag before calling {@link #doInit()} to initialize reporting.
+   * @param enabled - whether or not reporting is to be enabled
    */
   public void setEnabled(Boolean enabled) {
     if (enabled != null) {
       this.enabled = enabled;
     }
+  }
+
+  /**
+   * @param period - in seconds
+   */
+  public void setPeriod(int period) {
+    this.period = period;
+  }
+
+  /**
+   * @return period, in seconds
+   */
+  public int getPeriod() {
+    return period;
   }
 
   /**

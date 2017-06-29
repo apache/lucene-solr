@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -30,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -47,6 +46,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 
@@ -55,7 +56,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
  *
  * @since solr 4.5
  */
-public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> {
+public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport {
 
   protected final CollectionAction action;
 
@@ -68,6 +69,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public CollectionAdminRequest(String path, CollectionAction action) {
     super(METHOD.GET, path);
     this.action = checkNotNull("action", action);
+  }
+
+  @Override
+  public SolrRequest getV2Request() {
+    return usev2 ?
+        V1toV2ApiMapper.convert(this).useBinary(useBinaryV2).build() :
+        this;
   }
 
   @Override
@@ -344,6 +352,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String configName = null;
     protected String createNodeSet = null;
     protected String routerName;
+    protected String policy;
     protected String shards;
     protected String routerField;
     protected Integer numShards;
@@ -492,9 +501,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if(rule != null) params.set("rule", rule);
       if(snitch != null) params.set("snitch", snitch);
+      params.setNonNull(POLICY, policy);
       return params;
     }
 
+    public Create setPolicy(String policy) {
+      this.policy = policy;
+      return this;
+    }
   }
 
   /**
@@ -1346,6 +1360,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String collection;
     protected String shard;
     protected String node;
+    protected String coreName;
     protected String routeKey;
     protected String instanceDir;
     protected String dataDir;
@@ -1412,6 +1427,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public AddReplica setCoreName(String coreName) {
+      this.coreName = coreName;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -1431,6 +1451,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (coreName != null) {
+        params.add("name", coreName);
       }
       if (type != null) {
         params.add(ZkStateReader.REPLICA_TYPE, type.name());

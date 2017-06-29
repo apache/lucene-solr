@@ -345,11 +345,11 @@ public abstract class FilterLeafReader extends LeafReader {
   protected void doClose() throws IOException {
     in.close();
   }
-  
+
   @Override
-  public Fields fields() throws IOException {
+  public Terms terms(String field) throws IOException {
     ensureOpen();
-    return in.fields();
+    return in.terms(field);
   }
 
   @Override

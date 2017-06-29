@@ -73,10 +73,10 @@
   <!--
     Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
   -->
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
@@ -105,7 +105,7 @@
                       
          Consult the TrieDateField javadocs for more information.
       -->
-    <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" sortMissingLast="true" omitNorms="true"/>
 
 
     <!-- The "RandomSortField" is not used to store or search any
@@ -245,24 +245,25 @@
      --> 
     <fieldType name="ignored" stored="false" indexed="false" class="solr.StrField" /> 
 
-    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+    <fieldType name="file" keyField="id" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
-    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" valType="float"/>
+    <fieldType name="sfile" keyField="sfile_s" defVal="1" stored="false" indexed="false" class="solr.ExternalFileField" />
 
+    
+    <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble4" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldType name="tint" class="solr.TrieIntField"  omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tfloat" class="solr.TrieFloatField"  omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tlong" class="solr.TrieLongField"  omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdouble" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdouble4" class="solr.TrieDoubleField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" positionIncrementGap="0"/>
-
-
-    <fieldType name="tints" class="solr.TrieIntField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
-    <fieldType name="tfloats" class="solr.TrieFloatField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
-    <fieldType name="tlongs" class="solr.TrieLongField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
-    <fieldType name="tdoubles" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
-    <fieldType name="tdates" class="solr.TrieDateField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+    
+    <fieldType name="tints" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+    <fieldType name="tfloats" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
+    <fieldType name="tlongs" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true"/>
+    <fieldType name="tdoubles" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+    <fieldType name="tdates" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
+ 
 
     <!-- Poly field -->
     <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
@@ -275,19 +276,9 @@
 valued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
-     <!-- These should pass right through and insure that we can declare external field types -->
-    <fieldType name="eff_float" keyField="id" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="float"/>
-
     <fieldType name="eff_tfloat" keyField="eff_ti" defVal="0"
                stored="false" indexed="true"
-               class="solr.ExternalFileField" valType="tfloat"/>
-
-    <!-- Be sure that the valType can be optional Since valType has done nothing up until now, this is preferred -->
-    <fieldType name="eff_none" keyField="id" defVal="0"
-               stored="false" indexed="true"
-               class="solr.ExternalFileField"/>
+               class="solr.ExternalFileField" />
 
     <fieldType name="text_no_analyzer" stored="false" indexed="true" class="solr.TextField" />
 
@@ -319,8 +310,10 @@ valued. -->
        best performance.
    -->
 
-   <!-- for testing, a type that does a transform to see if it's correctly done everywhere -->
-   <field name="id" type="float" indexed="true" stored="true" required="true" />
+   <field name="id" type="string" indexed="true" stored="true" required="true" />
+   <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+   <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+   <copyField source="id" dest="id_i" />
    <field name="text" type="text" indexed="true" stored="false" />
 
    <!-- Test a point field for distances -->
@@ -335,12 +328,12 @@ valued. -->
 
    <field name="text_no_analyzer" type="text_no_analyzer" indexed="true" />
 
-   <field name="_version_" type="${solr.tests.longClass:plong}" indexed="true" stored="true" multiValued="false" />
+   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
 
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="cat_docValues" type="string"  indexed="true" stored="true" docValues="true" multiValued="true" />
-   <field name="cat_intDocValues" type="${solr.tests.intClass:pint}"  indexed="true" stored="true" docValues="true" multiValued="true" />
-   <field name="cat_floatDocValues" type="${solr.tests.floatClass:pfloat}"  indexed="true" stored="true" docValues="true" multiValued="true" />
+   <field name="cat_intDocValues" type="int"  indexed="true" stored="true" docValues="true" multiValued="true" />
+   <field name="cat_floatDocValues" type="float"  indexed="true" stored="true" docValues="true" multiValued="true" />
    <field name="cat_length" type="text_length" indexed="true" stored="true" multiValued="true"/>
 
 
@@ -358,12 +351,13 @@ valued. -->
    <dynamicField name="*_s_dv"  type="string"  indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ss"    type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_sS"   type="string"  indexed="false" stored="true"/>
-   <dynamicField name="*_i"    type="${solr.tests.intClass:pint}"    indexed="true"  stored="true"/>
-   <dynamicField name="*_ii"   type="${solr.tests.intClass:pint}"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_l"    type="${solr.tests.longClass:plong}"   indexed="true"  stored="true"/>
-   <dynamicField name="*_f"    type="${solr.tests.floatClass:pfloat}"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"    type="${solr.tests.doubleClass:pdouble}" indexed="true"  stored="true"/>
-
+   <dynamicField name="*_i"    type="int"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ii"   type="int"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_l"    type="long"   indexed="true"  stored="true"/>
+   <dynamicField name="*_f"    type="float"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"    type="double" indexed="true"  stored="true"/>
+   
+    <!-- Test trie fields explicitly -->
    <dynamicField name="*_ti"      type="tint"    indexed="true"  stored="true"/>
    <dynamicField name="*_ti_dv"   type="tint"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_ti_ni_dv"   type="tint"    indexed="false"  stored="true" docValues="true"/>
@@ -413,10 +407,16 @@ valued. -->
    <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_p"      type="pdate"    indexed="true"  stored="true" docValues="true"/>
+   <dynamicField name="*_dts_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_dt_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true"/>
+   <dynamicField name="*_dts_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
+   <dynamicField name="*_is_ndv_p"   type="pint"    indexed="true"  stored="true" docValues="false" multiValued="true"/>
 
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
-   <dynamicField name="*_dt" type="${solr.tests.dateClass:pdate}"    indexed="true"  stored="true"/>
+   <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_ws" type="text_ws" indexed="true"  stored="true"/>
    
    <!-- for testing tfidf functions, see TestFunctionQuery.testTFIDFFunctions -->

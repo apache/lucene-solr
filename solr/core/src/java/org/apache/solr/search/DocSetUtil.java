@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -169,8 +168,7 @@ public class DocSetUtil {
     for (LeafReaderContext ctx : leaves) {
       assert leaves.get(ctx.ord) == ctx;
       LeafReader r = ctx.reader();
-      Fields f = r.fields();
-      Terms t = f.terms(field);
+      Terms t = r.terms(field);
       if (t == null) continue;  // field is missing
       TermsEnum te = t.iterator();
       if (te.seekExact(termVal)) {

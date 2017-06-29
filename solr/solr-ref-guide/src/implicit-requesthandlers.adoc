@@ -53,7 +53,7 @@ Solr ships with many out-of-the-box RequestHandlers, which are called implicit b
 |<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,`/update`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE` |Add, delete and update indexed documents formatted as SolrXML, CSV, SolrJSON or javabin.
 |<<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths,`/update/csv`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV` |Add and update CSV-formatted documents.
 |<<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths,`/update/json`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON` |Add, delete and update SolrJSON-formatted documents.
-|<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,`/update/json/docs`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS ` |Add and update custom JSON-formatted documents.
+|<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,`/update/json/docs`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS` |Add and update custom JSON-formatted documents.
 |===
 
 [[ImplicitRequestHandlers-HowtoViewtheConfiguration]]

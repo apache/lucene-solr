@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -40,6 +41,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
@@ -148,14 +150,17 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     // length of date math caused issues...
-    if (h.getCore().getLatestSchema().getField("foo_dt").getType().isPointField()) {
+    {
+      SchemaField foo_dt = h.getCore().getLatestSchema().getField("foo_dt");
+      String expected = "foo_dt:2013-09-11T00:00:00Z";
+      if (foo_dt.getType().isPointField()) {
+        expected = "(foo_dt:[1378857600000 TO 1378857600000])";
+        if (foo_dt.hasDocValues() && foo_dt.indexed()) {
+          expected = "IndexOrDocValuesQuery"+expected ;
+        }
+      }
       assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
-          , "/debug/parsedquery=='IndexOrDocValuesQuery(foo_dt:[1378857600000 TO 1378857600000])'"
-      );
-    } else {
-      assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
-          , "/debug/parsedquery=='foo_dt:2013-09-11T00:00:00Z'"
-      );
+               , "/debug/parsedquery=='"+expected+"'");
     }
   }
 
@@ -278,7 +283,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertEquals(20, ((TermInSetQuery)q).getTermData().size());
+      if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+        assertEquals(20, ((PointInSetQuery)q).getPackedPoints().size());
+      } else {
+        assertEquals(20, ((TermInSetQuery)q).getTermData().size());
+      }
 
       // for point fields large filter query should use PointInSetQuery
       qParser = QParser.getParser("foo_pi:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
@@ -349,6 +358,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String q = sb.toString();
 
     // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
+    try {
+      ignoreException("Too many clauses");
+      assertJQ(req("q",q)
+          ,"/response/numFound==6");
+      fail();
+    } catch (Exception e) {
+      // expect "too many clauses" exception... see SOLR-10921
+      assertTrue(e.getMessage().contains("many clauses"));
+    }
+
     assertJQ(req("q","*:*", "fq", q)
         ,"/response/numFound==6");
     assertJQ(req("q","*:*", "fq", q, "sow", "false")
@@ -1006,7 +1025,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         QParser qParser = QParser.getParser("text:grackle", req); // "text" has autoGeneratePhraseQueries="true"
         qParser.setParams(sowFalseParams);
         Query q = qParser.getQuery();
-        assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
+        assertEquals("(text:\"crow blackbird\" text:grackl)", q.toString());
       }
 
       QParser qParser = QParser.getParser("text:grackle", req);
@@ -1018,7 +1037,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
         qParser.setParams(params);
         q = qParser.getQuery();
-        assertEquals("(+text_sw:crow +text_sw:blackbird) text_sw:grackl", q.toString());
+        assertEquals("((+text_sw:crow +text_sw:blackbird) text_sw:grackl)", q.toString());
       }
     }
   }
@@ -1037,5 +1056,40 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("df", "shingle23", "q", "A B C", "sow", "false")
         , "/response/numFound==1"
     );
+  }
+  
+  @Test
+  public void testBadRequestInSetQuery() throws SyntaxError {
+    SolrQueryRequest req = req();
+    QParser qParser;
+    String[] fieldSuffix = new String[] {
+        "ti", "tf", "td", "tl",
+        "i", "f", "d", "l",
+        "is", "fs", "ds", "ls",
+        "i_dv", "f_dv", "d_dv", "l_dv",
+        "is_dv", "fs_dv", "ds_dv", "ls_dv",
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo",
+    };
+    
+    for (String suffix:fieldSuffix) {
+      //Good queries
+      qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 25)", req);
+      qParser.setIsFilter(true);
+      qParser.getQuery();
+    }
+    
+    for (String suffix:fieldSuffix) {
+      qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
+      qParser.setIsFilter(true); // this may change in the future
+      try {
+        qParser.getQuery();
+        fail("Expecting exception");
+      } catch (SolrException e) {
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
+      }
+    }
+    
+    
   }
 }

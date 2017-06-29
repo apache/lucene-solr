@@ -513,7 +513,7 @@ Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `lan
 The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
 <<tokenizers.adoc#Tokenizers-StandardTokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.  When combined with <<LanguageAnalysis-CJKBigramFilter,CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
- 
+
 <<LanguageAnalysis-CJKWidthFilter,CJK Width Filter>> folds fullwidth ASCII variants into the equivalent Basic Latin forms.
 
 *Examples:*
@@ -565,7 +565,7 @@ See the example under <<LanguageAnalysis-TraditionalChinese,Traditional Chinese>
 [[LanguageAnalysis-SimplifiedChinese]]
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<LanguageAnalysis-HMMChineseTokenizer,HMM Chinese Tokenizer`>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<LanguageAnalysis-HMMChineseTokenizer,HMM Chinese Tokenizer>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
 The default configuration of the <<tokenizers.adoc#Tokenizers-ICUTokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
@@ -613,7 +613,7 @@ To use the default setup with fallback to English Porter stemmer for English wor
 
 `<analyzer class="org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer"/>`
 
-Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.  See an example of this in the <<LanguageAnalysis-SimplifiedChinese,Simplified Chinese>> section. 
+Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.  See an example of this in the <<LanguageAnalysis-SimplifiedChinese,Simplified Chinese>> section.
 
 [[LanguageAnalysis-Czech]]
 === Czech
@@ -1409,7 +1409,7 @@ Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, 
 
 In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
-There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö->o etc.
+There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö\->o etc.
 
 See also each language section for other relevant filters.
 
@@ -1444,7 +1444,7 @@ It's a semantically less destructive solution than `ScandinavianFoldingFilter`, 
 [[LanguageAnalysis-ScandinavianFoldingFilter]]
 ==== Scandinavian Folding Filter
 
-This filter folds Scandinavian characters åÅäæÄÆ->a and öÖøØ->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
+This filter folds Scandinavian characters åÅäæÄÆ\->a and öÖøØ\->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
 
 It's a semantically more destructive solution than `ScandinavianNormalizationFilter`, but can in addition help with matching raksmorgas as räksmörgås.
 

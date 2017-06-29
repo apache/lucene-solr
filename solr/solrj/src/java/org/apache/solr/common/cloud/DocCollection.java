@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.noggit.JSONUtil;
@@ -66,6 +68,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numPullReplicas;
   private final Integer maxShardsPerNode;
   private final Boolean autoAddReplicas;
+  private final String policy;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, Integer.MAX_VALUE, ZkStateReader.CLUSTER_STATE);
@@ -92,6 +95,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS);
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean autoAddReplicas = (Boolean) verifyProp(props, AUTO_ADD_REPLICAS);
+    this.policy = (String) props.get(Policy.POLICY);
     this.autoAddReplicas = autoAddReplicas == null ? Boolean.FALSE : autoAddReplicas;
     
     verifyProp(props, RULE);
@@ -168,6 +172,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public Slice getSlice(String sliceName) {
     return slices.get(sliceName);
+  }
+
+  public void forEachReplica(BiConsumer<String, Replica> consumer) {
+    slices.forEach((shard, slice) -> slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
   }
 
   /**
@@ -363,4 +371,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return numPullReplicas;
   }
 
+  /**
+   * @return the policy associated with this collection if any
+   */
+  public String getPolicyName() {
+    return policy;
+  }
 }

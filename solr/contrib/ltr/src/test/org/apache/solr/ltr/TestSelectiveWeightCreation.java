@@ -70,16 +70,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     return features;
   }
 
-  private static Map<String,Object> makeFeatureWeights(List<Feature> features) {
-    final Map<String,Object> nameParams = new HashMap<String,Object>();
-    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
-    for (final Feature feat : features) {
-      modelWeights.put(feat.getName(), 0.1);
-    }
-    nameParams.put("weights", modelWeights);
-    return nameParams;
-  }
-
   private LTRScoringQuery.ModelWeight performQuery(TopDocs hits,
       IndexSearcher searcher, int docid, LTRScoringQuery model) throws IOException,
       ModelException {
@@ -168,7 +158,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // when features are NOT requested in the response, only the modelFeature weights should be created
     final LTRScoringModel ltrScoringModel1 = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
+        TestLinearModel.makeFeatureWeights(features));
     LTRScoringQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel1, false)); // features not requested in response
     LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
@@ -185,7 +175,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // when features are requested in the response, weights should be created for all features
     final LTRScoringModel ltrScoringModel2 = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
+        TestLinearModel.makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel2, true)); // features requested in response
     featuresInfo = modelWeight.getFeaturesInfo();

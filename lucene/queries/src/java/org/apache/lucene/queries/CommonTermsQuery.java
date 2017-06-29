@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -214,11 +213,10 @@ public class CommonTermsQuery extends Query {
       Term[] queryTerms) throws IOException {
     TermsEnum termsEnum = null;
     for (LeafReaderContext context : leaves) {
-      final Fields fields = context.reader().fields();
       for (int i = 0; i < queryTerms.length; i++) {
         Term term = queryTerms[i];
         TermContext termContext = contextArray[i];
-        final Terms terms = fields.terms(term.field());
+        final Terms terms = context.reader().terms(term.field());
         if (terms == null) {
           // field does not exist
           continue;

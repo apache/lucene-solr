@@ -28,10 +28,8 @@ The Replication screen shows you the current replication state for the core you 
 [IMPORTANT]
 ====
 When using <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,SolrCloud>>, do not attempt to disable replication via this screen.
-====
 
-.Sample Replication Screen
 image::images/replication-screen/replication.png[image,width=412,height=250]
-
+====
 
 More details on how to configure replication is available in the section called <<index-replication.adoc#index-replication,Index Replication>>.

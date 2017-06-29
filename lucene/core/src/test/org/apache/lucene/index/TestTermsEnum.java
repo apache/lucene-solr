@@ -18,7 +18,17 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -738,7 +748,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    Terms terms = sub.terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
@@ -792,7 +802,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    Terms terms = sub.terms("field");
 
     Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -846,7 +856,7 @@ public class TestTermsEnum extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     w.close();
     LeafReader sub = getOnlyLeafReader(r);
-    Terms terms = sub.fields().terms("field");
+    Terms terms = sub.terms("field");
 
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -986,7 +996,7 @@ public class TestTermsEnum extends LuceneTestCase {
       w.addDocument(doc);
       IndexReader r = w.getReader();
       assertEquals(1, r.leaves().size());
-      TermsEnum te = r.leaves().get(0).reader().fields().terms("field").iterator();
+      TermsEnum te = r.leaves().get(0).reader().terms("field").iterator();
       for(int i=0;i<=termCount;i++) {
         assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
       }
@@ -1007,9 +1017,8 @@ public class TestTermsEnum extends LuceneTestCase {
     doc.add(newStringField("field", "foobar", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    Fields fields = MultiFields.getFields(r);
+    Terms terms = MultiFields.getTerms(r, "field");
     CompiledAutomaton automaton = new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
-    Terms terms = fields.terms("field");
     String message = expectThrows(IllegalArgumentException.class, () -> {terms.intersect(automaton, null);}).getMessage();
     assertEquals("please use CompiledAutomaton.getTermsEnum instead", message);
     r.close();

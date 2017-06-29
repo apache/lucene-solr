@@ -212,7 +212,7 @@ For more information about user-defined properties, see the section <<configurin
 See also the section <<ConfigAPI-CreatingandUpdatingUser-DefinedProperties,Creating and Updating User-Defined Properties>> below for examples of how to use this type of command.
 
 [[ConfigAPI-HowtoMapsolrconfig.xmlPropertiestoJSON]]
-== How to Map `solrconfig.xml` Properties to JSON
+== How to Map solrconfig.xml Properties to JSON
 
 By using this API, you will be generating JSON representations of properties defined in `solrconfig.xml`. To understand how properties should be represented with the API, let's take a look at a few examples.
 

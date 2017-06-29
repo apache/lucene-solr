@@ -34,7 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -45,8 +45,8 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
-import org.apache.solr.api.SpecProvider;
-import org.apache.solr.util.JsonSchemaValidator;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +74,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrConfigHandler.setWt(req, CommonParams.JSON);
+    RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
     String key = path.substring(path.lastIndexOf('/')+1);
@@ -264,10 +264,10 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
       synchronized (this) {
         if (apis == null) {
           Collection<Api> apis = new ArrayList<>();
-          final SpecProvider authcCommands = ApiBag.getSpec("cluster.security.authentication.Commands");
-          final SpecProvider authzCommands = ApiBag.getSpec("cluster.security.authorization.Commands");
-          apis.add(new ReqHandlerToApi(this, ApiBag.getSpec("cluster.security.authentication")));
-          apis.add(new ReqHandlerToApi(this, ApiBag.getSpec("cluster.security.authorization")));
+          final SpecProvider authcCommands = Utils.getSpec("cluster.security.authentication.Commands");
+          final SpecProvider authzCommands = Utils.getSpec("cluster.security.authorization.Commands");
+          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
+          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
           SpecProvider authcSpecProvider = () -> {
             AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
             return authcPlugin != null && authcPlugin instanceof SpecProvider ?

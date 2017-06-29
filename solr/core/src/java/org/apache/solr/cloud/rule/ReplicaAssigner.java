@@ -211,7 +211,7 @@ public class ReplicaAssigner {
     int startPosition = 0;
     Map<String, Map<String, Integer>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
     List<String> sortedLiveNodes = new ArrayList<>(this.participatingLiveNodes);
-    Collections.sort(sortedLiveNodes, (n1, n2) -> {
+    Collections.sort(sortedLiveNodes, (String n1, String n2) -> {
       int result1 = 0;
       for (int i = 0; i < rulePermutation.length; i++) {
         Rule rule = rules.get(rulePermutation[i]);

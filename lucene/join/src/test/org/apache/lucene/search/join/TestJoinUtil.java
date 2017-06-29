@@ -1188,13 +1188,16 @@ public class TestJoinUtil extends LuceneTestCase {
   private void executeRandomJoin(boolean multipleValuesPerDocument, int maxIndexIter, int maxSearchIter, int numberOfDocumentsToIndex) throws Exception {
     for (int indexIter = 1; indexIter <= maxIndexIter; indexIter++) {
       if (VERBOSE) {
-        System.out.println("indexIter=" + indexIter);
+        System.out.println("TEST: indexIter=" + indexIter + " numDocs=" + numberOfDocumentsToIndex);
       }
       IndexIterationContext context = createContext(numberOfDocumentsToIndex, multipleValuesPerDocument, false);
       IndexSearcher indexSearcher = context.searcher;
+      if (VERBOSE) {
+        System.out.println("TEST: got searcher=" + indexSearcher);
+      }
       for (int searchIter = 1; searchIter <= maxSearchIter; searchIter++) {
         if (VERBOSE) {
-          System.out.println("searchIter=" + searchIter);
+          System.out.println("TEST: searchIter=" + searchIter);
         }
 
         int r = random().nextInt(context.randomUniqueValues.length);
@@ -1325,7 +1328,10 @@ public class TestJoinUtil extends LuceneTestCase {
       String uniqueRandomValue;
       do {
         // the trick is to generate values which will be ordered similarly for string, ints&longs, positive nums makes it easier
-        final int nextInt = random.nextInt(Integer.MAX_VALUE);
+        //
+        // Additionally in order to avoid precision loss when joining via a float field we can't generate values higher than
+        // 0xFFFFFF, so we can't use Integer#MAX_VALUE as upper bound here:
+        final int nextInt = random.nextInt(0xFFFFFF);
         uniqueRandomValue = String.format(Locale.ROOT, "%08x", nextInt);
         assert nextInt == Integer.parseUnsignedInt(uniqueRandomValue,16);
       } while ("".equals(uniqueRandomValue) || trackSet.contains(uniqueRandomValue));
@@ -1357,9 +1363,9 @@ public class TestJoinUtil extends LuceneTestCase {
       }
       final List<String> subValues;
       {
-      int start = randomUniqueValuesReplica.size()==numberOfLinkValues? 0 : random.nextInt(randomUniqueValuesReplica.size()-numberOfLinkValues);
-      subValues = randomUniqueValuesReplica.subList(start, start+numberOfLinkValues);
-      Collections.shuffle(subValues, random);
+        int start = randomUniqueValuesReplica.size()==numberOfLinkValues? 0 : random.nextInt(randomUniqueValuesReplica.size()-numberOfLinkValues);
+        subValues = randomUniqueValuesReplica.subList(start, start+numberOfLinkValues);
+        Collections.shuffle(subValues, random);
       }
       for (String linkValue : subValues) {
 
@@ -1401,6 +1407,9 @@ public class TestJoinUtil extends LuceneTestCase {
     }
 
     if (random.nextBoolean()) {
+      if (VERBOSE) {
+        System.out.println("TEST: now force merge");
+      }
       w.forceMerge(1);
     }
     w.close();

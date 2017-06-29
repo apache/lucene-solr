@@ -138,8 +138,10 @@
    <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
    <dynamicField name="*_is" type="int"    indexed="true"  stored="true"  multiValued="true"/>
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" />
+   <dynamicField name="*_s_ns"  type="string"  indexed="true"  stored="false" />
    <dynamicField name="*_ss" type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
+   <dynamicField name="*_l_ns"  type="long"   indexed="true"  stored="false"/>
    <dynamicField name="*_ls" type="long"   indexed="true"  stored="true"  multiValued="true"/>
    <dynamicField name="*_t"  type="text_general"    indexed="true"  stored="true"/>
    <dynamicField name="*_txt" type="text_general"   indexed="true"  stored="true" multiValued="true"/>
@@ -623,17 +625,22 @@
 
    <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
         Parameters:
-          defaultCurrency: Specifies the default currency if none specified. Defaults to "USD"
-          precisionStep:   Specifies the precisionStep for the TrieLong field used for the amount
-          providerClass:   Lets you plug in other exchange provider backend:
-                           solr.FileExchangeRateProvider is the default and takes one parameter:
-                             currencyConfig: name of an xml file holding exchange rates
-                           solr.OpenExchangeRatesOrgProvider uses rates from openexchangerates.org:
-                             ratesFileLocation: URL or path to rates JSON file (default latest.json on the web)
-                             refreshInterval: Number of minutes between each rates fetch (default: 1440, min: 60)
+          amountLongSuffix: Required. Refers to a dynamic field for the raw amount sub-field. 
+                              The dynamic field must have a field type that extends LongValueFieldType.
+                              Note: If you expect to use Atomic Updates, this dynamic field may not be stored.
+          codeStrSuffix:    Required. Refers to a dynamic field for the currency code sub-field.
+                              The dynamic field must have a field type that extends StrField.
+                              Note: If you expect to use Atomic Updates, this dynamic field may not be stored.
+          defaultCurrency:  Specifies the default currency if none specified. Defaults to "USD"
+          providerClass:    Lets you plug in other exchange provider backend:
+                            solr.FileExchangeRateProvider is the default and takes one parameter:
+                              currencyConfig: name of an xml file holding exchange rates
+                            solr.OpenExchangeRatesOrgProvider uses rates from openexchangerates.org:
+                              ratesFileLocation: URL or path to rates JSON file (default latest.json on the web)
+                              refreshInterval: Number of minutes between each rates fetch (default: 1440, min: 60)
    -->
-    <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD" currencyConfig="currency.xml" />
-             
+    <fieldType name="currency" class="solr.CurrencyFieldType" amountLongSuffix="_l_ns" codeStrSuffix="_s_ns"
+               defaultCurrency="USD" currencyConfig="currency.xml" />
 
 
    <!-- some examples for different languages (generally ordered by ISO code) -->

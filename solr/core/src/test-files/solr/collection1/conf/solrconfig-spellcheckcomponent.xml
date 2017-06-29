@@ -20,8 +20,7 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <indexConfig>
-    <mergePolicy enable="${solr.tests.useMergePolicy:true}" class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />
-    <mergePolicyFactory enable="${solr.tests.useMergePolicyFactory:true}" class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
+    <mergePolicyFactory class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
     <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
@@ -34,8 +33,8 @@
       <maxWarmingSearchers>1</maxWarmingSearchers>
     </query>
   </indexConfig>
-  <requestHandler name="standard"
-     class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select"
+     class="solr.SearchHandler"></requestHandler>
 
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
@@ -157,7 +156,7 @@
    -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
-  <requestHandler name="spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <!-- omp = Only More Popular -->
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -170,7 +169,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
       <lst name="defaults">
         <str name="defType">dismax</str>
         <str name="qf">lowerfilt1^1</str>
@@ -179,7 +178,7 @@
         <str>spellcheck</str>
       </arr>
  </requestHandler>
- <requestHandler name="spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
+ <requestHandler name="/spellCheckWithWordbreak" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">default</str>
       <str name="spellcheck.dictionary">wordbreak</str>
@@ -189,7 +188,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-  <initParams path="spellCheckCompRH,spellCheckCompRH1,spellCheckWithWordbreak">
+  <initParams path="/spellCheckCompRH,/spellCheckCompRH1,/spellCheckWithWordbreak">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

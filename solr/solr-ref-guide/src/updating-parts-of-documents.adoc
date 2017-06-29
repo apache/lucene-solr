@@ -35,37 +35,22 @@ Solr supports several modifiers that atomically update values of a document. Thi
 
 To use atomic updates, add a modifier to the field that needs to be updated. The content can be updated, added to, or incrementally increased if a number.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
-|===
-|Modifier |Usage
-|set a|
+`set`::
 Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
++
+May be specified as a single value, or as a list for multiValued fields.
 
-May be specified as a single value, or as a list for multiValued fields
+`add`::
+Adds the specified values to a multiValued field. May be specified as a single value, or as a list.
 
-|add a|
-Adds the specified values to a multiValued field.
+`remove`::
+Removes (all occurrences of) the specified values from a multiValued field. May be specified as a single value, or as a list.
 
-May be specified as a single value, or as a list.
+`removeregex`::
+Removes all occurrences of the specified regex from a multiValued field. May be specified as a single value, or as a list.
 
-|remove a|
-Removes (all occurrences of) the specified values from a multiValued field.
-
-May be specified as a single value, or as a list.
-
-|removeregex a|
-Removes all occurrences of the specified regex from a multiValued field.
-
-May be specified as a single value, or as a list.
-
-|inc a|
-Increments a numeric value by a specific amount.
-
-Must be specified as a single numeric value.
-
-|===
+`inc`::
+Increments a numeric value by a specific amount. Must be specified as a single numeric value.
 
 [[UpdatingPartsofDocuments-FieldStorage]]
 === Field Storage
@@ -74,7 +59,7 @@ The core functionality of atomically updating a document requires that all field
 
 If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields. If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
 
-There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types use derived fields. Examples of this are solr.BBoxField and solr.LatLonType. These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
+There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types use derived fields. Examples of this are solr.BBoxField and solr.LatLonType. CurrencyFieldType also uses derived fields.  These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
 
 [[UpdatingPartsofDocuments-Example]]
 === Example
@@ -130,20 +115,11 @@ An atomic update operation is performed using this approach only when the fields
 
 To use in-place updates, add a modifier to the field that needs to be updated. The content can be updated or incrementally increased.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`set`::
+Set or replace the field value(s) with the specified value(s). May be specified as a single value.
 
-[cols="30,70",options="header"]
-|===
-|Modifier |Usage
-|set a|
-Set or replace the field value(s) with the specified value(s).
-
-May be specified as a single value.
-|inc a|
-Increments a numeric value by a specific amount.
-
-Must be specified as a single numeric value.
-|===
+`inc`::
+Increments a numeric value by a specific amount. Must be specified as a single numeric value.
 
 [[UpdatingPartsofDocuments-Example.1]]
 === Example

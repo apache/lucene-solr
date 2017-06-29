@@ -101,7 +101,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       String key = entry.getKey();
       NamedList commandResult = entry.getValue();
       Integer totalGroupedHitCount = (Integer) commandResult.get("totalGroupedHitCount");
-      Integer totalHits = (Integer) commandResult.get("totalHits");
+      Number totalHits = (Number) commandResult.get("totalHits"); // previously Integer now Long
       if (totalHits != null) {
         Integer matches = (Integer) commandResult.get("matches");
         Float maxScore = (Float) commandResult.get("maxScore");
@@ -114,9 +114,9 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         ScoreDoc[] scoreDocs = transformToNativeShardDoc(documents, groupSort, shard, schema);
         final TopDocs topDocs;
         if (withinGroupSort.equals(Sort.RELEVANCE)) {
-          topDocs = new TopDocs(totalHits, scoreDocs, maxScore);
+          topDocs = new TopDocs(totalHits.longValue(), scoreDocs, maxScore);
         } else {
-          topDocs = new TopFieldDocs(totalHits, scoreDocs, withinGroupSort.getSort(), maxScore);
+          topDocs = new TopFieldDocs(totalHits.longValue(), scoreDocs, withinGroupSort.getSort(), maxScore);
         }
         result.put(key, new QueryCommandResult(topDocs, matches));
         continue;
@@ -129,7 +129,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         String groupValue = commandResult.getName(i);
         @SuppressWarnings("unchecked")
         NamedList<Object> groupResult = (NamedList<Object>) commandResult.getVal(i);
-        Integer totalGroupHits = (Integer) groupResult.get("totalHits");
+        Number totalGroupHits = (Number) groupResult.get("totalHits"); // // previously Integer now Long
         Float maxScore = (Float) groupResult.get("maxScore");
         if (maxScore == null) {
           maxScore = Float.NaN;
@@ -140,7 +140,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         ScoreDoc[] scoreDocs = transformToNativeShardDoc(documents, withinGroupSort, shard, schema);
 
         BytesRef groupValueRef = groupValue != null ? new BytesRef(groupValue) : null;
-        groupDocs.add(new GroupDocs<>(Float.NaN, maxScore, totalGroupHits, scoreDocs, groupValueRef, null));
+        groupDocs.add(new GroupDocs<>(Float.NaN, maxScore, totalGroupHits.longValue(), scoreDocs, groupValueRef, null));
       }
 
       @SuppressWarnings("unchecked")

@@ -26,6 +26,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -144,6 +147,8 @@ public abstract class TextResponseWriter implements PushWriter {
       writeNumber(name, (Number) val);
     } else if (val instanceof Boolean) {
       writeBool(name, (Boolean) val);
+    } else if (val instanceof AtomicBoolean)  {
+      writeBool(name, ((AtomicBoolean) val).get());
     } else if (val instanceof Date) {
       writeDate(name, (Date) val);
     } else if (val instanceof Document) {
@@ -221,13 +226,17 @@ public abstract class TextResponseWriter implements PushWriter {
     } else if (val instanceof Float) {
       // we pass the float instead of using toString() because
       // it may need special formatting. same for double.
-      writeFloat(name, ((Float)val).floatValue());
+      writeFloat(name, val.floatValue());
     } else if (val instanceof Double) {
-      writeDouble(name, ((Double) val).doubleValue());
+      writeDouble(name, val.doubleValue());
     } else if (val instanceof Short) {
       writeInt(name, val.toString());
     } else if (val instanceof Byte) {
       writeInt(name, val.toString());
+    } else if (val instanceof AtomicInteger) {
+      writeInt(name, ((AtomicInteger) val).get());
+    } else if (val instanceof AtomicLong) {
+      writeLong(name, ((AtomicLong) val).get());
     } else {
       // default... for debugging only
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);

@@ -23,7 +23,6 @@ import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -162,8 +161,8 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       double pc = numPositiveDocs / numDocs;
       double entropyC = binaryEntropy(pc);
 
-      Terms terms = MultiFields.getFields(searcher.getIndexReader()).terms(field);
-      TermsEnum termsEnum = terms.iterator();
+      Terms terms = ((SolrIndexSearcher)searcher).getSlowAtomicReader().terms(field);
+      TermsEnum termsEnum = terms == null ? TermsEnum.EMPTY : terms.iterator();
       BytesRef term;
       PostingsEnum postingsEnum = null;
       while ((term = termsEnum.next()) != null) {

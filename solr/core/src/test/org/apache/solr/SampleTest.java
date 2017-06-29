@@ -61,7 +61,7 @@ public class SampleTest extends SolrTestCaseJ4 {
     assertQ("couldn't find subject hoss",
             req("subject:Hoss")
             ,"//result[@numFound=1]"
-            ,"//int[@name='id'][.='4055']"
+            ,"//str[@name='id'][.='4055']"
             );
   }
 
@@ -94,7 +94,7 @@ public class SampleTest extends SolrTestCaseJ4 {
     assertQ("couldn't find subject hoss",
             req
             ,"//result[@numFound=1]"
-            ,"//int[@name='id'][.='4055']"
+            ,"//str[@name='id'][.='4055']"
             );
 
     /* make your own LocalRequestFactory to build a request
@@ -102,7 +102,7 @@ public class SampleTest extends SolrTestCaseJ4 {
      * Note: the qt proves we are using our custom config...
      */
     TestHarness.LocalRequestFactory l = h.getRequestFactory
-      ("crazy_custom_qt",100,200,CommonParams.VERSION,"2.2");
+      ("/crazy_custom_qt",100,200,CommonParams.VERSION,"2.2");
     assertQ("how did i find Mack Daddy? ",
             l.makeRequest( "Mack Daddy" )
             ,"//result[@numFound=0]"

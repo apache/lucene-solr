@@ -35,6 +35,9 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiSupport;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
@@ -46,15 +49,12 @@ import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.ApiSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * This manages the lifecycle of a set of plugin of the same type .
@@ -125,10 +125,12 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
-      return new LazyPluginHolder<>(meta, info, core, core.getMemClassLoader());
+      return new LazyPluginHolder<T>(meta, info, core, "true".equals(System.getProperty("enable.runtime.lib")) ?
+          core.getMemClassLoader() :
+          core.getResourceLoader(), true);
     } else if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
       log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
-      return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader());
+      return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
       T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
       initInstance(inst, info);
@@ -371,11 +373,13 @@ public class PluginBag<T> implements AutoCloseable {
     protected SolrException solrException;
     private final SolrCore core;
     protected ResourceLoader resourceLoader;
+    private final boolean isRuntimeLib;
 
 
-    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader) {
+    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader, boolean isRuntimeLib) {
       super(pluginInfo);
       this.pluginMeta = pluginMeta;
+      this.isRuntimeLib = isRuntimeLib;
       this.core = core;
       this.resourceLoader = loader;
       if (loader instanceof MemClassLoader) {
@@ -413,7 +417,19 @@ public class PluginBag<T> implements AutoCloseable {
         loader.loadJars();
       }
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
-      T localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+      T localInst = null;
+      try {
+        localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+      } catch (SolrException e) {
+        if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
+          throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
+              e.getMessage() + ". runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true",
+              e.getCause());
+        }
+        throw e;
+
+
+      }
       initInstance(localInst, pluginInfo);
       if (localInst instanceof SolrCoreAware) {
         SolrResourceLoader.assertAwareCompatibility(SolrCoreAware.class, localInst);

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -56,6 +57,33 @@ import org.slf4j.LoggerFactory;
 public abstract class PointField extends NumericFieldType {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  /**
+   * <p>
+   * The Test framework can set this global variable to instruct PointField that
+   * (on init) it should be tollerant of the <code>precisionStep</code> argument used by TrieFields.
+   * This allows for simple randomization of TrieFields and PointFields w/o extensive duplication
+   * of <code>&lt;fieldType/&gt;</code> declarations.
+   * </p>
+   *
+   * <p>NOTE: When {@link TrieField} is removed, this boolean must also be removed</p>
+   *
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public static boolean TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
+  
+  /** 
+   * NOTE: This method can be removed completely when
+   * {@link #TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS} is removed 
+   */
+  @Override
+  protected void init(IndexSchema schema, Map<String, String> args) {
+    super.init(schema, args);
+    if (TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS) {
+      args.remove("precisionStep");
+    }
+  }
 
   @Override
   public boolean isPointField() {
@@ -127,7 +155,7 @@ public abstract class PointField extends NumericFieldType {
       return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
     } else {
       return getExactQuery(field, externalVal);
-    }
+    } 
   }
 
   protected abstract Query getExactQuery(SchemaField field, String externalVal);
@@ -190,6 +218,11 @@ public abstract class PointField extends NumericFieldType {
   }
   
   protected abstract String indexedToReadable(BytesRef indexedForm);
+  
+  @Override
+  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't run prefix queries on numeric fields");
+  }
   
   protected boolean isFieldUsed(SchemaField field) {
     boolean indexed = field.indexed();

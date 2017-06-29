@@ -522,8 +522,10 @@ public class TestQueryParser extends QueryParserTestBase {
         .build();
 
     BooleanQuery graphQuery = new BooleanQuery.Builder()
-        .add(guineaPig, BooleanClause.Occur.SHOULD)
-        .add(cavy, BooleanClause.Occur.SHOULD)
+        .add(new BooleanQuery.Builder()
+            .add(guineaPig, BooleanClause.Occur.SHOULD)
+            .add(cavy, BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.SHOULD)
         .build();
     assertEquals(graphQuery, dumb.parse("guinea pig"));
 
@@ -541,11 +543,32 @@ public class TestQueryParser extends QueryParserTestBase {
     QueryParser smart = new SmartQueryParser();
     smart.setSplitOnWhitespace(false);
     graphQuery = new BooleanQuery.Builder()
-        .add(guineaPig, BooleanClause.Occur.SHOULD)
-        .add(cavy, BooleanClause.Occur.SHOULD)
+        .add(new BooleanQuery.Builder()
+            .add(guineaPig, BooleanClause.Occur.SHOULD)
+            .add(cavy, BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.SHOULD)
         .build();
     assertEquals(graphQuery, smart.parse("guinea pig"));
     assertEquals(phraseGuineaPig, smart.parse("\"guinea pig\""));
+
+    // with the AND operator
+    dumb.setDefaultOperator(Operator.AND);
+    BooleanQuery graphAndQuery = new BooleanQuery.Builder()
+        .add(new BooleanQuery.Builder()
+            .add(guineaPig, BooleanClause.Occur.SHOULD)
+            .add(cavy, BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.MUST)
+        .build();
+    assertEquals(graphAndQuery, dumb.parse("guinea pig"));
+
+    graphAndQuery = new BooleanQuery.Builder()
+        .add(new BooleanQuery.Builder()
+            .add(guineaPig, BooleanClause.Occur.SHOULD)
+            .add(cavy, BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.MUST)
+        .add(cavy, BooleanClause.Occur.MUST)
+        .build();
+    assertEquals(graphAndQuery, dumb.parse("guinea pig cavy"));
   }
 
   public void testEnableGraphQueries() throws Exception {
@@ -616,30 +639,30 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea /pig/", a, "guinea /pig/");
 
     // Operators should not interrupt multiword analysis if not don't associate
-    assertQueryEquals("(guinea pig)", a, "(+guinea +pig) cavy");
-    assertQueryEquals("+(guinea pig)", a, "+((+guinea +pig) cavy)");
-    assertQueryEquals("-(guinea pig)", a, "-((+guinea +pig) cavy)");
-    assertQueryEquals("!(guinea pig)", a, "-((+guinea +pig) cavy)");
-    assertQueryEquals("NOT (guinea pig)", a, "-((+guinea +pig) cavy)");
-    assertQueryEquals("(guinea pig)^2", a, "((+guinea +pig) cavy)^2.0");
+    assertQueryEquals("(guinea pig)", a, "((+guinea +pig) cavy)");
+    assertQueryEquals("+(guinea pig)", a, "+(((+guinea +pig) cavy))");
+    assertQueryEquals("-(guinea pig)", a, "-(((+guinea +pig) cavy))");
+    assertQueryEquals("!(guinea pig)", a, "-(((+guinea +pig) cavy))");
+    assertQueryEquals("NOT (guinea pig)", a, "-(((+guinea +pig) cavy))");
+    assertQueryEquals("(guinea pig)^2", a, "(((+guinea +pig) cavy))^2.0");
 
-    assertQueryEquals("field:(guinea pig)", a, "(+guinea +pig) cavy");
+    assertQueryEquals("field:(guinea pig)", a, "((+guinea +pig) cavy)");
 
-    assertQueryEquals("+small guinea pig", a, "+small (+guinea +pig) cavy");
-    assertQueryEquals("-small guinea pig", a, "-small (+guinea +pig) cavy");
-    assertQueryEquals("!small guinea pig", a, "-small (+guinea +pig) cavy");
-    assertQueryEquals("NOT small guinea pig", a, "-small (+guinea +pig) cavy");
-    assertQueryEquals("small* guinea pig", a, "small* (+guinea +pig) cavy");
-    assertQueryEquals("small? guinea pig", a, "small? (+guinea +pig) cavy");
-    assertQueryEquals("\"small\" guinea pig", a, "small (+guinea +pig) cavy");
+    assertQueryEquals("+small guinea pig", a, "+small ((+guinea +pig) cavy)");
+    assertQueryEquals("-small guinea pig", a, "-small ((+guinea +pig) cavy)");
+    assertQueryEquals("!small guinea pig", a, "-small ((+guinea +pig) cavy)");
+    assertQueryEquals("NOT small guinea pig", a, "-small ((+guinea +pig) cavy)");
+    assertQueryEquals("small* guinea pig", a, "small* ((+guinea +pig) cavy)");
+    assertQueryEquals("small? guinea pig", a, "small? ((+guinea +pig) cavy)");
+    assertQueryEquals("\"small\" guinea pig", a, "small ((+guinea +pig) cavy)");
 
-    assertQueryEquals("guinea pig +running", a, "(+guinea +pig) cavy +running");
-    assertQueryEquals("guinea pig -running", a, "(+guinea +pig) cavy -running");
-    assertQueryEquals("guinea pig !running", a, "(+guinea +pig) cavy -running");
-    assertQueryEquals("guinea pig NOT running", a, "(+guinea +pig) cavy -running");
-    assertQueryEquals("guinea pig running*", a, "(+guinea +pig) cavy running*");
-    assertQueryEquals("guinea pig running?", a, "(+guinea +pig) cavy running?");
-    assertQueryEquals("guinea pig \"running\"", a, "(+guinea +pig) cavy running");
+    assertQueryEquals("guinea pig +running", a, "((+guinea +pig) cavy) +running");
+    assertQueryEquals("guinea pig -running", a, "((+guinea +pig) cavy) -running");
+    assertQueryEquals("guinea pig !running", a, "((+guinea +pig) cavy) -running");
+    assertQueryEquals("guinea pig NOT running", a, "((+guinea +pig) cavy) -running");
+    assertQueryEquals("guinea pig running*", a, "((+guinea +pig) cavy) running*");
+    assertQueryEquals("guinea pig running?", a, "((+guinea +pig) cavy) running?");
+    assertQueryEquals("guinea pig \"running\"", a, "((+guinea +pig) cavy) running");
 
     assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
 
@@ -744,14 +767,16 @@ public class TestQueryParser extends QueryParserTestBase {
     BooleanQuery guineaPig = synonym.build();
 
     BooleanQuery graphQuery = new BooleanQuery.Builder()
-        .add(guineaPig, BooleanClause.Occur.SHOULD)
-        .add(cavy, BooleanClause.Occur.SHOULD)
-        .build();;
+        .add(new BooleanQuery.Builder()
+            .add(guineaPig, BooleanClause.Occur.SHOULD)
+            .add(cavy, BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.SHOULD)
+        .build();
     assertEquals(graphQuery, parser.parse("guinea pig"));
 
     boolean oldSplitOnWhitespace = splitOnWhitespace;
     splitOnWhitespace = QueryParser.DEFAULT_SPLIT_ON_WHITESPACE;
-    assertQueryEquals("guinea pig", new MockSynonymAnalyzer(), "(+guinea +pig) cavy");
+    assertQueryEquals("guinea pig", new MockSynonymAnalyzer(), "((+guinea +pig) cavy)");
     splitOnWhitespace = oldSplitOnWhitespace;
   }
    
@@ -917,7 +942,7 @@ public class TestQueryParser extends QueryParserTestBase {
     DirectoryReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
       
-    int hits = is.search(q, 10).totalHits;
+    long hits = is.search(q, 10).totalHits;
     ir.close();
     ramDir.close();
     if (hits == 1){

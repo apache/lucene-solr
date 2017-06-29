@@ -150,8 +150,10 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     for(NamedEvaluator evaluator : evaluators) {
       expression.addParameter(String.format(Locale.ROOT, "%s as %s", evaluator.getEvaluator().toExpression(factory), evaluator.getName()));
     }
-    
-    expression.addParameter(new StreamExpressionNamedParameter("productSort", orderBy.toExpression(factory)));
+
+    if(orderBy != null) {
+      expression.addParameter(new StreamExpressionNamedParameter("productSort", orderBy.toExpression(factory)));
+    }
     
     return expression;   
   }
@@ -171,8 +173,10 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     for(NamedEvaluator evaluator : evaluators){
       explanation.addHelper(evaluator.getEvaluator().toExplanation(factory));
     }
-    
-    explanation.addHelper(orderBy.toExplanation(factory));
+
+    if(orderBy != null) {
+      explanation.addHelper(orderBy.toExplanation(factory));
+    }
     
     return explanation;
   }

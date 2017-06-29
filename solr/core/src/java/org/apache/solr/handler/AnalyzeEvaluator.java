@@ -54,13 +54,13 @@ public class AnalyzeEvaluator extends SimpleEvaluator {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
     Object solrCoreObj = context.get("solr-core");
     if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
-    SolrCore solrCore = (SolrCore) solrCoreObj;
 
-    analyzer = solrCore.getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
+    analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
   }
 
   private void init(String fieldName, String analyzerField) {
@@ -74,9 +74,13 @@ public class AnalyzeEvaluator extends SimpleEvaluator {
 
   @Override
   public Object evaluate(Tuple tuple) throws IOException {
-    String value = tuple.getString(fieldName);
-    if(value == null) {
-      return null;
+    String value = null;
+    Object obj = tuple.get(fieldName);
+
+    if(obj == null) {
+      value = fieldName;
+    } else {
+      value = obj.toString();
     }
 
     List<String> tokens = new ArrayList();

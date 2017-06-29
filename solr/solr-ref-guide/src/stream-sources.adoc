@@ -113,7 +113,16 @@ jdbc(
 ----
 
 == echo
-//TODO
+
+The `echo` function returns a single Tuple echoing its text parameter. `Echo` is the simplest stream source designed to provide text
+to a text analyzing stream decorator.
+
+=== echo Syntax
+
+[source,text]
+----
+echo("Hello world")
+----
 
 == facet
 
@@ -204,9 +213,41 @@ features(collection1,
          numTerms=250)
 ----
 
-== gatherNodes
+== nodes
 
-The `gatherNodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
+The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
+
+== knn
+
+The `knn` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knn` function
+use the More Like This query parser plugin.
+
+=== knn Parameters
+
+* `collection`: (Mandatory) The collection to perform the search in.
+* `id`: (Mandatory) The id of the source document to begin the knn search from.
+* `qf`: (Mandatory) The query field used to compare documents.
+* `k`: (Mandatory) The number of nearest neighbors to return.
+* `fl`: (Mandatory) The field list to return.
+* `mintf`: (Optional) The minimum numer of occurrences of the term in the source document to be inlcued in the search.
+* `maxtf`: (Optional) The maximum numer of occurrences of the term in the source document to be inlcued in the search.
+* `mindf`: (Optional) The minimum numer of occurrences in the corpus to be inlcued in the search.
+* `maxdf`: (Optional) The maximum numer of occurrences in the corpus to be inlcued in the search.
+* `minwl`: (Optional) The minimum world length of to be inlcued in the search.
+* `maxwl`: (Optional) The maximum world length of to be inlcued in the search.
+
+=== knn Syntax
+
+[source,text]
+----
+knn(collection1,
+    id="doc1",
+    qf="text_field",
+    k="10",
+    fl="id, title",
+    mintf="3",
+    maxdf="10000000")
+----
 
 == model
 
@@ -275,6 +316,7 @@ The `significantTerms` function queries a SolrCloud collection, but instead of r
 
 * `collection`: (Mandatory) The collection that the function is run on.
 * `q`: (Mandatory) The query that describes the foreground document set.
+* `field`: (Mandatory) The field to extract the terms from.
 * `limit`: (Optional, Default 20) The max number of terms to return.
 * `minDocFreq`: (Optional, Defaults to 5 documents) The minimum number of documents the term must appear in on a shard. This is a float value. If greater then 1.0 then it's considered the absolute number of documents. If less then 1.0 it's treated as a percentage of documents.
 * `maxDocFreq`: (Optional, Defaults to 30% of documents) The maximum number of documents the term can appear in on a shard. This is a float value. If greater then 1.0 then it's considered the absolute number of documents. If less then 1.0 it's treated as a percentage of documents.
@@ -286,12 +328,14 @@ The `significantTerms` function queries a SolrCloud collection, but instead of r
 ----
 significantTerms(collection1,
                  q="body:Solr",
+                 field="author",
+                 limit="50",
                  minDocFreq="10",
                  maxDocFreq=".20",
                  minTermLength="5")
 ----
 
-In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms that appear in 10 or more documents but not more then 20% of the corpus.
+In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms from the `authors` field that appear in 10 or more documents but not more then 20% of the corpus.
 
 == shortestPath
 
@@ -327,7 +371,30 @@ The expression above performs a breadth-first search to find the shortest paths 
 The search starts from the nodeID "\john@company.com" in the `from_address` field and searches for the nodeID "\jane@company.com" in the `to_address` field. This search is performed iteratively until the `maxDepth` has been reached. Each level in the traversal is implemented as a parallel partitioned nested loop join across the entire collection. The `threads` parameter controls the number of threads performing the join at each level, while the `partitionSize` parameter controls the of number of nodes in each join partition. The `maxDepth` parameter controls the number of levels to traverse. `fq` is a limiting query applied to each level in the traversal.
 
 == shuffle
-//TODO
+
+The `shuffle` expression sorts and exports entire result sets. The `shuffle` expression is similar to the `search` expression except that
+under the covers `shuffle` always uses the /export handler. The `shuffle` expression is designed to be combined with the relational algebra
+decorators that require complete, sorted result sets. Shuffled result sets can be partitioned across worker nodes with the parallel
+stream decorator to perform parallel relational algebra. When used in parallel mode the partitionKeys parameter must be provided.
+
+=== shuffle Parameters
+
+* `collection`: (Mandatory) the collection being searched.
+* `q`: (Mandatory) The query to perform on the Solr index.
+* `fl`: (Mandatory) The list of fields to return.
+* `sort`: (Mandatory) The sort criteria.
+* `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+* `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorators.adoc#parallel,parallel>> function for details.
+
+=== shuffle Syntax
+
+[source,text]
+----
+shuffle(collection1,
+        q="*:*",
+        fl="id,a_s,a_i,a_f",
+        sort="a_f asc, a_i asc")
+----
 
 == stats
 
@@ -358,7 +425,38 @@ stats(collection1,
 
 == timeseries
 
-//TODO
+The `timeseries` function builds a time series aggregation. Under the covers the `timeseries` function uses the
+JSON Facet API as its high performance aggregation engine.
+
+=== timeseries Parameters
+
+* `collection`: (Mandatory) Collection the stats will be aggregated from.
+* `q`: (Mandatory) The query to build the aggregations from.
+* `field`: (Mandatory) The date field for the time series.
+* `start`: (Mandatory) The start of the time series expressed in Solr date or date math syntax.
+* `end`: (Mandatory) The end of the time series expressed in Solr date or date math syntax.
+* `gap`: (Mandatory) The time gap between time series aggregation points expressed in Solr date math syntax.
+* `format`: (Optional) Date template to format the date field in the output tuples. Formatting is performed by Java's SimpleDateFormat class.
+* `metrics`: (Mandatory) The metrics to include in the result tuple. Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)` and `count(*)`
+
+=== timeseries Syntax
+
+[source,text]
+----
+timeseries(collection1,
+           q=*:*,
+           field="rec_dt"
+           start="NOW-30DAYS",
+           end="NOW",
+           gap="+1DAY",
+           format="YYYY-MM-dd",
+           sum(a_i),
+           max(a_i),
+           max(a_f),
+           avg(a_i),
+           avg(a_f),
+           count(*))
+----
 
 == train
 
@@ -419,3 +517,24 @@ topic(checkpointCollection,
       q="topic query",
       fl="id, name, country")
 ----
+
+== tuple
+
+The `tuple` function emits a single Tuple with name/value pairs. The values can be set to variables assigned in a `let` expression, literals, Stream Evaluators or
+Stream Expressions. In the case of Stream Evaluators the tuple will output the return value from the evaluator.
+This could be a numeric, list or map. If a value is set to a Stream Expression, the `tuple` function will flatten
+the tuple stream from the Stream Expression into a list of Tuples.
+
+=== tuple Parameters
+
+* name=value pairs
+
+=== tuple Syntax
+
+[source,text]
+----
+tuple(a=add(1,1),
+      b=search(collection1, q="cat:a", fl="a, b, c", sort="a desc"))
+----
+
+

@@ -18,6 +18,8 @@ package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServlet;
 
+import org.apache.solr.util.Java9InitHack;
+
 /**
  * All Solr servlets available to the user's webapp should
  * extend this class and not {@link HttpServlet}.
@@ -29,6 +31,7 @@ abstract class BaseSolrServlet extends HttpServlet {
   
   static {
     CheckLoggingConfiguration.check();
+    Java9InitHack.initJava9();
   }
   
 }

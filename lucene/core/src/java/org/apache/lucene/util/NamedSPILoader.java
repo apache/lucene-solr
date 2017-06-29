@@ -35,7 +35,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
   private final Class<S> clazz;
 
   public NamedSPILoader(Class<S> clazz) {
-    this(clazz, Thread.currentThread().getContextClassLoader());
+    this(clazz, null);
   }
   
   public NamedSPILoader(Class<S> clazz, ClassLoader classloader) {

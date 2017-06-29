@@ -90,7 +90,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
     assertQ("test document was correctly committed", req("q","*:*")
             , "//result[@numFound='1']"
-            , "//int[@name='id'][.='12345']"
+            , "//str[@name='id'][.='12345']"
         );
   }
   

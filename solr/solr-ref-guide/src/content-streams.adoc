@@ -39,23 +39,33 @@ By default, curl sends a `contentType="application/x-www-form-urlencoded"` heade
 
 Remote streaming lets you send the contents of a URL as a stream to a given SolrRequestHandler. You could use remote streaming to send a remote or local file to an update plugin.
 
-For convenience, remote streaming is enabled in most of the example `solrconfig.xml` files included with Solr, however it is not recommended in a production situation without additional security between you and untrusted remote clients.
+Remote streaming is disabled by default. Enabling it is not recommended in a production situation without additional security between you and untrusted remote clients.
 
 [source,xml]
 ----
-    <!-- *** WARNING ***
-         The settings below authorize Solr to fetch remote files, You
-         should make sure your system has some authentication before
-         using enableRemoteStreaming="true"
-      -->
-    <requestParsers enableRemoteStreaming="true" />
+    *** WARNING ***
+    Before enabling remote streaming, you should make sure your
+    system has authentication enabled.
+
+    <requestParsers enableRemoteStreaming="false"...>
 ----
 
-The default behavior, when `enableRemoteStreaming` is not specified in `solrconfig.xml` is to _not_ allow remote streaming (i.e., `enableRemoteStreaming="false"`).
+When `enableRemoteStreaming` is not specified in `solrconfig.xml`, the default behavior is to _not_ allow remote streaming (i.e., `enableRemoteStreaming="false"`).
+
+Remote streaming can also be enabled through the <<config-api.adoc#config-api,Config API>> as follows:
+
+[source]
+----
+curl -d '
+{
+  "set-property" : {"requestDispatcher.requestParsers.enableRemoteStreaming":true}
+}
+' http://localhost:8983/solr/techproducts/config -H 'Content-type:application/json'
+----
 
 [IMPORTANT]
 ====
-If you `enableRemoteStreaming="true"` is used, be aware that this allows _anyone_ to send a request to any URL or local file. If <<ContentStreams-DebuggingRequests,DumpRequestHandler>> is enabled, it will allow anyone to view any file on your system.
+If `enableRemoteStreaming="true"` is used, be aware that this allows _anyone_ to send a request to any URL or local file. If <<ContentStreams-DebuggingRequests,DumpRequestHandler>> is enabled, it will allow anyone to view any file on your system.
 ====
 
 [[ContentStreams-DebuggingRequests]]

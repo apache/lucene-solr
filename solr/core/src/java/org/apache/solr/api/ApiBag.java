@@ -18,7 +18,6 @@
 package org.apache.solr.api;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +32,10 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.PluginBag;
@@ -42,9 +45,8 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.util.JsonSchemaValidator;
-import org.apache.solr.util.PathTrie;
+import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.common.util.PathTrie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -227,12 +229,6 @@ public class ApiBag {
     }
   }
 
-  public static SpecProvider getSpec(final String name) {
-    return () -> {
-      return ValidatingJsonMap.parse(APISPEC_LOCATION + name + ".json", APISPEC_LOCATION);
-    };
-  }
-
   public static class ReqHandlerToApi extends Api implements PermissionNameProvider {
     SolrRequestHandler rh;
 
@@ -257,12 +253,9 @@ public class ApiBag {
 
   public static List<Api> wrapRequestHandlers(final SolrRequestHandler rh, String... specs) {
     ImmutableList.Builder<Api> b = ImmutableList.builder();
-    for (String spec : specs) b.add(new ReqHandlerToApi(rh, ApiBag.getSpec(spec)));
+    for (String spec : specs) b.add(new ReqHandlerToApi(rh, Utils.getSpec(spec)));
     return b.build();
   }
-
-  public static final String APISPEC_LOCATION = "apispec/";
-  public static final String INTROSPECT = "/_introspect";
 
 
   public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
@@ -276,7 +269,7 @@ public class ApiBag {
   public void registerLazy(PluginBag.PluginHolder<SolrRequestHandler> holder, PluginInfo info) {
     String specName = info.attributes.get("spec");
     if (specName == null) specName = "emptySpec";
-    register(new LazyLoadedApi(ApiBag.getSpec(specName), holder), Collections.singletonMap(HANDLER_NAME, info.attributes.get(NAME)));
+    register(new LazyLoadedApi(Utils.getSpec(specName), holder), Collections.singletonMap(HANDLER_NAME, info.attributes.get(NAME)));
   }
 
   public static SpecProvider constructSpec(PluginInfo info) {
@@ -286,17 +279,18 @@ public class ApiBag {
       Map map = (Map) specObj;
       return () -> ValidatingJsonMap.getDeepCopy(map, 4, false);
     } else {
-      return ApiBag.getSpec((String) specObj);
+      return Utils.getSpec((String) specObj);
     }
   }
 
-  public static List<CommandOperation> getCommandOperations(Reader reader, Map<String, JsonSchemaValidator> validators, boolean validate) {
+  public static List<CommandOperation> getCommandOperations(ContentStream stream, Map<String, JsonSchemaValidator> validators, boolean validate) {
     List<CommandOperation> parsedCommands = null;
     try {
-      parsedCommands = CommandOperation.parse(reader);
+      parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList());
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands");
     }
+
     if (validators == null || !validate) {    // no validation possible because we do not have a spec
       return parsedCommands;
     }

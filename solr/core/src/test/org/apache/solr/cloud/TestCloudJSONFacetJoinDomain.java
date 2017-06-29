@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudPivotFacet
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-9989")
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10939")
 public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -82,6 +82,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /** One client per node */
   private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
+  public TestCloudJSONFacetJoinDomain() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
   
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {

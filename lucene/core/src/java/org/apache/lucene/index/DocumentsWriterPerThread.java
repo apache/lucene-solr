@@ -96,15 +96,18 @@ class DocumentsWriterPerThread {
     final FieldInfos fieldInfos;
     final FrozenBufferedUpdates segmentUpdates;
     final MutableBits liveDocs;
+    final Sorter.DocMap sortMap;
     final int delCount;
 
-    private FlushedSegment(SegmentCommitInfo segmentInfo, FieldInfos fieldInfos,
-                           BufferedUpdates segmentUpdates, MutableBits liveDocs, int delCount) {
+    private FlushedSegment(InfoStream infoStream, SegmentCommitInfo segmentInfo, FieldInfos fieldInfos,
+                           BufferedUpdates segmentUpdates, MutableBits liveDocs, int delCount, Sorter.DocMap sortMap)
+      throws IOException {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
-      this.segmentUpdates = segmentUpdates != null && segmentUpdates.any() ? new FrozenBufferedUpdates(segmentUpdates, true) : null;
+      this.segmentUpdates = segmentUpdates != null && segmentUpdates.any() ? new FrozenBufferedUpdates(infoStream, segmentUpdates, segmentInfo) : null;
       this.liveDocs = liveDocs;
       this.delCount = delCount;
+      this.sortMap = sortMap;
     }
   }
 
@@ -142,7 +145,7 @@ class DocumentsWriterPerThread {
   SegmentWriteState flushState;
   // Updates for our still-in-RAM (to be flushed next) segment
   final BufferedUpdates pendingUpdates;
-  private final SegmentInfo segmentInfo;     // Current segment we are working on
+  final SegmentInfo segmentInfo;     // Current segment we are working on
   boolean aborted = false;   // True if we aborted
 
   private final FieldInfos.Builder fieldInfos;
@@ -395,7 +398,7 @@ class DocumentsWriterPerThread {
    * {@link DocumentsWriterDeleteQueue}s global buffer and apply all pending
    * deletes to this DWPT.
    */
-  FrozenBufferedUpdates prepareFlush() {
+  FrozenBufferedUpdates prepareFlush() throws IOException {
     assert numDocsInRAM > 0;
     final FrozenBufferedUpdates globalUpdates = deleteQueue.freezeGlobalBuffer(deleteSlice);
     /* deleteSlice can possibly be null if we have hit non-aborting exceptions during indexing and never succeeded 
@@ -421,14 +424,14 @@ class DocumentsWriterPerThread {
     // Apply delete-by-docID now (delete-byDocID only
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
-    if (pendingUpdates.docIDs.size() > 0) {
+    if (pendingUpdates.deleteDocIDs.size() > 0) {
       flushState.liveDocs = codec.liveDocsFormat().newLiveDocs(numDocsInRAM);
-      for(int delDocID : pendingUpdates.docIDs) {
+      for(int delDocID : pendingUpdates.deleteDocIDs) {
         flushState.liveDocs.clear(delDocID);
       }
-      flushState.delCountOnFlush = pendingUpdates.docIDs.size();
-      pendingUpdates.bytesUsed.addAndGet(-pendingUpdates.docIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
-      pendingUpdates.docIDs.clear();
+      flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
+      pendingUpdates.bytesUsed.addAndGet(-pendingUpdates.deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
+      pendingUpdates.deleteDocIDs.clear();
     }
 
     if (aborted) {
@@ -446,7 +449,8 @@ class DocumentsWriterPerThread {
     final Sorter.DocMap sortMap;
     try {
       sortMap = consumer.flush(flushState);
-      pendingUpdates.terms.clear();
+      // We clear this here because we already resolved them (private to this segment) when writing postings:
+      pendingUpdates.clearDeleteTerms();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
       final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, -1L, -1L, -1L);
@@ -463,7 +467,7 @@ class DocumentsWriterPerThread {
       }
 
       final BufferedUpdates segmentDeletes;
-      if (pendingUpdates.queries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
+      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
         pendingUpdates.clear();
         segmentDeletes = null;
       } else {
@@ -480,13 +484,14 @@ class DocumentsWriterPerThread {
 
       assert segmentInfo != null;
 
-      FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
-                                             segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
+      FlushedSegment fs = new FlushedSegment(infoStream, segmentInfoPerCommit, flushState.fieldInfos,
+                                             segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush,
+                                             sortMap);
       sealFlushedSegment(fs, sortMap);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0)/1000000.0) + " msec");
       }
-
+      
       return fs;
     } catch (Throwable th) {
       abort();

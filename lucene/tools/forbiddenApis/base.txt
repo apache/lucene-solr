@@ -27,6 +27,10 @@ java.util.Properties#load(java.io.InputStream)
 java.util.Properties#save(java.io.OutputStream,java.lang.String)
 java.util.Properties#store(java.io.OutputStream,java.lang.String)
 
+@defaultMessage The context classloader should never be used for resource lookups, unless there is a 3rd party library that needs it. Always pass a classloader down as method parameters.
+java.lang.Thread#getContextClassLoader()
+java.lang.Thread#setContextClassLoader(java.lang.ClassLoader)
+
 java.lang.Character#codePointBefore(char[],int) @ Implicit start offset is error-prone when the char[] is a buffer and the first chars are random chars
 java.lang.Character#codePointAt(char[],int) @ Implicit end offset is error-prone when the char[] is a buffer and the last chars are random chars
 

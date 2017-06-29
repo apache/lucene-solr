@@ -131,7 +131,7 @@ public class TestMemoryIndex extends LuceneTestCase {
     mi.addField("field", "some terms be here", analyzer);
     IndexSearcher searcher = mi.createSearcher();
     LeafReader reader = (LeafReader) searcher.getIndexReader();
-    TermsEnum terms = reader.fields().terms("field").iterator();
+    TermsEnum terms = reader.terms("field").iterator();
     terms.seekExact(0);
     assertEquals("be", terms.term().utf8ToString());
     TestUtil.checkReader(reader);
@@ -510,6 +510,30 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(1, s.count(LongPoint.newRangeQuery("longs", new long[] {10L, 10L}, new long[] {30L, 30L})));
     assertEquals(1, s.count(FloatPoint.newRangeQuery("floats", new float[] {10F, 10F}, new float[] {30F, 30F})));
     assertEquals(1, s.count(DoublePoint.newRangeQuery("doubles", new double[] {10D, 10D}, new double[] {30D, 30D})));
+  }
+
+  public void testMultiValuedPointsSortedCorrectly() throws Exception {
+    Document doc = new Document();
+    doc.add(new IntPoint("ints", 3));
+    doc.add(new IntPoint("ints", 2));
+    doc.add(new IntPoint("ints", 1));
+    doc.add(new LongPoint("longs", 3L));
+    doc.add(new LongPoint("longs", 2L));
+    doc.add(new LongPoint("longs", 1L));
+    doc.add(new FloatPoint("floats", 3F));
+    doc.add(new FloatPoint("floats", 2F));
+    doc.add(new FloatPoint("floats", 1F));
+    doc.add(new DoublePoint("doubles", 3D));
+    doc.add(new DoublePoint("doubles", 2D));
+    doc.add(new DoublePoint("doubles", 1D));
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    IndexSearcher s = mi.createSearcher();
+
+    assertEquals(1, s.count(IntPoint.newSetQuery("ints", 2)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("longs", 2)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("floats", 2)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("doubles", 2)));
   }
 
   public void testIndexingPointsAndDocValues() throws Exception {

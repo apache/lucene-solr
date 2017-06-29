@@ -271,7 +271,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     initializeIndex(new String[] {"A", "B", "", "C", "D"}, analyzer);
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    int numHits = searcher.search(query, 1000).totalHits;
+    long numHits = searcher.search(query, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 3, numHits);
     // until Lucene-38 is fixed, use this assert:
@@ -306,7 +306,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     initializeIndex(new String[]{"A", "B", "","C", "D"}, analyzer);
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    int numHits = searcher.search(query, 1000).totalHits;
+    long numHits = searcher.search(query, 1000).totalHits;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 4, numHits);
     // until Lucene-38 is fixed, use this assert

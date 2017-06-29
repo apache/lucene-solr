@@ -18,12 +18,20 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -316,7 +324,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
   protected void runSearchThreads(final long stopTimeMS) throws Exception {
     final int numThreads = TestUtil.nextInt(random(), 1, 5);
     final Thread[] searchThreads = new Thread[numThreads];
-    final AtomicInteger totHits = new AtomicInteger();
+    final AtomicLong totHits = new AtomicLong();
 
     // silly starting guess:
     final AtomicInteger totTermCount = new AtomicInteger(100);
@@ -349,8 +357,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   }
                   if (s.getIndexReader().numDocs() > 0) {
                     smokeTestSearcher(s);
-                    Fields fields = MultiFields.getFields(s.getIndexReader());
-                    Terms terms = fields.terms("body");
+                    Terms terms = MultiFields.getTerms(s.getIndexReader(), "body");
                     if (terms == null) {
                       continue;
                     }
@@ -658,11 +665,11 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     }
   }
 
-  private int runQuery(IndexSearcher s, Query q) throws Exception {
+  private long runQuery(IndexSearcher s, Query q) throws Exception {
     s.search(q, 10);
-    int hitCount = s.search(q, 10, new Sort(new SortField("titleDV", SortField.Type.STRING))).totalHits;
+    long hitCount = s.search(q, 10, new Sort(new SortField("titleDV", SortField.Type.STRING))).totalHits;
     final Sort dvSort = new Sort(new SortField("titleDV", SortField.Type.STRING));
-    int hitCount2 = s.search(q, 10, dvSort).totalHits;
+    long hitCount2 = s.search(q, 10, dvSort).totalHits;
     assertEquals(hitCount, hitCount2);
     return hitCount;
   }

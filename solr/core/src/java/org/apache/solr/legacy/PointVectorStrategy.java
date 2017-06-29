@@ -23,15 +23,11 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.solr.legacy.LegacyDoubleField;
-import org.apache.solr.legacy.LegacyFieldType;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.solr.legacy.LegacyNumericType;
-import org.apache.lucene.queries.function.FunctionRangeQuery;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.FunctionMatchQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -218,7 +214,7 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     return new DistanceValueSource(this, queryPoint, multiplier);
   }
 
@@ -237,10 +233,11 @@ public class PointVectorStrategy extends SpatialStrategy {
       Rectangle bbox = circle.getBoundingBox();
       Query approxQuery = makeWithin(bbox);
       BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-      FunctionRangeQuery vsRangeQuery =
-          new FunctionRangeQuery(makeDistanceValueSource(circle.getCenter()), 0.0, circle.getRadius(), true, true);
+      double r = circle.getRadius();
+      FunctionMatchQuery vsMatchQuery = new FunctionMatchQuery(makeDistanceValueSource(circle.getCenter()),
+          v -> 0 <= v && v <= r);
       bqBuilder.add(approxQuery, BooleanClause.Occur.FILTER);//should have lowest "cost" value; will drive iteration
-      bqBuilder.add(vsRangeQuery, BooleanClause.Occur.FILTER);
+      bqBuilder.add(vsMatchQuery, BooleanClause.Occur.FILTER);
       return new ConstantScoreQuery(bqBuilder.build());
     } else {
       throw new UnsupportedOperationException("Only Rectangles and Circles are currently supported, " +

@@ -21,6 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.junit.Test;
 
 public class VersionInfoTest extends SolrTestCaseJ4 {
@@ -28,8 +29,13 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
   @Test
   public void testMaxIndexedVersionFromIndex() throws Exception {
     initCore("solrconfig-tlog.xml", "schema-version-indexed.xml");
-    try {
-      testMaxVersionLogic(req());
+    try (SolrQueryRequest r = req()) {
+      SchemaField v = r.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getVersionField();
+      assertNotNull(v);
+      assertTrue(v.indexed());
+      assertFalse(v.hasDocValues());
+      
+      testMaxVersionLogic(r);
     } finally {
       deleteCore();
     }
@@ -38,8 +44,13 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
   @Test
   public void testMaxDocValuesVersionFromIndex() throws Exception {
     initCore("solrconfig-tlog.xml","schema-version-dv.xml");
-    try {
-      testMaxVersionLogic(req());
+    try (SolrQueryRequest r = req()) {
+      SchemaField v = r.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getVersionField();
+      assertNotNull(v);
+      assertFalse(v.indexed());
+      assertTrue(v.hasDocValues());
+      
+      testMaxVersionLogic(r);
     } finally {
       deleteCore();
     }
@@ -55,76 +66,107 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     // index the first doc
     String docId = Integer.toString(1);
+    BytesRef idBytes = new BytesRef(docId);
     assertU(adoc("id", docId));
     assertU(commit());
 
-    // max from index should not be 0 or null
-    Long maxVersionFromIndex = ulog.getMaxVersionFromIndex();
-    assertNotNull(maxVersionFromIndex);
-    assertTrue(maxVersionFromIndex != 0L);
+    // max from the ulog should not be 0 or null
+    Long maxVersionFromUlog = ulog.getMaxVersionFromIndex();
+    assertNotNull(maxVersionFromUlog);
+    assertTrue(maxVersionFromUlog != 0L);
 
-    // version from index should be less than or equal the version of the first doc indexed
     VersionInfo vInfo = ulog.getVersionInfo();
-    Long version = vInfo.getVersionFromIndex(new BytesRef(docId));
+    try (SolrQueryRequest newReq = req()) {
+      // max version direct from the index should not be null, and should match what ulog reports
+      // (since doc is committed)
+      Long vInfoMax = vInfo.getMaxVersionFromIndex(newReq.getSearcher());
+      assertNotNull(vInfoMax);
+      assertEquals(maxVersionFromUlog, vInfoMax);
+    }
+    
+    // max version from ulog (and index) should be exactly the same as our single committed doc
+    Long version = vInfo.getVersionFromIndex(idBytes);
     assertNotNull("version info should not be null for test doc: "+docId, version);
-    assertTrue("max version from index should be less than or equal to the version of first doc added, diff: "+
-            (version - maxVersionFromIndex), maxVersionFromIndex <= version);
+    assertEquals(maxVersionFromUlog, version);
 
-    BytesRef idBytes = new BytesRef(docId);
     int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     VersionBucket bucket = vInfo.bucket(bucketHash);
-    assertTrue(bucket.highest == version.longValue());
+    assertEquals(bucket.highest, version.longValue());
 
-    // send 2nd doc ...
+    // send 2nd doc ... BUT DO NOT COMMIT
     docId = Integer.toString(2);
-    assertU(adoc("id", docId));
-    assertU(commit());
-
-    maxVersionFromIndex = ulog.getMaxVersionFromIndex();
-    assertNotNull(maxVersionFromIndex);
-    assertTrue(maxVersionFromIndex != 0L);
-
-    vInfo = ulog.getVersionInfo();
-    version = vInfo.getVersionFromIndex(new BytesRef(docId));
-    assertNotNull("version info should not be null for test doc: "+docId, version);
-    assertTrue("max version from index should be less than version of last doc added, diff: "+
-            (version - maxVersionFromIndex), maxVersionFromIndex < version);
-
     idBytes = new BytesRef(docId);
-    bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
-    bucket = vInfo.bucket(bucketHash);
-    assertTrue(bucket.highest == version.longValue());
+    assertU(adoc("id", docId));
+    
+    try (SolrQueryRequest newReq = req()) {
+      // max version direct from the index should not be null, and should still match what ulog
+      // previously reported (since new doc is un-committed)
+      Long vInfoMax = vInfo.getMaxVersionFromIndex(newReq.getSearcher());
+      assertNotNull(vInfoMax);
+      assertEquals(maxVersionFromUlog, vInfoMax);
+    }
+    
+    maxVersionFromUlog = ulog.getMaxVersionFromIndex();
+    assertNotNull(maxVersionFromUlog);
+    assertTrue("max version in ulog should have increased since our last committed doc: " +
+               version + " ?< " + maxVersionFromUlog,
+               version < maxVersionFromUlog.longValue());
+
+    version = vInfo.getVersionFromIndex(idBytes);
+    assertNull("version info should be null for uncommited test doc: "+docId, version);
 
     Long versionFromTLog = ulog.lookupVersion(idBytes);
-    Long versionFromIndex = vInfo.getVersionFromIndex(idBytes);
+    assertNotNull("version from tlog should be non-null for uncommited test doc: "+docId, versionFromTLog);
+
+    // now commit that 2nd doc
+    assertU(commit());
+    try (SolrQueryRequest newReq = req()) {
+      // max version direct from the index should match the new doc we just committed
+      Long vInfoMax = vInfo.getMaxVersionFromIndex(newReq.getSearcher());
+      assertEquals(versionFromTLog, vInfoMax);
+    }
+    assertEquals("committing doc should not have changed version from ulog",
+                 versionFromTLog, ulog.lookupVersion(idBytes));
+    Long versionFromIndex = version = vInfo.getVersionFromIndex(idBytes);
+    assertNotNull("version from index should be non-null for commited test doc: "+docId, versionFromIndex);
     assertEquals("version from tlog and version from index should be the same",
-        versionFromTLog, versionFromIndex);
+                 versionFromTLog, versionFromIndex);
+    
+    bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
+    bucket = vInfo.bucket(bucketHash);
+    assertEquals(bucket.highest, version.longValue());
 
     // reload the core, which should reset the max
     CoreContainer coreContainer = req.getCore().getCoreContainer();
     coreContainer.reload(req.getCore().getName());
-    maxVersionFromIndex = ulog.getMaxVersionFromIndex();
-    assertEquals("max version from index should be equal to version of last doc added after reload",
-        maxVersionFromIndex, version);
+    maxVersionFromUlog = ulog.getMaxVersionFromIndex();
+    assertEquals("after reload, max version from ulog should be equal to version of last doc added",
+                 maxVersionFromUlog, versionFromIndex);
 
     // one more doc after reload
     docId = Integer.toString(3);
+    idBytes = new BytesRef(docId);
     assertU(adoc("id", docId));
     assertU(commit());
 
-    maxVersionFromIndex = ulog.getMaxVersionFromIndex();
-    assertNotNull(maxVersionFromIndex);
-    assertTrue(maxVersionFromIndex != 0L);
+    maxVersionFromUlog = ulog.getMaxVersionFromIndex();
+    assertNotNull(maxVersionFromUlog);
+    assertTrue(maxVersionFromUlog != 0L);
 
     vInfo = ulog.getVersionInfo();
-    version = vInfo.getVersionFromIndex(new BytesRef(docId));
+    try (SolrQueryRequest newReq = req()) {
+      // max version direct from the index should not be null, and should match what ulog reports
+      // (since doc is committed)
+      Long vInfoMax = vInfo.getMaxVersionFromIndex(newReq.getSearcher());
+      assertNotNull(vInfoMax);
+      assertEquals(maxVersionFromUlog, vInfoMax);
+    }
+    version = vInfo.getVersionFromIndex(idBytes);
     assertNotNull("version info should not be null for test doc: "+docId, version);
-    assertTrue("max version from index should be less than version of last doc added, diff: "+
-        (version - maxVersionFromIndex), maxVersionFromIndex < version);
+    assertEquals(maxVersionFromUlog, version);
 
-    idBytes = new BytesRef(docId);
     bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     bucket = vInfo.bucket(bucketHash);
-    assertTrue(bucket.highest == version.longValue());
+    assertEquals(bucket.highest, version.longValue());
   }
 }

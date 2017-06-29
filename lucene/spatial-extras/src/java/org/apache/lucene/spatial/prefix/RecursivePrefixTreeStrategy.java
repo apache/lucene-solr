@@ -216,6 +216,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
         cell = cellIterator.next();
         assert prevLevel < cell.getLevel();
       }
+      assert cell.isLeaf();
       return new TermQuery(new Term(getFieldName(), cell.getTokenBytesWithLeaf(null)));
     } else {
       // Well there could be parent cells. But we can reduce the "scan level" which will be slower for a point query.

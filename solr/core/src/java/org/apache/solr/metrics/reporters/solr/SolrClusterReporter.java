@@ -124,7 +124,6 @@ public class SolrClusterReporter extends SolrMetricReporter {
   }};
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
-  private int period = SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD;
   private List<SolrReporter.Report> reports = new ArrayList<>();
 
   private SolrReporter reporter;
@@ -141,10 +140,6 @@ public class SolrClusterReporter extends SolrMetricReporter {
 
   public void setHandler(String handler) {
     this.handler = handler;
-  }
-
-  public void setPeriod(int period) {
-    this.period = period;
   }
 
   public void setReport(List<Map> reportConfig) {
@@ -169,20 +164,20 @@ public class SolrClusterReporter extends SolrMetricReporter {
     }
   }
 
-  // for unit tests
-  int getPeriod() {
-    return period;
-  }
-
   List<SolrReporter.Report> getReports() {
     return reports;
   }
 
   @Override
-  protected void validate() throws IllegalStateException {
+  protected void doInit() {
     if (reports.isEmpty()) { // set defaults
       reports = DEFAULT_REPORTS;
     }
+  }
+
+  @Override
+  protected void validate() throws IllegalStateException {
+    // (period < 1) means "don't start reporter" and so no (period > 0) validation needed
   }
 
   @Override
