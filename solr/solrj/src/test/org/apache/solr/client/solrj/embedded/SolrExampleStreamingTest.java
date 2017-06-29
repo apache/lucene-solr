@@ -132,7 +132,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       lastError = ex;
     }
     
-    static class Builder extends ConcurrentUpdateSolrClient.Builder {
+    public static class Builder extends ConcurrentUpdateSolrClient.Builder {
 
       public Builder(String baseSolrUrl) {
         super(baseSolrUrl);
