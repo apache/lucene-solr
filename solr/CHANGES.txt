@@ -363,6 +363,7 @@ Other Changes
   - SOLR-10970: Randomize PointFields in all tests using schema-*sort* files (hossman)
   - SOLR-10971: Randomize PointFields in CdcrBootstrapTest (hossman)
   - SOLR-10977: Randomize the usage of Points based numerics in schema15.xml and all impacted tests (hossman)
+  - SOLR-10979: Randomize PointFields in schema-docValues*.xml and all affected tests (hossman)
 
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
