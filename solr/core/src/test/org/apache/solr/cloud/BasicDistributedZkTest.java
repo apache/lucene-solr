@@ -25,8 +25,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
@@ -581,9 +583,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
         createCmd.setNumShards(numShards);
         try {
-          assertTrue(CollectionAdminRequest.addReplicaToShard(collection, "shard"+((freezeI%numShards)+1))
-              .setCoreName(collection + freezeI)
-              .setNode(nodeName).process(client).isSuccess());
+          String core3dataDir = createTempDir(collection).toFile().getAbsolutePath();
+          createCmd.setDataDir(getDataDir(core3dataDir));
+
+          client.request(createCmd);
         } catch (SolrServerException | IOException e) {
           throw new RuntimeException(e);
         }
