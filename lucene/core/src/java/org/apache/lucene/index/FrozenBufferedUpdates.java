@@ -299,7 +299,6 @@ class FrozenBufferedUpdates {
           if (infoStream.isEnabled("BD")) {
             infoStream.message("BD", "packet matches no segments");
           }
-          
           break;
         }
 
@@ -422,10 +421,7 @@ class FrozenBufferedUpdates {
       throw new IllegalArgumentException("gen is not yet set; call BufferedUpdatesStream.push first");
     }
 
-    if (applied.getCount() == 0) {
-      // already done
-      return totalDelCount;
-    }
+    assert applied.getCount() != 0;
 
     if (privateSegment != null) {
       assert segStates.length == 1;
