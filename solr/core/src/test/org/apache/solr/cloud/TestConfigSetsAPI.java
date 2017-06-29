@@ -744,7 +744,11 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         FileVisitResult result = super.preVisitDirectory(dir, attrs);
         Path relativePath = userDefault.toPath().relativize(dir);
         File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
-        assertEquals("Mismatch in files", Arrays.toString(dir.toFile().list()), Arrays.toString(testDefaultFile.list()));
+        String[] listOne = dir.toFile().list();
+        String[] listTwo = testDefaultFile.list();
+        Arrays.sort(listOne);
+        Arrays.sort(listTwo);
+        assertEquals("Mismatch in files", Arrays.toString(listOne), Arrays.toString(listTwo));
         return result;
       }
       @Override
