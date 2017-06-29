@@ -34,6 +34,10 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
@@ -43,6 +47,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.nio.file.SimpleFileVisitor;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -87,6 +92,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.security.BasicAuthIntegrationTest;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -714,7 +720,46 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
     solrClient.close();
   }
+  
+  @Test
+  public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
+    File testDefaultConf = configset("_default").toFile();
+    log.info("Test _default path: " + testDefaultConf);
+    
+    File userDefaultConf = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    log.info("User _default path: " + userDefaultConf);
+    
+    compareDirectories(userDefaultConf, testDefaultConf);
+  }
 
+  private static void compareDirectories(File userDefault, File testDefault) throws IOException {
+    assertTrue("Test _default doesn't exist: " + testDefault.getAbsolutePath(), testDefault.exists());
+    assertTrue("Test _default not a directory: " + testDefault.getAbsolutePath(),testDefault.isDirectory());
+    assertTrue("User _default doesn't exist: " + userDefault.getAbsolutePath(), userDefault.exists());
+    assertTrue("User _default not a directory: " + userDefault.getAbsolutePath(),userDefault.isDirectory());
+
+    Files.walkFileTree(userDefault.toPath(), new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        FileVisitResult result = super.preVisitDirectory(dir, attrs);
+        Path relativePath = userDefault.toPath().relativize(dir);
+        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
+        assertEquals("Mismatch in files", Arrays.toString(dir.toFile().list()), Arrays.toString(testDefaultFile.list()));
+        return result;
+      }
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        FileVisitResult result = super.visitFile(file, attrs);
+        Path relativePath = userDefault.toPath().relativize(file);
+        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
+        String userDefaultContents = FileUtils.readFileToString(file.toFile(), "UTF-8");
+        String testDefaultContents = FileUtils.readFileToString(testDefaultFile, "UTF-8");
+        assertEquals(testDefaultFile+" contents doesn't match expected ("+file+")", userDefaultContents, testDefaultContents);                    
+        return result;
+      }
+    });
+  }
+  
   private StringBuilder getConfigSetProps(Map<String, String> map) {
     return new StringBuilder(new String(Utils.toJSON(map), StandardCharsets.UTF_8));
   }
