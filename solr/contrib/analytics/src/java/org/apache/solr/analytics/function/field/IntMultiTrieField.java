@@ -19,33 +19,36 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
+import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.solr.analytics.value.LongValueStream.CastingLongValueStream;
+import org.apache.solr.analytics.util.function.FloatConsumer;
+import org.apache.solr.analytics.value.IntValueStream.CastingIntValueStream;
 import org.apache.solr.legacy.LegacyNumericUtils;
-import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.schema.TrieIntField;
 
 /**
- * An analytics wrapper for a multi-valued {@link TrieLongField} with DocValues enabled.
+ * An analytics wrapper for a multi-valued {@link TrieIntField} with DocValues enabled.
  */
-public class LongMultiField extends AnalyticsField implements CastingLongValueStream {
+public class IntMultiTrieField extends AnalyticsField implements CastingIntValueStream {
   private SortedSetDocValues docValues;
   private int count;
-  private long[] values;
+  private int[] values;
 
-  public LongMultiField(String fieldName) {
+  public IntMultiTrieField(String fieldName) {
     super(fieldName);
     count = 0;
-    values = new long[initialArrayLength];
+    values = new int[initialArrayLength];
   }
   
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
   }
+  
   @Override
   public void collect(int doc) throws IOException {
     count = 0;
@@ -55,13 +58,13 @@ public class LongMultiField extends AnalyticsField implements CastingLongValueSt
         if (count == values.length) {
           resizeValues();
         }
-        values[count++] = LegacyNumericUtils.prefixCodedToLong(docValues.lookupOrd(term));
+        values[count++] = LegacyNumericUtils.prefixCodedToInt(docValues.lookupOrd(term));
       }
     }
   }
   
   private void resizeValues() {
-    long[] newValues = new long[values.length*2];
+    int[] newValues = new int[values.length*2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -69,21 +72,29 @@ public class LongMultiField extends AnalyticsField implements CastingLongValueSt
   }
   
   @Override
-  public void streamLongs(LongConsumer cons) {
+  public void streamInts(IntConsumer cons) {
     for (int i = 0; i < count; ++i) {
       cons.accept(values[i]);
     }
   }
   @Override
+  public void streamLongs(LongConsumer cons) {
+    streamInts(value -> cons.accept((long)value));
+  }
+  @Override
+  public void streamFloats(FloatConsumer cons) {
+    streamInts(value -> cons.accept((float)value));
+  }
+  @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamLongs(value -> cons.accept((double)value));
+    streamInts(value -> cons.accept((double)value));
   }
   @Override
   public void streamStrings(Consumer<String> cons) {
-    streamLongs(value -> cons.accept(Long.toString(value)));
+    streamInts(value -> cons.accept(Integer.toString(value)));
   }
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamLongs(value -> cons.accept(value));
+    streamInts(value -> cons.accept(value));
   }
 }
