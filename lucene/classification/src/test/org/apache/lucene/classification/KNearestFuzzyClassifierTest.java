@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
 /**
- * Testcase for {@link KNearestFuzzyClassifier}
+ * Tests for {@link KNearestFuzzyClassifier}
  */
 public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef> {
 
