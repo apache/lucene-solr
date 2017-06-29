@@ -81,6 +81,8 @@ Bug Fixes
 
 * SOLR-11255: Fix occasional ConcurrentModificationException when using SolrInfoMBeanHandler. (ab)
 
+* SOLR-11272: fix NPE when EmbeddedSolrServer handles /admin/* request and so one (Stephen Allen via Mikhail Khludnev)
+
 Optimizations
 ----------------------
 
