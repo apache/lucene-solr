@@ -228,11 +228,8 @@ public class DistributedQueue {
   }
 
   /**
-   * Inserts data into queue.  Successfully calling this method does NOT guarantee
-   * that the element will be immediately available in the in-memory queue. In particular,
-   * calling this method on an empty queue will not necessarily cause {@link #poll()} to
-   * return the offered element.  Use a blocking method if you must wait for the offered
-   * element to become visible.
+   * Inserts data into queue.  If there are no other queue consumers, the offered element
+   * will be immediately visible when this method returns.
    */
   public void offer(byte[] data) throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_offer");

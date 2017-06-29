@@ -290,6 +290,8 @@ Bug Fixes
 * SOLR-10879: DELETEREPLICA and DELETENODE commands should prevent data loss when
   replicationFactor is 1. (ab)
 
+* SOLR-10983: Fix DOWNNODE -> queue-work explosion (Scott Blum, Joshua Humphries)
+
 Optimizations
 ----------------------
 
