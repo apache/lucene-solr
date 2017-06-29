@@ -81,7 +81,7 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     return GeoBBoxFactory.makeGeoBBox(planetModel, maxLat, minLat, leftLon, rightLon);
   }
 
-  abstract class Geo3dRectIntersectionTestHelper extends RectIntersectionTestHelper<Geo3dShape> {
+  public abstract class Geo3dRectIntersectionTestHelper extends RectIntersectionTestHelper<Geo3dShape> {
 
     public Geo3dRectIntersectionTestHelper(SpatialContext ctx) {
       super(ctx);

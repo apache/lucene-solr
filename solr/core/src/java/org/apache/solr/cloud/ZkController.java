@@ -16,15 +16,19 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,6 +74,7 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -87,7 +92,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
+import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -660,7 +667,7 @@ public class ZkController {
    * @throws KeeperException      if there is a Zookeeper error
    * @throws InterruptedException on interrupt
    */
-  public static void createClusterZkNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+  public static void createClusterZkNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
@@ -669,6 +676,53 @@ public class ZkController {
     cmdExecutor.ensureExists(ZkStateReader.CLUSTER_STATE, emptyJson, CreateMode.PERSISTENT, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
+   bootstrapDefaultConfigSet(zkClient);
+  }
+
+  private static void bootstrapDefaultConfigSet(SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
+    if (zkClient.exists("/configs/_default", true) == false) {
+      String configDirPath = getDefaultConfigDirPath();
+      if (configDirPath == null) {
+        log.warn("The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset" +
+            " intended to be the default. Current 'solr.default.confdir' value: {}", System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+      } else {
+        ZkMaintenanceUtils.upConfig(zkClient, Paths.get(configDirPath), ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
+      }
+    }
+  }
+
+  /**
+   * Gets the absolute filesystem path of the _default configset to bootstrap from.
+   * First tries the sysprop "solr.default.confdir". If not found, tries to find
+   * the _default dir relative to the sysprop "solr.install.dir".
+   * If that fails as well (usually for unit tests), tries to get the _default from the
+   * classpath. Returns null if not found anywhere.
+   */
+  private static String getDefaultConfigDirPath() {
+    String configDirPath = null;
+    String serverSubPath = "solr" + File.separator +
+        "configsets" + File.separator + "_default" +
+        File.separator + "conf";
+    String subPath = File.separator + "server" + File.separator + serverSubPath;
+    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).exists()) {
+      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).getAbsolutePath();
+    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null &&
+        new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
+      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
+    } else { // find "_default" in the classpath. This one is used for tests
+      configDirPath = getDefaultConfigDirFromClasspath(serverSubPath);
+    }
+    return configDirPath;
+  }
+
+  private static String getDefaultConfigDirFromClasspath(String serverSubPath) {
+    URL classpathUrl = ZkController.class.getClassLoader().getResource(serverSubPath);
+    try {
+      if (classpathUrl != null && new File(classpathUrl.toURI()).exists()) {
+        return new File(classpathUrl.toURI()).getAbsolutePath();
+      }
+    } catch (URISyntaxException ex) {}
+    return null;
   }
 
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {

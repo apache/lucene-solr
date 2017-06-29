@@ -62,7 +62,7 @@ public class HighlighterConfigTest extends AbstractSolrTestCase {
     args.put("df", "t_text");
     args.put("hl.fl", "");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-      "standard", 0, 200, args);
+      "", 0, 200, args);
 
     assertU(adoc("t_text", "a long day's night", "id", "1"));
     assertU(commit());

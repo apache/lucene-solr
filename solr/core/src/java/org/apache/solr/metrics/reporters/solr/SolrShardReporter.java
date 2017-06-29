@@ -70,7 +70,6 @@ public class SolrShardReporter extends SolrMetricReporter {
   }};
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
-  private int period = SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD;
   private List<String> filters = new ArrayList<>();
 
   private SolrReporter reporter;
@@ -90,10 +89,6 @@ public class SolrShardReporter extends SolrMetricReporter {
     this.handler = handler;
   }
 
-  public void setPeriod(int period) {
-    this.period = period;
-  }
-
   public void setFilter(List<String> filterConfig) {
     if (filterConfig == null || filterConfig.isEmpty()) {
       return;
@@ -107,11 +102,6 @@ public class SolrShardReporter extends SolrMetricReporter {
     }
   }
 
-  // for unit tests
-  int getPeriod() {
-    return period;
-  }
-
   @Override
   protected void doInit() {
     if (filters.isEmpty()) {
@@ -122,7 +112,7 @@ public class SolrShardReporter extends SolrMetricReporter {
 
   @Override
   protected void validate() throws IllegalStateException {
-    // Nothing to validate
+    // (period < 1) means "don't start reporter" and so no (period > 0) validation needed
   }
 
   @Override

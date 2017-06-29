@@ -308,9 +308,8 @@ public class SolrConfig extends Config implements MapSerializable {
     enableRemoteStreams = getBool(
         "requestDispatcher/requestParsers/@enableRemoteStreaming", false);
 
-    // Let this filter take care of /select?xxx format
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", true);
+        "requestDispatcher/@handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
 
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);
@@ -367,10 +366,21 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
+    // Raise the Lucene static limit so we can control this with higher granularity.  See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+
     Map<String, SolrPluginInfo> map = new HashMap<>();
     for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
+
+  {
+    // non-static setMaxClauseCount because the test framework sometimes reverts the value on us and
+    // the static setting above is only executed once.  This re-sets the value every time a SolrConfig
+    // obect is created. See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+  }
+
 
   public static class SolrPluginInfo {
 

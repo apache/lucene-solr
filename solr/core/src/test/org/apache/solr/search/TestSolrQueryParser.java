@@ -41,6 +41,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
@@ -149,14 +150,17 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     // length of date math caused issues...
-    if (h.getCore().getLatestSchema().getField("foo_dt").getType().isPointField()) {
+    {
+      SchemaField foo_dt = h.getCore().getLatestSchema().getField("foo_dt");
+      String expected = "foo_dt:2013-09-11T00:00:00Z";
+      if (foo_dt.getType().isPointField()) {
+        expected = "(foo_dt:[1378857600000 TO 1378857600000])";
+        if (foo_dt.hasDocValues() && foo_dt.indexed()) {
+          expected = "IndexOrDocValuesQuery"+expected ;
+        }
+      }
       assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
-          , "/debug/parsedquery=='IndexOrDocValuesQuery(foo_dt:[1378857600000 TO 1378857600000])'"
-      );
-    } else {
-      assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
-          , "/debug/parsedquery=='foo_dt:2013-09-11T00:00:00Z'"
-      );
+               , "/debug/parsedquery=='"+expected+"'");
     }
   }
 
@@ -279,7 +283,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertEquals(20, ((TermInSetQuery)q).getTermData().size());
+      if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+        assertEquals(20, ((PointInSetQuery)q).getPackedPoints().size());
+      } else {
+        assertEquals(20, ((TermInSetQuery)q).getTermData().size());
+      }
 
       // for point fields large filter query should use PointInSetQuery
       qParser = QParser.getParser("foo_pi:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
@@ -350,6 +358,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String q = sb.toString();
 
     // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
+    try {
+      ignoreException("Too many clauses");
+      assertJQ(req("q",q)
+          ,"/response/numFound==6");
+      fail();
+    } catch (Exception e) {
+      // expect "too many clauses" exception... see SOLR-10921
+      assertTrue(e.getMessage().contains("many clauses"));
+    }
+
     assertJQ(req("q","*:*", "fq", q)
         ,"/response/numFound==6");
     assertJQ(req("q","*:*", "fq", q, "sow", "false")

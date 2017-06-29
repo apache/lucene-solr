@@ -38,7 +38,11 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
    * Package protected constructor for use by 
    * {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder}.
    * @lucene.internal
+   * 
+   * @deprecated use {@link DelegationTokenHttpSolrClient#DelegationTokenHttpSolrClient(HttpSolrClient.Builder)} instead, as it is a more
+   * extension/subclassing-friendly alternative
    */
+  @Deprecated
   DelegationTokenHttpSolrClient(String baseURL,
                                 HttpClient client,
                                 ResponseParser parser,
@@ -52,6 +56,11 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
     invariantParams = new ModifiableSolrParams();
     invariantParams.set(DELEGATION_TOKEN_PARAM, delegationToken);
   }
+  
+  protected DelegationTokenHttpSolrClient(Builder builder) {
+    super(builder);
+    setQueryParams(new TreeSet<>(Arrays.asList(DELEGATION_TOKEN_PARAM)));
+  }
 
   /**
    * This constructor is defined at "protected" scope. Ideally applications should
@@ -63,7 +72,11 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
    * @param parser Response parser instance to use to decode response from Solr server
    * @param allowCompression Should compression be allowed ?
    * @param invariantParams The parameters which should be passed with every request.
+   * 
+   * @deprecated use {@link DelegationTokenHttpSolrClient#DelegationTokenHttpSolrClient(HttpSolrClient.Builder)} instead, as it is a more
+   * extension/subclassing-friendly alternative
    */
+  @Deprecated
   protected DelegationTokenHttpSolrClient(String baseURL,
       HttpClient client,
       ResponseParser parser,

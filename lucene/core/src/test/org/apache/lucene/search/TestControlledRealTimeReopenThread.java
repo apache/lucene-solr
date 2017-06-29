@@ -333,9 +333,11 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     };
     t.start();
     writer.waitAfterUpdate = true; // wait in addDocument to let some reopens go through
+
     final long lastGen = writer.updateDocument(new Term("foo", "bar"), doc); // once this returns the doc is already reflected in the last reopen
 
-    assertFalse(manager.isSearcherCurrent()); // false since there is a delete in the queue
+    // We now eagerly resolve deletes so the manager should see it after update:
+    assertTrue(manager.isSearcherCurrent());
     
     IndexSearcher searcher = manager.acquire();
     try {

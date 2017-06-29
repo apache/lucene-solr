@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.junit.Test;
 
 /**
@@ -37,8 +38,14 @@ import org.junit.Test;
  * @since solr 4.0
  */
 @Slow
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
+  public TestDistributedGrouping() {
+    // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true" on trie fields?!?!?!!?
+    System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"false");
+  }
+  
   String t1="a_t";
   String i1dv="a_idv";
   String i1="a_i1";

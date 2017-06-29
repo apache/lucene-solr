@@ -18,9 +18,9 @@ package org.apache.solr;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -49,7 +49,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
    */
   public void testCallMBeanInfo() throws Exception {
     List<Class> classes = new ArrayList<>();
-    classes.addAll(getClassesForPackage(StandardRequestHandler.class.getPackage().getName()));
+    classes.addAll(getClassesForPackage(SearchHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(SearchComponent.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(LukeRequestHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(DefaultSolrHighlighter.class.getPackage().getName()));

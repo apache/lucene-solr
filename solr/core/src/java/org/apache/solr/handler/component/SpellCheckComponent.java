@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -60,8 +59,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.apache.solr.spelling.ConjunctionSolrSpellChecker;
 import org.apache.solr.spelling.IndexBasedSpellChecker;
@@ -72,6 +71,7 @@ import org.apache.solr.spelling.SpellCheckCollator;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingQueryConverter;
 import org.apache.solr.spelling.SpellingResult;
+import org.apache.solr.spelling.Token;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -171,12 +171,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           customParams.add(getCustomParams(checkerName, params));
         }
 
-        Integer hitsInteger = (Integer) rb.rsp.getToLog().get("hits");
+        Number hitsLong = (Number) rb.rsp.getToLog().get("hits");
         long hits = 0;
-        if (hitsInteger == null) {
+        if (hitsLong == null) {
           hits = rb.getNumberDocumentsFound();
         } else {
-          hits = hitsInteger.longValue();
+          hits = hitsLong.longValue();
         }
         
         SpellingResult spellingResult = null;
@@ -543,7 +543,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             NamedList expandedCollation = (NamedList) o;
             SpellCheckCollation coll = new SpellCheckCollation();
             coll.setCollationQuery((String) expandedCollation.get("collationQuery"));
-            coll.setHits((Integer) expandedCollation.get("hits"));
+            coll.setHits(((Number) expandedCollation.get("hits")).longValue());
             if(maxCollationTries>0)
             {
               coll.setInternalRank((Integer) expandedCollation.get("collationInternalRank"));

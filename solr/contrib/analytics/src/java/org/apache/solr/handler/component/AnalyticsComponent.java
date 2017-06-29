@@ -18,58 +18,128 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 
-import org.apache.solr.analytics.plugin.AnalyticsStatisticsCollector;
-import org.apache.solr.analytics.request.AnalyticsStats;
-import org.apache.solr.analytics.util.AnalyticsParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.analytics.AnalyticsDriver;
+import org.apache.solr.analytics.AnalyticsRequestManager;
+import org.apache.solr.analytics.AnalyticsRequestParser;
+import org.apache.solr.analytics.ExpressionFactory;
+import org.apache.solr.analytics.stream.AnalyticsShardRequestManager;
+import org.apache.solr.analytics.util.OldAnalyticsParams;
+import org.apache.solr.analytics.util.OldAnalyticsRequestConverter;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 
-public class AnalyticsComponent extends SearchComponent implements SolrMetricProducer {
+/**
+ * Computes analytics requests.
+ */
+public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
-  private final AnalyticsStatisticsCollector analyticsCollector = new AnalyticsStatisticsCollector();;
+  
+  @Override
+  public void init(NamedList args) {
+    AnalyticsRequestParser.init();
+  }
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
-    if (rb.req.getParams().getBool(AnalyticsParams.ANALYTICS,false)) {
-      rb.setNeedDocSet( true );
+    // First check to see if there is an analytics request using the current format
+    String analyticsRequest = rb.req.getParams().get(AnalyticsRequestParser.analyticsParamName);
+    rb._isOlapAnalytics = false;
+    rb.doAnalytics = false;
+    if (analyticsRequest != null) {
+      rb.doAnalytics = true;
+      rb._analyticsRequestManager = AnalyticsRequestParser.parse(analyticsRequest, new ExpressionFactory(rb.req.getSchema()), rb.isDistrib);
+    }
+    // If there is no request in the current format, check for the old olap-style format
+    else if (rb.req.getParams().getBool(OldAnalyticsParams.OLD_ANALYTICS,false)) {
+      rb._analyticsRequestManager = AnalyticsRequestParser.parse(OldAnalyticsRequestConverter.convert(rb.req.getParams()), new ExpressionFactory(rb.req.getSchema()), rb.isDistrib);
+      rb._isOlapAnalytics = true;
+      rb.doAnalytics = true;
+    }
+    
+    if (rb.doAnalytics) {
+      AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+      // Check to see if the request is distributed
+      if (rb.isDistrib) {
+        reqManager.sendShards = true;
+        reqManager.shardStream = new AnalyticsShardRequestManager(rb.req.getParams(), reqManager);
+      } else {
+        reqManager.sendShards = false;
+        rb.setNeedDocSet( true );
+      }
     }
   }
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    if (rb.req.getParams().getBool(AnalyticsParams.ANALYTICS,false)) {
-      SolrParams params = rb.req.getParams();
-      AnalyticsStats s = new AnalyticsStats(rb.req, rb.getResults().docSet, params, analyticsCollector);
-      rb.rsp.add( "stats", s.execute() );
+    if (!rb.doAnalytics) {
+      return;
     }
+    AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+    // Collect the data and generate a response
+    AnalyticsDriver.drive(reqManager, rb.req.getSearcher(), rb.getResults().docSet.getTopFilter(), rb.req);
+    
+    if (rb._isOlapAnalytics) {
+      rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());
+    } else {
+      rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
+    }
+
+    rb.doAnalytics = false;
   }
   
-  /*
+  
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
+    if (!rb.doAnalytics || rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+      return ResponseBuilder.STAGE_DONE;
+    }
+    AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+    if (!reqManager.sendShards){
+      return ResponseBuilder.STAGE_DONE;
+    }
+    
+    // Send out a request to each shard and merge the responses into our AnalyticsRequestManager
+    reqManager.shardStream.sendRequests(rb.req.getCore().getCoreDescriptor().getCollectionName(),
+        rb.req.getCore().getCoreContainer().getZkController().getZkServerAddress());
+    
+    reqManager.sendShards = false;
+    
     return ResponseBuilder.STAGE_DONE;
   }
   
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
-    // TODO Auto-generated method stub
+    // We don't want the shard requests to compute analytics, since we send
+    // separate requests for that in distributedProcess() to the AnalyticsHandler
+    sreq.params.remove(AnalyticsRequestParser.analyticsParamName);
+    sreq.params.remove(OldAnalyticsParams.OLD_ANALYTICS);
+    
     super.modifyRequest(rb, who, sreq);
   }
   
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    // TODO Auto-generated method stub
+    
+    // NO-OP since analytics shard responses are handled through the AnalyticsResponseParser
+    
     super.handleResponses(rb, sreq);
   }
  
   @Override
   public void finishStage(ResponseBuilder rb) {
-    // TODO Auto-generated method stub
+    if (rb.doAnalytics && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+      AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+      // Generate responses from the merged shard data
+      if (rb._isOlapAnalytics) {
+        rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());
+      } else {
+        rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
+      }
+    }
+    
     super.finishStage(rb);
   }
-  */
+  
   
   @Override
   public String getName() {
@@ -81,9 +151,8 @@ public class AnalyticsComponent extends SearchComponent implements SolrMetricPro
     return "Perform analytics";
   }
 
-  @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(analyticsCollector.getStatistics()));
-    manager.registerGauge(this, registry, metrics, true, getClass().getSimpleName(), getCategory().toString(), scope);
-  }
+  /*@Override
+  public NamedList getStatistics() {
+    return analyticsCollector.getStatistics();
+  }*/
 }

@@ -37,6 +37,11 @@ import org.junit.Test;
 
 public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCase {
 
+  public DistributedFacetPivotSmallTest() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
+  
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {

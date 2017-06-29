@@ -51,7 +51,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -66,11 +65,6 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.tests.intClassName", random().nextBoolean()? "TrieIntField": "IntPointField");
-    System.setProperty("solr.tests.longClassName", random().nextBoolean()? "TrieLongField": "LongPointField");
-    System.setProperty("solr.tests.floatClassName", random().nextBoolean()? "TrieFloatField": "FloatPointField");
-    System.setProperty("solr.tests.doubleClassName", random().nextBoolean()? "TrieDoubleField": "DoublePointField");
-
     // we need consistent segments that aren't re-ordered on merge because we're
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
@@ -119,14 +113,6 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() {
     client = null;
-  }
-
-  @After
-  public void after() {
-    System.clearProperty("solr.tests.intClassName");
-    System.clearProperty("solr.tests.longClassName");
-    System.clearProperty("solr.tests.floatClassName");
-    System.clearProperty("solr.tests.doubleClassName");
   }
 
   @Before

@@ -51,7 +51,7 @@ public class TestBooleanOr extends LuceneTestCase {
   private IndexReader reader;
   
 
-  private int search(Query q) throws IOException {
+  private long search(Query q) throws IOException {
     QueryUtils.check(random(), q,searcher);
     return searcher.search(q, 1000).totalHits;
   }

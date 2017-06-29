@@ -16,16 +16,16 @@
  */
 package org.apache.solr.search.stats;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ExactSharedStatsCache extends ExactStatsCache {
@@ -73,7 +73,7 @@ public class ExactSharedStatsCache extends ExactStatsCache {
 
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
     Map<String,TermStats> cache = perShardTermStats.get(shard);
-    return cache.get(t);
+    return (cache != null) ? cache.get(t) : null; //Term doesn't exist in shard;
   }
 
   protected void addToGlobalColStats(SolrQueryRequest req,

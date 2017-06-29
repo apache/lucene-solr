@@ -94,6 +94,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
 
   @Override
   public void setUp() throws Exception {
+    SolrTestCaseJ4.randomizeNumericTypesProperties(); // SOLR-10916
     super.setUp();
     setupMiniKdc();
   }
@@ -173,7 +174,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       String configName = "solrCloudCollectionConfig";
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
-      CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName,NUM_SHARDS,REPLICATION_FACTOR);
+      CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, configName, NUM_SHARDS,REPLICATION_FACTOR);
       Properties properties = new Properties();
       properties.put(CoreDescriptor.CORE_CONFIG, "solrconfig-tlog.xml");
       properties.put("solr.tests.maxBufferedDocs", "100000");
@@ -225,6 +226,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     System.clearProperty("solr.kerberos.name.rules");
     System.clearProperty("solr.jaas.debug");
     kerberosTestServices.stop();
+    SolrTestCaseJ4.clearNumericTypesProperties(); // SOLR-10916
     super.tearDown();
   }
 }

@@ -125,7 +125,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public void init(NamedList args) {
     initArgs = args;
 
-    // Copied from StandardRequestHandler
     if( args != null ) {
       defaults = getSolrParamsFromNamedList(args, "defaults");
       appends = getSolrParamsFromNamedList(args, "appends");

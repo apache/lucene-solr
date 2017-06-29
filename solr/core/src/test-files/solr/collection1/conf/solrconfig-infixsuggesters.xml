@@ -25,7 +25,7 @@
 
   <updateHandler class="solr.DirectUpdateHandler2"/>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
   <searchComponent class="solr.SuggestComponent" name="analyzing_infix_suggester_random_short_dictionary">
     <lst name="suggester">

@@ -313,7 +313,7 @@ public class ValidatingJsonMap implements Map<String, Object> {
   }
 
   public static ValidatingJsonMap parse(String resourceName, String includeLocation) {
-    InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
+    InputStream is = ValidatingJsonMap.class.getClassLoader().getResourceAsStream(resourceName);
     if (is == null)
       throw new RuntimeException("invalid API spec: " + resourceName);
     ValidatingJsonMap map = null;

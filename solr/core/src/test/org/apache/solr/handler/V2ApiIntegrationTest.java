@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -67,8 +68,13 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .withPayload(payload)
         .build();
     v2Request.setResponseParser(responseParser);
-    V2Response response = v2Request.process(cluster.getSolrClient());
-    assertEquals(getStatus(response), expectedCode);
+    try {
+      v2Request.process(cluster.getSolrClient());
+      fail("expected an exception with error code: "+expectedCode);
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      assertEquals(expectedCode, e.code());
+
+    }
   }
 
   @Test

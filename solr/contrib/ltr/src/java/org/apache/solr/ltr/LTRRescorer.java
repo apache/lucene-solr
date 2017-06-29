@@ -110,7 +110,7 @@ public class LTRRescorer extends Rescorer {
       }
     });
 
-    topN = Math.min(topN, firstPassTopDocs.totalHits);
+    topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits));
     final ScoreDoc[] reranked = new ScoreDoc[topN];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final LTRScoringQuery.ModelWeight modelWeight = (LTRScoringQuery.ModelWeight) searcher

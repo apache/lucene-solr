@@ -38,7 +38,6 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void moreLikeThisBeforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    lrf = h.getRequestFactory("standard", 0, 20 );
   }
 
   @Test

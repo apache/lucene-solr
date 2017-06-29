@@ -18,14 +18,14 @@
 
 <schema name="schema-docValuesMulti" version="1.6">
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
@@ -41,18 +41,18 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
   <field name="id" type="string" required="true" indexed="true"/>
-  <field name="floatdv_m" type="${solr.tests.floatClass:pfloat}" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="intdv_m" type="${solr.tests.intClass:pint}" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="doubledv_m" type="${solr.tests.doubleClass:pdouble}" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="longdv_m" type="${solr.tests.longClass:plong}" indexed="false" stored="false" docValues="true" multiValued="true"/>
-  <field name="datedv_m" type="${solr.tests.dateClass:pdate}" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="floatdv_m" type="float" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="intdv_m" type="int" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="doubledv_m" type="double" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="longdv_m" type="long" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="datedv_m" type="date" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="stringdv_m" type="string" indexed="false" stored="false" docValues="true" multiValued="true"/>
 
-  <field name="floatdv" type="${solr.tests.floatClass:pfloat}" indexed="false" stored="false" docValues="true"/>
-  <field name="intdv" type="${solr.tests.intClass:pint}" indexed="false" stored="false" docValues="true"/>
-  <field name="doubledv" type="${solr.tests.doubleClass:pdouble}" indexed="false" stored="false" docValues="true"/>
-  <field name="longdv" type="${solr.tests.longClass:plong}" indexed="false" stored="false" docValues="true"/>
-  <field name="datedv" type="${solr.tests.dateClass:pdate}" indexed="false" stored="false" docValues="true"/>
+  <field name="floatdv" type="float" indexed="false" stored="false" docValues="true"/>
+  <field name="intdv" type="int" indexed="false" stored="false" docValues="true"/>
+  <field name="doubledv" type="double" indexed="false" stored="false" docValues="true"/>
+  <field name="longdv" type="long" indexed="false" stored="false" docValues="true"/>
+  <field name="datedv" type="date" indexed="false" stored="false" docValues="true"/>
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true"/>
 
    <!-- Point fields explicitly -->

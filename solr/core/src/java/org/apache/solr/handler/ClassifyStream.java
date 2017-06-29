@@ -85,8 +85,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
     if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
-    SolrCore solrCore = (SolrCore) solrCoreObj;
-    analyzer = solrCore.getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
+    analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
 
     this.docStream.setStreamContext(context);
     this.modelStream.setStreamContext(context);

@@ -68,7 +68,6 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -249,18 +248,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
-  
-  // only change the BooleanQuery maxClauseCount once for ALL cores...
-  void booleanQueryMaxClauseCount()  {
-    synchronized(SolrCore.class) {
-      if (boolean_query_max_clause_count == Integer.MIN_VALUE) {
-        boolean_query_max_clause_count = solrConfig.booleanQueryMaxClauseCount;
-        BooleanQuery.setMaxClauseCount(boolean_query_max_clause_count);
-      } else if (boolean_query_max_clause_count != solrConfig.booleanQueryMaxClauseCount ) {
-        log.debug("BooleanQuery.maxClauseCount={}, ignoring {}", boolean_query_max_clause_count, solrConfig.booleanQueryMaxClauseCount);
-      }
-    }
-  }
+
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -931,8 +919,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     this.maxWarmingSearchers = config.maxWarmingSearchers;
     this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
 
-    booleanQueryMaxClauseCount();
-
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
@@ -1151,7 +1137,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     manager.registerGauge(this, registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(this, registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      manager.registerGauge(this, registry, () -> coreContainer.getCoreNames(this), true, "aliases", Category.CORE.toString());
+      manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         manager.registerGauge(this, registry, () -> {

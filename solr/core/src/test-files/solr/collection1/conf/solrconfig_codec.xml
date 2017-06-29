@@ -21,7 +21,7 @@
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
   <codecFactory class="solr.SchemaCodecFactory">
     <str name="compressionMode">${tests.COMPRESSION_MODE:BEST_COMPRESSION}</str>
   </codecFactory>

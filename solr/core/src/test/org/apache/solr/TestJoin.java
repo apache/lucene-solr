@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@SuppressPointFields
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10939")
 public class TestJoin extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

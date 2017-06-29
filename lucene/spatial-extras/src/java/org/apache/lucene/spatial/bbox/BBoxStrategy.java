@@ -25,12 +25,13 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -211,23 +212,21 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   /**
-   * Provides access to each rectangle per document as a ValueSource in which
-   * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)} returns a {@link
-   * Shape}.
+   * Provides access to each rectangle per document as a {@link ShapeValuesSource}
    */ //TODO raise to SpatialStrategy
-  public ValueSource makeShapeValueSource() {
+  public ShapeValuesSource makeShapeValueSource() {
     return new BBoxValueSource(this);
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     //TODO if makeShapeValueSource gets lifted to the top; this could become a generic impl.
     return new DistanceToShapeValueSource(makeShapeValueSource(), queryPoint, multiplier, ctx);
   }
 
   /** Returns a similarity based on {@link BBoxOverlapRatioValueSource}. This is just a
    * convenience method. */
-  public ValueSource makeOverlapRatioValueSource(Rectangle queryBox, double queryTargetProportion) {
+  public DoubleValuesSource makeOverlapRatioValueSource(Rectangle queryBox, double queryTargetProportion) {
     return new BBoxOverlapRatioValueSource(
         makeShapeValueSource(), ctx.isGeo(), queryBox, queryTargetProportion, 0.0);
   }

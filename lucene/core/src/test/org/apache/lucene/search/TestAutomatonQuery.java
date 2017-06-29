@@ -85,7 +85,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
     return new Term(FN, value);
   }
   
-  private int automatonQueryNrHits(AutomatonQuery query) throws IOException {
+  private long automatonQueryNrHits(AutomatonQuery query) throws IOException {
     if (VERBOSE) {
       System.out.println("TEST: run aq=" + query);
     }

@@ -176,13 +176,18 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
   fi
-
+  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+    export SOLR_SSL_KEY_STORE_PASSWORD=$SOLR_SSL_KEY_STORE_PASSWORD
+  fi
   if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore.type=$SOLR_SSL_KEY_STORE_TYPE"
   fi
 
   if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore=$SOLR_SSL_TRUST_STORE"
+  fi
+  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+    export SOLR_SSL_TRUST_STORE_PASSWORD=$SOLR_SSL_TRUST_STORE_PASSWORD
   fi
   if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
@@ -198,6 +203,9 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
 
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
+      export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD
+    fi
     if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
     fi
@@ -213,6 +221,9 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
     SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
 
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
+      export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD
+    fi
     if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
     fi
@@ -441,7 +452,6 @@ function print_usage() {
     echo "  -d <confdir>            Configuration directory to copy when creating the new collection, built-in options are:"
     echo ""
     echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
-    echo "      data_driven_schema_configs: Managed schema with field-guessing support enabled"
     echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
     echo "         demonstrate the full power of Solr"
     echo ""
@@ -936,8 +946,8 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   if [ -z "$CREATE_CONFDIR" ]; then
     CREATE_CONFDIR='_default'
   fi
-
-  # validate the confdir arg
+  
+  # validate the confdir arg (if provided)
   if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
     echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
     exit 1
@@ -947,11 +957,6 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     echo "Name (-c) argument is required!"
     print_usage "$SCRIPT_CMD"
     exit 1
-  fi
-
-  # If not defined, use the collection name for the name of the configuration in Zookeeper
-  if [ -z "$CREATE_CONFNAME" ]; then
-    CREATE_CONFNAME="$CREATE_NAME"
   fi
 
   if [ -z "$CREATE_PORT" ]; then
@@ -1662,6 +1667,11 @@ else
   fi
 fi
 
+# Set the default configset dir to be bootstrapped as _default
+if [ -z "$DEFAULT_CONFDIR" ]; then
+  DEFAULT_CONFDIR="$SOLR_SERVER_DIR/solr/configsets/_default/conf"
+fi
+
 # This is quite hacky, but examples rely on a different log4j.properties
 # so that we can write logs for examples to $SOLR_HOME/../logs
 if [ -z "$SOLR_LOGS_DIR" ]; then
@@ -1912,7 +1922,7 @@ function launch_solr() {
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"

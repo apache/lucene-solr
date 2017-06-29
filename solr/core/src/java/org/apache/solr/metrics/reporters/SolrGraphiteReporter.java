@@ -36,7 +36,6 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
 
   private String host = null;
   private int port = -1;
-  private int period = 60;
   private boolean pickled = false;
   private String instancePrefix = null;
   private List<String> filters = new ArrayList<>();
@@ -88,10 +87,6 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
 
   public void setPickled(boolean pickled) {
     this.pickled = pickled;
-  }
-
-  public void setPeriod(int period) {
-    this.period = period;
   }
 
   @Override

@@ -67,6 +67,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
@@ -754,12 +755,13 @@ public abstract class FieldType extends FieldProperties {
   /** @lucene.experimental  */
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
     if (!field.indexed()) {
+      // TODO: if the field isn't indexed, this feels like the wrong query type to use?
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (String externalVal : externalVals) {
         Query subq = getFieldQuery(parser, field, externalVal);
         builder.add(subq, BooleanClause.Occur.SHOULD);
       }
-      return builder.build();
+      return QueryUtils.build(builder, parser);
     }
 
     List<BytesRef> lst = new ArrayList<>(externalVals.size());

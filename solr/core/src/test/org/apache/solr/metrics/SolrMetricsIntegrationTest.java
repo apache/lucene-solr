@@ -43,7 +43,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
   private static final String CORE_NAME = "metrics_integration";
   private static final String METRIC_NAME = "requestTimes";
-  private static final String HANDLER_NAME = "standard";
+  private static final String HANDLER_NAME = "/select";
   private static final String[] REPORTER_NAMES = {"reporter1", "reporter2"};
   private static final String UNIVERSAL = "universal";
   private static final String SPECIFIC = "specific";

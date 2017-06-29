@@ -572,7 +572,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       super(f);
       this.now = now;
       if (! (field.getType() instanceof TrieDateField) && !(field.getType().isPointField()) ) {
-        throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField or DateRangeField");
+        throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField, DateRangeField or PointField");
       }
     }
 

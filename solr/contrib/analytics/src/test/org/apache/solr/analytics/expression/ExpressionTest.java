@@ -16,26 +16,16 @@
  */
 package org.apache.solr.analytics.expression;
 
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Scanner;
 
-import com.google.common.collect.ObjectArrays;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DateMathParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ExpressionTest extends AbstractAnalyticsStatsTest {
-  private static final String fileName = "/analytics/requestFiles/expressions.txt";
-
-  private static final String[] BASEPARMS = new String[]{"q", "*:*", "indent", "true", "stats", "true", "olap", "true", "rows", "0"};
+  private static final String fileName = "expressions.txt";
 
   private static final int INT = 71;
   private static final int LONG = 36;
@@ -48,7 +38,7 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema-analytics.xml");
+    initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
@@ -131,9 +121,9 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     double result = (Double) getStatResult("nr", "s", VAL_TYPE.DOUBLE);
     assertEquals(getRawResponse(), -1 * sumResult, result, 0.0);
 
-    double countResult = ((Long) getStatResult("nr", "count", VAL_TYPE.LONG)).doubleValue();
-    result = (Double) getStatResult("nr", "c", VAL_TYPE.DOUBLE);
-    assertEquals(getRawResponse(), -1 * countResult, result, 0.0);
+    long countResult = ((Long) getStatResult("nr", "count", VAL_TYPE.LONG));
+    long lresult = (Long) getStatResult("nr", "c", VAL_TYPE.LONG);
+    assertEquals(getRawResponse(), -1 * countResult, lresult, 0.0);
   }
 
   @Test
@@ -142,18 +132,18 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     double result = (Double) getStatResult("avr", "s", VAL_TYPE.DOUBLE);
     assertEquals(getRawResponse(), sumResult, result, 0.0);
 
-    double countResult = ((Long) getStatResult("avr", "count", VAL_TYPE.LONG)).doubleValue();
-    result = (Double) getStatResult("avr", "c", VAL_TYPE.DOUBLE);
-    assertEquals(getRawResponse(), countResult, result, 0.0);
+    long countResult = ((Long) getStatResult("avr", "count", VAL_TYPE.LONG));
+    long lresult = (Long) getStatResult("avr", "c", VAL_TYPE.LONG);
+    assertEquals(getRawResponse(), countResult, lresult, 0.0);
   }
 
   @Test
   public void constantNumberTest() throws Exception {
-    double result = (Double) getStatResult("cnr", "c8", VAL_TYPE.DOUBLE);
+    int result = (Integer) getStatResult("cnr", "c8", VAL_TYPE.INTEGER);
     assertEquals(getRawResponse(), 8, result, 0.0);
 
-    result = (Double) getStatResult("cnr", "c10", VAL_TYPE.DOUBLE);
-    assertEquals(getRawResponse(), 10, result, 0.0);
+    float dresult = (Float) getStatResult("cnr", "c10", VAL_TYPE.FLOAT);
+    assertEquals(getRawResponse(), 10.0f, dresult, 0.0);
   }
 
   @Test
@@ -207,43 +197,5 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     builder.append((String) getStatResult("cr", "max", VAL_TYPE.STRING));
     concat = (String) getStatResult("cr", "ccmax", VAL_TYPE.STRING);
     assertEquals(getRawResponse(), concat, builder.toString());
-  }
-
-  @Test
-  public void reverseTest() throws Exception {
-    StringBuilder builder = new StringBuilder();
-    builder.append((String) getStatResult("rr", "min", VAL_TYPE.STRING));
-    String rev = (String) getStatResult("rr", "rmin", VAL_TYPE.STRING);
-    assertEquals(getRawResponse(), rev, builder.reverse().toString());
-
-    builder.setLength(0);
-    builder.append((String) getStatResult("rr", "max", VAL_TYPE.STRING));
-    rev = (String) getStatResult("rr", "rmax", VAL_TYPE.STRING);
-    assertEquals(getRawResponse(), rev, builder.reverse().toString());
-  }
-
-  public static SolrQueryRequest request(String... args) {
-    return SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
-  }
-
-  public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
-    InputStream in = clazz.getResourceAsStream(fileName);
-    if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
-    Scanner file = new Scanner(in, "UTF-8");
-    try { 
-      ArrayList<String> strList = new ArrayList<>();
-      while (file.hasNextLine()) {
-        String line = file.nextLine();
-        if (line.length()<2) {
-          continue;
-        }
-        String[] param = line.split("=");
-        strList.add(param[0]);
-        strList.add(param[1]);
-      }
-      return strList.toArray(new String[0]);
-    } finally {
-      IOUtils.closeWhileHandlingException(file, in);
-    }
   }
 }

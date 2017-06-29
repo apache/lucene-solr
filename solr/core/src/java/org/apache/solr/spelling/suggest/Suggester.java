@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
@@ -47,6 +46,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
+import org.apache.solr.spelling.Token;
 import org.apache.solr.spelling.suggest.fst.FSTLookupFactory;
 import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
 import org.apache.solr.spelling.suggest.tst.TSTLookupFactory;

@@ -16,62 +16,71 @@
  */
 package org.apache.lucene.spatial.util;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Explanation;
 
 /**
  * Caches the doubleVal of another value source in a HashMap
  * so that it is computed only once.
  * @lucene.internal
  */
-public class CachingDoubleValueSource extends ValueSource {
+public class CachingDoubleValueSource extends DoubleValuesSource {
 
-  final ValueSource source;
+  final DoubleValuesSource source;
   final Map<Integer, Double> cache;
 
-  public CachingDoubleValueSource( ValueSource source )
-  {
+  public CachingDoubleValueSource(DoubleValuesSource source) {
     this.source = source;
     cache = new HashMap<>();
   }
 
   @Override
-  public String description() {
-    return "Cached["+source.description()+"]";
+  public String toString() {
+    return "Cached["+source.toString()+"]";
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
     final int base = readerContext.docBase;
-    final FunctionValues vals = source.getValues(context,readerContext);
-    return new FunctionValues() {
+    final DoubleValues vals = source.getValues(readerContext, scores);
+    return new DoubleValues() {
 
       @Override
-      public double doubleVal(int doc) throws IOException {
-        Integer key = Integer.valueOf( base+doc );
-        Double v = cache.get( key );
-        if( v == null ) {
-          v = Double.valueOf( vals.doubleVal(doc) );
-          cache.put( key, v );
+      public double doubleValue() throws IOException {
+        int key = base + doc;
+        Double v = cache.get(key);
+        if (v == null) {
+          v = vals.doubleValue();
+          cache.put(key, v);
         }
-        return v.doubleValue();
+        return v;
       }
 
       @Override
-      public float floatVal(int doc) throws IOException {
-        return (float)doubleVal(doc);
+      public boolean advanceExact(int doc) throws IOException {
+        this.doc = doc;
+        return vals.advanceExact(doc);
       }
 
-      @Override
-      public String toString(int doc) throws IOException {
-        return doubleVal(doc)+"";
-      }
+      int doc = -1;
+
     };
+  }
+
+  @Override
+  public boolean needsScores() {
+    return false;
+  }
+
+  @Override
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    return source.explain(ctx, docId, scoreExplanation);
   }
 
   @Override

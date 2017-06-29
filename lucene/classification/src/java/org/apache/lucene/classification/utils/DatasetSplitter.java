@@ -122,7 +122,7 @@ public class DatasetSplitter {
 
       // iterate over existing documents
       for (GroupDocs<Object> group : topGroups.groups) {
-        int totalHits = group.totalHits;
+        long totalHits = group.totalHits;
         double testSize = totalHits * testRatio;
         int tc = 0;
         double cvSize = totalHits * crossValidationRatio;

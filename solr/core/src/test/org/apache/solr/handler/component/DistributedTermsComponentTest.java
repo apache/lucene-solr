@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.junit.Test;
 
@@ -25,10 +26,12 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10847")
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void test() throws Exception {
+    
     del("*:*");
     index(id, 18, "b_t", "snake spider shark snail slug seal", "foo_i", "1");
     index(id, 19, "b_t", "snake spider shark snail slug", "foo_i", "2");

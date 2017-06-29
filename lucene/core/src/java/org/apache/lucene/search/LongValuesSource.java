@@ -52,6 +52,15 @@ public abstract class LongValuesSource {
    */
   public abstract boolean needsScores();
 
+  @Override
+  public abstract int hashCode();
+
+  @Override
+  public abstract boolean equals(Object obj);
+
+  @Override
+  public abstract String toString();
+
   /**
    * Create a sort field based on the value of this producer
    * @param reverse true if the sort should be decreasing
@@ -78,27 +87,55 @@ public abstract class LongValuesSource {
    * Creates a LongValuesSource that always returns a constant value
    */
   public static LongValuesSource constant(long value) {
-    return new LongValuesSource() {
-      @Override
-      public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        return new LongValues() {
-          @Override
-          public long longValue() throws IOException {
-            return value;
-          }
+    return new ConstantLongValuesSource(value);
+  }
 
-          @Override
-          public boolean advanceExact(int doc) throws IOException {
-            return true;
-          }
-        };
-      }
+  private static class ConstantLongValuesSource extends LongValuesSource {
 
-      @Override
-      public boolean needsScores() {
-        return false;
-      }
-    };
+    private final long value;
+
+    private ConstantLongValuesSource(long value) {
+      this.value = value;
+    }
+
+    @Override
+    public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+      return new LongValues() {
+        @Override
+        public long longValue() throws IOException {
+          return value;
+        }
+
+        @Override
+        public boolean advanceExact(int doc) throws IOException {
+          return true;
+        }
+      };
+    }
+
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(value);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ConstantLongValuesSource that = (ConstantLongValuesSource) o;
+      return value == that.value;
+    }
+
+    @Override
+    public String toString() {
+      return "constant(" + value + ")";
+    }
+
   }
 
   private static class FieldValuesSource extends LongValuesSource {
@@ -115,6 +152,11 @@ public abstract class LongValuesSource {
       if (o == null || getClass() != o.getClass()) return false;
       FieldValuesSource that = (FieldValuesSource) o;
       return Objects.equals(field, that.field);
+    }
+
+    @Override
+    public String toString() {
+      return "long(" + field + ")";
     }
 
     @Override

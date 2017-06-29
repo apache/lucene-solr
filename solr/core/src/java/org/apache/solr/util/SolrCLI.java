@@ -486,7 +486,7 @@ public class SolrCLI {
   private static List<Class<Tool>> findToolClassesInPackage(String packageName) {
     List<Class<Tool>> toolClasses = new ArrayList<Class<Tool>>();
     try {
-      ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+      ClassLoader classLoader = SolrCLI.class.getClassLoader();
       String path = packageName.replace('.', '/');
       Enumeration<URL> resources = classLoader.getResources(path);
       Set<String> classes = new TreeSet<String>();
@@ -993,7 +993,7 @@ public class SolrCLI {
     }
   } // end ApiTool class
 
-  private static final String DEFAULT_CONFIG_SET = "data_driven_schema_configs";
+  private static final String DEFAULT_CONFIG_SET = "_default";
 
   private static final long MS_IN_MIN = 60 * 1000L;
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
@@ -1503,17 +1503,23 @@ public class SolrCLI {
         maxShardsPerNode = ((numShards*replicationFactor)+numNodes-1)/numNodes;
       }
 
-      String confname = cli.getOptionValue("confname", collectionName);
-      boolean configExistsInZk =
+      String confname = cli.getOptionValue("confname");
+      String confdir = cli.getOptionValue("confdir");
+      String configsetsDir = cli.getOptionValue("configsetsDir");
+
+      boolean configExistsInZk = confname != null && !"".equals(confname.trim()) &&
           cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/" + confname, true);
 
       if (".system".equals(collectionName)) {
         //do nothing
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory "+confname);
-      } else {
-        Path confPath = ZkConfigManager.getConfigsetPath(cli.getOptionValue("confdir", DEFAULT_CONFIG_SET),
-            cli.getOptionValue("configsetsDir"));
+      } else if (confdir != null && !"".equals(confdir.trim())){
+        if (confname == null || "".equals(confname.trim())) {
+          confname = collectionName;
+        }
+        Path confPath = ZkConfigManager.getConfigsetPath(confdir,
+            configsetsDir);
 
         echo("Uploading " + confPath.toAbsolutePath().toString() +
             " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost());
@@ -1531,13 +1537,15 @@ public class SolrCLI {
       // doesn't seem to exist ... try to create
       String createCollectionUrl =
           String.format(Locale.ROOT,
-              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d&collection.configName=%s",
+              "%s/admin/collections?action=CREATE&name=%s&numShards=%d&replicationFactor=%d&maxShardsPerNode=%d",
               baseUrl,
               collectionName,
               numShards,
               replicationFactor,
-              maxShardsPerNode,
-              confname);
+              maxShardsPerNode);
+      if (confname != null && !"".equals(confname.trim())) {
+        createCollectionUrl = createCollectionUrl + String.format(Locale.ROOT, "&collection.configName=%s", confname);
+      }
 
       echo("\nCreating new collection '"+collectionName+"' using command:\n"+createCollectionUrl+"\n");
 
@@ -2681,7 +2689,7 @@ public class SolrCLI {
       File exDir = setupExampleDir(serverDir, exampleDir, exampleName);
       String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
       String configSet =
-          "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "data_driven_schema_configs";
+          "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
       boolean isCloudMode = cli.hasOption('c');
       String zkHost = cli.getOptionValue('z');
@@ -3054,7 +3062,7 @@ public class SolrCLI {
       // yay! numNodes SolrCloud nodes running
       int numShards = 2;
       int replicationFactor = 2;
-      String cloudConfig = "data_driven_schema_configs";
+      String cloudConfig = "_default";
       String collectionName = "gettingstarted";
 
       File configsetsDir = new File(serverDir, "solr/configsets");
@@ -3089,7 +3097,7 @@ public class SolrCLI {
             "How many replicas per shard would you like to create? [2] ", "a replication factor", 2, 1, 4);
 
         echo("Please choose a configuration for the "+collectionName+" collection, available options are:");
-        String validConfigs = "basic_configs, data_driven_schema_configs, or sample_techproducts_configs ["+cloudConfig+"] ";
+        String validConfigs = "_default or sample_techproducts_configs ["+cloudConfig+"] ";
         cloudConfig = prompt(readInput, validConfigs, cloudConfig);
 
         // validate the cloudConfig name

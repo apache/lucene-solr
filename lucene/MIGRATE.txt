@@ -1,5 +1,53 @@
 # Apache Lucene Migration Guide
 
+## Changed SPI lookups for codecs and analysis changed (LUCENE-7873) ##
+
+Due to serious problems with context class loaders in several frameworks
+(OSGI, Java 9 Jigsaw), the lookup of Codecs, PostingsFormats, DocValuesFormats
+and all analysis factories was changed to only inspect the current classloader
+that defined the interface class (`lucene-core.jar`). Normal applications
+should not encounter any issues with that change, because the application
+classloader (unnamed module in Java 9) can load all SPIs from all JARs
+from classpath.
+
+For any code that relies on the old behaviour (e.g., certain web applications
+or components in application servers) one can manually instruct the Lucene
+SPI implementation to also inspect the context classloader. To do this,
+add this code to the early startup phase of your application before any
+Apache Lucene component is used:
+
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    // Codecs:
+    PostingsFormat.reloadPostingsFormats(cl);
+    DocValuesFormat.reloadDocValuesFormats(cl);
+    Codec.reloadCodecs(cl);
+    // Analysis:
+    CharFilterFactory.reloadCharFilters(cl);
+    TokenFilterFactory.reloadTokenFilters(cl);
+    TokenizerFactory.reloadTokenizers(cl);
+
+This code will reload all service providers from the given class loader
+(in our case the context class loader). Of course, instead of specifying
+the context class loader, it is receommended to use the application's main
+class loader or the module class loader.
+
+If you are migrating your project to Java 9 Jigsaw module system, keep in mind
+that Lucene currently does not yet support `module-info.java` declarations of
+service provider impls (`provides` statement). It is therefore recommended
+to keep all of Lucene in one Uber-Module and not try to split Lucene into
+several modules. As soon as Lucene will migrate to Java 9 as minimum
+requirement, we will work on improving that.
+
+For OSGI, the same applies. You have to create a bundle with all of Lucene for
+SPI to work correctly.
+
+## CustomAnalyzer resources (LUCENE-7883)##
+
+Lucene no longer uses the context class loader when resolving resources in
+CustomAnalyzer or ClassPathResourceLoader. Resources are only resolved
+against Lucene's class loader by default. Please use another builder method
+to change to a custom classloader.
+
 ## Query.hashCode and Query.equals are now abstract methods (LUCENE-7277)
 
 Any custom query subclasses should redeclare equivalence relationship according
@@ -80,3 +128,19 @@ use TopGroupsCollector.
 Support for legacy numerics has been removed since legacy numerics had been
 deprecated since Lucene 6.0. Points should be used instead, see
 org.apache.lucene.index.PointValues for an introduction.
+
+## TopDocs.totalHits is now a long (LUCENE-7872)
+
+TopDocs.totalHits is now a long so that TopDocs instances can be used to
+represent top hits that have more than 2B matches. This is necessary for the
+case that multiple TopDocs instances are merged together with TopDocs#merge as
+they might have more than 2B matches in total. However TopDocs instances
+returned by IndexSearcher will still have a total number of hits which is less
+than 2B since Lucene indexes are still bound to at most 2B documents, so it
+can safely be casted to an int in that case.
+
+## PrefixAwareTokenFilter and PrefixAndSuffixAwareTokenFilter removed
+(LUCENE-7877)
+
+Instead use ConcatentingTokenStream, which will allow for the use of custom
+attributes.

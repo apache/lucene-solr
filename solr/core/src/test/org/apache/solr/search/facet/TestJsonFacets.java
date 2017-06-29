@@ -60,6 +60,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // instead of the following, see the constructor
     //FacetField.FacetMethod.DEFAULT_METHOD = rand(FacetField.FacetMethod.values());
 
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
@@ -86,7 +89,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public static Iterable<Object[]> parameters() {
     // wrap each enum val in an Object[] and return as Iterable
     return () -> Arrays.stream(FacetField.FacetMethod.values())
-        .filter(m -> m == FacetField.FacetMethod.ENUM)
         .map(it -> new Object[]{it}).iterator();
   }
 

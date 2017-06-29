@@ -28,6 +28,11 @@ import java.util.Map;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
+import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.SolrException;
@@ -139,11 +144,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
       for (Row row : sorted) {
         Map<String, Object> map = Utils.makeMap("node", row.node);
-        for (Cell cell : row.cells) {
+        for (Cell cell : row.getCells()) {
           for (Preference clusterPreference : clusterPreferences) {
-            Policy.SortParam name = clusterPreference.name;
-            if (cell.name.equalsIgnoreCase(name.name())) {
-              map.put(name.name(), cell.val);
+            Policy.SortParam name = clusterPreference.getName();
+            if (cell.getName().equalsIgnoreCase(name.name())) {
+              map.put(name.name(), cell.getValue());
               break;
             }
           }

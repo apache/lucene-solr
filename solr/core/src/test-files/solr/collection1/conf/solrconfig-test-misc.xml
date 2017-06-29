@@ -45,8 +45,8 @@
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
   <!-- see TestConfig.testDisableRequetsHandler -->
-  <requestHandler name="disabled" class="solr.StandardRequestHandler" enable="false"/>
-  <requestHandler name="enabled" class="solr.StandardRequestHandler" enable="true"/>
+  <requestHandler name="/disabled" class="solr.SearchHandler" enable="false"/>
+  <requestHandler name="/enabled" class="solr.SearchHandler" enable="true"/>
 
 
 

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -55,7 +54,11 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     setDaemon(true);
     this.clients = clients;
 
-    cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8, 2);
+    cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(((HttpSolrClient) clients.get(0)).getBaseURL())
+        .withHttpClient(httpClient)
+        .withQueueSize(8)
+        .withThreadCount(2)
+        .build();
     cusc.setConnectionTimeout(10000);
     cusc.setSoTimeout(clientSoTimeout);
   }
@@ -114,8 +117,11 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
         clientIndex = 0;
       }
       cusc.shutdownNow();
-      cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(clientIndex)).getBaseURL(),
-          httpClient, 30, 3);
+      cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(((HttpSolrClient) clients.get(clientIndex)).getBaseURL())
+          .withHttpClient(httpClient)
+          .withQueueSize(30)
+          .withThreadCount(3)
+          .build();
     }
   }
   
@@ -143,13 +149,24 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
   }
   
   static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
-    @SuppressWarnings("deprecation")
-    public ErrorLoggingConcurrentUpdateSolrClient(String serverUrl, HttpClient httpClient, int queueSize, int threadCount) {
-      super(serverUrl, httpClient, queueSize, threadCount, null, false);
+    public ErrorLoggingConcurrentUpdateSolrClient(Builder builder) {
+      super(builder);
     }
+    
     @Override
     public void handleError(Throwable ex) {
       log.warn("cusc error", ex);
+    }
+    
+    static class Builder extends ConcurrentUpdateSolrClient.Builder {
+
+      public Builder(String baseSolrUrl) {
+        super(baseSolrUrl);
+      }
+      
+      public ErrorLoggingConcurrentUpdateSolrClient build() {
+        return new ErrorLoggingConcurrentUpdateSolrClient(this);
+      }
     }
   }
   

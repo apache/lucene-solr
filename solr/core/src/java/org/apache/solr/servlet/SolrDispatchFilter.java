@@ -133,6 +133,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
 
+  public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
+
+  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
+
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 
   public static final String SOLR_LOG_LEVEL = "solr.log.level";
@@ -223,7 +227,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private void logWelcomeBanner() {
     log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
     log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty("solr.install.dir"));
+    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}, Default config dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE), System.getProperty(SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
     log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
   }
 
@@ -265,7 +269,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHome, null, nodeProperties);
+    SolrResourceLoader loader = new SolrResourceLoader(solrHome, SolrDispatchFilter.class.getClassLoader(), nodeProperties);
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn("Solr property solr.solrxml.location is no longer supported. " +
                "Will automatically load solr.xml from ZooKeeper if it exists");

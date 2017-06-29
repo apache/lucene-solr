@@ -16,7 +16,10 @@
  */
 package org.apache.solr.spelling;
 
-import org.apache.lucene.analysis.Token;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -25,9 +28,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import java.util.Collection;
-import java.util.HashSet;
-import java.io.IOException;
 
 
 /**

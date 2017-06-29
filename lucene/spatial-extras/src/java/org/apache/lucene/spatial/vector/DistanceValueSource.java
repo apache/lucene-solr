@@ -16,29 +16,28 @@
  */
 package org.apache.lucene.spatial.vector;
 
-import org.apache.lucene.index.NumericDocValues;
-import org.locationtech.spatial4j.distance.DistanceCalculator;
-import org.locationtech.spatial4j.shape.Point;
+import java.io.IOException;
+
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-
-import java.io.IOException;
-import java.util.Map;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.locationtech.spatial4j.distance.DistanceCalculator;
+import org.locationtech.spatial4j.shape.Point;
 
 /**
- * An implementation of the Lucene ValueSource model that returns the distance
- * for a {@link PointVectorStrategy}.
+ * A DoubleValuesSource that returns the distance for a {@link PointVectorStrategy}.
  *
  * @lucene.internal
  */
-public class DistanceValueSource extends ValueSource {
+public class DistanceValueSource extends DoubleValuesSource {
 
   private PointVectorStrategy strategy;
   private final Point from;
   private final double multiplier;
+  private final double nullValue;
 
   /**
    * Constructor.
@@ -47,13 +46,14 @@ public class DistanceValueSource extends ValueSource {
     this.strategy = strategy;
     this.from = from;
     this.multiplier = multiplier;
+    this.nullValue = 180 * multiplier;
   }
 
   /**
    * Returns the ValueSource description.
    */
   @Override
-  public String description() {
+  public String toString() {
     return "DistanceValueSource("+strategy+", "+from+")";
   }
 
@@ -61,55 +61,35 @@ public class DistanceValueSource extends ValueSource {
    * Returns the FunctionValues used by the function query.
    */
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
     LeafReader reader = readerContext.reader();
 
     final NumericDocValues ptX = DocValues.getNumeric(reader, strategy.getFieldNameX());
     final NumericDocValues ptY = DocValues.getNumeric(reader, strategy.getFieldNameY());
 
-    return new FunctionValues() {
-
-      private int lastDocID = -1;
+    return DoubleValues.withDefault(new DoubleValues() {
 
       private final Point from = DistanceValueSource.this.from;
       private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
-      private final double nullValue =
-          (strategy.getSpatialContext().isGeo() ? 180 * multiplier : Double.MAX_VALUE);
 
-      private double getDocValue(NumericDocValues values, int doc) throws IOException {
-        int curDocID = values.docID();
-        if (doc > curDocID) {
-          curDocID = values.advance(doc);
-        }
-        if (doc == curDocID) {
-          return Double.longBitsToDouble(values.longValue());
-        } else {
-          return 0.0;
-        }
+      @Override
+      public double doubleValue() throws IOException {
+        double x = Double.longBitsToDouble(ptX.longValue());
+        double y = Double.longBitsToDouble(ptY.longValue());
+        return calculator.distance(from, x, y) * multiplier;
       }
 
       @Override
-      public float floatVal(int doc) throws IOException {
-        return (float) doubleVal(doc);
+      public boolean advanceExact(int doc) throws IOException {
+        return ptX.advanceExact(doc) && ptY.advanceExact(doc);
       }
 
-      @Override
-      public double doubleVal(int doc) throws IOException {
-        // make sure it has minX and area
-        double x = getDocValue(ptX, doc);
-        if (ptX.docID() == doc) {
-          double y = getDocValue(ptY, doc);
-          assert ptY.docID() == doc;
-          return calculator.distance(from, x, y) * multiplier;
-        }
-        return nullValue;
-      }
+    }, nullValue);
+  }
 
-      @Override
-      public String toString(int doc) throws IOException {
-        return description() + "=" + floatVal(doc);
-      }
-    };
+  @Override
+  public boolean needsScores() {
+    return false;
   }
 
   @Override

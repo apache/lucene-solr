@@ -50,6 +50,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig.xml","schema.xml");
     createIndex();
   }
@@ -368,6 +370,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleGroupedFacets() throws Exception {
+    assumeFalse("SOLR-10844: group.facet doesn't play nice with points *OR* DocValues",
+                Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP) || Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
+                
+    
     // for the purposes of our test data, it shouldn't matter 
     // if we use facet.limit -100, -1, or 100 ...
     // our set of values is small enough either way
@@ -497,7 +503,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     Map rsp = (Map) ObjectBuilder.fromJSON(response);
     Long numFound  = (Long)(((Map)rsp.get("response")).get("numFound"));
 
-    ModifiableSolrParams params = params("q","*:*", "rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
+    ModifiableSolrParams params = params("q","*:*", "facet.mincount","1","rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
     
     String[] methods = {null, "fc","enum","fcs", "uif"};
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
@@ -3306,7 +3312,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       SolrQueryRequest req = req(params);
       log.info("Using Params: " + params);
       try {
-        SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+        SolrQueryResponse rsp = h.queryAndResponse("", req);
         rangeFacetsFilter = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_ranges");
       } finally {
         req.close();
@@ -3314,7 +3320,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       params.add("facet.range.method", FacetRangeMethod.DV.toString());
       req = req(params);
       try {
-        SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+        SolrQueryResponse rsp = h.queryAndResponse("", req);
         rangeFacetsDv = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_ranges");
       } finally {
         req.close();

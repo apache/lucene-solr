@@ -333,7 +333,7 @@ public class TestSpans extends LuceneTestCase {
   }
 
   // LUCENE-1404
-  private int hitCount(IndexSearcher searcher, String word) throws Throwable {
+  private long hitCount(IndexSearcher searcher, String word) throws Throwable {
     return searcher.search(new TermQuery(new Term("text", word)), 10).totalHits;
   }
 

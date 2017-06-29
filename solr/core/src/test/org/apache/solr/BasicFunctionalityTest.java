@@ -122,7 +122,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     // test that we got the expected config, not just hardcoded defaults
-    assertNotNull(core.getRequestHandler("mock"));
+    assertNotNull(core.getRequestHandler("/mock"));
 
     // test stats call
     SolrMetricManager manager = core.getCoreContainer().getMetricManager();
@@ -756,12 +756,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
 
     assertQ("defaults handler returns fewer matches",
-            req("q", "id:[42 TO 47]",   "qt","defaults"),
+            req("q", "id:[42 TO 47]",   "qt","/defaults"),
             "*[count(//doc)=4]"
             );
 
     assertQ("defaults handler includes highlighting",
-            req("q", "name:Zapp OR title:General",   "qt","defaults"),
+            req("q", "name:Zapp OR title:General",   "qt","/defaults"),
             "//lst[@name='highlighting']"
             );
 
