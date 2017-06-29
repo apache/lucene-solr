@@ -36,7 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * todo nocommit
+ * This class is responsible for using the configured policy and preferences
+ * with the hints provided by the trigger event to compute the required cluster operations.
+ *
+ * The cluster operations computed here are put into the {@link ActionContext}'s properties
+ * with the key name "operations". The value is a List of SolrRequest objects.
  */
 public class ComputePlanAction implements TriggerAction {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
