@@ -22,6 +22,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Properties;
 
 import com.google.common.collect.ImmutableMap;
@@ -152,7 +153,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     try {
 
       TestLazyCores.checkInCores(cc, "core1");
-      TestLazyCores.checkNotInCores(cc, "lazy1", "core2");
+      TestLazyCores.checkNotInCores(cc, Arrays.asList("lazy1", "core2"));
 
       // force loading of core2 and lazy1 by getting them from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");

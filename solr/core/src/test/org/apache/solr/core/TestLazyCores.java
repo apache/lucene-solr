@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,8 +101,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // NOTE: This checks the initial state for loading, no need to do this elsewhere.
       checkInCores(cc, "collection1", "collection2", "collection5");
-      checkNotInCores(cc, "collection3", "collection4", "collection6", "collection7",
-          "collection8", "collection9");
+      checkNotInCores(cc, Arrays.asList("collection3", "collection4", "collection6", "collection7",
+          "collection8", "collection9"));
 
       SolrCore core1 = cc.getCore("collection1");
       assertFalse("core1 should not be transient", core1.getCoreDescriptor().isTransient());
@@ -176,7 +177,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     CoreContainer cc = init();
     try {
       // Make sure Lazy4 isn't loaded. Should be loaded on the get
-      checkNotInCores(cc, "collection4");
+      checkNotInCores(cc, Arrays.asList("collection4"));
       SolrCore core4 = cc.getCore("collection4");
 
       checkSearch(core4);
@@ -205,7 +206,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       // First check that all the cores that should be loaded at startup actually are.
 
       checkInCores(cc, "collection1", "collection2", "collection5");
-      checkNotInCores(cc, "collection3", "collection4", "collection6", "collection7", "collection8", "collection9");
+      checkNotInCores(cc, Arrays.asList("collection3", "collection4", "collection6", "collection7", "collection8", "collection9"));
 
       // By putting these in non-alpha order, we're also checking that we're  not just seeing an artifact.
       SolrCore core1 = cc.getCore("collection1");
@@ -215,28 +216,28 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       SolrCore core5 = cc.getCore("collection5");
 
       checkInCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5");
-      checkNotInCores(cc, "collection6", "collection7", "collection8", "collection9");
+      checkNotInCores(cc, Arrays.asList("collection6", "collection7", "collection8", "collection9"));
 
       // map should be full up, add one more and verify
       SolrCore core6 = cc.getCore("collection6");
       checkInCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
           "collection6");
-      checkNotInCores(cc, "collection7", "collection8", "collection9");
+      checkNotInCores(cc, Arrays.asList("collection7", "collection8", "collection9"));
 
       SolrCore core7 = cc.getCore("collection7");
       checkInCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
           "collection6", "collection7");
-      checkNotInCores(cc, "collection8", "collection9");
+      checkNotInCores(cc, Arrays.asList("collection8", "collection9"));
 
       SolrCore core8 = cc.getCore("collection8");
       checkInCores(cc, "collection1", "collection2", "collection4", "collection5", "collection6",
           "collection7", "collection8");
-      checkNotInCores(cc, "collection3", "collection9");
+      checkNotInCores(cc, Arrays.asList("collection3", "collection9"));
 
       SolrCore core9 = cc.getCore("collection9");
       checkInCores(cc, "collection1", "collection4", "collection5", "collection6", "collection7",
           "collection8", "collection9");
-      checkNotInCores(cc, "collection2", "collection3");
+      checkNotInCores(cc, Arrays.asList("collection2", "collection3"));
 
 
       // Note decrementing the count when the core is removed from the lazyCores list is appropriate, since the
@@ -396,8 +397,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       final SolrCore c4 = cc.getCore("core4");
       final SolrCore c5 = cc.getCore("core5");
 
-      checkNotInCores(cc, "core1", "collection2", "collection3", "collection4", "collection6"
-          , "collection7", "collection8", "collection9");
+      checkNotInCores(cc, Arrays.asList("core1", "collection2", "collection3", "collection4", "collection6"
+          , "collection7", "collection8", "collection9"));
 
       checkInCores(cc, "collection1", "collection5", "core2", "core3", "core4", "core5");
 
@@ -467,7 +468,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkInCores(cc, "core1", "core2");
 
       // Did the bad cores fail to load?
-      checkNotInCores(cc, "badSchema1", "badSchema2", "badConfig1", "badConfig2");
+      checkNotInCores(cc, Collections.emptyList(), Arrays.asList("badSchema1", "badSchema2", "badConfig1", "badConfig2"));
 
       //  Can we still search the "good" cores even though there were core init failures?
       SolrCore core1 = cc.getCore("core1");
@@ -644,7 +645,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  public static void checkNotInCores(CoreContainer cc, String... nameCheck) {
+  public static void checkNotInCores(CoreContainer cc, List<String> nameCheck) {
+    checkNotInCores(cc, nameCheck, Collections.emptyList());
+  }
+  public static void checkNotInCores(CoreContainer cc, List<String> nameCheck, List<String> namesBad) {
     Collection<String> loadedNames = cc.getLoadedCoreNames();
     for (String name : nameCheck) {
       assertFalse("core " + name + " was found in the list of cores", loadedNames.contains(name));
@@ -657,7 +661,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     // the names in nameCheck should be loaded and thus should not be in names.
     
     Collection<String> allNames = cc.getAllCoreNames();
-    // Every core, loaded or not should be in the accumulated coredescriptors:
+    // Every core that has not failed to load should be in coreDescriptors.
     List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
 
     assertEquals("There should be as many coreDescriptors as coreNames", allNames.size(), descriptors.size());
@@ -671,10 +675,18 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           allNames.contains(name));
     }
 
+    // failed cores should have had their descriptors removed.
     for (String name : nameCheck) {
       assertTrue("Not-currently-loaded core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
     }
+
+    // Failed cores should not be in coreDescriptors.
+    for (String name : namesBad) {
+      assertFalse("Failed core " + name + " should have been found in the list of all possible core names",
+          allNames.contains(name));
+    }
+
   }
 
   public static void checkInCores(CoreContainer cc, String... nameCheck) {
@@ -795,7 +807,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       }
       
       // Just proving that some cores have been aged out.
-      checkNotInCores(cc, "collection2", "collection3");
+      checkNotInCores(cc, Arrays.asList("collection2", "collection3"));
 
       // Close our get of all cores above.
       for (SolrCore core : openCores) core.close();
@@ -807,7 +819,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       for (String coreName : coreList) {
         // The point of this test is to insure that when cores are aged out and re-opened
         // that the docs are there, so insure that the core we're testing is gone, gone, gone. 
-        checkNotInCores(cc, coreName);
+        checkNotInCores(cc, Arrays.asList(coreName));
         
         // Load the core up again.
         SolrCore core = cc.getCore(coreName);
