@@ -26,9 +26,9 @@ import org.apache.solr.schema.TrieDateField;
 /**
  * An analytics wrapper for a multi-valued {@link TrieDateField} with DocValues enabled.
  */
-public class DateMultiField extends LongMultiField implements CastingDateValueStream {
+public class DateMultiTrieField extends LongMultiTrieField implements CastingDateValueStream {
 
-  public DateMultiField(String fieldName) {
+  public DateMultiTrieField(String fieldName) {
     super(fieldName);
   }
   

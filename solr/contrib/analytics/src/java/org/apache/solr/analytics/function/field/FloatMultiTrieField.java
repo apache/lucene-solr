@@ -19,29 +19,28 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-import java.util.function.IntConsumer;
-import java.util.function.LongConsumer;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.analytics.util.function.FloatConsumer;
-import org.apache.solr.analytics.value.IntValueStream.CastingIntValueStream;
+import org.apache.solr.analytics.value.FloatValueStream.CastingFloatValueStream;
 import org.apache.solr.legacy.LegacyNumericUtils;
-import org.apache.solr.schema.TrieIntField;
+import org.apache.solr.schema.TrieFloatField;
 
 /**
- * An analytics wrapper for a multi-valued {@link TrieIntField} with DocValues enabled.
+ * An analytics wrapper for a multi-valued {@link TrieFloatField} with DocValues enabled.
  */
-public class IntMultiField extends AnalyticsField implements CastingIntValueStream {
+public class FloatMultiTrieField extends AnalyticsField implements CastingFloatValueStream {
   private SortedSetDocValues docValues;
   private int count;
-  private int[] values;
+  private float[] values;
 
-  public IntMultiField(String fieldName) {
+  public FloatMultiTrieField(String fieldName) {
     super(fieldName);
     count = 0;
-    values = new int[initialArrayLength];
+    values = new float[initialArrayLength];
   }
   
   @Override
@@ -58,13 +57,13 @@ public class IntMultiField extends AnalyticsField implements CastingIntValueStre
         if (count == values.length) {
           resizeValues();
         }
-        values[count++] = LegacyNumericUtils.prefixCodedToInt(docValues.lookupOrd(term));
+        values[count++] = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(docValues.lookupOrd(term)));
       }
     }
   }
   
   private void resizeValues() {
-    int[] newValues = new int[values.length*2];
+    float[] newValues = new float[values.length*2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -72,29 +71,21 @@ public class IntMultiField extends AnalyticsField implements CastingIntValueStre
   }
   
   @Override
-  public void streamInts(IntConsumer cons) {
+  public void streamFloats(FloatConsumer cons) {
     for (int i = 0; i < count; ++i) {
       cons.accept(values[i]);
     }
   }
   @Override
-  public void streamLongs(LongConsumer cons) {
-    streamInts(value -> cons.accept((long)value));
-  }
-  @Override
-  public void streamFloats(FloatConsumer cons) {
-    streamInts(value -> cons.accept((float)value));
-  }
-  @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamInts(value -> cons.accept((double)value));
+    streamFloats(value -> cons.accept((double)value));
   }
   @Override
   public void streamStrings(Consumer<String> cons) {
-    streamInts(value -> cons.accept(Integer.toString(value)));
+    streamFloats(value -> cons.accept(Float.toString(value)));
   }
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamInts(value -> cons.accept(value));
+    streamFloats(value -> cons.accept(value));
   }
 }
