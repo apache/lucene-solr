@@ -181,7 +181,11 @@ Here is a sample of a source configuration file, a section in `solrconfig.xml`. 
 ----
 <requestHandler name="/cdcr" class="solr.CdcrRequestHandler">
   <lst name="replica">
-    <str name="zkHost">10.240.18.211:2181</str>
+    <str name="zkHost">10.240.18.211:2181,10.240.18.212:2181</str>
+    <!--
+    If you have chrooted your Solr information at the target you must include the chroot, for example:
+    <str name="zkHost">10.240.18.211:2181,10.240.18.212:2181/solr</str>
+    -->
     <str name="source">collection1</str>
     <str name="target">collection1</str>
   </lst>
