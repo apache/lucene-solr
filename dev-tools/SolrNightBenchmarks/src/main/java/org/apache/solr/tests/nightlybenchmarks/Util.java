@@ -771,39 +771,39 @@ public class Util {
 				
 				int atleastOne = 0;
 				
-				if (argsList.contains("-Generate1MDataFile")) {
+				if (argsList.contains("--generate-data-file")) {
 					atleastOne++;
 				}
-				if (argsList.contains("-RegisterLatestCommit")) {
+				if (argsList.contains("--register-commit")) {
 					atleastOne++;
 				}
-				if (argsList.contains("-TestWithNumberOfDocuments")) {
+				if (argsList.contains("--test-with-number-of-documents")) {
 
 					try {
-						Long.parseLong(argsList.get(argsList.indexOf("-TestWithNumberOfDocuments") + 1));
+						Long.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
 						atleastOne++;
 					} catch (Exception e) {
-						Util.postMessage("** Parameter value for -TestWithNumberOfDocuments should be a number! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+						Util.postMessage("** Parameter value for --test-with-number-of-documents should be a number! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
 						System.exit(0);
 					}
 					
 				}
-				if (argsList.contains("-RunSilently")) {
+				if (argsList.contains("--silent")) {
 					atleastOne++;
 				}
-				if (argsList.contains("-ProcessCommitsFromQueue")) {
+				if (argsList.contains("--from-queue")) {
 					atleastOne++;
 				}
-				if (argsList.contains("-ProcessLatestCommit")) {
+				if (argsList.contains("--latest-commit")) {
 					atleastOne++;
 				}
-				if (argsList.contains("-ProcessWithCommitID")) {
+				if (argsList.contains("--commit-id")) {
 					
 					try {
-						argsList.get(argsList.indexOf("-ProcessWithCommitID") + 1);
+						argsList.get(argsList.indexOf("--commit-id") + 1);
 						atleastOne++;
 					} catch (Exception e) {
-						Util.postMessage("** Parameter value for -ProcessWithCommitID not defined! [EXITING] ...", MessageType.RED_TEXT, false);
+						Util.postMessage("** Parameter value for --commit-id not defined! [EXITING] ...", MessageType.RED_TEXT, false);
 						Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
 						System.exit(0);
 					}
@@ -839,12 +839,12 @@ public class Util {
 				System.exit(0);
 			}
 			
-			if (argsList.contains("-Generate1MDataFile")) {
+			if (argsList.contains("--generate-data-file")) {
 				createTestDataFile("test-data-file-1M.csv", 1000000);
 				System.exit(0);
 			}
 
-			if (argsList.contains("-RegisterLatestCommit")) {
+			if (argsList.contains("--register-commit")) {
 				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
 				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 
@@ -863,8 +863,8 @@ public class Util {
 
 			}
 
-			if (argsList.contains("-TestWithNumberOfDocuments")) {
-				long numDocuments = Long.parseLong(argsList.get(argsList.indexOf("-TestWithNumberOfDocuments") + 1));
+			if (argsList.contains("--test-with-number-of-documents")) {
+				long numDocuments = Long.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
 
 				if (numDocuments > 0 && numDocuments <= 1000000) {
 					Util.TEST_WITH_NUMBER_OF_DOCUMENTS = numDocuments;
@@ -873,8 +873,8 @@ public class Util {
 				}
 			}
 
-			if (argsList.contains("-RunSilently")) {
-				Util.postMessage("** Running silently since -RunSilently parameter is set ...", MessageType.BLUE_TEXT,
+			if (argsList.contains("--silent")) {
+				Util.postMessage("** Running silently since --silent parameter is set ...", MessageType.BLUE_TEXT,
 						false);
 				Util.SILENT = true;
 			}
@@ -906,7 +906,7 @@ public class Util {
 				Util.deleteRunningFile();
 			}
 
-			if (argsList.contains("-ProcessCommitsFromQueue")) {
+			if (argsList.contains("--from-queue")) {
 				Util.postMessage("** Initiating processing from commit queue ...", MessageType.BLUE_TEXT, false);
 
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
@@ -940,7 +940,7 @@ public class Util {
 					}
 					Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 				}
-			} else if (argsList.contains("-ProcessLatestCommit")) {
+			} else if (argsList.contains("--latest-commit")) {
 
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
@@ -948,9 +948,9 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-			} else if (argsList.contains("-ProcessWithCommitID")) {
+			} else if (argsList.contains("--commit-id")) {
 
-				Util.COMMIT_ID = argsList.get(argsList.indexOf("-ProcessWithCommitID") + 1);
+				Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
 				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT,
 						false);
 				TestPlans.execute();
@@ -968,7 +968,7 @@ public class Util {
 
 		try {
 
-			if (argsList.contains("-Housekeeping")) {
+			if (argsList.contains("--clean-up")) {
 				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
 				Util.execute("rm -r -f " + Util.DOWNLOAD_DIR, Util.DOWNLOAD_DIR);
 			}
