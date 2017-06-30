@@ -17,12 +17,15 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.ResultContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Transform a document before it gets sent out
@@ -31,6 +34,9 @@ import org.apache.solr.response.ResultContext;
  */
 public class DocTransformers extends DocTransformer
 {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final List<DocTransformer> children = new ArrayList<>();
 
   @Override
@@ -94,9 +100,8 @@ public class DocTransformers extends DocTransformer
       try {
         a.close();
       } catch (Exception e){
-        //TODO report error and ignore
+        log.warn("ignored exception closing transformer {}", a.getName(), e);
       }
     }
   }
-
 }

@@ -95,6 +95,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     // finish() will double the number of documents
     assertEquals(max*2, CustomFinishTransformerFactory.finishTrasformer.counter);
     CustomFinishTransformerFactory.finishTrasformer.counter = 0;
+
     // test binary writer
     h.query(req(
         "q", "*:*",
@@ -104,7 +105,14 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     ));
     assertEquals(max*2, CustomFinishTransformerFactory.finishTrasformer.counter);
 
-
+    // test that a transformer that throws an exception doesn't affect the other transformers
+    h.query(req(
+        "q", "*:*",
+        "fl", "id,[exceptionFinish],[customFinish]",
+        "rows", String.valueOf(max),
+        "wt", "javabin"
+    ));
+    assertEquals(max*2, CustomFinishTransformerFactory.finishTrasformer.counter);
   }
   
   public static class CustomTransformerFactory extends TransformerFactory {
@@ -201,6 +209,42 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     @Override
     public void close(){
       counter*=2;
+    }
+  }
+
+  public static class ExceptionOnCloseTransformerFactory extends TransformerFactory {
+
+    static ExceptionOnCloseTransformer finishTrasformer = new ExceptionOnCloseTransformer();
+
+    @Override
+    public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+      return finishTrasformer;
+    }
+  }
+
+
+  public static class ExceptionOnCloseTransformer extends DocTransformer {
+
+    public ExceptionOnCloseTransformer() {
+    }
+
+    @Override
+    public void setContext(ResultContext context){
+      super.setContext(context);
+    }
+
+    @Override
+    public String getName() {
+      return "exception";
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid, float score) throws IOException {
+    }
+
+    @Override
+    public void close(){
+      throw new RuntimeException("Hello, I'm an Exception");
     }
   }
 }
