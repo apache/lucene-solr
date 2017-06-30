@@ -185,32 +185,6 @@ public class TestClassicSimilarity extends LuceneTestCase {
     }
   }
 
-  public void testNormEncodingBackwardCompatibility() throws IOException {
-    Similarity similarity = new ClassicSimilarity();
-    for (int indexCreatedVersionMajor : new int[] { Version.LUCENE_6_0_0.major, Version.LATEST.major}) {
-      for (int length : new int[] {1, 4, 16 }) { // these length values are encoded accurately on both cases
-        Directory dir = newDirectory();
-        // set the version on the directory
-        new SegmentInfos(indexCreatedVersionMajor).commit(dir);
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(similarity));
-        Document doc = new Document();
-        String value = IntStream.range(0, length).mapToObj(i -> "b").collect(Collectors.joining(" "));
-        doc.add(new TextField("foo", value, Store.NO));
-        w.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(w);
-        IndexSearcher searcher = newSearcher(reader);
-        searcher.setSimilarity(similarity);
-        Explanation expl = searcher.explain(new TermQuery(new Term("foo", "b")), 0);
-        Explanation fieldNorm = findExplanation(expl, "fieldNorm");
-        assertNotNull(fieldNorm);
-        assertEquals(fieldNorm.toString(), 1/Math.sqrt(length), fieldNorm.getValue(), 0f);
-        w.close();
-        reader.close();
-        dir.close();
-      }
-    }
-  }
-
   private static Explanation findExplanation(Explanation expl, String text) {
     if (expl.getDescription().startsWith(text)) {
       return expl;

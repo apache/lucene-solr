@@ -609,33 +609,4 @@ public class TestSimilarityBase extends LuceneTestCase {
     actual.setDiscountOverlaps(true);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
   }
-
-  public void testLengthEncodingBackwardCompatibility() throws IOException {
-    Similarity similarity = RandomPicks.randomFrom(random(), sims);
-    for (int indexCreatedVersionMajor : new int[] { Version.LUCENE_6_0_0.major, Version.LATEST.major}) {
-      for (int length : new int[] {1, 2, 4}) { // these length values are encoded accurately on both cases
-        Directory dir = newDirectory();
-        // set the version on the directory
-        new SegmentInfos(indexCreatedVersionMajor).commit(dir);
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(similarity));
-        Document doc = new Document();
-        String value = IntStream.range(0, length).mapToObj(i -> "b").collect(Collectors.joining(" "));
-        doc.add(new TextField("foo", value, Store.NO));
-        w.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(w);
-        IndexSearcher searcher = newSearcher(reader);
-        searcher.setSimilarity(similarity);
-        Term term = new Term("foo", "b");
-        TermContext context = TermContext.build(reader.getContext(), term);
-        SimWeight simWeight = similarity.computeWeight(1f, searcher.collectionStatistics("foo"), searcher.termStatistics(term, context));
-        SimilarityBase.BasicSimScorer simScorer = (SimilarityBase.BasicSimScorer) similarity.simScorer(simWeight, reader.leaves().get(0));
-        float docLength = simScorer.getLengthValue(0);
-        assertEquals(length, (int) docLength);
-        
-        w.close();
-        reader.close();
-        dir.close();
-      }
-    }
-  }
 }
