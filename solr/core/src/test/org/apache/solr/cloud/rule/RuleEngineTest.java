@@ -28,7 +28,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.rule.ReplicaAssigner.Position;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.Snitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
@@ -73,7 +73,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
             "'replica':'1',shard:'*','node':'*'}," +
             " {'freedisk':'>1'}]");
 
-    Map<Position, String> mapping = new ReplicaAssigner(
+    Map<ReplicaPosition, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null ).getNodeMappings();
@@ -147,7 +147,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
             "{node:'!127.0.0.1:49947_'}," +
             "{freedisk:'>1'}]");
     Map shardVsReplicaCount = makeMap("shard1", 2, "shard2", 2);
-    Map<Position, String> mapping = new ReplicaAssigner(
+    Map<ReplicaPosition, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings();
@@ -236,7 +236,7 @@ public class RuleEngineTest extends SolrTestCaseJ4{
         "node5:80", makeMap("rack", "182")
     );
     MockSnitch.nodeVsTags = nodeVsTags;
-    Map<Position, String> mapping = new ReplicaAssigner(
+    Map<ReplicaPosition, String> mapping = new ReplicaAssigner(
         rules,
         shardVsReplicaCount, singletonList(MockSnitch.class.getName()),
         new HashMap(), new ArrayList<>(MockSnitch.nodeVsTags.keySet()), null, null).getNodeMappings0();
