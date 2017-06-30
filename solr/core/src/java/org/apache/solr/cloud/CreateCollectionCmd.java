@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -131,12 +131,12 @@ public class CreateCollectionCmd implements Cmd {
       // add our new cores to existing nodes serving the least number of cores
       // but (for now) require that each core goes on a distinct node.
 
-      final List<String> nodeList = OverseerCollectionMessageHandler.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, RANDOM);
-      Map<ReplicaAssigner.Position, String> positionVsNodes;
+      final List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, RANDOM);
+      List<ReplicaPosition> replicaPositions;
       if (nodeList.isEmpty()) {
         log.warn("It is unusual to create a collection ("+collectionName+") without cores.");
 
-        positionVsNodes = new HashMap<>();
+        replicaPositions = new ArrayList<>();
       } else {
         int totalNumReplicas = numNrtReplicas + numTlogReplicas + numPullReplicas;
         if (totalNumReplicas > nodeList.size()) {
@@ -164,7 +164,9 @@ public class CreateCollectionCmd implements Cmd {
               + " shards to be created (higher than the allowed number)");
         }
 
-        positionVsNodes = ocmh.identifyNodes(clusterState, nodeList, collectionName, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
+        replicaPositions = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
+            ocmh.zkStateReader
+            , clusterState, nodeList, collectionName, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
       }
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -207,12 +209,11 @@ public class CreateCollectionCmd implements Cmd {
       log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , nrtReplicas : {2}, tlogReplicas: {3}, pullReplicas: {4}",
           collectionName, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas));
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
-      for (Map.Entry<ReplicaAssigner.Position, String> e : positionVsNodes.entrySet()) {
-        ReplicaAssigner.Position position = e.getKey();
-        String nodeName = e.getValue();
-        String coreName = Assign.buildCoreName(collectionName, position.shard, position.type, position.index + 1);
+      for (ReplicaPosition replicaPosition : replicaPositions) {
+        String nodeName = replicaPosition.node;
+        String coreName = Assign.buildCoreName(collectionName, replicaPosition.shard, replicaPosition.type, replicaPosition.index + 1);
         log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
-            , coreName, position.shard, collectionName, nodeName));
+            , coreName, replicaPosition.shard, collectionName, nodeName));
 
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
@@ -222,11 +223,11 @@ public class CreateCollectionCmd implements Cmd {
           ZkNodeProps props = new ZkNodeProps(
               Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
               ZkStateReader.COLLECTION_PROP, collectionName,
-              ZkStateReader.SHARD_ID_PROP, position.shard,
+              ZkStateReader.SHARD_ID_PROP, replicaPosition.shard,
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-              ZkStateReader.BASE_URL_PROP, baseUrl, 
-              ZkStateReader.REPLICA_TYPE, position.type.name());
+              ZkStateReader.BASE_URL_PROP, baseUrl,
+              ZkStateReader.REPLICA_TYPE, replicaPosition.type.name());
           Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
         }
 
@@ -237,10 +238,10 @@ public class CreateCollectionCmd implements Cmd {
         params.set(CoreAdminParams.NAME, coreName);
         params.set(COLL_CONF, configName);
         params.set(CoreAdminParams.COLLECTION, collectionName);
-        params.set(CoreAdminParams.SHARD, position.shard);
+        params.set(CoreAdminParams.SHARD, replicaPosition.shard);
         params.set(ZkStateReader.NUM_SHARDS_PROP, numSlices);
         params.set(CoreAdminParams.NEW_COLLECTION, "true");
-        params.set(CoreAdminParams.REPLICA_TYPE, position.type.name());
+        params.set(CoreAdminParams.REPLICA_TYPE, replicaPosition.type.name());
 
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());

@@ -28,12 +28,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -108,7 +109,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 
     // Get the Solr nodes to restore a collection.
-    final List<String> nodeList = OverseerCollectionMessageHandler.getLiveOrLiveAndCreateNodeSetList(
+    final List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
         zkStateReader.getClusterState().getLiveNodes(), message, RANDOM);
 
     int numShards = backupCollectionState.getActiveSlices().size();
@@ -213,8 +214,11 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     List<String> sliceNames = new ArrayList<>();
     restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
 
-    Map<ReplicaAssigner.Position, String> positionVsNodes = ocmh.identifyNodes(clusterState, nodeList,
-        restoreCollectionName, message, sliceNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
+    List<ReplicaPosition> replicaPositions = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
+        ocmh.zkStateReader, clusterState,
+        nodeList, restoreCollectionName,
+        message, sliceNames,
+        numNrtReplicas, numTlogReplicas, numPullReplicas);
 
     //Create one replica per shard and copy backed up data to it
     for (Slice slice : restoreCollection.getSlices()) {
@@ -235,12 +239,11 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       // Get the first node matching the shard to restore in
       String node;
-      for (Map.Entry<ReplicaAssigner.Position, String> pvn : positionVsNodes.entrySet()) {
-        ReplicaAssigner.Position position = pvn.getKey();
-        if (position.shard == slice.getName()) {
-          node = pvn.getValue();
+      for (ReplicaPosition replicaPosition : replicaPositions) {
+        if (Objects.equals(replicaPosition.shard, slice.getName())) {
+          node = replicaPosition.node;
           propMap.put(CoreAdminParams.NODE, node);
-          positionVsNodes.remove(position);
+          replicaPositions.remove(replicaPosition);
           break;
         }
       }
@@ -319,12 +322,11 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
           // Get the first node matching the shard to restore in
           String node;
-          for (Map.Entry<ReplicaAssigner.Position, String> pvn : positionVsNodes.entrySet()) {
-            ReplicaAssigner.Position position = pvn.getKey();
-            if (position.shard == slice.getName()) {
-              node = pvn.getValue();
+          for (ReplicaPosition replicaPosition : replicaPositions) {
+            if (Objects.equals(replicaPosition.shard, slice.getName())) {
+              node = replicaPosition.node;
               propMap.put(CoreAdminParams.NODE, node);
-              positionVsNodes.remove(position);
+              replicaPositions.remove(replicaPosition);
               break;
             }
           }
