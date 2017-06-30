@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
-import static org.apache.solr.common.params.CommonParams.ID;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -42,6 +39,8 @@ import org.apache.solr.search.EarlyTerminatingCollectorException;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 public class SpellCheckCollator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -93,7 +92,7 @@ public class SpellCheckCollator {
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);
-      int hits = 0;
+      long hits = 0;
 
       if (verifyCandidateWithQuery) {
         tryNo++;
@@ -162,7 +161,7 @@ public class SpellCheckCollator {
             checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);            
           }
           queryComponent.process(checkResponse);
-          hits = (Integer) checkResponse.rsp.getToLog().get("hits");
+          hits = ((Number) checkResponse.rsp.getToLog().get("hits")).longValue();
         } catch (EarlyTerminatingCollectorException etce) {
           assert (docCollectionLimit > 0);
           assert 0 < etce.getNumberScanned();
@@ -171,7 +170,7 @@ public class SpellCheckCollator {
           if (etce.getNumberScanned() == maxDocId) {
             hits = etce.getNumberCollected();
           } else {
-            hits = (int) ( ((float)( maxDocId * etce.getNumberCollected() )) 
+            hits = (long) ( ((float)( maxDocId * etce.getNumberCollected() )) 
                            / (float)etce.getNumberScanned() );
           }
         } catch (Exception e) {

@@ -121,15 +121,6 @@ public final class FunctionScoreQuery extends Query {
           Explanation.match(boost, "boost"), expl);
     }
 
-    private Explanation scoreExplanation(LeafReaderContext context, int doc, DoubleValues scores) throws IOException {
-      if (valueSource.needsScores() == false)
-        return Explanation.match((float) scores.doubleValue(), valueSource.toString());
-      float score = (float) scores.doubleValue();
-      return Explanation.match(score, "computed from:",
-          Explanation.match(score, valueSource.toString()),
-          inner.explain(context, doc));
-    }
-
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       Scorer in = inner.scorer(context);

@@ -706,6 +706,51 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
   }
 
+  private static class PlusOneValuesSource extends DoubleValuesSource {
+
+    @Override
+    public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+      return new DoubleValues() {
+        int doc = -1;
+        @Override
+        public double doubleValue() throws IOException {
+          return doc + 1;
+        }
+
+        @Override
+        public boolean advanceExact(int doc) throws IOException {
+          this.doc = doc;
+          return true;
+        }
+      };
+    }
+
+    @Override
+    public boolean needsScores() {
+      return false;
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      return Explanation.match(docId + 1, "");
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj.getClass() == PlusOneValuesSource.class;
+    }
+
+    @Override
+    public String toString() {
+      return null;
+    }
+  }
+
   public void testCustomDoubleValuesSource() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -718,35 +763,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
     // Test wants 3 docs in one segment:
     writer.forceMerge(1);
 
-    final DoubleValuesSource vs = new DoubleValuesSource() {
-
-      @Override
-      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        return new DoubleValues() {
-          int doc = -1;
-          @Override
-          public double doubleValue() throws IOException {
-            return doc + 1;
-          }
-
-          @Override
-          public boolean advanceExact(int doc) throws IOException {
-            this.doc = doc;
-            return true;
-          }
-        };
-      }
-
-      @Override
-      public boolean needsScores() {
-        return false;
-      }
-
-      @Override
-      public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-        return Explanation.match(docId + 1, "");
-      }
-    };
+    final DoubleValuesSource vs = new PlusOneValuesSource();
 
     FacetsConfig config = new FacetsConfig();
     

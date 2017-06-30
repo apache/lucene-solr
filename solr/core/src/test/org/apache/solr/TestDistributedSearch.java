@@ -101,6 +101,11 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // server so that we don't use a bad one
     System.setProperty("validateAfterInactivity", "200");
   }
+
+  public TestDistributedSearch() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
   
   @Test
   public void test() throws Exception {
@@ -381,7 +386,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","*:*", "fl","n_*","sort",i1 + " desc");
 
     // basic spellcheck testing
-    query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "spellCheckCompRH_Direct", "shards.qt", "spellCheckCompRH_Direct");
+    query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "/spellCheckCompRH_Direct", "shards.qt", "/spellCheckCompRH_Direct");
 
     stress=0;  // turn off stress... we want to tex max combos in min time
     for (int i=0; i<25*RANDOM_MULTIPLIER; i++) {
@@ -1007,8 +1012,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           "q", "toyata",
           "spellcheck", "true",
           "spellcheck.q", "toyata",
-          "qt", "spellCheckCompRH_Direct",
-          "shards.qt", "spellCheckCompRH_Direct",
+          "qt", "/spellCheckCompRH_Direct",
+          "shards.qt", "/spellCheckCompRH_Direct",
           ShardParams.SHARDS_INFO, "true",
           ShardParams.SHARDS_TOLERANT, "true");
 

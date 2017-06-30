@@ -80,7 +80,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     handle.put("timestamp", SKIPVAL);
 
     String testCollectionName = "forceleader_test_collection";
-    createCollection(testCollectionName, 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     try {
@@ -166,7 +166,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     handle.put("timestamp", SKIPVAL);
 
     String testCollectionName = "forceleader_last_published";
-    createCollection(testCollectionName, 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
     log.info("Collection created: " + testCollectionName);
 

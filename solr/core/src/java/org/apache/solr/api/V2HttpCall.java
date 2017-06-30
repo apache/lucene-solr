@@ -56,7 +56,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.common.util.PathTrie.getPathSegments;
 
@@ -76,7 +75,7 @@ public class V2HttpCall extends HttpSolrCall {
 
   protected void init() throws Exception {
     String path = this.path;
-    String fullPath = path = path.substring(7);//strip off '/____v2'
+    final String fullPath = path = path.substring(7);//strip off '/____v2'
     try {
       pieces = getPathSegments(path);
       if (pieces.size() == 0 || (pieces.size() == 1 && path.endsWith(CommonParams.INTROSPECT))) {
@@ -159,7 +158,7 @@ public class V2HttpCall extends HttpSolrCall {
       log.error("Error in init()", rte);
       throw rte;
     } finally {
-      if (api == null) action = PASSTHROUGH;
+      if (api == null) action = PROCESS;
       if (solrReq != null) solrReq.getContext().put(CommonParams.PATH, path);
     }
   }
@@ -309,16 +308,28 @@ public class V2HttpCall extends HttpSolrCall {
 
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
-    api.call(this.solrReq, solrResp);
+    try {
+      api.call(this.solrReq, solrResp);
+    } catch (Exception e) {
+      solrResp.setException(e);
+    }
   }
 
   @Override
   protected void execute(SolrQueryResponse rsp) {
-    try {
-      api.call(solrReq, rsp);
-    } catch (RuntimeException e) {
-      throw e;
+    SolrCore.preDecorateResponse(solrReq, rsp);
+    if (api == null) {
+      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND,
+          "Cannot find correspond api for the path : " + solrReq.getContext().get(CommonParams.PATH)));
+    } else {
+      try {
+        api.call(solrReq, rsp);
+      } catch (Exception e) {
+        rsp.setException(e);
+      }
     }
+
+    SolrCore.postDecorateResponse(handler, solrReq, rsp);
   }
 
   @Override

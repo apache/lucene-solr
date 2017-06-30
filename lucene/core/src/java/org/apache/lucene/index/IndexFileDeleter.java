@@ -510,9 +510,8 @@ final class IndexFileDeleter implements Closeable {
     assert locked();
 
     assert Thread.holdsLock(writer);
-    long t0 = 0;
+    long t0 = System.nanoTime();
     if (infoStream.isEnabled("IFD")) {
-      t0 = System.nanoTime();
       infoStream.message("IFD", "now checkpoint \"" + writer.segString(writer.toLiveInfos(segmentInfos)) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
@@ -698,7 +697,9 @@ final class IndexFileDeleter implements Closeable {
     ensureOpen();
 
     if (infoStream.isEnabled("IFD")) {
-      infoStream.message("IFD", "delete " + names + "");
+      if (names.size() > 0) {
+        infoStream.message("IFD", "delete " + names + "");
+      }
     }
 
     // We make two passes, first deleting any segments_N files, second deleting the rest.  We do this so that if we throw exc or JVM

@@ -48,10 +48,6 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertTrue(home.isPolyField());
     
     String subFieldType = "double";
-    if (usingPointFields()) {
-      subFieldType = "pdouble";
-    }
-
     SchemaField[] dynFields = schema.getDynamicFieldPrototypes();
     boolean seen = false;
     for (SchemaField dynField : dynFields) {
@@ -186,10 +182,6 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     BooleanQuery bq = (BooleanQuery) q;
     assertEquals(2, bq.clauses().size());
     clearIndex();
-  }
-  
-  private boolean usingPointFields() {
-    return h.getCore().getLatestSchema().getField("foo_d1_dv").getType().isPointField();
   }
 
 }

@@ -55,7 +55,8 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 /**
  * Emulates bin/solr -e cloud -noprompt; bin/post -c gettingstarted example/exampledocs/*.xml;
  * this test is useful for catching regressions in indexing the example docs in collections that
- * use data-driven schema and managed schema features provided by configsets/data_driven_schema_configs.
+ * use data driven functionality and managed schema features of the default configset
+ * (configsets/_default).
  */
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
@@ -73,8 +74,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("testLoadDocsIntoGettingStartedCollection initialized OK ... running test logic");
 
     String testCollectionName = "gettingstarted";
-    File data_driven_schema_configs = new File(ExternalPaths.SCHEMALESS_CONFIGSET);
-    assertTrue(data_driven_schema_configs.getAbsolutePath()+" not found!", data_driven_schema_configs.isDirectory());
+    File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue(defaultConfigs.getAbsolutePath()+" not found!", defaultConfigs.isDirectory());
 
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())
@@ -88,8 +89,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         "-shards", "2",
         "-replicationFactor", "2",
         "-confname", testCollectionName,
-        "-confdir", "data_driven_schema_configs",
-        "-configsetsDir", data_driven_schema_configs.getParentFile().getParentFile().getAbsolutePath(),
+        "-confdir", "_default",
+        "-configsetsDir", defaultConfigs.getParentFile().getParentFile().getAbsolutePath(),
         "-solrUrl", solrUrl
     };
 

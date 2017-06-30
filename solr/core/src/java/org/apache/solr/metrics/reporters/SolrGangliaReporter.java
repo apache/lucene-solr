@@ -35,7 +35,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
   private String host = null;
   private int port = -1;
   private boolean multicast;
-  private int period = 60;
   private String instancePrefix = null;
   private List<String> filters = new ArrayList<>();
   private boolean testing;
@@ -86,10 +85,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
     if (filter != null && !filter.isEmpty()) {
       this.filters.add(filter);
     }
-  }
-
-  public void setPeriod(int period) {
-    this.period = period;
   }
 
   public void setMulticast(boolean multicast) {

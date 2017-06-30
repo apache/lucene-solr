@@ -44,9 +44,8 @@ public class PageTool {
     Object docs = response.getResponse();
     if (docs != null) {
       if (docs instanceof DocSlice) {
-        DocSlice doc_slice = (DocSlice) docs;
-        results_found = doc_slice.matches();
-        start = doc_slice.offset();
+        results_found = ((DocSlice) docs).matches();
+        start = ((DocSlice) docs).offset();
       } else if(docs instanceof ResultContext) {
         DocList dl = ((ResultContext) docs).getDocList();
         results_found = dl.matches();

@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -69,79 +66,6 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     while (iter.next() != null) {
       assertTrue(expected.hasNext());
       assertEquals(expected.next(), new Term(iter.field(), iter.bytes));
-    }
-
-    assertFalse(expected.hasNext());
-  }
-
-  @SuppressWarnings("unchecked")
-  public void testMergeOne() {
-    Term t1 = new Term("foo", "a");
-    PrefixCodedTerms.Builder b1 = new PrefixCodedTerms.Builder();
-    b1.add(t1);
-    PrefixCodedTerms pb1 = b1.finish();
-    
-    Term t2 = new Term("foo", "b");
-    PrefixCodedTerms.Builder b2 = new PrefixCodedTerms.Builder();
-    b2.add(t2);
-    PrefixCodedTerms pb2 = b2.finish();
-
-    MergedPrefixCodedTermsIterator merged = new MergedPrefixCodedTermsIterator(Arrays.asList(new PrefixCodedTerms[] {pb1, pb2}));
-    BytesRef term = merged.next();
-    assertNotNull(term);
-    assertEquals("foo", merged.field());
-    assertEquals("a", term.utf8ToString());
-    term = merged.next();
-    assertNotNull(term);
-    assertEquals("b", term.utf8ToString());
-    assertNull(merged.next());
-  }
-
-  @SuppressWarnings({"unchecked","rawtypes"})
-  public void testMergeRandom() {
-    PrefixCodedTerms pb[] = new PrefixCodedTerms[TestUtil.nextInt(random(), 2, 10)];
-    Set<Term> superSet = new TreeSet<>();
-    
-    for (int i = 0; i < pb.length; i++) {
-      Set<Term> terms = new TreeSet<>();
-      int nterms = TestUtil.nextInt(random(), 0, 10000);
-      for (int j = 0; j < nterms; j++) {
-        String field = TestUtil.randomUnicodeString(random(), 2);
-        //String field = TestUtil.randomSimpleString(random(), 2);
-        Term term = new Term(field, TestUtil.randomUnicodeString(random(), 4));
-        terms.add(term);
-      }
-      superSet.addAll(terms);
-    
-      PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
-      //System.out.println("TEST: sub " + i + " has " + terms.size() + " terms");
-      for (Term ref: terms) {
-        //System.out.println("  add " + ref.field() + " " + ref.bytes());
-        b.add(ref);
-      }
-      pb[i] = b.finish();
-    }
-    
-    Iterator<Term> expected = superSet.iterator();
-
-    MergedPrefixCodedTermsIterator actual = new MergedPrefixCodedTermsIterator(Arrays.asList(pb));
-    String field = "";
-
-    BytesRef lastTerm = null;
-    BytesRef term;
-    while ((term = actual.next()) != null) {
-      if (field != actual.field()) {
-        field = actual.field();
-        lastTerm = null;
-      }
-      if (lastTerm != null && lastTerm.equals(term)) {
-        continue;
-      }
-      lastTerm = BytesRef.deepCopyOf(term);
-      assertTrue(expected.hasNext());
-
-      Term expectedTerm = expected.next();
-      assertEquals(expectedTerm, new Term(field, term));
     }
 
     assertFalse(expected.hasNext());

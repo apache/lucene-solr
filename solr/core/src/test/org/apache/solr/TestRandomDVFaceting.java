@@ -28,6 +28,8 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieIntField;
+import org.apache.solr.schema.IntPointField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -39,13 +41,36 @@ import org.slf4j.LoggerFactory;
  * to the indexed facet results as if it were just another faceting method.
  */
 @Slow
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="Test explicitly compares Trie to Points, randomization defeats the point")
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // This tests explicitly compares Trie DV with non-DV Trie with DV Points
+    // so we don't want randomized DocValues on all Trie fields
+    System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "false");
+    
     initCore("solrconfig-basic.xml","schema-docValuesFaceting.xml");
+
+    assertEquals("DocValues: Schema assumptions are broken",
+                 false, h.getCore().getLatestSchema().getField("foo_i").hasDocValues());
+    assertEquals("DocValues: Schema assumptions are broken",
+                 true, h.getCore().getLatestSchema().getField("foo_i_dv").hasDocValues());
+    assertEquals("DocValues: Schema assumptions are broken",
+                 true, h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
+    
+    assertEquals("Type: Schema assumptions are broken",
+                 TrieIntField.class,
+                 h.getCore().getLatestSchema().getField("foo_i").getType().getClass());
+    assertEquals("Type: Schema assumptions are broken",
+                 TrieIntField.class,
+                 h.getCore().getLatestSchema().getField("foo_i_dv").getType().getClass());
+    assertEquals("Type: Schema assumptions are broken",
+                 IntPointField.class,
+                 h.getCore().getLatestSchema().getField("foo_i_p").getType().getClass());
+    
   }
 
   int indexSize;

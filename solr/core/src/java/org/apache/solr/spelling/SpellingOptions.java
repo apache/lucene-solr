@@ -16,12 +16,11 @@
  */
 package org.apache.solr.spelling;
 
-import org.apache.lucene.analysis.Token;
+import java.util.Collection;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.solr.common.params.SolrParams;
-
-import java.util.Collection;
 
 /**
  *

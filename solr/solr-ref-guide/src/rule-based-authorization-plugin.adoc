@@ -152,8 +152,9 @@ For example, this property could be used to limit the actions a role is allowed 
 +
 [source,json]
 ----
-"params": {
+{"params": {
    "action": ["LIST", "CLUSTERSTATUS"]
+  }
 }
 ----
 +
@@ -163,8 +164,9 @@ If the commands LIST and CLUSTERSTATUS are case insensitive, the above example s
 +
 [source,json]
 ----
-"params": {
+{"params": {
    "action": ["REGEX:(?i)LIST", "REGEX:(?i)CLUSTERSTATUS"]
+  }
 }
 ----
 
@@ -177,25 +179,21 @@ The name of the role(s) to give this permission. This name will be used to map u
 The following creates a new permission named "collection-mgr" that is allowed to create and list collections. The permission will be placed before the "read" permission. Note also that we have defined "collection as `null`, this is because requests to the Collections API are never collection-specific.
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "set-permission": {"collection": null,
                      "path":"/admin/collections",
-                     "params":{"action":[LIST, CREATE]},
+                     "params":{"action":["LIST", "CREATE"]},
                      "before": 3,
                      "role": "admin"}
 }' http://localhost:8983/solr/admin/authorization
-----
 
 Apply an update permission on all collections to a role called `dev` and read permissions to a role called `guest`:
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
-  "set-permission": {"name": "update, "role":"dev"},
-  "set-permission": {"name": "read, "role":"guest"},
+  "set-permission": {"name": "update", "role":"dev"},
+  "set-permission": {"name": "read", "role":"guest"}
 }' http://localhost:8983/solr/admin/authorization
-----
 
 [[Rule-BasedAuthorizationPlugin-UpdateorDeletePermissions]]
 === Update or Delete Permissions
@@ -205,21 +203,18 @@ Permissions can be accessed using their index in the list. Use the `/admin/autho
 The following example updates the `'role'` attribute of permission at index `3`:
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "update-permission": {"index": 3,
                        "role": ["admin", "dev"]}
 }' http://localhost:8983/solr/admin/authorization
-----
 
 The following example deletes permission at index `3`:
 
 [source,bash]
-----
 curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "delete-permission": 3
 }' http://localhost:8983/solr/admin/authorization
-----
+
 
 [[Rule-BasedAuthorizationPlugin-MapRolestoUsers]]
 === Map Roles to Users
@@ -235,9 +230,7 @@ The values supplied to the command are simply a user ID and one or more roles th
 For example, the following would grant a user "solr" the "admin" and "dev" roles, and remove all roles from the user ID "harry":
 
 [source,bash]
-----
 curl -u solr:SolrRocks -H 'Content-type:application/json' -d '{
    "set-user-role" : {"solr": ["admin","dev"],
                       "harry": null}
 }' http://localhost:8983/solr/admin/authorization
-----

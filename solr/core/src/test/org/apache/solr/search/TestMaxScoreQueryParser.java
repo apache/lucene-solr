@@ -48,8 +48,14 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
-    assertTrue(q instanceof LegacyNumericRangeQuery 
-        || (q instanceof IndexOrDocValuesQuery && ((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery));
+    Class expected = LegacyNumericRangeQuery.class;
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+      expected = PointRangeQuery.class;
+      if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+        expected = IndexOrDocValuesQuery.class;
+      }
+    }
+    assertTrue(expected + " vs actual: " + q.getClass(), expected.isInstance(q));
   }
 
   @Test

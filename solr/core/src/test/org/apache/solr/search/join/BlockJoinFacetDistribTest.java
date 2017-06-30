@@ -137,7 +137,7 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
               oldFacetsEnabled&&usually() ? "facet.limit" : "ignore" , "1",
               oldFacetsEnabled&&usually() ? "facet.mincount" : "ignore" , "2",
               oldFacetsEnabled&&usually() ? "facet.overrequest.count" : "ignore" , "0",
-          "qt",  random().nextBoolean() ? "blockJoinDocSetFacetRH" : "blockJoinFacetRH",
+          "qt",  random().nextBoolean() ? "/blockJoinDocSetFacetRH" : "/blockJoinFacetRH",
           "child.facet.field", "COLOR_s",
           "child.facet.field", "SIZE_s",
           "distrib.singlePass", random().nextBoolean() ? "true":"false",

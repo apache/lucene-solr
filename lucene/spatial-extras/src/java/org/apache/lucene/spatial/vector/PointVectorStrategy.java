@@ -16,18 +16,30 @@
  */
 package org.apache.lucene.spatial.vector;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.queries.function.FunctionRangeQuery;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -169,12 +181,12 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     return new DistanceValueSource(this, queryPoint, multiplier);
   }
 
   @Override
-  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+  public Query makeQuery(SpatialArgs args) {
     if(! SpatialOperation.is( args.getOperation(),
         SpatialOperation.Intersects,
         SpatialOperation.IsWithin ))
@@ -186,13 +198,7 @@ public class PointVectorStrategy extends SpatialStrategy {
     } else if (shape instanceof Circle) {
       Circle circle = (Circle)shape;
       Rectangle bbox = circle.getBoundingBox();
-      Query approxQuery = makeWithin(bbox);
-      BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
-      FunctionRangeQuery vsRangeQuery =
-          new FunctionRangeQuery(makeDistanceValueSource(circle.getCenter()), 0.0, circle.getRadius(), true, true);
-      bqBuilder.add(approxQuery, BooleanClause.Occur.FILTER);//should have lowest "cost" value; will drive iteration
-      bqBuilder.add(vsRangeQuery, BooleanClause.Occur.FILTER);
-      return new ConstantScoreQuery(bqBuilder.build());
+      return new DistanceRangeQuery(makeWithin(bbox), makeDistanceValueSource(circle.getCenter()), circle.getRadius());
     } else {
       throw new UnsupportedOperationException("Only Rectangles and Circles are currently supported, " +
           "found [" + shape.getClass() + "]");//TODO
@@ -236,5 +242,72 @@ public class PointVectorStrategy extends SpatialStrategy {
     }
     //TODO try doc-value range query?
     throw new UnsupportedOperationException("An index is required for this operation.");
+  }
+
+  private static class DistanceRangeQuery extends Query {
+
+    final Query inner;
+    final DoubleValuesSource distanceSource;
+    final double limit;
+
+    private DistanceRangeQuery(Query inner, DoubleValuesSource distanceSource, double limit) {
+      this.inner = inner;
+      this.distanceSource = distanceSource;
+      this.limit = limit;
+    }
+
+    @Override
+    public Query rewrite(IndexReader reader) throws IOException {
+      Query rewritten = inner.rewrite(reader);
+      if (rewritten == inner)
+        return this;
+      return new DistanceRangeQuery(rewritten, distanceSource, limit);
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      Weight w = inner.createWeight(searcher, needsScores, 1f);
+      return new ConstantScoreWeight(this, boost) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          Scorer in = w.scorer(context);
+          if (in == null)
+            return null;
+          DoubleValues v = distanceSource.getValues(context, DoubleValuesSource.fromScorer(in));
+          DocIdSetIterator approximation = in.iterator();
+          TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
+            @Override
+            public boolean matches() throws IOException {
+              return v.advanceExact(approximation.docID()) && v.doubleValue() <= limit;
+            }
+
+            @Override
+            public float matchCost() {
+              return 100;   // distance calculation can be heavy!
+            }
+          };
+          return new ConstantScoreScorer(this, score(), twoPhase);
+        }
+      };
+    }
+
+    @Override
+    public String toString(String field) {
+      return "DistanceRangeQuery(" + inner.toString(field) + "; " + distanceSource.toString() + " < " + limit + ")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      DistanceRangeQuery that = (DistanceRangeQuery) o;
+      return Objects.equals(inner, that.inner) &&
+          Objects.equals(distanceSource, that.distanceSource) && limit == that.limit;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(inner, distanceSource, limit);
+    }
   }
 }

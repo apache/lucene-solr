@@ -17,18 +17,17 @@
 package org.apache.lucene.analysis.payloads;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-
 
 /**
- * Assigns a payload to a token based on the {@link org.apache.lucene.analysis.Token#type()}
- *
+ * Assigns a payload to a token based on the {@link org.apache.lucene.analysis.tokenattributes.TypeAttribute}
  **/
 public class NumericPayloadTokenFilter extends TokenFilter {
 

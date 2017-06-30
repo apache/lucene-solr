@@ -26,7 +26,7 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <requestHandler name="/select" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="p1">${foo.foo1}</str>
       <str name="p2">${foo.foo2}</str>

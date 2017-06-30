@@ -109,7 +109,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     assertTrue(newStat.getVersion() > stat.getVersion());
     log.info("new_version "+ newStat.getVersion());
     Integer newVersion = newStat.getVersion();
-    long maxTimeoutSeconds = 20;
+    long maxTimeoutSeconds = 60;
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {

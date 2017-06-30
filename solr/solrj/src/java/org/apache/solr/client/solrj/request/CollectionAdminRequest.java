@@ -46,7 +46,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.cloud.autoscaling.Policy.POLICY;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
@@ -1360,6 +1360,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String collection;
     protected String shard;
     protected String node;
+    protected String coreName;
     protected String routeKey;
     protected String instanceDir;
     protected String dataDir;
@@ -1426,6 +1427,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public AddReplica setCoreName(String coreName) {
+      this.coreName = coreName;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -1445,6 +1451,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (coreName != null) {
+        params.add("name", coreName);
       }
       if (type != null) {
         params.add(ZkStateReader.REPLICA_TYPE, type.name());

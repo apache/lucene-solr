@@ -189,6 +189,14 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=0]");
 
+      assertQ("The default for lowercaseOperators should not allow lower case and",
+          req("q", "Zapp and Brannigan",
+              "qf", "name",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=0]");
+
       assertQ("Lower case operator, allow lower case operators",
           req("q", "Zapp and Brannigan",
               "qf", "name",
@@ -284,7 +292,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                "q","Order AND op"), oner
     );
    assertQ(req("defType", "edismax", "qf", "name title subject text",
-               "q","Order and op"), oner
+               "q","Order and op"), twor
     );
     assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","+Order op"), oner

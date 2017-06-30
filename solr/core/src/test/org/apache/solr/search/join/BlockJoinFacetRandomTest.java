@@ -46,7 +46,7 @@ public class BlockJoinFacetRandomTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-blockjoinfacetcomponent.xml", "schema-blockjoinfacetcomponent.xml");
-    handler = random().nextBoolean() ? "blockJoinDocSetFacetRH":"blockJoinFacetRH";
+    handler = random().nextBoolean() ? "/blockJoinDocSetFacetRH":"/blockJoinFacetRH";
     facets = createFacets();
     createIndex();
   }

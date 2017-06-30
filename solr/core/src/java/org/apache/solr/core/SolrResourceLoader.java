@@ -105,7 +105,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
-  //TODO: Solr5. Remove this completely when you obsolete putting <core> tags in solr.xml (See Solr-4196)
   private final Properties coreProperties;
 
   private volatile boolean live;
@@ -145,7 +144,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
 
   /**
    * <p>
-   * This loader will delegate to the context classloader when possible,
+   * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
    * </p>
@@ -162,9 +161,10 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
     }
 
-    if (parent == null)
-      parent = Thread.currentThread().getContextClassLoader();
-    this.classLoader = new URLClassLoader(new URL[0], parent);
+    if (parent == null) {
+      parent = getClass().getClassLoader();
+    }
+    this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
 
     /* 
      * Skip the lib subdirectory when we are loading from the solr home.

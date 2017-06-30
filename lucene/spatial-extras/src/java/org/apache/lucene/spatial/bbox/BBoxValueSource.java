@@ -17,24 +17,22 @@
 package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.Explanation;
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A ValueSource in which the indexed Rectangle is returned from
- * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
+ * A ShapeValuesSource returning a Rectangle from each document derived from four numeric fields
  *
  * @lucene.internal
  */
-class BBoxValueSource extends ValueSource {
+class BBoxValueSource extends ShapeValuesSource {
 
   private final BBoxStrategy strategy;
 
@@ -43,12 +41,12 @@ class BBoxValueSource extends ValueSource {
   }
 
   @Override
-  public String description() {
+  public String toString() {
     return "bboxShape(" + strategy.getFieldName() + ")";
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
     LeafReader reader = readerContext.reader();
     final NumericDocValues minX = DocValues.getNumeric(reader, strategy.field_minX);
     final NumericDocValues minY = DocValues.getNumeric(reader, strategy.field_minY);
@@ -58,61 +56,23 @@ class BBoxValueSource extends ValueSource {
     //reused
     final Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
 
-    return new FunctionValues() {
-      private int lastDocID = -1;
+    return new ShapeValues() {
 
-      private double getDocValue(NumericDocValues values, int doc) throws IOException {
-        int curDocID = values.docID();
-        if (doc > curDocID) {
-          curDocID = values.advance(doc);
-        }
-        if (doc == curDocID) {
-          return Double.longBitsToDouble(values.longValue());
-        } else {
-          return 0.0;
-        }
+      @Override
+      public boolean advanceExact(int doc) throws IOException {
+        return minX.advanceExact(doc) && minY.advanceExact(doc) && maxX.advanceExact(doc) && maxY.advanceExact(doc);
       }
 
       @Override
-      public Object objectVal(int doc) throws IOException {
-        if (doc < lastDocID) {
-          throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + doc);
-        }
-        lastDocID = doc;
-
-        double minXValue = getDocValue(minX, doc);
-        if (minX.docID() != doc) {
-          return null;
-        } else {
-          double minYValue = getDocValue(minY, doc);
-          double maxXValue = getDocValue(maxX, doc);
-          double maxYValue = getDocValue(maxY, doc);
-          rect.reset(minXValue, maxXValue, minYValue, maxYValue);
-          return rect;
-        }
+      public Shape value() throws IOException {
+        double minXValue = Double.longBitsToDouble(minX.longValue());
+        double minYValue = Double.longBitsToDouble(minY.longValue());
+        double maxXValue = Double.longBitsToDouble(maxX.longValue());
+        double maxYValue = Double.longBitsToDouble(maxY.longValue());
+        rect.reset(minXValue, maxXValue, minYValue, maxYValue);
+        return rect;
       }
 
-      @Override
-      public String strVal(int doc) throws IOException {//TODO support WKT output once Spatial4j does
-        Object v = objectVal(doc);
-        return v == null ? null : v.toString();
-      }
-
-      @Override
-      public boolean exists(int doc) throws IOException {
-        getDocValue(minX, doc);
-        return minX.docID() == doc;
-      }
-
-      @Override
-      public Explanation explain(int doc) throws IOException {
-        return Explanation.match(Float.NaN, toString(doc));
-      }
-
-      @Override
-      public String toString(int doc) throws IOException {
-        return description() + '=' + strVal(doc);
-      }
     };
   }
 

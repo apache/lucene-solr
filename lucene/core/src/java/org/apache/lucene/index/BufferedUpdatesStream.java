@@ -14,40 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.PriorityQueue;
 
-/* Tracks the stream of {@link BufferedDeletes}.
+/** Tracks the stream of {@link FrozenBufferedUpdates}.
  * When DocumentsWriterPerThread flushes, its buffered
- * deletes and updates are appended to this stream.  We later
- * apply them (resolve them to the actual
- * docIDs, per segment) when a merge is started
- * (only to the to-be-merged segments).  We
- * also apply to all segments when NRT reader is pulled,
- * commit/close is called, or when too many deletes or  updates are
+ * deletes and updates are appended to this stream and immediately
+ * resolved (to actual docIDs, per segment) using the indexing
+ * thread that triggered the flush for concurrency.  When a
+ * merge kicks off, we sync to ensure all resolving packets
+ * complete.  We also apply to all segments when NRT reader is pulled,
+ * commit/close is called, or when too many deletes or updates are
  * buffered and must be flushed (by RAM usage or by count).
  *
  * Each packet is assigned a generation, and each flushed or
@@ -57,23 +50,24 @@ import org.apache.lucene.util.PriorityQueue;
 
 class BufferedUpdatesStream implements Accountable {
 
-  // TODO: maybe linked list?
-  private final List<FrozenBufferedUpdates> updates = new ArrayList<>();
+  private final Set<FrozenBufferedUpdates> updates = new HashSet<>();
 
   // Starts at 1 so that SegmentInfos that have never had
   // deletes applied (whose bufferedDelGen defaults to 0)
   // will be correct:
   private long nextGen = 1;
 
-  // used only by assert
-  private BytesRef lastDeleteTerm;
-
+  private final FinishedSegments finishedSegments;
   private final InfoStream infoStream;
   private final AtomicLong bytesUsed = new AtomicLong();
   private final AtomicInteger numTerms = new AtomicInteger();
+  private final IndexWriter writer;
+  private boolean closed;
 
-  public BufferedUpdatesStream(InfoStream infoStream) {
-    this.infoStream = infoStream;
+  public BufferedUpdatesStream(IndexWriter writer) {
+    this.writer = writer;
+    this.infoStream = writer.infoStream;
+    this.finishedSegments = new FinishedSegments(infoStream);
   }
 
   // Appends a new packet of buffered deletes to the stream,
@@ -89,21 +83,27 @@ class BufferedUpdatesStream implements Accountable {
     packet.setDelGen(nextGen++);
     assert packet.any();
     assert checkDeleteStats();
-    assert packet.delGen() < nextGen;
-    assert updates.isEmpty() || updates.get(updates.size()-1).delGen() < packet.delGen() : "Delete packets must be in order";
+
     updates.add(packet);
     numTerms.addAndGet(packet.numTermDeletes);
     bytesUsed.addAndGet(packet.bytesUsed);
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "push deletes " + packet + " segmentPrivate?=" + packet.isSegmentPrivate + " delGen=" + packet.delGen() + " packetCount=" + updates.size() + " totBytesUsed=" + bytesUsed.get());
+      infoStream.message("BD", String.format(Locale.ROOT, "push new packet (%s), packetCount=%d, bytesUsed=%.3f MB", packet, updates.size(), bytesUsed.get()/1024./1024.));
     }
     assert checkDeleteStats();
+
     return packet.delGen();
   }
 
+  public synchronized int getPendingUpdatesCount() {
+    return updates.size();
+  }
+
+  /** Only used by IW.rollback */
   public synchronized void clear() {
     updates.clear();
     nextGen = 1;
+    finishedSegments.clear();
     numTerms.set(0);
     bytesUsed.set(0);
   }
@@ -121,253 +121,151 @@ class BufferedUpdatesStream implements Accountable {
     return bytesUsed.get();
   }
 
+  private synchronized void ensureOpen() {
+    if (closed) {
+      throw new AlreadyClosedException("already closed");
+    }
+  }
+
   public static class ApplyDeletesResult {
     
     // True if any actual deletes took place:
     public final boolean anyDeletes;
 
-    // Current gen, for the merged segment:
-    public final long gen;
-
     // If non-null, contains segments that are 100% deleted
     public final List<SegmentCommitInfo> allDeleted;
 
-    ApplyDeletesResult(boolean anyDeletes, long gen, List<SegmentCommitInfo> allDeleted) {
+    ApplyDeletesResult(boolean anyDeletes, List<SegmentCommitInfo> allDeleted) {
       this.anyDeletes = anyDeletes;
-      this.gen = gen;
       this.allDeleted = allDeleted;
     }
   }
 
-  // Sorts SegmentInfos from smallest to biggest bufferedDelGen:
-  private static final Comparator<SegmentCommitInfo> sortSegInfoByDelGen = new Comparator<SegmentCommitInfo>() {
-    @Override
-    public int compare(SegmentCommitInfo si1, SegmentCommitInfo si2) {
-      return Long.compare(si1.getBufferedDeletesGen(), si2.getBufferedDeletesGen());
+  /** Waits for all in-flight packets, which are already being resolved concurrently
+   *  by indexing threads, to finish.  Returns true if there were any 
+   *  new deletes or updates.  This is called for refresh, commit. */
+  public void waitApplyAll() throws IOException {
+
+    assert Thread.holdsLock(writer) == false;
+    
+    final long t0 = System.nanoTime();
+
+    Set<FrozenBufferedUpdates> waitFor;
+    synchronized (this) {
+      waitFor = new HashSet<>(updates);
     }
-  };
+
+    waitApply(waitFor);
+  }
+
+  /** Returns true if this delGen is still running. */
+  public boolean stillRunning(long delGen) {
+    return finishedSegments.stillRunning(delGen);
+  }
+
+  public void finishedSegment(long delGen) {
+    finishedSegments.finishedSegment(delGen);
+  }
   
-  /** Resolves the buffered deleted Term/Query/docIDs, into
-   *  actual deleted docIDs in the liveDocs MutableBits for
-   *  each SegmentReader. */
-  public synchronized ApplyDeletesResult applyDeletesAndUpdates(IndexWriter.ReaderPool pool, List<SegmentCommitInfo> infos) throws IOException {
-    final long t0 = System.currentTimeMillis();
+  /** Called by indexing threads once they are fully done resolving all deletes for the provided
+   *  delGen.  We track the completed delGens and record the maximum delGen for which all prior
+   *  delGens, inclusive, are completed, so that it's safe for doc values updates to apply and write. */
 
-    final long gen = nextGen++;
+  public synchronized void finished(FrozenBufferedUpdates packet) {
+    // TODO: would be a bit more memory efficient to track this per-segment, so when each segment writes it writes all packets finished for
+    // it, rather than only recording here, across all segments.  But, more complex code, and more CPU, and maybe not so much impact in
+    // practice?
+    assert packet.applied.getCount() == 1: "packet=" + packet;
 
-    if (infos.size() == 0) {
-      return new ApplyDeletesResult(false, gen, null);
+    packet.applied.countDown();
+
+    updates.remove(packet);
+    numTerms.addAndGet(-packet.numTermDeletes);
+    assert numTerms.get() >= 0: "numTerms=" + numTerms + " packet=" + packet;
+    
+    bytesUsed.addAndGet(-packet.bytesUsed);
+
+    finishedSegment(packet.delGen());
+  }
+
+  /** All frozen packets up to and including this del gen are guaranteed to be finished. */
+  public long getCompletedDelGen() {
+    return finishedSegments.getCompletedDelGen();
+  }   
+
+  /** Waits only for those in-flight packets that apply to these merge segments.  This is
+   *  called when a merge needs to finish and must ensure all deletes to the merging
+   *  segments are resolved. */
+  public void waitApplyForMerge(List<SegmentCommitInfo> mergeInfos) throws IOException {
+    assert Thread.holdsLock(writer) == false;
+
+    final long t0 = System.nanoTime();
+
+    long maxDelGen = Long.MIN_VALUE;
+    for (SegmentCommitInfo info : mergeInfos) {
+      maxDelGen = Math.max(maxDelGen, info.getBufferedDeletesGen());
     }
 
-    // We only init these on demand, when we find our first deletes that need to be applied:
-    SegmentState[] segStates = null;
-
-    long totDelCount = 0;
-    long totTermVisitedCount = 0;
-
-    boolean success = false;
-
-    ApplyDeletesResult result = null;
-
-    try {
-      if (infoStream.isEnabled("BD")) {
-        infoStream.message("BD", String.format(Locale.ROOT, "applyDeletes: open segment readers took %d msec", System.currentTimeMillis()-t0));
-      }
-
-      assert checkDeleteStats();
-
-      if (!any()) {
-        if (infoStream.isEnabled("BD")) {
-          infoStream.message("BD", "applyDeletes: no segments; skipping");
+    Set<FrozenBufferedUpdates> waitFor = new HashSet<>();
+    synchronized (this) {
+      for (FrozenBufferedUpdates packet : updates) {
+        if (packet.delGen() <= maxDelGen) {
+          // We must wait for this packet before finishing the merge because its
+          // deletes apply to a subset of the segments being merged:
+          waitFor.add(packet);
         }
-        return new ApplyDeletesResult(false, gen, null);
-      }
-
-      if (infoStream.isEnabled("BD")) {
-        infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + updates.size());
-      }
-
-      infos = sortByDelGen(infos);
-
-      CoalescedUpdates coalescedUpdates = null;
-      int infosIDX = infos.size()-1;
-      int delIDX = updates.size()-1;
-
-      // Backwards merge sort the segment delGens with the packet delGens in the buffered stream:
-      while (infosIDX >= 0) {
-        final FrozenBufferedUpdates packet = delIDX >= 0 ? updates.get(delIDX) : null;
-        final SegmentCommitInfo info = infos.get(infosIDX);
-        final long segGen = info.getBufferedDeletesGen();
-
-        if (packet != null && segGen < packet.delGen()) {
-          if (!packet.isSegmentPrivate && packet.any()) {
-            /*
-             * Only coalesce if we are NOT on a segment private del packet: the segment private del packet
-             * must only apply to segments with the same delGen.  Yet, if a segment is already deleted
-             * from the SI since it had no more documents remaining after some del packets younger than
-             * its segPrivate packet (higher delGen) have been applied, the segPrivate packet has not been
-             * removed.
-             */
-            if (coalescedUpdates == null) {
-              coalescedUpdates = new CoalescedUpdates();
-            }
-            coalescedUpdates.update(packet);
-          }
-
-          delIDX--;
-        } else if (packet != null && segGen == packet.delGen()) {
-          assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet gen=" + segGen;
-
-          if (segStates == null) {
-            segStates = openSegmentStates(pool, infos);
-          }
-
-          SegmentState segState = segStates[infosIDX];
-
-          // Lock order: IW -> BD -> RP
-          assert pool.infoIsLive(info);
-          int delCount = 0;
-          final DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
-
-          // first apply segment-private deletes/updates
-          delCount += applyQueryDeletes(packet.queriesIterable(), segState);
-          applyDocValuesUpdates(Arrays.asList(packet.numericDVUpdates), segState, dvUpdates);
-          applyDocValuesUpdates(Arrays.asList(packet.binaryDVUpdates), segState, dvUpdates);
-
-          // ... then coalesced deletes/updates, so that if there is an update that appears in both, the coalesced updates (carried from
-          // updates ahead of the segment-privates ones) win:
-          if (coalescedUpdates != null) {
-            delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), segState);
-            applyDocValuesUpdatesList(coalescedUpdates.numericDVUpdates, segState, dvUpdates);
-            applyDocValuesUpdatesList(coalescedUpdates.binaryDVUpdates, segState, dvUpdates);
-          }
-          if (dvUpdates.any()) {
-            segState.rld.writeFieldUpdates(info.info.dir, dvUpdates);
-          }
-
-          totDelCount += delCount;
-
-          /*
-           * Since we are on a segment private del packet we must not
-           * update the coalescedUpdates here! We can simply advance to the 
-           * next packet and seginfo.
-           */
-          delIDX--;
-          infosIDX--;
-
-        } else {
-          if (coalescedUpdates != null) {
-            if (segStates == null) {
-              segStates = openSegmentStates(pool, infos);
-            }
-            SegmentState segState = segStates[infosIDX];
-            // Lock order: IW -> BD -> RP
-            assert pool.infoIsLive(info);
-            int delCount = 0;
-            delCount += applyQueryDeletes(coalescedUpdates.queriesIterable(), segState);
-            DocValuesFieldUpdates.Container dvUpdates = new DocValuesFieldUpdates.Container();
-            applyDocValuesUpdatesList(coalescedUpdates.numericDVUpdates, segState, dvUpdates);
-            applyDocValuesUpdatesList(coalescedUpdates.binaryDVUpdates, segState, dvUpdates);
-            if (dvUpdates.any()) {
-              segState.rld.writeFieldUpdates(info.info.dir, dvUpdates);
-            }
-
-            totDelCount += delCount;
-          }
-
-          infosIDX--;
-        }
-      }
-
-      // Now apply all term deletes:
-      if (coalescedUpdates != null && coalescedUpdates.totalTermCount != 0) {
-        if (segStates == null) {
-          segStates = openSegmentStates(pool, infos);
-        }
-        totTermVisitedCount += applyTermDeletes(coalescedUpdates, segStates);
-      }
-
-      assert checkDeleteStats();
-
-      success = true;
-
-    } finally {
-      if (segStates != null) {
-        result = closeSegmentStates(pool, segStates, success, gen);
       }
     }
 
-    if (result == null) {
-      result = new ApplyDeletesResult(false, gen, null);      
+    if (infoStream.isEnabled("BD")) {
+      infoStream.message("BD", "waitApplyForMerge: " + waitFor.size() + " packets, " + mergeInfos.size() + " merging segments");
+    }
+    
+    waitApply(waitFor);
+  }
+
+  private void waitApply(Set<FrozenBufferedUpdates> waitFor) throws IOException {
+
+    long startNS = System.nanoTime();
+
+    int packetCount = waitFor.size();
+
+    if (waitFor.isEmpty()) {
+      if (infoStream.isEnabled("BD")) {
+        infoStream.message("BD", "waitApply: no deletes to apply");
+      }
+      return;
+    }
+
+    if (infoStream.isEnabled("BD")) {
+      infoStream.message("BD", "waitApply: " + waitFor.size() + " packets: " + waitFor);
+    }
+
+    long totalDelCount = 0;
+    for (FrozenBufferedUpdates packet : waitFor) {
+      // Frozen packets are now resolved, concurrently, by the indexing threads that
+      // create them, by adding a DocumentsWriter.ResolveUpdatesEvent to the events queue,
+      // but if we get here and the packet is not yet resolved, we resolve it now ourselves:
+      packet.apply(writer);
+      totalDelCount += packet.totalDelCount;
     }
 
     if (infoStream.isEnabled("BD")) {
       infoStream.message("BD",
-                         String.format(Locale.ROOT,
-                                       "applyDeletes took %d msec for %d segments, %d newly deleted docs (query deletes), %d visited terms, allDeleted=%s",
-                                       System.currentTimeMillis()-t0, infos.size(), totDelCount, totTermVisitedCount, result.allDeleted));
+                         String.format(Locale.ROOT, "waitApply: done %d packets; totalDelCount=%d; totBytesUsed=%d; took %.2f msec",
+                                       packetCount,
+                                       totalDelCount,
+                                       bytesUsed.get(),
+                                       (System.nanoTime() - startNS) / 1000000.));
     }
-
-    return result;
-  }
-
-  private List<SegmentCommitInfo> sortByDelGen(List<SegmentCommitInfo> infos) {
-    infos = new ArrayList<>(infos);
-    // Smaller delGens come first:
-    Collections.sort(infos, sortSegInfoByDelGen);
-    return infos;
   }
 
   synchronized long getNextGen() {
     return nextGen++;
   }
 
-  // Lock order IW -> BD
-  /* Removes any BufferedDeletes that we no longer need to
-   * store because all segments in the index have had the
-   * deletes applied. */
-  public synchronized void prune(SegmentInfos segmentInfos) {
-    assert checkDeleteStats();
-    long minGen = Long.MAX_VALUE;
-    for(SegmentCommitInfo info : segmentInfos) {
-      minGen = Math.min(info.getBufferedDeletesGen(), minGen);
-    }
-
-    if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "prune sis=" + segmentInfos + " minGen=" + minGen + " packetCount=" + updates.size());
-    }
-    final int limit = updates.size();
-    for(int delIDX=0;delIDX<limit;delIDX++) {
-      if (updates.get(delIDX).delGen() >= minGen) {
-        prune(delIDX);
-        assert checkDeleteStats();
-        return;
-      }
-    }
-
-    // All deletes pruned
-    prune(limit);
-    assert !any();
-    assert checkDeleteStats();
-  }
-
-  private synchronized void prune(int count) {
-    if (count > 0) {
-      if (infoStream.isEnabled("BD")) {
-        infoStream.message("BD", "pruneDeletes: prune " + count + " packets; " + (updates.size() - count) + " packets remain");
-      }
-      for(int delIDX=0;delIDX<count;delIDX++) {
-        final FrozenBufferedUpdates packet = updates.get(delIDX);
-        numTerms.addAndGet(-packet.numTermDeletes);
-        assert numTerms.get() >= 0;
-        bytesUsed.addAndGet(-packet.bytesUsed);
-        assert bytesUsed.get() >= 0;
-      }
-      updates.subList(0, count).clear();
-    }
-  }
-
-  static class SegmentState {
+  /** Holds all per-segment internal state used while resolving deletions. */
+  public static final class SegmentState {
     final long delGen;
     final ReadersAndUpdates rld;
     final SegmentReader reader;
@@ -376,7 +274,6 @@ class BufferedUpdatesStream implements Accountable {
     TermsEnum termsEnum;
     PostingsEnum postingsEnum;
     BytesRef term;
-    boolean any;
 
     public SegmentState(IndexWriter.ReaderPool pool, SegmentCommitInfo info) throws IOException {
       rld = pool.get(info, true);
@@ -392,58 +289,54 @@ class BufferedUpdatesStream implements Accountable {
         pool.release(rld);
       }
     }
-  }
-
-  /** Does a merge sort by current term across all segments. */
-  static class SegmentQueue extends PriorityQueue<SegmentState> {
-    public SegmentQueue(int size) {
-      super(size);
-    }
 
     @Override
-    protected boolean lessThan(SegmentState a, SegmentState b) {
-      return a.term.compareTo(b.term) < 0;
+    public String toString() {
+      return "SegmentState(" + rld.info + ")";
     }
   }
 
   /** Opens SegmentReader and inits SegmentState for each segment. */
-  private SegmentState[] openSegmentStates(IndexWriter.ReaderPool pool, List<SegmentCommitInfo> infos) throws IOException {
-    int numReaders = infos.size();
-    SegmentState[] segStates = new SegmentState[numReaders];
+  public SegmentState[] openSegmentStates(IndexWriter.ReaderPool pool, List<SegmentCommitInfo> infos,
+                                          Set<SegmentCommitInfo> alreadySeenSegments, long delGen) throws IOException {
+    ensureOpen();
+
+    List<SegmentState> segStates = new ArrayList<>();
     boolean success = false;
     try {
-      for(int i=0;i<numReaders;i++) {
-        segStates[i] = new SegmentState(pool, infos.get(i));
+      for (SegmentCommitInfo info : infos) {
+        if (info.getBufferedDeletesGen() <= delGen && alreadySeenSegments.contains(info) == false) {
+          segStates.add(new SegmentState(pool, info));
+          alreadySeenSegments.add(info);
+        }
       }
       success = true;
     } finally {
       if (success == false) {
-        for(int j=0;j<numReaders;j++) {
-          if (segStates[j] != null) {
+        for(SegmentState segState : segStates) {
             try {
-              segStates[j].finish(pool);
+              segState.finish(pool);
             } catch (Throwable th) {
               // suppress so we keep throwing original exc
             }
-          }
         }
       }
     }
-
-    return segStates;
+    
+    return segStates.toArray(new SegmentState[0]);
   }
 
   /** Close segment states previously opened with openSegmentStates. */
-  private ApplyDeletesResult closeSegmentStates(IndexWriter.ReaderPool pool, SegmentState[] segStates, boolean success, long gen) throws IOException {
-    int numReaders = segStates.length;
+  public ApplyDeletesResult closeSegmentStates(IndexWriter.ReaderPool pool, SegmentState[] segStates, boolean success) throws IOException {
+    int count = segStates.length;
     Throwable firstExc = null;
     List<SegmentCommitInfo> allDeleted = null;
     long totDelCount = 0;
-    for (int j=0;j<numReaders;j++) {
+
+    for (int j=0;j<count;j++) {
       SegmentState segState = segStates[j];
       if (success) {
         totDelCount += segState.rld.getPendingDeleteCount() - segState.startDelCount;
-        segState.reader.getSegmentInfo().setBufferedDeletesGen(gen);
         int fullDelCount = segState.rld.info.getDelCount() + segState.rld.getPendingDeleteCount();
         assert fullDelCount <= segState.rld.info.info.maxDoc();
         if (fullDelCount == segState.rld.info.info.maxDoc()) {
@@ -469,276 +362,10 @@ class BufferedUpdatesStream implements Accountable {
     }
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", "applyDeletes: " + totDelCount + " new deleted documents");
+      infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + updates.size() + " packets; bytesUsed=" + pool.ramBytesUsed());
     }
 
-    return new ApplyDeletesResult(totDelCount > 0, gen, allDeleted);      
-  }
-
-  /** Merge sorts the deleted terms and all segments to resolve terms to docIDs for deletion. */
-  private synchronized long applyTermDeletes(CoalescedUpdates updates, SegmentState[] segStates) throws IOException {
-
-    long startNS = System.nanoTime();
-
-    int numReaders = segStates.length;
-
-    long delTermVisitedCount = 0;
-    long segTermVisitedCount = 0;
-
-    FieldTermIterator iter = updates.termIterator();
-
-    String field = null;
-    SegmentQueue queue = null;
-
-    BytesRef term;
-
-    while ((term = iter.next()) != null) {
-
-      if (iter.field() != field) {
-        // field changed
-        field = iter.field();
-
-        queue = new SegmentQueue(numReaders);
-
-        long segTermCount = 0;
-        for (SegmentState state : segStates) {
-          Terms terms = state.reader.terms(field);
-          if (terms != null) {
-            segTermCount += terms.size();
-            state.termsEnum = terms.iterator();
-            state.term = state.termsEnum.next();
-            if (state.term != null) {
-              queue.add(state);
-            }
-          }
-        }
-
-        assert checkDeleteTerm(null);
-      }
-
-      assert checkDeleteTerm(term);
-
-      delTermVisitedCount++;
-
-      long delGen = iter.delGen();
-
-      while (queue.size() != 0) {
-
-        // Get next term merged across all segments
-        SegmentState state = queue.top();
-        segTermVisitedCount++;
-
-        int cmp = term.compareTo(state.term);
-
-        if (cmp < 0) {
-          break;
-        } else if (cmp == 0) {
-          // fall through
-        } else {
-          TermsEnum.SeekStatus status = state.termsEnum.seekCeil(term);
-          if (status == TermsEnum.SeekStatus.FOUND) {
-            // fallthrough
-          } else {
-            if (status == TermsEnum.SeekStatus.NOT_FOUND) {
-              state.term = state.termsEnum.term();
-              queue.updateTop();
-            } else {
-              // No more terms in this segment
-              queue.pop();
-            }
-
-            continue;
-          }
-        }
-
-        assert state.delGen != delGen;
-
-        if (state.delGen < delGen) {
-
-          // we don't need term frequencies for this
-          final Bits acceptDocs = state.rld.getLiveDocs();
-          state.postingsEnum = state.termsEnum.postings(state.postingsEnum, PostingsEnum.NONE);
-
-          assert state.postingsEnum != null;
-
-          while (true) {
-            final int docID = state.postingsEnum.nextDoc();
-            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-              break;
-            }
-            if (acceptDocs != null && acceptDocs.get(docID) == false) {
-              continue;
-            }
-            if (!state.any) {
-              state.rld.initWritableLiveDocs();
-              state.any = true;
-            }
-
-            // NOTE: there is no limit check on the docID
-            // when deleting by Term (unlike by Query)
-            // because on flush we apply all Term deletes to
-            // each segment.  So all Term deleting here is
-            // against prior segments:
-            state.rld.delete(docID);
-          }
-        }
-
-        state.term = state.termsEnum.next();
-        if (state.term == null) {
-          queue.pop();
-        } else {
-          queue.updateTop();
-        }
-      }
-    }
-
-    if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD",
-                         String.format(Locale.ROOT, "applyTermDeletes took %.1f msec for %d segments and %d packets; %d del terms visited; %d seg terms visited",
-                                       (System.nanoTime()-startNS)/1000000.,
-                                       numReaders,
-                                       updates.terms.size(),
-                                       delTermVisitedCount, segTermVisitedCount));
-    }
-
-    return delTermVisitedCount;
-  }
-
-  private synchronized void applyDocValuesUpdatesList(List<List<DocValuesUpdate>> updates, 
-      SegmentState segState, DocValuesFieldUpdates.Container dvUpdatesContainer) throws IOException {
-    // we walk backwards through the segments, appending deletion packets to the coalesced updates, so we must apply the packets in reverse
-    // so that newer packets override older ones:
-    for(int idx=updates.size()-1;idx>=0;idx--) {
-      applyDocValuesUpdates(updates.get(idx), segState, dvUpdatesContainer);
-    }
-  }
-
-  // DocValues updates
-  private synchronized void applyDocValuesUpdates(List<DocValuesUpdate> updates, 
-      SegmentState segState, DocValuesFieldUpdates.Container dvUpdatesContainer) throws IOException {
-
-    // TODO: we can process the updates per DV field, from last to first so that
-    // if multiple terms affect same document for the same field, we add an update
-    // only once (that of the last term). To do that, we can keep a bitset which
-    // marks which documents have already been updated. So e.g. if term T1
-    // updates doc 7, and then we process term T2 and it updates doc 7 as well,
-    // we don't apply the update since we know T1 came last and therefore wins
-    // the update.
-    // We can also use that bitset as 'liveDocs' to pass to TermEnum.docs(), so
-    // that these documents aren't even returned.
-    
-    String currentField = null;
-    TermsEnum termsEnum = null;
-    PostingsEnum postingsEnum = null;
-    
-    for (DocValuesUpdate update : updates) {
-      Term term = update.term;
-      int limit = update.docIDUpto;
-      
-      // TODO: we traverse the terms in update order (not term order) so that we
-      // apply the updates in the correct order, i.e. if two terms udpate the
-      // same document, the last one that came in wins, irrespective of the
-      // terms lexical order.
-      // we can apply the updates in terms order if we keep an updatesGen (and
-      // increment it with every update) and attach it to each NumericUpdate. Note
-      // that we cannot rely only on docIDUpto because an app may send two updates
-      // which will get same docIDUpto, yet will still need to respect the order
-      // those updates arrived.
-      
-      if (!term.field().equals(currentField)) {
-        // if we change the code to process updates in terms order, enable this assert
-//        assert currentField == null || currentField.compareTo(term.field()) < 0;
-        currentField = term.field();
-        Terms terms = segState.reader.terms(currentField);
-        if (terms != null) {
-          termsEnum = terms.iterator();
-        } else {
-          termsEnum = null;
-        }
-      }
-
-      if (termsEnum == null) {
-        // no terms in this field
-        continue;
-      }
-
-      if (termsEnum.seekExact(term.bytes())) {
-        // we don't need term frequencies for this
-        final Bits acceptDocs = segState.rld.getLiveDocs();
-        postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
-
-        DocValuesFieldUpdates dvUpdates = dvUpdatesContainer.getUpdates(update.field, update.type);
-        if (dvUpdates == null) {
-          dvUpdates = dvUpdatesContainer.newUpdates(update.field, update.type, segState.reader.maxDoc());
-        }
-        int doc;
-        while ((doc = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          if (doc >= limit) {
-            break; // no more docs that can be updated for this term
-          }
-          if (acceptDocs != null && acceptDocs.get(doc) == false) {
-            continue;
-          }
-          dvUpdates.add(doc, update.value);
-        }
-      }
-    }
-  }
-  
-  public static class QueryAndLimit {
-    public final Query query;
-    public final int limit;
-    public QueryAndLimit(Query query, int limit) {
-      this.query = query;
-      this.limit = limit;
-    }
-  }
-
-  // Delete by query
-  private static long applyQueryDeletes(Iterable<QueryAndLimit> queriesIter, SegmentState segState) throws IOException {
-    long delCount = 0;
-    final LeafReaderContext readerContext = segState.reader.getContext();
-    for (QueryAndLimit ent : queriesIter) {
-      Query query = ent.query;
-      int limit = ent.limit;
-      final IndexSearcher searcher = new IndexSearcher(readerContext.reader());
-      searcher.setQueryCache(null);
-      final Weight weight = searcher.createNormalizedWeight(query, false);
-      final Scorer scorer = weight.scorer(readerContext);
-      if (scorer != null) {
-        final DocIdSetIterator it = scorer.iterator();
-        final Bits liveDocs = readerContext.reader().getLiveDocs();
-        while (true)  {
-          int doc = it.nextDoc();
-          if (doc >= limit) {
-            break;
-          }
-          if (liveDocs != null && liveDocs.get(doc) == false) {
-            continue;
-          }
-
-          if (!segState.any) {
-            segState.rld.initWritableLiveDocs();
-            segState.any = true;
-          }
-          if (segState.rld.delete(doc)) {
-            delCount++;
-          }
-        }
-      }
-    }
-
-    return delCount;
-  }
-
-  // used only by assert
-  private boolean checkDeleteTerm(BytesRef term) {
-    if (term != null) {
-      assert lastDeleteTerm == null || term.compareTo(lastDeleteTerm) >= 0: "lastTerm=" + lastDeleteTerm + " vs term=" + term;
-    }
-    // TODO: we re-use term now in our merged iterable, but we shouldn't clone, instead copy for this assert
-    lastDeleteTerm = term == null ? null : BytesRef.deepCopyOf(term);
-    return true;
+    return new ApplyDeletesResult(totDelCount > 0, allDeleted);      
   }
 
   // only for assert
@@ -752,5 +379,53 @@ class BufferedUpdatesStream implements Accountable {
     assert numTerms2 == numTerms.get(): "numTerms2=" + numTerms2 + " vs " + numTerms.get();
     assert bytesUsed2 == bytesUsed.get(): "bytesUsed2=" + bytesUsed2 + " vs " + bytesUsed;
     return true;
+  }
+
+  /** Tracks the contiguous range of packets that have finished resolving.  We need this because the packets
+   *  are concurrently resolved, and we can only write to disk the contiguous completed
+   *  packets. */
+  private static class FinishedSegments {
+
+    /** Largest del gen, inclusive, for which all prior packets have finished applying. */
+    private long completedDelGen;
+
+    /** This lets us track the "holes" in the current frontier of applying del
+     *  gens; once the holes are filled in we can advance completedDelGen. */
+    private final Set<Long> finishedDelGens = new HashSet<>();
+
+    private final InfoStream infoStream;
+
+    public FinishedSegments(InfoStream infoStream) {
+      this.infoStream = infoStream;
+    }
+
+    public synchronized void clear() {
+      finishedDelGens.clear();
+      completedDelGen = 0;
+    }
+
+    public synchronized boolean stillRunning(long delGen) {
+      return delGen > completedDelGen && finishedDelGens.contains(delGen) == false;
+    }
+
+    public synchronized long getCompletedDelGen() {
+      return completedDelGen;
+    }
+
+    public synchronized void finishedSegment(long delGen) {
+      finishedDelGens.add(delGen);
+      while (true) {
+        if (finishedDelGens.contains(completedDelGen + 1)) {
+          finishedDelGens.remove(completedDelGen + 1);
+          completedDelGen++;
+        } else {
+          break;
+        }
+      }
+
+      if (infoStream.isEnabled("BD")) {
+        infoStream.message("BD", "finished packet delGen=" + delGen + " now completedDelGen=" + completedDelGen);
+      }
+    }
   }
 }

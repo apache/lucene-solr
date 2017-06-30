@@ -178,16 +178,14 @@ The `ComplexPhraseQParser` provides support for wildcards, ORs, etc., inside phr
 
 Under the covers, this query parser makes use of the Span group of queries, e.g., spanNear, spanOr, etc., and is subject to the same limitations as that family or parsers.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+*Parameters*
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`inOrder` |Set to true to force phrase queries to match terms in the order specified. Default: *true*
-|`df` |The default search field.
-|===
+`inOrder`::
+Set to true to force phrase queries to match terms in the order specified. The default is `true`.
+`df`::
+The default search field.
 
-*Examples:*
+*Examples*
 
 [source,text]
 ----
@@ -284,20 +282,21 @@ Example:
 
 The `FunctionRangeQParser` extends the `QParserPlugin` and creates a range query over a function. This is also referred to as `frange`, as seen in the examples below.
 
-Other parameters:
+*Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`l`::
+The lower bound. This parameter is optional.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|l |The lower bound, optional
-|u |The upper bound, optional
-|incl |Include the lower bound: true/false, optional, default=true
-|incu |Include the upper bound: true/false, optional, default=true
-|===
+`u`::
+The upper bound. This parameter is optional.
 
-Examples:
+`incl`::
+Include the lower bound. This parameter is optional. The default is `true`.
+
+`incu`::
+Include the upper bound. This parameter is optional. The default is `true`.
+
+*Examples*
 
 [source,text]
 ----
@@ -318,24 +317,30 @@ For more information about range queries over functions, see Yonik Seeley's intr
 
 The `graph` query parser does a breadth first, cyclic aware, graph traversal of all documents that are "reachable" from a starting set of root documents identified by a wrapped query.
 
-The graph is built according to linkages between documents based on the terms found in "```from```" and "```to```" fields that you specify as part of the query
+The graph is built according to linkages between documents based on the terms found in `from` and `to` fields that you specify as part of the query.
 
 [[OtherParsers-Parameters]]
 === Parameters
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`to`::
+The field name of matching documents to inspect to identify outgoing edges for graph traversal. Defaults to `edge_ids`.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|to |The field name of matching documents to inspect to identify outgoing edges for graph traversal. Defaults to `edge_ids` .
-|from |The field name to of candidate documents to inspect to identify incoming graph edges. Defaults to `node_id` .
-|traversalFilter |An optional query that can be supplied to limit the scope of documents that are traversed.
-|maxDepth |Integer specifying how deep the breadth first search of the graph should go beginning with the initial query. Defaults to -1 (unlimited)
-|returnRoot |Boolean to indicate if the documents that matched the original query (to define the starting points for graph) should be included in the final results. Defaults to true
-|returnOnlyLeaf |Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned. Defaults to false
-|useAutn |Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs. Defaults to false.
-|===
+`from`::
+The field name to of candidate documents to inspect to identify incoming graph edges. Defaults to `node_id`.
+
+`traversalFilter`::
+An optional query that can be supplied to limit the scope of documents that are traversed.
+
+`maxDepth`::
+Integer specifying how deep the breadth first search of the graph should go beginning with the initial query. Defaults to `-1` (unlimited).
+
+`returnRoot`::
+Boolean to indicate if the documents that matched the original query (to define the starting points for graph) should be included in the final results. Defaults to `true`.
+
+`returnOnlyLeaf`::
+Boolean that indicates if the results of the query should be filtered so that only documents with no outgoing edges are returned. Defaults to `false`.
+
+`useAutn`:: Boolean that indicates if an Automatons should be compiled for each iteration of the breadth first search, which may be faster for some graphs. Defaults to `false`.
 
 [[OtherParsers-Limitations.1]]
 === Limitations
@@ -590,23 +595,34 @@ Example:
 
 This query parser takes the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`qf`::
+Specifies the fields to use for similarity.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|qf |Specifies the fields to use for similarity.
-|mintf |Specifies the Minimum Term Frequency, the frequency below which terms will be ignored in the source document.
-|mindf |Specifies the Minimum Document Frequency, the frequency at which words will be ignored when they do not occur in at least this many documents.
-|maxdf |Specifies the Maximum Document Frequency, the frequency at which words will be ignored when they occur in more than this many documents.
-|minwl |Sets the minimum word length below which words will be ignored.
-|maxwl |Sets the maximum word length above which words will be ignored.
-|maxqt |Sets the maximum number of query terms that will be included in any generated query.
-|maxntp |Sets the maximum number of tokens to parse in each example document field that is not stored with TermVector support.
-|boost |Specifies if the query will be boosted by the interesting term relevance. It can be either "true" or "false".
-|===
+`mintf`::
+Specifies the Minimum Term Frequency, the frequency below which terms will be ignored in the source document.
 
-Examples:
+`mindf`::
+Specifies the Minimum Document Frequency, the frequency at which words will be ignored when they do not occur in at least this many documents.
+
+`maxdf`::
+Specifies the Maximum Document Frequency, the frequency at which words will be ignored when they occur in more than this many documents.
+
+`minwl`::
+Sets the minimum word length below which words will be ignored.
+
+`maxwl`::
+Sets the maximum word length above which words will be ignored.
+
+`maxqt`::
+Sets the maximum number of query terms that will be included in any generated query.
+
+`maxntp`::
+Sets the maximum number of tokens to parse in each example document field that is not stored with TermVector support.
+
+`boost`::
+Specifies if the query will be boosted by the interesting term relevance. It can be either "true" or "false".
+
+*Examples*
 
 Find documents like the document with id=1 and using the `name` field for similarity.
 
@@ -663,17 +679,16 @@ The main query, for both of these parsers, is parsed straightforwardly from the 
 
 This parser accepts the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`f`::
+The field to use (required).
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`f` |Field to use (required)
-|`func` |Payload function: min, max, average (required)
-|`includeSpanScore` |If true, multiples computed payload factor by the score of the original query. If false, the computed payload factor is the score. (default: false)
-|===
+`func`::
+Payload function: min, max, average (required).
 
-Example:
+`includeSpanScore`::
+If `true`, multiples computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
+
+*Example*
 
 [source,text]
 ----
@@ -687,20 +702,17 @@ Example:
 
 This parser accepts the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`f`::
+The field to use (required).
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|`f` |Field to use (required)
-|payloads a|
+`payloads`::
 A space-separated list of payloads that must match the query terms (required)
-
++
 Each specified payload will be encoded using the encoder determined from the field type and encoded accordingly for matching.
-
++
 `DelimitedPayloadTokenFilter` 'identity' encoded payloads also work here, as well as float and integer encoded ones.
 
-|===
+*Example*
 
 [source,text]
 ----
@@ -761,7 +773,7 @@ q.operators::
 Comma-separated list of names of parsing operators to enable. By default, all operations are enabled, and this parameter can be used to effectively disable specific operators as needed, by excluding them from the list. Passing an empty string with this parameter disables all operators.
 +
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
++
 [cols="15,20,50,15",options="header"]
 |===
 |Name |Operator |Description |Example query
@@ -791,7 +803,8 @@ At the end of terms, specifies a fuzzy query.
 q.op::
 Defines the default operator to use if none is defined by the user. Allowed values are `AND` and `OR`. `OR` is used if none is specified.
 
-qf:: A list of query fields and boosts to use when building the query.
+qf::
+A list of query fields and boosts to use when building the query.
 
 df::
 Defines the default field if none is defined in the Schema, or overrides the default field if it is already defined.
@@ -901,23 +914,23 @@ If no analysis or transformation is desired for any type of field, see the <<Oth
 [[OtherParsers-TermsQueryParser]]
 == Terms Query Parser
 
-`TermsQParser`, functions similarly to the <<OtherParsers-TermQueryParser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
+`TermsQParser` functions similarly to the <<OtherParsers-TermQueryParser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate an boolean query since the default implementation "```method```" avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate an boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`f`::
+The field on which to search. This parameter is required.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|f |The field on which to search. Required.
-|separator |Separator to use when parsing the input. If set to " " (a single blank space), will trim additional white space from the input terms. Defaults to "`,`".
-|method |The internal query-building implementation: `termsFilter`, `booleanQuery`, `automaton`, or `docValuesTermsFilter`. Defaults to "```termsFilter```".
-|===
+`separator`::
+Separator to use when parsing the input. If set to " " (a single blank space), will trim additional white space from the input terms. Defaults to  a comma (`,`).
 
-Examples:
+`method`::
+The internal query-building implementation: `termsFilter`, `booleanQuery`, `automaton`, or `docValuesTermsFilter`. Defaults to `termsFilter`.
+
+
+*Examples*
 
 [source,text]
 ----

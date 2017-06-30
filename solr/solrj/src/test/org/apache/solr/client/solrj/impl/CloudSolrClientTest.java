@@ -456,7 +456,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private Long getNumRequests(String baseUrl, String collectionName) throws
       SolrServerException, IOException {
-    return getNumRequests(baseUrl, collectionName, "QUERY", "standard", null, false);
+    return getNumRequests(baseUrl, collectionName, "QUERY", "/select", null, false);
   }
 
   private Long getNumRequests(String baseUrl, String collectionName, String category, String key, String scope, boolean returnNumErrors) throws

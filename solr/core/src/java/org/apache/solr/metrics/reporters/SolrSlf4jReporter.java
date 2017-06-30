@@ -47,7 +47,6 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
   @SuppressWarnings("unused") // we need this to pass validate-source-patterns
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private int period = 60;
   private String instancePrefix = null;
   private String logger = null;
   private List<String> filters = new ArrayList<>();
@@ -89,10 +88,6 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
 
   public void setLogger(String logger) {
     this.logger = logger;
-  }
-
-  public void setPeriod(int period) {
-    this.period = period;
   }
 
   @Override

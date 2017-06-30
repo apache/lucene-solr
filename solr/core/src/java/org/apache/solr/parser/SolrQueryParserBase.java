@@ -56,6 +56,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
@@ -657,7 +658,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       }
     }
 
-    BooleanQuery bq = booleanBuilder.build();
+    BooleanQuery bq = QueryUtils.build(booleanBuilder,parser);
     if (bq.clauses().size() == 1) { // Unwrap single SHOULD query
       BooleanClause clause = bq.clauses().iterator().next();
       if (clause.getOccur() == BooleanClause.Occur.SHOULD) {
@@ -910,7 +911,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             Query subq = ft.getFieldQuery(this.parser, rawq.sfield, externalVal);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           }
-          normal = booleanBuilder.build();
+          normal = QueryUtils.build(booleanBuilder, parser);
         }
       }
     }

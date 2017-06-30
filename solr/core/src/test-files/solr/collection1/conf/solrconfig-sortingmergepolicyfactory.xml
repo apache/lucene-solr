@@ -31,7 +31,7 @@
     <lockType>${solr.tests.lockType:single}</lockType>
   </indexConfig>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
@@ -47,7 +47,7 @@
       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
     </autoSoftCommit>
   </updateHandler>
-  <initParams path="standard">
+  <initParams path="/select">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

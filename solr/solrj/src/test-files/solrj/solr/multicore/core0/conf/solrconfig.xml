@@ -57,18 +57,18 @@
     </updateLog>
   </updateHandler>
 
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" formdataUploadLimitInKB="2048" />
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" formdataUploadLimitInKB="-1" />
   </requestDispatcher>
-  
-  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
+
+  <requestHandler name="/select" class="solr.SearchHandler"/>
 
   <!-- config for the admin interface --> 
   <admin>
     <defaultQuery>solr</defaultQuery>
   </admin>
 
-  <initParams path="standard">
+  <initParams path="/select">
     <lst name="defaults">
       <str name="df">name</str>
     </lst>

@@ -73,11 +73,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
    */
   private void testRequestTracking() throws Exception {
 
-    CollectionAdminRequest.createCollection("a1x2",1,2)
+    CollectionAdminRequest.createCollection("a1x2", "conf1", 1, 2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
-    CollectionAdminRequest.createCollection("b1x1",1,1)
+    CollectionAdminRequest.createCollection("b1x1", "conf1", 1, 1)
         .setCreateNodeSet(nodeNames.get(2))
         .process(cloudClient);
 
@@ -108,7 +108,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       SolrMetricManager metricManager = container.getMetricManager();
       for (SolrCore core : container.getCores()) {
         String registry = core.getCoreMetricManager().getRegistryName();
-        Counter cnt = metricManager.counter(null, registry, "requests", "QUERY.standard");
+        Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
         SolrRequestHandler select = core.getRequestHandler("");
 //        long c = (long) select.getStatistics().get("requests");
         shardVsCount.put(core.getName(), (int) cnt.getCount());
@@ -128,7 +128,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   private void testQueryAgainstDownReplica() throws Exception {
 
     log.info("Creating collection 'football' with 1 shard and 2 replicas");
-    CollectionAdminRequest.createCollection("football",1,2)
+    CollectionAdminRequest.createCollection("football", "conf1", 1, 2)
         .setCreateNodeSet(nodeNames.get(0) + ',' + nodeNames.get(1))
         .process(cloudClient);
 
@@ -188,7 +188,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
       SolrMetricManager leaderMetricManager = leaderCore.getCoreContainer().getMetricManager();
       String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
-      Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY.standard");
+      Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY./select");
 
       // All queries should be served by the active replica
       // To make sure that's true we keep querying the down replica

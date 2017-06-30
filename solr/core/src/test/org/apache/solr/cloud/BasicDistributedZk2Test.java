@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -58,6 +58,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
   public BasicDistributedZk2Test() {
     super();
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     sliceCount = 2;
   }
 
@@ -153,21 +156,15 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   }
   
   private void testNodeWithoutCollectionForwarding() throws Exception {
-    final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
-      client.setConnectionTimeout(30000);
-      Create createCmd = new Create();
-      createCmd.setRoles("none");
-      createCmd.setCoreName(ONE_NODE_COLLECTION + "core");
-      createCmd.setCollection(ONE_NODE_COLLECTION);
-      createCmd.setNumShards(1);
-      createCmd.setDataDir(getDataDir(createTempDir(ONE_NODE_COLLECTION).toFile().getAbsolutePath()));
-      client.request(createCmd);
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail(e.getMessage());
-    }
-    
+    assertEquals(0, CollectionAdminRequest
+        .createCollection(ONE_NODE_COLLECTION, "conf1", 1, 1)
+        .setCreateNodeSet("")
+        .process(cloudClient).getStatus());
+    assertTrue(CollectionAdminRequest
+        .addReplicaToShard(ONE_NODE_COLLECTION, "shard1")
+        .setCoreName(ONE_NODE_COLLECTION + "core")
+        .process(cloudClient).isSuccess());
+
     waitForCollection(cloudClient.getZkStateReader(), ONE_NODE_COLLECTION, 1);
     waitForRecoveriesToFinish(ONE_NODE_COLLECTION, cloudClient.getZkStateReader(), false);
     

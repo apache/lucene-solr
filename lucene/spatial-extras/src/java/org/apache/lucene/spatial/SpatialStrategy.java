@@ -16,15 +16,15 @@
  */
 package org.apache.lucene.spatial;
 
+import org.apache.lucene.document.Field;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.util.ReciprocalDoubleValuesSource;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
  * The SpatialStrategy encapsulates an approach to indexing and searching based
@@ -103,7 +103,7 @@ public abstract class SpatialStrategy {
    * See {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point, double)} called with
    * a multiplier of 1.0 (i.e. units of degrees).
    */
-  public ValueSource makeDistanceValueSource(Point queryPoint) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint) {
     return makeDistanceValueSource(queryPoint, 1.0);
   }
 
@@ -113,7 +113,7 @@ public abstract class SpatialStrategy {
    * then the closest one is chosen. The result is multiplied by {@code multiplier}, which
    * conveniently is used to get the desired units.
    */
-  public abstract ValueSource makeDistanceValueSource(Point queryPoint, double multiplier);
+  public abstract DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier);
 
   /**
    * Make a Query based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
@@ -133,13 +133,14 @@ public abstract class SpatialStrategy {
    * scores will be 1 for indexed points at the center of the query shape and as
    * low as ~0.1 at its furthest edges.
    */
-  public final ValueSource makeRecipDistanceValueSource(Shape queryShape) {
+  public final DoubleValuesSource makeRecipDistanceValueSource(Shape queryShape) {
     Rectangle bbox = queryShape.getBoundingBox();
     double diagonalDist = ctx.getDistCalc().distance(
         ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
     double distToEdge = diagonalDist * 0.5;
     float c = (float)distToEdge * 0.1f;//one tenth
-    return new ReciprocalFloatFunction(makeDistanceValueSource(queryShape.getCenter(), 1.0), 1f, c, c);
+    DoubleValuesSource distance = makeDistanceValueSource(queryShape.getCenter(), 1.0);
+    return new ReciprocalDoubleValuesSource(c, distance);
   }
 
   @Override

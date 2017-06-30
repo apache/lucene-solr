@@ -52,7 +52,7 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
 
     assertNotNull("includedHandler is null", 
-                  core.getRequestHandler("includedHandler"));
+                  core.getRequestHandler("/includedHandler"));
 
     UpdateRequestProcessorChain chain 
       = core.getUpdateProcessingChain("special-include");

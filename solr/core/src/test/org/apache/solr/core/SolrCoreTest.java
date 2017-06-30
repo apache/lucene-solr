@@ -254,7 +254,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     bean = infoRegistry.get(QueryComponent.COMPONENT_NAME);
     assertNotNull("bean not registered", bean);
     //try a Req Handler, which are stored by name, not clas
-    bean = infoRegistry.get("standard");
+    bean = infoRegistry.get("/select");
     assertNotNull("bean not registered", bean);
   }
 

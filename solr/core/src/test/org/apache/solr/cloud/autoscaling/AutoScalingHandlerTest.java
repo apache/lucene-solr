@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -49,10 +48,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  * Test for AutoScalingHandler
  */
 public class AutoScalingHandlerTest extends SolrCloudTestCase {
+  final static String CONFIGSET_NAME = "conf";
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig(CONFIGSET_NAME, configset("cloud-minimal"))
         .configure();
   }
 
@@ -79,22 +79,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setPolicyCommand);
     NamedList<Object> response = null;
     try {
-      response = solrClient.request(req);
+      solrClient.request(req);
       fail("Adding a policy with 'cores' attribute should not have succeeded.");
-    } catch (SolrServerException e) {
-      // todo one of these catch blocks should not be needed after SOLR-10768
-      if (e.getRootCause() instanceof HttpSolrClient.RemoteSolrException) {
-        HttpSolrClient.RemoteSolrException rootCause = (HttpSolrClient.RemoteSolrException) e.getRootCause();
-        // expected
-        assertTrue(rootCause.getMessage().contains("cores is only allowed in 'cluster-policy'"));
-      } else  {
-        throw e;
-      }
     } catch (HttpSolrClient.RemoteSolrException e)  {
       // expected
       assertTrue(e.getMessage().contains("cores is only allowed in 'cluster-policy'"));
-    } catch (Exception e) {
-      throw e;
     }
 
     setPolicyCommand =  "{'set-policy': {" +
@@ -275,7 +264,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(0, violations.size());
 
     // lets create a collection which violates the rule replicas < 2
-    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", 1, 6);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
     create.setMaxShardsPerNode(10);
     CollectionAdminResponse adminResponse = create.process(solrClient);
     assertTrue(adminResponse.isSuccess());

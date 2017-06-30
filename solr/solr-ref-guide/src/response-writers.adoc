@@ -259,7 +259,7 @@ Solr has an optional Ruby response format that extends its JSON output in the fo
 * \ and ' are the only two characters escaped.
 * Unicode escapes are not used. Data is written as raw UTF-8.
 * nil used for null.
-* => is used as the key/value separator in maps.
+* \=> is used as the key/value separator in maps.
 
 Here is a simple example of how one may query Solr using the Ruby response format:
 

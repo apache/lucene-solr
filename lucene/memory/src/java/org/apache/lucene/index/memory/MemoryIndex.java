@@ -938,11 +938,11 @@ public class MemoryIndex {
     MemoryDocValuesIterator it = new MemoryDocValuesIterator();
     return new SortedNumericDocValues() {
 
-      int value = 0;
+      int ord = 0;
 
       @Override
       public long nextValue() throws IOException {
-        return values[value++];
+        return values[ord++];
       }
 
       @Override
@@ -952,6 +952,7 @@ public class MemoryIndex {
 
       @Override
       public boolean advanceExact(int target) throws IOException {
+        ord = 0;
         return it.advance(target) == target;
       }
 
@@ -1082,6 +1083,7 @@ public class MemoryIndex {
 
       @Override
       public boolean advanceExact(int target) throws IOException {
+        ord = 0;
         return it.advance(target) == target;
       }
 

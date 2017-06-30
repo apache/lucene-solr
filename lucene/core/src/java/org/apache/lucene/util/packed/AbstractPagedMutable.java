@@ -84,7 +84,7 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
 
   @Override
   public final long get(long index) {
-    assert index >= 0 && index < size;
+    assert index >= 0 && index < size: "index=" + index + " size=" + size;
     final int pageIndex = pageIndex(index);
     final int indexInPage = indexInPage(index);
     return subMutables[pageIndex].get(indexInPage);

@@ -55,6 +55,36 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .configure();
   }
 
+  /**
+   * When a config name is not specified during collection creation, the _default should
+   * be used.
+   */
+  @Test
+  public void testCreateWithDefaultConfigSet() throws Exception {
+    String collectionName = "solrj_default_configset";
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2)
+        .process(cluster.getSolrClient());
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
+    assertEquals(4, coresStatus.size());
+    for (int i=0; i<4; i++) {
+      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
+      assertEquals(0, (int)status.get("status"));
+      assertTrue(status.get("QTime") > 0);
+    }
+
+    response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
+    assertEquals(4, nodesStatus.size());
+
+    waitForState("Expected " + collectionName + " to disappear from cluster state", collectionName, (n, c) -> c == null);
+  }
+
   @Test
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
@@ -272,17 +302,19 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals("Expecting prop to default to unset, test needs upated",
                  props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
     
-    CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
+    CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true")
       .process(cluster.getSolrClient());
-
     assertEquals(0, response.getStatus());
-
-    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), "false");
+    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), "true");
 
     // Unset ClusterProp that we set.
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
     assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
 
+    response = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
+        .process(cluster.getSolrClient());
+    assertEquals(0, response.getStatus());
+    assertEquals("Cluster property was not set", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), "false");
   }
 
   @Test

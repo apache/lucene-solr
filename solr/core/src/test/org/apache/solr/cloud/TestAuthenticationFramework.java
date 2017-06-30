@@ -86,6 +86,7 @@ public class TestAuthenticationFramework extends LuceneTestCase {
 
   @Before
   public void setUp() throws Exception {
+    SolrTestCaseJ4.randomizeNumericTypesProperties(); // SOLR-10916
     setupAuthenticationPlugin();
     super.setUp();
   }
@@ -126,6 +127,7 @@ public class TestAuthenticationFramework extends LuceneTestCase {
 
   @After
   public void tearDown() throws Exception {
+    SolrTestCaseJ4.clearNumericTypesProperties(); // SOLR-10916
     System.clearProperty("authenticationPlugin");
     super.tearDown();
   }

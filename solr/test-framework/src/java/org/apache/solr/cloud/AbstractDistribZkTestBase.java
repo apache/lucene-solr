@@ -25,6 +25,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -98,19 +99,14 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     File controlHome = new File(new File(getSolrHome()).getParentFile(), "control" + homeCount.incrementAndGet());
     FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
     setupJettySolrHome(controlHome);
-    
-    System.setProperty("collection", "control_collection");
-    String numShardsS = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
-    System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
-    controlJetty = createJetty(controlHome, null);      // let the shardId default to shard1
-    System.clearProperty("collection");
-    if(numShardsS != null) {
-      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, numShardsS);
-    } else {
-      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
-    }
 
+    controlJetty = createJetty(controlHome, null);      // let the shardId default to shard1
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
+
+    assertTrue(CollectionAdminRequest
+        .createCollection("control_collection", 1, 1)
+        .setCreateNodeSet(controlJetty.getNodeName())
+        .process(controlClient).isSuccess());
 
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numShards; i++) {

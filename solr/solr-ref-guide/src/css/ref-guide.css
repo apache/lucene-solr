@@ -698,7 +698,8 @@ ol li ul
     margin-left: 1.25em;
 }
 
-dl dt
+dl dt,
+dl dt code
 {
     margin-bottom: .3125em;
     font-weight: bold;

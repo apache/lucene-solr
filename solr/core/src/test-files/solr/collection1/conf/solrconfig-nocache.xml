@@ -31,15 +31,15 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
-  
-  <requestHandler name="standard" class="solr.StandardRequestHandler"/>
 
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestHandler name="/select" class="solr.SearchHandler" />
+
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching never304="true" />
   </requestDispatcher>
 
-  <initParams path="standard">
+  <initParams path="/select">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

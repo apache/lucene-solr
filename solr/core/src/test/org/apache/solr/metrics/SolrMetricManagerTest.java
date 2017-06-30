@@ -249,6 +249,11 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void testDefaultCloudReporterPeriodUnchanged() throws Exception {
+    assertEquals(60, SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD);
+  }
+
   private PluginInfo createPluginInfo(String name, String group, String registry) {
     Map<String,String> attrs = new HashMap<>();
     attrs.put("name", name);

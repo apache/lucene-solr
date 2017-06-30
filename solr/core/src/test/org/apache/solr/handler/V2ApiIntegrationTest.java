@@ -22,11 +22,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -55,6 +60,45 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
     res = new V2Request.Builder("/_introspect").build().process(cluster.getSolrClient());
     assertEquals(0, res.getStatus());
+  }
+
+  private void testException(ResponseParser responseParser, int expectedCode, String path, String payload) throws IOException, SolrServerException {
+    V2Request v2Request = new V2Request.Builder(path)
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload(payload)
+        .build();
+    v2Request.setResponseParser(responseParser);
+    try {
+      v2Request.process(cluster.getSolrClient());
+      fail("expected an exception with error code: "+expectedCode);
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      assertEquals(expectedCode, e.code());
+
+    }
+  }
+
+  @Test
+  public void testException() throws Exception {
+    String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
+    String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
+    testException(new XMLResponseParser(),404,
+        notFoundPath, incorrectPayload);
+    testException(new DelegationTokenResponse.JsonMapResponseParser(),404,
+        notFoundPath, incorrectPayload);
+    testException(new BinaryResponseParser(),404,
+        notFoundPath, incorrectPayload);
+    testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(new BinaryResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(new DelegationTokenResponse.JsonMapResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+  }
+
+  private long getStatus(V2Response response) {
+    Object header = response.getResponse().get("responseHeader");
+    if (header instanceof NamedList) {
+      return (int) ((NamedList) header).get("status");
+    } else {
+      return (long) ((Map) header).get("status");
+    }
   }
 
   @Test

@@ -302,6 +302,46 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals("f", sortedSetDocValues.lookupOrd(2L).utf8ToString());
   }
 
+  public void testDocValues_resetIterator() throws Exception {
+    Document doc = new Document();
+
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("f")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("d")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("d")));
+    doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("c")));
+
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 33L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 32L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 32L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 31L));
+    doc.add(new SortedNumericDocValuesField("sorted_numeric", 30L));
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+    LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
+
+    SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
+    assertEquals(3, sortedSetDocValues.getValueCount());
+    for (int times = 0; times < 3; times++) {
+      assertTrue(sortedSetDocValues.advanceExact(0));
+      assertEquals(0L, sortedSetDocValues.nextOrd());
+      assertEquals(1L, sortedSetDocValues.nextOrd());
+      assertEquals(2L, sortedSetDocValues.nextOrd());
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSetDocValues.nextOrd());
+    }
+
+    SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
+    for (int times = 0; times < 3; times++) {
+      assertTrue(sortedNumericDocValues.advanceExact(0));
+      assertEquals(5, sortedNumericDocValues.docValueCount());
+      assertEquals(30L, sortedNumericDocValues.nextValue());
+      assertEquals(31L, sortedNumericDocValues.nextValue());
+      assertEquals(32L, sortedNumericDocValues.nextValue());
+      assertEquals(32L, sortedNumericDocValues.nextValue());
+      assertEquals(33L, sortedNumericDocValues.nextValue());
+    }
+
+  }
+
   public void testInvalidDocValuesUsage() throws Exception {
     Document doc = new Document();
     doc.add(new NumericDocValuesField("field", 29L));

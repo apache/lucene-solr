@@ -192,77 +192,29 @@ based HashBitset. -->
       The "standard" request handler is the default and will be used if qt
      is not specified in the request.
   -->
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
-  </requestHandler>
-
-  <requestHandler name="dismax" class="solr.SearchHandler" >
-    <lst name="defaults">
-      <str name="defType">dismax</str>
-      <str name="q.alt">*:*</str>
-      <float name="tie">0.01</float>
-      <str name="qf">
-        text^0.5 features_t^1.0 subject^1.4 title_stemmed^2.0
-      </str>
-      <str name="pf">
-        text^0.2 features_t^1.1 subject^1.4 title_stemmed^2.0 title^1.5
-      </str>
-      <str name="bf">
-        ord(weight)^0.5 recip(rord(iind),1,1000,1000)^0.3
-      </str>
-      <str name="mm">
-        3&lt;-1 5&lt;-2 6&lt;90%
-      </str>
-      <int name="ps">100</int>
-    </lst>
-  </requestHandler>
-
-  <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler"/>
-
-  <!-- test query parameter defaults -->
-  <requestHandler name="defaults" class="solr.StandardRequestHandler">
-    <lst name="defaults">
-      <int name="rows">4</int>
-      <bool name="hl">true</bool>
-      <str name="hl.fl">text,name,subject,title,whitetok</str>
-    </lst>
-  </requestHandler>
-
-  <!-- test query parameter defaults -->
-  <requestHandler name="lazy" class="solr.StandardRequestHandler" startup="lazy">
-    <lst name="defaults">
-      <int name="rows">4</int>
-      <bool name="hl">true</bool>
-      <str name="hl.fl">text,name,subject,title,whitetok</str>
-    </lst>
   </requestHandler>
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <!-- This is slightly different from the field value so we can test dealing with token offset changes -->
     <str name="queryAnalyzerFieldType">a_s</str>
 
-   <lst name="spellchecker">
+    <lst name="spellchecker">
       <str name="name">direct</str>
       <str name="classname">DirectSolrSpellChecker</str>
       <str name="field">a_s</str>
       <int name="minQueryLength">3</int>
-    </lst>    
+    </lst>
   </searchComponent>
 
-  <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
-
-  <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
-    <arr name="components">
-      <str>termsComp</str>
-    </arr>
-  </requestHandler>
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
    -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SpellingQueryConverter"/>
 
-  <requestHandler name="spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/spellCheckCompRH_Direct" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="spellcheck.dictionary">direct</str>
       <str name="spellcheck.onlyMorePopular">false</str>
@@ -271,21 +223,6 @@ based HashBitset. -->
     </lst>
     <arr name="last-components">
       <str>spellcheck</str>
-    </arr>
-  </requestHandler>
-
-  <requestHandler name="mltrh" class="org.apache.solr.handler.component.SearchHandler">
-
-  </requestHandler>
-
-  <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
-
-  <requestHandler name="tvrh" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-
-    </lst>
-    <arr name="last-components">
-      <str>tvComponent</str>
     </arr>
   </requestHandler>
 
@@ -305,59 +242,8 @@ based HashBitset. -->
     </arr>
   </requestHandler>
 
-  <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
-  </requestHandler>
-
-  <searchComponent class="solr.HighlightComponent" name="highlight">
-    <highlighting>
-      <!-- Configure the standard fragmenter -->
-      <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
-        <lst name="defaults">
-          <int name="hl.fragsize">100</int>
-        </lst>
-      </fragmenter>
-
-      <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
-        <lst name="defaults">
-          <int name="hl.fragsize">70</int>
-        </lst>
-      </fragmenter>
-
-      <!-- Configure the standard formatter -->
-      <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
-        <lst name="defaults">
-          <str name="hl.simple.pre"><![CDATA[<em>]]></str>
-          <str name="hl.simple.post"><![CDATA[</em>]]></str>
-        </lst>
-      </formatter>
-
-      <!-- Configure the standard fragListBuilder -->
-      <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
-
-      <!-- Configure the standard fragmentsBuilder -->
-      <fragmentsBuilder name="simple" class="org.apache.solr.highlight.SimpleFragmentsBuilder" default="true"/>
-      <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder"/>
-
-      <boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
-        <lst name="defaults">
-          <str name="hl.bs.maxScan">10</str>
-          <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
-        </lst>
-      </boundaryScanner>
-
-      <boundaryScanner name="breakIterator" class="solr.highlight.BreakIteratorBoundaryScanner">
-        <lst name="defaults">
-          <str name="hl.bs.type">WORD</str>
-          <str name="hl.bs.language">en</str>
-          <str name="hl.bs.country">US</str>
-        </lst>
-      </boundaryScanner>
-    </highlighting>
-  </searchComponent>
-
-  <!-- enable streaming for testing... -->
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
@@ -448,7 +334,7 @@ based HashBitset. -->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-  <initParams path="/elevate,standard">
+  <initParams path="/elevate,/select">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

@@ -37,9 +37,11 @@
     <HashDocSet maxSize="3000" loadFactor="0.75"/>
     <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
   </query>
-  
-  <requestHandler name="standard" class="solr.StandardRequestHandler" />
-  <requestHandler name="crazy_custom_qt" class="solr.StandardRequestHandler">
+
+  <requestDispatcher/>
+
+  <requestHandler name="/select" class="solr.SearchHandler" />
+  <requestHandler name="/crazy_custom_qt" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="fl">implicit</str>
       <str name="df">subject</str>
@@ -55,7 +57,7 @@
     <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
   </admin>
 
-  <initParams path="standard,crazy_custom_qt">
+  <initParams path="/select,/crazy_custom_qt">
     <lst name="defaults">
       <str name="df">subject</str>
     </lst>

@@ -134,8 +134,8 @@ Request parameters can be substituted in configuration with placeholder `${datai
 ----
 <dataSource driver="org.hsqldb.jdbcDriver"
             url="${dataimporter.request.jdbcurl}"
-	    user="${dataimporter.request.jdbcuser}"
-	    password="${dataimporter.request.jdbcpassword}" />
+            user="${dataimporter.request.jdbcuser}"
+            password="${dataimporter.request.jdbcpassword}" />
 ----
 
 These parameters can then be passed to the `full-import` command or defined in the `<defaults>` section in `solrconfig.xml`. This example shows the parameters with the full-import command:

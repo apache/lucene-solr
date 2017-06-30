@@ -60,15 +60,14 @@
 
   </query>
 
-  <requestDispatcher handleSelect="true" >
+  <requestDispatcher>
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048000" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime"
                  etagSeed="Solr">
     </httpCaching>
   </requestDispatcher>
 
-  <requestHandler name="standard" class="solr.SearchHandler" default="true">
-  </requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
 </config>

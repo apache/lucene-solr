@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class LetStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
   private TupleStream stream;
   private StreamContext streamContext;
-  private Map letParams = new HashMap();
+  private Map letParams = new LinkedHashMap();
 
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {
     List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);

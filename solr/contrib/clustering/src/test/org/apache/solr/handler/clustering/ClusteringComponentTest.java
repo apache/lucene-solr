@@ -66,7 +66,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     params.add(ClusteringParams.USE_SEARCH_RESULTS, "true");
 
 
-    SolrRequestHandler handler = core.getRequestHandler("standard");
+    SolrRequestHandler handler = core.getRequestHandler("/select");
     SolrQueryResponse rsp;
     rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());

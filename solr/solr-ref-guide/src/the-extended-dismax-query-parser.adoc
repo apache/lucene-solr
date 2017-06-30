@@ -24,7 +24,7 @@ In addition to supporting all the DisMax query parser parameters, Extended Disma
 
 * supports the <<the-standard-query-parser.adoc#the-standard-query-parser,full Lucene query parser syntax>>.
 * supports queries such as AND, OR, NOT, -, and +.
-* treats "and" and "or" as "AND" and "OR" in Lucene syntax mode.
+* optionally treats "and" and "or" as "AND" and "OR" in Lucene syntax mode.
 * respects the 'magic field' names `\_val_` and `\_query_`. These are not a real fields in the Schema, but if used it helps do special things (like a function query in the case of `\_val_` or a nested query in the case of `\_query_`). If `\_val_` is used in a term or phrase query, the value is parsed as a function.
 * includes improved smart partial escaping in the case of syntax errors; fielded queries, +/-, and phrase queries are still supported in this mode.
 * improves proximity boosting by using word shingles; you do not need the query to match all words in the document before proximity boosting is applied.
@@ -59,6 +59,7 @@ A multivalued list of strings parsed as queries with scores multiplied by the sc
 === The lowercaseOperators Parameter
 
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
+Defaults to `false`.
 
 [[TheExtendedDisMaxQueryParser-ThepsParameter]]
 === The ps Parameter

@@ -605,7 +605,7 @@ public class Grouping {
     }
 
     protected DocList getDocList(GroupDocs groups) {
-      int max = groups.totalHits;
+      int max = Math.toIntExact(groups.totalHits);
       int off = groupOffset;
       int len = docsPerGroup;
       if (format == Format.simple) {

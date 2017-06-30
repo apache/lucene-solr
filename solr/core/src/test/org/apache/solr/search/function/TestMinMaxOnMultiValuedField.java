@@ -36,13 +36,14 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   /** Initializes core and does some sanity checking of schema */
   @BeforeClass
   public static void beforeClass() throws Exception {
+
     initCore("solrconfig-functionquery.xml","schema11.xml");
     checkFields(new String[] {"i", "l", "f", "d"}, new String [] {"_p", "_ni_p"});
     checkFields(new String[] {"ti", "tl", "tf", "td"}, new String [] {"", "_dv", "_ni_dv"});
   }
   
   private static void checkFields(String[] types, String[] suffixes) {
- // sanity check the expected properties of our fields (ie: who broke the schema?)
+    // sanity check the expected properties of our fields (ie: who broke the schema?)
     IndexSchema schema = h.getCore().getLatestSchema();
     for (String type : types) {
       for (String suffix : suffixes) {
@@ -50,7 +51,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         SchemaField sf = schema.getField(f);
         assertTrue(f + " is not multivalued", sf.multiValued());
         assertEquals(f + " doesn't have expected docValues status",
-                     f.contains("dv") || sf.getType().isPointField(), sf.hasDocValues());
+                     f.contains("dv") || f.endsWith("_p")
+                     || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP), sf.hasDocValues());
         assertEquals(f + " doesn't have expected index status",
                      ! f.contains("ni"), sf.indexed());
       }
@@ -222,17 +224,19 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
     
     // useful error until/unless LUCENE-6709
+    assertFalse(h.getCore().getLatestSchema().getField("val_is_ndv_p").hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField("val_is_ndv_p").multiValued());
     assertQEx("no error asking for max on a non docVals field",
-              "val_tds",
-              req("q","*:*", "fl", "field(val_tds,'max')"),
+              "val_is_ndv_p",
+              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     assertQEx("no error asking for max on a non docVals field",
               "max",
-              req("q","*:*", "fl", "field(val_tds,'max')"),
+              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     assertQEx("no error asking for max on a non docVals field",
               "docValues",
-              req("q","*:*", "fl", "field(val_tds,'max')"),
+              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     
     // useful error if min/max is unsupported for fieldtype
@@ -245,15 +249,6 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
               req("q","*:*", "fl", "field(cat_docValues,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     
-    // MultiValued point field with dv=false
-    assertFalse(h.getCore().getLatestSchema().getField("val_is_ndv_p").hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField("val_is_ndv_p").getType().isPointField());
-    assertTrue(h.getCore().getLatestSchema().getField("val_is_ndv_p").multiValued());
-    assertQEx("no error asking for non-dv point fields",
-              "docValues",
-              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
-              SolrException.ErrorCode.BAD_REQUEST);
-
   }
 
   public void testRandom() throws Exception {
