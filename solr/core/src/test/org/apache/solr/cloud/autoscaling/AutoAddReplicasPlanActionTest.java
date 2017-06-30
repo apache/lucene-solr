@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -82,14 +84,14 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
     JettySolrRunner lostJetty = random().nextBoolean()? jetty1 : jetty2;
     String lostNodeName = lostJetty.getNodeName();
-    Set<String> coreNodeNames = lostJetty.getCoreContainer().getCores().stream()
-        .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName())
-        .collect(Collectors.toSet());
+    List<CloudDescriptor> cloudDescriptors = lostJetty.getCoreContainer().getCores().stream()
+        .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor())
+        .collect(Collectors.toList());
     lostJetty.stop();
     waitForNodeLeave(lostNodeName);
 
     List<SolrRequest> operations = getOperations(jetty3, lostNodeName);
-    assertOperations(collection1, operations, lostNodeName,coreNodeNames,  null);
+    assertOperations(collection1, operations, lostNodeName, cloudDescriptors,  null);
 
     lostJetty.start();
     ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000);
@@ -103,14 +105,14 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
     lostJetty = random().nextBoolean()? jetty1 : jetty2;
     lostNodeName = lostJetty.getNodeName();
-    coreNodeNames = lostJetty.getCoreContainer().getCores().stream()
-        .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName())
-        .collect(Collectors.toSet());
+    cloudDescriptors = lostJetty.getCoreContainer().getCores().stream()
+        .map(solrCore -> solrCore.getCoreDescriptor().getCloudDescriptor())
+        .collect(Collectors.toList());
     lostJetty.stop();
     waitForNodeLeave(lostNodeName);
 
     operations = getOperations(jetty3, lostNodeName);
-    assertOperations(collection1, operations, lostNodeName, coreNodeNames, jetty3);
+    assertOperations(collection1, operations, lostNodeName, cloudDescriptors, jetty3);
   }
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
@@ -131,9 +133,10 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     return operations;
   }
 
-  private void assertOperations(String collection, List<SolrRequest> operations, String lostNodeName, Set<String> coreNodeNames, JettySolrRunner destJetty) {
+  private void assertOperations(String collection, List<SolrRequest> operations, String lostNodeName,
+                                List<CloudDescriptor> cloudDescriptors, JettySolrRunner destJetty) {
     assertEquals("Replicas of " + collection + " is not fully moved, operations="+operations,
-        2, operations.size());
+        cloudDescriptors.stream().filter(cd -> cd.getCollectionName().equals(collection)).count(), operations.size());
     for (SolrRequest solrRequest : operations) {
       assertTrue(solrRequest instanceof CollectionAdminRequest.MoveReplica);
       SolrParams params = solrRequest.getParams();
@@ -141,12 +144,28 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
       assertEquals(params.get("collection"), collection);
 
       String replica = params.get("replica");
-      assertTrue("Can not find "+replica+ " in node " + lostNodeName, coreNodeNames.contains(replica));
+      boolean found = false;
+      Iterator<CloudDescriptor> it = cloudDescriptors.iterator();
+      while (it.hasNext()) {
+        CloudDescriptor cd = it.next();
+        if (cd.getCollectionName().equals(collection) && cd.getCoreNodeName().equals(replica)) {
+          found = true;
+          it.remove();
+          break;
+        }
+      }
+      assertTrue("Can not find "+replica+ " in node " + lostNodeName, found);
 
       String targetNode = params.get("targetNode");
       assertFalse("Target node match the lost one " + lostNodeName, lostNodeName.equals(targetNode));
       if (destJetty != null) {
-        assertEquals("Target not is expected", destJetty.getNodeName(), targetNode);
+        assertEquals("Target node is not as expectation", destJetty.getNodeName(), targetNode);
+      }
+    }
+
+    for (CloudDescriptor cd : cloudDescriptors) {
+      if (cd.getCollectionName().equals(collection)) {
+        fail("Exist replica which is not moved " + cd);
       }
     }
   }
