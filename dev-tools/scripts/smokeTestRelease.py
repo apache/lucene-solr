@@ -644,10 +644,14 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       textFiles.append('BUILD')
 
   for fileName in textFiles:
-    fileName += '.txt'
-    if fileName not in l:
-      raise RuntimeError('file "%s" is missing from artifact %s' % (fileName, artifact))
-    l.remove(fileName)
+    fileNameTxt = fileName + '.txt'
+    fileNameMd = fileName + '.md'
+    if fileNameTxt in l:
+      l.remove(fileNameTxt)
+    elif fileNameMd in l:
+      l.remove(fileNameMd)
+    else:
+      raise RuntimeError('file "%s".[txt|md] is missing from artifact %s' % (fileName, artifact))
 
   if project == 'lucene':
     if LUCENE_NOTICE is None:
