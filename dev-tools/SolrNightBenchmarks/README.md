@@ -36,14 +36,14 @@ A comprehensive Solr performance benchmark framework.
 
 ## Possible parameters
 
-     * -RunSilently                            Use this parameter if you do not want any output on console.
-     * -ProcessLatestCommit                    Use this parameter if you want the system to look for the latest commit to work on.
-     * -ProcessWithCommitID XXXXXXXXXXXX       Use this parameter if you want the system to use the commit hash to work on.
-     * -ProcessCommitsFromQueue                Use this parameter if you want the system to work on the commit hash present in the queue.
-     * -RegisterLatestCommit                   This parameter is used in conjunction with the last parameter. 
-     * -Generate1MDataFile                     Generates a fresh test data file with 1 million records ~3.7GB size, in the webapp/data directory.     
-     * -Housekeeping                           Use this parameter to instruct the system to clean up at the end of the work cycle.
-     * -TestWithNumberOfDocuments XXXX         Use this parameter to specify the subset of the available documents to test with. Valid value lies in (with test-data-file-1M.csv data file) between 1 and 1000000.
+     * --silent                                Use this parameter if you do not want any output on console.
+     * --latest-commit                         Use this parameter if you want the system to look for the latest commit to work on.
+     * --commit-id XXXXXXXXXXXX                Use this parameter if you want the system to use the commit hash to work on.
+     * --from-queue                            Use this parameter if you want the system to work on the commit hash present in the queue.
+     * --register-commit                       This parameter is used in conjunction with the last parameter. 
+     * --generate-data-file                    Generates a fresh test data file with 1 million records ~3.7GB size, in the webapp/data directory.     
+     * --clean-up                              Use this parameter to instruct the system to clean up at the end of the work cycle.
+     * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents to test with. Valid value lies in (with test-data-file-1M.csv data file) between 1 and 1000000.
      
 ## Running benchmarks in queue mode
 
