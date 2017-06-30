@@ -42,7 +42,6 @@ public abstract class DocTransformer implements Closeable {
    */
   public abstract String getName();
 
-
   /**
    * This is called before {@link #transform} to provide context for any subsequent transformations.
    *
