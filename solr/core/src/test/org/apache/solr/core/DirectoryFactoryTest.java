@@ -20,16 +20,19 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import org.apache.commons.exec.OS;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.util.MockCoreContainer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class DirectoryFactoryTest extends LuceneTestCase {
 
+  private static boolean IS_WINDOWS = (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
   public void testLockTypesUnchanged() throws Exception {
     assertEquals("simple", DirectoryFactory.LOCK_TYPE_SIMPLE);
     assertEquals("native", DirectoryFactory.LOCK_TYPE_NATIVE);
@@ -55,20 +58,28 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     rdf.init(new NamedList());
 
     // No solr.data.home property set. Absolute instanceDir
-    assertEquals("/tmp/inst1/data", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("/tmp/inst1"), cp, zkAware)));
+    assertDataHome("/tmp/inst1/data", "/tmp/inst1", rdf, cc);
 
     // Simulate solr.data.home set in solrconfig.xml <directoryFactory> tag
     NamedList args = new NamedList();
     args.add("solr.data.home", "/solrdata/");
     rdf.init(args);
-    assertEquals("/solrdata/inst_dir/data", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("inst_dir"), cp, zkAware)));
-
+    assertDataHome("/solrdata/inst_dir/data", "inst_dir", rdf, cc);
+    
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
     rdf.init(new NamedList());
-    assertEquals("/solr/home/solrdata/inst_dir/data", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("inst_dir"), cp, zkAware)));
+    assertDataHome("/solr/home/solrdata/inst_dir/data", "inst_dir", rdf, cc);
     // Test parsing last component of instanceDir, and using custom dataDir
-    assertEquals("/solr/home/solrdata/myinst/mydata", rdf.getDataHome(new CoreDescriptor("core_name", Paths.get("/path/to/myinst"), cp, zkAware, "dataDir", "mydata")));
+    assertDataHome("/solr/home/solrdata/myinst/mydata", "/path/to/myinst", rdf, cc, "dataDir", "mydata");
+  }
+
+  private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, MockCoreContainer cc, String... properties) throws IOException {
+    String dataHome = rdf.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
+    if (IS_WINDOWS) {
+      dataHome = dataHome.replaceFirst("^C:", "").replaceAll("\\\\","/");
+    }
+    assertEquals(expected, dataHome);
   }
 
 
