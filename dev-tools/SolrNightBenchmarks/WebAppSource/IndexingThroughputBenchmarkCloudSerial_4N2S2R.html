@@ -45,14 +45,17 @@
             </div>
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Standalone Metrics<span class="caret"></span></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="IndexingThroughputBenchmarkStandalone.html">Indexing Throughput - HTTP Client</a></li>
-                        <li><a href="IndexingThroughputBenchmarkStandaloneConcurrent.html">Indexing Throughput - Concurrent Client</a></li>
-                        <li><a href="CreateCollectionBenchmarkStandalone.html">Create Collection</a></li>
-                    </ul>
-                </li>
+	                <li class="dropdown">
+	                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Standalone Metrics<span class="caret"></span></a>
+	                    <ul class="dropdown-menu">
+	                        <li><a href="IndexingThroughputBenchmarkStandalone.html">Indexing Throughput - HTTP Client</a></li>
+	                        <li><a href="IndexingThroughputBenchmarkStandaloneConcurrent.html">Indexing Throughput - Concurrent Client</a></li>
+	                        <li><a href="CreateCollectionBenchmarkStandalone.html">Create Collection</a></li>
+	                        <li role="separator" class="divider"></li>
+	                        <li><a href="NumericQueryBenchmarkStandalone.html">Numeric Query QPS</a></li>
+	                        <li><a href="NumericSortQueryBenchmarkStandalone.html">Sorting Query QPS</a></li>
+	                    </ul>
+	                </li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Cloud Metrics<span class="caret"></span></a>
                         <ul class="dropdown-menu">
@@ -68,16 +71,9 @@
                             <li><a href="IndexingThroughputBenchmarkCloudConcurrent_4N2S2R.html">Indexing Throughput - Concurrent: 4 Nodes, 2 Shards, 2 Replicas</a></li>
 				            <li role="separator" class="divider"></li>
                             <li><a href="CreateCollectionBenchmarkCloud.html">Create Collection</a></li>
-
-                        </ul>
-                    </li>
-                    <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Numeric Query Benchmarks<span class="caret"></span></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="NumericQueryBenchmarkCloud.html">Numeric Query QPS - Cloud</a></li>
-                            <li><a href="NumericQueryBenchmarkStandalone.html">Numeric Query QPS - Standalone</a></li>
-                            <li><a href="NumericSortQueryBenchmarkCloud.html">Sorting Query QPS - Cloud</a></li>
-                            <li><a href="NumericSortQueryBenchmarkStandalone.html">Sorting Query QPS - Standalone</a></li>
+				            <li role="separator" class="divider"></li>
+                            <li><a href="NumericQueryBenchmarkCloud.html">Numeric Query QPS</a></li>
+                            <li><a href="NumericSortQueryBenchmarkCloud.html">Sorting Query QPS</a></li>
                         </ul>
                     </li>
                 </ul>
