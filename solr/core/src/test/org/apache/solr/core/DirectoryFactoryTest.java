@@ -20,19 +20,17 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.apache.commons.exec.OS;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
-import org.apache.solr.util.MockCoreContainer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class DirectoryFactoryTest extends LuceneTestCase {
 
-  private static boolean IS_WINDOWS = (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
   public void testLockTypesUnchanged() throws Exception {
     assertEquals("simple", DirectoryFactory.LOCK_TYPE_SIMPLE);
     assertEquals("native", DirectoryFactory.LOCK_TYPE_NATIVE);
@@ -76,8 +74,9 @@ public class DirectoryFactoryTest extends LuceneTestCase {
 
   private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, MockCoreContainer cc, String... properties) throws IOException {
     String dataHome = rdf.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
-    if (IS_WINDOWS) {
-      dataHome = dataHome.replaceFirst("^C:", "").replaceAll("\\\\","/");
+    if (Constants.WINDOWS) {
+      // TODO: find a less-hacky way to assert this!
+      dataHome = dataHome.replaceFirst("^[A-Z]:", "").replace("\\", "/");
     }
     assertEquals(expected, dataHome);
   }
