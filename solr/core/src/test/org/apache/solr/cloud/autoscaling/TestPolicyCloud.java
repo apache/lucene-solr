@@ -22,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
@@ -129,6 +131,69 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     assertEquals("Expected exactly three replica of collection on node with port: " + firstNodePort, 3, replicasOnNode1);
     assertEquals("Expected exactly three replica of collection on node with port: " + secondNodePort, 3, replicasOnNode2);
+  }
+
+  public void testCreateCollectionAddShardWithReplicaTypeUsingPolicy() throws Exception {
+    JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
+    String nrtNodeName = jetty.getNodeName();
+    int nrtPort = jetty.getLocalPort();
+
+    jetty = cluster.getJettySolrRunners().get(1);
+    String pullNodeName = jetty.getNodeName();
+    int pullPort = jetty.getLocalPort();
+
+    jetty = cluster.getJettySolrRunners().get(2);
+    String tlogNodeName = jetty.getNodeName();
+    int tlogPort = jetty.getLocalPort();
+    log.info("NRT {} PULL {} , TLOG {} ", nrtNodeName, pullNodeName, tlogNodeName);
+
+    String commands = "{set-cluster-policy :[" +
+        "{replica:0 , shard:'#EACH', type: NRT, port: '!" + nrtPort + "'}" +
+        "{replica:0 , shard:'#EACH', type: PULL, port: '!" + pullPort + "'}" +
+        "{replica:0 , shard:'#EACH', type: TLOG, port: '!" + tlogPort + "'}" +
+        "]}";
+
+
+    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
+    assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
+        Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
+    assertEquals("full json:" + Utils.toJSONString(json), "!" + pullPort,
+        Utils.getObjectByPath(json, true, "cluster-policy[1]/port"));
+    assertEquals("full json:" + Utils.toJSONString(json), "!" + tlogPort,
+        Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
+
+    CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .setMaxShardsPerNode(5)
+        .process(cluster.getSolrClient());
+
+    DocCollection coll = getCollectionState("policiesTest");
+
+
+    BiConsumer<String, Replica> verifyReplicas = (s, replica) -> {
+      switch (replica.getType()) {
+        case NRT: {
+          assertTrue("NRT replica should be in " + nrtNodeName, replica.getNodeName().equals(nrtNodeName));
+          break;
+        }
+        case TLOG: {
+          assertTrue("TLOG replica should be in " + tlogNodeName, replica.getNodeName().equals(tlogNodeName));
+          break;
+        }
+        case PULL: {
+          assertTrue("PULL replica should be in " + pullNodeName, replica.getNodeName().equals(pullNodeName));
+          break;
+        }
+      }
+
+    };
+    coll.forEachReplica(verifyReplicas);
+
+    CollectionAdminRequest.createShard("policiesTest", "s3").
+        process(cluster.getSolrClient());
+    coll = getCollectionState("policiesTest");
+    assertEquals(3, coll.getSlice("s3").getReplicas().size());
+    coll.forEachReplica(verifyReplicas);
   }
 
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {

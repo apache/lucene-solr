@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,20 +28,24 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.Utils;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 public class PolicyHelper {
-  public static Map<String, List<String>> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
-                                                              ClusterDataProvider cdp,
-                                                              Map<String, String> optionalPolicyMapping,
-                                                              List<String> shardNames,
-                                                              int repFactor,
-                                                              List<String> nodesList) {
-    Map<String, List<String>> positionMapping = new HashMap<>();
-    for (String shardName : shardNames) positionMapping.put(shardName, new ArrayList<>(repFactor));
+  public static List<ReplicaPosition> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
+                                                          ClusterDataProvider cdp,
+                                                          Map<String, String> optionalPolicyMapping,
+                                                          List<String> shardNames,
+                                                          int nrtReplicas,
+                                                          int tlogReplicas,
+                                                          int pullReplicas,
+                                                          List<String> nodesList) {
+    List<ReplicaPosition> positions = new ArrayList<>();
     if (optionalPolicyMapping != null) {
       final ClusterDataProvider delegate = cdp;
       cdp = new ClusterDataProvider() {
@@ -66,31 +71,37 @@ public class PolicyHelper {
               delegate.getPolicyNameByCollection(coll);
         }
       };
-
     }
-
 
     Policy policy = new Policy(autoScalingJson);
     Policy.Session session = policy.createSession(cdp);
+    Map<Replica.Type, Integer> typeVsCount = new EnumMap<>(Replica.Type.class);
+    typeVsCount.put(Replica.Type.NRT, nrtReplicas);
+    typeVsCount.put(Replica.Type.TLOG, tlogReplicas);
+    typeVsCount.put(Replica.Type.PULL, pullReplicas);
     for (String shardName : shardNames) {
-      for (int i = 0; i < repFactor; i++) {
-        Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
-            .hint(Hint.COLL, collName)
-            .hint(Hint.SHARD, shardName);
-        if (nodesList != null)  {
-          for (String nodeName : nodesList) {
-            suggester = suggester.hint(Hint.TARGET_NODE, nodeName);
+      int idx = 0;
+      for (Map.Entry<Replica.Type, Integer> e : typeVsCount.entrySet()) {
+        for (int i = 0; i < e.getValue(); i++) {
+          Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
+              .hint(Hint.COLL, collName)
+              .hint(Hint.REPLICATYPE, e.getKey())
+              .hint(Hint.SHARD, shardName);
+          if (nodesList != null) {
+            for (String nodeName : nodesList) {
+              suggester = suggester.hint(Hint.TARGET_NODE, nodeName);
+            }
           }
+          SolrRequest op = suggester.getOperation();
+          if (op == null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules " + Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
+          }
+          session = suggester.getSession();
+          positions.add(new ReplicaPosition(shardName, ++idx, e.getKey(), op.getParams().get(NODE)));
         }
-        SolrRequest op = suggester.getOperation();
-        if (op == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules "+ Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
-        }
-        session = suggester.getSession();
-        positionMapping.get(shardName).add(op.getParams().get(CoreAdminParams.NODE));
       }
     }
 
-    return positionMapping;
+    return positions;
   }
 }

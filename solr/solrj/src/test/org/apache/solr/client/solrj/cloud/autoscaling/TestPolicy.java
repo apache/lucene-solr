@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
@@ -903,11 +905,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return Arrays.asList( "127.0.0.1:50097_solr", "127.0.0.1:50096_solr");
       }
     };
-    Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, null);
-    assertTrue(locations.get("shard1").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
-    assertTrue(locations.get("shard2").containsAll(ImmutableList.of("127.0.0.1:50096_solr")));
+        dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
+
+    assertTrue(locations.stream().allMatch(it -> it.node.equals("127.0.0.1:50096_solr")) );
   }
 
   public void testMultiReplicaPlacement() {
@@ -960,13 +962,10 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return Arrays.asList("node1", "node2", "node3", "node4");
       }
     };
-    Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
         "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
-        dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3, null);
-    assertTrue(locations.get("shard1").containsAll(ImmutableList.of("node2", "node1", "node3")));
-    assertTrue(locations.get("shard2").containsAll(ImmutableList.of("node2", "node1", "node3")));
-
-
+        dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3,0,0, null);
+    assertTrue(locations.stream().allMatch(it -> ImmutableList.of("node2", "node1", "node3").contains(it.node)) );
   }
 
 
