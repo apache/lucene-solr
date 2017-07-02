@@ -642,12 +642,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
 
-    void writeDocValuesUpdates(List<SegmentCommitInfo> infos) throws IOException {
+    void writeDocValuesUpdatesForMerge(List<SegmentCommitInfo> infos) throws IOException {
       boolean any = false;
       for (SegmentCommitInfo info : infos) {
         ReadersAndUpdates rld = get(info, false);
         if (rld != null) {
           any |= rld.writeFieldUpdates(directory, bufferedUpdatesStream.getCompletedDelGen(), infoStream);
+          rld.setIsMerging();
         }
       }
       if (any) {
@@ -4216,7 +4217,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // Must move the pending doc values updates to disk now, else the newly merged segment will not see them:
     // TODO: we could fix merging to pull the merged DV iterator so we don't have to move these updates to disk first, i.e. just carry them
     // in memory:
-    readerPool.writeDocValuesUpdates(merge.segments);
+    readerPool.writeDocValuesUpdatesForMerge(merge.segments);
     
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
