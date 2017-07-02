@@ -544,11 +544,11 @@ final class DocumentsWriter implements Closeable, Accountable {
             dwptSuccess = true;
           } finally {
             subtractFlushedNumDocs(flushingDocsInRam);
-            if (!flushingDWPT.pendingFilesToDelete().isEmpty()) {
+            if (flushingDWPT.pendingFilesToDelete().isEmpty() == false) {
               putEvent(new DeleteNewFilesEvent(flushingDWPT.pendingFilesToDelete()));
               hasEvents = true;
             }
-            if (!dwptSuccess) {
+            if (dwptSuccess == false) {
               putEvent(new FlushFailedEvent(flushingDWPT.getSegmentInfo()));
               hasEvents = true;
             }
@@ -582,6 +582,10 @@ final class DocumentsWriter implements Closeable, Accountable {
       flushingDWPT = flushControl.nextPendingFlush();
     }
 
+    if (hasEvents) {
+      writer.doAfterSegmentFlushed(false, false);
+    }
+
     // If deletes alone are consuming > 1/2 our RAM
     // buffer, force them all to apply now. This is to
     // prevent too-frequent flushing of a long tail of
@@ -605,7 +609,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   
   void subtractFlushedNumDocs(int numFlushed) {
     int oldValue = numDocsInRAM.get();
-    while (!numDocsInRAM.compareAndSet(oldValue, oldValue - numFlushed)) {
+    while (numDocsInRAM.compareAndSet(oldValue, oldValue - numFlushed) == false) {
       oldValue = numDocsInRAM.get();
     }
     assert numDocsInRAM.get() >= 0;
@@ -726,10 +730,9 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   static final class ApplyDeletesEvent implements Event {
     static final Event INSTANCE = new ApplyDeletesEvent();
-    private int instCount = 0;
+
     private ApplyDeletesEvent() {
-      assert instCount == 0;
-      instCount++;
+      // only one instance
     }
     
     @Override
@@ -740,10 +743,9 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   static final class ForcedPurgeEvent implements Event {
     static final Event INSTANCE = new ForcedPurgeEvent();
-    private int instCount = 0;
+
     private ForcedPurgeEvent() {
-      assert instCount == 0;
-      instCount++;
+      // only one instance
     }
     
     @Override
