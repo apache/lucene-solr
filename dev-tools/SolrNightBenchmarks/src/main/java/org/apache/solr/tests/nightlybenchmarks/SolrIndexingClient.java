@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -107,11 +106,15 @@ public class SolrIndexingClient {
 				String[] data = line.split(cvsSplitBy);
 
 				document.addField("id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Text1", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Int1_pi", Integer.parseInt(data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Long1_pl", Long.parseLong(data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Category1", data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Text2", data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Title_t", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Article_t", data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Category_t", data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Int1_pi", Integer.parseInt(data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Int2_pi", Integer.parseInt(data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Float1_pf", Float.parseFloat(data[6].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Long1_pl", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Double1_pd", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Text_t", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 
 				if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 					httpSolrClient.add(document);
@@ -173,7 +176,7 @@ public class SolrIndexingClient {
 
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (SolrServerException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 

@@ -44,13 +44,20 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipInputStream;
 
 import javax.ws.rs.core.MediaType;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -84,10 +91,14 @@ public class Util {
 	public static String METRIC_ESTIMATION_PERIOD = "1000";
 	public static String QUERY_THREAD_COUNT = "1";
 	public static String TEST_DATA_DIRECTORY = "";
-	public static String ONEM_TEST_DATA = "test-data-file-1M.csv";
-	public static String NUMERIC_QUERY_TERM_DATA = "Numeric-Term-Query.txt";
-	public static String NUMERIC_QUERY_PAIR_DATA = "Numeric-Pair-Query-Data.txt";
-	public static String SORTED_NUMERIC_QUERY_PAIR_DATA = "Numeric-Pair-Sorted-Query-Data.txt";
+	public static String ONEM_TEST_DATA = "";
+	public static String NUMERIC_QUERY_TERM_DATA = "";
+	public static String NUMERIC_QUERY_PAIR_DATA = "";
+	public static String NUMERIC_QUERY_AND_OR_DATA = "";	
+	public static String NUMERIC_SORTED_QUERY_PAIR_DATA = "";
+	public static String TEXT_TERM_DATA = "";
+	public static String TEXT_PHRASE_DATA = "";
+	
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
 
@@ -503,15 +514,24 @@ public class Util {
 			Util.postMessage(
 					"Getting Property Value for testWithNumberOfDocuments: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
 					MessageType.YELLOW_TEXT, false);
-			Util.SORTED_NUMERIC_QUERY_PAIR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericSortedQueryPairsData");
-			Util.postMessage(
-					"Getting Property Value for staticNumericSortedQueryPairsData: " + Util.SORTED_NUMERIC_QUERY_PAIR_DATA,
+			Util.NUMERIC_SORTED_QUERY_PAIR_DATA = prop
+					.getProperty("SolrNightlyBenchmarks.staticNumericSortedQueryPairsData");
+			Util.postMessage("Getting Property Value for staticNumericSortedQueryPairsData: "
+					+ Util.NUMERIC_SORTED_QUERY_PAIR_DATA, MessageType.YELLOW_TEXT, false);
+			Util.USE_COLORED_TEXT_ON_CONSOLE = new Boolean(
+					prop.getProperty("SolrNightlyBenchmarks.useColoredTextOnConsole"));
+			Util.postMessage("Getting Property Value for useColoredTextOnConsole: " + Util.USE_COLORED_TEXT_ON_CONSOLE,
 					MessageType.YELLOW_TEXT, false);
-			Util.USE_COLORED_TEXT_ON_CONSOLE = new Boolean(prop.getProperty("SolrNightlyBenchmarks.useColoredTextOnConsole"));
-			Util.postMessage(
-					"Getting Property Value for useColoredTextOnConsole: " + Util.USE_COLORED_TEXT_ON_CONSOLE,
+			Util.NUMERIC_QUERY_AND_OR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryAndOrTermsData");
+			Util.postMessage("Getting Property Value for staticNumericQueryAndOrTermsData: " + Util.NUMERIC_QUERY_AND_OR_DATA,
 					MessageType.YELLOW_TEXT, false);
-			
+			Util.TEXT_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.staticTextTermQueryData");
+			Util.postMessage("Getting Property Value for staticTextTermQueryData: " + Util.TEXT_TERM_DATA,
+					MessageType.YELLOW_TEXT, false);
+			Util.TEXT_PHRASE_DATA = prop.getProperty("SolrNightlyBenchmarks.staticTextPhraseQueryData");
+			Util.postMessage("Getting Property Value for staticTextPhraseQueryData: " + Util.TEXT_PHRASE_DATA,
+					MessageType.YELLOW_TEXT, false);
+
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
 				Util.postMessage("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...",
@@ -742,7 +762,7 @@ public class Util {
 
 		List<String> argsList = new LinkedList<String>();
 		for (int i = 0; i < args.length; i++) {
-			argsList.add(args[i]);		
+			argsList.add(args[i]);
 		}
 		return argsList;
 	}
@@ -759,18 +779,20 @@ public class Util {
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
 
 		Util.getPropertyValues();
-		
+
 		try {
 			argsList = Util.getArgs(args);
-			
+
 			if (argsList.size() == 0) {
 				Util.postMessage("** No Parameters defined! [EXITING] ...", MessageType.RED_TEXT, false);
-				Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
+				Util.postMessage(
+						"** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n",
+						MessageType.CYAN_TEXT, false);
 				System.exit(0);
 			} else {
-				
+
 				int atleastOne = 0;
-				
+
 				if (argsList.contains("--generate-data-file")) {
 					atleastOne++;
 				}
@@ -783,10 +805,12 @@ public class Util {
 						Long.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
 						atleastOne++;
 					} catch (Exception e) {
-						Util.postMessage("** Parameter value for --test-with-number-of-documents should be a number! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+						Util.postMessage(
+								"** Parameter value for --test-with-number-of-documents should be a number! [EXITING] ...\n\n",
+								MessageType.RED_TEXT, false);
 						System.exit(0);
 					}
-					
+
 				}
 				if (argsList.contains("--silent")) {
 					atleastOne++;
@@ -798,47 +822,56 @@ public class Util {
 					atleastOne++;
 				}
 				if (argsList.contains("--commit-id")) {
-					
+
 					try {
 						argsList.get(argsList.indexOf("--commit-id") + 1);
 						atleastOne++;
 					} catch (Exception e) {
-						Util.postMessage("** Parameter value for --commit-id not defined! [EXITING] ...", MessageType.RED_TEXT, false);
-						Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
+						Util.postMessage("** Parameter value for --commit-id not defined! [EXITING] ...",
+								MessageType.RED_TEXT, false);
+						Util.postMessage(
+								"** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n",
+								MessageType.CYAN_TEXT, false);
 						System.exit(0);
 					}
-					
+
 				}
-				
+
 				if (atleastOne == 0) {
 					Util.postMessage("** No Valid Parameters defined! [EXITING] ...", MessageType.RED_TEXT, false);
-					Util.postMessage("** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n", MessageType.CYAN_TEXT, false);
+					Util.postMessage(
+							"** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n",
+							MessageType.CYAN_TEXT, false);
 					System.exit(0);
 				}
-				
+
 			}
-			
+
 			File datafile = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File "+ Util.ONEM_TEST_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				Util.postMessage("** Data File " + Util.ONEM_TEST_DATA + " Missing! [EXITING] ...\n\n",
+						MessageType.RED_TEXT, false);
 				System.exit(0);
 			}
 			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File "+ Util.NUMERIC_QUERY_TERM_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				Util.postMessage("** Data File " + Util.NUMERIC_QUERY_TERM_DATA + " Missing! [EXITING] ...\n\n",
+						MessageType.RED_TEXT, false);
 				System.exit(0);
 			}
 			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File "+ Util.NUMERIC_QUERY_PAIR_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				Util.postMessage("** Data File " + Util.NUMERIC_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n",
+						MessageType.RED_TEXT, false);
 				System.exit(0);
 			}
-			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.SORTED_NUMERIC_QUERY_PAIR_DATA);
+			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File "+ Util.SORTED_NUMERIC_QUERY_PAIR_DATA +" Missing! [EXITING] ...\n\n", MessageType.RED_TEXT, false);
+				Util.postMessage("** Data File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n",
+						MessageType.RED_TEXT, false);
 				System.exit(0);
 			}
-			
+
 			if (argsList.contains("--generate-data-file")) {
 				createTestDataFile("test-data-file-1M.csv", 1000000);
 				System.exit(0);
@@ -864,7 +897,8 @@ public class Util {
 			}
 
 			if (argsList.contains("--test-with-number-of-documents")) {
-				long numDocuments = Long.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
+				long numDocuments = Long
+						.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
 
 				if (numDocuments > 0 && numDocuments <= 1000000) {
 					Util.TEST_WITH_NUMBER_OF_DOCUMENTS = numDocuments;
@@ -1039,12 +1073,12 @@ public class Util {
 			int number = r.nextInt((1000000 - 100));
 
 			String line = number + "," + (number + 100);
-			
+
 			BenchmarkAppConnector.writeToWebAppDataFile(fileName, line, false, FileType.TEST_ENV_FILE);
 		}
 		Util.postMessage("** Preparation [COMPLETE] ...", MessageType.WHITE_TEXT, false);
 	}
-	
+
 	public static void killProcesses(String lookFor) {
 
 		Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
@@ -1074,5 +1108,57 @@ public class Util {
 			line = null;
 		}
 
+	}
+
+	public static void CreateWikiDataFile() {
+
+		try {
+
+			int id = 1;
+
+			for (int i = 1; i <= 5; i++) {
+
+				File fXmlFile = new File("/home/vivek/data/enwiki-20170520-pages-articles" + i + ".xml");
+				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+				Document doc = dBuilder.parse(fXmlFile);
+
+				doc.getDocumentElement().normalize();
+
+				NodeList nList = doc.getElementsByTagName("page");
+
+				for (int temp = 0; temp < nList.getLength(); temp++) {
+
+					Node nNode = nList.item(temp);
+
+					if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+
+						Element eElement = (Element) nNode;
+						String data = (id++) + ","
+								+ eElement.getElementsByTagName("title").item(0).getTextContent().replaceAll("\n", "")
+										.replaceAll("\t", "").replaceAll("\r", "").replaceAll("( )+", " ")
+										.replaceAll("[^\\sa-zA-Z0-9]", "").replaceAll("[a-zA-Z0-9]{30,}", "").trim()
+								+ ","
+								+ eElement.getElementsByTagName("revision").item(0).getTextContent()
+										.replaceAll("\n", "").replaceAll("\t", "").replaceAll("\r", "")
+										.replaceAll("( )+", " ").replaceAll("[^\\sa-zA-Z0-9]", "")
+										.replaceAll("[a-zA-Z0-9]{30,}", "").trim()
+								+ "," + "Category-" + new Random().nextInt(10) + "," + new Random().nextInt() + ","
+								+ new Random().nextInt() + "," + new Random().nextFloat() + ","
+								+ new Random().nextLong() + "," + new Random().nextDouble() + ","
+								+ RandomStringUtils.randomAlphabetic(20);
+
+						BenchmarkAppConnector.writeToWebAppDataFile("en-wiki-data-2G-modified.csv", data, false,
+								FileType.TEST_ENV_FILE);
+
+						Util.postMessageOnLine("\r" + id);
+					}
+				}
+
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }
