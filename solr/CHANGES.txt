@@ -501,9 +501,6 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 * SOLR-10910: Clean up a few details left over from pluggable transient core and untangling
   CoreDescriptor/CoreContainer references (Erick Erickson)
 
-* LUCENE-7871: fix false positive match in BlockJoinSelector when children have no value, introducing 
-  wrap methods accepting children as DISI. Extracting ToParentDocValues (Mikhail Khludnev)
-
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)

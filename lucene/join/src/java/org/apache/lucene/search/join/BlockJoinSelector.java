@@ -126,7 +126,7 @@ public class BlockJoinSelector {
     return wrap(sortedNumerics, selection, parents, toIter(children));
   }
 
-  /** creates an interator for the given bitset */
+  /** creates an iterator for the given bitset */
   protected static BitSetIterator toIter(BitSet children) {
     return new BitSetIterator(children, 0);
   }

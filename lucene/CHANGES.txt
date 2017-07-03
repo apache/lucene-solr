@@ -105,6 +105,9 @@ Bug Fixes
 * LUCENE-7859: Spatial-extras PackedQuadPrefixTree bug that only revealed itself
   with the new pointsOnly optimizations in LUCENE-7845. (David Smiley)
 
+* LUCENE-7871: fix false positive match in BlockJoinSelector when children have no value, introducing 
+  wrap methods accepting children as DISI. Extracting ToParentDocValues (Mikhail Khludnev)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
