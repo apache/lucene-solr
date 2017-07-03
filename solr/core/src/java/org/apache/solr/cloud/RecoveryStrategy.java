@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -647,29 +646,12 @@ public class RecoveryStrategy extends Thread implements Closeable {
       prepCmd.setOnlyIfLeaderActive(true);
     }
 
-    final int maxTries = 30;
-    for (int numTries = 0; numTries < maxTries; numTries++) {
-      try {
-        sendPrepRecoveryCmd(leaderBaseUrl, prepCmd);
-        break;
-      } catch (ExecutionException e) {
-        if (e.getCause() instanceof SolrServerException) {
-          SolrServerException solrException = (SolrServerException) e.getCause();
-          if (solrException.getRootCause() instanceof SocketTimeoutException && numTries < maxTries) {
-            LOG.warn("Socket timeout on send prep recovery cmd, retrying.. ");
-            continue;
-          }
-        }
-        throw  e;
-      }
-    }
-  }
-
-  final private void sendPrepRecoveryCmd(String leaderBaseUrl, WaitForState prepCmd)
-      throws SolrServerException, IOException, InterruptedException, ExecutionException {
+    int conflictWaitMs = zkController.getLeaderConflictResolveWait();
+    // timeout after 5 seconds more than the max timeout (conflictWait + 3 seconds) on the server side
+    int readTimeout = conflictWaitMs + 8000;
     try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl).build()) {
       client.setConnectionTimeout(10000);
-      client.setSoTimeout(10000);
+      client.setSoTimeout(readTimeout);
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
 
@@ -678,5 +660,4 @@ public class RecoveryStrategy extends Thread implements Closeable {
       mrr.future.get();
     }
   }
-
 }
