@@ -43,6 +43,7 @@
     <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="leaderVoteWait">${leaderVoteWait:10000}</int>
+    <int name="leaderConflictResolveWait">${leaderConflictResolveWait:180000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>
     <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
