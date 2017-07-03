@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -74,11 +73,7 @@ public class DirectoryFactoryTest extends LuceneTestCase {
 
   private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, MockCoreContainer cc, String... properties) throws IOException {
     String dataHome = rdf.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
-    if (Constants.WINDOWS) {
-      // TODO: find a less-hacky way to assert this!
-      dataHome = dataHome.replaceFirst("^[A-Z]:", "").replace("\\", "/");
-    }
-    assertEquals(expected, dataHome);
+    assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
 
