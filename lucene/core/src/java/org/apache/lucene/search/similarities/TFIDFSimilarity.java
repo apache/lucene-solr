@@ -376,15 +376,6 @@ import org.apache.lucene.util.SmallFloat;
  */
 public abstract class TFIDFSimilarity extends Similarity {
 
-  /** Cache of decoded bytes. */
-  static final float[] OLD_NORM_TABLE = new float[256];
-
-  static {
-    for (int i = 0; i < 256; i++) {
-      OLD_NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
-    }
-  }
-
   /**
    * Sole constructor. (For invocation by subclass 
    * constructors, typically implicit.)
@@ -516,11 +507,7 @@ public abstract class TFIDFSimilarity extends Similarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    if (state.getIndexCreatedVersionMajor() >= 7) {
-      return SmallFloat.intToByte4(numTerms);
-    } else {
-      return SmallFloat.floatToByte315(lengthNorm(numTerms));
-    }
+    return SmallFloat.intToByte4(numTerms);
   }
  
   /** Computes the amount of a sloppy phrase match, based on an edit distance.
@@ -569,14 +556,8 @@ public abstract class TFIDFSimilarity extends Similarity {
   @Override
   public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    final float[] normTable;
-    if (context.reader().getMetaData().getCreatedVersionMajor() >= 7) {
-      // the norms only encode the length, we need a translation table that depends on how lengthNorm is implemented
-      normTable = idfstats.normTable;
-    } else {
-      // the norm is directly encoded in the index
-      normTable = OLD_NORM_TABLE;
-    }
+    // the norms only encode the length, we need a translation table that depends on how lengthNorm is implemented
+    final float[] normTable = idfstats.normTable;
     return new TFIDFSimScorer(idfstats, context.reader().getNormValues(idfstats.field), normTable);
   }
   

@@ -276,30 +276,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   final static String[] oldNames = {
-    "6.0.0-cfs",
-    "6.0.0-nocfs",
-    "6.0.1-cfs",
-    "6.0.1-nocfs",
-    "6.1.0-cfs",
-    "6.1.0-nocfs",
-    "6.2.0-cfs",
-    "6.2.0-nocfs",
-    "6.2.1-cfs",
-    "6.2.1-nocfs",
-    "6.3.0-cfs",
-    "6.3.0-nocfs",
-    "6.4.0-cfs",
-    "6.4.0-nocfs",
-    "6.4.1-cfs",
-    "6.4.1-nocfs",
-    "6.4.2-cfs",
-    "6.4.2-nocfs",
-    "6.5.0-cfs",
-    "6.5.0-nocfs",
-    "6.5.1-cfs",
-    "6.5.1-nocfs",
-    "6.6.0-cfs",
-    "6.6.0-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -432,7 +408,31 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "5.5.3-cfs",
       "5.5.3-nocfs",
       "5.5.4-cfs",
-      "5.5.4-nocfs"
+      "5.5.4-nocfs",
+      "6.0.0-cfs",
+      "6.0.0-nocfs",
+      "6.0.1-cfs",
+      "6.0.1-nocfs",
+      "6.1.0-cfs",
+      "6.1.0-nocfs",
+      "6.2.0-cfs",
+      "6.2.0-nocfs",
+      "6.2.1-cfs",
+      "6.2.1-nocfs",
+      "6.3.0-cfs",
+      "6.3.0-nocfs",
+      "6.4.0-cfs",
+      "6.4.0-nocfs",
+      "6.4.1-cfs",
+      "6.4.1-nocfs",
+      "6.4.2-cfs",
+      "6.4.2-nocfs",
+      "6.5.0-cfs",
+      "6.5.0-nocfs",
+      "6.5.1-cfs",
+      "6.5.1-nocfs",
+      "6.6.0-cfs",
+      "6.6.0-nocfs"
   };
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
@@ -1436,9 +1436,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String emptyIndex = "empty.6.0.0.zip";
+  public static final String emptyIndex = "empty.7.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("emptyIndex");
     TestUtil.unzip(getDataInputStream(emptyIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1450,9 +1451,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String moreTermsIndex = "moreterms.6.0.0.zip";
+  public static final String moreTermsIndex = "moreterms.7.0.0.zip";
 
   public void testMoreTerms() throws Exception {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1462,7 +1464,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.6.0.0.zip";
+  public static final String dvUpdatesIndex = "dvupdates.7.0.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
@@ -1495,8 +1497,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     reader.close();
   }
-  
+
   public void testDocValuesUpdates() throws Exception {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1559,7 +1562,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testSortedIndex() throws Exception {
-    String[] versions = new String[] {"6.2.0", "6.2.1", "6.3.0"};
+    assumeTrue("Reenable when 7.0 is released", false);
+    String[] versions = new String[] {};
     for(String version : versions) {
       Path path = createTempDir("sorted");
       InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("sorted." + version + ".zip");
