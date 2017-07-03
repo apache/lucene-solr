@@ -132,7 +132,7 @@ Documents can be deleted from the index in two ways. "Delete by ID" deletes the 
 [IMPORTANT]
 ====
 
-When using the Join query parser in a Delete By Query, you should use the `score` parameter with a value of " `none`" to avoid a `ClassCastException`. See the section on the <<other-parsers.adoc#other-parsers,Join Query Parser>> for more details on the `score` parameter.
+When using the Join query parser in a Delete By Query, you should use the `score` parameter with a value of "none" to avoid a `ClassCastException`. See the section on the <<other-parsers.adoc#other-parsers,Join Query Parser>> for more details on the `score` parameter.
 
 ====
 
