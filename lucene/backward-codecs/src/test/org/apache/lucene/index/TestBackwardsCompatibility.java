@@ -1436,9 +1436,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String emptyIndex = "empty.6.0.0.zip";
+  public static final String emptyIndex = "empty.7.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("emptyIndex");
     TestUtil.unzip(getDataInputStream(emptyIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1450,9 +1451,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String moreTermsIndex = "moreterms.6.0.0.zip";
+  public static final String moreTermsIndex = "moreterms.7.0.0.zip";
 
   public void testMoreTerms() throws Exception {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1462,7 +1464,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.6.0.0.zip";
+  public static final String dvUpdatesIndex = "dvupdates.7.0.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
@@ -1497,6 +1499,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testDocValuesUpdates() throws Exception {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1559,7 +1562,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testSortedIndex() throws Exception {
-    String[] versions = new String[] {"6.2.0", "6.2.1", "6.3.0"};
+    assumeTrue("Reenable when 7.0 is released", false);
+    String[] versions = new String[] {};
     for(String version : versions) {
       Path path = createTempDir("sorted");
       InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("sorted." + version + ".zip");
