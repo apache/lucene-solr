@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -508,6 +507,85 @@ public class TestPolicy extends SolrTestCaseJ4 {
     op = suggester.getOperation();
     assertNull("No node should qualify for this" ,op);
 
+  }
+
+  public void testMultipleCollections() {
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl'}," +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2', type : PULL}," +
+        "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2'}," +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!ssd',  type : TLOG }" +
+        "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!slowdisk' ,  type : PULL }" +
+        "  ]" +
+        "}");
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
+        "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
+        "node3:{cores:7, freedisk: 262, heapUsage:7834, rack: rack2, sysprop.fs : ssd}," +
+        "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
+        "}");
+    Policy policy = new Policy(policies);
+    Policy.Suggester suggester = policy.createSession(getClusterDataProvider(nodeValues, clusterState))
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.COLL, "newColl2")
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL)
+        .hint(Hint.SHARD, "shard1");
+    SolrRequest op;
+    int countOp = 0;
+    int countNewCollOp = 0;
+    int countNewColl2Op = 0;
+    while ((op = suggester.getOperation()) != null) {
+      countOp++;
+      suggester = suggester.getSession().getSuggester(ADDREPLICA)
+          .hint(Hint.COLL, "newColl")
+          .hint(Hint.COLL, "newColl2")
+          .hint(Hint.REPLICATYPE, Replica.Type.PULL)
+          .hint(Hint.SHARD, "shard1");
+      assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
+      String collection =  op.getParams().get("collection");
+      assertTrue("Collection for replica is not as expected " + collection, collection.equals("newColl") || collection.equals("newColl2"));
+      if (collection.equals("newColl")) countNewCollOp++;
+      else countNewColl2Op++;
+      assertEquals("PULL type node must be in 'slowdisk' node","node1", op.getParams().get("node"));
+    }
+    assertEquals(2, countOp);
+    assertEquals(1, countNewCollOp);
+    assertEquals(1, countNewColl2Op);
+
+    countOp = 0;
+    countNewCollOp = 0;
+    countNewColl2Op = 0;
+    suggester = suggester.getSession()
+        .getSuggester(ADDREPLICA)
+        .hint(Hint.COLL, "newColl")
+        .hint(Hint.COLL, "newColl2")
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
+        .hint(Hint.SHARD, "shard2");
+    while ((op = suggester.getOperation()) != null) {
+      countOp++;
+      suggester = suggester.getSession()
+          .getSuggester(ADDREPLICA)
+          .hint(Hint.COLL, "newColl")
+          .hint(Hint.COLL, "newColl2")
+          .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
+          .hint(Hint.SHARD, "shard2");
+      assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
+      String collection =  op.getParams().get("collection");
+      assertTrue("Collection for replica is not as expected " + collection, collection.equals("newColl") || collection.equals("newColl2"));
+      if (collection.equals("newColl")) countNewCollOp++;
+      else countNewColl2Op++;
+      assertEquals("TLOG type node must be in 'ssd' node","node3", op.getParams().get("node"));
+    }
+    assertEquals(3, countOp);
+    assertEquals(1, countNewCollOp);
+    assertEquals(2, countNewColl2Op);
   }
 
   public void testRow() {
