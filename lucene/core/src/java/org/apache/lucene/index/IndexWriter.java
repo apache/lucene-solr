@@ -1170,9 +1170,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).
-   *  This is unfortunately just best effort, because it could be the old index only has unsorted flushed segments built
-   *  before {@link Version#LUCENE_6_5_0} (flushed segments are sorted in Lucene 7.0).  */
+  /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).  */
   private void validateIndexSort() throws CorruptIndexException {
     Sort indexSort = config.getIndexSort();
     if (indexSort != null) {
@@ -1180,7 +1178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         Sort segmentIndexSort = info.info.getIndexSort();
         if (segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
           throw new IllegalArgumentException("cannot change previous indexSort=" + segmentIndexSort + " (from segment=" + info + ") to new indexSort=" + indexSort);
-        } else if (segmentIndexSort == null && info.info.getVersion().onOrAfter(Version.LUCENE_6_5_0)) {
+        } else if (segmentIndexSort == null) {
           // Flushed segments are not sorted if they were built with a version prior to 6.5.0
           throw new CorruptIndexException("segment not sorted with indexSort=" + segmentIndexSort, info.info.toString());
         }

@@ -118,16 +118,9 @@ public class BM25Similarity extends Similarity {
   }
   
   /** Cache of decoded bytes. */
-  private static final float[] OLD_LENGTH_TABLE = new float[256];
   private static final float[] LENGTH_TABLE = new float[256];
 
   static {
-    for (int i = 1; i < 256; i++) {
-      float f = SmallFloat.byte315ToFloat((byte)i);
-      OLD_LENGTH_TABLE[i] = 1.0f / (f*f);
-    }
-    OLD_LENGTH_TABLE[0] = 1.0f / OLD_LENGTH_TABLE[255]; // otherwise inf
-
     for (int i = 0; i < 256; i++) {
       LENGTH_TABLE[i] = SmallFloat.byte4ToInt((byte) i);
     }
@@ -137,12 +130,7 @@ public class BM25Similarity extends Similarity {
   @Override
   public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    int indexCreatedVersionMajor = state.getIndexCreatedVersionMajor();
-    if (indexCreatedVersionMajor >= 7) {
-      return SmallFloat.intToByte4(numTerms);
-    } else {
-      return SmallFloat.floatToByte315((float) (1 / Math.sqrt(numTerms)));
-    }
+    return SmallFloat.intToByte4(numTerms);
   }
 
   /**
@@ -205,19 +193,17 @@ public class BM25Similarity extends Similarity {
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
     float avgdl = avgFieldLength(collectionStats);
 
-    float[] oldCache = new float[256];
     float[] cache = new float[256];
     for (int i = 0; i < cache.length; i++) {
-      oldCache[i] = k1 * ((1 - b) + b * OLD_LENGTH_TABLE[i] / avgdl);
       cache[i] = k1 * ((1 - b) + b * LENGTH_TABLE[i] / avgdl);
     }
-    return new BM25Stats(collectionStats.field(), boost, idf, avgdl, oldCache, cache);
+    return new BM25Stats(collectionStats.field(), boost, idf, avgdl, cache);
   }
 
   @Override
   public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    return new BM25DocScorer(bm25stats, context.reader().getMetaData().getCreatedVersionMajor(), context.reader().getNormValues(bm25stats.field));
+    return new BM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }
   
   private class BM25DocScorer extends SimScorer {
@@ -229,17 +215,12 @@ public class BM25Similarity extends Similarity {
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
     private final float[] cache;
     
-    BM25DocScorer(BM25Stats stats, int indexCreatedVersionMajor, NumericDocValues norms) throws IOException {
+    BM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.norms = norms;
-      if (indexCreatedVersionMajor >= 7) {
-        lengthCache = LENGTH_TABLE;
-        cache = stats.cache;
-      } else {
-        lengthCache = OLD_LENGTH_TABLE;
-        cache = stats.oldCache;
-      }
+      lengthCache = LENGTH_TABLE;
+      cache = stats.cache;
     }
     
     @Override
@@ -287,16 +268,15 @@ public class BM25Similarity extends Similarity {
     /** field name, for pulling norms */
     private final String field;
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl)
-     *  for both OLD_LENGTH_TABLE and LENGTH_TABLE */
-    private final float[] oldCache, cache;
+     *  for LENGTH_TABLE */
+    private final float[] cache;
 
-    BM25Stats(String field, float boost, Explanation idf, float avgdl, float[] oldCache, float[] cache) {
+    BM25Stats(String field, float boost, Explanation idf, float avgdl, float[] cache) {
       this.field = field;
       this.boost = boost;
       this.idf = idf;
       this.avgdl = avgdl;
       this.weight = idf.getValue() * boost;
-      this.oldCache = oldCache;
       this.cache = cache;
     }
 

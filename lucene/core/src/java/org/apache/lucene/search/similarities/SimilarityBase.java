@@ -191,7 +191,6 @@ public abstract class SimilarityBase extends Similarity {
   
   @Override
   public final SimScorer simScorer(SimWeight stats, LeafReaderContext context) throws IOException {
-    int indexCreatedVersionMajor = context.reader().getMetaData().getCreatedVersionMajor();
     if (stats instanceof MultiSimilarity.MultiStats) {
       // a multi term query (e.g. phrase). return the summation, 
       // scoring almost as if it were boolean query
@@ -199,12 +198,12 @@ public abstract class SimilarityBase extends Similarity {
       SimScorer subScorers[] = new SimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicSimScorer(basicstats, indexCreatedVersionMajor, context.reader().getNormValues(basicstats.field));
+        subScorers[i] = new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
       }
       return new MultiSimilarity.MultiSimScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicSimScorer(basicstats, indexCreatedVersionMajor, context.reader().getNormValues(basicstats.field));
+      return new BasicSimScorer(basicstats, context.reader().getNormValues(basicstats.field));
     }
   }
   
@@ -218,16 +217,9 @@ public abstract class SimilarityBase extends Similarity {
   // ------------------------------ Norm handling ------------------------------
   
   /** Cache of decoded bytes. */
-  private static final float[] OLD_LENGTH_TABLE = new float[256];
   private static final float[] LENGTH_TABLE = new float[256];
 
   static {
-    for (int i = 1; i < 256; i++) {
-      float f = SmallFloat.byte315ToFloat((byte)i);
-      OLD_LENGTH_TABLE[i] = 1.0f / (f*f);
-    }
-    OLD_LENGTH_TABLE[0] = 1.0f / OLD_LENGTH_TABLE[255]; // otherwise inf
-
     for (int i = 0; i < 256; i++) {
       LENGTH_TABLE[i] = SmallFloat.byte4ToInt((byte) i);
     }
@@ -241,12 +233,7 @@ public abstract class SimilarityBase extends Similarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    int indexCreatedVersionMajor = state.getIndexCreatedVersionMajor();
-    if (indexCreatedVersionMajor >= 7) {
-      return SmallFloat.intToByte4(numTerms);
-    } else {
-      return SmallFloat.floatToByte315((float) (1 / Math.sqrt(numTerms)));
-    }
+    return SmallFloat.intToByte4(numTerms);
   }
 
   // ----------------------------- Static methods ------------------------------
@@ -268,12 +255,10 @@ public abstract class SimilarityBase extends Similarity {
   final class BasicSimScorer extends SimScorer {
     private final BasicStats stats;
     private final NumericDocValues norms;
-    private final float[] normCache;
     
-    BasicSimScorer(BasicStats stats, int indexCreatedVersionMajor, NumericDocValues norms) throws IOException {
+    BasicSimScorer(BasicStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.norms = norms;
-      this.normCache = indexCreatedVersionMajor >= 7 ? LENGTH_TABLE : OLD_LENGTH_TABLE;
     }
 
     float getLengthValue(int doc) throws IOException {
@@ -281,7 +266,7 @@ public abstract class SimilarityBase extends Similarity {
         return 1F;
       }
       if (norms.advanceExact(doc)) {
-        return normCache[Byte.toUnsignedInt((byte) norms.longValue())];
+        return LENGTH_TABLE[Byte.toUnsignedInt((byte) norms.longValue())];
       } else {
         return 0;
       }
