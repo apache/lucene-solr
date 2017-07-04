@@ -32,7 +32,9 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 enum SolrClientType {
-	HTTP_SOLR_CLIENT, CLOUD_SOLR_CLIENT, CONCURRENT_UPDATE_SOLR_CLIENT
+	HTTP_SOLR_CLIENT, 
+	CLOUD_SOLR_CLIENT, 
+	CONCURRENT_UPDATE_SOLR_CLIENT
 };
 
 public class SolrIndexingClient {
@@ -131,6 +133,8 @@ public class SolrIndexingClient {
 			}
 			end = System.currentTimeMillis();
 
+			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
+
 			if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 				httpSolrClient.commit(collectionName);
 			} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
@@ -138,8 +142,6 @@ public class SolrIndexingClient {
 			} else if (clientType == SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT) {
 				concurrentUpdateSolrClient.commit(collectionName);
 			}
-
-			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
 
 			if (deleteData) {
 				Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);

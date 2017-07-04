@@ -296,6 +296,173 @@ public class Tests {
 		return true;
 	}
 
+	public static boolean indexingTestsCloudConcurrentCustomClient(String commitID, long numDocuments, int nodes,
+			String shards, String replicas) {
+
+		Util.postMessage("** INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
+				+ " Replicas:" + replicas, MessageType.PURPLE_TEXT, false);
+
+		try {
+
+			SolrCloud cloud = new SolrCloud(nodes, shards, replicas, commitID, null, "localhost", false);
+			Tests.cloud = cloud;
+
+			if (nodes == 2 && shards == "1" && replicas == "2") {
+
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				cloud.deleteCollection(collectionName1);
+
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				cloud.deleteCollection(collectionName3);
+
+			} else if (nodes == 2 && shards == "2" && replicas == "1") {
+
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				cloud.deleteCollection(collectionName1);
+
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				cloud.deleteCollection(collectionName3);
+
+			} else if (nodes == 3 && shards == "1" && replicas == "3") {
+
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				cloud.deleteCollection(collectionName1);
+
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				cloud.deleteCollection(collectionName3);
+
+			} else if (nodes == 4 && shards == "2" && replicas == "2") {
+
+				String collectionName1 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName1, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				cloud.deleteCollection(collectionName1);
+
+				String collectionName2 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName2, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				cloud.deleteCollection(collectionName2);
+
+				String collectionName3 = "" + UUID.randomUUID();
+				cloud.createCollection(collectionName3, null, shards, replicas);
+				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = Tests
+						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				cloud.deleteCollection(collectionName3);
+
+			}
+
+			cloud.shutdown();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		Util.postMessage("** COMPLETING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
+				+ " Replicas:" + replicas, MessageType.GREEN_TEXT, false);
+
+		return true;
+	}
+
+	private static Map<String, String> cloudConcurrentIndexing(String zookeeperURL, String collectionName,
+			int numberOfThreads, int estimationDuration) {
+
+		Util.postMessage("** Indexing documents through cloudConcurrentIndexing with parameters: Url:" + zookeeperURL
+				+ ", collectionName:" + collectionName + " Threadcount:" + numberOfThreads + " Estimation duration:"
+				+ estimationDuration, MessageType.CYAN_TEXT, false);
+
+		try {
+			CloudConcurrentIndexingClient.reset();
+			CloudConcurrentIndexingClient.prepare();
+
+			ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+			LinkedList<CloudConcurrentIndexingClient> list = new LinkedList<CloudConcurrentIndexingClient>();
+
+			for (int i = 0; i < numberOfThreads; i++) {
+				CloudConcurrentIndexingClient client = new CloudConcurrentIndexingClient(zookeeperURL, collectionName);
+				list.add(client);
+			}
+
+			CloudConcurrentIndexingClient.running = true;
+
+			for (int i = 0; i < numberOfThreads; i++) {
+				executorService.execute(list.get(i));
+			}
+
+			Thread.sleep(estimationDuration * 1000);
+
+			CloudConcurrentIndexingClient.running = false;
+
+			for (int i = 0; i < numberOfThreads; i++) {
+				list.get(i).closeAndCommit();
+			}
+
+			executorService.shutdownNow();
+
+			Thread.sleep(5000);
+
+			Map<String, String> returnMap = new HashMap<String, String>();
+
+			Date dNow = new Date();
+			SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+			returnMap.put("TimeStamp", ft.format(dNow));
+			returnMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
+			returnMap.put("IndexingTime", "" + CloudConcurrentIndexingClient.totalTime);
+			returnMap.put("IndexingThroughput", "" + ((CloudConcurrentIndexingClient.documentCount)
+					/ (CloudConcurrentIndexingClient.totalTime / 1000d)));
+			returnMap.put("ThroughputUnit", "doc/sec");
+			returnMap.put("CommitID", Util.COMMIT_ID);
+
+			Util.postMessage(returnMap.toString(), MessageType.RED_TEXT, false);
+			CloudConcurrentIndexingClient.reset();
+
+			return returnMap;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
 	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType,
 			int numberOfThreads, int estimationDuration, long delayEstimationBySeconds, String baseURL,
 			String collectionName) {
@@ -479,32 +646,33 @@ public class Tests {
 				Tests.cloud.collectionName);
 
 		numericQueryONQMetricC.stop();
-		
+
 		Thread numericQuerySNQMetricC = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_NUMERIC_QUERY_STANDALONE, port));
 		numericQuerySNQMetricC.start();
 
-		BenchmarkReportData.numericQuerySNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				queryThreadCount, 120, 30, Tests.cloud.getuRL(),
+		BenchmarkReportData.numericQuerySNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.SORTED_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
 		numericQuerySNQMetricC.stop();
-		
+
 		Thread numericQueryTTQMetricC = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_TERM_QUERY_CLOUD, port));
 		numericQueryTTQMetricC.start();
-		
+
 		BenchmarkReportData.numericQueryTTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
 				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
-		numericQueryTTQMetricC.stop();		
+		numericQueryTTQMetricC.stop();
 
 		Thread numericQueryPTQMetricC = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_PHRASE_QUERY_CLOUD, port));
 		numericQueryPTQMetricC.start();
-		
-		BenchmarkReportData.numericQueryPTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
+
+		BenchmarkReportData.numericQueryPTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.TEXT_PHRASE_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryPTQMetricC.stop();
 
@@ -577,35 +745,36 @@ public class Tests {
 				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryONQMetricS.stop();
-		
+
 		Thread numericQuerySNQMetricS = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_NUMERIC_QUERY_STANDALONE, port));
 		numericQuerySNQMetricS.start();
 
-		BenchmarkReportData.numericQuerySNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
+		BenchmarkReportData.numericQuerySNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.SORTED_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQuerySNQMetricS.stop();
 
 		Thread numericQueryTTQMetricS = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_TERM_QUERY_STANDALONE, port));
 		numericQueryTTQMetricS.start();
-		
+
 		BenchmarkReportData.numericQueryTTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
 				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
-		numericQueryTTQMetricS.stop();		
+		numericQueryTTQMetricS.stop();
 
 		Thread numericQueryPTQMetricS = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_PHRASE_QUERY_STANDALONE, port));
 		numericQueryPTQMetricS.start();
-		
-		BenchmarkReportData.numericQueryPTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
+
+		BenchmarkReportData.numericQueryPTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.TEXT_PHRASE_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
 
 		numericQueryPTQMetricS.stop();
 
-		
 		Tests.shutDownStandalone();
 
 	}

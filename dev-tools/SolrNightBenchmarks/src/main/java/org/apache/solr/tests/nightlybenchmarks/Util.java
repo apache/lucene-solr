@@ -94,11 +94,11 @@ public class Util {
 	public static String ONEM_TEST_DATA = "";
 	public static String NUMERIC_QUERY_TERM_DATA = "";
 	public static String NUMERIC_QUERY_PAIR_DATA = "";
-	public static String NUMERIC_QUERY_AND_OR_DATA = "";	
+	public static String NUMERIC_QUERY_AND_OR_DATA = "";
 	public static String NUMERIC_SORTED_QUERY_PAIR_DATA = "";
 	public static String TEXT_TERM_DATA = "";
 	public static String TEXT_PHRASE_DATA = "";
-	
+
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
 
@@ -523,7 +523,8 @@ public class Util {
 			Util.postMessage("Getting Property Value for useColoredTextOnConsole: " + Util.USE_COLORED_TEXT_ON_CONSOLE,
 					MessageType.YELLOW_TEXT, false);
 			Util.NUMERIC_QUERY_AND_OR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryAndOrTermsData");
-			Util.postMessage("Getting Property Value for staticNumericQueryAndOrTermsData: " + Util.NUMERIC_QUERY_AND_OR_DATA,
+			Util.postMessage(
+					"Getting Property Value for staticNumericQueryAndOrTermsData: " + Util.NUMERIC_QUERY_AND_OR_DATA,
 					MessageType.YELLOW_TEXT, false);
 			Util.TEXT_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.staticTextTermQueryData");
 			Util.postMessage("Getting Property Value for staticTextTermQueryData: " + Util.TEXT_TERM_DATA,
