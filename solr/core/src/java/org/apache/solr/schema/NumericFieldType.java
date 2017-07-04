@@ -164,9 +164,9 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     }
     if (multiValued) {
       // In multiValued case use SortedNumericDocValuesField, this won't work for Trie*Fields wince they use BinaryDV in the multiValue case
-      return SortedNumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
+      return SortedNumericDocValuesField.newSlowRangeQuery(field, actualLowerValue, actualUpperValue);
     } else {
-      return NumericDocValuesField.newRangeQuery(field, actualLowerValue, actualUpperValue);
+      return NumericDocValuesField.newSlowRangeQuery(field, actualLowerValue, actualUpperValue);
     }
   }
   
