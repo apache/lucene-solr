@@ -311,80 +311,92 @@ public class Tests {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, cloud.port, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, cloud.port, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, cloud.port, true);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, cloud.port, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, cloud.port, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, cloud.port, true);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, cloud.port, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, cloud.port, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, cloud.port, true);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
 
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60);
+				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, cloud.port, true);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60);
+				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, cloud.port, true);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
-				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = Tests
-						.cloudConcurrentIndexing(cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60);
+				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = Tests.cloudConcurrentIndexing(
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, 60, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, cloud.port, true);
 				cloud.deleteCollection(collectionName3);
 
 			}
@@ -401,12 +413,14 @@ public class Tests {
 		return true;
 	}
 
+	@SuppressWarnings("deprecation")
 	private static Map<String, String> cloudConcurrentIndexing(String zookeeperURL, String collectionName,
-			int numberOfThreads, int estimationDuration) {
+			int numberOfThreads, int estimationDuration, String commitId, TestType type, String port,
+			boolean captureMetrics) {
 
-		Util.postMessage("** Indexing documents through cloudConcurrentIndexing with parameters: Url:" + zookeeperURL
-				+ ", collectionName:" + collectionName + " Threadcount:" + numberOfThreads + " Estimation duration:"
-				+ estimationDuration, MessageType.CYAN_TEXT, false);
+		Util.postMessage("** Indexing documents through custom cloud concurrent client with parameters: Url:" + zookeeperURL
+				+ ", Collection Name:" + collectionName + " Thread Count:" + numberOfThreads + " Estimation Duration:"
+				+ estimationDuration + " seconds", MessageType.CYAN_TEXT, false);
 
 		try {
 			CloudConcurrentIndexingClient.reset();
@@ -420,6 +434,12 @@ public class Tests {
 				list.add(client);
 			}
 
+			Thread thread = null;
+			if (captureMetrics) {
+				thread = new Thread(new MetricCollector(commitId, type, port));
+				thread.start();
+			}
+
 			CloudConcurrentIndexingClient.running = true;
 
 			for (int i = 0; i < numberOfThreads; i++) {
@@ -429,6 +449,10 @@ public class Tests {
 			Thread.sleep(estimationDuration * 1000);
 
 			CloudConcurrentIndexingClient.running = false;
+
+			if (captureMetrics) {
+				thread.stop();
+			}
 
 			for (int i = 0; i < numberOfThreads; i++) {
 				list.get(i).closeAndCommit();
