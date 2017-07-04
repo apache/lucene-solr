@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
@@ -26,7 +27,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -54,7 +59,40 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + node + " is not live");
     }
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
-    cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC));
+    List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
+    if (!singleReplicas.isEmpty()) {
+      results.add("failure", "Can't delete the only existing non-PULL replica(s) on node " + node + ": " + singleReplicas.toString());
+    } else {
+      cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC));
+    }
+  }
+
+  // collect names of replicas that cannot be deleted
+  static List<String> verifyReplicaAvailability(List<ZkNodeProps> sourceReplicas, ClusterState state) {
+    List<String> res = new ArrayList<>();
+    for (ZkNodeProps sourceReplica : sourceReplicas) {
+      String coll = sourceReplica.getStr(COLLECTION_PROP);
+      String shard = sourceReplica.getStr(SHARD_ID_PROP);
+      String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
+      DocCollection collection = state.getCollection(coll);
+      Slice slice = collection.getSlice(shard);
+      if (slice.getReplicas().size() < 2) {
+        // can't delete the only replica in existence
+        res.add(coll + "/" + shard + "/" + replicaName + ", type=" + sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+      } else { // check replica types
+        int otherNonPullReplicas = 0;
+        for (Replica r : slice.getReplicas()) {
+          if (!r.getName().equals(replicaName) && !r.getType().equals(Replica.Type.PULL)) {
+            otherNonPullReplicas++;
+          }
+        }
+        // can't delete - there are no other non-pull replicas
+        if (otherNonPullReplicas == 0) {
+          res.add(coll + "/" + shard + "/" + replicaName + ", type=" + sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+        }
+      }
+    }
+    return res;
   }
 
   static void cleanupReplicas(NamedList results,
@@ -67,7 +105,8 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       String coll = sourceReplica.getStr(COLLECTION_PROP);
       String shard = sourceReplica.getStr(SHARD_ID_PROP);
-      log.info("Deleting replica for collection={} shard={} on node={}", coll, shard, node);
+      String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
+      log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
       NamedList deleteResult = new NamedList();
       try {
         if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
