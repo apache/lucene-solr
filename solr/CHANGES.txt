@@ -57,6 +57,9 @@ Other Changes
 
 * SOLR-10827: Factor out abstract FilteringSolrMetricReporter class. (Christine Poerschke)
 
+* SOLR-10957: Changed SolrCoreParser.init to use the resource loader from getSchema()
+  instead of the resource loader from getCore(). (Christine Poerschke)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
