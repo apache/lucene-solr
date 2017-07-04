@@ -2300,6 +2300,50 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
+  public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, int socketTimeoutMillis) {
+    if (shardLeadersOnly) {
+      return new CloudSolrClientBuilder()
+          .withZkHost(zkHost)
+          .sendUpdatesOnlyToShardLeaders()
+          .withSocketTimeout(socketTimeoutMillis)
+          .build();
+    }
+    return new CloudSolrClientBuilder()
+        .withZkHost(zkHost)
+        .sendUpdatesToAllReplicasInShard()
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
+  }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
+  public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    if (shardLeadersOnly) {
+      return new CloudSolrClientBuilder()
+          .withZkHost(zkHost)
+          .sendUpdatesOnlyToShardLeaders()
+          .withConnectionTimeout(connectionTimeoutMillis)
+          .withSocketTimeout(socketTimeoutMillis)
+          .build();
+    }
+    return new CloudSolrClientBuilder()
+        .withZkHost(zkHost)
+        .sendUpdatesToAllReplicasInShard()
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
+  }
+  
+  
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
     if (shardLeadersOnly) {
       return new CloudSolrClientBuilder()
@@ -2318,12 +2362,50 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
    * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */ 
+  public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly, HttpClient httpClient,
+      int connectionTimeoutMillis, int socketTimeoutMillis) {
+    if (shardLeadersOnly) {
+      return new CloudSolrClientBuilder()
+          .withZkHost(zkHost)
+          .withHttpClient(httpClient)
+          .sendUpdatesOnlyToShardLeaders()
+          .withConnectionTimeout(connectionTimeoutMillis)
+          .withSocketTimeout(socketTimeoutMillis)
+          .build();
+    }
+    return new CloudSolrClientBuilder()
+        .withZkHost(zkHost)
+        .withHttpClient(httpClient)
+        .sendUpdatesToAllReplicasInShard()
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
+  }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
    * {@link org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
    */ 
   public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(String baseSolrUrl, int queueSize, int threadCount) {
     return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
+        .build();
+  }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
+   */ 
+  public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(String baseSolrUrl, int queueSize, int threadCount, int connectionTimeoutMillis) {
+    return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .withConnectionTimeout(connectionTimeoutMillis)
         .build();
   }
   
@@ -2349,6 +2431,21 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return new LBHttpSolrClient.Builder()
         .withHttpClient(client)
         .withBaseSolrUrls(solrUrls)
+        .build();
+  }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
+   */ 
+  public static LBHttpSolrClient getLBHttpSolrClient(HttpClient client, int connectionTimeoutMillis,
+      int socketTimeoutMillis, String... solrUrls) {
+    return new LBHttpSolrClient.Builder()
+        .withHttpClient(client)
+        .withBaseSolrUrls(solrUrls)
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
         .build();
   }
   
@@ -2398,6 +2495,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .withHttpClient(httpClient)
         .build();
   }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
+  public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient, int connectionTimeoutMillis) {
+    return new Builder(url)
+        .withHttpClient(httpClient)
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .build();
+  }
 
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
@@ -2406,6 +2515,29 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */ 
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new Builder(url)
+        .build();
+  }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
+  public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
+    return new Builder(url)
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .build();
+  }
+  
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the 
+   * {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
+   */ 
+  public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    return new Builder(url)
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
         .build();
   }
 

@@ -129,6 +129,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.threadCount = builder.threadCount;
     this.runners = new LinkedList<>();
     this.streamDeletes = builder.streamDeletes;
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -703,6 +705,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
   
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.connectionTimeout = timeout;
   }
@@ -710,7 +716,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
    * not for indexing.
+   * 
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
    */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     this.soTimeout = timeout;
   }
@@ -768,6 +777,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     protected int threadCount;
     protected ExecutorService executorService;
     protected boolean streamDeletes;
+    protected Integer connectionTimeoutMillis;
+    protected Integer socketTimeoutMillis;
 
     /**
      * Create a Builder object, based on the provided Solr URL.
@@ -848,6 +859,31 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.streamDeletes = false;
       return this;
     }
+    
+    /**
+     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
+     */
+    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
+      if (connectionTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
+      }
+      
+      this.connectionTimeoutMillis = connectionTimeoutMillis;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
+     */
+    public Builder withSocketTimeout(int socketTimeoutMillis) {
+      if (socketTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
+      }
+      
+      this.socketTimeoutMillis = socketTimeoutMillis;
+      return this;
+    }
+
     
     /**
      * Create a {@link ConcurrentUpdateSolrClient} based on the provided configuration options.

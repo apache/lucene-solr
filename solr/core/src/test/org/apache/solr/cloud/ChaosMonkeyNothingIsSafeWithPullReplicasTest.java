@@ -84,7 +84,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
 
-  private int clientSoTimeout;
+  private int clientSoTimeout = 60000;
   
   public String[] getFieldNames() {
     return fieldNames;
@@ -115,19 +115,29 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     fixShardCount(numNodes);
     log.info("Starting ChaosMonkey test with {} shards and {} nodes", sliceCount, numNodes);
 
-    // None of the operations used here are particularly costly, so this should work.
-    // Using this low timeout will also help us catch index stalling.
-    clientSoTimeout = 5000;
+
   }
 
   @Override
   protected boolean useTlogReplicas() {
     return useTlogReplicas;
   }
+  
+  @Override
+  protected CloudSolrClient createCloudClient(String defaultCollection) {
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, clientSoTimeout);
+    client.setParallelUpdates(random().nextBoolean());
+    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
+    return client;
+  }
+
 
   @Test
   public void test() throws Exception {
-    cloudClient.setSoTimeout(clientSoTimeout);
+    // None of the operations used here are particularly costly, so this should work.
+    // Using this low timeout will also help us catch index stalling.
+    clientSoTimeout = 5000;
+    cloudClient = createCloudClient(DEFAULT_COLLECTION);
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");

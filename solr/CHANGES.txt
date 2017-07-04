@@ -397,6 +397,9 @@ Other Changes
   (added leading '/' in request handlers). Switch all tests referring to "standard" request handler to
   instead refer to "/select" with SearchHandler. Deprecated the old StandardRequestHandler. (David Smiley)
 
+* SOLR-10456: Deprecate timeout related setters from SolrClients, and replace with Builder based implementation
+  (Jason Gerlowski, Anshum Gupta)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

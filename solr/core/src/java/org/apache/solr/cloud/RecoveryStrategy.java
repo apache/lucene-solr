@@ -255,8 +255,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl).build()) {
-      client.setConnectionTimeout(30000);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
+        .withConnectionTimeout(30000)
+        .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);

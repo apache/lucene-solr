@@ -59,7 +59,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
 
-  private int clientSoTimeout;
+  private int clientSoTimeout = 60000;
   
   public String[] getFieldNames() {
     return fieldNames;
@@ -92,9 +92,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     }
     fixShardCount(numShards);
 
-    // None of the operations used here are particularly costly, so this should work.
-    // Using this low timeout will also help us catch index stalling.
-    clientSoTimeout = 5000;
+
   }
 
   @Override
@@ -102,9 +100,20 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     return onlyLeaderIndexes;
   }
 
+  @Override
+  protected CloudSolrClient createCloudClient(String defaultCollection) {
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, clientSoTimeout);
+    client.setParallelUpdates(random().nextBoolean());
+    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
+    return client;
+  }
+
   @Test
   public void test() throws Exception {
-    cloudClient.setSoTimeout(clientSoTimeout);
+    // None of the operations used here are particularly costly, so this should work.
+    // Using this low timeout will also help us catch index stalling.
+    clientSoTimeout = 5000;
+    cloudClient = createCloudClient(DEFAULT_COLLECTION);
     boolean testSuccessful = false;
     try {
       handle.clear();

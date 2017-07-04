@@ -1605,9 +1605,10 @@ public class ZkController {
         log.info("Replica " + myCoreNodeName +
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
 
-        try (HttpSolrClient client = new Builder(leaderBaseUrl).build()) {
-          client.setConnectionTimeout(15000);
-          client.setSoTimeout(120000);
+        try (HttpSolrClient client = new Builder(leaderBaseUrl)
+            .withConnectionTimeout(15000)
+            .withSocketTimeout(120000)
+            .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
           prepCmd.setNodeName(getNodeName());

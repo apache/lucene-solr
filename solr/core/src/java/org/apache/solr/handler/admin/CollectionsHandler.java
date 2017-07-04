@@ -442,9 +442,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       ZkNodeProps leaderProps = docCollection.getLeader(shard);
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-      try (HttpSolrClient client = new Builder(nodeProps.getBaseUrl()).build()) {
-        client.setConnectionTimeout(15000);
-        client.setSoTimeout(60000);
+      try (HttpSolrClient client = new Builder(nodeProps.getBaseUrl())
+          .withConnectionTimeout(15000)
+          .withSocketTimeout(60000)
+          .build()) {
         RequestSyncShard reqSyncShard = new RequestSyncShard();
         reqSyncShard.setCollection(collection);
         reqSyncShard.setShard(shard);

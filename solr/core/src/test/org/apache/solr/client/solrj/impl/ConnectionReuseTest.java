@@ -76,11 +76,9 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
-        CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient);
+        CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
         client.setParallelUpdates(random().nextBoolean());
         client.setDefaultCollection(COLLECTION);
-        client.getLbClient().setConnectionTimeout(30000);
-        client.getLbClient().setSoTimeout(60000);
         return client;
     }
     throw new RuntimeException("impossible");

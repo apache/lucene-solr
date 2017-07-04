@@ -83,9 +83,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl);
-      client.setConnectionTimeout(15000);
-      client.setSoTimeout(60000);
+      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
       return client;
     }
     catch (Exception ex) {

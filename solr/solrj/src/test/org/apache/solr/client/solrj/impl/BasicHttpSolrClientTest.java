@@ -209,8 +209,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
 
     SolrQuery q = new SolrQuery("*:*");
-    try(HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/slow/foo")) {
-      client.setSoTimeout(2000);
+    try(HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
       client.query(q, METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
