@@ -17,26 +17,24 @@
 package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.ganglia.GangliaReporter;
 import info.ganglia.gmetric4j.gmetric.GMetric;
+
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 
 /**
  *
  */
-public class SolrGangliaReporter extends SolrMetricReporter {
+public class SolrGangliaReporter extends FilteringSolrMetricReporter {
 
   private String host = null;
   private int port = -1;
   private boolean multicast;
   private String instancePrefix = null;
-  private List<String> filters = new ArrayList<>();
   private boolean testing;
   private GangliaReporter reporter;
 
@@ -66,25 +64,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
 
   public void setPrefix(String prefix) {
     this.instancePrefix = prefix;
-  }
-
-  /**
-   * Report only metrics with names matching any of the prefix filters.
-   * @param filters list of 0 or more prefixes. If the list is empty then
-   *                all names will match.
-   */
-  public void setFilter(List<String> filters) {
-    if (filters == null || filters.isEmpty()) {
-      return;
-    }
-    this.filters.addAll(filters);
-  }
-
-  // due to vagaries of SolrPluginUtils.invokeSetters we need this too
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
   }
 
   public void setMulticast(boolean multicast) {
@@ -141,12 +120,7 @@ public class SolrGangliaReporter extends SolrMetricReporter {
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS)
         .prefixedWith(instancePrefix);
-    MetricFilter filter;
-    if (!filters.isEmpty()) {
-      filter = new SolrMetricManager.PrefixFilter(filters);
-    } else {
-      filter = MetricFilter.ALL;
-    }
+    final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
     reporter = builder.build(ganglia);
     reporter.start(period, TimeUnit.SECONDS);

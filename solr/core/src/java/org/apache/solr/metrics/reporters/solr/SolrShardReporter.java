@@ -30,10 +30,12 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.MetricFilter;
 
 /**
  * This class reports selected metrics from replicas to shard leader.
@@ -56,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *    &lt;/reporter&gt;
  * </pre>
  */
-public class SolrShardReporter extends SolrMetricReporter {
+public class SolrShardReporter extends FilteringSolrMetricReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
@@ -70,7 +72,6 @@ public class SolrShardReporter extends SolrMetricReporter {
   }};
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
-  private List<String> filters = new ArrayList<>();
 
   private SolrReporter reporter;
 
@@ -89,25 +90,18 @@ public class SolrShardReporter extends SolrMetricReporter {
     this.handler = handler;
   }
 
-  public void setFilter(List<String> filterConfig) {
-    if (filterConfig == null || filterConfig.isEmpty()) {
-      return;
-    }
-    filters.addAll(filterConfig);
-  }
-
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
-  }
-
   @Override
   protected void doInit() {
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
     }
     // start in setCore(SolrCore) when core is available
+  }
+
+  @Override
+  protected MetricFilter newMetricFilter() {
+    // unsupported here since setCore(SolrCore) directly uses the this.filters
+    throw new UnsupportedOperationException(getClass().getCanonicalName()+".newMetricFilter() is not supported");
   }
 
   @Override

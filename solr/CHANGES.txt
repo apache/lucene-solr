@@ -72,7 +72,7 @@ Optimizations
 Other Changes
 ----------------------
 
-(No Changes)
+* SOLR-10827: Factor out abstract FilteringSolrMetricReporter class. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 
