@@ -22,9 +22,7 @@ import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -33,6 +31,8 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricRegistryListener;
+
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * <p>NOTE: {@link JmxReporter} that this class uses exports only newly added metrics (it doesn't
  * process already existing metrics in a registry)</p>
  */
-public class SolrJmxReporter extends SolrMetricReporter {
+public class SolrJmxReporter extends FilteringSolrMetricReporter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,7 +56,6 @@ public class SolrJmxReporter extends SolrMetricReporter {
   private String agentId;
   private String serviceUrl;
   private String rootName;
-  private List<String> filters = new ArrayList<>();
 
   private JmxReporter reporter;
   private MetricRegistry registry;
@@ -103,16 +102,7 @@ public class SolrJmxReporter extends SolrMetricReporter {
     }
     JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(pluginInfo.name, fullDomain);
     registry = metricManager.registry(registryName);
-    // filter out MetricsMap gauges - we have a better way of handling them
-    MetricFilter mmFilter = (name, metric) -> !(metric instanceof MetricsMap);
-    MetricFilter filter;
-    if (filters.isEmpty()) {
-      filter = mmFilter;
-    } else {
-      // apply also prefix filters
-      SolrMetricManager.PrefixFilter prefixFilter = new SolrMetricManager.PrefixFilter(filters);
-      filter = new SolrMetricManager.AndFilter(prefixFilter, mmFilter);
-    }
+    final MetricFilter filter = newMetricFilter();
 
     reporter = JmxReporter.forRegistry(registry)
                           .registerWith(mBeanServer)
@@ -126,6 +116,21 @@ public class SolrJmxReporter extends SolrMetricReporter {
     registry.addListener(listener);
 
     log.info("JMX monitoring for '" + fullDomain + "' (registry '" + registryName + "') enabled at server: " + mBeanServer);
+  }
+
+  @Override
+  protected MetricFilter newMetricFilter() {
+    // filter out MetricsMap gauges - we have a better way of handling them
+    final MetricFilter mmFilter = (name, metric) -> !(metric instanceof MetricsMap);
+    final MetricFilter filter;
+    if (filters.isEmpty()) {
+      filter = mmFilter;
+    } else {
+      // apply also prefix filters
+      SolrMetricManager.PrefixFilter prefixFilter = new SolrMetricManager.PrefixFilter(filters);
+      filter = new SolrMetricManager.AndFilter(prefixFilter, mmFilter);
+    }
+    return filter;
   }
 
   /**
@@ -220,24 +225,6 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   public String getDomain() {
     return domain;
-  }
-
-  /**
-   * Report only metrics with names matching any of the prefix filters.
-   * @param filters list of 0 or more prefixes. If the list is empty then
-   *                all names will match.
-   */
-  public void setFilter(List<String> filters) {
-    if (filters == null || filters.isEmpty()) {
-      return;
-    }
-    this.filters.addAll(filters);
-  }
-
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
   }
 
   /**
