@@ -262,6 +262,8 @@ class FrozenBufferedUpdates {
     int totalSegmentCount = 0;
     long totalDelCount = 0;
 
+    boolean finished = false;
+
     // Optimistic concurrency: assume we are free to resolve the deletes against all current segments in the index, despite that
     // concurrent merges are running.  Once we are done, we check to see if a merge completed while we were running.  If so, we must retry
     // resolving against the newly merged segment(s).  Eventually no merge finishes while we were running and we are done.
@@ -299,7 +301,6 @@ class FrozenBufferedUpdates {
           if (infoStream.isEnabled("BD")) {
             infoStream.message("BD", "packet matches no segments");
           }
-          
           break;
         }
 
@@ -335,7 +336,7 @@ class FrozenBufferedUpdates {
 
       if (infoStream.isEnabled("BD")) {
         infoStream.message("BD", String.format(Locale.ROOT,
-                                               messagePrefix + "done apply del packet (%s) to %d segments; %d new deletes/updates; took %.3f sec",
+                                               messagePrefix + "done inner apply del packet (%s) to %d segments; %d new deletes/updates; took %.3f sec",
                                                this, segStates.length, delCount, (System.nanoTime() - iterStartNS) / 1000000000.));
       }
       
@@ -353,6 +354,13 @@ class FrozenBufferedUpdates {
 
         if (mergeGenCur == mergeGenStart) {
 
+          // Must do this while still holding IW lock else a merge could finish and skip carrying over our updates:
+          
+          // Record that this packet is finished:
+          writer.bufferedUpdatesStream.finished(this);
+
+          finished = true;
+
           // No merge finished while we were applying, so we are done!
           break;
         }
@@ -368,9 +376,11 @@ class FrozenBufferedUpdates {
       iter++;
     }
 
-    // Record that this packet is finished:
-    writer.bufferedUpdatesStream.finished(this);
-
+    if (finished == false) {
+      // Record that this packet is finished:
+      writer.bufferedUpdatesStream.finished(this);
+    }
+        
     if (infoStream.isEnabled("BD")) {
       String message = String.format(Locale.ROOT,
                                      "done apply del packet (%s) to %d segments; %d new deletes/updates; took %.3f sec",
@@ -422,10 +432,7 @@ class FrozenBufferedUpdates {
       throw new IllegalArgumentException("gen is not yet set; call BufferedUpdatesStream.push first");
     }
 
-    if (applied.getCount() == 0) {
-      // already done
-      return totalDelCount;
-    }
+    assert applied.getCount() != 0;
 
     if (privateSegment != null) {
       assert segStates.length == 1;

@@ -49,6 +49,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
 
   private static int jmxPort;
+  private static String PREFIX;
 
   private String domain;
 
@@ -64,6 +65,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     jmxPort = getNextAvailablePort();
     assertFalse(jmxPort == -1);
     LocateRegistry.createRegistry(jmxPort);
+    PREFIX = getSimpleClassName() + "-";
   }
 
   @Before
@@ -72,7 +74,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     final SolrCore core = h.getCore();
     domain = core.getName();
-    rootName = TestUtil.randomSimpleString(random(), 5, 10);
+    rootName = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
 
     coreMetricManager = core.getCoreMetricManager();
     metricManager = core.getCoreContainer().getMetricManager();
@@ -95,7 +97,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private PluginInfo createReporterPluginInfo(String rootName, boolean enabled) {
     Random random = random();
     String className = SolrJmxReporter.class.getName();
-    String reporterName = TestUtil.randomSimpleString(random, 5, 10);
+    String reporterName = PREFIX + TestUtil.randomSimpleString(random, 5, 10);
 
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, className);
@@ -106,7 +108,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     boolean shouldOverrideDomain = random.nextBoolean();
     if (shouldOverrideDomain) {
-      domain = TestUtil.randomSimpleString(random);
+      domain = PREFIX + TestUtil.randomSimpleString(random);
       attrs.put("domain", domain);
     }
 
@@ -129,7 +131,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     Random random = random();
 
     Map<String, Counter> registered = new HashMap<>();
-    String scope = SolrMetricTestUtils.getRandomScope(random, true);
+    String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
 
     int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
@@ -150,7 +152,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   public void testReloadCore() throws Exception {
     Random random = random();
 
-    String scope = SolrMetricTestUtils.getRandomScope(random, true);
+    String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
@@ -174,12 +176,12 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEnabled() throws Exception {
-    String root1 = TestUtil.randomSimpleString(random(), 5, 10);
+    String root1 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
     PluginInfo pluginInfo1 = createReporterPluginInfo(root1, true);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
         pluginInfo1, coreMetricManager.getTag());
 
-    String root2 = TestUtil.randomSimpleString(random(), 5, 10);
+    String root2 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
     assertFalse(root2.equals(root1));
     PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
@@ -189,7 +191,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     assertTrue(reporters.containsKey(pluginInfo1.name + "@" + coreMetricManager.getTag()));
     assertTrue(reporters.containsKey(pluginInfo2.name + "@" + coreMetricManager.getTag()));
 
-    String scope = SolrMetricTestUtils.getRandomScope(random(), true);
+    String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random(), true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random(), true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random(), true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);

@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import junit.framework.Assert;
 import org.apache.hadoop.util.Time;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -63,8 +62,6 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
-    assumeFalse("SOLR-10951: Hadoop does not work on Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
-    
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");

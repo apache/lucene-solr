@@ -329,7 +329,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       // Prevent for continuous pause forever
-      if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 2) {
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100) && countPrepRecoveryOpPauseForever.get() < 1) {
         countPrepRecoveryOpPauseForever.incrementAndGet();
         log.info("inject pause forever for prep recovery op");
         try {

@@ -23,7 +23,7 @@
   -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 

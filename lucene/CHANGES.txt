@@ -3,6 +3,9 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 8.0.0 =======================
+(No Changes)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
@@ -105,6 +108,9 @@ Bug Fixes
 * LUCENE-7859: Spatial-extras PackedQuadPrefixTree bug that only revealed itself
   with the new pointsOnly optimizations in LUCENE-7845. (David Smiley)
 
+* LUCENE-7871: fix false positive match in BlockJoinSelector when children have no value, introducing 
+  wrap methods accepting children as DISI. Extracting ToParentDocValues (Mikhail Khludnev)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
@@ -166,6 +172,8 @@ Other
   resources in CustomAnalyzer or ClassPathResourceLoader. Resources are only
   resolved against Lucene's class loader by default. Please use another builder
   method to change to a custom classloader.  (Uwe Schindler)
+
+* LUCENE-5822: Convert README to Markdown (Jason Gerlowski via Mike Drob)
 
 ======================= Lucene 6.7.0 =======================
 

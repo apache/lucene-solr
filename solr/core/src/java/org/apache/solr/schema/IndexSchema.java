@@ -68,7 +68,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.similarities.ClassicSimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -475,8 +474,7 @@ public class IndexSchema {
       Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
-        final boolean modernSim = getDefaultLuceneMatchVersion().onOrAfter(Version.LUCENE_6_0_0);
-        final Class simClass = modernSim ? SchemaSimilarityFactory.class : ClassicSimilarityFactory.class;
+        final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
         similarityFactory = loader.newInstance(simClass.getName(), SimilarityFactory.class);
         similarityFactory.init(new ModifiableSolrParams());

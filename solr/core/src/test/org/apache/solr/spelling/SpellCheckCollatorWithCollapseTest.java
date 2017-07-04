@@ -57,7 +57,7 @@ public class SpellCheckCollatorWithCollapseTest  extends SolrTestCaseJ4 {
             SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "5",
             SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
             CommonParams.Q, "a_s:lpve",
-            CommonParams.QT, "spellCheckCompRH_Direct",
+            CommonParams.QT, "/spellCheckCompRH_Direct",
             SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "5",
             CommonParams.FQ, "{!collapse field=group_i}",
             "expand", "true"),

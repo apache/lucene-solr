@@ -115,6 +115,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.Java9InitHack;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -160,6 +161,11 @@ import static java.util.Objects.requireNonNull;
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  // this must be a static init block to be safe!
+  static {
+    Java9InitHack.initJava9();
+  }
 
   private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
       "org.junit.",
@@ -483,7 +489,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       xmlStr = "<solr></solr>";
     Files.write(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
     h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome));
-    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("/select", 0, 20, CommonParams.VERSION, "2.2");
   }
   
   /** 
@@ -681,20 +687,20 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory
-            ("standard",0,20,CommonParams.VERSION,"2.2");
+            ("",0,20,CommonParams.VERSION,"2.2");
   }
 
   public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = requireNonNull(solrHome);
     h = new TestHarness(solrHome, solrXML);
-    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
     testSolrHome = config.getSolrResourceLoader().getInstancePath();
     h = new TestHarness(config, locator);
-    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
 
@@ -709,7 +715,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static CoreContainer createDefaultCoreContainer(Path solrHome) {
     testSolrHome = requireNonNull(solrHome);
     h = new TestHarness("collection1", initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
-    lrf = h.getRequestFactory("standard", 0, 20, CommonParams.VERSION, "2.2");
+    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
 

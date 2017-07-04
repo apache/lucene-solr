@@ -943,12 +943,14 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     done
   fi
 
+  if [ -z "$CREATE_CONFDIR" ]; then
+    CREATE_CONFDIR='_default'
+  fi
+  
   # validate the confdir arg (if provided)
-  if ! [ -z "$CREATE_CONFDIR" ]; then
-    if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
-      echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
-      exit 1
-    fi
+  if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
+    echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
+    exit 1
   fi
 
   if [ -z "$CREATE_NAME" ]; then

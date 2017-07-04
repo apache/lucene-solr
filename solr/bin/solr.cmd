@@ -1404,8 +1404,10 @@ IF "!CREATE_NAME!"=="" (
   set "SCRIPT_ERROR=Name (-c) is a required parameter for %SCRIPT_CMD%"
   goto invalid_cmd_line
 )
+IF "!CREATE_CONFDIR!"=="" set CREATE_CONFDIR=_default
 IF "!CREATE_NUM_SHARDS!"=="" set CREATE_NUM_SHARDS=1
 IF "!CREATE_REPFACT!"=="" set CREATE_REPFACT=1
+IF "!CREATE_CONFNAME!"=="" set CREATE_CONFNAME=!CREATE_NAME!
 
 REM Find a port that Solr is running on
 if "!CREATE_PORT!"=="" (
@@ -1431,7 +1433,7 @@ if "%SCRIPT_CMD%"=="create_core" (
     org.apache.solr.util.SolrCLI create_core -name !CREATE_NAME! -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!CREATE_PORT!/solr ^
     -confdir !CREATE_CONFDIR! -configsetsDir "%SOLR_TIP%\server\solr\configsets"
 ) else (
-+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
     -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.util.SolrCLI create -name !CREATE_NAME! -shards !CREATE_NUM_SHARDS! -replicationFactor !CREATE_REPFACT! ^

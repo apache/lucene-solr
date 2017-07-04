@@ -105,7 +105,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
-  //TODO: Solr5. Remove this completely when you obsolete putting <core> tags in solr.xml (See Solr-4196)
   private final Properties coreProperties;
 
   private volatile boolean live;

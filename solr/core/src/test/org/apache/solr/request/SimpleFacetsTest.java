@@ -3312,7 +3312,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       SolrQueryRequest req = req(params);
       log.info("Using Params: " + params);
       try {
-        SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+        SolrQueryResponse rsp = h.queryAndResponse("", req);
         rangeFacetsFilter = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_ranges");
       } finally {
         req.close();
@@ -3320,7 +3320,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       params.add("facet.range.method", FacetRangeMethod.DV.toString());
       req = req(params);
       try {
-        SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+        SolrQueryResponse rsp = h.queryAndResponse("", req);
         rangeFacetsDv = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_ranges");
       } finally {
         req.close();

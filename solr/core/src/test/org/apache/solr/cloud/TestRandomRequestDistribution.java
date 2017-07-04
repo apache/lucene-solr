@@ -108,7 +108,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       SolrMetricManager metricManager = container.getMetricManager();
       for (SolrCore core : container.getCores()) {
         String registry = core.getCoreMetricManager().getRegistryName();
-        Counter cnt = metricManager.counter(null, registry, "requests", "QUERY.standard");
+        Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
         SolrRequestHandler select = core.getRequestHandler("");
 //        long c = (long) select.getStatistics().get("requests");
         shardVsCount.put(core.getName(), (int) cnt.getCount());
@@ -188,7 +188,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
       SolrMetricManager leaderMetricManager = leaderCore.getCoreContainer().getMetricManager();
       String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
-      Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY.standard");
+      Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY./select");
 
       // All queries should be served by the active replica
       // To make sure that's true we keep querying the down replica

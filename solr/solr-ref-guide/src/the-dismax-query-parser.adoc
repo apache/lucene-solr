@@ -20,9 +20,9 @@
 
 The DisMax query parser is designed to process simple phrases (without complex syntax) entered by users and to search for individual terms across several fields using different weighting (boosts) based on the significance of each field. Additional options enable users to influence the score based on rules specific to each use case (independent of user input).
 
-In general, the DisMax query parser's interface is more like that of Google than the interface of the 'standard' Solr request handler. This similarity makes DisMax the appropriate query parser for many consumer applications. It accepts a simple syntax, and it rarely produces error messages.
+In general, the DisMax query parser's interface is more like that of Google than the interface of the 'lucene' Solr query parser. This similarity makes DisMax the appropriate query parser for many consumer applications. It accepts a simple syntax, and it rarely produces error messages.
 
-The DisMax query parser supports an extremely simplified subset of the Lucene QueryParser syntax. As in Lucene, quotes can be used to group phrases, and +/- can be used to denote mandatory and optional clauses. All other Lucene query parser special characters (except AND and OR) are escaped to simplify the user experience. The DisMax query parser takes responsibility for building a good query from the user's input using Boolean clauses containing DisMax queries across fields and boosts specified by the user. It also lets the Solr administrator provide additional boosting queries, boosting functions, and filtering queries to artificially affect the outcome of all searches. These options can all be specified as default parameters for the handler in the `solrconfig.xml` file or overridden in the Solr query URL.
+The DisMax query parser supports an extremely simplified subset of the Lucene QueryParser syntax. As in Lucene, quotes can be used to group phrases, and +/- can be used to denote mandatory and optional clauses. All other Lucene query parser special characters (except AND and OR) are escaped to simplify the user experience. The DisMax query parser takes responsibility for building a good query from the user's input using Boolean clauses containing DisMax queries across fields and boosts specified by the user. It also lets the Solr administrator provide additional boosting queries, boosting functions, and filtering queries to artificially affect the outcome of all searches. These options can all be specified as default parameters for the request handler in the `solrconfig.xml` file or overridden in the Solr query URL.
 
 Interested in the technical concept behind the DisMax name? DisMax stands for Maximum Disjunction. Here's a definition of a Maximum Disjunction or "DisMax" query:
 
@@ -190,11 +190,11 @@ All of the sample URLs in this section assume you are running Solr's "techproduc
 bin/solr -e techproducts
 ----
 
-Normal results for the word "video" using the StandardRequestHandler with the default search field:
+Results for the word "video" using the standard query parser, and we assume "df" is pointing to a field to search:
 
 `\http://localhost:8983/solr/techproducts/select?q=video&fl=name+score`
 
-The "dismax" handler is configured to search across the text, features, name, sku, id, manu, and cat fields all with varying boosts designed to ensure that "better" matches appear first, specifically: documents which match on the name and cat fields get higher scores.
+The "dismax" parser is configured to search across the text, features, name, sku, id, manu, and cat fields all with varying boosts designed to ensure that "better" matches appear first, specifically: documents which match on the name and cat fields get higher scores.
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=video`
 
@@ -210,13 +210,13 @@ You can boost results that have a field that matches a specific value.
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=video&bq=cat:electronics^5.0`
 
-Another instance of the handler is registered using the `qt` "instock" and has slightly different configuration options, notably: a filter for (you guessed it) `inStock:true)`.
+Another request handler is registered at "/instock" and has slightly different configuration options, notably: a filter for (you guessed it) `inStock:true)`.
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=video&fl=name,score,inStock`
 
-`\http://localhost:8983/solr/techproducts/select?defType=dismax&q=video&qt=instock&fl=name,score,inStock`
+`\http://localhost:8983/solr/techproducts/instock?defType=dismax&q=video&fl=name,score,inStock`
 
-One of the other really cool features in this handler is robust support for specifying the "BooleanQuery.minimumNumberShouldMatch" you want to be used based on how many terms are in your user's query. These allows flexibility for typos and partial matches. For the dismax handler, one and two word queries require that all of the optional clauses match, but for three to five word queries one missing word is allowed.
+One of the other really cool features in this parser is robust support for specifying the "BooleanQuery.minimumNumberShouldMatch" you want to be used based on how many terms are in your user's query. These allows flexibility for typos and partial matches. For the dismax parser, one and two word queries require that all of the optional clauses match, but for three to five word queries one missing word is allowed.
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod`
 
@@ -224,7 +224,7 @@ One of the other really cool features in this handler is robust support for spec
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod+apple`
 
-Just like the StandardRequestHandler, it supports the debugQuery option to viewing the parsed query, and the score explanations for each document.
+Use the debugQuery option to see the parsed query, and the score explanations for each document.
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod+gibberish&debugQuery=true`
 

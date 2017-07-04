@@ -429,7 +429,7 @@ public class HttpSolrClient extends SolrClient {
             parts.add(new FormBodyPart(name,
                 new InputStreamBody(
                     content.getStream(),
-                    contentType,
+                    ContentType.parse(contentType),
                     content.getName())));
           }
         }

@@ -16,7 +16,33 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
+==================  8.0.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+
+(No Changes)
+
+
 ==================  7.0.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
 
 Upgrading from Solr 6.x
 ----------------------
@@ -116,6 +142,17 @@ Upgrading from Solr 6.x
      curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
   Please see SOLR-10574 for details.
 
+* SOLR-10123: The Analytics Component has been upgraded to support distributed collections, expressions over multivalued
+  fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics expression
+  whereas previously docValues was not required. Please see SOLR-10123 for details.
+
+* solrconfig.xml: <requestDispatcher handleSelect="..."> now defaults to false when luceneMatchVersion >= 7.0,
+  thus ignoring "qt". Regardless, "qt" is still used as a SolrJ special parameter that specifies the request handler
+  (tail URL path) to use.  If you have request handlers without a leading '/', you can set handleSelect="true"
+  or better yet consider migrating.
+
+* StandardRequestHandler is deprecated. Simply use SearchHandler instead.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -185,6 +222,10 @@ New Features
 
 * SOLR-10272: Use _default config set if no collection.configName is specified with CREATE (Ishan Chattopadhyaya)
 
+* SOLR-10123: Upgraded the Analytics Component to version 2.0 which now supports distributed collections, expressions over
+  multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics
+  expression  whereas previously docValues was not required. Please see SOLR-10123 for details. (Houston Putman)
+
 * SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
   operations upon a trigger fire. (Noble Paul, shalin)
 
@@ -233,6 +274,9 @@ Bug Fixes
   config watcher is fired. (shalin)
 
 * SOLR-10738: TriggerAction is initialised even if the trigger is never scheduled. (shalin)
+
+* SOLR-6807: CloudSolrClient's ZK state version check with the server was ignored when handleSelect=false
+  (David Smiley)
 
 Optimizations
 ----------------------
@@ -364,6 +408,16 @@ Other Changes
 * SOLR-10807: Randomize Points based numeric field types in (more) test schemas
   - SOLR-10946: Randomize the usage of Points based numerics in solrj test schemas (hossman)
   - SOLR-10947: Randomize the usage of Points based numerics in contrib test schemas (hossman)
+  - SOLR-10970: Randomize PointFields in all tests using schema-*sort* files (hossman)
+  - SOLR-10971: Randomize PointFields in CdcrBootstrapTest (hossman)
+  - SOLR-10977: Randomize the usage of Points based numerics in schema15.xml and all impacted tests (hossman)
+  - SOLR-10979: Randomize PointFields in schema-docValues*.xml and all affected tests (hossman)
+  - SOLR-10989: Randomize PointFields and general cleanup in schema files where some Trie fields were unused (hossman)
+
+* SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
+  Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
+  (added leading '/' in request handlers). Switch all tests referring to "standard" request handler to
+  instead refer to "/select" with SearchHandler. Deprecated the old StandardRequestHandler. (David Smiley)
 
 ==================  6.7.0 ==================
 
@@ -492,6 +546,11 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 * SOLR-10963: Fix example json in MultipleAdditiveTreesModel javadocs.
   (Stefan Langenmaier via Christine Poerschke)
 
+* SOLR-10910: Clean up a few details left over from pluggable transient core and untangling
+  CoreDescriptor/CoreContainer references (Erick Erickson)
+
+* SOLR-10914: RecoveryStrategy's sendPrepRecoveryCmd can get stuck for 5 minutes if leader is unloaded. (shalin)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
@@ -548,6 +607,9 @@ Other Changes
 * SOLR-10503,SOLR-10502: Deprecate CurrencyField in favor of new CurrencyFieldType, which works
   with point fields and provides control over dynamic fields used for the raw amount and currency
   code sub-fields.  (hossman, Steve Rowe)
+
+* SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
+  (Uwe Schindler)
 
 ==================  6.6.1 ==================
 

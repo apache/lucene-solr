@@ -642,12 +642,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
 
-    void writeDocValuesUpdates(List<SegmentCommitInfo> infos) throws IOException {
+    void writeDocValuesUpdatesForMerge(List<SegmentCommitInfo> infos) throws IOException {
       boolean any = false;
       for (SegmentCommitInfo info : infos) {
         ReadersAndUpdates rld = get(info, false);
         if (rld != null) {
           any |= rld.writeFieldUpdates(directory, bufferedUpdatesStream.getCompletedDelGen(), infoStream);
+          rld.setIsMerging();
         }
       }
       if (any) {
@@ -1169,9 +1170,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).
-   *  This is unfortunately just best effort, because it could be the old index only has unsorted flushed segments built
-   *  before {@link Version#LUCENE_6_5_0} (flushed segments are sorted in Lucene 7.0).  */
+  /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).  */
   private void validateIndexSort() throws CorruptIndexException {
     Sort indexSort = config.getIndexSort();
     if (indexSort != null) {
@@ -1179,7 +1178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         Sort segmentIndexSort = info.info.getIndexSort();
         if (segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
           throw new IllegalArgumentException("cannot change previous indexSort=" + segmentIndexSort + " (from segment=" + info + ") to new indexSort=" + indexSort);
-        } else if (segmentIndexSort == null && info.info.getVersion().onOrAfter(Version.LUCENE_6_5_0)) {
+        } else if (segmentIndexSort == null) {
           // Flushed segments are not sorted if they were built with a version prior to 6.5.0
           throw new CorruptIndexException("segment not sorted with indexSort=" + segmentIndexSort, info.info.toString());
         }
@@ -2363,8 +2362,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Must pre-close in case it increments changeCount so that we can then
       // set it to false before calling rollbackInternal
       mergeScheduler.close();
-
-      bufferedUpdatesStream.clear();
 
       docWriter.close(); // mark it as closed first to prevent subsequent indexing actions/flushes 
       docWriter.abort(this); // don't sync on IW here
@@ -4218,7 +4215,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // Must move the pending doc values updates to disk now, else the newly merged segment will not see them:
     // TODO: we could fix merging to pull the merged DV iterator so we don't have to move these updates to disk first, i.e. just carry them
     // in memory:
-    readerPool.writeDocValuesUpdates(merge.segments);
+    readerPool.writeDocValuesUpdatesForMerge(merge.segments);
     
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment

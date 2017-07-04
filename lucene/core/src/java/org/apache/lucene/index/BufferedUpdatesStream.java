@@ -175,11 +175,14 @@ class BufferedUpdatesStream implements Accountable {
     // TODO: would be a bit more memory efficient to track this per-segment, so when each segment writes it writes all packets finished for
     // it, rather than only recording here, across all segments.  But, more complex code, and more CPU, and maybe not so much impact in
     // practice?
+    assert packet.applied.getCount() == 1: "packet=" + packet;
 
     packet.applied.countDown();
 
     updates.remove(packet);
     numTerms.addAndGet(-packet.numTermDeletes);
+    assert numTerms.get() >= 0: "numTerms=" + numTerms + " packet=" + packet;
+    
     bytesUsed.addAndGet(-packet.bytesUsed);
 
     finishedSegment(packet.delGen());

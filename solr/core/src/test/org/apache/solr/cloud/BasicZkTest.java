@@ -58,7 +58,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     SolrCore core = h.getCore();
 
     // test that we got the expected config, not just hardcoded defaults
-    assertNotNull(core.getRequestHandler("mock"));
+    assertNotNull(core.getRequestHandler("/mock"));
 
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertQ("test query on empty index", request("qlkciyopsbgzyvkylsjhchghjrdf"),

@@ -1137,7 +1137,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     manager.registerGauge(this, registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(this, registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      manager.registerGauge(this, registry, () -> coreContainer.getCoreNames(this), true, "aliases", Category.CORE.toString());
+      manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         manager.registerGauge(this, registry, () -> {

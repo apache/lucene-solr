@@ -62,16 +62,27 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testCreateWithDefaultConfigSet() throws Exception {
     String collectionName = "solrj_default_configset";
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2) // no configset specified
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2)
         .process(cluster.getSolrClient());
 
-    // The _default configset (for the tests) is designed to error out upon collection creation,
-    // so we just ensure that the correct error message was obtained.
-    assertFalse(response.isSuccess());
-    System.out.println("Errors are: "+response.getErrorMessages());
-    assertTrue(response.getErrorMessages() != null && response.getErrorMessages().size() > 0);
-    assertTrue(response.getErrorMessages().getVal(0).contains("This is the _default configset, which is designed"
-        + " to throw error upon collection creation"));
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
+    assertEquals(4, coresStatus.size());
+    for (int i=0; i<4; i++) {
+      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
+      assertEquals(0, (int)status.get("status"));
+      assertTrue(status.get("QTime") > 0);
+    }
+
+    response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+    Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
+    assertEquals(4, nodesStatus.size());
+
+    waitForState("Expected " + collectionName + " to disappear from cluster state", collectionName, (n, c) -> c == null);
   }
 
   @Test

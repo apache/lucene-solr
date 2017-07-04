@@ -158,7 +158,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   public void testInConjunction() throws Exception {
     assertQ(req(
         "q", "lowerfilt:(paintable pine apple good ness)", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.SPELLCHECK_BUILD, "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
@@ -222,7 +222,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   public void testCollate() throws Exception {
    assertQ(req(
         "q", "lowerfilt:(paintable pine apple godness)", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.SPELLCHECK_BUILD, "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
@@ -248,7 +248,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     );
     assertQ(req(
         "q", "lowerfilt:(pine AND apple)", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
         SpellCheckComponent.SPELLCHECK_ACCURACY, ".75", 
@@ -262,7 +262,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     );
     assertQ(req(
         "q", "lowerfilt:pine AND NOT lowerfilt:apple", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
         SpellCheckComponent.SPELLCHECK_ACCURACY, ".75", 
@@ -275,7 +275,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     );
     assertQ(req(
         "q", "lowerfilt:pine NOT lowerfilt:apple", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
         SpellCheckComponent.SPELLCHECK_ACCURACY, ".75", 
@@ -288,7 +288,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     );
     assertQ(req(
         "q", "lowerfilt:(+pine -apple)", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
         SpellCheckComponent.SPELLCHECK_ACCURACY, ".75", 
@@ -301,7 +301,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     );
     assertQ(req(
         "q", "lowerfilt:(+printableinpuntableplantable)", 
-        "qt", "spellCheckWithWordbreak", 
+        "qt", "/spellCheckWithWordbreak",
         "indent", "true",
         SpellCheckComponent.COMPONENT_NAME, "true", 
         SpellCheckComponent.SPELLCHECK_ACCURACY, "1", 
@@ -313,7 +313,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     );
     assertQ(req(
         "q", "zxcv AND qwtp AND fghj", 
-        "qt", "spellCheckWithWordbreak",
+        "qt", "/spellCheckWithWordbreak",
         "defType", "edismax",
         "qf", "lowerfilt",
         "indent", "true",

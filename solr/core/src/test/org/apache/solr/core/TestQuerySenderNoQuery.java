@@ -70,7 +70,7 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
     SolrIndexSearcher currentSearcher = currentSearcherRef.get();
     SolrIndexSearcher dummy = null;
     qsl.newSearcher(currentSearcher, dummy);//test first Searcher (since param is null)
-    MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("mock");
+    MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("/mock");
     assertNotNull("Mock is null", mock);
     assertNull("Req (firstsearcher) is not null", mock.req);
 

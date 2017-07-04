@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="schema-docValues" version="1.6">
+<schema name="schema-analytics" version="1.0">
 
 
   <!-- field type definitions... note that the "name" attribute is
@@ -54,7 +54,7 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
 
-  <field name="id" type="string" required="true"/>
+  <field name="id" type="string" docValues="true" multiValued="false" required="true"/>
 
   <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" default="1"/>
   <field name="intdv" type="int" indexed="false" stored="false" docValues="true" default="2"/>
@@ -63,8 +63,7 @@
   <field name="datedv" type="date" indexed="false" stored="false" docValues="true" default="1995-12-31T23:59:59.999Z"/>
 
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" default="solr"/>
-  <field name="stringdvm" type="string" indexed="false" stored="false" docValues="true" default="solr"
-         multiValued="true"/>
+  <field name="stringdvm" type="string" indexed="false" stored="false" docValues="true" default="solr" multiValued="true"/>
 
   <dynamicField name="*_i" type="int" indexed="true" stored="true" docValues="false" multiValued="false"/>
   <dynamicField name="*_id" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>

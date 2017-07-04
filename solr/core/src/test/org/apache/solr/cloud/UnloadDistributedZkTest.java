@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -348,18 +347,17 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
   }
   
   private void testUnloadLotsOfCores() throws Exception {
-    SolrClient client = clients.get(2);
-    String url3 = getBaseUrl(client);
-    try (final HttpSolrClient adminClient = getHttpSolrClient(url3)) {
+    JettySolrRunner jetty = jettys.get(0);
+    try (final HttpSolrClient adminClient = (HttpSolrClient) jetty.newClient()) {
       adminClient.setConnectionTimeout(15000);
       adminClient.setSoTimeout(60000);
-      int cnt = atLeast(3);
+      int numReplicas = atLeast(3);
       ThreadPoolExecutor executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
           5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
           new DefaultSolrThreadFactory("testExecutor"));
       try {
         // create the cores
-        createCores(adminClient, executor, "multiunload", 2, cnt);
+        createCollectionInOneInstance(adminClient, jetty.getNodeName(), executor, "multiunload", 2, numReplicas);
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
       }
@@ -368,7 +366,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
           TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
           new DefaultSolrThreadFactory("testExecutor"));
       try {
-        for (int j = 0; j < cnt; j++) {
+        for (int j = 0; j < numReplicas; j++) {
           final int freezeJ = j;
           executor.execute(() -> {
             Unload unloadCmd = new Unload(true);
