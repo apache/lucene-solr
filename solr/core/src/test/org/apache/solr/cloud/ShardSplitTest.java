@@ -932,9 +932,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl)) {
-      baseServer.setConnectionTimeout(30000);
-      baseServer.setSoTimeout(60000 * 5);
+    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
       baseServer.request(request);
     }
   }
@@ -1007,15 +1005,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(collection, baseUrl);
-    client.setSoTimeout(5 * 60 * 1000);
+    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(collection, baseUrl, DEFAULT_CONNECTION_TIMEOUT, 5 * 60 * 1000);
     return client;
   }
 
   @Override
   protected SolrClient createNewSolrClient(int port) {
-    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(port);
-    client.setSoTimeout(5 * 60 * 1000);
+    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(port, DEFAULT_CONNECTION_TIMEOUT, 5 * 60 * 1000);
     return client;
   }
 

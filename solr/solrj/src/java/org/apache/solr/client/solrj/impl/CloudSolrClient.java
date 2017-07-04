@@ -195,6 +195,10 @@ public class CloudSolrClient extends SolrClient {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }
 
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     lbClient.setSoTimeout(timeout);
   }
@@ -264,13 +268,28 @@ public class CloudSolrClient extends SolrClient {
     }
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
-    if(builder.lbClientBuilder != null) builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
+    if(builder.lbClientBuilder != null) {
+      propagateLBClientConfigOptions(builder);
+      builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
+    }
     if(builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
     this.myClient = (builder.httpClient == null) ? HttpClientUtil.createClient(null) : builder.httpClient;
-    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(myClient);
+    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, myClient);
     this.lbClient = builder.loadBalancedSolrClient;
     this.updatesToLeaders = builder.shardLeadersOnly;
     this.directUpdatesToLeadersOnly = builder.directUpdatesToLeadersOnly;
+  }
+  
+  private void propagateLBClientConfigOptions(Builder builder) {
+    final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
+    
+    if (builder.connectionTimeoutMillis != null) {
+      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis);
+    }
+    
+    if (builder.socketTimeoutMillis != null) {
+      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
+    }
   }
 
   /**Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -1292,6 +1311,10 @@ public class CloudSolrClient extends SolrClient {
     return results;
   }
   
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.lbClient.setConnectionTimeout(timeout); 
   }
@@ -1325,10 +1348,16 @@ public class CloudSolrClient extends SolrClient {
     return true;
   }
 
-  private static LBHttpSolrClient createLBHttpSolrClient(HttpClient httpClient) {
-    final LBHttpSolrClient lbClient = new LBHttpSolrClient.Builder()
-        .withHttpClient(httpClient)
-        .build();
+  private static LBHttpSolrClient createLBHttpSolrClient(Builder cloudSolrClientBuilder, HttpClient httpClient) {
+    final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
+    lbBuilder.withHttpClient(httpClient);
+    if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
+      lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
+    }
+    if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
+      lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
+    }
+    final LBHttpSolrClient lbClient = lbBuilder.build();
     lbClient.setRequestWriter(new BinaryRequestWriter());
     lbClient.setParser(new BinaryResponseParser());
     
@@ -1348,6 +1377,8 @@ public class CloudSolrClient extends SolrClient {
     protected boolean shardLeadersOnly;
     protected boolean directUpdatesToLeadersOnly;
     protected ClusterStateProvider stateProvider;
+    protected Integer connectionTimeoutMillis;
+    protected Integer socketTimeoutMillis;
 
 
     public Builder() {
@@ -1481,6 +1512,30 @@ public class CloudSolrClient extends SolrClient {
 
     public Builder withClusterStateProvider(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
+     */
+    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
+      if (connectionTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
+      }
+      
+      this.connectionTimeoutMillis = connectionTimeoutMillis;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
+     */
+    public Builder withSocketTimeout(int socketTimeoutMillis) {
+      if (socketTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
+      }
+      
+      this.socketTimeoutMillis = socketTimeoutMillis;
       return this;
     }
 

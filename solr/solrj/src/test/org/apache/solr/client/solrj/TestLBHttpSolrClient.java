@@ -206,9 +206,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
     CloseableHttpClient myHttpClient = HttpClientUtil.createClient(null);
     try {
-      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, s);
-      client.setConnectionTimeout(500);
-      client.setSoTimeout(500);
+      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, 500, 500, s);
       client.setAliveCheckInterval(500);
   
       // Kill a server and test again

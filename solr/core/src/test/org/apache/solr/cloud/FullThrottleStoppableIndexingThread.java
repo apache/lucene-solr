@@ -58,9 +58,9 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
         .withHttpClient(httpClient)
         .withQueueSize(8)
         .withThreadCount(2)
+        .withConnectionTimeout(10000)
+        .withSocketTimeout(clientSoTimeout)
         .build();
-    cusc.setConnectionTimeout(10000);
-    cusc.setSoTimeout(clientSoTimeout);
   }
   
   @Override

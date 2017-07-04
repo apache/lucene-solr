@@ -503,9 +503,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(url).build()) {
-      client.setConnectionTimeout(30000);
-      client.setSoTimeout(120000);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(url)
+        .withConnectionTimeout(30000)
+        .withSocketTimeout(120000)
+        .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);

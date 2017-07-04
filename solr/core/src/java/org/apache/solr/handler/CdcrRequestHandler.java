@@ -789,8 +789,9 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     private void commitOnLeader(String leaderUrl) throws SolrServerException,
         IOException {
-      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl).build()) {
-        client.setConnectionTimeout(30000);
+      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
+          .withConnectionTimeout(30000)
+          .build()) {
         UpdateRequest ureq = new UpdateRequest();
         ureq.setParams(new ModifiableSolrParams());
         ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -827,9 +828,10 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public Long call() throws Exception {
-      try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl).build()) {
-        server.setConnectionTimeout(15000);
-        server.setSoTimeout(60000);
+      try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl)
+          .withConnectionTimeout(15000)
+          .withSocketTimeout(60000)
+          .build()) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.SHARDCHECKPOINT.toString());
