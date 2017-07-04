@@ -131,9 +131,10 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
           return;
         }
 
-        HttpSolrClient server = new HttpSolrClient.Builder(leaderUrl).build();
-        server.setConnectionTimeout(15000);
-        server.setSoTimeout(60000);
+        HttpSolrClient server = new HttpSolrClient.Builder(leaderUrl)
+            .withConnectionTimeout(15000)
+            .withSocketTimeout(60000)
+            .build();
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.LASTPROCESSEDVERSION.toString());

@@ -782,8 +782,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   protected static SolrClient createNewSolrServer(String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient s = getHttpSolrClient(baseUrl);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      HttpSolrClient s = getHttpSolrClient(baseUrl, DEFAULT_CONNECTION_TIMEOUT);
       return s;
     } catch (Exception ex) {
       throw new RuntimeException(ex);

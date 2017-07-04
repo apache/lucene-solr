@@ -224,9 +224,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
     LBHttpSolrClient client = new Builder()
         .withHttpClient(httpClient)
+        .withConnectionTimeout(connectionTimeout)
+        .withSocketTimeout(soTimeout)
         .build();
-    client.setConnectionTimeout(connectionTimeout);
-    client.setSoTimeout(soTimeout);
     return client;
   }
 

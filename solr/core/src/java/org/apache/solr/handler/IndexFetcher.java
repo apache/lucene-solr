@@ -276,9 +276,11 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new Builder(masterUrl).withHttpClient(myHttpClient).build()) {
-      client.setSoTimeout(soTimeout);
-      client.setConnectionTimeout(connTimeout);
+    try (HttpSolrClient client = new Builder(masterUrl)
+        .withHttpClient(myHttpClient)
+        .withConnectionTimeout(connTimeout)
+        .withSocketTimeout(soTimeout)
+        .build()) {
 
       return client.request(req);
     } catch (SolrServerException e) {
@@ -298,9 +300,11 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
-      client.setSoTimeout(soTimeout);
-      client.setConnectionTimeout(connTimeout);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+        .withHttpClient(myHttpClient)
+        .withConnectionTimeout(connTimeout)
+        .withSocketTimeout(soTimeout)
+        .build()) {
       NamedList response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
@@ -1691,9 +1695,9 @@ public class IndexFetcher {
       try (HttpSolrClient client = new Builder(masterUrl)
           .withHttpClient(myHttpClient)
           .withResponseParser(null)
+          .withConnectionTimeout(connTimeout)
+          .withSocketTimeout(soTimeout)
           .build()) {
-        client.setSoTimeout(soTimeout);
-        client.setConnectionTimeout(connTimeout);
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
         is = (InputStream) response.get("stream");
@@ -1800,9 +1804,11 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     // TODO use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
-      client.setSoTimeout(soTimeout);
-      client.setConnectionTimeout(connTimeout);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+        .withHttpClient(myHttpClient)
+        .withConnectionTimeout(connTimeout)
+        .withSocketTimeout(soTimeout)
+        .build()) {
       QueryRequest request = new QueryRequest(params);
       return client.request(request);
     }

@@ -443,10 +443,11 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       final String createUrl, final String dataDir, final String ulogDir,
       final String coreNodeName, final String coreName, final String shardId) {
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(createUrl).build()) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(createUrl)
+        .withConnectionTimeout(30000)
+        .withSocketTimeout(60000)
+        .build()) {
       log.debug("create url={}", createUrl);
-      client.setConnectionTimeout(30000);
-      client.setSoTimeout(60000);
       Create createCmd = new Create();
       createCmd.setCollection(collection);
       createCmd.setCoreNodeName(coreNodeName);

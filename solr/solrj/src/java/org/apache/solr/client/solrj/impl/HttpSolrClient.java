@@ -199,6 +199,8 @@ public class HttpSolrClient extends SolrClient {
     
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
   }
 
   public Set<String> getQueryParams() {
@@ -713,7 +715,10 @@ public class HttpSolrClient extends SolrClient {
    * 
    * @param timeout
    *          Timeout in milliseconds
-   **/
+   *          
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.connectionTimeout = timeout;
   }
@@ -724,7 +729,10 @@ public class HttpSolrClient extends SolrClient {
    * 
    * @param timeout
    *          Timeout in milliseconds
-   **/
+   *          
+s   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     this.soTimeout = timeout;
   }
@@ -825,6 +833,8 @@ public class HttpSolrClient extends SolrClient {
     protected ResponseParser responseParser;
     protected boolean compression;
     protected ModifiableSolrParams invariantParams = new ModifiableSolrParams();
+    protected Integer connectionTimeoutMillis;
+    protected Integer socketTimeoutMillis;
 
     public Builder() {
       this.responseParser = new BinaryResponseParser();
@@ -929,6 +939,30 @@ public class HttpSolrClient extends SolrClient {
       }
 
       this.invariantParams.add(params);
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
+     */
+    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
+      if (connectionTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
+      }
+      
+      this.connectionTimeoutMillis = connectionTimeoutMillis;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
+     */
+    public Builder withSocketTimeout(int socketTimeoutMillis) {
+      if (socketTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
+      }
+      
+      this.socketTimeoutMillis = socketTimeoutMillis;
       return this;
     }
 

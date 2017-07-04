@@ -536,9 +536,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient()) {
-      httpSolrClient.setConnectionTimeout(15000);
-      httpSolrClient.setSoTimeout(60000);
+    try (final HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
       ThreadPoolExecutor executor = null;
       try {
         executor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
@@ -772,9 +770,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     String collection = elements[elements.length - 1];
     String urlString = url.toString();
     urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (HttpSolrClient client = getHttpSolrClient(urlString)) {
-      client.setConnectionTimeout(15000);
-      client.setSoTimeout(60000);
+    try (HttpSolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       //params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." + collection);
       params.set("qt", "/admin/metrics");
@@ -860,9 +856,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "shard1"));
     
     // now test that unloading a core gets us a new leader
-    try (HttpSolrClient unloadClient = getHttpSolrClient(jettys.get(0).getBaseUrl().toString())) {
-      unloadClient.setConnectionTimeout(15000);
-      unloadClient.setSoTimeout(60000);
+    try (HttpSolrClient unloadClient = getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(props.getCoreName());
 
@@ -1126,6 +1120,18 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     try {
       // setup the server...
       HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+
+      return client;
+    }
+    catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+  
+  protected SolrClient createNewSolrClient(String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    try {
+      // setup the server...
+      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 
       return client;
     }

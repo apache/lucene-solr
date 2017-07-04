@@ -292,9 +292,11 @@ public class SyncStrategy {
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
         recoverRequestCmd.setCoreName(coreName);
         
-        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl).withHttpClient(SyncStrategy.this.client).build()) {
-          client.setConnectionTimeout(30000);
-          client.setSoTimeout(120000);
+        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
+            .withHttpClient(SyncStrategy.this.client)
+            .withConnectionTimeout(30000)
+            .withSocketTimeout(120000)
+            .build()) {
           client.request(recoverRequestCmd);
         } catch (Throwable t) {
           SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
