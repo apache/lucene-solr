@@ -93,15 +93,6 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     CountDownLatch replicasToRecover = new CountDownLatch(numLeaders);
 
     for (ZkNodeProps sourceReplica : sourceReplicas) {
-      if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false)) {
-        String shardName = sourceReplica.getStr(SHARD_ID_PROP);
-        String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
-        String collectionName = sourceReplica.getStr(COLLECTION_PROP);
-        String key = collectionName + "_" + replicaName;
-        RecoveryWatcher watcher = new RecoveryWatcher(collectionName, shardName, replicaName, replicasToRecover);
-        watchers.put(key, watcher);
-        zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
-      }
       NamedList nl = new NamedList();
       log.info("Going to create replica for collection={} shard={} on node={}", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
       ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, target);
@@ -128,6 +119,16 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
       if (addedReplica != null) {
         createdReplicas.add(addedReplica);
+        if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false)) {
+          String shardName = sourceReplica.getStr(SHARD_ID_PROP);
+          String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
+          String collectionName = sourceReplica.getStr(COLLECTION_PROP);
+          String key = collectionName + "_" + replicaName;
+          RecoveryWatcher watcher = new RecoveryWatcher(collectionName, shardName, replicaName,
+              addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
+          watchers.put(key, watcher);
+          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
+        }
       }
     }
 
@@ -208,16 +209,27 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   // we use this watcher to wait for replicas to recover
-  private static class RecoveryWatcher implements CollectionStateWatcher {
+  static class RecoveryWatcher implements CollectionStateWatcher {
     String collectionId;
     String shardId;
     String replicaId;
+    String targetCore;
     CountDownLatch countDownLatch;
+    Replica recovered;
 
-    RecoveryWatcher(String collectionId, String shardId, String replicaId, CountDownLatch countDownLatch) {
+    /**
+     * Watch for recovery of a replica
+     * @param collectionId collection name
+     * @param shardId shard id
+     * @param replicaId source replica name (coreNodeName)
+     * @param targetCore specific target core name - if null then any active replica will do
+     * @param countDownLatch countdown when recovered
+     */
+    RecoveryWatcher(String collectionId, String shardId, String replicaId, String targetCore, CountDownLatch countDownLatch) {
       this.collectionId = collectionId;
       this.shardId = shardId;
       this.replicaId = replicaId;
+      this.targetCore = targetCore;
       this.countDownLatch = countDownLatch;
     }
 
@@ -241,7 +253,12 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             continue;
           }
           // check its state
+          String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          if (targetCore != null && !targetCore.equals(coreName)) {
+            continue;
+          }
           if (replica.isActive(liveNodes)) { // recovered - stop waiting
+            recovered = replica;
             countDownLatch.countDown();
             return true;
           }
@@ -249,6 +266,10 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       // set the watch again to wait for the new replica to recover
       return false;
+    }
+
+    public Replica getRecoveredReplica() {
+      return recovered;
     }
   }
 }
