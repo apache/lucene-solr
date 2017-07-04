@@ -266,7 +266,7 @@ public class EnumField extends PrimitiveFieldType {
           --upperValue;
         }
       }
-      query = new ConstantScoreQuery(NumericDocValuesField.newRangeQuery(field.getName(), lowerValue, upperValue));
+      query = new ConstantScoreQuery(NumericDocValuesField.newSlowRangeQuery(field.getName(), lowerValue, upperValue));
     } else {
       query = LegacyNumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,
           min == null ? null : minValue,

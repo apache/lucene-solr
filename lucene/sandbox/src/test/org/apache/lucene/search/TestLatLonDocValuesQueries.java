@@ -36,12 +36,12 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return LatLonDocValuesField.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
+    return LatLonDocValuesField.newSlowBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return LatLonDocValuesField.newDistanceQuery(field, centerLat, centerLon, radiusMeters);
+    return LatLonDocValuesField.newSlowDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 
   @Override

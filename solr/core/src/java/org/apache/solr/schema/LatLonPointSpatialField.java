@@ -155,16 +155,16 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
       if (shape instanceof Circle) {
         Circle circle = (Circle) shape;
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
-        return LatLonDocValuesField.newDistanceQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
             circle.getCenter().getY(), circle.getCenter().getX(),
             radiusMeters);
       } else if (shape instanceof Rectangle) {
         Rectangle rect = (Rectangle) shape;
-        return LatLonDocValuesField.newBoxQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowBoxQuery(getFieldName(),
             rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
       } else if (shape instanceof Point) {
         Point point = (Point) shape;
-        return LatLonDocValuesField.newDistanceQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
             point.getY(), point.getX(), 0);
       } else {
         throw new UnsupportedOperationException("Shape " + shape.getClass() + " is not supported by " + getClass());
