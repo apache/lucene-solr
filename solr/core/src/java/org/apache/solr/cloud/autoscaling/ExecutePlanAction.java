@@ -18,12 +18,31 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * todo nocommit
+ * This class is responsible for executing cluster operations read from the {@link ActionContext}'s properties
+ * with the key name "operations"
  */
 public class ExecutePlanAction implements TriggerAction {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private Map<String, String> initArgs;
+
   @Override
   public void close() throws IOException {
 
@@ -31,16 +50,45 @@ public class ExecutePlanAction implements TriggerAction {
 
   @Override
   public void init(Map<String, String> args) {
-
+    this.initArgs = args;
   }
 
   @Override
   public String getName() {
-    return null;
+    return initArgs.get("name");
   }
 
   @Override
-  public void process(TriggerEvent event, ActionContext actionContext) {
-
+  public void process(TriggerEvent event, ActionContext context) {
+    log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
+    CoreContainer container = context.getCoreContainer();
+    List<SolrRequest> operations = (List<SolrRequest>) context.getProperty("operations");
+    if (operations == null || operations.isEmpty()) {
+      log.info("No operations to execute for event: {}", event);
+      return;
+    }
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
+        .withZkHost(container.getZkController().getZkServerAddress())
+        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
+        .build()) {
+      for (SolrRequest operation : operations) {
+        log.info("Executing operation: {}", operation.getParams());
+        try {
+          SolrResponse response = operation.process(cloudSolrClient);
+          context.getProperties().compute("responses", (s, o) -> {
+            List<NamedList<Object>> responses = (List<NamedList<Object>>) o;
+            if (responses == null)  responses = new ArrayList<>(operations.size());
+            responses.add(response.getResponse());
+            return responses;
+          });
+        } catch (SolrServerException | HttpSolrClient.RemoteSolrException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Unexpected exception executing operation: " + operation.getParams(), e);
+        }
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected IOException while processing event: " + event, e);
+    }
   }
 }

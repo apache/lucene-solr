@@ -229,6 +229,9 @@ New Features
 * SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
   operations upon a trigger fire. (Noble Paul, shalin)
 
+* SOLR-10965: New ExecutePlanAction for autoscaling which executes the operations computed by ComputePlanAction
+  against the cluster. (shalin)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
