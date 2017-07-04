@@ -285,6 +285,8 @@ Bug Fixes
 * SOLR-6807: CloudSolrClient's ZK state version check with the server was ignored when handleSelect=false
   (David Smiley)
 
+* SOLR-10878: MOVEREPLICA command may lose data when replicationFactor is 1. (ab, shalin)
+
 Optimizations
 ----------------------
 
