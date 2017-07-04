@@ -57,7 +57,9 @@ public class BenchmarkAppConnector {
 		TEXT_TERM_QUERY_CLOUD,
 		TEXT_TERM_QUERY_STANDALONE,
 		TEXT_PHRASE_QUERY_CLOUD,
-		TEXT_PHRASE_QUERY_STANDALONE
+		TEXT_PHRASE_QUERY_STANDALONE,
+		SORTING_TEXT_QUERY_STANDALONE, 
+		SORTING_TEXT_QUERY_CLOUD
 		
 	}
 
@@ -630,6 +632,38 @@ public class BenchmarkAppConnector {
 					false, FileType.TEXT_PHRASE_QUERY_CLOUD);
 		}
 		
+		if (BenchmarkReportData.numericQuerySTQMetricS != null) {
+
+			BenchmarkAppConnector.writeToWebAppDataFile("text_sorting_query_standalone.csv",
+					BenchmarkReportData.numericQuerySTQMetricS.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("CommitID") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("75thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("95thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("99thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricS.get("99.9thQtime"),
+
+					false, FileType.TEXT_PHRASE_QUERY_STANDALONE);
+		}
+		
+		if (BenchmarkReportData.numericQuerySTQMetricC != null) {
+
+			BenchmarkAppConnector.writeToWebAppDataFile("text_sorting_query_cloud.csv",
+					BenchmarkReportData.numericQuerySTQMetricC.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("CommitID") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("QueriesPerSecond") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("MinQTime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("MaxQTime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("75thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("95thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("99thQtime") + ", "
+							+ BenchmarkReportData.numericQuerySTQMetricC.get("99.9thQtime"),
+
+					false, FileType.TEXT_PHRASE_QUERY_STANDALONE);
+		}
+
 		Util.getAndPublishCommitInformation();
 
 		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.GREEN_TEXT, false);

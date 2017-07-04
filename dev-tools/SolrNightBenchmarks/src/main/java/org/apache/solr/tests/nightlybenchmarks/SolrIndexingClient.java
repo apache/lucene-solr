@@ -116,7 +116,7 @@ public class SolrIndexingClient {
 				document.addField("Float1_pf", Float.parseFloat(data[6].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Long1_pl", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Double1_pd", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Text_t", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				document.addField("Text_s", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 
 				if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 					httpSolrClient.add(document);

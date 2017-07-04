@@ -42,6 +42,7 @@ public class QueryClient implements Runnable {
 		AND_NUMERIC_QUERY, 
 		OR_NUMERIC_QUERY, 
 		SORTED_NUMERIC_QUERY, 
+		SORTED_TEXT_QUERY,
 		TEXT_TERM_QUERY, 
 		TEXT_PHRASE_QUERY
 
@@ -248,6 +249,21 @@ public class QueryClient implements Runnable {
 						}
 
 						requestParams.add("sort", "Int1_pi asc");
+
+					} else if (this.queryType == QueryType.SORTED_TEXT_QUERY) {
+
+						String pairData[] = sortedNumericQueryParameterList.poll().trim().split(",");
+
+						int ft_1 = Integer.parseInt(pairData[0]);
+						int ft_2 = Integer.parseInt(pairData[1]);
+
+						if (ft_2 > ft_1) {
+							requestParams.add("q", "id:[" + ft_1 + " TO " + ft_2 + "]");
+						} else {
+							requestParams.add("q", "id:[" + ft_2 + " TO " + ft_1 + "]");
+						}
+
+						requestParams.add("sort", "Text_s asc");
 
 					} else if (this.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
 						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");

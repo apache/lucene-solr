@@ -686,7 +686,8 @@ public class Tests {
 		numericQueryTTQMetricC.start();
 
 		BenchmarkReportData.numericQueryTTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
+				queryThreadCount, 120, 30,  Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryTTQMetricC.stop();
 
@@ -695,10 +696,20 @@ public class Tests {
 		numericQueryPTQMetricC.start();
 
 		BenchmarkReportData.numericQueryPTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.TEXT_PHRASE_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
-				Tests.node.collectionName);
+				QueryType.TEXT_PHRASE_QUERY, queryThreadCount, 120, 30,  Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
 
 		numericQueryPTQMetricC.stop();
+		
+		Thread numericQuerySTQMetricC = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_TEXT_QUERY_CLOUD, port));
+		numericQuerySTQMetricC.start();
+
+		BenchmarkReportData.numericQuerySTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.SORTED_TEXT_QUERY, queryThreadCount, 120, 30,  Tests.cloud.getuRL(),
+				Tests.cloud.collectionName);
+
+		numericQuerySTQMetricC.stop();
 
 		Tests.shutDownCloud();
 
@@ -798,6 +809,16 @@ public class Tests {
 				Tests.node.collectionName);
 
 		numericQueryPTQMetricS.stop();
+
+		Thread numericQuerySTQMetricS = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_TEXT_QUERY_STANDALONE, port));
+		numericQuerySTQMetricS.start();
+
+		BenchmarkReportData.numericQuerySTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.SORTED_TEXT_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);
+
+		numericQuerySTQMetricS.stop();
 
 		Tests.shutDownStandalone();
 
