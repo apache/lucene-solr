@@ -304,6 +304,9 @@ Bug Fixes
 
 * SOLR-10878: MOVEREPLICA command may lose data when replicationFactor is 1. (ab, shalin)
 
+* SOLR-10879: DELETEREPLICA and DELETENODE commands should prevent data loss when
+  replicationFactor is 1. (ab)
+
 Optimizations
 ----------------------
 
