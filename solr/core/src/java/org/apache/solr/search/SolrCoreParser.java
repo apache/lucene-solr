@@ -57,7 +57,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
     if (req == null) {
       loader = new SolrResourceLoader();
     } else {
-      loader = req.getCore().getResourceLoader();
+      loader = req.getSchema().getResourceLoader();
     }
 
     final Iterable<Map.Entry<String,Object>> args = initArgs;
