@@ -25,7 +25,6 @@ import org.apache.solr.util.plugin.MapInitializedPlugin;
  * Interface for actions performed in response to a trigger being activated
  */
 public interface TriggerAction extends MapInitializedPlugin, Closeable {
-  // todo nocommit
   String getName();
 
   void process(TriggerEvent event, ActionContext context);
