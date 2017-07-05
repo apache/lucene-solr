@@ -32,11 +32,14 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
 enum SolrClientType {
-	HTTP_SOLR_CLIENT, 
-	CLOUD_SOLR_CLIENT, 
-	CONCURRENT_UPDATE_SOLR_CLIENT
+	HTTP_SOLR_CLIENT, CLOUD_SOLR_CLIENT, CONCURRENT_UPDATE_SOLR_CLIENT
 };
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class SolrIndexingClient {
 
 	@SuppressWarnings("unused")
@@ -50,6 +53,13 @@ public class SolrIndexingClient {
 
 	public static long documentCount;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param host
+	 * @param port
+	 * @param commitId
+	 */
 	public SolrIndexingClient(String host, String port, String commitId) {
 		super();
 		this.host = host;
@@ -57,6 +67,22 @@ public class SolrIndexingClient {
 		this.commitId = commitId;
 	}
 
+	/**
+	 * A method used for indexing text data.
+	 * 
+	 * @param numDocuments
+	 * @param urlString
+	 * @param collectionName
+	 * @param queueSize
+	 * @param threadCount
+	 * @param type
+	 * @param captureMetrics
+	 * @param deleteData
+	 * @param clientType
+	 * @param zookeeperIp
+	 * @param zookeeperPort
+	 * @return Map
+	 */
 	@SuppressWarnings("deprecation")
 	public Map<String, String> indexData(long numDocuments, String urlString, String collectionName, int queueSize,
 			int threadCount, TestType type, boolean captureMetrics, boolean deleteData, SolrClientType clientType,
@@ -130,7 +156,7 @@ public class SolrIndexingClient {
 				if (numDocuments == numberOfDocuments) {
 					break;
 				}
-			}			
+			}
 			end = System.currentTimeMillis();
 
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
@@ -190,7 +216,8 @@ public class SolrIndexingClient {
 		returnMetricMap.put("TimeStamp", ft.format(dNow));
 		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 		returnMetricMap.put("IndexingTime", "" + (end - start));
-		returnMetricMap.put("IndexingThroughput", "" + (double) numberOfDocuments / ((double) Math.floor(((end - start) / 1000d))));
+		returnMetricMap.put("IndexingThroughput",
+				"" + (double) numberOfDocuments / ((double) Math.floor(((end - start) / 1000d))));
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 

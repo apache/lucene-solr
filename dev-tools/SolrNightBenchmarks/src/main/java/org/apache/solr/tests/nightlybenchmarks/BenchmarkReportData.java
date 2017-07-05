@@ -19,6 +19,9 @@ package org.apache.solr.tests.nightlybenchmarks;
 
 import java.util.Map;
 
+/**
+ * @author Vivek Narang
+ */
 public class BenchmarkReportData {
 
 	public static Map<String, String> returnStandaloneCreateCollectionMap;
@@ -71,19 +74,11 @@ public class BenchmarkReportData {
 	public static Map<String, String> numericQueryTTQMetricS;
 	public static Map<String, String> numericQueryPTQMetricS;
 	public static Map<String, String> numericQuerySTQMetricS;
-	
 
+	/**
+	 * A method used to refresh the data structures when a cycle completes.
+	 */
 	public static void reset() {
-
-		returnStandaloneCreateCollectionMap = null;
-		returnCloudCreateCollectionMap = null;
-
-		metricMapStandalone = null;
-
-		metricMapCloudSerial_2N1S2R = null;
-		metricMapCloudSerial_2N2S1R = null;
-		metricMapCloudSerial_3N1S3R = null;
-		metricMapCloudSerial_4N2S2R = null;
 
 		metricMapCloudConcurrent1_2N1S2R = null;
 		metricMapCloudConcurrent1_2N2S1R = null;
@@ -103,6 +98,16 @@ public class BenchmarkReportData {
 		metricMapStandaloneConcurrent1 = null;
 		metricMapStandaloneConcurrent2 = null;
 		metricMapStandaloneConcurrent3 = null;
+
+		metricMapCloudSerial_2N1S2R = null;
+		metricMapCloudSerial_2N2S1R = null;
+		metricMapCloudSerial_3N1S3R = null;
+		metricMapCloudSerial_4N2S2R = null;
+
+		returnStandaloneCreateCollectionMap = null;
+		returnCloudCreateCollectionMap = null;
+
+		metricMapStandalone = null;
 
 		numericQueryTNQMetricC = null;
 		numericQueryRNQMetricC = null;

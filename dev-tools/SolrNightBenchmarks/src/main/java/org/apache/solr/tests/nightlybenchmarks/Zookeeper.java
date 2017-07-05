@@ -24,6 +24,11 @@ enum ZookeeperAction {
 	ZOOKEEPER_START, ZOOKEEPER_STOP, ZOOKEEPER_CLEAN
 }
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class Zookeeper {
 
 	public static String zooCommand;
@@ -36,11 +41,21 @@ public class Zookeeper {
 
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @throws IOException
+	 */
 	Zookeeper() throws IOException {
 		super();
 		this.install();
 	}
 
+	/**
+	 * A method for setting up zookeeper node.
+	 * 
+	 * @throws IOException
+	 */
 	private void install() throws IOException {
 
 		Util.postMessage("** Installing Zookeeper Node ...", MessageType.CYAN_TEXT, false);
@@ -84,6 +99,12 @@ public class Zookeeper {
 		}
 	}
 
+	/**
+	 * A method to act on the zookeeper node (start, stop etc...)
+	 * 
+	 * @param action
+	 * @return
+	 */
 	public int doAction(ZookeeperAction action) {
 
 		new File(Util.ZOOKEEPER_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + File.separator + zooCommand)
@@ -105,10 +126,20 @@ public class Zookeeper {
 		return -1;
 	}
 
+	/**
+	 * A method for getting the zookeeper IP.
+	 * 
+	 * @return
+	 */
 	public String getZookeeperIp() {
 		return Util.ZOOKEEPER_IP;
 	}
 
+	/**
+	 * A method for getting the zookeeper Port.
+	 * 
+	 * @return
+	 */
 	public String getZookeeperPort() {
 		return Util.ZOOKEEPER_PORT;
 	}

@@ -25,6 +25,11 @@ import java.util.UUID;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class SolrCloud {
 
 	public int solrNodes;
@@ -44,6 +49,17 @@ public class SolrCloud {
 	public boolean createADefaultCollection;
 	public Map<String, String> returnMapCreateCollection;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param solrNodes
+	 * @param shards
+	 * @param replicas
+	 * @param commitId
+	 * @param configName
+	 * @param host
+	 * @param creatADefaultCollection
+	 */
 	public SolrCloud(int solrNodes, String shards, String replicas, String commitId, String configName, String host,
 			boolean creatADefaultCollection) {
 		super();
@@ -59,6 +75,9 @@ public class SolrCloud {
 		this.init();
 	}
 
+	/**
+	 * A method used for getting ready to set up the Solr Cloud.
+	 */
 	private void init() {
 
 		try {
@@ -98,6 +117,14 @@ public class SolrCloud {
 
 	}
 
+	/**
+	 * A method used for creating a collection.
+	 * 
+	 * @param collectionName
+	 * @param configName
+	 * @param shards
+	 * @param replicas
+	 */
 	public void createCollection(String collectionName, String configName, String shards, String replicas) {
 		try {
 			nodes.get(0).createCollection(collectionName, configName, shards, replicas);
@@ -106,6 +133,11 @@ public class SolrCloud {
 		}
 	}
 
+	/**
+	 * A method for deleting a collection.
+	 * 
+	 * @param collectionName
+	 */
 	public void deleteCollection(String collectionName) {
 		try {
 			nodes.get(0).deleteCollection(collectionName);
@@ -114,14 +146,31 @@ public class SolrCloud {
 		}
 	}
 
+	/**
+	 * A method used for getting the URL for the solr cloud.
+	 * 
+	 * @return String
+	 */
 	public String getuRL() {
 		return "http://" + this.host + ":" + this.port + "/solr/";
 	}
 
+	/**
+	 * A method used to get the zookeeper url for communication with the solr
+	 * cloud.
+	 * 
+	 * @return String
+	 */
 	public String getZookeeperUrl() {
 		return this.zookeeperIp + ":" + this.zookeeperPort;
 	}
 
+	/**
+	 * A method used for shutting down the solr cloud.
+	 * 
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public void shutdown() throws IOException, InterruptedException {
 		for (SolrNode node : nodes) {
 			node.doAction(SolrNodeAction.NODE_STOP);

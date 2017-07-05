@@ -70,6 +70,11 @@ enum MessageType {
 	YELLOW_TEXT, WHITE_TEXT, GREEN_TEXT, RED_TEXT, BLUE_TEXT, BLACK_TEXT, PURPLE_TEXT, CYAN_TEXT
 };
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class Util {
 
 	public static String WORK_DIRECTORY = System.getProperty("user.dir");
@@ -108,6 +113,14 @@ public class Util {
 
 	static List<String> argsList;
 
+	/**
+	 * A method used for wrapping up the output from the system (on console or
+	 * log).
+	 * 
+	 * @param message
+	 * @param type
+	 * @param printInLog
+	 */
 	public static void postMessage(String message, MessageType type, boolean printInLog) {
 
 		String ANSI_RESET = "\u001B[0m";
@@ -148,6 +161,13 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for invoking a process with specific parameters.
+	 * 
+	 * @param command
+	 * @param workingDirectoryPath
+	 * @return
+	 */
 	public static int execute(String command, String workingDirectoryPath) {
 		Util.postMessage("Executing: " + command, MessageType.WHITE_TEXT, true);
 		Util.postMessage("Working dir: " + workingDirectoryPath, MessageType.WHITE_TEXT, true);
@@ -176,12 +196,23 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method for printing output on a single line.
+	 * 
+	 * @param message
+	 */
 	public static void postMessageOnLine(String message) {
 		if (!SILENT) {
 			System.out.print(message);
 		}
 	}
 
+	/**
+	 * A method used for checking if the required directories are present or
+	 * not. If not this method creates the required directories.
+	 * 
+	 * @throws IOException
+	 */
 	public static void checkBaseAndTempDir() throws IOException {
 
 		File webAppDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
@@ -225,6 +256,12 @@ public class Util {
 		tempDirectory = null;
 	}
 
+	/**
+	 * A method used for get an available free port for running the
+	 * solr/zookeeper node on.
+	 * 
+	 * @return int
+	 */
 	public static int getFreePort() {
 
 		int port = ThreadLocalRandom.current().nextInt(10000, 60000);
@@ -261,6 +298,11 @@ public class Util {
 		return getFreePort();
 	}
 
+	/**
+	 * 
+	 * @param plaintext
+	 * @return String
+	 */
 	static public String md5(String plaintext) {
 		MessageDigest m;
 		String hashtext = null;
@@ -282,6 +324,13 @@ public class Util {
 		return hashtext;
 	}
 
+	/**
+	 * A metod used for extracting files from an archive.
+	 * 
+	 * @param zipIn
+	 * @param filePath
+	 * @throws IOException
+	 */
 	public static void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
 
 		BufferedOutputStream bos = null;
@@ -306,6 +355,12 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method used for downloading a resource from external sources.
+	 * 
+	 * @param downloadURL
+	 * @param fileDownloadLocation
+	 */
 	public static void download(String downloadURL, String fileDownloadLocation) {
 
 		URL link = null;
@@ -336,6 +391,13 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for extracting files from a zip archive.
+	 * 
+	 * @param filename
+	 * @param filePath
+	 * @throws IOException
+	 */
 	public static void extract(String filename, String filePath) throws IOException {
 		Util.postMessage("** Attempting to unzip the downloaded release ...", MessageType.WHITE_TEXT, true);
 		try {
@@ -346,6 +408,13 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method used for fetching latest commit from a remote repository.
+	 * 
+	 * @param repositoryURL
+	 * @return
+	 * @throws IOException
+	 */
 	public static String getLatestCommitID(String repositoryURL) throws IOException {
 		Util.postMessage("** Getting the latest commit ID from: " + repositoryURL, MessageType.BLUE_TEXT, false);
 		return new BufferedReader(new InputStreamReader(
@@ -353,22 +422,40 @@ public class Util {
 						.split("HEAD")[0].trim();
 	}
 
+	/**
+	 * A method used for getting the repository path.
+	 * 
+	 * @return
+	 */
 	public static String getLocalRepoPath() {
 		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + Util.COMMIT_ID;
 		return Util.GIT_REPOSITORY_PATH;
 	}
 
+	/**
+	 * A method used for getting the path for a local repository.
+	 * 
+	 * @return
+	 */
 	public static String getLocalLastRepoPath() {
 		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + BenchmarkAppConnector.getLastRunCommitID();
 		return Util.GIT_REPOSITORY_PATH;
 	}
 
+	/**
+	 * A method for getting the commit information and publishing it on a file.
+	 */
 	public static void getAndPublishCommitInformation() {
 		BenchmarkAppConnector.writeToWebAppDataFile(
 				Util.TEST_ID + "_" + Util.COMMIT_ID + "_COMMIT_INFORMATION_dump.csv", Util.getCommitInformation(), true,
 				FileType.COMMIT_INFORMATION_FILE);
 	}
 
+	/**
+	 * A method used for getting the commit information.
+	 * 
+	 * @return String
+	 */
 	public static String getCommitInformation() {
 		Util.postMessage("** Getting the latest commit Information from local repository", MessageType.BLUE_TEXT,
 				false);
@@ -401,6 +488,9 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for getting the host system information.
+	 */
 	public static void getSystemEnvironmentInformation() {
 
 		Util.postMessage("** Getting the test environment information", MessageType.BLUE_TEXT, false);
@@ -448,6 +538,10 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method used for reading the property file and injecting data into the
+	 * data variables.
+	 */
 	public static void getPropertyValues() {
 
 		// THIS METHOD SHOULD BE CALLED BEFORE ANYOTHER METHOD
@@ -557,6 +651,13 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for sending requests to web resources.
+	 * 
+	 * @param url
+	 * @param type
+	 * @return
+	 */
 	public static String getResponse(String url, String type) {
 
 		Client client;
@@ -584,6 +685,12 @@ public class Util {
 		return "";
 	}
 
+	/**
+	 * A method used for getting information from the metric API.
+	 * 
+	 * @param commitID
+	 * @param port
+	 */
 	public static void getEnvironmentInformationFromMetricAPI(String commitID, String port) {
 
 		String response = Util.getResponse("http://localhost:" + port + "/solr/admin/metrics?wt=json&group=jvm",
@@ -641,6 +748,10 @@ public class Util {
 		printString = null;
 	}
 
+	/**
+	 * A method that checks if the webapp files are present. If not, this method
+	 * copies the required files into the required directory.
+	 */
 	public static void checkWebAppFiles() {
 
 		Util.postMessage("** Verifying that the Webapp files are present ... ", MessageType.BLUE_TEXT, false);
@@ -694,6 +805,12 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for copying contents from one folder to the other.
+	 * 
+	 * @param source
+	 * @param destination
+	 */
 	public static void copyFolder(File source, File destination) {
 		if (source.isDirectory()) {
 			if (!destination.exists()) {
@@ -738,6 +855,11 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method used for setting up the alive flag file.
+	 * 
+	 * @throws IOException
+	 */
 	public static void setAliveFlag() throws IOException {
 
 		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
@@ -749,6 +871,9 @@ public class Util {
 		statusFile = null;
 	}
 
+	/**
+	 * A method used for setting up the dead flag file.
+	 */
 	public static void setDeadFlag() {
 
 		File statusFile = new File(BenchmarkAppConnector.benchmarkAppDirectory + "iamalive.txt");
@@ -759,6 +884,12 @@ public class Util {
 		statusFile = null;
 	}
 
+	/**
+	 * A method used for capturing the command line args for this package.
+	 * 
+	 * @param args
+	 * @return
+	 */
 	public static List<String> getArgs(String[] args) {
 
 		List<String> argsList = new LinkedList<String>();
@@ -768,6 +899,11 @@ public class Util {
 		return argsList;
 	}
 
+	/**
+	 * A method used for initializing and executing the benchmarks.
+	 * 
+	 * @param args
+	 */
 	public static void init(String[] args) {
 
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
@@ -999,6 +1135,9 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for doing the cleanup after the benchmarks cycle end.
+	 */
 	public static void destroy() {
 
 		try {
@@ -1017,6 +1156,9 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method used for creating the last run file.
+	 */
 	public static void createLastRunFile() {
 
 		BenchmarkAppConnector.deleteFolder(FileType.LAST_RUN_COMMIT);
@@ -1024,6 +1166,9 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for creating the running flag file.
+	 */
 	public static void createIsRunningFile() {
 
 		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
@@ -1031,14 +1176,27 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for deleting the running file.
+	 */
 	public static void deleteRunningFile() {
 		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
 	}
 
+	/**
+	 * A method used for cleaning the run directory.
+	 */
 	public static void cleanRunDirectory() {
 		Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
 	}
 
+	/**
+	 * A method used for generating random sentences for tests.
+	 * 
+	 * @param r
+	 * @param words
+	 * @return String
+	 */
 	public static String getSentence(Random r, int words) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < words; i++) {
@@ -1047,6 +1205,12 @@ public class Util {
 		return sb.toString().trim();
 	}
 
+	/**
+	 * A method used for creating a test data file.
+	 * 
+	 * @param fileName
+	 * @param numberOfDocuments
+	 */
 	public static void createTestDataFile(String fileName, int numberOfDocuments) {
 		Util.postMessage("** Preparing 4k text documents", MessageType.WHITE_TEXT, false);
 		for (int i = 0; i < numberOfDocuments; i++) {
@@ -1063,6 +1227,12 @@ public class Util {
 		}
 	}
 
+	/**
+	 * A method used for creating numeric sorting query data file.
+	 * 
+	 * @param fileName
+	 * @param numberOfDocuments
+	 */
 	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) {
 		Util.postMessage("** Preparing sorted numeric query data ...", MessageType.WHITE_TEXT, false);
 		for (int i = 0; i < numberOfDocuments; i++) {
@@ -1080,6 +1250,11 @@ public class Util {
 		Util.postMessage("** Preparation [COMPLETE] ...", MessageType.WHITE_TEXT, false);
 	}
 
+	/**
+	 * A method used for locating and killing unused processes.
+	 * 
+	 * @param lookFor
+	 */
 	public static void killProcesses(String lookFor) {
 
 		Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
@@ -1111,6 +1286,9 @@ public class Util {
 
 	}
 
+	/**
+	 * A method used for creating test data file using Wikipedia data.
+	 */
 	public static void CreateWikiDataFile() {
 
 		try {

@@ -36,6 +36,11 @@ enum SolrNodeAction {
 	NODE_START, NODE_STOP
 }
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class SolrNode {
 
 	final static Logger logger = Logger.getLogger(SolrNode.class);
@@ -52,6 +57,15 @@ public class SolrNode {
 
 	private String gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-";
 
+	/**
+	 * Constructor. 
+	 * @param commitId
+	 * @param zooKeeperIp
+	 * @param zooKeeperPort
+	 * @param isRunningInCloudMode
+	 * @throws IOException
+	 * @throws GitAPIException
+	 */
 	public SolrNode(String commitId, String zooKeeperIp, String zooKeeperPort, boolean isRunningInCloudMode)
 			throws IOException, GitAPIException {
 		super();
@@ -64,6 +78,11 @@ public class SolrNode {
 		this.install();
 	}
 
+	/**
+	 * A method used for initializing the solr node.
+	 * @throws IOException
+	 * @throws GitAPIException
+	 */
 	private void install() throws IOException, GitAPIException {
 
 		Util.postMessage("** Installing Solr Node ...", MessageType.CYAN_TEXT, true);
@@ -96,6 +115,11 @@ public class SolrNode {
 		Util.extract(Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip", baseDirectory);
 	}
 
+	/**
+	 * A method used for checking out the solr code based on a commit and build the package for testing.
+	 * @throws IOException
+	 * @throws GitAPIException
+	 */
 	void checkoutCommitAndBuild() throws IOException, GitAPIException {
 		Util.postMessage("** Checking out Solr: " + commitId + " ...", MessageType.CYAN_TEXT, true);
 
@@ -142,6 +166,11 @@ public class SolrNode {
 				MessageType.PURPLE_TEXT, true);
 	}
 
+	/**
+	 * A method used to do action (start, stop ... etc.) a solr node. 
+	 * @param action
+	 * @return
+	 */
 	public int doAction(SolrNodeAction action) {
 
 		long start = 0;
@@ -178,6 +207,14 @@ public class SolrNode {
 		return returnValue;
 	}
 
+	/**
+	 * A method used for creating a collection on a solr node. 
+	 * @param coreName
+	 * @param collectionName
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	@SuppressWarnings("deprecation")
 	public Map<String, String> createCollection(String coreName, String collectionName)
 			throws IOException, InterruptedException {
@@ -217,6 +254,16 @@ public class SolrNode {
 		return returnMap;
 	}
 
+	/**
+	 * A method used for creating collection on the solr cloud. 
+	 * @param collectionName
+	 * @param configName
+	 * @param shards
+	 * @param replicationFactor
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	@SuppressWarnings("deprecation")
 	public Map<String, String> createCollection(String collectionName, String configName, String shards,
 			String replicationFactor) throws IOException, InterruptedException {
@@ -261,6 +308,13 @@ public class SolrNode {
 		return returnMap;
 	}
 
+	/**
+	 * A method for deleting a collection on a solr cloud or a node. 
+	 * @param collectionName
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public int deleteCollection(String collectionName) throws IOException, InterruptedException {
 
 		this.collectionName = collectionName;
@@ -270,18 +324,33 @@ public class SolrNode {
 
 	}
 
+	/**
+	 * A method to get the node directory for the solr node. 
+	 * @return
+	 */
 	public String getNodeDirectory() {
 		return nodeDirectory;
 	}
 
+	/**
+	 * A method used for getting the URL for the solr node for communication. 
+	 * @return
+	 */
 	public String getBaseUrl() {
 		return "http://localhost:" + port + "/solr/";
 	}
 
+	/**
+	 * A method used for getting the URL (containing the collection reference) for the solr node.  
+	 * @return
+	 */
 	public String getBaseUrlC() {
 		return "http://localhost:" + port + "/solr/" + this.collectionName;
 	}
 
+	/**
+	 * A method used for cleaning up the files for the solr node. 
+	 */
 	public void cleanup() {
 		Util.execute("rm -r -f " + baseDirectory, baseDirectory);
 	}

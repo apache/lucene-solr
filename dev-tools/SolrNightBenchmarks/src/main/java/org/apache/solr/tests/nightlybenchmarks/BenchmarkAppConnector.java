@@ -24,6 +24,11 @@ import java.util.Arrays;
 
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class BenchmarkAppConnector {
 
 	public static String benchmarkAppDirectory;
@@ -32,6 +37,9 @@ public class BenchmarkAppConnector {
 		super();
 	}
 
+	/**
+	 * An enum defining various file types.
+	 */
 	public enum FileType {
 
 		MEMORY_HEAP_USED, 
@@ -53,16 +61,21 @@ public class BenchmarkAppConnector {
 		IS_RUNNING_FILE, 
 		COMMIT_INFORMATION_FILE, 
 		IS_CLONING_FILE, 
-		COMMIT_QUEUE,
-		TEXT_TERM_QUERY_CLOUD,
-		TEXT_TERM_QUERY_STANDALONE,
-		TEXT_PHRASE_QUERY_CLOUD,
-		TEXT_PHRASE_QUERY_STANDALONE,
+		COMMIT_QUEUE, 
+		TEXT_TERM_QUERY_CLOUD, 
+		TEXT_TERM_QUERY_STANDALONE, 
+		TEXT_PHRASE_QUERY_CLOUD, 
+		TEXT_PHRASE_QUERY_STANDALONE, 
 		SORTING_TEXT_QUERY_STANDALONE, 
 		SORTING_TEXT_QUERY_CLOUD
-		
+
 	}
 
+	/**
+	 * A method used for getting the last registered commit.
+	 * 
+	 * @return String
+	 */
 	public static String getLastRunCommitID() {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
@@ -79,6 +92,11 @@ public class BenchmarkAppConnector {
 		}
 	}
 
+	/**
+	 * A method used for checking if the 'running' folder is empty.
+	 * 
+	 * @return boolean
+	 */
 	public static boolean isRunningFolderEmpty() {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
@@ -90,6 +108,11 @@ public class BenchmarkAppConnector {
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
+	/**
+	 * A method used to check if the 'cloning' folder is empty.
+	 * 
+	 * @return boolean
+	 */
 	public static boolean isCloningFolderEmpty() {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
@@ -101,6 +124,11 @@ public class BenchmarkAppConnector {
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
+	/**
+	 * A method used to check if the commit queue is empty.
+	 * 
+	 * @return boolean
+	 */
 	public static boolean isCommitQueueEmpty() {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
@@ -112,6 +140,12 @@ public class BenchmarkAppConnector {
 		return dir.listFiles().length == 0 ? true : false;
 	}
 
+	/**
+	 * A method used to delete a specific commit from the queue.
+	 * 
+	 * @param commit
+	 * @return boolean
+	 */
 	public static boolean deleteCommitFromQueue(String commit) {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
@@ -128,6 +162,11 @@ public class BenchmarkAppConnector {
 
 	}
 
+	/**
+	 * A method used to get the oldest commit from the queue.
+	 * 
+	 * @return String
+	 */
 	public static String getOldestCommitFromQueue() {
 
 		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
@@ -146,6 +185,11 @@ public class BenchmarkAppConnector {
 		return files[0].getName();
 	}
 
+	/**
+	 * A method used to get the array of registered commits from the queue.
+	 * 
+	 * @return File Array
+	 */
 	public static File[] getRegisteredCommitsFromQueue() {
 
 		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
@@ -162,6 +206,12 @@ public class BenchmarkAppConnector {
 		return files;
 	}
 
+	/**
+	 * A method used to check if a particular commit is in the queue.
+	 * 
+	 * @param commit
+	 * @return boolean
+	 */
 	public static boolean isCommitInQueue(String commit) {
 
 		File file = new File(
@@ -175,6 +225,11 @@ public class BenchmarkAppConnector {
 
 	}
 
+	/**
+	 * A method used to delete a specific folder.
+	 * 
+	 * @param type
+	 */
 	public static void deleteFolder(FileType type) {
 
 		if (type == FileType.LAST_RUN_COMMIT) {
@@ -228,6 +283,14 @@ public class BenchmarkAppConnector {
 		}
 	}
 
+	/**
+	 * A method used to write new files or append to a file for the WebApp.
+	 * 
+	 * @param fileName
+	 * @param data
+	 * @param createNewFile
+	 * @param type
+	 */
 	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) {
 
 		File dataDir = null;
@@ -308,7 +371,9 @@ public class BenchmarkAppConnector {
 					fw.write(
 							"Date, Test_ID, CommitID, QPS(Term), QTime-Min(Term), QTime-Max(Term), QTime-75th-Percentile(Term), QTime-95th-Percentile(Term), QTime-99th-Percentile(Term), QTime-99.9th-Percentile(Term), QPS(Range), QTime-Min(Range), QTime-Max(Range), QTime-75th-Percentile(Range), QTime-95th-Percentile(Range), QTime-99th-Percentile(Range), QTime-99.9th-Percentile(Range), QPS(Less Than), QTime-Min(Less Than), QTime-Max(Less Than), QTime-75th-Percentile(Less Than), QTime-95th-Percentile(Less Than), QTime-99th-Percentile(Less Than), QTime-99.9th-Percentile(Less Than), QPS(Greater Than), QTime-Min(Greater Than), QTime-Max(Greater Than), QTime-75th-Percentile(Greater Than), QTime-95th-Percentile(Greater Than), QTime-99th-Percentile(Greater Than), QTime-99.9th-Percentile(Greater Than), QPS(AND), QTime-Min(AND), QTime-Max(AND), QTime-75th-Percentile(And), QTime-95th-Percentile(And), QTime-99th-Percentile(And), QTime-99.9th-Percentile(And), QPS(OR), QTime-Min(OR), QTime-Max(OR), QTime-75th-Percentile(OR), QTime-95th-Percentile(OR), QTime-99th-Percentile(OR), QTime-99.9th-Percentile(OR)\n");
 				} else if (type == FileType.SORTING_NUMERIC_QUERY_STANDALONE
-						|| type == FileType.SORTING_NUMERIC_QUERY_CLOUD || type == FileType.TEXT_PHRASE_QUERY_CLOUD || type == FileType.TEXT_PHRASE_QUERY_STANDALONE || type == FileType.TEXT_TERM_QUERY_CLOUD || type == FileType.TEXT_TERM_QUERY_STANDALONE) {
+						|| type == FileType.SORTING_NUMERIC_QUERY_CLOUD || type == FileType.TEXT_PHRASE_QUERY_CLOUD
+						|| type == FileType.TEXT_PHRASE_QUERY_STANDALONE || type == FileType.TEXT_TERM_QUERY_CLOUD
+						|| type == FileType.TEXT_TERM_QUERY_STANDALONE) {
 					fw.write(
 							"Date, Test_ID, CommitID, QPS, QTime-Min, QTime-Max, QTime-75th-Percentile, QTime-95th-Percentile, QTime-99th-Percentile, QTime-99.9th-Percentile\n");
 				}
@@ -330,6 +395,9 @@ public class BenchmarkAppConnector {
 
 	}
 
+	/**
+	 * A method which publishes data to the WebApp once the cycle completes.
+	 */
 	public static void publishDataForWebApp() {
 
 		Util.postMessage("** Publishing data for webapp ..", MessageType.CYAN_TEXT, false);
@@ -582,7 +650,6 @@ public class BenchmarkAppConnector {
 					false, FileType.TEXT_TERM_QUERY_STANDALONE);
 		}
 
-		
 		if (BenchmarkReportData.numericQueryPTQMetricS != null) {
 
 			BenchmarkAppConnector.writeToWebAppDataFile("text_phrase_query_standalone.csv",
@@ -598,7 +665,7 @@ public class BenchmarkAppConnector {
 
 					false, FileType.TEXT_PHRASE_QUERY_STANDALONE);
 		}
-		
+
 		if (BenchmarkReportData.numericQueryTTQMetricC != null) {
 
 			BenchmarkAppConnector.writeToWebAppDataFile("text_term_query_cloud.csv",
@@ -615,7 +682,6 @@ public class BenchmarkAppConnector {
 					false, FileType.TEXT_TERM_QUERY_CLOUD);
 		}
 
-		
 		if (BenchmarkReportData.numericQueryPTQMetricC != null) {
 
 			BenchmarkAppConnector.writeToWebAppDataFile("text_phrase_query_cloud.csv",
@@ -631,7 +697,7 @@ public class BenchmarkAppConnector {
 
 					false, FileType.TEXT_PHRASE_QUERY_CLOUD);
 		}
-		
+
 		if (BenchmarkReportData.numericQuerySTQMetricS != null) {
 
 			BenchmarkAppConnector.writeToWebAppDataFile("text_sorting_query_standalone.csv",
@@ -647,7 +713,7 @@ public class BenchmarkAppConnector {
 
 					false, FileType.TEXT_PHRASE_QUERY_STANDALONE);
 		}
-		
+
 		if (BenchmarkReportData.numericQuerySTQMetricC != null) {
 
 			BenchmarkAppConnector.writeToWebAppDataFile("text_sorting_query_cloud.csv",

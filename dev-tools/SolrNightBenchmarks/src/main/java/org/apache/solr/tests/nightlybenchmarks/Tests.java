@@ -33,12 +33,22 @@ enum ConfigurationType {
 	STANDALONE, CLOUD
 }
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class Tests {
 
 	public static SolrCloud cloud;
 	public static SolrNode node;
 	public static int queryThreadCount = Integer.parseInt(Util.QUERY_THREAD_COUNT);
 
+	/**
+	 * A collection creating test on standalone mode. 
+	 * @param commitID
+	 * @return boolean
+	 */
 	public static boolean createCollectionTestStandalone(String commitID) {
 
 		try {
@@ -61,6 +71,12 @@ public class Tests {
 		return true;
 	}
 
+	/**
+	 * A method for testing indexing of test data on the solr standalone mode. 
+	 * @param commitID
+	 * @param numDocuments
+	 * @return boolean
+	 */
 	public static boolean indexingTestsStandalone(String commitID, long numDocuments) {
 
 		try {
@@ -85,6 +101,12 @@ public class Tests {
 		return true;
 	}
 
+	/**
+	 * A method for testing indexing of test data on the solr standalone mode using concurrent client.  
+	 * @param commitID
+	 * @param numDocuments
+	 * @return boolean
+	 */
 	public static boolean indexingTestsStandaloneConcurrent(String commitID, long numDocuments) {
 
 		try {
@@ -122,6 +144,15 @@ public class Tests {
 		return true;
 	}
 
+	/**
+	 * A method for testing indexing throughput on solr cloud using serial client. 
+	 * @param commitID
+	 * @param numDocuments
+	 * @param nodes
+	 * @param shards
+	 * @param replicas
+	 * @return boolean
+	 */
 	public static boolean indexingTestsCloudSerial(String commitID, long numDocuments, int nodes, String shards,
 			String replicas) {
 
@@ -165,6 +196,15 @@ public class Tests {
 		return true;
 	}
 
+	/**
+	 * A method for testing indexing throughput on solr cloud using concurrent update client. 
+	 * @param commitID
+	 * @param numDocuments
+	 * @param nodes
+	 * @param shards
+	 * @param replicas
+	 * @return Map
+	 */
 	public static boolean indexingTestsCloudConcurrent(String commitID, long numDocuments, int nodes, String shards,
 			String replicas) {
 
@@ -296,6 +336,15 @@ public class Tests {
 		return true;
 	}
 
+	/**
+	 * A method for testing indexing throughput on solr cloud using a custom concurrent indexing client. 
+	 * @param commitID
+	 * @param numDocuments
+	 * @param nodes
+	 * @param shards
+	 * @param replicas
+	 * @return Map
+	 */
 	public static boolean indexingTestsCloudConcurrentCustomClient(String commitID, long numDocuments, int nodes,
 			String shards, String replicas) {
 
@@ -413,6 +462,18 @@ public class Tests {
 		return true;
 	}
 
+	/**
+	 * A method used by the custom concurrent indexing client. 
+	 * @param zookeeperURL
+	 * @param collectionName
+	 * @param numberOfThreads
+	 * @param estimationDuration
+	 * @param commitId
+	 * @param type
+	 * @param port
+	 * @param captureMetrics
+	 * @return Map
+	 */
 	@SuppressWarnings("deprecation")
 	private static Map<String, String> cloudConcurrentIndexing(String zookeeperURL, String collectionName,
 			int numberOfThreads, int estimationDuration, String commitId, TestType type, String port,
@@ -487,6 +548,17 @@ public class Tests {
 		return null;
 	}
 
+	/**
+	 * A method implementing the querying tests. 
+	 * @param commitID
+	 * @param queryType
+	 * @param numberOfThreads
+	 * @param estimationDuration
+	 * @param delayEstimationBySeconds
+	 * @param baseURL
+	 * @param collectionName
+	 * @return Map
+	 */
 	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType,
 			int numberOfThreads, int estimationDuration, long delayEstimationBySeconds, String baseURL,
 			String collectionName) {
@@ -549,6 +621,17 @@ public class Tests {
 		return null;
 	}
 
+	/**
+	 * A method used to set up a solr cloud instance for testing on the cloud mode. 
+	 * @param commitID
+	 * @param documentCount
+	 * @param solrNodes
+	 * @param shards
+	 * @param replicas
+	 * @param queueSize
+	 * @return String
+	 * @throws InterruptedException
+	 */
 	private static String setUpCloudForFeatureTests(String commitID, long documentCount, int solrNodes, String shards,
 			String replicas, int queueSize) throws InterruptedException {
 
@@ -564,6 +647,12 @@ public class Tests {
 		return cloud.port;
 	}
 
+	/**
+	 * A method used for setting up solr in standalone mode for testing on the standalone mode. 
+	 * @param commitID
+	 * @param numDocuments
+	 * @return String
+	 */
 	private static String setUpStandaloneNodeForFeatureTests(String commitID, long numDocuments) {
 
 		Util.postMessage("** Setting up standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
@@ -589,6 +678,11 @@ public class Tests {
 		return "0";
 	}
 
+	/**
+	 * A method used for shutting down the solr cloud instance. 
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	private static void shutDownCloud() throws IOException, InterruptedException {
 
 		Util.postMessage("** Shutting down cloud for feature tests ...", MessageType.PURPLE_TEXT, false);
@@ -596,6 +690,11 @@ public class Tests {
 		cloud.shutdown();
 	}
 
+	/**
+	 * A method used for shutting down the solr standalone mode instance. 
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	private static void shutDownStandalone() throws IOException, InterruptedException {
 
 		Util.postMessage("** Shutting down standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
@@ -604,6 +703,12 @@ public class Tests {
 		node.cleanup();
 	}
 
+	/**
+	 * A method used for setting up various configuration to be tested on cloud mode. 
+	 * @param numDocuments
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	@SuppressWarnings("deprecation")
 	public static void runNumericTestsCloud(long numDocuments) throws IOException, InterruptedException {
 
@@ -715,6 +820,12 @@ public class Tests {
 
 	}
 
+	/**
+	 * A method used for setting up configurations to be tested on solr standalone mode. 
+	 * @param numDocuments
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	@SuppressWarnings("deprecation")
 	public static void runNumericQueryTestsStandalone(long numDocuments) throws IOException, InterruptedException {
 

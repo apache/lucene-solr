@@ -31,8 +31,16 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class QueryClient implements Runnable {
 
+	/**
+	 * An enum defining various types of queries.  
+	 */
 	public enum QueryType {
 
 		TERM_NUMERIC_QUERY, 
@@ -83,6 +91,14 @@ public class QueryClient implements Runnable {
 
 	Random random = new Random();
 
+	/**
+	 * Constructor.
+	 * @param urlString
+	 * @param collectionName
+	 * @param queryType
+	 * @param numberOfThreads
+	 * @param delayEstimationBySeconds
+	 */
 	public QueryClient(String urlString, String collectionName, QueryType queryType, long numberOfThreads,
 			long delayEstimationBySeconds) {
 		super();
@@ -97,6 +113,9 @@ public class QueryClient implements Runnable {
 				MessageType.GREEN_TEXT, false);
 	}
 
+	/**
+	 * A method invoked to inject the query terms in the data varibles for the threads to use. 
+	 */
 	public static void prepare() {
 		Util.postMessage("** Preparing Term Query queue ...", MessageType.CYAN_TEXT, false);
 
@@ -197,6 +216,9 @@ public class QueryClient implements Runnable {
 		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 	}
 
+	/**
+	 * A method used by various query threads.
+	 */
 	public void run() {
 
 		long elapsedTime;
@@ -214,7 +236,7 @@ public class QueryClient implements Runnable {
 			}
 
 			if (running == true) {
-				// Critical Section ....
+				// Critical Section: When actual querying begins. 
 				SolrResponse response = null;
 				try {
 					requestParams.remove("q");
@@ -302,8 +324,7 @@ public class QueryClient implements Runnable {
 						setTotalQTime(elapsedTime);
 						setMinMaxQTime(elapsedTime);
 					} else {
-						// This is deliberately done to warm up document cache
-						// ...
+						// This is deliberately done to warm up document cache.
 						requestParams.remove("q");
 						requestParams.add("q", "*:*");
 						params = SolrParams.toSolrParams(requestParams);
@@ -332,6 +353,14 @@ public class QueryClient implements Runnable {
 		return;
 	}
 
+	/**
+	 * A method used by running threads to fire a query. 
+	 * @param collectionName
+	 * @param params
+	 * @return
+	 * @throws SolrServerException
+	 * @throws IOException
+	 */
 	private synchronized SolrResponse fireQuery(String collectionName, SolrParams params)
 			throws SolrServerException, IOException {
 
@@ -339,6 +368,9 @@ public class QueryClient implements Runnable {
 
 	}
 
+	/**
+	 * A method to count the number of queries executed by all the threads. 
+	 */
 	private synchronized void setQueryCounter() {
 
 		if (running == false) {
@@ -348,6 +380,10 @@ public class QueryClient implements Runnable {
 		queryCount++;
 	}
 
+	/**
+	 * A method used by threads to sum up the total qtime for all the queries. 
+	 * @param qTime
+	 */
 	private synchronized void setTotalQTime(long qTime) {
 
 		if (running == false) {
@@ -357,18 +393,28 @@ public class QueryClient implements Runnable {
 		totalQTime += qTime;
 	}
 
+	/**
+	 * A method used by the running threads to count the number of queries failing. 
+	 */
 	private synchronized void setQueryFailureCount() {
 
 		queryFailureCount++;
 
 	}
 
+	/**
+	 * A method used by the threads to count the number of threads up and ready for running. 
+	 */
 	private synchronized void setThreadReadyCount() {
 
 		threadReadyCount++;
 
 	}
 
+	/**
+	 * A method called by the running methods to compute the minumum and maximum qtime across all the queries fired. 
+	 * @param QTime
+	 */
 	private synchronized void setMinMaxQTime(long QTime) {
 
 		if (running == false) {
@@ -387,6 +433,11 @@ public class QueryClient implements Runnable {
 
 	}
 
+	/**
+	 * A method used to compute the nth percentile Qtime for all the queries fired by all the threads. 
+	 * @param percentile
+	 * @return
+	 */
 	public static double getNthPercentileQTime(double percentile) {
 
 		if (!percentilesObjectCreated) {
@@ -404,6 +455,9 @@ public class QueryClient implements Runnable {
 
 	}
 
+	/**
+	 * A method used to for reseting the static data variables to get ready for the next cycle. 
+	 */
 	public static void reset() {
 		running = false;
 		queryCount = 0;

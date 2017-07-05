@@ -29,6 +29,11 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class CloudConcurrentIndexingClient implements Runnable {
 
 	String urlString;
@@ -48,6 +53,12 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	public static ConcurrentLinkedQueue<SolrInputDocument> documents = new ConcurrentLinkedQueue<SolrInputDocument>();
 	public static long totalTime = 0;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param zookeeperURL
+	 * @param collectionName
+	 */
 	public CloudConcurrentIndexingClient(String zookeeperURL, String collectionName) {
 		super();
 		this.collectionName = collectionName;
@@ -60,16 +71,20 @@ public class CloudConcurrentIndexingClient implements Runnable {
 				false);
 	}
 
+	/**
+	 * A method invoked to inject the documents into the queue for indexing
+	 * threads to use.
+	 */
 	public static void prepare() {
 
 		Util.postMessage("** Preparing document queue ...", MessageType.CYAN_TEXT, false);
-		
+
 		documents = new ConcurrentLinkedQueue<SolrInputDocument>();
 
 		String line = "";
 		String cvsSplitBy = ",";
 		int documentCount = 0;
-		
+
 		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
 			while ((line = br.readLine()) != null) {
@@ -91,7 +106,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 				document.addField("Text_s", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				documentCount++;
 				documents.add(document);
-				
+
 				if (documentCount > 25000) {
 					break;
 				}
@@ -105,9 +120,13 @@ public class CloudConcurrentIndexingClient implements Runnable {
 			e.printStackTrace();
 		}
 
-		Util.postMessage("** Preparing document queue [COMPLETE] ..." + documents.size(), MessageType.GREEN_TEXT, false);
+		Util.postMessage("** Preparing document queue [COMPLETE] ..." + documents.size(), MessageType.GREEN_TEXT,
+				false);
 	}
 
+	/**
+	 * A method invoked by indexing threads.
+	 */
 	public void run() {
 
 		startTime = System.currentTimeMillis();
@@ -125,11 +144,11 @@ public class CloudConcurrentIndexingClient implements Runnable {
 			} else if (running == false) {
 				// Break out from loop ...
 				synchronized (this) {
-						if (!endLock) {
-							endLock = true;
-							endTime = System.currentTimeMillis();
-							totalTime = endTime - startTime;
-						}
+					if (!endLock) {
+						endLock = true;
+						endTime = System.currentTimeMillis();
+						totalTime = endTime - startTime;
+					}
 				}
 				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",
 						MessageType.RED_TEXT, false);
@@ -138,14 +157,26 @@ public class CloudConcurrentIndexingClient implements Runnable {
 		}
 	}
 
+	/**
+	 * A method called by running threads to index the document.
+	 * 
+	 * @param collectionName
+	 * @param document
+	 * @return
+	 * @throws SolrServerException
+	 * @throws IOException
+	 */
 	private synchronized SolrResponse addDocument(String collectionName, SolrInputDocument document)
 			throws SolrServerException, IOException {
-		
+
 		documentCount++;
 		return solrClient.add(collectionName, document, 5000);
-		
+
 	}
-	
+
+	/**
+	 * A method invoked to close the open CloudSolrClients.
+	 */
 	public void closeAndCommit() {
 		try {
 			solrClient.commit(collectionName);
@@ -155,6 +186,9 @@ public class CloudConcurrentIndexingClient implements Runnable {
 		}
 	}
 
+	/**
+	 * A method used to reset the static data variables.
+	 */
 	public static void reset() {
 		documents = new ConcurrentLinkedQueue<SolrInputDocument>();
 		running = false;

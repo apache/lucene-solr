@@ -22,16 +22,30 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class ProcessStreamReader extends Thread {
 
 	InputStream is;
 	String type;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param is
+	 * @param type
+	 */
 	ProcessStreamReader(InputStream is, String type) {
 		this.is = is;
 		this.type = type;
 	}
 
+	/**
+	 * A method invoked by process execution thread.
+	 */
 	public void run() {
 		try {
 			InputStreamReader isr = new InputStreamReader(is);
@@ -45,5 +59,4 @@ public class ProcessStreamReader extends Thread {
 			Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
 		}
 	}
-
 }

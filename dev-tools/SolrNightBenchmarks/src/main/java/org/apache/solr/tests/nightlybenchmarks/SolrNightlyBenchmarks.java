@@ -19,8 +19,20 @@ package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.IOException;
 
+/**
+ * 
+ * @author Vivek Narang
+ *
+ */
 public class SolrNightlyBenchmarks {
 
+	/**
+	 * Main method.
+	 * 
+	 * @param args
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
 
 		Util.init(args);
