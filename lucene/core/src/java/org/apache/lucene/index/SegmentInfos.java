@@ -118,8 +118,6 @@ import org.apache.lucene.util.Version;
  */
 public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo> {
 
-  /** Adds the {@link Version} that committed this segments_N file, as well as the {@link Version} of the oldest segment, since 5.3+ */
-  public static final int VERSION_53 = 6;
   /** The version that added information about the Lucene version at the time when the index has been created. */
   public static final int VERSION_70 = 7;
 
@@ -302,7 +300,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (magic != CodecUtil.CODEC_MAGIC) {
       throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
     }
-    int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_53, VERSION_CURRENT);
+    int format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_70, VERSION_CURRENT);
     byte id[] = new byte[StringHelper.ID_LENGTH];
     input.readBytes(id, 0, id.length);
     CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
@@ -313,10 +311,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       throw new IndexFormatTooOldException(input, "this index is too old (version: " + luceneVersion + ")");
     }
 
-    int indexCreatedVersion = 6;
-    if (format >= VERSION_70) {
-      indexCreatedVersion = input.readVInt();
-    }
+    int indexCreatedVersion = input.readVInt();
 
     SegmentInfos infos = new SegmentInfos(indexCreatedVersion);
     infos.id = id;
@@ -341,14 +336,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     long totalDocs = 0;
     for (int seg = 0; seg < numSegments; seg++) {
       String segName = input.readString();
-      if (format < VERSION_70) {
-        byte hasID = input.readByte();
-        if (hasID == 0) {
-          throw new IndexFormatTooOldException(input, "Segment is from Lucene 4.x");
-        } else if (hasID != 1) {
-          throw new CorruptIndexException("invalid hasID byte, got: " + hasID, input);
-        }
-      }
       byte[] segmentID = new byte[StringHelper.ID_LENGTH];
       input.readBytes(segmentID, 0, segmentID.length);
       Codec codec = readCodec(input);
