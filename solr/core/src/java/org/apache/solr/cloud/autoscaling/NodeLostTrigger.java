@@ -224,11 +224,10 @@ public class NodeLostTrigger extends TriggerBase {
           throw new RuntimeException("Trigger has been closed");
         }
       }
-      log.debug("Running NodeLostTrigger: {}", name);
 
       ZkStateReader reader = container.getZkController().getZkStateReader();
       Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();
-      log.debug("Found livenodes: {}", newLiveNodes);
+      log.debug("Running NodeLostTrigger: {} with currently live nodes: {}", name, newLiveNodes);
 
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
@@ -252,10 +251,12 @@ public class NodeLostTrigger extends TriggerBase {
           // fire!
           AutoScaling.TriggerListener listener = listenerRef.get();
           if (listener != null) {
-            log.debug("NodeLostTrigger firing registered listener");
+            log.debug("NodeLostTrigger firing registered listener for lost node: {}", nodeName);
             if (listener.triggerFired(new NodeLostEvent(getEventType(), getName(), timeRemoved, nodeName)))  {
               it.remove();
               removeNodeLostMarker(nodeName);
+            } else  {
+              log.debug("NodeLostTrigger listener for lost node: {} is not ready, will try later", nodeName);
             }
           } else  {
             it.remove();
