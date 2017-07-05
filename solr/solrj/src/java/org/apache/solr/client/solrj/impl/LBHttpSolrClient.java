@@ -268,7 +268,8 @@ public class LBHttpSolrClient extends SolrClient {
     this.clientIsInternal = builder.httpClient == null;
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.httpClient = builder.httpClient == null ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()])) : builder.httpClient;
-    
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;    
     this.parser = builder.responseParser;
 
     if (! builder.baseSolrUrls.isEmpty()) {
@@ -316,16 +317,28 @@ public class LBHttpSolrClient extends SolrClient {
     HttpSolrClient client;
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
-        client = httpSolrClientBuilder
+        httpSolrClientBuilder
             .withBaseSolrUrl(server)
-            .withHttpClient(httpClient)
-            .build();
+            .withHttpClient(httpClient);
+        if (connectionTimeout != null) {
+          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
+        }
+        if (soTimeout != null) {
+          httpSolrClientBuilder.withSocketTimeout(soTimeout);
+        }
+        client = httpSolrClientBuilder.build();
       }
     } else {
-      client = new HttpSolrClient.Builder(server)
+      final HttpSolrClient.Builder clientBuilder = new HttpSolrClient.Builder(server)
           .withHttpClient(httpClient)
-          .withResponseParser(parser)
-          .build();
+          .withResponseParser(parser);
+      if (connectionTimeout != null) {
+        clientBuilder.withConnectionTimeout(connectionTimeout);
+      }
+      if (soTimeout != null) {
+        clientBuilder.withSocketTimeout(soTimeout);
+      }
+      client = clientBuilder.build();
     }
     if (requestWriter != null) {
       client.setRequestWriter(requestWriter);
@@ -558,6 +571,10 @@ public class LBHttpSolrClient extends SolrClient {
     return null;
   }
 
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.connectionTimeout = timeout;
     synchronized (aliveServers) {
@@ -575,7 +592,10 @@ public class LBHttpSolrClient extends SolrClient {
   /**
    * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
    * not for indexing.
+   *
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
    */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     this.soTimeout = timeout;
     synchronized (aliveServers) {
@@ -866,6 +886,8 @@ public class LBHttpSolrClient extends SolrClient {
     protected HttpClient httpClient;
     protected ResponseParser responseParser;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
+    protected Integer connectionTimeoutMillis;
+    protected Integer socketTimeoutMillis;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -956,6 +978,30 @@ public class LBHttpSolrClient extends SolrClient {
      */
     public Builder withHttpSolrClientBuilder(HttpSolrClient.Builder builder) {
       this.httpSolrClientBuilder = builder;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
+     */
+    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
+      if (connectionTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
+      }
+      
+      this.connectionTimeoutMillis = connectionTimeoutMillis;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
+     */
+    public Builder withSocketTimeout(int socketTimeoutMillis) {
+      if (socketTimeoutMillis <= 0) {
+        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
+      }
+      
+      this.socketTimeoutMillis = socketTimeoutMillis;
       return this;
     }
 

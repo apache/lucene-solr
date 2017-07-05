@@ -265,7 +265,7 @@ public class DeleteReplicaCmd implements Cmd {
       try {
         if (!callable.call())
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not  remove replica : " + collectionName + "/" + shard + "/" + replicaName);
+                  "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
       } catch (InterruptedException | KeeperException e) {
         throw e;
       } catch (Exception ex) {

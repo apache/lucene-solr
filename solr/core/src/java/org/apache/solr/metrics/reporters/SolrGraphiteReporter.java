@@ -17,8 +17,6 @@
 package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
@@ -26,19 +24,19 @@ import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.graphite.GraphiteSender;
 import com.codahale.metrics.graphite.PickledGraphite;
+
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 
 /**
  * Metrics reporter that wraps {@link com.codahale.metrics.graphite.GraphiteReporter}.
  */
-public class SolrGraphiteReporter extends SolrMetricReporter {
+public class SolrGraphiteReporter extends FilteringSolrMetricReporter {
 
   private String host = null;
   private int port = -1;
   private boolean pickled = false;
   private String instancePrefix = null;
-  private List<String> filters = new ArrayList<>();
   private GraphiteReporter reporter = null;
 
   private static final ReporterClientCache<GraphiteSender> serviceRegistry = new ReporterClientCache<>();
@@ -65,25 +63,6 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
   public void setPrefix(String prefix) {
     this.instancePrefix = prefix;
   }
-
-  /**
-   * Report only metrics with names matching any of the prefix filters.
-   * @param filters list of 0 or more prefixes. If the list is empty then
-   *                all names will match.
-   */
-  public void setFilter(List<String> filters) {
-    if (filters == null || filters.isEmpty()) {
-      return;
-    }
-    this.filters.addAll(filters);
-  }
-
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
-  }
-
 
   public void setPickled(boolean pickled) {
     this.pickled = pickled;
@@ -113,12 +92,7 @@ public class SolrGraphiteReporter extends SolrMetricReporter {
         .prefixedWith(instancePrefix)
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS);
-    MetricFilter filter;
-    if (!filters.isEmpty()) {
-      filter = new SolrMetricManager.PrefixFilter(filters);
-    } else {
-      filter = MetricFilter.ALL;
-    }
+    final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
     reporter = builder.build(graphite);
     reporter.start(period, TimeUnit.SECONDS);

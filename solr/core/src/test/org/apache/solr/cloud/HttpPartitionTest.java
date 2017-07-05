@@ -96,11 +96,11 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     CloudSolrClient client = new CloudSolrClient.Builder()
         .withZkHost(zkServer.getZkAddress())
         .sendDirectUpdatesToAnyShardReplica()
+        .withConnectionTimeout(30000)
+        .withSocketTimeout(60000)
         .build();
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    client.getLbClient().setConnectionTimeout(30000);
-    client.getLbClient().setSoTimeout(60000);
     return client;
   }
 

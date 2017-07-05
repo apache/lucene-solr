@@ -295,11 +295,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 60000);
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    client.getLbClient().setConnectionTimeout(30000);
-    client.getLbClient().setSoTimeout(60000);
     return client;
   }
 
@@ -1708,15 +1706,29 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(int port) {
     return createNewSolrClient(DEFAULT_COLLECTION, port);
   }
+  
+  protected SolrClient createNewSolrClient(int port, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    return createNewSolrClient(DEFAULT_COLLECTION, port, connectionTimeoutMillis, socketTimeoutMillis);
+  }
 
   protected SolrClient createNewSolrClient(String coreName, int port) {
     try {
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-      HttpSolrClient client = getHttpSolrClient(url);
-      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setSoTimeout(60000);
+      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
+      return client;
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+  
+  protected SolrClient createNewSolrClient(String coreName, int port, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    try {
+      // setup the server...
+      String baseUrl = buildUrl(port);
+      String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
+      HttpSolrClient client = getHttpSolrClient(url, connectionTimeoutMillis, socketTimeoutMillis);
       return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -1726,8 +1738,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
-      client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT);
       return client;
     }
     catch (Exception ex) {
@@ -1811,9 +1822,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         boolean updatesToLeaders = random().nextBoolean();
         boolean parallelUpdates = random().nextBoolean();
         commonCloudSolrClient = getCloudSolrClient(zkServer.getZkAddress(),
-                updatesToLeaders);
-        commonCloudSolrClient.getLbClient().setConnectionTimeout(5000);
-        commonCloudSolrClient.getLbClient().setSoTimeout(120000);
+                updatesToLeaders, 5000, 120000);
         commonCloudSolrClient.setParallelUpdates(parallelUpdates);
         commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
         commonCloudSolrClient.connect();

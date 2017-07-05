@@ -143,7 +143,7 @@ public class LatLonDocValuesField extends Field {
    * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
    * {@link LatLonPoint#newBoxQuery}.
    */
-  public static Query newBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
+  public static Query newSlowBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
     // exact double values of lat=90.0D and lon=180.0D must be treated special as they are not represented in the encoding
     // and should not drag in extra bogus junk! TODO: should encodeCeil just throw ArithmeticException to be less trappy here?
     if (minLatitude == 90.0) {
@@ -175,7 +175,7 @@ public class LatLonDocValuesField extends Field {
    * @return query matching points within this distance
    * @throws IllegalArgumentException if {@code field} is null, location has invalid coordinates, or radius is invalid.
    */
-  public static Query newDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+  public static Query newSlowDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     return new LatLonDocValuesDistanceQuery(field, latitude, longitude, radiusMeters);
   }
 }

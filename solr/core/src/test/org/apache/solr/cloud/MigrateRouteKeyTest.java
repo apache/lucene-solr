@@ -80,13 +80,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   }
 
   protected void invokeCollectionMigration(CollectionAdminRequest.AsyncCollectionAdminRequest request) throws IOException, SolrServerException, InterruptedException {
-    if (random().nextBoolean()) {
-      cluster.getSolrClient().setSoTimeout(60000);  // can take a while
-      request.process(cluster.getSolrClient());
-    }
-    else {
-      request.processAndWait(cluster.getSolrClient(), 60000);
-    }
+    request.processAndWait(cluster.getSolrClient(), 60000);
   }
 
   @Test

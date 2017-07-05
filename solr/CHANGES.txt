@@ -33,6 +33,50 @@ Jetty 9.3.14.v20161028
 (No Changes)
 
 
+==================  7.1.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Detailed Change List
+----------------------
+
+Upgrade Notes
+----------------------
+
+(No Notes)
+
+New Features
+----------------------
+
+(No Changes)
+
+Bug Fixes
+----------------------
+
+(No Changes)
+
+Optimizations
+----------------------
+
+(No Changes)
+
+Other Changes
+----------------------
+
+* SOLR-10827: Factor out abstract FilteringSolrMetricReporter class. (Christine Poerschke)
+
+* SOLR-10957: Changed SolrCoreParser.init to use the resource loader from getSchema()
+  instead of the resource loader from getCore(). (Christine Poerschke)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
@@ -281,6 +325,11 @@ Bug Fixes
 * SOLR-6807: CloudSolrClient's ZK state version check with the server was ignored when handleSelect=false
   (David Smiley)
 
+* SOLR-10878: MOVEREPLICA command may lose data when replicationFactor is 1. (ab, shalin)
+
+* SOLR-10879: DELETEREPLICA and DELETENODE commands should prevent data loss when
+  replicationFactor is 1. (ab)
+
 Optimizations
 ----------------------
 
@@ -421,6 +470,9 @@ Other Changes
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
   (added leading '/' in request handlers). Switch all tests referring to "standard" request handler to
   instead refer to "/select" with SearchHandler. Deprecated the old StandardRequestHandler. (David Smiley)
+
+* SOLR-10456: Deprecate timeout related setters from SolrClients, and replace with Builder based implementation
+  (Jason Gerlowski, Anshum Gupta)
 
 ==================  6.7.0 ==================
 

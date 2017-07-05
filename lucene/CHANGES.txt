@@ -100,6 +100,10 @@ API Changes
   DoubleValuesSource extensions, or with the new ShapeValuesSource and
   ShapeValuesPredicate classes (Alan Woodward, David Smiley)
 
+* LUCENE-7892: Doc-values query factory methods have been renamed so that their
+  name contains "slow" in order to cleary indicate that they would usually be a
+  bad choice. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
