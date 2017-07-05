@@ -3760,7 +3760,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // and re-resolve against the newly merged segment:
       
       Map<String,List<DocValuesFieldUpdates>> mergingDVUpdates = rld.getMergingDVUpdates();
-
       for (Map.Entry<String,List<DocValuesFieldUpdates>> ent : mergingDVUpdates.entrySet()) {
 
         String field = ent.getKey();
@@ -4358,6 +4357,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
         final ReadersAndUpdates rld = readerPool.get(info, true);
+        rld.setIsMerging();
 
         SegmentReader reader = rld.getReaderForMerge(context);
         int delCount = reader.numDeletedDocs();
