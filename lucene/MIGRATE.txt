@@ -146,3 +146,6 @@ Instead use ConcatentingTokenStream, which will allow for the use of custom
 attributes.
 
 ## FieldValueQuery is renamed to DocValuesFieldExistsQuery (LUCENE-7899)
+
+This query matches only documents that have a value for the specified doc
+values field.
