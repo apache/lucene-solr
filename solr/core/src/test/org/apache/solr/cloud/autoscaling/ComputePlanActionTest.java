@@ -127,7 +127,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     String setClusterPreferencesCommand = "{" +
         "'set-cluster-preferences': [" +
-        "{'minimize': 'cores','precision': 3}," +
+        "{'minimize': 'cores'}," +
         "{'maximize': 'freedisk','precision': 100}]" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
@@ -295,6 +295,18 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
+    // the default policy limits 1 replica per node, we need more right now
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<3', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
         "conf",1, 2);
     create.setMaxShardsPerNode(2);
@@ -303,6 +315,19 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     waitForState("Timed out waiting for replicas of new collection to be active",
         "testNodeAdded", (liveNodes, collectionState) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
+    // reset to the original policy which has only 1 replica per shard per node
+    setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // start a node so that the 'violation' created by the previous policy update is fixed
     JettySolrRunner runner = cluster.startJettySolrRunner();
     assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
     assertTrue(fired.get());
