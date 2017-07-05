@@ -827,14 +827,10 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    */
-  public static class Builder {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
-    protected HttpClient httpClient;
-    protected ResponseParser responseParser;
     protected boolean compression;
     protected ModifiableSolrParams invariantParams = new ModifiableSolrParams();
-    protected Integer connectionTimeoutMillis;
-    protected Integer socketTimeoutMillis;
 
     public Builder() {
       this.responseParser = new BinaryResponseParser();
@@ -895,22 +891,6 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     }
 
     /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
-    }
-
-    /**
-     * Provides a {@link ResponseParser} for created clients to use when handling requests.
-     */
-    public Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
-
-    /**
      * Chooses whether created {@link HttpSolrClient}s use compression by default.
      */
     public Builder allowCompression(boolean compression) {
@@ -941,30 +921,6 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
       this.invariantParams.add(params);
       return this;
     }
-    
-    /**
-     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
-     */
-    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
-      if (connectionTimeoutMillis <= 0) {
-        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
-      }
-      
-      this.connectionTimeoutMillis = connectionTimeoutMillis;
-      return this;
-    }
-    
-    /**
-     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
-     */
-    public Builder withSocketTimeout(int socketTimeoutMillis) {
-      if (socketTimeoutMillis <= 0) {
-        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
-      }
-      
-      this.socketTimeoutMillis = socketTimeoutMillis;
-      return this;
-    }
 
     /**
      * Create a {@link HttpSolrClient} based on provided configuration.
@@ -979,6 +935,11 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
       } else {
         return new DelegationTokenHttpSolrClient(this);
       }
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }
