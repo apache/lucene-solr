@@ -432,8 +432,10 @@ Other Changes
 * SOLR-10456: Deprecate timeout related setters from SolrClients, and replace with Builder based implementation
   (Jason Gerlowski, Anshum Gupta)
 
-* SOLR-11004: Consolidate SolrClient builder code in an abstract base class (Jason Gerlowski,
-  Anshum Gupta)
+* SOLR-11004: Consolidate SolrClient builder code in an abstract base class (Jason Gerlowski, Anshum Gupta)
+
+* SOLR-10967: Cleanup the default configset. The changes involve some documentation corrections, removing the currency
+  field from the examples and a few dynamic fields (Varun Thacker)
 
 ==================  6.7.0 ==================
 
