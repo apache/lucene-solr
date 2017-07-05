@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 /**
@@ -61,8 +62,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
   private static final AtomicReference<Map> actionContextPropsRef = new AtomicReference<>();
   private static final AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
 
-  private String path = null;
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(NODE_COUNT)
@@ -77,7 +76,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     fired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     actionContextPropsRef.set(null);
-    this.path = "/admin/autoscaling";
 
     // remove everything from autoscaling.json in ZK
     zkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, "{}".getBytes(Charsets.UTF_8), true);
@@ -123,16 +121,16 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPolicyCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     String setClusterPreferencesCommand = "{" +
         "'set-cluster-preferences': [" +
-        "{'minimize': 'cores','precision': 3}," +
+        "{'minimize': 'cores'}," +
         "{'maximize': 'freedisk','precision': 100}]" +
         "}";
-    req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setClusterPreferencesCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPreferencesCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
   }
@@ -153,7 +151,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -227,7 +225,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -293,8 +291,20 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'test','class':'" + ComputePlanActionTest.AssertingTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = new AutoScalingHandlerTest.AutoScalingRequest(SolrRequest.METHOD.POST, path, setTriggerCommand);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // the default policy limits 1 replica per node, we need more right now
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<3', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
@@ -305,6 +315,19 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     waitForState("Timed out waiting for replicas of new collection to be active",
         "testNodeAdded", (liveNodes, collectionState) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
+    // reset to the original policy which has only 1 replica per shard per node
+    setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // start a node so that the 'violation' created by the previous policy update is fixed
     JettySolrRunner runner = cluster.startJettySolrRunner();
     assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
     assertTrue(fired.get());
