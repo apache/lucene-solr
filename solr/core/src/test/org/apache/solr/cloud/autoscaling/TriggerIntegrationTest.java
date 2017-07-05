@@ -696,10 +696,12 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue("action wasn't interrupted", await);
     // it should fire again from enqueued event
     await = actionStarted.await(60, TimeUnit.SECONDS);
+    assertTrue("action wasn't started", await);
     TriggerEvent replayedEvent = events.iterator().next();
     assertTrue(replayedEvent.getProperty(TriggerEventQueue.ENQUEUE_TIME) != null);
     assertTrue(events + "\n" + replayedEvent.toString(), replayedEvent.getProperty(TriggerEventQueue.DEQUEUE_TIME) != null);
     await = actionCompleted.await(10, TimeUnit.SECONDS);
+    assertTrue("action wasn't completed", await);
     assertTrue(triggerFired.get());
   }
 
