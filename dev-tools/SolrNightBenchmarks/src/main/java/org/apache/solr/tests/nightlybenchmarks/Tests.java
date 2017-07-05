@@ -96,19 +96,19 @@ public class Tests {
 			String collectionName1 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
 			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName1, 1000, 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true,
+					collectionName1, (int)Math.floor(numDocuments/100) , 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true,
 					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 			node.deleteCollection(collectionName1);
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
 			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName2, 1000, 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true,
+					collectionName2, (int)Math.floor(numDocuments/100), 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true,
 					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 			node.deleteCollection(collectionName2);
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
 			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName3, 1000, 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true,
+					collectionName3, (int)Math.floor(numDocuments/100), 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true,
 					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 			node.deleteCollection(collectionName3);
 
@@ -183,7 +183,7 @@ public class Tests {
 				cloud.createCollection(collectionName1, null, shards, replicas);
 
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1000, 1,
+						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
@@ -191,7 +191,7 @@ public class Tests {
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1000, 2,
+						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
@@ -199,7 +199,7 @@ public class Tests {
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1000, 1,
+						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
@@ -209,7 +209,7 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1000, 1,
+						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
@@ -217,7 +217,7 @@ public class Tests {
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1000, 2,
+						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
@@ -225,7 +225,7 @@ public class Tests {
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1000, 3,
+						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
@@ -235,7 +235,7 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1000, 1,
+						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
@@ -243,7 +243,7 @@ public class Tests {
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1000, 2,
+						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
@@ -251,7 +251,7 @@ public class Tests {
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1000, 3,
+						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
@@ -261,7 +261,7 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName1, 1000, 1,
+						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName1);
@@ -269,7 +269,7 @@ public class Tests {
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName2, 1000, 2,
+						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName2);
@@ -277,7 +277,7 @@ public class Tests {
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexData(numDocuments,
-						cloud.getuRL(), collectionName3, 1000, 3,
+						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, true, true,
 						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
 				cloud.deleteCollection(collectionName3);
@@ -471,7 +471,7 @@ public class Tests {
 			returnMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 			returnMap.put("IndexingTime", "" + CloudConcurrentIndexingClient.totalTime);
 			returnMap.put("IndexingThroughput", "" + ((CloudConcurrentIndexingClient.documentCount)
-					/ (CloudConcurrentIndexingClient.totalTime / 1000d)));
+					/ Math.floor(CloudConcurrentIndexingClient.totalTime / 1000d)));
 			returnMap.put("ThroughputUnit", "doc/sec");
 			returnMap.put("CommitID", Util.COMMIT_ID);
 

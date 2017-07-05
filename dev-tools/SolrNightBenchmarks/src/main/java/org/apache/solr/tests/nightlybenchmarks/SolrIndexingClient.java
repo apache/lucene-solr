@@ -130,7 +130,7 @@ public class SolrIndexingClient {
 				if (numDocuments == numberOfDocuments) {
 					break;
 				}
-			}
+			}			
 			end = System.currentTimeMillis();
 
 			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
@@ -190,7 +190,7 @@ public class SolrIndexingClient {
 		returnMetricMap.put("TimeStamp", ft.format(dNow));
 		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 		returnMetricMap.put("IndexingTime", "" + (end - start));
-		returnMetricMap.put("IndexingThroughput", "" + (double) numberOfDocuments / ((double) ((end - start) / 1000d)));
+		returnMetricMap.put("IndexingThroughput", "" + (double) numberOfDocuments / ((double) Math.floor(((end - start) / 1000d))));
 		returnMetricMap.put("ThroughputUnit", "doc/sec");
 		returnMetricMap.put("CommitID", this.commitId);
 
