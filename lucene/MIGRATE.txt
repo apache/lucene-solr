@@ -144,3 +144,5 @@ can safely be casted to an int in that case.
 
 Instead use ConcatentingTokenStream, which will allow for the use of custom
 attributes.
+
+## FieldValueQuery is renamed to DocValuesFieldExistsQuery (LUCENE-7899)
