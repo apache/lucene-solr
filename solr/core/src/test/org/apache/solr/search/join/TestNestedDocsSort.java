@@ -85,6 +85,11 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       parse("childfield(name_s1,$q)");
     }
     
+    @Test
+    public void testOmitSpaceinFrontOfOrd(){
+      parseAssertEq("childfield(name_s1,$q)asc", "childfield(name_s1,$q) asc");
+    }
+    
     private void parseAssertEq(String sortField, String sortField2) {
       assertEq(parse(sortField), parse(sortField2));
     }
