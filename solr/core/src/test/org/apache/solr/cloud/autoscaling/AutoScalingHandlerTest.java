@@ -595,6 +595,9 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "    ]," +
         "    'policy1':[" +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]," +
+        "    'policy2':[" +
+        "      {'replica':'<7', 'shard': '#EACH', 'node': '#ANY'}" +
         "    ]" +
         "}}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setPolicyCommand);
@@ -624,7 +627,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     Map policies = (Map) response.get("policies");
     assertNotNull(policies);
-    assertEquals(2, policies.size());
+    assertEquals(3, policies.size());
     assertNotNull(policies.get("xyz"));
     assertNotNull(policies.get("policy1"));
 
@@ -660,10 +663,21 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(0, violations.size());
 
     // lets create a collection which violates the rule replicas < 2
-    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
-    create.setMaxShardsPerNode(10);
-    CollectionAdminResponse adminResponse = create.process(solrClient);
+    CollectionAdminResponse adminResponse = CollectionAdminRequest.Create
+        .createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6)
+        .setPolicy("policy2")
+        .setMaxShardsPerNode(10)
+        .process(solrClient);
     assertTrue(adminResponse.isSuccess());
+    setPolicyCommand =  "{'set-policy': {" +
+        "    'policy2':[" +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}" +
+        "    ]" +
+        "}}";
+
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
 
     // get the diagnostics output again
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/diagnostics", null);
