@@ -38,6 +38,7 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.hdfs.blockcache.enabled", "false");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
