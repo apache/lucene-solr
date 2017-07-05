@@ -62,7 +62,7 @@ New Features
 Bug Fixes
 ----------------------
 
-(No Changes)
+* SOLR-10668: fix NPE at sort=childfield(..) .. on absent values (Mikhail Khludnev)
 
 Optimizations
 ----------------------
