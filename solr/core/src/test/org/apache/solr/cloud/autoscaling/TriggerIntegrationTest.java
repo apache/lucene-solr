@@ -271,9 +271,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
           fail("Trigger should not have fired more than once!");
         }
       } finally {
-        if (locked) {
-          lock.unlock();
-        }
+        lock.unlock();
       }
     }
   }
@@ -815,9 +813,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         log.debug("--throwable", t);
         throw t;
       } finally {
-        if (locked) {
-          lock.unlock();
-        }
+        lock.unlock();
       }
     }
 
