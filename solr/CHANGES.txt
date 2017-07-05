@@ -449,6 +449,9 @@ Other Changes
 * SOLR-10456: Deprecate timeout related setters from SolrClients, and replace with Builder based implementation
   (Jason Gerlowski, Anshum Gupta)
 
+* SOLR-11004: Consolidate SolrClient builder code in an abstract base class (Jason Gerlowski,
+  Anshum Gupta)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
