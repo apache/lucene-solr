@@ -34,6 +34,10 @@ New Features
   updates concurrently, giving sizable speedups in update-heavy
   indexing use cases (Simon Willnauer, Mike McCandless)
 
+* LUCENE-7823: Pure query based naive bayes classifier using BM25 scores (Tommaso Teofili)
+
+* LUCENE-7838: Knn classifier based on fuzzified term queries (Tommaso Teofili)
+
 API Changes
 
 * LUCENE-2605: Classic QueryParser no longer splits on whitespace by default.
