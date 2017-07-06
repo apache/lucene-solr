@@ -89,7 +89,9 @@ Next, the script prompts you for the number of shards to distribute the collecti
 
 Next, the script will prompt you for the number of replicas to create for each shard.  <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Replication>> is covered in more detail later in the guide, so if you're unsure, then use the default of 2 so that you can see how replication is handled in SolrCloud.
 
-Lastly, the script will prompt you for the name of a configuration directory for your collection. You can choose *basic_configs*, *data_driven_schema_configs*, or *sample_techproducts_configs*. The configuration directories are pulled from `server/solr/configsets/` so you can review them beforehand if you wish. The *data_driven_schema_configs* configuration (the default) is useful when you're still designing a schema for your documents and need some flexiblity as you experiment with Solr.
+Lastly, the script will prompt you for the name of a configuration directory for your collection. You can choose *_default*, or *sample_techproducts_configs*. The configuration directories are pulled from `server/solr/configsets/` so you can review them beforehand if you wish. The *_default* configuration is useful when you're still designing a schema for your documents and need some flexiblity as you experiment with Solr, since it has schemaless functionality. However, after creating your collection, the schemaless functionality can be disabled in order to lock down the schema (so that documents indexed after doing so will not alter the schema) or to configure the schema by yourself. This can be done as follows (assuming your collection name is `mycollection`):
+
+`curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'`
 
 At this point, you should have a new collection created in your local SolrCloud cluster. To verify this, you can run the status command:
 

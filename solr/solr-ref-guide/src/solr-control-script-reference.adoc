@@ -213,7 +213,7 @@ The configset used is customized for DIH, and is found in `$SOLR_HOME/example/ex
 For more information about DIH, see the section <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>.
 * *schemaless*: This example starts Solr in standalone mode using a managed schema, as described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>, and provides a very minimal pre-defined schema. Solr will run in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
-The configset used can be found in `$SOLR_HOME/server/solr/configsets/data_driven_schema_configs`.
+The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
 
 [IMPORTANT]
 ====
@@ -392,11 +392,11 @@ Name of the core or collection to create (required).
 *Example*: `bin/solr create -c mycollection`
 
 `-d <confdir>`::
-The configuration directory. This defaults to `data_driven_schema_configs`.
+The configuration directory. This defaults to `_default`.
 +
 See the section <<Configuration Directories and SolrCloud>> below for more details about this option when running in SolrCloud mode.
 +
-*Example*: `bin/solr create -d basic_configs`
+*Example*: `bin/solr create -d _default`
 
 `-n <configName>`::
 The configuration name. This defaults to the same name as the core or collection.
@@ -431,15 +431,15 @@ Before creating a collection in SolrCloud, the configuration directory used by t
 
 Let's work through a few examples to illustrate how configuration directories work in SolrCloud.
 
-First, if you don't provide the `-d` or `-n` options, then the default configuration (`$SOLR_HOME/server/solr/configsets/data_driven_schema_configs/conf`) is uploaded to ZooKeeper using the same name as the collection.
+First, if you don't provide the `-d` or `-n` options, then the default configuration (`$SOLR_HOME/server/solr/configsets/_default/conf`) is uploaded to ZooKeeper using the same name as the collection.
 
-For example, the following command will result in the `data_driven_schema_configs` configuration being uploaded to `/configs/contacts` in ZooKeeper: `bin/solr create -c contacts`.
+For example, the following command will result in the `_default` configuration being uploaded to `/configs/contacts` in ZooKeeper: `bin/solr create -c contacts`.
 
-If you create another collection with `bin/solr create -c contacts2`, then another copy of the `data_driven_schema_configs` directory will be uploaded to ZooKeeper under `/configs/contacts2`.
+If you create another collection with `bin/solr create -c contacts2`, then another copy of the `_default` directory will be uploaded to ZooKeeper under `/configs/contacts2`.
 
 Any changes you make to the configuration for the contacts collection will not affect the `contacts2` collection. Put simply, the default behavior creates a unique copy of the configuration directory for each collection you create.
 
-You can override the name given to the configuration directory in ZooKeeper by using the `-n` option. For instance, the command `bin/solr create -c logs -d basic_configs -n basic` will upload the `server/solr/configsets/basic_configs/conf` directory to ZooKeeper as `/configs/basic`.
+You can override the name given to the configuration directory in ZooKeeper by using the `-n` option. For instance, the command `bin/solr create -c logs -d _default -n basic` will upload the `server/solr/configsets/_default/conf` directory to ZooKeeper as `/configs/basic`.
 
 Notice that we used the `-d` option to specify a different configuration than the default. Solr provides several built-in configurations under `server/solr/configsets`. However you can also provide the path to your own configuration directory using the `-d` option. For instance, the command `bin/solr create -c mycoll -d /tmp/myconfigs`, will upload `/tmp/myconfigs` into ZooKeeper under `/configs/mycoll` .
 
@@ -449,7 +449,9 @@ Other collections can share the same configuration by specifying the name of the
 
 ==== Data-driven Schema and Shared Configurations
 
-The `data_driven_schema_configs` schema can mutate as data is indexed. Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections.
+The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e. data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e. data-driven changes to the schema) for a collection by the following (assuming the collection name is `mycollection`):
+
+`curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'`
 
 === Delete Core or Collection
 

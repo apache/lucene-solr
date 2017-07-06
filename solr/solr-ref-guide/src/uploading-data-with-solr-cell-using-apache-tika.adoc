@@ -172,7 +172,7 @@ Here is the order in which the Solr Cell framework, using the Extracting Request
 [[UploadingDatawithSolrCellusingApacheTika-ConfiguringtheSolrExtractingRequestHandler]]
 == Configuring the Solr ExtractingRequestHandler
 
-If you are not working with the supplied `sample_techproducts_configs `or` data_driven_schema_configs` <<config-sets.adoc#config-sets,config set>>, you must configure your own `solrconfig.xml` to know about the Jar's containing the `ExtractingRequestHandler` and its dependencies:
+If you are not working with the supplied `sample_techproducts_configs` or `_default` <<config-sets.adoc#config-sets,config set>>, you must configure your own `solrconfig.xml` to know about the Jar's containing the `ExtractingRequestHandler` and its dependencies:
 
 [source,xml]
 ----

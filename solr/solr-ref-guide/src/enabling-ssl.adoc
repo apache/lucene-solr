@@ -255,7 +255,7 @@ NOTE: If your operating system does not include cURL, you can download binaries 
 
 === Create a SolrCloud Collection using bin/solr
 
-Create a 2-shard, replicationFactor=1 collection named mycollection using the default configset (data_driven_schema_configs):
+Create a 2-shard, replicationFactor=1 collection named mycollection using the default configset (_default):
 
 .*nix command
 [source,bash]

@@ -29,7 +29,7 @@ For example, if you want several of your search handlers to return the same list
 
 The properties and configuration of an `<initParams>` section mirror the properties and configuration of a request handler. It can include sections for defaults, appends, and invariants, the same as any request handler.
 
-For example, here is one of the `<initParams>` sections defined by default in the `data_driven_config` example:
+For example, here is one of the `<initParams>` sections defined by default in the `_default` example:
 
 [source,xml]
 ----
