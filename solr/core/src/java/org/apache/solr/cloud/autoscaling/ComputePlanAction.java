@@ -111,16 +111,14 @@ public class ComputePlanAction implements TriggerAction {
     Policy.Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:
-        NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) event;
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
-            .hint(Policy.Suggester.Hint.TARGET_NODE, nodeAddedEvent.getProperty(TriggerEvent.NODE_NAME));
-        log.debug("Created suggester with targetNode: {}", nodeAddedEvent.getProperty(TriggerEvent.NODE_NAME));
+            .hint(Policy.Suggester.Hint.TARGET_NODE, event.getProperty(TriggerEvent.NODE_NAME));
+        log.debug("Created suggester with targetNode: {}", event.getProperty(TriggerEvent.NODE_NAME));
         break;
       case NODELOST:
-        NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) event;
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
-            .hint(Policy.Suggester.Hint.SRC_NODE, nodeLostEvent.getProperty(TriggerEvent.NODE_NAME));
-        log.debug("Created suggester with srcNode: {}", nodeLostEvent.getProperty(TriggerEvent.NODE_NAME));
+            .hint(Policy.Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAME));
+        log.debug("Created suggester with srcNode: {}", event.getProperty(TriggerEvent.NODE_NAME));
         break;
       default:
         throw new UnsupportedOperationException("No support for events other than nodeAdded and nodeLost, received: " + event.getEventType());
