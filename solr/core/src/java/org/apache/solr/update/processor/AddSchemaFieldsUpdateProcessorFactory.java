@@ -74,52 +74,61 @@ import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
  * </p>
  * <p>
  * This processor takes as configuration a sequence of zero or more "typeMapping"-s from
- * one or more "valueClass"-s, specified as either an &lt;arr&gt; of &lt;str&gt;, or
- * multiple &lt;str&gt; with the same name, to an existing schema "fieldType".
+ * one or more "valueClass"-s, specified as either an <code>&lt;arr&gt;</code> of 
+ * <code>&lt;str&gt;</code>, or multiple <code>&lt;str&gt;</code> with the same name,
+ * to an existing schema "fieldType".
  * </p>
  * <p>
  * If more than one "valueClass" is specified in a "typeMapping", field values with any
  * of the specified "valueClass"-s will be mapped to the specified target "fieldType".
  * The "typeMapping"-s are attempted in the specified order; if a field value's class
  * is not specified in a "valueClass", the next "typeMapping" is attempted. If no
- * "typeMapping" succeeds, then the specified "defaultFieldType" is used. 
+ * "typeMapping" succeeds, then either the "typeMapping" configured with 
+ * <code>&lt;bool name="default"&gt;true&lt;/bool&gt;</code> is used, or if none is so
+ * configured, the <code>lt;str name="defaultFieldType"&gt;...&lt;/str&gt;</code> is
+ * used.
+ * </p>
+ * <p>
+ * Zero or more "copyField" directives may be included with each "typeMapping", using a
+ * <code>&lt;lst&gt;</code>. The copy field source is automatically set to the new field
+ * name; "dest" must specify the destination field or dynamic field in a
+ * <code>&lt;str&gt;</code>; and "maxChars" may optionally be specified in an
+ * <code>&lt;int&gt;</code>.
  * </p>
  * <p>
  * Example configuration:
  * </p>
  * 
  * <pre class="prettyprint">
- * &lt;processor class="solr.AddSchemaFieldsUpdateProcessorFactory"&gt;
- *   &lt;str name="defaultFieldType"&gt;text_general&lt;/str&gt;
+ * &lt;updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields"&gt;
  *   &lt;lst name="typeMapping"&gt;
- *     &lt;str name="valueClass"&gt;Boolean&lt;/str&gt;
+ *     &lt;str name="valueClass"&gt;java.lang.String&lt;/str&gt;
+ *     &lt;str name="fieldType"&gt;text_general&lt;/str&gt;
+ *     &lt;lst name="copyField"&gt;
+ *       &lt;str name="dest"&gt;*_str&lt;/str&gt;
+ *       &lt;int name="maxChars"&gt;256&lt;/int&gt;
+ *     &lt;/lst&gt;
+ *     &lt;!-- Use as default mapping instead of defaultFieldType --&gt;
+ *     &lt;bool name="default"&gt;true&lt;/bool&gt;
+ *   &lt;/lst&gt;
+ *   &lt;lst name="typeMapping"&gt;
+ *     &lt;str name="valueClass"&gt;java.lang.Boolean&lt;/str&gt;
  *     &lt;str name="fieldType"&gt;booleans&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
- *     &lt;str name="valueClass"&gt;Integer&lt;/str&gt;
- *     &lt;str name="fieldType"&gt;pints&lt;/str&gt;
- *   &lt;/lst&gt;
- *   &lt;lst name="typeMapping"&gt;
- *     &lt;str name="valueClass"&gt;Float&lt;/str&gt;
- *     &lt;str name="fieldType"&gt;pfloats&lt;/str&gt;
- *   &lt;/lst&gt;
- *   &lt;lst name="typeMapping"&gt;
- *     &lt;str name="valueClass"&gt;Date&lt;/str&gt;
+ *     &lt;str name="valueClass"&gt;java.util.Date&lt;/str&gt;
  *     &lt;str name="fieldType"&gt;pdates&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
- *     &lt;str name="valueClass"&gt;Long&lt;/str&gt;
- *     &lt;str name="valueClass"&gt;Integer&lt;/str&gt;
+ *     &lt;str name="valueClass"&gt;java.lang.Long&lt;/str&gt;
+ *     &lt;str name="valueClass"&gt;java.lang.Integer&lt;/str&gt;
  *     &lt;str name="fieldType"&gt;plongs&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="typeMapping"&gt;
- *     &lt;arr name="valueClass"&gt;
- *       &lt;str&gt;Double&lt;/str&gt;
- *       &lt;str&gt;Float&lt;/str&gt;
- *     &lt;/arr&gt;
+ *     &lt;str name="valueClass"&gt;java.lang.Number&lt;/str&gt;
  *     &lt;str name="fieldType"&gt;pdoubles&lt;/str&gt;
  *   &lt;/lst&gt;
- * &lt;/processor&gt;</pre>
+ * &lt;/updateProcessor&gt;</pre>
  */
 public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
