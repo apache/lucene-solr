@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -243,7 +245,6 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
   }
 
-  
   /** 
    * Test some small, hand crafted, but non-trivial queries that are
    * easier to trace/debug then a pure random monstrosity.
@@ -251,6 +252,30 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    */
   public void testBespoke() throws Exception {
 
+    { // sanity check our test methods can handle a query matching no docs
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      TermFacet top = new TermFacet(strfield(9), new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"));
+      top.subFacets.put("sub", new TermFacet(strfield(11), new JoinDomain(strfield(8), strfield(8), null)));
+      facets.put("empty_top", top);
+      assertFacetCountsAreCorrect(facets, strfield(7) + ":bogus");
+    }
+    
+    { // sanity check our test methods can handle a query where a facet filter prevents any doc from having terms
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      TermFacet top = new TermFacet(strfield(9), new JoinDomain(null, null, "-*:*"));
+      top.subFacets.put("sub", new TermFacet(strfield(11), new JoinDomain(strfield(8), strfield(8), null)));
+      facets.put("filtered_top", top);
+      assertFacetCountsAreCorrect(facets, "*:*");
+    }
+    
+    { // sanity check our test methods can handle a query where a facet filter prevents any doc from having sub-terms
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      TermFacet top = new TermFacet(strfield(9), new JoinDomain(strfield(8), strfield(8), null));
+      top.subFacets.put("sub", new TermFacet(strfield(11), new JoinDomain(null, null, "-*:*")));
+      facets.put("filtered_top", top);
+      assertFacetCountsAreCorrect(facets, "*:*");
+    }
+  
     { // strings
       Map<String,TermFacet> facets = new LinkedHashMap<>();
       TermFacet top = new TermFacet(strfield(9), new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"));
@@ -274,11 +299,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
 
     }
-
-    
   }
 
-  
   public void testRandom() throws Exception {
 
     final int numIters = atLeast(3);
@@ -320,21 +342,31 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     final SolrParams initParams = SolrParams.wrapAppended(facetParams, baseParams);
     
     log.info("Doing full run: {}", initParams);
-    
-    NamedList topResponse = null;
+
+    QueryResponse rsp = null;
+    // JSON Facets not (currently) available from QueryResponse...
+    NamedList topNamedList = null;
     try {
-      topResponse = getRandClient(random()).request(new QueryRequest(initParams));
-      assertNotNull(initParams + " is null response?", topResponse);
+      rsp = (new QueryRequest(initParams)).process(getRandClient(random()));
+      assertNotNull(initParams + " is null rsp?", rsp);
+      topNamedList = rsp.getResponse();
+      assertNotNull(initParams + " is null topNamedList?", topNamedList);
     } catch (Exception e) {
       throw new RuntimeException("init query failed: " + initParams + ": " + 
                                  e.getMessage(), e);
     }
     try {
-      final NamedList facetResponse = (NamedList) topResponse.get("facets");
+      final NamedList facetResponse = (NamedList) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
+      assertEquals("numFound mismatch with top count?",
+                   rsp.getResults().getNumFound(), ((Number)facetResponse.get("count")).longValue());
+      if (0 == rsp.getResults().getNumFound()) {
+        // when the query matches nothing, we should expect no top level facets
+        expected = Collections.emptyMap();
+      }
       assertFacetCountsAreCorrect(expected, baseParams, facetResponse);
     } catch (AssertionError e) {
-      throw new AssertionError(initParams + " ===> " + topResponse + " --> " + e.getMessage(), e);
+      throw new AssertionError(initParams + " ===> " + topNamedList + " --> " + e.getMessage(), e);
     } finally {
       log.info("Ending full run"); 
     }
@@ -373,7 +405,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         }
       }
     }
-    assertTrue("facets have unexpeted keys left over: " + actualFacetResponse,
+    assertTrue("facets have unexpected keys left over: " + actualFacetResponse,
                // should alwasy be a count, maybe a 'val' if we're a subfacet
                (actualFacetResponse.size() == expected.size() + 1) ||
                (actualFacetResponse.size() == expected.size() + 2));
