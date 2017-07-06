@@ -168,7 +168,7 @@ For posting XML messages contained in a file, you can use the alternative form:
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary @myfile.xml
 ----
 
-Short requests can also be sent using a HTTP GET command, URL-encoding the request, as in the following. Note the escaping of "<" and ">":
+Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher-in-solrconfig.adoc#RequestDispatcherinSolrConfig-requestParsersElement,RequestDispatcher in SolrConfig>> element, URL-encoding the request, as in the following. Note the escaping of "<" and ">":
 
 [source,bash]
 ----
