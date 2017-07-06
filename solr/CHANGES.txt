@@ -405,6 +405,8 @@ Other Changes
 * SOLR-10967: Cleanup the default configset. The changes involve some documentation corrections, removing the currency
   field from the examples and a few dynamic fields (Varun Thacker)
 
+* SOLR-11016: Fix TestCloudJSONFacetJoinDomain test-only bug (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
