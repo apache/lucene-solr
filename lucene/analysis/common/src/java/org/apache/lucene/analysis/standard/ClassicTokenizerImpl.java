@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -342,17 +343,17 @@ class ClassicTokenizerImpl {
 
   /* user code: */
 
-public static final int ALPHANUM          = StandardTokenizer.ALPHANUM;
-public static final int APOSTROPHE        = StandardTokenizer.APOSTROPHE;
-public static final int ACRONYM           = StandardTokenizer.ACRONYM;
-public static final int COMPANY           = StandardTokenizer.COMPANY;
-public static final int EMAIL             = StandardTokenizer.EMAIL;
-public static final int HOST              = StandardTokenizer.HOST;
-public static final int NUM               = StandardTokenizer.NUM;
-public static final int CJ                = StandardTokenizer.CJ;
-public static final int ACRONYM_DEP       = StandardTokenizer.ACRONYM_DEP;
+public static final int ALPHANUM          = ClassicTokenizer.ALPHANUM;
+public static final int APOSTROPHE        = ClassicTokenizer.APOSTROPHE;
+public static final int ACRONYM           = ClassicTokenizer.ACRONYM;
+public static final int COMPANY           = ClassicTokenizer.COMPANY;
+public static final int EMAIL             = ClassicTokenizer.EMAIL;
+public static final int HOST              = ClassicTokenizer.HOST;
+public static final int NUM               = ClassicTokenizer.NUM;
+public static final int CJ                = ClassicTokenizer.CJ;
+public static final int ACRONYM_DEP       = ClassicTokenizer.ACRONYM_DEP;
 
-public static final String [] TOKEN_TYPES = StandardTokenizer.TOKEN_TYPES;
+public static final String [] TOKEN_TYPES = ClassicTokenizer.TOKEN_TYPES;
 
 public final int yychar()
 {
