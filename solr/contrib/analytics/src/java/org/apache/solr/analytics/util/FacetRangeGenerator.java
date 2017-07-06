@@ -27,9 +27,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumericFieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
 
 
@@ -249,7 +248,7 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
     final SchemaField sf = rangeFacet.getField();
     final FieldType ft = sf.getType();
     final FacetRangeGenerator<?> calc;
-    if (ft instanceof TrieField) {
+    if (ft instanceof NumericFieldType) {
       switch (ft.getNumberType()) {
         case FLOAT:
           calc = new FloatFacetRangeGenerator(rangeFacet);
@@ -267,10 +266,10 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
           calc = new DateFacetRangeGenerator(rangeFacet, null);
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on tried field of unexpected type:" + sf.getName());
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on numeric field of unexpected type: " + sf.getName());
       }
     } else {
-      throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on field:" + sf);
+      throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on non-numeric field: " + sf);
     } 
     return calc;
   }
@@ -330,9 +329,6 @@ class DateFacetRangeGenerator extends FacetRangeGenerator<Date> {
   public DateFacetRangeGenerator(final RangeFacet rangeFacet, final Date now) { 
     super(rangeFacet); 
     this.now = now;
-    if (! (field.getType() instanceof TrieDateField) ) {
-      throw new IllegalArgumentException("SchemaField must use field type extending TrieDateField");
-    }
   }
   
   @Override
