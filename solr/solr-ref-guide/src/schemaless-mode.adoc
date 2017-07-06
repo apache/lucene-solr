@@ -29,7 +29,7 @@ These Solr features, all controlled via `solrconfig.xml`, are:
 [[SchemalessMode-UsingtheSchemalessExample]]
 == Using the Schemaless Example
 
-The three features of schemaless mode are pre-configured in the `data_driven_schema_configs` <<config-sets.adoc#config-sets,config set>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
+The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,config set>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
 
 [source,bash]
 ----
@@ -67,15 +67,10 @@ You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to co
       "uniqueKey":true}]}
 ----
 
-[TIP]
-====
-The `data_driven_schema_configs` configset includes a `copyField` directive that causes all content to be indexed in a predefined "catch-all" `\_text_` field, which is used to enable single-field search that includes all fields' content. This will cause the index to be larger than it would be without this "catch-all" `copyField`. When you nail down your schema, consider removing the `\_text_` field and the corresponding `copyField` directive if you don't need it.
-====
-
 [[SchemalessMode-ConfiguringSchemalessMode]]
 == Configuring Schemaless Mode
 
-As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `data_driven_schema_configs` config set included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
+As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the default (`_default`) config set included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
 
 [[SchemalessMode-EnableManagedSchema]]
 === Enable Managed Schema
@@ -190,7 +185,7 @@ After each of these changes have been made, Solr should be restarted (or, you ca
 [[SchemalessMode-ExamplesofIndexedDocuments]]
 == Examples of Indexed Documents
 
-Once the schemaless mode has been enabled (whether you configured it manually or are using `data_driven_schema_configs` ), documents that include fields that are not defined in your schema should be added to the index, and the new fields added to the schema.
+Once the schemaless mode has been enabled (whether you configured it manually or are using `_default` ), documents that include fields that are not defined in your schema should be added to the index, and the new fields added to the schema.
 
 For example, adding a CSV document will cause its fields that are not in the schema to be added, with fieldTypes based on values:
 
