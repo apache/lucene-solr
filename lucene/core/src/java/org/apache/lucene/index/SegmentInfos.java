@@ -306,12 +306,17 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
 
     Version luceneVersion = Version.fromBits(input.readVInt(), input.readVInt(), input.readVInt());
-    if (luceneVersion.onOrAfter(Version.LUCENE_7_0_0) == false) {
-      // TODO: should we check indexCreatedVersion instead?
-      throw new IndexFormatTooOldException(input, "this index is too old (version: " + luceneVersion + ")");
+    int indexCreatedVersion = input.readVInt();
+    if (luceneVersion.major < indexCreatedVersion) {
+      throw new CorruptIndexException("Creation version [" + indexCreatedVersion
+          + ".x] can't be greater than the version that wrote the segment infos: [" + luceneVersion + "]" , input);
     }
 
-    int indexCreatedVersion = input.readVInt();
+    if (indexCreatedVersion < Version.LATEST.major - 1) {
+      throw new IndexFormatTooOldException(input, "This index was initially created with Lucene "
+          + indexCreatedVersion + ".x while the current version is " + Version.LATEST
+          + " and Lucene only supports reading the current and previous major versions.");
+    }
 
     SegmentInfos infos = new SegmentInfos(indexCreatedVersion);
     infos.id = id;

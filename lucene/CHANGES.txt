@@ -4,7 +4,14 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 8.0.0 =======================
-(No Changes)
+
+Changes in Runtime Behavior
+
+* LUCENE-7837: Indices that were created before the previous major version
+  will now fail to open even if they have been merged with the previous major
+  version. (Adrien Grand)
+
+
 
 ======================= Lucene 7.1.0 =======================
 (No Changes)
