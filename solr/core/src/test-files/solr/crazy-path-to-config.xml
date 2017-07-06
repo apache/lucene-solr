@@ -38,7 +38,9 @@
     <boolTofilterOptimizer enabled="true" cacheSize="32" threshold=".05"/>
   </query>
 
-  <requestDispatcher/>
+  <requestDispatcher>
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
 
   <requestHandler name="/select" class="solr.SearchHandler" />
   <requestHandler name="/crazy_custom_qt" class="solr.SearchHandler">

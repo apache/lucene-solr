@@ -31,6 +31,9 @@
     <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
   </directoryFactory>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
+  <requestDispatcher>
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
   
   <dataDir>${solr.data.dir:}</dataDir>
 

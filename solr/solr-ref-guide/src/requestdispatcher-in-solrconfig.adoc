@@ -48,6 +48,8 @@ The `<requestParsers>` sub-element controls values related to parsing requests. 
 
 The attribute `enableRemoteStreaming` controls whether remote streaming of content is allowed. If omitted or set to `false` (the default), streaming will not be allowed. Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
 
+The attribute `enableStreamBody` controls whether streaming content from the HTTP parameter `stream.body` is allowed. If omitted or set to `false` (the default), streaming will not be allowed. Setting it to `true` lets you pass data in the `stream.body` parameter.
+
 If you enable remote streaming, be sure that you have authentication enabled. Otherwise, someone could potentially gain access to your content by accessing arbitrary URLs. It's also a good idea to place Solr behind a firewall to prevent it from being accessed from untrusted clients.
 
 The attribute `multipartUploadLimitInKB` sets an upper limit in kilobytes on the size of a document that may be submitted in a multi-part HTTP POST request. The value specified is multiplied by 1024 to determine the size in bytes. A value of `-1` means MAX_INT, which is also the system default if omitted.
@@ -59,9 +61,20 @@ The attribute `addHttpRequestToContext` can be used to indicate that the origina
 [source,xml]
 ----
 <requestParsers enableRemoteStreaming="false"
+                enableStreamBody="false"
                 multipartUploadLimitInKB="2048"
                 formdataUploadLimitInKB="2048"
                 addHttpRequestToContext="false" />
+----
+
+The below command is an example of how to enable RemoteStreaming and BodyStreaming through <<config-api.adoc#ConfigAPI-CreatingandUpdatingCommonProperties,Config API>>:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d'{
+    "set-property" : {"requestDispatcher.requestParsers.enableRemoteStreaming":true},
+    "set-property" : {"requestDispatcher.requestParsers.enableStreamBody":true}
+}'
 ----
 
 [[RequestDispatcherinSolrConfig-httpCachingElement]]

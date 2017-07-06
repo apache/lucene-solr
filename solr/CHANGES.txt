@@ -77,6 +77,8 @@ Other Changes
 * SOLR-10957: Changed SolrCoreParser.init to use the resource loader from getSchema()
   instead of the resource loader from getCore(). (Christine Poerschke)
 
+* SOLR-10748: Make stream.body configurable and disabled by default (janhoy)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components

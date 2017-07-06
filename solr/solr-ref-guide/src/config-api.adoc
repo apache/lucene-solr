@@ -117,6 +117,7 @@ The properties that are configured with these commands are predefined and listed
 * `requestDispatcher.requestParsers.multipartUploadLimitInKB`
 * `requestDispatcher.requestParsers.formdataUploadLimitInKB`
 * `requestDispatcher.requestParsers.enableRemoteStreaming`
+* `requestDispatcher.requestParsers.enableStreamBody`
 * `requestDispatcher.requestParsers.addHttpRequestToContext`
 
 [[ConfigAPI-CommandsforCustomHandlersandLocalComponents]]

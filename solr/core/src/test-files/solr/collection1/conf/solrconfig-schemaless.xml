@@ -35,6 +35,10 @@
     </updateLog>
   </updateHandler>
 
+  <requestDispatcher>
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
+  
   <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>

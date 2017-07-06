@@ -18,6 +18,9 @@
 
  <schemaFactory class="ClassicIndexSchemaFactory" />
 
+ <requestDispatcher>
+   <requestParsers enableStreamBody="true" />
+ </requestDispatcher>
 
  <!-- Query parser used to rerank top docs with a provided model -->
  <queryParser name="ltr"
