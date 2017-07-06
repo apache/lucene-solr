@@ -321,6 +321,8 @@ Bug Fixes
 
 * SOLR-10983: Fix DOWNNODE -> queue-work explosion (Scott Blum, Joshua Humphries)
 
+* SOLR-10826: Fix CloudSolrClient to expand the collection parameter correctly (Tim Owen via Varun Thacker)
+
 Optimizations
 ----------------------
 
