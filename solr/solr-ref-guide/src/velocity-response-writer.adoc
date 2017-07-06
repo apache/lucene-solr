@@ -18,7 +18,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using configurations such as "basic_configs", "techproducts", and "example/files".
+The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using configurations such as "_default", "techproducts", and "example/files".
 
 Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion), and must be registered in `solrconfig.xml` like this:
 
