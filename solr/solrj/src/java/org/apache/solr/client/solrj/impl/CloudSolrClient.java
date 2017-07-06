@@ -1129,7 +1129,7 @@ public class CloudSolrClient extends SolrClient {
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (stateProvider.getState(collectionName) == null) {
-        String alias = stateProvider.getAlias(collection);
+        String alias = stateProvider.getAlias(collectionName);
         if (alias != null) {
           List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
           collectionNames.addAll(aliasList);
