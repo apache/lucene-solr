@@ -179,6 +179,9 @@ Other
 
 * LUCENE-5822: Convert README to Markdown (Jason Gerlowski via Mike Drob)
 
+* LUCENE-7773: Remove unused/deprecated token types from StandardTokenizer.
+  (Ahmet Arslan via Steve Rowe)
+
 ======================= Lucene 6.7.0 =======================
 
 New Features
