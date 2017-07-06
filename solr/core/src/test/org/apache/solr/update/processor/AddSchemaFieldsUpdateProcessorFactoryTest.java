@@ -17,10 +17,12 @@
 package org.apache.solr.update.processor;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -115,6 +117,29 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
+    assertEquals(0, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
+    assertU(commit());
+    assertQ(req("id:4")
+        ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']"
+        ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue2.toString() + "']"
+        ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue3.toString() + "']"
+    );
+  }
+
+  public void testSingleFieldDefaultTypeMappingRoundTrip() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    final String fieldName = "newfield4";
+    assertNull(schema.getFieldOrNull(fieldName));
+    Float fieldValue1 = -13258.0f;
+    Double fieldValue2 = 8.4828800808E10;
+    String fieldValue3 = "blah blah";
+    SolrInputDocument d = processAdd
+        ("add-fields-default-mapping", doc(f("id", "4"), f(fieldName, fieldValue1, fieldValue2, fieldValue3)));
+    assertNotNull(d);
+    schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull(fieldName));
+    assertEquals("text", schema.getFieldType(fieldName).getTypeName());
+    assertEquals(1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertU(commit());
     assertQ(req("id:4")
         ,"//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']"
@@ -208,6 +233,60 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
         ,"//arr[@name='" + fieldName3 + "']/str[.='" + field3String1 + "']"
         ,"//arr[@name='" + fieldName3 + "']/str[.='" + field3String2 + "']"
         ,"//arr[@name='" + fieldName4 + "']/date[.='" + field4Value1String + "']");
+  }
+
+  public void testStringWithCopyField() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    final String fieldName = "stringField";
+    final String strFieldName = fieldName+"_str";
+    assertNull(schema.getFieldOrNull(fieldName));
+    String content = "This is a text that should be copied to a string field but not be cutoff";
+    SolrInputDocument d = processAdd("add-fields", doc(f("id", "1"), f(fieldName, content)));
+    assertNotNull(d);
+    schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull(fieldName));
+    assertNotNull(schema.getFieldOrNull(strFieldName));
+    assertEquals("text", schema.getFieldType(fieldName).getTypeName());
+    assertEquals(1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(strFieldName)).size());
+  }
+
+  public void testStringWithCopyFieldAndMaxChars() throws Exception {
+    IndexSchema schema = h.getCore().getLatestSchema();
+    final String fieldName = "stringField";
+    final String strFieldName = fieldName+"_str";
+    assertNull(schema.getFieldOrNull(fieldName));
+    String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
+    SolrInputDocument d = processAdd("add-fields-maxchars", doc(f("id", "1"), f(fieldName, content)));
+    assertNotNull(d);
+    System.out.println("Document is "+d);
+    schema = h.getCore().getLatestSchema();
+    assertNotNull(schema.getFieldOrNull(fieldName));
+    assertNotNull(schema.getFieldOrNull(strFieldName));
+    assertEquals("text", schema.getFieldType(fieldName).getTypeName());
+    // We have three copyFields, one with maxChars 10 and two with maxChars 20
+    assertEquals(3, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
+    assertEquals("The configured maxChars cutoff does not exist on the copyField", 10, 
+        schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(strFieldName))
+            .get(0).get("maxChars"));
+    assertEquals("The configured maxChars cutoff does not exist on the copyField", 20, 
+        schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(fieldName+"_t"))
+            .get(0).get("maxChars"));
+    assertEquals("The configured maxChars cutoff does not exist on the copyField", 20, 
+        schema.getCopyFieldProperties(true, Collections.singleton(fieldName), Collections.singleton(fieldName+"2_t"))
+            .get(0).get("maxChars"));
+  }
+  
+  public void testCopyFieldByIndexing() throws Exception {
+    String content = "This is a text that should be copied to a string field and cutoff at 10 characters";
+    SolrInputDocument d = processAdd("add-fields-default-mapping", doc(f("id", "1"), f("mynewfield", content)));
+    assertU(commit());
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("q", "*:*").add("facet", "true").add("facet.field", "mynewfield_str");
+    assertQ(req(params)
+            , "*[count(//doc)=1]"
+            ,"//lst[@name='mynewfield_str']/int[@name='This is a '][.='1']"
+            );
   }
   
   @After

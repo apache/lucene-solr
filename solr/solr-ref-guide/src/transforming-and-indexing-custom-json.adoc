@@ -153,7 +153,7 @@ In this example, we simply named the field paths (such as `/exams/test`). Solr w
 [TIP]
 ====
 
-If you are working in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, fields that don't exist will be created on the fly with Solr's best guess for the field type. Documents WILL get rejected if the fields do not exist in the schema before indexing. So, if you are NOT using schemaless mode, pre-create those fields.
+Documents WILL get rejected if the fields do not exist in the schema before indexing. So, if you are NOT using schemaless mode, pre-create those fields. If you are working in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, fields that don't exist will be created on the fly with Solr's best guess for the field type. 
 
 ====
 
@@ -336,7 +336,7 @@ With this example, the documents indexed would be, as follows:
 == Tips for Custom JSON Indexing
 
 1.  Schemaless mode: This handles field creation automatically. The field guessing may not be exactly as you expect, but it works. The best thing to do is to setup a local server in schemaless mode, index a few sample docs and create those fields in your real setup with proper field types before indexing
-2.  Pre-created Schema : Post your docs to the `/update/`json`/docs` endpoint with `echo=true`. This gives you the list of field names you need to create. Create the fields before you actually index
+2.  Pre-created Schema : Post your docs to the `/update/json/docs` endpoint with `echo=true`. This gives you the list of field names you need to create. Create the fields before you actually index
 3.  No schema, only full-text search : All you need to do is to do full-text search on your JSON. Set the configuration as given in the Setting JSON Defaults section.
 
 [[TransformingandIndexingCustomJSON-SettingJSONDefaults]]

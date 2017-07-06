@@ -39,5 +39,5 @@ This section helps you get Solr up and running quickly, and introduces you to th
 
 [TIP]
 ====
-Solr includes a Quick Start tutorial which will be helpful if you are just starting out with Solr. You can find it online at http://lucene.apache.org/solr/quickstart.html, or in your Solr installation at `$SOLR_INSTALL_DIR/docs/quickstart.html`.
+Solr includes a Quick Start tutorial which will be helpful if you are just starting out with Solr. You can find it online at http://lucene.apache.org/solr/quickstart.html.
 ====

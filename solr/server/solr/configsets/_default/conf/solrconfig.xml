@@ -1138,7 +1138,8 @@
        Field type guessing update processors that will
        attempt to parse string-typed field values as Booleans, Longs,
        Doubles, or Dates, and then add schema fields with the guessed
-       field types.  
+       field types. Text content will be indexed as "text_general" as
+       well as a copy to a plain string version in *_str. 
        
        These require that the schema is both managed and mutable, by
        declaring schemaFactory as ManagedIndexSchemaFactory, with
@@ -1177,7 +1178,16 @@
     </arr>
   </updateProcessor>
   <updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields">
-    <str name="defaultFieldType">strings</str>
+    <lst name="typeMapping">
+      <str name="valueClass">java.lang.String</str>
+      <str name="fieldType">text_general</str>
+      <lst name="copyField">
+        <str name="dest">*_str</str>
+        <int name="maxChars">256</int>
+      </lst>
+      <!-- Use as default mapping instead of defaultFieldType -->
+      <bool name="default">true</bool>
+    </lst>
     <lst name="typeMapping">
       <str name="valueClass">java.lang.Boolean</str>
       <str name="fieldType">booleans</str>
