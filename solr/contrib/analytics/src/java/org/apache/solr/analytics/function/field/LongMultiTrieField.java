@@ -19,27 +19,27 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
+import java.util.function.LongConsumer;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.solr.analytics.value.DoubleValueStream.CastingDoubleValueStream;
+import org.apache.solr.analytics.value.LongValueStream.CastingLongValueStream;
 import org.apache.solr.legacy.LegacyNumericUtils;
-import org.apache.solr.schema.TrieDoubleField;
+import org.apache.solr.schema.TrieLongField;
 
 /**
- * An analytics wrapper for a multi-valued {@link TrieDoubleField} with DocValues enabled.
+ * An analytics wrapper for a multi-valued {@link TrieLongField} with DocValues enabled.
  */
-public class DoubleMultiField extends AnalyticsField implements CastingDoubleValueStream {
+public class LongMultiTrieField extends AnalyticsField implements CastingLongValueStream {
   private SortedSetDocValues docValues;
   private int count;
-  private double[] values;
+  private long[] values;
 
-  public DoubleMultiField(String fieldName) {
+  public LongMultiTrieField(String fieldName) {
     super(fieldName);
     count = 0;
-    values = new double[initialArrayLength];
+    values = new long[initialArrayLength];
   }
   
   @Override
@@ -55,13 +55,13 @@ public class DoubleMultiField extends AnalyticsField implements CastingDoubleVal
         if (count == values.length) {
           resizeValues();
         }
-        values[count++] = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(docValues.lookupOrd(term)));
+        values[count++] = LegacyNumericUtils.prefixCodedToLong(docValues.lookupOrd(term));
       }
     }
   }
   
   private void resizeValues() {
-    double[] newValues = new double[values.length*2];
+    long[] newValues = new long[values.length*2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -69,17 +69,21 @@ public class DoubleMultiField extends AnalyticsField implements CastingDoubleVal
   }
   
   @Override
-  public void streamDoubles(DoubleConsumer cons) {
+  public void streamLongs(LongConsumer cons) {
     for (int i = 0; i < count; ++i) {
       cons.accept(values[i]);
     }
   }
   @Override
+  public void streamDoubles(DoubleConsumer cons) {
+    streamLongs(value -> cons.accept((double)value));
+  }
+  @Override
   public void streamStrings(Consumer<String> cons) {
-    streamDoubles(value -> cons.accept(Double.toString(value)));
+    streamLongs(value -> cons.accept(Long.toString(value)));
   }
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamDoubles(value -> cons.accept(value));
+    streamLongs(value -> cons.accept(value));
   }
 }
