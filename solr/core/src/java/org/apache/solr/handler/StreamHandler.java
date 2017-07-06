@@ -216,6 +216,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("rev", ReverseEvaluator.class)
         .withFunctionName("scale", ScaleEvaluator.class)
         .withFunctionName("sequence", SequenceEvaluator.class)
+        .withFunctionName("addAll", AddAllEvaluator.class)
 
         
         // Boolean Stream Evaluators

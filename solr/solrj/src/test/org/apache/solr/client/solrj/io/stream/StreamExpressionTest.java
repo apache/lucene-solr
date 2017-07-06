@@ -5995,6 +5995,32 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).doubleValue() == 500.23D);
   }
 
+
+  @Test
+  public void testAddAll() throws Exception {
+    String cexpr = "addAll(array(1, 2, 3), array(4.5, 5.5, 6.5), array(7,8,9))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 9);
+    assertTrue(out.get(0).intValue() == 1);
+    assertTrue(out.get(1).intValue() == 2);
+    assertTrue(out.get(2).intValue() == 3);
+    assertTrue(out.get(3).doubleValue() == 4.5D);
+    assertTrue(out.get(4).doubleValue() == 5.5D);
+    assertTrue(out.get(5).doubleValue() == 6.5D);
+    assertTrue(out.get(6).intValue() == 7);
+    assertTrue(out.get(7).intValue() == 8);
+    assertTrue(out.get(8).intValue() == 9);
+  }
+
   @Test
   public void testAnova() throws Exception {
     String cexpr = "anova(array(1,2,3,5,4,6), array(5,2,3,5,4,6), array(1,2,7,5,4,6))";
