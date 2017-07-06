@@ -40,7 +40,7 @@ Upgrade Notes
 New Features
 ----------------------
 
-(No Changes)
+* SOLR-11019: Add addAll Stream Evaluator (Joel Bernstein)
 
 Bug Fixes
 ----------------------
