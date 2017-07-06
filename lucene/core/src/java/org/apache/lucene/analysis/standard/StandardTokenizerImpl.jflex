@@ -82,7 +82,7 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
    */
   public static final int SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.SOUTHEAST_ASIAN;
   
-  /** Idiographic token type */
+  /** Ideographic token type */
   public static final int IDEOGRAPHIC_TYPE = StandardTokenizer.IDEOGRAPHIC;
   
   /** Hiragana token type */
