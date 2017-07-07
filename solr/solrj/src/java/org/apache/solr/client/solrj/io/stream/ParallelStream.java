@@ -267,6 +267,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
 
         String url = shardUrls.get(w);
         SolrStream solrStream = new SolrStream(url, paramsLoc);
+        solrStream.setStreamContext(streamContext);
         solrStreams.add(solrStream);
       }
 
