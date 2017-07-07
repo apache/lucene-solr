@@ -179,15 +179,14 @@ public class ExactStatsCache extends StatsCache {
         String termStatsString = StatsUtil.termStatsMapToString(statsMap);
         rb.rsp.add(TERM_STATS_KEY, termStatsString);
         if (LOG.isDebugEnabled()) {
-          LOG.debug("termStats=" + termStatsString + ", terms=" + terms + ", numDocs=" + searcher.maxDoc());
+          LOG.debug("termStats={}, terms={}, numDocs={}", termStatsString, terms, searcher.maxDoc());
         }
       }
       if (colMap.size() != 0){
         String colStatsString = StatsUtil.colStatsMapToString(colMap);
         rb.rsp.add(COL_STATS_KEY, colStatsString);
         if (LOG.isDebugEnabled()) {
-          LOG.debug("collectionStats="
-              + colStatsString + ", terms=" + terms + ", numDocs=" + searcher.maxDoc());
+          LOG.debug("collectionStats={}, terms={}, numDocs={}", colStatsString, terms, searcher.maxDoc());
         }
       }
     } catch (IOException e) {

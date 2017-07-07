@@ -50,7 +50,8 @@ Bug Fixes
 Optimizations
 ----------------------
 
-(No Changes)
+* SOLR-10985: Remove unnecessary toString() calls in solr-core's search package's debug logging.
+  (Michael Braun via Christine Poerschke)
 
 Other Changes
 ----------------------
