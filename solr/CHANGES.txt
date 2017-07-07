@@ -411,6 +411,9 @@ Other Changes
 
 * SOLR-11016: Fix TestCloudJSONFacetJoinDomain test-only bug (hossman)
 
+* SOLR-11021: The elevate.xml config-file is made optional in the ElevationComponent.
+  The default configset doesn't ship with a elevate.xml file anymore (Varun Thacker)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
