@@ -80,6 +80,8 @@ Other Changes
 
 * SOLR-10748: Make stream.body configurable and disabled by default (janhoy)
 
+* SOLR-10964: Reduce SolrIndexSearcher casting in LTRRescorer. (Christine Poerschke)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
