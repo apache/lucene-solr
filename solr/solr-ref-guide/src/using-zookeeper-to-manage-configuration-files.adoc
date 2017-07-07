@@ -31,7 +31,7 @@ These files are uploaded in either of the following cases:
 
 When you try SolrCloud for the first time using the `bin/solr -e cloud`, the related configset gets uploaded to ZooKeeper automatically and is linked with the newly created collection.
 
-The below command would start SolrCloud with the default collection name (gettingstarted) and default configset (data_driven_schema_configs) uploaded and linked to it.
+The below command would start SolrCloud with the default collection name (gettingstarted) and default configset (_default) uploaded and linked to it.
 
 [source,bash]
 ----
@@ -42,10 +42,10 @@ You can also explicitly upload a configuration directory when creating a collect
 
 [source,bash]
 ----
-bin/solr create -c mycollection -d data_driven_schema_configs
+bin/solr create -c mycollection -d _default
 ----
 
-The create command will upload a copy of the `data_driven_schema_configs` configuration directory to ZooKeeper under `/configs/mycollection`. Refer to the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> page for more details about the create command for creating collections.
+The create command will upload a copy of the `_default` configuration directory to ZooKeeper under `/configs/mycollection`. Refer to the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> page for more details about the create command for creating collections.
 
 Once a configuration directory has been uploaded to ZooKeeper, you can update them using the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>>
 

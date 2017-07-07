@@ -39,8 +39,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   private static ArrayList<String> vals = new ArrayList<>();
@@ -78,7 +76,8 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     
     {
       List<SolrInputDocument> docs = new ArrayList<>();
-      int parentsNum = 10+random().nextInt(20);
+      int parentsNum = 10 +random().nextInt(20)
+          ;
       for (int i=0; i<parentsNum || (matchingParent==null ||matchingChild==null); i++) {
         final String parentTieVal = "" + random().nextInt(5);
         final String parentId = ""+random().nextInt();
@@ -93,9 +92,11 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           SolrInputDocument child = new SolrInputDocument("id", ""+random().nextInt(),
               "type_s", "child",
               "parentTie_s1", parentTieVal,
-              "val_s1", Integer.toString(random().nextInt(1000), Character.MAX_RADIX)+"" ,
               "parent_id_s1", parentId);
           child.addField("parentFilter_s", parentFilter);
+          if (usually()) {
+            child.addField( "val_s1", Integer.toString(random().nextInt(1000), Character.MAX_RADIX)+"" );
+          }
           final List<String> chVals = addValsField(child, "childFilter_s");
           parent.addChildDocument(child );
 
@@ -115,7 +116,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     }
   }
 
-  @Test @Repeat(iterations=2)
+  @Test 
   public void test() throws SolrServerException, IOException {
     final boolean asc = random().nextBoolean();
     final String dir = asc ? "asc": "desc";
@@ -134,10 +135,17 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
     final QueryResponse children = client.query(q);
     
-    final SolrQuery bjq = new SolrQuery("q", "{!parent which=type_s:parent}(+type_s:child^=0 "+parentFilter+" "+
-        childFilter+")",
-       "sort", sortClause.replace("val_s1 ", "childfield(val_s1)"),
-        "rows", ""+maxDocs, "fl", fl);
+    final SolrQuery bjq = random().nextBoolean() ? 
+         new SolrQuery(// top level bjq
+           "q", "{!parent which=type_s:parent}(+type_s:child^=0 "+parentFilter+" "+ childFilter+")",
+           "sort", sortClause.replace("val_s1", "childfield(val_s1)"),
+           "rows", ""+maxDocs, "fl", fl)
+         :
+        new SolrQuery(// same bjq as a subordinate clause
+           "q", "+type_s:parent "+parentFilter+" +{!v=$parentcaluse}",
+           "parentcaluse","{!parent which=type_s:parent v='"+(childFilter).replace("+", "")+"'}",
+           "sort", sortClause.replace("val_s1", "childfield(val_s1,$parentcaluse)"),
+           "rows", ""+maxDocs, "fl", fl);
 
     final QueryResponse parents = client.query(bjq);
     
@@ -153,11 +161,11 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           final String actParentId = ""+ parent.get("id");
           if (!actParentId.equals(parentId)) {
             final String chDump = children.toString().replace("SolrDocument","\nSolrDocument");
-            System.out.println("\n\n"+chDump.substring(0,5000)+"\n\n");
-            System.out.println("\n\n"+chDump
+            System.out.println("\n\n"+chDump+"\n\n");
+            System.out.println("\n\n"+parents.toString().replace("SolrDocument","\nSolrDocument")
                 +"\n\n");
           }
-          assertEquals(actParentId, parentId);
+          assertEquals(""+child+"\n"+parent,actParentId, parentId);
         }
       }
     }

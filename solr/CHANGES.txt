@@ -57,12 +57,12 @@ Upgrade Notes
 New Features
 ----------------------
 
-(No Changes)
+* SOLR-11019: Add addAll Stream Evaluator (Joel Bernstein)
 
 Bug Fixes
 ----------------------
 
-(No Changes)
+* SOLR-10668: fix NPE at sort=childfield(..) .. on absent values (Mikhail Khludnev)
 
 Optimizations
 ----------------------
@@ -76,6 +76,8 @@ Other Changes
 
 * SOLR-10957: Changed SolrCoreParser.init to use the resource loader from getSchema()
   instead of the resource loader from getCore(). (Christine Poerschke)
+
+* SOLR-10748: Make stream.body configurable and disabled by default (janhoy)
 
 ==================  7.0.0 ==================
 
@@ -181,10 +183,14 @@ Upgrading from Solr 6.x
 * The unused 'valType' option has been removed from ExternalFileField, if you have this in your schema you
   can safely remove it. see SOLR-10929 for more details.
 
-* SOLR-10574: basic_configs and data_driven_schema_configs have now been merged into _default. It has data driven nature
+* Config sets basic_configs and data_driven_schema_configs have now been merged into _default. It has data driven nature
   enabled by default, and can be turned off (after creating a collection) with:
      curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
   Please see SOLR-10574 for details.
+
+* The data driven config (now _default) for auto-creating fields earlier defaulted to "string" for text input.
+  Now the default is to use "text_general" and to add a copyField to the schema, copying to a "*_str" dynamic field,
+  with a cutoff at 256 characters. This enables full text search as well as faceting. See SOLR-9526 for more.
 
 * SOLR-10123: The Analytics Component has been upgraded to support distributed collections, expressions over multivalued
   fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics expression
@@ -262,9 +268,15 @@ New Features
 * SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
 
 * SOLR-10574: New _default config set replacing basic_configs and data_driven_schema_configs.
-  (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, Jan Hoydahl, Alexandre Rafalovich) 
+  (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, janhoy, Alexandre Rafalovich)
 
 * SOLR-10272: Use _default config set if no collection.configName is specified with CREATE (Ishan Chattopadhyaya)
+
+* SOLR-9526: Data driven schema now indexes text field "foo" as both "foo" (text_general) and as "foo_str" (string)
+  to facilitate both search and faceting. AddSchemaFieldsUpdateProcessor now has the ability to add a "copyField" to
+  the type mappings, with an optional maxChars limitation. You can also define one typeMappings as default.
+  This also solves issues SOLR-8495, SOLR-6966, and SOLR-7058
+  (janhoy, Steve Rowe, hossman, Alexandre Rafalovich, Shawn Heisey, Cao Manh Dat)
 
 * SOLR-10123: Upgraded the Analytics Component to version 2.0 which now supports distributed collections, expressions over
   multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics
@@ -329,6 +341,10 @@ Bug Fixes
 
 * SOLR-10879: DELETEREPLICA and DELETENODE commands should prevent data loss when
   replicationFactor is 1. (ab)
+
+* SOLR-10983: Fix DOWNNODE -> queue-work explosion (Scott Blum, Joshua Humphries)
+
+* SOLR-10826: Fix CloudSolrClient to expand the collection parameter correctly (Tim Owen via Varun Thacker)
 
 Optimizations
 ----------------------
@@ -473,6 +489,13 @@ Other Changes
 
 * SOLR-10456: Deprecate timeout related setters from SolrClients, and replace with Builder based implementation
   (Jason Gerlowski, Anshum Gupta)
+
+* SOLR-11004: Consolidate SolrClient builder code in an abstract base class (Jason Gerlowski, Anshum Gupta)
+
+* SOLR-10967: Cleanup the default configset. The changes involve some documentation corrections, removing the currency
+  field from the examples and a few dynamic fields (Varun Thacker)
+
+* SOLR-11016: Fix TestCloudJSONFacetJoinDomain test-only bug (hossman)
 
 ==================  6.7.0 ==================
 

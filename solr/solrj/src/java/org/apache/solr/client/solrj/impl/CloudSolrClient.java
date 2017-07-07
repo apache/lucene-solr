@@ -1129,7 +1129,7 @@ public class CloudSolrClient extends SolrClient {
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (stateProvider.getState(collectionName) == null) {
-        String alias = stateProvider.getAlias(collection);
+        String alias = stateProvider.getAlias(collectionName);
         if (alias != null) {
           List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
           collectionNames.addAll(aliasList);
@@ -1367,18 +1367,15 @@ public class CloudSolrClient extends SolrClient {
   /**
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
-  public static class Builder {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected Collection<String> zkHosts;
     protected List<String> solrUrls;
-    protected HttpClient httpClient;
     protected String zkChroot;
     protected LBHttpSolrClient loadBalancedSolrClient;
     protected LBHttpSolrClient.Builder lbClientBuilder;
     protected boolean shardLeadersOnly;
     protected boolean directUpdatesToLeadersOnly;
     protected ClusterStateProvider stateProvider;
-    protected Integer connectionTimeoutMillis;
-    protected Integer socketTimeoutMillis;
 
 
     public Builder() {
@@ -1435,15 +1432,6 @@ public class CloudSolrClient extends SolrClient {
       this.lbClientBuilder = lbHttpSolrClientBuilder;
       return this;
     }
-
-    /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
-    }
-
 
     /**
      * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
@@ -1516,30 +1504,6 @@ public class CloudSolrClient extends SolrClient {
     }
     
     /**
-     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
-     */
-    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
-      if (connectionTimeoutMillis <= 0) {
-        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
-      }
-      
-      this.connectionTimeoutMillis = connectionTimeoutMillis;
-      return this;
-    }
-    
-    /**
-     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
-     */
-    public Builder withSocketTimeout(int socketTimeoutMillis) {
-      if (socketTimeoutMillis <= 0) {
-        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
-      }
-      
-      this.socketTimeoutMillis = socketTimeoutMillis;
-      return this;
-    }
-
-    /**
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */
     public CloudSolrClient build() {
@@ -1559,6 +1523,11 @@ public class CloudSolrClient extends SolrClient {
         }
       }
       return new CloudSolrClient(this);
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }

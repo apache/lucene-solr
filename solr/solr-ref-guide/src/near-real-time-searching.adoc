@@ -102,7 +102,7 @@ Example of `commit` and `optimize` with optional attributes:
 [[NearRealTimeSearching-PassingcommitandcommitWithinparametersaspartoftheURL]]
 === Passing commit and commitWithin Parameters as Part of the URL
 
-Update handlers can also get `commit`-related parameters as part of the update URL. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
+Update handlers can also get `commit`-related parameters as part of the update URL, if the `stream.body` feature is enabled. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
 
 [source,text]
 ----
@@ -131,6 +131,8 @@ This example adds a small test document with a `commitWithin` instruction that t
 curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
   -H "Content-Type: text/xml" --data-binary '<add><doc><field name="id">testdoc</field></doc></add>'
 ----
+
+WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#RequestDispatcherinSolrConfig-requestParsersElement,RequestDispatcher in SolrConfig>> for details.  
 
 [[NearRealTimeSearching-ChangingdefaultcommitWithinBehavior]]
 === Changing default commitWithin Behavior

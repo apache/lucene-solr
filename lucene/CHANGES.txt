@@ -4,6 +4,16 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 8.0.0 =======================
+
+Changes in Runtime Behavior
+
+* LUCENE-7837: Indices that were created before the previous major version
+  will now fail to open even if they have been merged with the previous major
+  version. (Adrien Grand)
+
+
+
+======================= Lucene 7.1.0 =======================
 (No Changes)
 
 ======================= Lucene 7.0.0 =======================
@@ -30,6 +40,10 @@ New Features
 * LUCENE-7868: Multiple threads can now resolve deletes and doc values
   updates concurrently, giving sizable speedups in update-heavy
   indexing use cases (Simon Willnauer, Mike McCandless)
+
+* LUCENE-7823: Pure query based naive bayes classifier using BM25 scores (Tommaso Teofili)
+
+* LUCENE-7838: Knn classifier based on fuzzified term queries (Tommaso Teofili)
 
 API Changes
 
@@ -103,6 +117,9 @@ API Changes
 * LUCENE-7892: Doc-values query factory methods have been renamed so that their
   name contains "slow" in order to cleary indicate that they would usually be a
   bad choice. (Adrien Grand)
+
+* LUCENE-7899: FieldValueQuery is renamed to DocValuesFieldExistsQuery
+  (Adrien Grand, Mike McCandless)
 
 Bug Fixes
 
@@ -178,6 +195,9 @@ Other
   method to change to a custom classloader.  (Uwe Schindler)
 
 * LUCENE-5822: Convert README to Markdown (Jason Gerlowski via Mike Drob)
+
+* LUCENE-7773: Remove unused/deprecated token types from StandardTokenizer.
+  (Ahmet Arslan via Steve Rowe)
 
 ======================= Lucene 6.7.0 =======================
 

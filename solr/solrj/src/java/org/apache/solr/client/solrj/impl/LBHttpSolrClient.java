@@ -881,13 +881,9 @@ public class LBHttpSolrClient extends SolrClient {
   /**
    * Constructs {@link LBHttpSolrClient} instances from provided configuration.
    */
-  public static class Builder {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected final List<String> baseSolrUrls;
-    protected HttpClient httpClient;
-    protected ResponseParser responseParser;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
-    protected Integer connectionTimeoutMillis;
-    protected Integer socketTimeoutMillis;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -955,23 +951,6 @@ public class LBHttpSolrClient extends SolrClient {
       }
       return this;
     }
-    
-    
-    /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
-    }
-    
-    /**
-     * Provides a {@link ResponseParser} for created clients to use when handling requests.
-     */
-    public Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
 
     /**
      * Provides a {@link HttpSolrClient.Builder} to be used for building the internally used clients.
@@ -980,36 +959,17 @@ public class LBHttpSolrClient extends SolrClient {
       this.httpSolrClientBuilder = builder;
       return this;
     }
-    
-    /**
-     * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
-     */
-    public Builder withConnectionTimeout(int connectionTimeoutMillis) {
-      if (connectionTimeoutMillis <= 0) {
-        throw new IllegalArgumentException("connectionTimeoutMillis must be a positive integer.");
-      }
-      
-      this.connectionTimeoutMillis = connectionTimeoutMillis;
-      return this;
-    }
-    
-    /**
-     * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
-     */
-    public Builder withSocketTimeout(int socketTimeoutMillis) {
-      if (socketTimeoutMillis <= 0) {
-        throw new IllegalArgumentException("socketTimeoutMillis must be a positive integer.");
-      }
-      
-      this.socketTimeoutMillis = socketTimeoutMillis;
-      return this;
-    }
 
     /**
      * Create a {@link HttpSolrClient} based on provided configuration.
      */
     public LBHttpSolrClient build() {
       return new LBHttpSolrClient(this);
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }

@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,10 +48,10 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.nio.file.SimpleFileVisitor;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
@@ -61,27 +62,22 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -103,8 +99,6 @@ import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
@@ -331,7 +325,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     uploadConfigSet("regular", suffix, null, null);
     // try to create a collection with the uploaded configset
     createCollection("newcollection", "regular" + suffix, 1, 1, solrCluster.getSolrClient());
-    xsltRequest("newcollection");
   }
   
   @Test
@@ -504,35 +497,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       }
     } finally {
       zout.close();
-    }
-  }
-
-  private void xsltRequest(String collection) throws SolrServerException, IOException {
-    String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection)) {
-      String xml = 
-          "<random>" +
-              " <document>" +
-              "  <node name=\"id\" value=\"12345\"/>" +
-              "  <node name=\"name\" value=\"kitten\"/>" +
-              "  <node name=\"text\" enhance=\"3\" value=\"some other day\"/>" +
-              "  <node name=\"title\" enhance=\"4\" value=\"A story\"/>" +
-              "  <node name=\"timestamp\" enhance=\"5\" value=\"2011-07-01T10:31:57.140Z\"/>" +
-              " </document>" +
-              "</random>";
-
-      SolrQuery query = new SolrQuery();
-      query.setQuery( "*:*" );//for anything
-      query.add("qt","/update");
-      query.add(CommonParams.TR, "xsl-update-handler-test.xsl");
-      query.add("stream.body", xml);
-      query.add("commit", "true");
-      try {
-        client.query(query);
-        fail("This should've returned a 401.");
-      } catch (SolrException ex) {
-        assertEquals(ErrorCode.UNAUTHORIZED.code, ex.code());
-      }
     }
   }
   

@@ -20,21 +20,16 @@
 
 <schema name="cloud-analytics" version="1.0">
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-
-  <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
-       seconds part (.999) is optional.
-    -->
-  <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true" precisionStep="6"/>
-
+  
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-  <field name="signatureField" type="string" indexed="true" stored="false"/>
 
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>

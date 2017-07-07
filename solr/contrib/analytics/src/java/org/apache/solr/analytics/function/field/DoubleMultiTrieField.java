@@ -24,30 +24,28 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.solr.analytics.util.function.FloatConsumer;
-import org.apache.solr.analytics.value.FloatValueStream.CastingFloatValueStream;
+import org.apache.solr.analytics.value.DoubleValueStream.CastingDoubleValueStream;
 import org.apache.solr.legacy.LegacyNumericUtils;
-import org.apache.solr.schema.TrieFloatField;
+import org.apache.solr.schema.TrieDoubleField;
 
 /**
- * An analytics wrapper for a multi-valued {@link TrieFloatField} with DocValues enabled.
+ * An analytics wrapper for a multi-valued {@link TrieDoubleField} with DocValues enabled.
  */
-public class FloatMultiField extends AnalyticsField implements CastingFloatValueStream {
+public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubleValueStream {
   private SortedSetDocValues docValues;
   private int count;
-  private float[] values;
+  private double[] values;
 
-  public FloatMultiField(String fieldName) {
+  public DoubleMultiTrieField(String fieldName) {
     super(fieldName);
     count = 0;
-    values = new float[initialArrayLength];
+    values = new double[initialArrayLength];
   }
   
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
   }
-  
   @Override
   public void collect(int doc) throws IOException {
     count = 0;
@@ -57,13 +55,13 @@ public class FloatMultiField extends AnalyticsField implements CastingFloatValue
         if (count == values.length) {
           resizeValues();
         }
-        values[count++] = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(docValues.lookupOrd(term)));
+        values[count++] = NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(docValues.lookupOrd(term)));
       }
     }
   }
   
   private void resizeValues() {
-    float[] newValues = new float[values.length*2];
+    double[] newValues = new double[values.length*2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -71,21 +69,17 @@ public class FloatMultiField extends AnalyticsField implements CastingFloatValue
   }
   
   @Override
-  public void streamFloats(FloatConsumer cons) {
+  public void streamDoubles(DoubleConsumer cons) {
     for (int i = 0; i < count; ++i) {
       cons.accept(values[i]);
     }
   }
   @Override
-  public void streamDoubles(DoubleConsumer cons) {
-    streamFloats(value -> cons.accept((double)value));
-  }
-  @Override
   public void streamStrings(Consumer<String> cons) {
-    streamFloats(value -> cons.accept(Float.toString(value)));
+    streamDoubles(value -> cons.accept(Double.toString(value)));
   }
   @Override
   public void streamObjects(Consumer<Object> cons) {
-    streamFloats(value -> cons.accept(value));
+    streamDoubles(value -> cons.accept(value));
   }
 }

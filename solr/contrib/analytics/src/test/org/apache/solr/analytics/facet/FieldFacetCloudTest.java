@@ -28,7 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 
-public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
+public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest {
   public static final int INT = 71;
   public static final int LONG = 36;
   public static final int LONGM = 50;
@@ -132,6 +132,8 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
     multiStringTestMissing = new ArrayList<>();
     multiDateTestStart = new ArrayList<>();
     multiDateTestMissing = new ArrayList<>();
+    
+    boolean multiCanHaveDuplicates = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
 
     UpdateRequest req = new UpdateRequest();
     for (int j = 0; j < NUM_LOOPS; ++j) {
@@ -148,8 +150,6 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
       
-      if (dt != 0) {
-      }
       if( i != 0 ) {
         fields.add("int_id"); fields.add("" + i);
       }
@@ -180,16 +180,13 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
       if ( sm != 0 ) {
         fields.add("string_sdm"); fields.add("str" + sm);
       }
-      if ( dtm != 0 ) {
-        fields.add("date_dtdm"); fields.add((1800+dtm) + "-12-31T23:59:59Z");
-      }
       req.add(fields.toArray(new String[0]));
       
-      if( dt != 0 ){
+      if( dt != 0 ) {
         //Dates
-        if (j-DATE<0) {
+        if ( j-DATE < 0 ) {
           ArrayList<Integer> list1 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list1.add(i);
             intDateTestMissing.add(0l);
           } else {
@@ -197,7 +194,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           intDateTestStart.add(list1);
           ArrayList<Long> list2 = new ArrayList<>();
-          if( l != 0l ){
+          if( l != 0l ) {
             list2.add(l);
             longDateTestMissing.add(0l);
           } else {
@@ -205,7 +202,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           longDateTestStart.add(list2);
           ArrayList<Float> list3 = new ArrayList<>();
-          if ( f != 0.0f ){
+          if ( f != 0.0f ) {
             list3.add(f);
             floatDateTestMissing.add(0l);
           } else {
@@ -214,7 +211,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           floatDateTestStart.add(list3);
           ArrayList<Double> list4 = new ArrayList<>();
-          if( d != 0.0d ){
+          if( d != 0.0d ) {
             list4.add(d);
             doubleDateTestMissing.add(0l);
           } else {
@@ -222,7 +219,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           doubleDateTestStart.add(list4);
           ArrayList<Integer> list5 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list5.add(i);
             multiDateTestMissing.add(0l);
           } else {
@@ -239,24 +236,26 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
         }
       }
       
-      if (j-DATEM<0 && dtm!=dt && dtm!=0) {
-        ArrayList<Integer> list1 = new ArrayList<>();
-        if( i != 0 ){
-          list1.add(i);
-          multiDateTestMissing.add(0l);
-        } else {
-          multiDateTestMissing.add(1l);
+      if ( dtm != 0 ) {
+        if ( j-DATEM < 0 && dtm != dt ) {
+          ArrayList<Integer> list1 = new ArrayList<>();
+          if( i != 0 ) {
+            list1.add(i);
+            multiDateTestMissing.add(0l);
+          } else {
+            multiDateTestMissing.add(1l);
+          }
+          multiDateTestStart.add(list1);
+        } else if ( dtm != dt || multiCanHaveDuplicates ) {
+          if( i != 0 ) multiDateTestStart.get(dtm-1).add(i); else increment(multiDateTestMissing,dtm-1);
         }
-        multiDateTestStart.add(list1);
-      } else if (dtm!=dt && dtm!=0) {
-        if( i != 0 ) multiDateTestStart.get(dtm-1).add(i);
       }
       
       if( s != 0 ){
         //Strings
-        if (j-STRING<0) {
+        if ( j-STRING < 0 ) {
           ArrayList<Integer> list1 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list1.add(i);
             intStringTestMissing.add(0l);
           } else {
@@ -264,7 +263,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           intStringTestStart.add(list1);
           ArrayList<Long> list2 = new ArrayList<>();
-          if( l != 0l ){
+          if( l != 0l ) {
             list2.add(l);
             longStringTestMissing.add(0l);
           } else {
@@ -280,7 +279,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           floatStringTestStart.add(list3);
           ArrayList<Double> list4 = new ArrayList<>();
-          if( d != 0.0d ){
+          if( d != 0.0d ) {
             list4.add(d);
             doubleStringTestMissing.add(0l);
           } else {
@@ -288,7 +287,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           doubleStringTestStart.add(list4);
           ArrayList<Integer> list5 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list5.add(i);
             multiStringTestMissing.add(0l);
           } else {
@@ -306,7 +305,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
       
       //Strings
       if( sm != 0 ){
-        if (j-STRINGM<0&&sm!=s) {
+        if ( j-STRINGM < 0 && sm != s ) {
           ArrayList<Integer> list1 = new ArrayList<>();
           if( i != 0 ){
             list1.add(i);
@@ -315,14 +314,14 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
             multiStringTestMissing.add(1l);
           }
           multiStringTestStart.add(list1);
-        } else if (sm!=s) {
+        } else if ( sm != s ) {
           if( i != 0 ) multiStringTestStart.get(sm-1).add(i); else increment(multiStringTestMissing,sm-1);
         }
       }
       
       //Int
-      if( i != 0 ){
-        if (j-INT<0) {
+      if( i != 0 ) {
+        if ( j-INT < 0 ) {
           ArrayList<String> list1 = new ArrayList<>();
           if( dt != 0 ){
             list1.add((1800+dt) + "-12-31T23:59:59Z");
@@ -332,7 +331,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           dateIntTestStart.add(list1);
           ArrayList<String> list2 = new ArrayList<>();
-          if( s != 0 ){
+          if( s != 0 ) {
             list2.add("str"+s);
             stringIntTestMissing.add(0l);
           } else {
@@ -346,8 +345,8 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
       }
       
       //Long
-      if( l != 0 ){
-        if (j-LONG<0) {
+      if( l != 0 ) {
+        if ( j-LONG < 0 ) {
           ArrayList<String> list1 = new ArrayList<>();
           if( dt != 0 ){
             list1.add((1800+dt) + "-12-31T23:59:59Z");
@@ -357,7 +356,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           dateLongTestStart.add(list1);
           ArrayList<String> list2 = new ArrayList<>();
-          if( s != 0 ){
+          if( s != 0 ) {
             list2.add("str"+s);
             stringLongTestMissing.add(0l);
           } else {
@@ -365,7 +364,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
           }
           stringLongTestStart.add(list2);
           ArrayList<Integer> list3 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list3.add(i);
             multiLongTestMissing.add(0l);
           } else {
@@ -380,17 +379,17 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
       }
       
       //Long
-      if( lm != 0 ){
-        if (j-LONGM<0&&lm!=l) {
+      if( lm != 0 ) {
+        if ( j-LONGM < 0 && lm != l ) {
           ArrayList<Integer> list1 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list1.add(i);
             multiLongTestMissing.add(0l);
           } else {
             multiLongTestMissing.add(1l);
           }
           multiLongTestStart.add(list1);
-        } else if (lm!=l) {
+        } else if ( lm != l || multiCanHaveDuplicates ) {
           if( i != 0 ) multiLongTestStart.get((int)lm-1).add(i); else increment( multiLongTestMissing,(int)lm-1);
         }
       }
@@ -848,7 +847,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
     //Int Date
     Collection<Integer> intDate = getValueList(response, "maxn", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateStat(intDateTestStart, "max");
-    //assertEquals(responseStr,intDate,intDateTest);
+    assertEquals(responseStr,intDate,intDateTest);
     
     //Int String
     Collection<Integer> intString = getValueList(response, "maxn", "fieldFacets", "string_sd", "int", false);
@@ -1061,7 +1060,6 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
     assertEquals(responseStr,stringLong,stringLongTest);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void missingTest() throws Exception { 
     String[] params = new String[] {
@@ -1165,7 +1163,6 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
   @Test
   public void missingFacetTest() throws Exception { 
     String[] params = new String[] {
-        "o.func.facet_show_missing(a)", "fillmissing(a,\"(MISSING)\")",
         "o.missingf.s.mean", "mean(int_id)",
         "o.missingf.ff", "date_dtd",
         "o.missingf.ff", "string_sd",
@@ -1206,6 +1203,7 @@ public class FieldFacetCloudTest extends AbstractAnalyticsFacetCloudTest{
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static void assertEquals(String mes, Object actual, Object expected) {
     Collections.sort((List<Comparable>) actual);
     Collections.sort((List<Comparable>)  expected);

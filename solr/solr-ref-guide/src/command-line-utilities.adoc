@@ -103,7 +103,7 @@ If you are on Windows machine, simply replace `zkcli.sh` with `zkcli.bat` in the
 
 [source,bash]
 ----
-./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd upconfig -confname my_new_config -confdir server/solr/configsets/basic_configs/conf
+./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd upconfig -confname my_new_config -confdir server/solr/configsets/_default/conf
 ----
 
 [[CommandLineUtilities-BootstrapZooKeeperfromexistingSOLR_HOME]]

@@ -811,9 +811,10 @@ class ReadersAndUpdates {
   synchronized public void setIsMerging() {
     // This ensures any newly resolved doc value updates while we are merging are
     // saved for re-applying after this segment is done merging:
-    isMerging = true;
-
-    assert mergingDVUpdates.isEmpty();
+    if (isMerging == false) {
+      isMerging = true;
+      assert mergingDVUpdates.isEmpty();
+    }
   }
 
   /** Returns a reader for merge, with the latest doc values updates and deletions. */

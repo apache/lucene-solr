@@ -197,7 +197,9 @@ public class Overseer implements Closeable {
             log.error("Exception in Overseer main queue loop", e);
           }
           try {
+            boolean[] itemWasMoved = new boolean[1];
             while (head != null) {
+              itemWasMoved[0] = false;
               byte[] data = head;
               final ZkNodeProps message = ZkNodeProps.load(data);
               log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
@@ -205,7 +207,11 @@ public class Overseer implements Closeable {
               clusterState = processQueueItem(message, clusterState, zkStateWriter, true, new ZkStateWriter.ZkWriteCallback() {
                 @Override
                 public void onEnqueue() throws Exception {
-                  workQueue.offer(data);
+                  if (!itemWasMoved[0]) {
+                    stateUpdateQueue.poll();
+                    itemWasMoved[0] = true;
+                    workQueue.offer(data);
+                  }
                 }
 
                 @Override
@@ -215,9 +221,10 @@ public class Overseer implements Closeable {
                 }
               });
 
-              // it is safer to keep this poll here because an invalid message might never be queued
-              // and therefore we can't rely on the ZkWriteCallback to remove the item
-              stateUpdateQueue.poll();
+              // If the ZkWriteCallback never fired, just dump the item, it might be an invalid message.
+              if (!itemWasMoved[0]) {
+                stateUpdateQueue.poll();
+              }
 
               if (isClosed) break;
               // if an event comes in the next 100ms batch it together

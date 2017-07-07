@@ -30,13 +30,13 @@ import org.apache.lucene.index.LeafReaderContext;
  * A {@link Query} that matches documents that have a value for a given field
  * as reported by doc values iterators.
  */
-public final class FieldValueQuery extends Query {
+public final class DocValuesFieldExistsQuery extends Query {
 
   private final String field;
 
   /** Create a query that will match that have a value for the given
    *  {@code field}. */
-  public FieldValueQuery(String field) {
+  public DocValuesFieldExistsQuery(String field) {
     this.field = Objects.requireNonNull(field);
   }
 
@@ -47,7 +47,7 @@ public final class FieldValueQuery extends Query {
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
-           field.equals(((FieldValueQuery) other).field);
+           field.equals(((DocValuesFieldExistsQuery) other).field);
   }
 
   @Override
@@ -57,7 +57,7 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "FieldValueQuery [field=" + this.field + "]";
+    return "DocValuesFieldExistsQuery [field=" + this.field + "]";
   }
 
   @Override
