@@ -159,6 +159,19 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
             "{'id':'xyz'}"
             + "]");
   }
+  
+  @Test
+  public void testDuplicateMultiValued() throws Exception {
+    doTest("strTF", dvStringFieldName(3,true,false), "str", "X", "X", "Y");
+    doTest("strTT", dvStringFieldName(3,true,true), "str", "X", "X", "Y");
+    doTest("strFF", dvStringFieldName(3,false,false), "str", "X", "X", "Y");
+    doTest("int", "test_is_dvo", "int", "42", "42", "-666");
+    doTest("float", "test_fs_dvo", "float", "4.2", "4.2", "-66.666");
+    doTest("long", "test_ls_dvo", "long", "420", "420", "-6666666" );
+    doTest("double", "test_ds_dvo", "double", "0.0042", "0.0042", "-6.6666E-5");
+    doTest("date", "test_dts_dvo", "date", "2016-07-04T03:02:01Z", "2016-07-04T03:02:01Z", "1999-12-31T23:59:59Z" );
+    doTest("enum", "enums_dvo", "str", SEVERITY[0], SEVERITY[0], SEVERITY[1]);
+  }
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
@@ -318,9 +331,14 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         xpaths[i] = "//arr[@name='" + field + "']/" + type + "[.='" + value[i] + "']";
       }
 
-      // Docvalues are sets, but stored values are ordered multisets, so cardinality depends on the value source
-      xpaths[value.length] = "*[count(//arr[@name='" + field + "']/" + type + ") = "
-          + (isStoredField(field) ? value.length : valueSet.size()) + "]";
+      // See SOLR-10924...
+      // Trie/String based Docvalues are sets, but stored values & Point DVs are ordered multisets,
+      // so cardinality depends on the value source
+      final int expectedCardinality =
+        (isStoredField(field) || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+                                  && ! (field.startsWith("enum") || field.startsWith("test_s"))))
+        ? value.length : valueSet.size();
+      xpaths[value.length] = "*[count(//arr[@name='"+field+"']/"+type+")="+expectedCardinality+"]";
       assertU(adoc(fieldAndValues));
 
     } else {
