@@ -1,0 +1,17 @@
+language: java
+    # specifying other dists doesn't make sense because `trusty` doesn't have `oraclejdk8` (fails due to `Sorry, but JDK '[oraclejdk8]' is not known.`) which is the only supported JDK currently. Testing on Mac OSX doesn't make too much sense since it will run the same `maven` based build routine.
+
+jdk:
+- oraclejdk8
+    # `openjdk8` not available
+    # `openjdk7` and `oraclejdk7` don't make sense because the build fails due to `/home/travis/build/krichter722/lucene-solr/lucene/common-build.xml:274: Minimum supported Java version is 1.8.`
+
+install:
+- ant ivy-bootstrap
+    # necessary in order to avoid `This build requires Ivy and Ivy could not be found in your ant classpath.` which can be fixed by `sudo apt-get install ivy`
+
+script:
+- ant get-maven-poms && cd maven-build
+- mvn install -DskipTests=true -Dmaven.javadoc.skip=true --batch-mode --show-version
+    # add --update-snapshots if snapshots are used
+- mvn test verify --batch-mode
