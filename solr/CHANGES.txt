@@ -209,6 +209,8 @@ New Features
   multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics 
   expression  whereas previously docValues was not required. Please see SOLR-10123 for details. (Houston Putman)
 
+* SOLR-10282: bin/solr support for enabling Kerberos authentication (Ishan Chattopadhyaya)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
