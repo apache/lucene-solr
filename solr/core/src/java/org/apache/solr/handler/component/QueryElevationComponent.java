@@ -204,53 +204,51 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     core.addTransformerFactory(markerName, elevatedMarkerFactory);
     forceElevation = initArgs.getBool(QueryElevationParams.FORCE_ELEVATION, forceElevation);
-    try {
-      synchronized (elevationCache) {
-        elevationCache.clear();
-        String f = initArgs.get(CONFIG_FILE);
-        if (f == null) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "QueryElevationComponent must specify argument: '" + CONFIG_FILE
-                  + "' -- path to elevate.xml");
-        }
-        boolean exists = false;
 
-        // check if using ZooKeeper
-        ZkController zkController = core.getCoreContainer().getZkController();
-        if (zkController != null) {
-          // TODO : shouldn't have to keep reading the config name when it has been read before
-          exists = zkController.configFileExists(zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);
-        } else {
-          File fC = new File(core.getResourceLoader().getConfigDir(), f);
-          File fD = new File(core.getDataDir(), f);
-          if (fC.exists() == fD.exists()) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "QueryElevationComponent missing config file: '" + f + "\n"
-                    + "either: " + fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both.");
+    String f = initArgs.get(CONFIG_FILE);
+    if (f != null) {
+      try {
+        synchronized (elevationCache) {
+          elevationCache.clear();
+          boolean exists = false;
+
+          // check if using ZooKeeper
+          ZkController zkController = core.getCoreContainer().getZkController();
+          if (zkController != null) {
+            // TODO : shouldn't have to keep reading the config name when it has been read before
+            exists = zkController.configFileExists(zkController.getZkStateReader().readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);
+          } else {
+            File fC = new File(core.getResourceLoader().getConfigDir(), f);
+            File fD = new File(core.getDataDir(), f);
+            if (fC.exists() == fD.exists()) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                  "QueryElevationComponent missing config file: '" + f + "\n"
+                      + "either: " + fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both.");
+            }
+            if (fC.exists()) {
+              exists = true;
+              log.info("Loading QueryElevation from: " + fC.getAbsolutePath());
+              Config cfg = new Config(core.getResourceLoader(), f);
+              elevationCache.put(null, loadElevationMap(cfg));
+            }
           }
-          if (fC.exists()) {
-            exists = true;
-            log.info("Loading QueryElevation from: " + fC.getAbsolutePath());
-            Config cfg = new Config(core.getResourceLoader(), f);
-            elevationCache.put(null, loadElevationMap(cfg));
+          //in other words, we think this is in the data dir, not the conf dir
+          if (!exists) {
+            // preload the first data
+            RefCounted<SolrIndexSearcher> searchHolder = null;
+            try {
+              searchHolder = core.getNewestSearcher(false);
+              IndexReader reader = searchHolder.get().getIndexReader();
+              getElevationMap(reader, core);
+            } finally {
+              if (searchHolder != null) searchHolder.decref();
+            }
           }
         }
-        //in other words, we think this is in the data dir, not the conf dir
-        if (!exists) {
-          // preload the first data
-          RefCounted<SolrIndexSearcher> searchHolder = null;
-          try {
-            searchHolder = core.getNewestSearcher(false);
-            IndexReader reader = searchHolder.get().getIndexReader();
-            getElevationMap(reader, core);
-          } finally {
-            if (searchHolder != null) searchHolder.decref();
-          }
-        }
+      } catch (Exception ex) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Error initializing QueryElevationComponent.", ex);
       }
-    } catch (Exception ex) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error initializing QueryElevationComponent.", ex);
     }
   }
 
