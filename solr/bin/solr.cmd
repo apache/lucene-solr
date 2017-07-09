@@ -1426,6 +1426,14 @@ if "!CREATE_PORT!"=="" (
   goto err
 )
 
+
+if "!CREATE_CONFDIR!"=="_default" (
+  echo WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is
+  echo          NOT RECOMMENDED for production use.
+  echo          To turn it off:
+  echo             curl http://%SOLR_TOOL_HOST%:!CREATE_PORT!/solr/!CREATE_NAME!/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+)
+
 if "%SCRIPT_CMD%"=="create_core" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^

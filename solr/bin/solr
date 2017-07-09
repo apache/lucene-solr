@@ -978,6 +978,14 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     exit 1
   fi
 
+  if [ "$CREATE_CONFDIR" == "_default" ]; then
+    echo "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is"
+    echo "         NOT RECOMMENDED for production use."
+    echo
+    echo "         To turn it off:"
+    echo "            curl http://$SOLR_TOOL_HOST:$CREATE_PORT/solr/$CREATE_NAME/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'"
+  fi
+
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
     echo "WARNING: Creating cores as the root user can cause Solr to fail and is not advisable. Exiting."
     echo "         If you started Solr as root (not advisable either), force core creation by adding argument -force"
