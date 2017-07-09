@@ -39,7 +39,7 @@ import org.apache.solr.common.util.NamedList;
 public class QueryClient implements Runnable {
 
 	/**
-	 * An enum defining various types of queries.  
+	 * An enum defining various types of queries.
 	 */
 	public enum QueryType {
 
@@ -50,9 +50,10 @@ public class QueryClient implements Runnable {
 		AND_NUMERIC_QUERY, 
 		OR_NUMERIC_QUERY, 
 		SORTED_NUMERIC_QUERY, 
-		SORTED_TEXT_QUERY,
+		SORTED_TEXT_QUERY, 
 		TEXT_TERM_QUERY, 
-		TEXT_PHRASE_QUERY
+		TEXT_PHRASE_QUERY,
+		HIGHLIGHT_QUERY
 
 	}
 
@@ -88,11 +89,13 @@ public class QueryClient implements Runnable {
 	public static ConcurrentLinkedQueue<String> sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> textTerms = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> textPhrases = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> highlightTerms = new ConcurrentLinkedQueue<String>();
 
 	Random random = new Random();
 
 	/**
 	 * Constructor.
+	 * 
 	 * @param urlString
 	 * @param collectionName
 	 * @param queryType
@@ -114,7 +117,8 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method invoked to inject the query terms in the data varibles for the threads to use. 
+	 * A method invoked to inject the query terms in the data varibles for the
+	 * threads to use.
 	 */
 	public static void prepare() {
 		Util.postMessage("** Preparing Term Query queue ...", MessageType.CYAN_TEXT, false);
@@ -128,6 +132,7 @@ public class QueryClient implements Runnable {
 		sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		textTerms = new ConcurrentLinkedQueue<String>();
 		textPhrases = new ConcurrentLinkedQueue<String>();
+		highlightTerms = new ConcurrentLinkedQueue<String>();
 
 		String line = "";
 		try (BufferedReader br = new BufferedReader(
@@ -206,12 +211,28 @@ public class QueryClient implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		Util.postMessage("** Preparing sorted query pair data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
+		Util.postMessage("** Preparing highlight terms data queue ...", MessageType.CYAN_TEXT, false);
+
+		line = "";
+		try (BufferedReader br = new BufferedReader(
+				new FileReader(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA))) {
+
+			while ((line = br.readLine()) != null) {
+				highlightTerms.add(line.trim());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Util.postMessage("** Preparing highlight terms data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
 
 		Util.postMessage(
-				"Starting State:| " + termNumericQueryParameterList.size() + "| " + greaterNumericQueryParameterList.size() + "| "
-						+ lesserNumericQueryParameterList.size() + "| " + andNumericQueryParameterList.size() + "| "
-						+ orNumericQueryParameterList.size() + "| " + sortedNumericQueryParameterList.size() + "| "
-						+ rangeNumericQueryParameterList.size() + "| " + textTerms.size() + "| " + textPhrases.size(),
+				"Starting State:| " + termNumericQueryParameterList.size() + "| "
+						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
+						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
+						+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
+						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size(),
 				MessageType.YELLOW_TEXT, false);
 		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 	}
@@ -236,11 +257,14 @@ public class QueryClient implements Runnable {
 			}
 
 			if (running == true) {
-				// Critical Section: When actual querying begins. 
+				// Critical Section: When actual querying begins.
 				SolrResponse response = null;
 				try {
 					requestParams.remove("q");
 					requestParams.remove("sort");
+					requestParams.remove("hl");
+					requestParams.remove("hl.fl");
+
 
 					if (this.queryType == QueryType.TERM_NUMERIC_QUERY) {
 						requestParams.add("q", "Int1_pi:" + termNumericQueryParameterList.poll());
@@ -311,9 +335,13 @@ public class QueryClient implements Runnable {
 
 					} else if (this.queryType == QueryType.TEXT_TERM_QUERY) {
 						requestParams.add("q", "Text:" + textTerms.poll().trim());
- 					} else if (this.queryType == QueryType.TEXT_PHRASE_QUERY) {
- 						requestParams.add("q", "Title_t:" + textPhrases.poll().trim());
- 					}
+					} else if (this.queryType == QueryType.TEXT_PHRASE_QUERY) {
+						requestParams.add("q", "Title_t:" + textPhrases.poll().trim());
+					} else if (this.queryType == QueryType.HIGHLIGHT_QUERY) {
+						requestParams.add("hl", "on");
+						requestParams.add("hl.fl", "Article_t");
+						requestParams.add("q", "Article_t:"+highlightTerms.poll());
+					}
 
 					params = SolrParams.toSolrParams(requestParams);
 					response = this.fireQuery(collectionName, params);
@@ -337,11 +365,11 @@ public class QueryClient implements Runnable {
 
 			} else if (running == false) {
 				// Break out from loop ...
-				Util.postMessage(
-						"Ending State: | " + termNumericQueryParameterList.size() + "| " + greaterNumericQueryParameterList.size() + "| "
-								+ lesserNumericQueryParameterList.size() + "| " + andNumericQueryParameterList.size() + "| "
-								+ orNumericQueryParameterList.size() + "| " + sortedNumericQueryParameterList.size() + "| "
-								+ rangeNumericQueryParameterList.size() + "| " + textTerms.size() + "| " + textPhrases.size(),
+				Util.postMessage("Ending State: | " + termNumericQueryParameterList.size() + "| "
+						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
+						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
+						+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
+						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size(),
 						MessageType.YELLOW_TEXT, false);
 
 				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",
@@ -354,7 +382,8 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method used by running threads to fire a query. 
+	 * A method used by running threads to fire a query.
+	 * 
 	 * @param collectionName
 	 * @param params
 	 * @return
@@ -369,7 +398,7 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method to count the number of queries executed by all the threads. 
+	 * A method to count the number of queries executed by all the threads.
 	 */
 	private synchronized void setQueryCounter() {
 
@@ -381,7 +410,8 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method used by threads to sum up the total qtime for all the queries. 
+	 * A method used by threads to sum up the total qtime for all the queries.
+	 * 
 	 * @param qTime
 	 */
 	private synchronized void setTotalQTime(long qTime) {
@@ -394,7 +424,8 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method used by the running threads to count the number of queries failing. 
+	 * A method used by the running threads to count the number of queries
+	 * failing.
 	 */
 	private synchronized void setQueryFailureCount() {
 
@@ -403,7 +434,8 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method used by the threads to count the number of threads up and ready for running. 
+	 * A method used by the threads to count the number of threads up and ready
+	 * for running.
 	 */
 	private synchronized void setThreadReadyCount() {
 
@@ -412,7 +444,9 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method called by the running methods to compute the minumum and maximum qtime across all the queries fired. 
+	 * A method called by the running methods to compute the minumum and maximum
+	 * qtime across all the queries fired.
+	 * 
 	 * @param QTime
 	 */
 	private synchronized void setMinMaxQTime(long QTime) {
@@ -434,7 +468,9 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method used to compute the nth percentile Qtime for all the queries fired by all the threads. 
+	 * A method used to compute the nth percentile Qtime for all the queries
+	 * fired by all the threads.
+	 * 
 	 * @param percentile
 	 * @return
 	 */
@@ -456,7 +492,8 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method used to for reseting the static data variables to get ready for the next cycle. 
+	 * A method used to for reseting the static data variables to get ready for
+	 * the next cycle.
 	 */
 	public static void reset() {
 		running = false;
@@ -480,7 +517,6 @@ public class QueryClient implements Runnable {
 		sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		textTerms = new ConcurrentLinkedQueue<String>();
 		textPhrases = new ConcurrentLinkedQueue<String>();
-
+		highlightTerms = new ConcurrentLinkedQueue<String>();
 	}
-
 }

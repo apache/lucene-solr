@@ -710,7 +710,7 @@ public class Tests {
 	 * @throws InterruptedException
 	 */
 	@SuppressWarnings("deprecation")
-	public static void runNumericTestsCloud(long numDocuments) throws IOException, InterruptedException {
+	public static void queryTestsCloud(long numDocuments) throws IOException, InterruptedException {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on cloud ...", MessageType.PURPLE_TEXT, false);
 
@@ -720,7 +720,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_CLOUD, port));
 		numericQueryTNQMetricC.start();
 
-		BenchmarkReportData.numericQueryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryTNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryClient.QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -730,7 +730,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.RANGE_NUMERIC_QUERY_CLOUD, port));
 		numericQueryRNQMetricC.start();
 
-		BenchmarkReportData.numericQueryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryRNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryClient.QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -740,7 +740,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.LT_NUMERIC_QUERY_CLOUD, port));
 		numericQueryLNQMetricC.start();
 
-		BenchmarkReportData.numericQueryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryLNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryClient.QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -750,7 +750,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.GT_NUMERIC_QUERY_CLOUD, port));
 		numericQueryGNQMetricC.start();
 
-		BenchmarkReportData.numericQueryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryGNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryClient.QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -760,7 +760,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.AND_NUMERIC_QUERY_CLOUD, port));
 		numericQueryANQMetricC.start();
 
-		BenchmarkReportData.numericQueryANQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryANQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryClient.QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -770,7 +770,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.OR_NUMERIC_QUERY_CLOUD, port));
 		numericQueryONQMetricC.start();
 
-		BenchmarkReportData.numericQueryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryONQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryClient.QueryType.OR_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -780,7 +780,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_NUMERIC_QUERY_STANDALONE, port));
 		numericQuerySNQMetricC.start();
 
-		BenchmarkReportData.numericQuerySNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.querySNQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.SORTED_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -790,7 +790,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_TERM_QUERY_CLOUD, port));
 		numericQueryTTQMetricC.start();
 
-		BenchmarkReportData.numericQueryTTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
+		BenchmarkReportData.queryTTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
 				queryThreadCount, 120, 30,  Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -800,7 +800,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_PHRASE_QUERY_CLOUD, port));
 		numericQueryPTQMetricC.start();
 
-		BenchmarkReportData.numericQueryPTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryPTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.TEXT_PHRASE_QUERY, queryThreadCount, 120, 30,  Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
@@ -810,11 +810,20 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_TEXT_QUERY_CLOUD, port));
 		numericQuerySTQMetricC.start();
 
-		BenchmarkReportData.numericQuerySTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.querySTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.SORTED_TEXT_QUERY, queryThreadCount, 120, 30,  Tests.cloud.getuRL(),
 				Tests.cloud.collectionName);
 
 		numericQuerySTQMetricC.stop();
+		
+		Thread numericQueryHTQMetricC = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.HIGHLIGHTING_QUERY_CLOUD, port));
+		numericQueryHTQMetricC.start();
+
+		BenchmarkReportData.queryHTQMetricC = Tests.numericQueryTests(Util.COMMIT_ID,QueryType.HIGHLIGHT_QUERY, 
+				queryThreadCount, 120, 30, Tests.cloud.getuRL(), Tests.cloud.collectionName);
+
+		numericQueryHTQMetricC.stop();
 
 		Tests.shutDownCloud();
 
@@ -827,7 +836,7 @@ public class Tests {
 	 * @throws InterruptedException
 	 */
 	@SuppressWarnings("deprecation")
-	public static void runNumericQueryTestsStandalone(long numDocuments) throws IOException, InterruptedException {
+	public static void queryTestsStandalone(long numDocuments) throws IOException, InterruptedException {
 
 		Util.postMessage("** INITIATING TEST: Numeric query on standalone node ...", MessageType.PURPLE_TEXT, false);
 
@@ -837,7 +846,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryTNQMetricS.start();
 
-		BenchmarkReportData.numericQueryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryTNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.TERM_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -847,7 +856,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.RANGE_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryRNQMetricS.start();
 
-		BenchmarkReportData.numericQueryRNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryRNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.RANGE_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -857,7 +866,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.LT_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryLNQMetricS.start();
 
-		BenchmarkReportData.numericQueryLNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryLNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.LESS_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -867,7 +876,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.GT_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryGNQMetricS.start();
 
-		BenchmarkReportData.numericQueryGNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryGNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.GREATER_THAN_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -877,7 +886,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.AND_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryANQMetricS.start();
 
-		BenchmarkReportData.numericQueryANQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryANQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.AND_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -887,7 +896,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.OR_NUMERIC_QUERY_STANDALONE, port));
 		numericQueryONQMetricS.start();
 
-		BenchmarkReportData.numericQueryONQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
+		BenchmarkReportData.queryONQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
 				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryONQMetricS.stop();
@@ -896,7 +905,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_NUMERIC_QUERY_STANDALONE, port));
 		numericQuerySNQMetricS.start();
 
-		BenchmarkReportData.numericQuerySNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.querySNQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.SORTED_NUMERIC_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -906,7 +915,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_TERM_QUERY_STANDALONE, port));
 		numericQueryTTQMetricS.start();
 
-		BenchmarkReportData.numericQueryTTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
+		BenchmarkReportData.queryTTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
 				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
 
 		numericQueryTTQMetricS.stop();
@@ -915,7 +924,7 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_PHRASE_QUERY_STANDALONE, port));
 		numericQueryPTQMetricS.start();
 
-		BenchmarkReportData.numericQueryPTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.queryPTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.TEXT_PHRASE_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
@@ -925,14 +934,21 @@ public class Tests {
 				new MetricCollector(Util.COMMIT_ID, TestType.SORTED_TEXT_QUERY_STANDALONE, port));
 		numericQuerySTQMetricS.start();
 
-		BenchmarkReportData.numericQuerySTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
+		BenchmarkReportData.querySTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,
 				QueryType.SORTED_TEXT_QUERY, queryThreadCount, 120, 30, Tests.node.getBaseUrl(),
 				Tests.node.collectionName);
 
 		numericQuerySTQMetricS.stop();
+		
+		Thread numericQueryHTQMetricS = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.HIGHLIGHTING_QUERY_STANDALONE, port));
+		numericQueryHTQMetricS.start();
+
+		BenchmarkReportData.queryHTQMetricS = Tests.numericQueryTests(Util.COMMIT_ID,QueryType.HIGHLIGHT_QUERY, 
+				queryThreadCount, 120, 30, Tests.node.getBaseUrl(), Tests.node.collectionName);
+
+		numericQueryHTQMetricS.stop();
 
 		Tests.shutDownStandalone();
-
 	}
-
 }

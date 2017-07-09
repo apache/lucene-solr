@@ -53,27 +53,29 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapStandaloneConcurrent2;
 	public static Map<String, String> metricMapStandaloneConcurrent3;
 
-	public static Map<String, String> numericQueryTNQMetricC;
-	public static Map<String, String> numericQueryRNQMetricC;
-	public static Map<String, String> numericQueryLNQMetricC;
-	public static Map<String, String> numericQueryGNQMetricC;
-	public static Map<String, String> numericQueryANQMetricC;
-	public static Map<String, String> numericQueryONQMetricC;
-	public static Map<String, String> numericQuerySNQMetricC;
-	public static Map<String, String> numericQueryTTQMetricC;
-	public static Map<String, String> numericQueryPTQMetricC;
-	public static Map<String, String> numericQuerySTQMetricC;
+	public static Map<String, String> queryTNQMetricC;
+	public static Map<String, String> queryRNQMetricC;
+	public static Map<String, String> queryLNQMetricC;
+	public static Map<String, String> queryGNQMetricC;
+	public static Map<String, String> queryANQMetricC;
+	public static Map<String, String> queryONQMetricC;
+	public static Map<String, String> querySNQMetricC;
+	public static Map<String, String> queryTTQMetricC;
+	public static Map<String, String> queryPTQMetricC;
+	public static Map<String, String> querySTQMetricC;
+	public static Map<String, String> queryHTQMetricC;
 
-	public static Map<String, String> numericQueryTNQMetricS;
-	public static Map<String, String> numericQueryRNQMetricS;
-	public static Map<String, String> numericQueryLNQMetricS;
-	public static Map<String, String> numericQueryGNQMetricS;
-	public static Map<String, String> numericQueryANQMetricS;
-	public static Map<String, String> numericQueryONQMetricS;
-	public static Map<String, String> numericQuerySNQMetricS;
-	public static Map<String, String> numericQueryTTQMetricS;
-	public static Map<String, String> numericQueryPTQMetricS;
-	public static Map<String, String> numericQuerySTQMetricS;
+	public static Map<String, String> queryTNQMetricS;
+	public static Map<String, String> queryRNQMetricS;
+	public static Map<String, String> queryLNQMetricS;
+	public static Map<String, String> queryGNQMetricS;
+	public static Map<String, String> queryANQMetricS;
+	public static Map<String, String> queryONQMetricS;
+	public static Map<String, String> querySNQMetricS;
+	public static Map<String, String> queryTTQMetricS;
+	public static Map<String, String> queryPTQMetricS;
+	public static Map<String, String> querySTQMetricS;
+	public static Map<String, String> queryHTQMetricS;
 
 	/**
 	 * A method used to refresh the data structures when a cycle completes.
@@ -109,27 +111,29 @@ public class BenchmarkReportData {
 
 		metricMapStandalone = null;
 
-		numericQueryTNQMetricC = null;
-		numericQueryRNQMetricC = null;
-		numericQueryLNQMetricC = null;
-		numericQueryGNQMetricC = null;
-		numericQueryANQMetricC = null;
-		numericQueryONQMetricC = null;
-		numericQuerySNQMetricC = null;
-		numericQueryTTQMetricC = null;
-		numericQueryPTQMetricC = null;
-		numericQuerySTQMetricC = null;
-
-		numericQueryTNQMetricS = null;
-		numericQueryRNQMetricS = null;
-		numericQueryLNQMetricS = null;
-		numericQueryGNQMetricS = null;
-		numericQueryANQMetricS = null;
-		numericQueryONQMetricS = null;
-		numericQuerySNQMetricS = null;
-		numericQueryTTQMetricS = null;
-		numericQueryPTQMetricS = null;
-		numericQuerySTQMetricS = null;
+		queryTNQMetricC = null;
+		queryRNQMetricC = null;
+		queryLNQMetricC = null;
+		queryGNQMetricC = null;
+		queryANQMetricC = null;
+		queryONQMetricC = null;
+		querySNQMetricC = null;
+		queryTTQMetricC = null;
+		queryPTQMetricC = null;
+		querySTQMetricC = null;
+		queryHTQMetricC = null;
+		
+		queryTNQMetricS = null;
+		queryRNQMetricS = null;
+		queryLNQMetricS = null;
+		queryGNQMetricS = null;
+		queryANQMetricS = null;
+		queryONQMetricS = null;
+		querySNQMetricS = null;
+		queryTTQMetricS = null;
+		queryPTQMetricS = null;
+		querySTQMetricS = null;
+		queryHTQMetricS = null;
 
 	}
 

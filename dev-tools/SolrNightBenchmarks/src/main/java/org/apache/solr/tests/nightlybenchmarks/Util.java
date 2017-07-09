@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -103,6 +104,7 @@ public class Util {
 	public static String NUMERIC_SORTED_QUERY_PAIR_DATA = "";
 	public static String TEXT_TERM_DATA = "";
 	public static String TEXT_PHRASE_DATA = "";
+	public static String HIGHLIGHT_TERM_DATA = "";
 
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
@@ -625,6 +627,9 @@ public class Util {
 					MessageType.YELLOW_TEXT, false);
 			Util.TEXT_PHRASE_DATA = prop.getProperty("SolrNightlyBenchmarks.staticTextPhraseQueryData");
 			Util.postMessage("Getting Property Value for staticTextPhraseQueryData: " + Util.TEXT_PHRASE_DATA,
+					MessageType.YELLOW_TEXT, false);
+			Util.HIGHLIGHT_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.highlightTermsData");
+			Util.postMessage("Getting Property Value for highlightTermsData: " + Util.HIGHLIGHT_TERM_DATA,
 					MessageType.YELLOW_TEXT, false);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
@@ -1284,6 +1289,33 @@ public class Util {
 			line = null;
 		}
 
+	}
+	
+	public static void createHighlightKeywordsDataFile() {
+		
+		String line = "";
+		String cvsSplitBy = ",";
+		
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
+
+			while ((line = br.readLine()) != null) {
+				String[] data = line.split(cvsSplitBy);
+				Random r = new Random();
+				int number = r.nextInt(data[2].split(" ").length);
+				String s = data[2].split(" ")[number].trim();
+				
+				while (s.length() < 10) {
+					s = data[2].split(" ")[r.nextInt(data[2].split(" ").length)].trim();
+				}
+
+				Util.postMessage(data[2].split(" ")[number], MessageType.RED_TEXT, false);
+				BenchmarkAppConnector.writeToWebAppDataFile("Highlight-Terms.csv",s, false, FileType.TEST_ENV_FILE);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 	/**
