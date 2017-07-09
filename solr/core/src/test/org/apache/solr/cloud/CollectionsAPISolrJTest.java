@@ -74,9 +74,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertEquals(0, (int)status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
+    // Use of _default configset should generate a warning for data-driven functionality in production use
+    assertTrue(response.getWarning() != null && response.getWarning().contains("NOT RECOMMENDED for production use"));
 
     response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
