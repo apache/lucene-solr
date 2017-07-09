@@ -262,6 +262,8 @@ Bug Fixes
 
 * SOLR-10826: Fix CloudSolrClient to expand the collection parameter correctly (Tim Owen via Varun Thacker)
 
+* SOLR-11039: Next button in Solr admin UI for collection list pagination does not work. (janhoy)
+
 Optimizations
 ----------------------
 
