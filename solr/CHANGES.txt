@@ -467,6 +467,8 @@ Other Changes
 
 * SOLR-10898: Fix SOLR-10898 to not deterministicly fail 1/512 runs (hossman)
 
+* SOLR-10796: TestPointFields: increase randomized testing of non-trivial values.  (Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
