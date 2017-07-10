@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spell.CombineSuggestion;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.WordBreakSpellChecker;
 import org.apache.lucene.search.spell.WordBreakSpellChecker.BreakSuggestionSortMethod;
@@ -89,7 +91,19 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
    * See {@link WordBreakSpellChecker#setMinSuggestionFrequency}
    */
   public static final String PARAM_MIN_SUGGESTION_FREQUENCY = "minSuggestionFreq";
-  
+  /**
+   * SuggestMode for WordBreakSolrSpellChecker : If set, will override the SpellCheckComponent's SuggestMode
+   */
+  public static final String PARAM_SUGGEST_MODE = "suggestMode";
+  /**
+   * SuggestMode specific to Breaking words : If set, will override all other SuggestModes while breaking words.
+   */
+  public static final String PARAM_WB_SUGGEST_MODE = "wordBreakSuggestMode";
+  /**
+   * SuggestMode specific to Joining Words : If set, will override all other SuggestModes while joining words
+   */
+  public static final String PARAM_WJ_SUGGEST_MODE = "joinWordsSuggestMode";
+
   /**
    * <p>
    *  Specify a value on the "breakSugestionTieBreaker" parameter.
@@ -113,8 +127,25 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   private WordBreakSpellChecker wbsp = null;
   private boolean combineWords = false;
   private boolean breakWords = false;
+  private SuggestMode wordBreakSuggestMode = null;
+  private SuggestMode combineWordsSuggestMode = null;
+
   private BreakSuggestionSortMethod sortMethod = BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY;
   private static final Pattern spacePattern = Pattern.compile("\\s+");
+
+  private SuggestMode getSuggestModeFromParam(String paramName, NamedList config, SuggestMode defaultSugMode){
+    if (config.get(paramName)!=null){
+      try{
+        return SuggestMode.valueOf(strParam(config, paramName));
+      } catch (IllegalArgumentException iae){
+        String errMsg = "Error initialising " + this.getClass().getName()
+                + ". Invalid `suggestMode` : '" + strParam(config, paramName)
+                + "' . Permitted Values: " + Arrays.asList(SuggestMode.values());
+        throw new IllegalArgumentException(errMsg);
+      }
+    }
+    return defaultSugMode;
+  }
 
   @Override
   public String init(@SuppressWarnings("unchecked") NamedList config,
@@ -122,6 +153,11 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     String name = super.init(config, core);
     combineWords = boolParam(config, PARAM_COMBINE_WORDS);
     breakWords = boolParam(config, PARAM_BREAK_WORDS);
+    // The default SuggestMode of the spellcheck component will be overridden by `suggestMode` of the WordBreakSolrSpellChekcer (if not null).
+    // Which can be overridden by the suggestModes for WordBreak and WordJoin Respectively.
+    SuggestMode suggestMode = getSuggestModeFromParam(PARAM_SUGGEST_MODE, config, null);
+    combineWordsSuggestMode = getSuggestModeFromParam(PARAM_WJ_SUGGEST_MODE, config, suggestMode);
+    wordBreakSuggestMode    = getSuggestModeFromParam(PARAM_WB_SUGGEST_MODE, config, suggestMode);
     wbsp = new WordBreakSpellChecker();
     String bstb = strParam(config, PARAM_BREAK_SUGGESTION_TIE_BREAKER);
     if (bstb != null) {
@@ -226,9 +262,12 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       Term thisTerm = new Term(field, tokenArr[i].toString());
       termArr.add(thisTerm);
       tokenArrWithSeparators.add(tokenArr[i]);
+      if ( wordBreakSuggestMode == null ){
+        wordBreakSuggestMode = options.suggestMode;
+      }
       if (breakWords) {
         SuggestWord[][] breakSuggestions = wbsp.suggestWordBreaks(thisTerm,
-            numSuggestions, ir, options.suggestMode, sortMethod);
+            numSuggestions, ir, wordBreakSuggestMode, sortMethod);
         if(breakSuggestions.length==0) {
           noBreakSuggestionList.add(new ResultEntry(tokenArr[i], null, 0));
         }
@@ -254,10 +293,12 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       }
     }
     breakSuggestionList.addAll(noBreakSuggestionList);
-    
+    if (combineWordsSuggestMode == null){
+      combineWordsSuggestMode = options.suggestMode;
+    }
     List<ResultEntry> combineSuggestionList = Collections.emptyList();
     CombineSuggestion[] combineSuggestions = wbsp.suggestWordCombinations(
-        termArr.toArray(new Term[termArr.size()]), numSuggestions, ir, options.suggestMode);
+        termArr.toArray(new Term[termArr.size()]), numSuggestions, ir, combineWordsSuggestMode);
     if (combineWords) {
       combineSuggestionList = new ArrayList<>(
           combineSuggestions.length);
