@@ -50,9 +50,13 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapCloudConcurrent3_3N1S3R;
 	public static Map<String, String> metricMapCloudConcurrent3_4N2S2R;
 
-	public static Map<String, String> metricMapStandaloneConcurrent1;
-	public static Map<String, String> metricMapStandaloneConcurrent2;
-	public static Map<String, String> metricMapStandaloneConcurrent3;
+	public static Map<String, String> metricMapStandaloneIndexingConcurrent1;
+	public static Map<String, String> metricMapStandaloneIndexingConcurrent2;
+	public static Map<String, String> metricMapStandaloneIndexingConcurrent3;
+	
+	public static Map<String, String> metricMapStandalonePartialUpdateConcurrent1;
+	public static Map<String, String> metricMapStandalonePartialUpdateConcurrent2;
+	public static Map<String, String> metricMapStandalonePartialUpdateConcurrent3;
 
 	public static Map<String, String> queryTNQMetricC;
 	public static Map<String, String> queryRNQMetricC;
@@ -98,9 +102,13 @@ public class BenchmarkReportData {
 		metricMapCloudConcurrent3_3N1S3R = null;
 		metricMapCloudConcurrent3_4N2S2R = null;
 
-		metricMapStandaloneConcurrent1 = null;
-		metricMapStandaloneConcurrent2 = null;
-		metricMapStandaloneConcurrent3 = null;
+		metricMapStandaloneIndexingConcurrent1 = null;
+		metricMapStandaloneIndexingConcurrent2 = null;
+		metricMapStandaloneIndexingConcurrent3 = null;
+		
+		metricMapStandalonePartialUpdateConcurrent1 = null;
+		metricMapStandalonePartialUpdateConcurrent2 = null;
+		metricMapStandalonePartialUpdateConcurrent3 = null;
 
 		metricMapCloudSerial_2N1S2R = null;
 		metricMapCloudSerial_2N2S1R = null;

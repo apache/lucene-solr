@@ -70,7 +70,8 @@ public class BenchmarkAppConnector {
 		SORTING_TEXT_QUERY_CLOUD,
 		HIGHLIGHTING_QUERY_STANDALONE,
 		HIGHLIGHTING_QUERY_CLOUD,
-		PARTIAL_UPDATE_STANDALONE,
+		PARTIAL_UPDATE_HTTP_STANDALONE,
+		PARTIAL_UPDATE_CONCURRENT_STANDALONE,
 		PARTIAL_UPDATE_CLOUD
 
 	}
@@ -364,13 +365,13 @@ public class BenchmarkAppConnector {
 					// Don't add any header
 				} else if (type == FileType.STANDALONE_INDEXING_THROUGHPUT
 						|| type == FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT 
-						|| type == FileType.PARTIAL_UPDATE_STANDALONE
+						|| type == FileType.PARTIAL_UPDATE_HTTP_STANDALONE
 						|| type == FileType.PARTIAL_UPDATE_CLOUD) {
 					fw.write("Date, Test_ID, Throughput (doc/sec), CommitID\n");
 				} else if (type == FileType.CLOUD_INDEXING_CONCURRENT) {
 					fw.write(
 							"Date, Test_ID, CommitID, Seconds (1 Threads), Seconds (2 Threads), Seconds (3 Threads)\n");
-				} else if (type == FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT) {
+				} else if (type == FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT || type == FileType.PARTIAL_UPDATE_CONCURRENT_STANDALONE) {
 					fw.write(
 							"Date, Test_ID, CommitID, Throughput (1 Threads), Throughput (2 Threads), Throughput (3 Threads)\n");
 				} else if (type == FileType.NUMERIC_QUERY_CLOUD || type == FileType.NUMERIC_QUERY_STANDALONE) {
@@ -483,13 +484,13 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapStandaloneConcurrent1 != null) {
+		if (BenchmarkReportData.metricMapStandaloneIndexingConcurrent1 != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_concurrent.csv",
-					BenchmarkReportData.metricMapStandaloneConcurrent1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent1.get("CommitID") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent1.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent2.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandaloneConcurrent3.get("IndexingThroughput"),
+					BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandaloneIndexingConcurrent2.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandaloneIndexingConcurrent3.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 
@@ -774,7 +775,19 @@ public class BenchmarkAppConnector {
 					BenchmarkReportData.metricMapPartialUpdateStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapPartialUpdateStandalone.get("IndexingThroughput") + ", "
 							+ BenchmarkReportData.metricMapPartialUpdateStandalone.get("CommitID"),
-					false, FileType.STANDALONE_INDEXING_THROUGHPUT);
+					false, FileType.PARTIAL_UPDATE_HTTP_STANDALONE);
+		}
+		
+		if (BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent1 != null 
+				&& BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent2 != null
+				&& BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent3 != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("partial_update_throughput_data_standalone_concurrent.csv",
+					BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent1.get("CommitID") + ", "
+							+ BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent1.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent2.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent3.get("IndexingThroughput"),
+					false, FileType.PARTIAL_UPDATE_CONCURRENT_STANDALONE);
 		}
 
 		Util.getAndPublishCommitInformation();

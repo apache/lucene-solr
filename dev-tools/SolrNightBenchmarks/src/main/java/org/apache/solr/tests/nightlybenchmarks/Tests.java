@@ -121,36 +121,87 @@ public class Tests {
 	 * @param numDocuments
 	 * @return boolean
 	 */
-	public static boolean indexingTestsStandaloneConcurrent(String commitID, long numDocuments) {
+	public static boolean indexingTestsStandaloneConcurrent(String commitID, long numDocuments, ActionType action) {
 
 		try {
-			SolrNode node = new SolrNode(commitID, "", "", false);
-			node.doAction(SolrNodeAction.NODE_START);
-			node.createCollection("Core-" + UUID.randomUUID(), "Collection-" + UUID.randomUUID());
-			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
+			
+			if (action == ActionType.INDEX) {
+			
+				SolrNode node = new SolrNode(commitID, "", "", false);
+				node.doAction(SolrNodeAction.NODE_START);
+				node.createCollection("Core-" + UUID.randomUUID(), "Collection-" + UUID.randomUUID());
+				SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
+	
+				String collectionName1 = "" + UUID.randomUUID();
+				node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
+				BenchmarkReportData.metricMapStandaloneIndexingConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName1, (int)Math.floor(numDocuments/100) , 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
+				node.deleteCollection(collectionName1);
+				String collectionName2 = "" + UUID.randomUUID();
+				node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
+				BenchmarkReportData.metricMapStandaloneIndexingConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName2, (int)Math.floor(numDocuments/100), 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
+				node.deleteCollection(collectionName2);
+				String collectionName3 = "" + UUID.randomUUID();
+				node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
+				BenchmarkReportData.metricMapStandaloneIndexingConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName3, (int)Math.floor(numDocuments/100), 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
+				node.deleteCollection(collectionName3);
+	
+				node.doAction(SolrNodeAction.NODE_STOP);
+				node.cleanup();
+			
+			} else if (action == ActionType.PARTIAL_UPDATE) {
+				
+				SolrNode node = new SolrNode(commitID, "", "", false);
+				node.doAction(SolrNodeAction.NODE_START);
+				node.createCollection("Core-" + UUID.randomUUID(), "Collection-" + UUID.randomUUID());
+				SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
+	
+				String collectionName1 = "" + UUID.randomUUID();
+				node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
+				client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName1, (int)Math.floor(numDocuments/100) , 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, false, false,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 
-			String collectionName1 = "" + UUID.randomUUID();
-			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
-			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName1, (int)Math.floor(numDocuments/100) , 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true,
-					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
-			node.deleteCollection(collectionName1);
-			String collectionName2 = "" + UUID.randomUUID();
-			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
-			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName2, (int)Math.floor(numDocuments/100), 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true,
-					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
-			node.deleteCollection(collectionName2);
-			String collectionName3 = "" + UUID.randomUUID();
-			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
-			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
-					collectionName3, (int)Math.floor(numDocuments/100), 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true,
-					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
-			node.deleteCollection(collectionName3);
+				BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName1, (int)Math.floor(numDocuments/100) , 1, TestType.STANDALONE_PARTIAL_UPDATE_THROUGHPUT_CONCURRENT_1, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.PARTIAL_UPDATE);
+				
+				node.deleteCollection(collectionName1);
+				
+				String collectionName2 = "" + UUID.randomUUID();
+				node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
+				client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName2, (int)Math.floor(numDocuments/100), 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, false, false,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 
-			node.doAction(SolrNodeAction.NODE_STOP);
-			node.cleanup();
+				BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName2, (int)Math.floor(numDocuments/100), 2, TestType.STANDALONE_PARTIAL_UPDATE_THROUGHPUT_CONCURRENT_2, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.PARTIAL_UPDATE);
 
+				node.deleteCollection(collectionName2);
+				
+				String collectionName3 = "" + UUID.randomUUID();
+				node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
+				client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName3, (int)Math.floor(numDocuments/100), 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, false, false,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
+
+				BenchmarkReportData.metricMapStandalonePartialUpdateConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
+						collectionName3, (int)Math.floor(numDocuments/100), 3, TestType.STANDALONE_PARTIAL_UPDATE_THROUGHPUT_CONCURRENT_3, true, true,
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.PARTIAL_UPDATE);
+				
+				node.deleteCollection(collectionName3);
+	
+				node.doAction(SolrNodeAction.NODE_STOP);
+				node.cleanup();
+
+			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
