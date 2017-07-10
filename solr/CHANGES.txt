@@ -416,6 +416,8 @@ Other Changes
 * SOLR-11021: The elevate.xml config-file is made optional in the ElevationComponent.
   The default configset doesn't ship with a elevate.xml file anymore (Varun Thacker)
 
+* SOLR-10898: Fix SOLR-10898 to not deterministicly fail 1/512 runs (hossman)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
