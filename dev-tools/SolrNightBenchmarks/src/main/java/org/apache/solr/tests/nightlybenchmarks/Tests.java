@@ -97,11 +97,11 @@ public class Tests {
 		    } else if (action == ActionType.PARTIAL_UPDATE) {
 			
 			    client.indexData(numDocuments,
-							node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
-							true, false, SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.INDEX);
+							node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.PARTIAL_UPDATE_THROUGHPUT_STANDALONE,
+							false, false, SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.INDEX);
 			    	
 			    BenchmarkReportData.metricMapPartialUpdateStandalone = client.indexData(numDocuments,
-						node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
+						node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.PARTIAL_UPDATE_THROUGHPUT_STANDALONE,
 						true, true, SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.PARTIAL_UPDATE);
 
 		    }
