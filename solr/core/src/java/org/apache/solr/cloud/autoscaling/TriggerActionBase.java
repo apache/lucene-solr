@@ -14,15 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cloud.autoscaling;
 
-/**
- * todo nocommit
- */
-public class LogPlanAction extends TriggerActionBase {
-  @Override
-  public void process(TriggerEvent event, ActionContext actionContext) {
+import java.io.IOException;
+import java.util.Map;
 
+/**
+ * Base class for {@link TriggerAction} implementations.
+ */
+public abstract class TriggerActionBase implements TriggerAction {
+
+  protected Map<String, String> initArgs;
+
+  @Override
+  public String getName() {
+    if (initArgs != null) {
+      return initArgs.get("name");
+    } else {
+      return getClass().getSimpleName();
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+
+  }
+
+  @Override
+  public void init(Map<String, String> args) {
+    this.initArgs = args;
   }
 }

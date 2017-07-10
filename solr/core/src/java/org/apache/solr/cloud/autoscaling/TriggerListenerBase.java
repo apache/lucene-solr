@@ -14,15 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
+
+import org.apache.solr.core.CoreContainer;
+
 /**
- * todo nocommit
+ * Base class for implementations of {@link TriggerListener}.
  */
-public class LogPlanAction extends TriggerActionBase {
+public abstract class TriggerListenerBase implements TriggerListener {
+
+  protected AutoScalingConfig.TriggerListenerConfig config;
+  protected CoreContainer coreContainer;
+
   @Override
-  public void process(TriggerEvent event, ActionContext actionContext) {
+  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
+    this.coreContainer = coreContainer;
+    this.config = config;
+  }
+
+  @Override
+  public AutoScalingConfig.TriggerListenerConfig getConfig() {
+    return config;
+  }
+
+  @Override
+  public void close() throws IOException {
 
   }
 }

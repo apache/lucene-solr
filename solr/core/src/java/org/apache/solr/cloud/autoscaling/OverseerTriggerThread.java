@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -74,6 +75,8 @@ public class OverseerTriggerThread implements Runnable, Closeable {
   private Map<String, AutoScaling.Trigger> activeTriggers = new HashMap<>();
 
   private boolean isClosed = false;
+
+  private AutoScalingConfig autoScalingConfig;
 
   public OverseerTriggerThread(ZkController zkController) {
     this.zkController = zkController;
@@ -162,6 +165,9 @@ public class OverseerTriggerThread implements Runnable, Closeable {
         log.warn("Interrupted", e);
         break;
       }
+
+      // update the current config
+      scheduledTriggers.setAutoScalingConfig(autoScalingConfig);
 
       Set<String> managedTriggerNames = scheduledTriggers.getScheduledTriggerNames();
       // remove the triggers which are no longer active
@@ -265,8 +271,9 @@ public class OverseerTriggerThread implements Runnable, Closeable {
         // protect against reordered watcher fires by ensuring that we only move forward
         return;
       }
+      autoScalingConfig = new AutoScalingConfig(data);
       znodeVersion = stat.getVersion();
-      Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, data);
+      Map<String, AutoScaling.Trigger> triggerMap = loadTriggers(triggerFactory, autoScalingConfig);
 
       // remove all active triggers that have been removed from ZK
       Set<String> trackingKeySet = activeTriggers.keySet();
@@ -288,22 +295,19 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     }
   }
 
-  private static Map<String, AutoScaling.Trigger> loadTriggers(AutoScaling.TriggerFactory triggerFactory, byte[] data) {
-    ZkNodeProps loaded = ZkNodeProps.load(data);
-    Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
-
+  private static Map<String, AutoScaling.Trigger> loadTriggers(AutoScaling.TriggerFactory triggerFactory, AutoScalingConfig autoScalingConfig) {
+    Map<String, AutoScalingConfig.TriggerConfig> triggers = autoScalingConfig.getTriggerConfigs();
     if (triggers == null) {
       return Collections.emptyMap();
     }
 
     Map<String, AutoScaling.Trigger> triggerMap = new HashMap<>(triggers.size());
 
-    for (Map.Entry<String, Object> entry : triggers.entrySet()) {
-      Map<String, Object> props = (Map<String, Object>) entry.getValue();
-      String event = (String) props.get(AutoScalingParams.EVENT);
-      AutoScaling.EventType eventType = AutoScaling.EventType.valueOf(event.toUpperCase(Locale.ROOT));
+    for (Map.Entry<String, AutoScalingConfig.TriggerConfig> entry : triggers.entrySet()) {
+      AutoScalingConfig.TriggerConfig cfg = entry.getValue();
+      AutoScaling.EventType eventType = cfg.eventType;
       String triggerName = entry.getKey();
-      triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, props));
+      triggerMap.put(triggerName, triggerFactory.create(eventType, triggerName, cfg.properties));
     }
     return triggerMap;
   }

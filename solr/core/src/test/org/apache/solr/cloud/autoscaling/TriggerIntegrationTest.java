@@ -17,8 +17,9 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.TimeSource;
@@ -566,15 +568,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         newNode.getNodeName(), nodeAddedEvent.getProperty(TriggerEvent.NODE_NAME));
   }
 
-  public static class TestTriggerAction implements TriggerAction {
+  public static class TestTriggerAction extends TriggerActionBase {
 
     public TestTriggerAction() {
       actionConstructorCalled.countDown();
-    }
-
-    @Override
-    public String getName() {
-      return "TestTriggerAction";
     }
 
     @Override
@@ -596,26 +593,17 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void close() throws IOException {
-
-    }
-
-    @Override
     public void init(Map<String, String> args) {
       log.info("TestTriggerAction init");
       actionInitCalled.countDown();
+      super.init(args);
     }
   }
 
-  public static class TestEventQueueAction implements TriggerAction {
+  public static class TestEventQueueAction extends TriggerActionBase {
 
     public TestEventQueueAction() {
       log.info("TestEventQueueAction instantiated");
-    }
-
-    @Override
-    public String getName() {
-      return this.getClass().getSimpleName();
     }
 
     @Override
@@ -634,14 +622,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void close() throws IOException {
-
-    }
-
-    @Override
     public void init(Map<String, String> args) {
       log.debug("TestTriggerAction init");
       actionInitCalled.countDown();
+      super.init(args);
     }
   }
 
@@ -790,15 +774,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     return listener;
   }
 
-  public static class TestEventMarkerAction implements TriggerAction {
+  public static class TestEventMarkerAction extends TriggerActionBase {
 
     public TestEventMarkerAction() {
       actionConstructorCalled.countDown();
-    }
-
-    @Override
-    public String getName() {
-      return "TestEventMarkerAction";
     }
 
     @Override
@@ -820,14 +799,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void close() throws IOException {
-
-    }
-
-    @Override
     public void init(Map<String, String> args) {
       log.info("TestEventMarkerAction init");
       actionInitCalled.countDown();
+      super.init(args);
     }
   }
 
@@ -951,5 +926,210 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     TriggerEvent ev = events.iterator().next();
     assertEquals(overseerLeader, ev.getProperty(TriggerEvent.NODE_NAME));
     assertEquals(AutoScaling.EventType.NODELOST, ev.getEventType());
+  }
+
+  private static class TestEvent {
+    final AutoScalingConfig.TriggerListenerConfig config;
+    final AutoScaling.EventProcessorStage stage;
+    final String actionName;
+    final TriggerEvent event;
+    final String message;
+
+    TestEvent(AutoScalingConfig.TriggerListenerConfig config, AutoScaling.EventProcessorStage stage, String actionName, TriggerEvent event, String message) {
+      this.config = config;
+      this.stage = stage;
+      this.actionName = actionName;
+      this.event = event;
+      this.message = message;
+    }
+
+    @Override
+    public String toString() {
+      return "TestEvent{" +
+          "config=" + config +
+          ", stage=" + stage +
+          ", actionName='" + actionName + '\'' +
+          ", event=" + event +
+          ", message='" + message + '\'' +
+          '}';
+    }
+  }
+
+  static Map<String, List<TestEvent>> listenerEvents = new HashMap<>();
+  static CountDownLatch listenerCreated = new CountDownLatch(1);
+  static boolean failDummyAction = false;
+
+  public static class TestTriggerListener extends TriggerListenerBase {
+    @Override
+    public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
+      super.init(coreContainer, config);
+      listenerCreated.countDown();
+    }
+
+    @Override
+    public synchronized void onEvent(TriggerEvent event, AutoScaling.EventProcessorStage stage, String actionName,
+                                     ActionContext context, Throwable error, String message) {
+      List<TestEvent> lst = listenerEvents.get(config.name);
+      if (lst == null) {
+        lst = new ArrayList<>();
+        listenerEvents.put(config.name, lst);
+      }
+      lst.add(new TestEvent(config, stage, actionName, event, message));
+    }
+  }
+
+  public static class TestDummyAction extends TriggerActionBase {
+
+    @Override
+    public void process(TriggerEvent event, ActionContext context) {
+      if (failDummyAction) {
+        throw new RuntimeException("failure");
+      }
+
+    }
+  }
+
+  @Test
+  public void testListeners() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_trigger'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}," +
+        "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
+        "]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
+      fail("The TriggerAction should have been created by now");
+    }
+
+    String setListenerCommand = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'foo'," +
+        "'trigger' : 'node_added_trigger'," +
+        "'stage' : ['WAITING', 'STARTED','ABORTED','SUCCEEDED', 'FAILED']," +
+        "'beforeAction' : 'test'," +
+        "'afterAction' : ['test', 'test1']," +
+        "'class' : '" + TestTriggerListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand1 = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'bar'," +
+        "'trigger' : 'node_added_trigger'," +
+        "'stage' : ['WAITING','FAILED','SUCCEEDED']," +
+        "'beforeAction' : ['test', 'test1']," +
+        "'afterAction' : 'test'," +
+        "'class' : '" + TestTriggerListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    listenerEvents.clear();
+    failDummyAction = false;
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+    assertTrue(triggerFired.get());
+
+    assertEquals("both listeners should have fired", 2, listenerEvents.size());
+
+    Thread.sleep(2000);
+
+    // check foo events
+    List<TestEvent> testEvents = listenerEvents.get("foo");
+    assertNotNull("foo events: " + testEvents, testEvents);
+    assertEquals("foo events: " + testEvents, 5, testEvents.size());
+
+    assertEquals(AutoScaling.EventProcessorStage.STARTED, testEvents.get(0).stage);
+
+    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(1).stage);
+    assertEquals("test", testEvents.get(1).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(2).stage);
+    assertEquals("test", testEvents.get(2).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(3).stage);
+    assertEquals("test1", testEvents.get(3).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.SUCCEEDED, testEvents.get(4).stage);
+
+    // check bar events
+    testEvents = listenerEvents.get("bar");
+    assertNotNull("bar events", testEvents);
+    assertEquals("bar events", 4, testEvents.size());
+
+    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(0).stage);
+    assertEquals("test", testEvents.get(0).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(1).stage);
+    assertEquals("test", testEvents.get(1).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(2).stage);
+    assertEquals("test1", testEvents.get(2).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.SUCCEEDED, testEvents.get(3).stage);
+
+    // reset
+    triggerFired.set(false);
+    triggerFiredLatch = new CountDownLatch(1);
+    listenerEvents.clear();
+    failDummyAction = true;
+
+    newNode = cluster.startJettySolrRunner();
+    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+
+    Thread.sleep(2000);
+
+    // check foo events
+    testEvents = listenerEvents.get("foo");
+    assertNotNull("foo events: " + testEvents, testEvents);
+    assertEquals("foo events: " + testEvents, 4, testEvents.size());
+
+    assertEquals(AutoScaling.EventProcessorStage.STARTED, testEvents.get(0).stage);
+
+    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(1).stage);
+    assertEquals("test", testEvents.get(1).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(2).stage);
+    assertEquals("test", testEvents.get(2).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.FAILED, testEvents.get(3).stage);
+    assertEquals("test1", testEvents.get(3).actionName);
+
+    // check bar events
+    testEvents = listenerEvents.get("bar");
+    assertNotNull("bar events", testEvents);
+    assertEquals("bar events", 4, testEvents.size());
+
+    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(0).stage);
+    assertEquals("test", testEvents.get(0).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(1).stage);
+    assertEquals("test", testEvents.get(1).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(2).stage);
+    assertEquals("test1", testEvents.get(2).actionName);
+
+    assertEquals(AutoScaling.EventProcessorStage.FAILED, testEvents.get(3).stage);
+    assertEquals("test1", testEvents.get(3).actionName);
   }
 }

@@ -52,7 +52,7 @@ public class NodeAddedTrigger extends TriggerBase {
   private final Map<String, Object> properties;
   private final CoreContainer container;
   private final List<TriggerAction> actions;
-  private final AtomicReference<AutoScaling.TriggerListener> listenerRef;
+  private final AtomicReference<AutoScaling.EventProcessor> processorRef;
   private final boolean enabled;
   private final int waitForSecond;
   private final AutoScaling.EventType eventType;
@@ -71,7 +71,7 @@ public class NodeAddedTrigger extends TriggerBase {
     this.properties = properties;
     this.container = container;
     this.timeSource = TimeSource.CURRENT_TIME;
-    this.listenerRef = new AtomicReference<>();
+    this.processorRef = new AtomicReference<>();
     List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
     if (o != null && !o.isEmpty()) {
       actions = new ArrayList<>(3);
@@ -119,13 +119,13 @@ public class NodeAddedTrigger extends TriggerBase {
   }
 
   @Override
-  public void setListener(AutoScaling.TriggerListener listener) {
-    listenerRef.set(listener);
+  public void setProcessor(AutoScaling.EventProcessor processor) {
+    processorRef.set(processor);
   }
 
   @Override
-  public AutoScaling.TriggerListener getListener() {
-    return listenerRef.get();
+  public AutoScaling.EventProcessor getProcessor() {
+    return processorRef.get();
   }
 
   @Override
@@ -254,10 +254,10 @@ public class NodeAddedTrigger extends TriggerBase {
         long now = timeSource.getTime();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           // fire!
-          AutoScaling.TriggerListener listener = listenerRef.get();
-          if (listener != null) {
-            log.debug("NodeAddedTrigger {} firing registered listener for node: {} added at time {} , now: {}", name, nodeName, timeAdded, now);
-            if (listener.triggerFired(new NodeAddedEvent(getEventType(), getName(), timeAdded, nodeName))) {
+          AutoScaling.EventProcessor processor = processorRef.get();
+          if (processor != null) {
+            log.debug("NodeAddedTrigger {} firing registered processor for node: {} added at time {} , now: {}", name, nodeName, timeAdded, now);
+            if (processor.process(new NodeAddedEvent(getEventType(), getName(), timeAdded, nodeName))) {
               // remove from tracking set only if the fire was accepted
               it.remove();
               removeNodeAddedMarker(nodeName);

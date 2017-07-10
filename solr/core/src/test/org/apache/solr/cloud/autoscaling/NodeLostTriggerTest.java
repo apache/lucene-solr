@@ -43,7 +43,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionCloseCalled = new AtomicBoolean(false);
 
-  private AutoScaling.TriggerListener noFirstRunListener = event -> {
+  private AutoScaling.EventProcessor noFirstRunProcessor = event -> {
     fail("Did not expect the listener to fire on first run!");
     return true;
   };
@@ -74,14 +74,14 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     Map<String, Object> props = createTriggerProps(waitForSeconds);
 
     try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
-      trigger.setListener(noFirstRunListener);
+      trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
       String lostNodeName = cluster.getJettySolrRunner(1).getNodeName();
       cluster.stopJettySolrRunner(1);
 
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
-      trigger.setListener(event -> {
+      trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
           long currentTimeNanos = timeSource.getTime();
@@ -115,13 +115,13 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
       final long waitTime = 2;
       props.put("waitFor", waitTime);
-      trigger.setListener(noFirstRunListener);
+      trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
 
       JettySolrRunner lostNode = cluster.getJettySolrRunner(1);
       lostNode.stop();
       AtomicBoolean fired = new AtomicBoolean(false);
-      trigger.setListener(event -> {
+      trigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           long currentTimeNanos = timeSource.getTime();
           long eventTimeNanos = event.getEventTime();
@@ -210,7 +210,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     CoreContainer container = cluster.getJettySolrRunners().get(0).getCoreContainer();
     Map<String, Object> props = createTriggerProps(0);
     try (NodeLostTrigger trigger = new NodeLostTrigger("node_added_trigger", props, container)) {
-      trigger.setListener(noFirstRunListener);
+      trigger.setProcessor(noFirstRunProcessor);
 
       JettySolrRunner newNode = cluster.startJettySolrRunner();
       cluster.waitForAllNodes(5);
@@ -230,7 +230,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       AtomicInteger callCount = new AtomicInteger(0);
       AtomicBoolean fired = new AtomicBoolean(false);
 
-      trigger.setListener(event -> {
+      trigger.setProcessor(event -> {
         if (callCount.incrementAndGet() < 2) {
           return false;
         } else  {
@@ -263,7 +263,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     // and assert that the new trigger still fires
 
     NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container);
-    trigger.setListener(noFirstRunListener);
+    trigger.setProcessor(noFirstRunProcessor);
     trigger.run();
 
     // stop the newly created node
@@ -291,7 +291,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     try (NodeLostTrigger newTrigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
-      newTrigger.setListener(event -> {
+      newTrigger.setProcessor(event -> {
         if (fired.compareAndSet(false, true)) {
           eventRef.set(event);
           long currentTimeNanos = timeSource.getTime();

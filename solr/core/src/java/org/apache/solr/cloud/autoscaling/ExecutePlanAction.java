@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -38,25 +37,8 @@ import org.slf4j.LoggerFactory;
  * This class is responsible for executing cluster operations read from the {@link ActionContext}'s properties
  * with the key name "operations"
  */
-public class ExecutePlanAction implements TriggerAction {
+public class ExecutePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private Map<String, String> initArgs;
-
-  @Override
-  public void close() throws IOException {
-
-  }
-
-  @Override
-  public void init(Map<String, String> args) {
-    this.initArgs = args;
-  }
-
-  @Override
-  public String getName() {
-    return initArgs.get("name");
-  }
 
   @Override
   public void process(TriggerEvent event, ActionContext context) {

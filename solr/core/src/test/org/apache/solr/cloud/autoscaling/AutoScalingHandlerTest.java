@@ -356,7 +356,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'trigger' : 'node_lost_trigger'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED']," +
         "'beforeAction' : 'execute_plan'," +
-        "'class' : 'org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener'," +
+        "'class' : 'org.apache.solr.cloud.autoscaling.HttpTriggerListener'," +
         "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
         "}" +
         "}";
@@ -371,7 +371,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertTrue(listeners.containsKey("xyz"));
     Map<String, Object> xyzListener = (Map<String, Object>) listeners.get("xyz");
     assertEquals(5, xyzListener.size());
-    assertEquals("org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener", xyzListener.get("class").toString());
+    assertEquals("org.apache.solr.cloud.autoscaling.HttpTriggerListener", xyzListener.get("class").toString());
 
     String removeTriggerCommand = "{" +
         "'remove-trigger' : {" +
@@ -422,7 +422,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "'trigger' : 'node_lost_trigger'," +
         "'stage' : ['STARTED','ABORTED','SUCCEEDED']," +
         "'beforeAction' : 'execute_plan'," +
-        "'class' : 'org.apache.solr.cloud.autoscaling.AutoScaling$HttpCallbackListener'," +
+        "'class' : 'org.apache.solr.cloud.autoscaling.AutoScaling$HttpTriggerListener'," +
         "'url' : 'http://xyz.com/on_node_lost?node={$LOST_NODE_NAME}'" +
         "}" +
         "}";
