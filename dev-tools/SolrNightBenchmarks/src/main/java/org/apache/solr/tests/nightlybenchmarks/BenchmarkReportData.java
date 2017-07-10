@@ -27,7 +27,8 @@ public class BenchmarkReportData {
 	public static Map<String, String> returnStandaloneCreateCollectionMap;
 	public static Map<String, String> returnCloudCreateCollectionMap;
 
-	public static Map<String, String> metricMapStandalone;
+	public static Map<String, String> metricMapIndexingStandalone;
+	public static Map<String, String> metricMapPartialUpdateStandalone;
 
 	public static Map<String, String> metricMapCloudSerial_2N1S2R;
 	public static Map<String, String> metricMapCloudSerial_2N2S1R;
@@ -109,7 +110,7 @@ public class BenchmarkReportData {
 		returnStandaloneCreateCollectionMap = null;
 		returnCloudCreateCollectionMap = null;
 
-		metricMapStandalone = null;
+		metricMapIndexingStandalone = null;
 
 		queryTNQMetricC = null;
 		queryRNQMetricC = null;

@@ -69,7 +69,9 @@ public class BenchmarkAppConnector {
 		SORTING_TEXT_QUERY_STANDALONE, 
 		SORTING_TEXT_QUERY_CLOUD,
 		HIGHLIGHTING_QUERY_STANDALONE,
-		HIGHLIGHTING_QUERY_CLOUD
+		HIGHLIGHTING_QUERY_CLOUD,
+		PARTIAL_UPDATE_STANDALONE,
+		PARTIAL_UPDATE_CLOUD
 
 	}
 
@@ -361,7 +363,9 @@ public class BenchmarkAppConnector {
 						|| type == FileType.COMMIT_QUEUE) {
 					// Don't add any header
 				} else if (type == FileType.STANDALONE_INDEXING_THROUGHPUT
-						|| type == FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT) {
+						|| type == FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT 
+						|| type == FileType.PARTIAL_UPDATE_STANDALONE
+						|| type == FileType.PARTIAL_UPDATE_CLOUD) {
 					fw.write("Date, Test_ID, Throughput (doc/sec), CommitID\n");
 				} else if (type == FileType.CLOUD_INDEXING_CONCURRENT) {
 					fw.write(
@@ -405,11 +409,11 @@ public class BenchmarkAppConnector {
 
 		Util.postMessage("** Publishing data for webapp ..", MessageType.CYAN_TEXT, false);
 
-		if (BenchmarkReportData.metricMapStandalone != null) {
+		if (BenchmarkReportData.metricMapIndexingStandalone != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_regular.csv",
-					BenchmarkReportData.metricMapStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("IndexingThroughput") + ", "
-							+ BenchmarkReportData.metricMapStandalone.get("CommitID"),
+					BenchmarkReportData.metricMapIndexingStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapIndexingStandalone.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapIndexingStandalone.get("CommitID"),
 					false, FileType.STANDALONE_INDEXING_THROUGHPUT);
 		}
 
@@ -763,6 +767,14 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.queryHTQMetricC.get("99.9thQtime"),
 
 					false, FileType.HIGHLIGHTING_QUERY_CLOUD);
+		}
+		
+		if (BenchmarkReportData.metricMapPartialUpdateStandalone != null) {
+			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_partial_update.csv",
+					BenchmarkReportData.metricMapPartialUpdateStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
+							+ BenchmarkReportData.metricMapPartialUpdateStandalone.get("IndexingThroughput") + ", "
+							+ BenchmarkReportData.metricMapPartialUpdateStandalone.get("CommitID"),
+					false, FileType.STANDALONE_INDEXING_THROUGHPUT);
 		}
 
 		Util.getAndPublishCommitInformation();

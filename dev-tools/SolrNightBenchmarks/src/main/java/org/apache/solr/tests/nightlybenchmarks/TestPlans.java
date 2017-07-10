@@ -36,8 +36,8 @@ public class TestPlans {
 
 		Util.postMessage("** Executing the benchmark test plan ...", MessageType.BLUE_TEXT, false);
 
-		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
-		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.PARTIAL_UPDATE);
+/*		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 		
 		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
@@ -53,7 +53,7 @@ public class TestPlans {
 		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
 
 		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
-
+*/
 		Util.postMessage("** Executing the benchmark test plan [COMPLETE]...", MessageType.BLUE_TEXT, false);
 
 	}

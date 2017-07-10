@@ -77,7 +77,7 @@ public class Tests {
 	 * @param numDocuments
 	 * @return boolean
 	 */
-	public static boolean indexingTestsStandalone(String commitID, long numDocuments) {
+	public static boolean indexingTestsStandalone(String commitID, long numDocuments, ActionType action) {
 
 		try {
 			SolrNode node = new SolrNode(commitID, "", "", false);
@@ -87,9 +87,24 @@ public class Tests {
 			node.createCollection("Core-" + UUID.randomUUID(), "Collection-" + UUID.randomUUID());
 
 			SolrIndexingClient client = new SolrIndexingClient("localhost", node.port, commitID);
-			BenchmarkReportData.metricMapStandalone = client.indexData(numDocuments,
-					node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
-					true, true, SolrClientType.HTTP_SOLR_CLIENT, null, null);
+
+			if (action == ActionType.INDEX) {
+			
+				BenchmarkReportData.metricMapIndexingStandalone = client.indexData(numDocuments,
+						node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
+						true, true, SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.INDEX);
+
+		    } else if (action == ActionType.PARTIAL_UPDATE) {
+			
+			    client.indexData(numDocuments,
+							node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
+							true, false, SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.INDEX);
+			    	
+			    BenchmarkReportData.metricMapPartialUpdateStandalone = client.indexData(numDocuments,
+						node.getBaseUrl() + node.collectionName, null, 0, 0, TestType.STANDALONE_INDEXING_THROUGHPUT_SERIAL,
+						true, true, SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.PARTIAL_UPDATE);
+
+		    }
 
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
@@ -97,7 +112,6 @@ public class Tests {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 		return true;
 	}
 
@@ -119,19 +133,19 @@ public class Tests {
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName1);
 			BenchmarkReportData.metricMapStandaloneConcurrent1 = client.indexData(numDocuments, node.getBaseUrl(),
 					collectionName1, (int)Math.floor(numDocuments/100) , 1, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_1, true, true,
-					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 			node.deleteCollection(collectionName1);
 			String collectionName2 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName2);
 			BenchmarkReportData.metricMapStandaloneConcurrent2 = client.indexData(numDocuments, node.getBaseUrl(),
 					collectionName2, (int)Math.floor(numDocuments/100), 2, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_2, true, true,
-					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 			node.deleteCollection(collectionName2);
 			String collectionName3 = "" + UUID.randomUUID();
 			node.createCollection("Core-" + UUID.randomUUID(), collectionName3);
 			BenchmarkReportData.metricMapStandaloneConcurrent3 = client.indexData(numDocuments, node.getBaseUrl(),
 					collectionName3, (int)Math.floor(numDocuments/100), 3, TestType.STANDALONE_INDEXING_THROUGHPUT_CONCURRENT_3, true, true,
-					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+					SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 			node.deleteCollection(collectionName3);
 
 			node.doAction(SolrNodeAction.NODE_STOP);
@@ -168,19 +182,19 @@ public class Tests {
 			if (nodes == 2 && shards == "1" && replicas == "2") {
 				BenchmarkReportData.metricMapCloudSerial_2N1S2R = cloudClient.indexData(numDocuments, cloud.getuRL(),
 						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N1S2R, true, true,
-						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort, ActionType.INDEX);
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
 				BenchmarkReportData.metricMapCloudSerial_2N2S1R = cloudClient.indexData(numDocuments, cloud.getuRL(),
 						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_2N2S1R, true, true,
-						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort, ActionType.INDEX);
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
 				BenchmarkReportData.metricMapCloudSerial_3N1S3R = cloudClient.indexData(numDocuments, cloud.getuRL(),
 						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_3N1S3R, true, true,
-						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort, ActionType.INDEX);
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
 				BenchmarkReportData.metricMapCloudSerial_4N2S2R = cloudClient.indexData(numDocuments, cloud.getuRL(),
 						cloud.collectionName, 0, 0, TestType.CLOUD_INDEXING_THROUGHPUT_SERIAL_4N2S2R, true, true,
-						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort);
+						SolrClientType.CLOUD_SOLR_CLIENT, cloud.zookeeperIp, cloud.zookeeperPort, ActionType.INDEX);
 			}
 
 			cloud.shutdown();
@@ -225,7 +239,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
@@ -233,7 +247,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
@@ -241,7 +255,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
@@ -251,7 +265,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
@@ -259,7 +273,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
@@ -267,7 +281,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
@@ -277,7 +291,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
@@ -285,7 +299,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
@@ -293,7 +307,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
@@ -303,7 +317,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName1, (int)Math.floor(numDocuments/100), 1,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
@@ -311,7 +325,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName2, (int)Math.floor(numDocuments/100), 2,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
@@ -319,7 +333,7 @@ public class Tests {
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = cloudClient.indexData(numDocuments,
 						cloud.getuRL(), collectionName3, (int)Math.floor(numDocuments/100), 3,
 						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, true, true,
-						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+						SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 				cloud.deleteCollection(collectionName3);
 
 			}
@@ -642,7 +656,7 @@ public class Tests {
 		SolrIndexingClient cloudClient = new SolrIndexingClient("localhost", cloud.port, commitID);
 
 		cloudClient.indexData(documentCount, cloud.getuRL(), cloud.collectionName, queueSize, 2, null, false, false,
-				SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null);
+				SolrClientType.CONCURRENT_UPDATE_SOLR_CLIENT, null, null, ActionType.INDEX);
 
 		return cloud.port;
 	}
@@ -665,7 +679,7 @@ public class Tests {
 			SolrIndexingClient client = new SolrIndexingClient("localhost", snode.port, commitID);
 
 			client.indexData(numDocuments, snode.getBaseUrl() + snode.collectionName, null, 0, 0, null, false, false,
-					SolrClientType.HTTP_SOLR_CLIENT, null, null);
+					SolrClientType.HTTP_SOLR_CLIENT, null, null, ActionType.INDEX);
 
 			node = snode;
 

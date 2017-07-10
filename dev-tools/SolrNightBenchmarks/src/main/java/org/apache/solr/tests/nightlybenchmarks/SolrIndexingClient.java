@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -34,6 +35,10 @@ import org.apache.solr.common.SolrInputDocument;
 enum SolrClientType {
 	HTTP_SOLR_CLIENT, CLOUD_SOLR_CLIENT, CONCURRENT_UPDATE_SOLR_CLIENT
 };
+
+enum ActionType {
+	INDEX, PARTIAL_UPDATE
+}
 
 /**
  * 
@@ -86,7 +91,7 @@ public class SolrIndexingClient {
 	@SuppressWarnings("deprecation")
 	public Map<String, String> indexData(long numDocuments, String urlString, String collectionName, int queueSize,
 			int threadCount, TestType type, boolean captureMetrics, boolean deleteData, SolrClientType clientType,
-			String zookeeperIp, String zookeeperPort) {
+			String zookeeperIp, String zookeeperPort, ActionType action) {
 
 		documentCount = numDocuments;
 
@@ -94,7 +99,7 @@ public class SolrIndexingClient {
 				+ numDocuments + ", Url:" + urlString + ", collectionName:" + collectionName + ", QueueSize:"
 				+ queueSize + ", Threadcount:" + threadCount + ", TestType:" + type + ", Capture Metrics: "
 				+ captureMetrics + ", Delete Data:" + deleteData + ", Zookeeper IP:" + zookeeperIp + ", Zookeeper Port:"
-				+ zookeeperPort, MessageType.CYAN_TEXT, false);
+				+ zookeeperPort + ", Action Type:" + action, MessageType.CYAN_TEXT, false);
 
 		HttpSolrClient httpSolrClient = null;
 		CloudSolrClient cloudSolrClient = null;
@@ -132,18 +137,29 @@ public class SolrIndexingClient {
 				line.trim();
 
 				String[] data = line.split(cvsSplitBy);
+				
+				if (action == ActionType.INDEX) {
 
-				document.addField("id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Title_t", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Article_t", data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Category_t", data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Int1_pi", Integer.parseInt(data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Int2_pi", Integer.parseInt(data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Float1_pf", Float.parseFloat(data[6].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Long1_pl", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Double1_pd", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Text_s", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+					document.addField("id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+					document.addField("Title_t", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+					document.addField("Article_t", data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+					document.addField("Category_t", data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+					document.addField("Int1_pi", Integer.parseInt(data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+					document.addField("Int2_pi", Integer.parseInt(data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+					document.addField("Float1_pf", Float.parseFloat(data[6].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+					document.addField("Long1_pl", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+					document.addField("Double1_pd", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+					document.addField("Text_s", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+				
+				} else if (action == ActionType.PARTIAL_UPDATE) {
 
+					document.addField("id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
+					Map<String,Object> fieldModifier = new HashMap<>(1);
+					fieldModifier.put("set", RandomStringUtils.randomAlphabetic(20));
+					document.addField("Text_s", fieldModifier);
+					
+				}				
+				
 				if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 					httpSolrClient.add(document);
 				} else if (clientType == SolrClientType.CLOUD_SOLR_CLIENT) {
