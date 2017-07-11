@@ -68,6 +68,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -84,11 +85,14 @@ import org.slf4j.LoggerFactory;
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
+  private static final String COLLECTION2 = "2nd_collection";
 
   private static final String id = "id";
 
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
+
+  private static CloudSolrClient httpBasedCloudSolrClient = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -99,8 +103,21 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
+    
+    httpBasedCloudSolrClient = new CloudSolrClient.Builder().withSolrUrl(
+        cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
   }
 
+  @AfterClass
+  public static void afterClass() {
+    if (httpBasedCloudSolrClient != null) {
+      try {
+        httpBasedCloudSolrClient.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
@@ -108,6 +125,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTION);
+  }
+
+  /**
+   * Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC.
+   */
+  private CloudSolrClient getRandomClient() {
+    return random().nextBoolean()? cluster.getSolrClient(): httpBasedCloudSolrClient;
   }
 
   @Test
@@ -118,7 +142,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       doc.addField("id", String.valueOf(TestUtil.nextInt(random(), 1000, 1100)));
       req.add(doc);
     }
-    UpdateResponse response = req.process(cluster.getSolrClient(), COLLECTION);
+    UpdateResponse response = req.process(getRandomClient(), COLLECTION);
     // See SOLR-6547, we just need to ensure that no exception is thrown here
     assertTrue(response.getQTime() >= 0);
   }
@@ -143,33 +167,78 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add(new SolrInputDocument(id, "1", "a_t", "hello2"), false)
         .commit(cluster.getSolrClient(), "overwrite");
       
-    resp = cluster.getSolrClient().query("overwrite", new SolrQuery("*:*"));
+    resp = getRandomClient().query("overwrite", new SolrQuery("*:*"));
     assertEquals("There should be 3 documents because there should be two id=1 docs due to overwrite=false", 3, resp.getResults().getNumFound());
 
   }
 
   @Test
+  public void testAliasHandling() throws Exception {
+
+    CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION2, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    CloudSolrClient client = getRandomClient();
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+    client.add(COLLECTION, doc);
+    client.commit(COLLECTION);
+    CollectionAdminRequest.createAlias("testalias", COLLECTION).process(cluster.getSolrClient());
+
+    SolrInputDocument doc2 = new SolrInputDocument("id", "2", "title_s", "my doc too");
+    client.add(COLLECTION2, doc2);
+    client.commit(COLLECTION2);
+    CollectionAdminRequest.createAlias("testalias2", COLLECTION2).process(cluster.getSolrClient());
+
+    CollectionAdminRequest.createAlias("testaliascombined", COLLECTION + "," + COLLECTION2).process(cluster.getSolrClient());
+
+    // ensure that the aliases have been registered
+    Map<String, String> aliases = new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases();
+    assertEquals(COLLECTION, aliases.get("testalias"));
+    assertEquals(COLLECTION2, aliases.get("testalias2"));
+    assertEquals(COLLECTION + "," + COLLECTION2, aliases.get("testaliascombined"));
+
+    assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
+    assertEquals(1, client.query("testalias", params("q", "*:*")).getResults().getNumFound());
+
+    assertEquals(1, client.query(COLLECTION2, params("q", "*:*")).getResults().getNumFound());
+    assertEquals(1, client.query("testalias2", params("q", "*:*")).getResults().getNumFound());
+
+    assertEquals(2, client.query("testaliascombined", params("q", "*:*")).getResults().getNumFound());
+
+    ModifiableSolrParams paramsWithBothCollections = params("q", "*:*", "collection", COLLECTION + "," + COLLECTION2);
+    assertEquals(2, client.query(null, paramsWithBothCollections).getResults().getNumFound());
+
+    ModifiableSolrParams paramsWithBothAliases = params("q", "*:*", "collection", "testalias,testalias2");
+    assertEquals(2, client.query(null, paramsWithBothAliases).getResults().getNumFound());
+
+    ModifiableSolrParams paramsWithCombinedAlias = params("q", "*:*", "collection", "testaliascombined");
+    assertEquals(2, client.query(null, paramsWithCombinedAlias).getResults().getNumFound());
+
+    ModifiableSolrParams paramsWithMixedCollectionAndAlias = params("q", "*:*", "collection", "testalias," + COLLECTION2);
+    assertEquals(2, client.query(null, paramsWithMixedCollectionAndAlias).getResults().getNumFound());
+  }
+
+  @Test
   public void testHandlingOfStaleAlias() throws Exception {
-    try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
-      client.setDefaultCollection("misconfigured-alias");
+    CloudSolrClient client = getRandomClient();
 
-      CollectionAdminRequest.createCollection("nemesis", "conf", 2, 1).process(client);
-      CollectionAdminRequest.createAlias("misconfigured-alias", "nemesis").process(client);
-      CollectionAdminRequest.deleteCollection("nemesis").process(client);
+    CollectionAdminRequest.createCollection("nemesis", "conf", 2, 1).process(client);
+    CollectionAdminRequest.createAlias("misconfigured-alias", "nemesis").process(client);
+    CollectionAdminRequest.deleteCollection("nemesis").process(client);
 
-      List<SolrInputDocument> docs = new ArrayList<>();
+    List<SolrInputDocument> docs = new ArrayList<>();
 
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField(id, Integer.toString(1));
-      docs.add(doc);
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField(id, Integer.toString(1));
+    docs.add(doc);
 
-      try {
-        client.add(docs);
-        fail("Alias points to non-existing collection, add should fail");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-        assertTrue("Unexpected exception", e.getMessage().contains("Collection not found"));
-      }
+    try {
+      client.add("misconfigured-alias", docs);
+      fail("Alias points to non-existing collection, add should fail");
+    } catch (SolrException e) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue("Unexpected exception", e.getMessage().contains("Collection not found"));
     }
   }
 
@@ -182,8 +251,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     
     // Test single threaded routed updates for UpdateRequest
-    NamedList<Object> response = cluster.getSolrClient().request(request, COLLECTION);
-    if (cluster.getSolrClient().isDirectUpdatesToLeadersOnly()) {
+    NamedList<Object> response = getRandomClient().request(request, COLLECTION);
+    if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(response);
     }
     CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
@@ -214,11 +283,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .deleteById("0")
         .deleteById("2")
         .commit(cluster.getSolrClient(), COLLECTION);
-    if (cluster.getSolrClient().isDirectUpdatesToLeadersOnly()) {
+    if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(uResponse.getResponse());
     }
 
-    QueryResponse qResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
+    QueryResponse qResponse = getRandomClient().query(COLLECTION, new SolrQuery("*:*"));
     SolrDocumentList docs = qResponse.getResults();
     assertEquals(0, docs.getNumFound());
     
@@ -307,7 +376,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(CommonParams.Q, "*:*");
       solrParams.set(ShardParams._ROUTE_, sameShardRoutes.get(random().nextInt(sameShardRoutes.size())));
-      log.info("output: {}", cluster.getSolrClient().query(COLLECTION, solrParams));
+      log.info("output: {}", getRandomClient().query(COLLECTION, solrParams));
     }
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
@@ -362,10 +431,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add(id, "0", "a_t", "hello1")
         .add(id, "2", "a_t", "hello2")
         .add(id, "3", "a_t", "hello2")
-        .commit(cluster.getSolrClient(), collectionName);
+        .commit(getRandomClient(), collectionName);
 
     // Run the actual test for 'preferLocalShards'
-    queryWithPreferLocalShards(cluster.getSolrClient(), true, collectionName);
+    queryWithPreferLocalShards(getRandomClient(), true, collectionName);
   }
 
   private void queryWithPreferLocalShards(CloudSolrClient cloudClient,
@@ -418,16 +487,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private Long getNumRequests(String baseUrl, String collectionName) throws
       SolrServerException, IOException {
-    return getNumRequests(baseUrl, collectionName, "QUERY", "standard", false);
+    return getNumRequests(baseUrl, collectionName, "QUERY", "/select", null, false);
   }
 
-  private Long getNumRequests(String baseUrl, String collectionName, String category, String key, boolean returnNumErrors) throws
+  private Long getNumRequests(String baseUrl, String collectionName, String category, String key, String scope, boolean returnNumErrors) throws
       SolrServerException, IOException {
 
     NamedList<Object> resp;
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName)) {
-      client.setConnectionTimeout(15000);
-      client.setSoTimeout(60000);
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "/"+ collectionName, 15000, 60000)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
@@ -437,7 +504,21 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       QueryRequest req = new QueryRequest(params);
       resp = client.request(req);
     }
-    return (Long) resp.findRecursive("solr-mbeans", category, key, "stats", returnNumErrors ? "errors" : "requests");
+    String name;
+    if (returnNumErrors) {
+      name = category + "." + (scope != null ? scope : key) + ".errors";
+    } else {
+      name = category + "." + (scope != null ? scope : key) + ".requests";
+    }
+    Map<String,Object> map = (Map<String,Object>)resp.findRecursive("solr-mbeans", category, key, "stats");
+    if (map == null) {
+      return null;
+    }
+    if (scope != null) { // admin handler uses a meter instead of counter here
+      return (Long)map.get(name + ".count");
+    } else {
+      return (Long) map.get(name);
+    }
   }
 
   @Test
@@ -458,7 +539,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         for (String adminPath : adminPathToMbean.keySet()) {
           long errorsBefore = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), true);
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), adminPath, true);
             errorsBefore += numRequests;
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
@@ -475,7 +556,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           }
           long errorsAfter = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), true);
+            Long numRequests = getNumRequests(runner.getBaseUrl().toString(), "foo", "ADMIN", adminPathToMbean.get(adminPath), adminPath, true);
             errorsAfter += numRequests;
             log.info("Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
           }
@@ -644,7 +725,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add("id", "2", "a_t", "hello2");
     updateRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
 
-    NamedList<Object> response = updateRequest.commit(cluster.getSolrClient(), COLLECTION).getResponse();
+    NamedList<Object> response = updateRequest.commit(getRandomClient(), COLLECTION).getResponse();
     Object addsObject = response.get("adds");
     
     assertNotNull("There must be a adds parameter", addsObject);
@@ -663,7 +744,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertTrue("Version for id 2 must be a long", object instanceof Long);
     versions.put("2", (Long) object);
 
-    QueryResponse resp = cluster.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
+    QueryResponse resp = getRandomClient().query(COLLECTION, new SolrQuery("*:*"));
     assertEquals("There should be one document because overwrite=true", 2, resp.getResults().getNumFound());
 
     for (SolrDocument doc : resp.getResults()) {
@@ -674,13 +755,38 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // assert that "deletes" are returned
     UpdateRequest deleteRequest = new UpdateRequest().deleteById("1");
     deleteRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
-    response = deleteRequest.commit(cluster.getSolrClient(), COLLECTION).getResponse();
+    response = deleteRequest.commit(getRandomClient(), COLLECTION).getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
     NamedList deletes = (NamedList) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
   }
   
+  @Test
+  public void testInitializationWithSolrUrls() throws Exception {
+    CloudSolrClient client = httpBasedCloudSolrClient;
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+    client.add(COLLECTION, doc);
+    client.commit(COLLECTION);
+    assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
+  }
+
+  @Test
+  public void testCollectionDoesntExist() throws Exception {
+    CloudSolrClient client = getRandomClient();
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+    try {
+      client.add("boguscollectionname", doc);
+      fail();
+    } catch (SolrException ex) {
+      if (ex.getMessage().equals("Collection not found: boguscollectionname")) {
+        // pass
+      } else {
+        throw ex;
+      }
+    }
+  }
+
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
     final Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();

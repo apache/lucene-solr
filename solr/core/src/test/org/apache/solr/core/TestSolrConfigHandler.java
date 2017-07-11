@@ -182,7 +182,8 @@ public class TestSolrConfigHandler extends RestTestBase {
     log.info("going to send config command. path {} , payload: {}", uri, payload);
     String response = harness.post(uri, json);
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
-    assertNull(response, map.get("errors"));
+    assertNull(response, map.get("errorMessages"));
+    assertNull(response, map.get("errors")); // Will this ever be returned?
   }
 
 
@@ -414,8 +415,8 @@ public class TestSolrConfigHandler extends RestTestBase {
 
     List l = (List) Utils.getObjectByPath(map, false, Arrays.asList("config", "initParams"));
     assertNotNull("no object /config/initParams : "+ TestBlobHandler.getAsString(map) , l);
-    assertEquals( 1, l.size());
-    assertEquals( "val", ((Map)l.get(0)).get("key") );
+    assertEquals( 2, l.size());
+    assertEquals( "val", ((Map)l.get(1)).get("key") );
 
 
     payload = "{\n" +

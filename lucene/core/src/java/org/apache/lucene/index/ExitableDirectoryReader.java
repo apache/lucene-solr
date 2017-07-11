@@ -17,13 +17,12 @@
 package org.apache.lucene.index;
 
 
-import org.apache.lucene.index.FilterLeafReader.FilterFields;
+import java.io.IOException;
+
 import org.apache.lucene.index.FilterLeafReader.FilterTerms;
 import org.apache.lucene.index.FilterLeafReader.FilterTermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-
-import java.io.IOException;
 
 
 /**
@@ -79,14 +78,12 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
     }
 
     @Override
-    public Fields fields() throws IOException {
-      Fields fields = super.fields();
-      if (queryTimeout.isTimeoutEnabled()) {
-        return new ExitableFields(fields, queryTimeout);
+    public Terms terms(String field) throws IOException {
+      Terms terms = in.terms(field);
+      if (terms == null) {
+        return null;
       }
-      else {
-        return fields;  // break out of wrapper as soon as possible
-      }
+      return (queryTimeout.isTimeoutEnabled()) ? new ExitableTerms(terms, queryTimeout) : terms;
     }
 
     // this impl does not change deletes or data so we can delegate the
@@ -101,29 +98,6 @@ public class ExitableDirectoryReader extends FilterDirectoryReader {
       return in.getCoreCacheHelper();
     }
 
-  }
-
-  /**
-   * Wrapper class for another Fields implementation that is used by the ExitableFilterAtomicReader.
-   */
-  public static class ExitableFields extends FilterFields {
-    
-    private QueryTimeout queryTimeout;
-
-    /** Constructor **/
-    public ExitableFields(Fields fields, QueryTimeout queryTimeout) {
-      super(fields);
-      this.queryTimeout = queryTimeout;
-    }
-
-    @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = in.terms(field);
-      if (terms == null) {
-        return null;
-      }
-      return new ExitableTerms(terms, queryTimeout);
-    }
   }
 
   /**

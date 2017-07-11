@@ -41,8 +41,8 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.V2HttpCall;
-import org.apache.solr.util.CommandOperation;
-import org.apache.solr.util.PathTrie;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.PathTrie;
 
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;

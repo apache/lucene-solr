@@ -34,6 +34,11 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
@@ -46,6 +51,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
@@ -56,27 +62,22 @@ import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -87,6 +88,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.security.BasicAuthIntegrationTest;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -97,8 +99,6 @@ import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * Simple ConfigSets API tests on user errors and simple success cases.
@@ -279,8 +279,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testUploadErrors() throws Exception {
-    final SolrClient solrClient = new HttpSolrClient(
-        solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    final SolrClient solrClient = getHttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
 
     ByteBuffer emptyData = ByteBuffer.allocate(0);
 
@@ -326,7 +325,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     uploadConfigSet("regular", suffix, null, null);
     // try to create a collection with the uploaded configset
     createCollection("newcollection", "regular" + suffix, 1, 1, solrCluster.getSolrClient());
-    xsltRequest("newcollection");
   }
   
   @Test
@@ -501,35 +499,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       zout.close();
     }
   }
-
-  private void xsltRequest(String collection) throws SolrServerException, IOException {
-    String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl + "/" + collection)) {
-      String xml = 
-          "<random>" +
-              " <document>" +
-              "  <node name=\"id\" value=\"12345\"/>" +
-              "  <node name=\"name\" value=\"kitten\"/>" +
-              "  <node name=\"text\" enhance=\"3\" value=\"some other day\"/>" +
-              "  <node name=\"title\" enhance=\"4\" value=\"A story\"/>" +
-              "  <node name=\"timestamp\" enhance=\"5\" value=\"2011-07-01T10:31:57.140Z\"/>" +
-              " </document>" +
-              "</random>";
-
-      SolrQuery query = new SolrQuery();
-      query.setQuery( "*:*" );//for anything
-      query.add("qt","/update");
-      query.add(CommonParams.TR, "xsl-update-handler-test.xsl");
-      query.add("stream.body", xml);
-      query.add("commit", "true");
-      try {
-        client.query(query);
-        fail("This should've returned a 401.");
-      } catch (SolrException ex) {
-        assertEquals(ErrorCode.UNAUTHORIZED.code, ex.code());
-      }
-    }
-  }
   
   public void scriptRequest(String collection) throws SolrServerException, IOException {
     SolrClient client = solrCluster.getSolrClient();
@@ -696,7 +665,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
       ConfigSetAdminResponse.List response = list.process(solrClient);
       Collection<String> actualConfigSets = response.getConfigSets();
-      assertEquals(0, actualConfigSets.size());
+      assertEquals(1, actualConfigSets.size()); // only the _default configset
 
       // test multiple
       Set<String> configSets = new HashSet<String>();
@@ -707,15 +676,58 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       }
       response = list.process(solrClient);
       actualConfigSets = response.getConfigSets();
-      assertEquals(configSets.size(), actualConfigSets.size());
-      assertTrue(configSets.containsAll(actualConfigSets));
+      assertEquals(configSets.size() + 1, actualConfigSets.size());
+      assertTrue(actualConfigSets.containsAll(configSets));
     } finally {
       zkClient.close();
     }
 
     solrClient.close();
   }
+  
+  @Test
+  public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
+    File testDefaultConf = configset("_default").toFile();
+    log.info("Test _default path: " + testDefaultConf);
+    
+    File userDefaultConf = new File(ExternalPaths.DEFAULT_CONFIGSET);
+    log.info("User _default path: " + userDefaultConf);
+    
+    compareDirectories(userDefaultConf, testDefaultConf);
+  }
 
+  private static void compareDirectories(File userDefault, File testDefault) throws IOException {
+    assertTrue("Test _default doesn't exist: " + testDefault.getAbsolutePath(), testDefault.exists());
+    assertTrue("Test _default not a directory: " + testDefault.getAbsolutePath(),testDefault.isDirectory());
+    assertTrue("User _default doesn't exist: " + userDefault.getAbsolutePath(), userDefault.exists());
+    assertTrue("User _default not a directory: " + userDefault.getAbsolutePath(),userDefault.isDirectory());
+
+    Files.walkFileTree(userDefault.toPath(), new SimpleFileVisitor<Path>() {
+      @Override
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        FileVisitResult result = super.preVisitDirectory(dir, attrs);
+        Path relativePath = userDefault.toPath().relativize(dir);
+        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
+        String[] listOne = dir.toFile().list();
+        String[] listTwo = testDefaultFile.list();
+        Arrays.sort(listOne);
+        Arrays.sort(listTwo);
+        assertEquals("Mismatch in files", Arrays.toString(listOne), Arrays.toString(listTwo));
+        return result;
+      }
+      @Override
+      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        FileVisitResult result = super.visitFile(file, attrs);
+        Path relativePath = userDefault.toPath().relativize(file);
+        File testDefaultFile = testDefault.toPath().resolve(relativePath).toFile();
+        String userDefaultContents = FileUtils.readFileToString(file.toFile(), "UTF-8");
+        String testDefaultContents = FileUtils.readFileToString(testDefaultFile, "UTF-8");
+        assertEquals(testDefaultFile+" contents doesn't match expected ("+file+")", userDefaultContents, testDefaultContents);                    
+        return result;
+      }
+    });
+  }
+  
   private StringBuilder getConfigSetProps(Map<String, String> map) {
     return new StringBuilder(new String(Utils.toJSON(map), StandardCharsets.UTF_8));
   }

@@ -48,7 +48,7 @@ public final class CommitTracker implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // scheduler delay for maxDoc-triggered autocommits
-  public final int DOC_COMMIT_DELAY_MS = 1;
+  public static final int DOC_COMMIT_DELAY_MS = 1;
   
   // settings, not final so we can change them in testing
   private int docsUpperBound;
@@ -66,7 +66,7 @@ public final class CommitTracker implements Runnable {
 
   private final boolean softCommit;
   private boolean openSearcher;
-  private final boolean waitSearcher = true;
+  private static final boolean WAIT_SEARCHER = true;
 
   private String name;
   
@@ -205,7 +205,7 @@ public final class CommitTracker implements Runnable {
     try {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;
-      command.waitSearcher = waitSearcher;
+      command.waitSearcher = WAIT_SEARCHER;
       command.softCommit = softCommit;
       if (core.getCoreDescriptor().getCloudDescriptor() != null
           && core.getCoreDescriptor().getCloudDescriptor().isLeader()

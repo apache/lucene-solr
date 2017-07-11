@@ -58,7 +58,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
 
       if (core != null) {
-        syncStrategy = new SyncStrategy(core.getCoreDescriptor().getCoreContainer());
+        syncStrategy = new SyncStrategy(core.getCoreContainer());
 
         Map<String, Object> props = new HashMap<>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
@@ -73,7 +73,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
                 .getNewestSearcher(false);
             SolrIndexSearcher searcher = searchHolder.get();
             try {
-              log.debug(core.getCoreDescriptor().getCoreContainer()
+              log.debug(core.getCoreContainer()
                   .getZkController().getNodeName()
                   + " synched "
                   + searcher.search(new MatchAllDocsQuery(), 1).totalHits);

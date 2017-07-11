@@ -36,6 +36,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -187,22 +188,25 @@ public class TestHarness extends BaseTestHarness {
         .build();
     if (System.getProperty("zkHost") == null)
       cloudConfig = null;
-    UpdateShardHandlerConfig updateShardHandlerConfig
-        = new UpdateShardHandlerConfig(UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
-                                       UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
-                                       30000, 30000,
-                                        UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+    UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
+        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
+        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
+        30000, 30000,
+        UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
     // universal default metric reporter
-    Map<String,String> attributes = new HashMap<>();
+    Map<String,Object> attributes = new HashMap<>();
     attributes.put("name", "default");
     attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes, null, null);
+    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
+        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+        .build();
 
     return new NodeConfig.NodeConfigBuilder("testNode", loader)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+        .setMetricsConfig(metricsConfig)
         .build();
   }
 
@@ -222,13 +226,15 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(new CoreDescriptor(cc, coreName, cc.getCoreRootDirectory().resolve(coreName),
+      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName),
+          cc.getContainerProperties(), cc.isZooKeeperAware(),
           CoreDescriptor.CORE_DATADIR, dataDir,
           CoreDescriptor.CORE_CONFIG, solrConfig,
           CoreDescriptor.CORE_SCHEMA, schema,
           CoreDescriptor.CORE_COLLECTION, System.getProperty("collection", "collection1"),
           CoreDescriptor.CORE_SHARD, System.getProperty("shard", "shard1")));
     }
+
   }
   
   public CoreContainer getCoreContainer() {

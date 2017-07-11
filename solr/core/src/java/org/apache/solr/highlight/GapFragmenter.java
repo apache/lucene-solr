@@ -30,7 +30,7 @@ public class GapFragmenter extends HighlightingPluginBase implements SolrFragmen
   @Override
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   {
-    numRequests++;
+    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
     
     int fragsize = params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 );

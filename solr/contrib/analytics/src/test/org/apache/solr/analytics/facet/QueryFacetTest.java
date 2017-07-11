@@ -23,7 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class QueryFacetTest extends AbstractAnalyticsFacetTest {
-  static String fileName = "/analytics/requestFiles/queryFacets.txt";
+  static String fileName = "queryFacets.txt";
 
   public final int INT = 71;
   public final int LONG = 36;
@@ -35,7 +35,7 @@ public class QueryFacetTest extends AbstractAnalyticsFacetTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml","schema-analytics.xml");
   }
 
   @SuppressWarnings("unchecked")
@@ -81,13 +81,13 @@ public class QueryFacetTest extends AbstractAnalyticsFacetTest {
       if (new Integer(s).toString().charAt(0)=='2') {
         longTestStart.get(1).add(l);
       }
-      if (l>=20) {
+      if (l>=30) {
         floatTestStart.get(0).add(f);
       }
-      if (l>=30) {
+      if (d<=50) {
         floatTestStart.get(1).add(f);
       }
-      if (d<=50) {
+      if (l>=20) {
         floatTestStart.get(2).add(f);
       }
       

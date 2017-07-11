@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an
@@ -59,6 +60,19 @@ final class SegmentMerger {
     this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
+    Version minVersion = Version.LATEST;
+    for (CodecReader reader : readers) {
+      Version leafMinVersion = reader.getMetaData().getMinVersion();
+      if (leafMinVersion == null) {
+        minVersion = null;
+        break;
+      }
+      if (minVersion.onOrAfter(leafMinVersion)) {
+        minVersion = leafMinVersion;
+      }
+    }
+    assert segmentInfo.minVersion == null : "The min version should be set by SegmentMerger for merged segments";
+    segmentInfo.minVersion = minVersion;
     if (mergeState.infoStream.isEnabled("SM")) {
       if (segmentInfo.getIndexSort() != null) {
         mergeState.infoStream.message("SM", "index sort during merge: " + segmentInfo.getIndexSort());

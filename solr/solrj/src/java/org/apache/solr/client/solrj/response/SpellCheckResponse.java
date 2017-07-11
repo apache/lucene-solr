@@ -69,7 +69,7 @@ public class SpellCheckResponse {
           NamedList<Object> expandedCollation = (NamedList<Object>) o;
           String collationQuery
             = (String) expandedCollation.get("collationQuery");
-          int hits = (Integer) expandedCollation.get("hits");
+          long hits = ((Number) expandedCollation.get("hits")).longValue();
           @SuppressWarnings("unchecked")
           NamedList<String> misspellingsAndCorrections
             = (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");

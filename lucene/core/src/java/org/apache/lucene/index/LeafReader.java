@@ -18,8 +18,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader.CacheHelper;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /** {@code LeafReader} is an abstract class, providing an interface for accessing an
@@ -61,7 +59,7 @@ public abstract class LeafReader extends IndexReader {
   }
 
   /**
-   * Optional method: Return a {@link CacheHelper} that can be used to cache
+   * Optional method: Return a {@link IndexReader.CacheHelper} that can be used to cache
    * based on the content of this leaf regardless of deletions. Two readers
    * that have the same data but different sets of deleted documents or doc
    * values updates may be considered equal. Consider using
@@ -73,12 +71,6 @@ public abstract class LeafReader extends IndexReader {
    * @lucene.experimental
    */
   public abstract CacheHelper getCoreCacheHelper();
-
-  /**
-   * Returns {@link Fields} for this reader.
-   * This method will not return null.
-   */
-  public abstract Fields fields() throws IOException;
 
   @Override
   public final int docFreq(Term term) throws IOException {
@@ -140,10 +132,8 @@ public abstract class LeafReader extends IndexReader {
     return terms.getSumTotalTermFreq();
   }
 
-  /** This may return null if the field does not exist.*/
-  public final Terms terms(String field) throws IOException {
-    return fields().terms(field);
-  }
+  /** Returns the {@link Terms} index for this field, or null if it has none. */
+  public abstract Terms terms(String field) throws IOException;
 
   /** Returns {@link PostingsEnum} for the specified term.
    *  This will return null if either the field or
@@ -246,6 +236,8 @@ public abstract class LeafReader extends IndexReader {
    */
   public abstract void checkIntegrity() throws IOException;
 
-  /** Returns null if this leaf is unsorted, or the {@link Sort} that it was sorted by */
-  public abstract Sort getIndexSort();
+  /**
+   * Return metadata about this leaf.
+   * @lucene.experimental */
+  public abstract LeafMetaData getMetaData();
 }

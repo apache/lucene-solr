@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -46,6 +47,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
@@ -59,6 +61,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.CdcrParams;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -69,6 +72,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_PROPS;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
@@ -142,6 +146,11 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
         zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
             Utils.toJSON(Collections.singletonMap("urlScheme", "https")),
             CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException e) {
+        ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS,
+            null, null, true));
+        props = props.plus("urlScheme", "https");
+        zkStateReader.getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(props), true);
       } finally {
         zkStateReader.close();
       }
@@ -423,7 +432,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
             REPLICATION_FACTOR, replicationFactor,
             CREATE_NODE_SET, createNodeSetStr,
             MAX_SHARDS_PER_NODE, maxShardsPerNode),
-        client, null);
+        client, "conf1");
   }
 
   private CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos, String collectionName,
@@ -567,7 +576,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
    */
   protected List<String> startServers(int nServer) throws Exception {
     String temporaryCollection = "tmp_collection";
-    System.setProperty("collection", temporaryCollection);
+
     for (int i = 1; i <= nServer; i++) {
       // give everyone there own solrhome
       File jettyDir = createTempDir("jetty").toFile();
@@ -575,6 +584,19 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       setupJettySolrHome(jettyDir);
       JettySolrRunner jetty = createJetty(jettyDir, null, "shard" + i);
       jettys.add(jetty);
+    }
+
+    try (SolrClient client = createCloudClient(temporaryCollection)) {
+      assertEquals(0, CollectionAdminRequest
+          .createCollection(temporaryCollection, "conf1", shardCount, 1)
+          .setCreateNodeSet("")
+          .process(client).getStatus());
+      for (int i = 0; i < jettys.size(); i++) {
+        assertTrue(CollectionAdminRequest
+            .addReplicaToShard(temporaryCollection, "shard"+((i % shardCount) + 1))
+            .setNode(jettys.get(i).getNodeName())
+            .process(client).isSuccess());
+      }
     }
 
     ZkStateReader zkStateReader = jettys.get(0).getCoreContainer().getZkController().getZkStateReader();
@@ -760,8 +782,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   protected static SolrClient createNewSolrServer(String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient s = getHttpSolrClient(baseUrl);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      HttpSolrClient s = getHttpSolrClient(baseUrl, DEFAULT_CONNECTION_TIMEOUT);
       return s;
     } catch (Exception ex) {
       throw new RuntimeException(ex);

@@ -59,6 +59,7 @@ public class TestManyPointsInOldIndex extends LuceneTestCase {
   }
 
   public void testCheckOldIndex() throws IOException {
+    assumeTrue("Reenable when 7.0 is released", false);
     Path path = createTempDir("manypointsindex");
     InputStream resource = getClass().getResourceAsStream("manypointsindex.zip");
     assertNotNull("manypointsindex not found", resource);

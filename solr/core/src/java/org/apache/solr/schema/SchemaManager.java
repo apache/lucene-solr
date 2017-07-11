@@ -35,7 +35,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -127,7 +127,7 @@ public class SchemaManager {
             latestVersion = ZkController.persistConfigResourceToZooKeeper
                 (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
                  sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreDescriptor().getCoreContainer().reload(req.getCore().getName());
+            req.getCore().getCoreContainer().reload(req.getCore().getName());
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");

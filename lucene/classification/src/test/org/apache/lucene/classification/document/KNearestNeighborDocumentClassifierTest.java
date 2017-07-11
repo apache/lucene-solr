@@ -33,8 +33,9 @@ public class KNearestNeighborDocumentClassifierTest extends DocumentClassificati
     try {
       Document videoGameDocument = getVideoGameDocument();
       Document batmanDocument = getBatmanDocument();
-      checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName}), videoGameDocument, VIDEOGAME_RESULT);
-      checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName}), batmanDocument, BATMAN_RESULT);
+      KNearestNeighborDocumentClassifier classifier = new KNearestNeighborDocumentClassifier(indexReader, null, null, 1, 4, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName});
+      checkCorrectDocumentClassification(classifier, videoGameDocument, VIDEOGAME_RESULT);
+      checkCorrectDocumentClassification(classifier, batmanDocument, BATMAN_RESULT);
       // considering only the text we have wrong classification because the text was ambiguos on purpose
       checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName}), videoGameDocument, BATMAN_RESULT);
       checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName}), batmanDocument, VIDEOGAME_RESULT);
@@ -51,9 +52,10 @@ public class KNearestNeighborDocumentClassifierTest extends DocumentClassificati
     try {
       Document videoGameDocument = getVideoGameDocument();
       Document batmanDocument = getBatmanDocument();
-      double score1 = checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName}), videoGameDocument, VIDEOGAME_RESULT);
+      KNearestNeighborDocumentClassifier classifier = new KNearestNeighborDocumentClassifier(indexReader, null, null, 1, 4, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName});
+      double score1 = checkCorrectDocumentClassification(classifier, videoGameDocument, VIDEOGAME_RESULT);
       assertEquals(1.0,score1,0);
-      double score2 = checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName}), batmanDocument, BATMAN_RESULT);
+      double score2 = checkCorrectDocumentClassification(classifier, batmanDocument, BATMAN_RESULT);
       assertEquals(1.0,score2,0);
       // considering only the text we have wrong classification because the text was ambiguos on purpose
       double score3 = checkCorrectDocumentClassification(new KNearestNeighborDocumentClassifier(indexReader,null, null, 1, 1, 1, categoryFieldName, field2analyzer, new String[]{textFieldName}), videoGameDocument, BATMAN_RESULT);

@@ -88,15 +88,16 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rows", "4");
     query.add("fv", "true");
 
-    String nonRerankedScore = "0.09271725";
+    // FIXME: design better way to test this, we cannot check an absolute score
+    // String nonRerankedScore = "0.09271725";
 
     // Normal solr order
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/id=='9'",
         "/response/docs/[1]/id=='8'",
         "/response/docs/[2]/id=='7'",
-        "/response/docs/[3]/id=='6'",
-        "/response/docs/[3]/score=="+nonRerankedScore
+        "/response/docs/[3]/id=='6'"
+    //  "/response/docs/[3]/score=="+nonRerankedScore
     );
 
     query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3}");
@@ -106,8 +107,8 @@ public class TestLTRQParserPlugin extends TestRerankBase {
         "/response/docs/[0]/id=='7'",
         "/response/docs/[1]/id=='8'",
         "/response/docs/[2]/id=='9'",
-        "/response/docs/[3]/id=='6'",
-        "/response/docs/[3]/score=="+nonRerankedScore
+        "/response/docs/[3]/id=='6'"
+    //  "/response/docs/[3]/score=="+nonRerankedScore
     );
   }
 

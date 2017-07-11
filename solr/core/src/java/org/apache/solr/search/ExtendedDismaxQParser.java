@@ -46,6 +46,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -191,7 +192,7 @@ public class ExtendedDismaxQParser extends QParser {
     //
     // create a boosted query (scores multiplied by boosts)
     //
-    Query topQuery = query.build();
+    Query topQuery = QueryUtils.build(query, this);
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size()>1) {
       ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[boosts.size()]));
@@ -281,7 +282,7 @@ public class ExtendedDismaxQParser extends QParser {
       BooleanQuery.Builder t = new BooleanQuery.Builder();
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)query);
       SolrPluginUtils.setMinShouldMatch(t, config.minShouldMatch, config.mmAutoRelax);
-      query = t.build();
+      query = QueryUtils.build(t, this);
     }
     return query;
   }
@@ -990,8 +991,7 @@ public class ExtendedDismaxQParser extends QParser {
       super(parser, defaultField);
       // Respect the q.op parameter before mm will be applied later
       SolrParams defaultParams = SolrParams.wrapDefaults(parser.getLocalParams(), parser.getParams());
-      QueryParser.Operator defaultOp = QueryParsing.getQueryParserDefaultOperator(
-          parser.getReq().getSchema(), defaultParams.get(QueryParsing.OP));
+      QueryParser.Operator defaultOp = QueryParsing.parseOP(defaultParams.get(QueryParsing.OP));
       setDefaultOperator(defaultOp);
     }
     
@@ -1063,7 +1063,7 @@ public class ExtendedDismaxQParser extends QParser {
       this.val = null;
       this.vals = queryTerms;
       this.slop = getPhraseSlop();
-      return getAliasedMultiTermQuery(queryTerms);
+      return getAliasedMultiTermQuery();
     }
 
     @Override
@@ -1080,7 +1080,8 @@ public class ExtendedDismaxQParser extends QParser {
     
     @Override
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, 
-                                  boolean quoted, boolean fieldAutoGenPhraseQueries) throws SyntaxError {
+                                  boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries)
+        throws SyntaxError {
       Analyzer actualAnalyzer;
       if (removeStopFilter) {
         if (nonStopFilterAnalyzerPerField == null) {
@@ -1093,7 +1094,7 @@ public class ExtendedDismaxQParser extends QParser {
       } else {
         actualAnalyzer = parser.getReq().getSchema().getFieldType(field).getQueryAnalyzer();
       }
-      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries);
+      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, enableGraphQueries);
     }
     
     @Override
@@ -1162,7 +1163,7 @@ public class ExtendedDismaxQParser extends QParser {
           for (Query sub : lst) {
             q.add(sub, BooleanClause.Occur.SHOULD);
           }
-          return q.build();
+          return QueryUtils.build(q, parser);
         }
       } else {
         
@@ -1187,11 +1188,11 @@ public class ExtendedDismaxQParser extends QParser {
      * DisjunctionMaxQuery.  (so yes: aliases which point at other
      * aliases should work)
      */
-    protected Query getAliasedMultiTermQuery(List<String> queryTerms) throws SyntaxError {
+    protected Query getAliasedMultiTermQuery() throws SyntaxError {
       Alias a = aliases.get(field);
       this.validateCyclicAliasing(field);
       if (a != null) {
-        List<Query> lst = getQueries(a);
+        List<Query> lst = getMultiTermQueries(a);
         if (lst == null || lst.size() == 0) {
           return getQuery();
         }
@@ -1202,18 +1203,29 @@ public class ExtendedDismaxQParser extends QParser {
         // DisMaxQuery.rewrite() removes itself if there is just a single clause anyway.
         // if (lst.size()==1) return lst.get(0);
         if (makeDismax) {
-          if (lst.get(0) instanceof BooleanQuery && allSameQueryStructure(lst)) {
+          Query firstQuery = lst.get(0);
+          if ((firstQuery instanceof BooleanQuery
+              || (firstQuery instanceof BoostQuery && ((BoostQuery)firstQuery).getQuery() instanceof BooleanQuery))
+              && allSameQueryStructure(lst)) {
             BooleanQuery.Builder q = new BooleanQuery.Builder();
             List<Query> subs = new ArrayList<>(lst.size());
-            for (int c = 0 ; c < ((BooleanQuery)lst.get(0)).clauses().size() ; ++c) {
+            BooleanQuery firstBooleanQuery = firstQuery instanceof BoostQuery
+                ? (BooleanQuery)((BoostQuery)firstQuery).getQuery() : (BooleanQuery)firstQuery;
+            for (int c = 0 ; c < firstBooleanQuery.clauses().size() ; ++c) {
               subs.clear();
               // Make a dismax query for each clause position in the boolean per-field queries.
               for (int n = 0 ; n < lst.size() ; ++n) {
-                subs.add(((BooleanQuery)lst.get(n)).clauses().get(c).getQuery());
+                if (lst.get(n) instanceof BoostQuery) {
+                  BoostQuery boostQuery = (BoostQuery)lst.get(n);
+                  BooleanQuery booleanQuery = (BooleanQuery)boostQuery.getQuery();
+                  subs.add(new BoostQuery(booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
+                } else {
+                  subs.add(((BooleanQuery)lst.get(n)).clauses().get(c).getQuery());
+                }
               }
               q.add(newBooleanClause(new DisjunctionMaxQuery(subs, a.tie), BooleanClause.Occur.SHOULD));
             }
-            return q.build();
+            return QueryUtils.build(q, parser);
           } else {
             return new DisjunctionMaxQuery(lst, a.tie); 
           }
@@ -1222,7 +1234,7 @@ public class ExtendedDismaxQParser extends QParser {
           for (Query sub : lst) {
             q.add(sub, BooleanClause.Occur.SHOULD);
           }
-          return q.build();
+          return QueryUtils.build(q, parser);
         }
       } else {
         // verify that a fielded query is actually on a field that exists... if not,
@@ -1238,12 +1250,21 @@ public class ExtendedDismaxQParser extends QParser {
       }
     }
 
-    /** Recursively examines the given query list for identical structure in all queries. */
+    /**
+     * Recursively examines the given query list for identical structure in all queries.
+     * Boosts on BoostQuery-s are ignored, and the contained queries are instead used as the basis for comparison.
+     **/
     private boolean allSameQueryStructure(List<Query> lst) {
       boolean allSame = true;
       Query firstQuery = lst.get(0);
+      if (firstQuery instanceof BoostQuery) {
+        firstQuery = ((BoostQuery)firstQuery).getQuery(); // ignore boost; compare contained query
+      }
       for (int n = 1 ; n < lst.size(); ++n) {
         Query nthQuery = lst.get(n);
+        if (nthQuery instanceof BoostQuery) {
+          nthQuery = ((BoostQuery)nthQuery).getQuery();
+        }
         if (nthQuery.getClass() != firstQuery.getClass()) {
           allSame = false;
           break;
@@ -1349,7 +1370,26 @@ public class ExtendedDismaxQParser extends QParser {
       }
       return lst;
     }
-    
+
+    protected List<Query> getMultiTermQueries(Alias a) throws SyntaxError {
+      if (a == null) return null;
+      if (a.fields.size()==0) return null;
+      List<Query> lst= new ArrayList<>(4);
+
+      for (String f : a.fields.keySet()) {
+        this.field = f;
+        Query sub = getAliasedMultiTermQuery();
+        if (sub != null) {
+          Float boost = a.fields.get(f);
+          if (boost != null && boost.floatValue() != 1f) {
+            sub = new BoostQuery(sub, boost);
+          }
+          lst.add(sub);
+        }
+      }
+      return lst;
+    }
+
     private Query getQuery() {
       try {
         
@@ -1664,8 +1704,10 @@ public class ExtendedDismaxQParser extends QParser {
       mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
       
       altQ = solrParams.get( DisMaxParams.ALTQ );
-      
-      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS, true);
+
+      // lowercaseOperators defaults to true for luceneMatchVersion < 7.0 and to false for >= 7.0
+      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS,
+          !req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
       
       /* * * Boosting Query * * */
       boostParams = solrParams.getParams(DisMaxParams.BQ);

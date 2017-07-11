@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.RTimer;
@@ -46,8 +45,8 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
 
   @Override
@@ -63,7 +62,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     // create a collection that has 2 shard and 2 replicas
     String testCollectionName = "c8n_2x2_commits";
-    createCollection(testCollectionName, 2, 2, 1);
+    createCollection(testCollectionName, "conf1", 2, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders =
@@ -96,14 +95,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     Thread.sleep(sleepMsBeforeHealPartition);
 
     // try to clean up
-    try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
 
     log.info("multiShardTest completed OK");
   }
@@ -113,7 +105,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     // create a collection that has 1 shard and 3 replicas
     String testCollectionName = "c8n_1x3_commits";
-    createCollection(testCollectionName, 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders =
@@ -144,14 +136,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     Thread.sleep(sleepMsBeforeHealPartition);
 
     // try to clean up
-    try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
 
     log.info("oneShardTest completed OK");
   }
@@ -161,9 +146,9 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
    */
   @Override
   public JettySolrRunner createJetty(File solrHome, String dataDir,
-                                     String shardList, String solrConfigOverride, String schemaOverride)
+                                     String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception {
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
 
   protected void sendCommitWithRetry(Replica replica) throws Exception {

@@ -71,7 +71,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.util.SSLTestConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -210,8 +209,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
 
     SolrQuery q = new SolrQuery("*:*");
-    try(HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/slow/foo")) {
-      client.setSoTimeout(2000);
+    try(HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
       client.query(q, METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -623,21 +621,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   }
 
   /**
-   * A trivial test that verifies the example keystore used for SSL testing can be 
-   * found using the base class. this helps future-proof against the possibility of 
-   * something moving/breaking the keystore path in a way that results in the SSL 
-   * randomization logic being forced to silently never use SSL.  (We can't enforce 
-   * this type of check in the base class because then it would not be usable by client 
-   * code depending on the test framework
-   */
-  public void testExampleKeystorePath() {
-    assertNotNull("Example keystore is null, meaning that something has changed in the " +
-                  "structure of the example configs and/or ExternalPaths.java - " + 
-                  "SSL randomization is broken",
-                  SSLTestConfig.TEST_KEYSTORE);
-  }
-
-  /**
    * An interceptor changing the request
    */
   HttpRequestInterceptor changeRequestInterceptor = new HttpRequestInterceptor() {
@@ -839,7 +822,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     try(HttpSolrClient createdClient = new HttpSolrClient.Builder()
         .withBaseSolrUrl(jetty.getBaseUrl().toString())
-        .withDelegationToken("mydt")
+        .withKerberosDelegationToken("mydt")
         .withInvariantParams(SolrTestCaseJ4.params(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, "mydt"))
         .build()) {
       fail();

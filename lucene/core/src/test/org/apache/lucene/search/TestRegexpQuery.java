@@ -42,7 +42,7 @@ public class TestRegexpQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
-  private final String FN = "field";
+  private static final String FN = "field";
   
   @Override
   public void setUp() throws Exception {
@@ -68,7 +68,7 @@ public class TestRegexpQuery extends LuceneTestCase {
     return new Term(FN, value);
   }
   
-  private int regexQueryNrHits(String regex) throws IOException {
+  private long regexQueryNrHits(String regex) throws IOException {
     RegexpQuery query = new RegexpQuery(newTerm(regex));
     return searcher.search(query, 5).totalHits;
   }

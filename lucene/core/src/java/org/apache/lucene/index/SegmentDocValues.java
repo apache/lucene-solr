@@ -85,13 +85,14 @@ final class SegmentDocValues {
       try {
         dvp.decRef();
       } catch (Throwable th) {
-        if (t != null) {
+        if (t == null) {
           t = th;
         }
       }
     }
+
     if (t != null) {
-      IOUtils.reThrow(t);
+      throw IOUtils.rethrowAlways(t);
     }
   }
 }

@@ -67,6 +67,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
@@ -453,7 +454,7 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
-   * DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
+   * If DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
    * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
    * This specifies the structure to use.
    * 
@@ -754,12 +755,13 @@ public abstract class FieldType extends FieldProperties {
   /** @lucene.experimental  */
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
     if (!field.indexed()) {
+      // TODO: if the field isn't indexed, this feels like the wrong query type to use?
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (String externalVal : externalVals) {
         Query subq = getFieldQuery(parser, field, externalVal);
         builder.add(subq, BooleanClause.Occur.SHOULD);
       }
-      return builder.build();
+      return QueryUtils.build(builder, parser);
     }
 
     List<BytesRef> lst = new ArrayList<>(externalVals.size());
@@ -833,7 +835,8 @@ public abstract class FieldType extends FieldProperties {
 
   private static final String POSTINGS_FORMAT = "postingsFormat";
   private static final String DOC_VALUES_FORMAT = "docValuesFormat";
-  private static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
+  protected static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
+  protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
 
@@ -856,6 +859,7 @@ public abstract class FieldType extends FieldProperties {
       }
       if (this instanceof TextField) {
         namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
+        namedPropertyValues.add(ENABLE_GRAPH_QUERIES, ((TextField) this).getEnableGraphQueries());
       }
       namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
       namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));
@@ -868,6 +872,7 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(OMIT_POSITIONS), hasProperty(OMIT_POSITIONS));
       namedPropertyValues.add(getPropertyName(STORE_OFFSETS), hasProperty(STORE_OFFSETS));
       namedPropertyValues.add(getPropertyName(MULTIVALUED), hasProperty(MULTIVALUED));
+      namedPropertyValues.add(getPropertyName(LARGE_FIELD), hasProperty(LARGE_FIELD));
       if (hasProperty(SORT_MISSING_FIRST)) {
         namedPropertyValues.add(getPropertyName(SORT_MISSING_FIRST), true);
       } else if (hasProperty(SORT_MISSING_LAST)) {

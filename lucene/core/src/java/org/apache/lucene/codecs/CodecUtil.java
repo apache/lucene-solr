@@ -331,6 +331,9 @@ public final class CodecUtil {
   /** Retrieves the full footer from the provided {@link IndexInput}.  This throws
    *  {@link CorruptIndexException} if this file does not have a valid footer. */
   public static byte[] readFooter(IndexInput in) throws IOException {
+    if (in.length() < footerLength()) {
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): length=" + in.length() + " but footerLength==" + footerLength(), in);
+    }
     in.seek(in.length() - footerLength());
     validateFooter(in);
     in.seek(in.length() - footerLength());
@@ -467,7 +470,7 @@ public final class CodecUtil {
         // catch-all for things that shouldn't go wrong (e.g. OOM during readInt) but could...
         priorException.addSuppressed(new CorruptIndexException("checksum status indeterminate: unexpected exception", in, t));
       }
-      IOUtils.reThrow(priorException);
+      throw IOUtils.rethrowAlways(priorException);
     }
   }
   
@@ -516,6 +519,9 @@ public final class CodecUtil {
     clone.seek(0);
     ChecksumIndexInput in = new BufferedChecksumIndexInput(clone);
     assert in.getFilePointer() == 0;
+    if (in.length() < footerLength()) {
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): length=" + in.length() + " but footerLength==" + footerLength(), input);
+    }
     in.seek(in.length() - footerLength());
     return checkFooter(in);
   }

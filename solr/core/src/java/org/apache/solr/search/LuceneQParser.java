@@ -39,14 +39,9 @@ public class LuceneQParser extends QParser {
     if (qstr == null || qstr.length()==0) return null;
 
     String defaultField = getParam(CommonParams.DF);
-    if (defaultField==null) {
-      defaultField = getReq().getSchema().getDefaultSearchFieldName();
-    }
     lparser = new SolrQueryParser(this, defaultField);
 
-    lparser.setDefaultOperator
-      (QueryParsing.getQueryParserDefaultOperator(getReq().getSchema(),
-                                                  getParam(QueryParsing.OP)));
+    lparser.setDefaultOperator(QueryParsing.parseOP(getParam(QueryParsing.OP)));
     lparser.setSplitOnWhitespace(StrUtils.parseBool
       (getParam(QueryParsing.SPLIT_ON_WHITESPACE), SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
 

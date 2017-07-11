@@ -40,8 +40,8 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
    */
   public void testQParserEmptyInput() throws Exception {
     
-    SolrQueryRequest req = req();
-    
+    SolrQueryRequest req = req("df", "text");
+
     final String[] parsersTested = new String[] {
       OldLuceneQParserPlugin.NAME,
       LuceneQParserPlugin.NAME,

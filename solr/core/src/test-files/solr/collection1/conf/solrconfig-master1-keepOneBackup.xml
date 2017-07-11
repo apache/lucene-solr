@@ -27,7 +27,7 @@
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler" />
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
     <lst name="master">
@@ -39,9 +39,8 @@
   </requestHandler>
   
 
-  <!-- enable streaming for testing... -->
-  <requestDispatcher handleSelect="true">
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048"/>
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1"/>
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>

@@ -27,6 +27,11 @@ import java.util.List;
 
 public class DistributedFacetPivotWhiteBoxTest extends BaseDistributedSearchTestCase {
 
+  public DistributedFacetPivotWhiteBoxTest() {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+  }
+  
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {

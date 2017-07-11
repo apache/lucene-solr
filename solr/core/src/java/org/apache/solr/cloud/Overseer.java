@@ -64,7 +64,8 @@ import static org.apache.solr.common.params.CommonParams.ID;
 public class Overseer implements Closeable {
   public static final String QUEUE_OPERATION = "operation";
 
-  public static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
+  public static final int STATE_UPDATE_DELAY = 2000;  // delay between cloud state updates
+  public static final int STATE_UPDATE_BATCH_SIZE = 10000;
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
@@ -195,7 +196,9 @@ public class Overseer implements Closeable {
             log.error("Exception in Overseer main queue loop", e);
           }
           try {
+            boolean[] itemWasMoved = new boolean[1];
             while (head != null) {
+              itemWasMoved[0] = false;
               byte[] data = head;
               final ZkNodeProps message = ZkNodeProps.load(data);
               log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
@@ -203,7 +206,11 @@ public class Overseer implements Closeable {
               clusterState = processQueueItem(message, clusterState, zkStateWriter, true, new ZkStateWriter.ZkWriteCallback() {
                 @Override
                 public void onEnqueue() throws Exception {
-                  workQueue.offer(data);
+                  if (!itemWasMoved[0]) {
+                    workQueue.offer(data);
+                    stateUpdateQueue.poll();
+                    itemWasMoved[0] = true;
+                  }
                 }
 
                 @Override
@@ -213,9 +220,10 @@ public class Overseer implements Closeable {
                 }
               });
 
-              // it is safer to keep this poll here because an invalid message might never be queued
-              // and therefore we can't rely on the ZkWriteCallback to remove the item
-              stateUpdateQueue.poll();
+              // If the ZkWriteCallback never fired, just dump the item, it might be an invalid message.
+              if (!itemWasMoved[0]) {
+                stateUpdateQueue.poll();
+              }
 
               if (isClosed) break;
               // if an event comes in the next 100ms batch it together
@@ -383,7 +391,7 @@ public class Overseer implements Closeable {
             }
             break;
           case DOWNNODE:
-            return new NodeMutator(getZkStateReader()).downNode(clusterState, message);
+            return new NodeMutator().downNode(clusterState, message);
           default:
             throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
         }
@@ -760,8 +768,8 @@ public class Overseer implements Closeable {
     }
   }
   public static boolean isLegacy(ZkStateReader stateReader) {
-    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true");
-    return !"false".equals(legacyProperty);
+    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
+    return "true".equals(legacyProperty);
   }
 
   public ZkStateReader getZkStateReader() {

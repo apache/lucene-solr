@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -93,7 +92,7 @@ public class SpellCheckCollator {
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);
-      int hits = 0;
+      long hits = 0;
 
       if (verifyCandidateWithQuery) {
         tryNo++;
@@ -132,6 +131,19 @@ public class SpellCheckCollator {
         params.remove(DisMaxParams.BF);
         // Collate testing does not support Grouping (see SOLR-2577)
         params.remove(GroupParams.GROUP);
+        
+        // Collate testing does not support the Collapse QParser (See SOLR-8807)
+        params.remove("expand");
+        String[] filters = params.getParams(CommonParams.FQ);
+        if (filters != null) {
+          List<String> filtersToApply = new ArrayList<>(filters.length);
+          for (String fq : filters) {
+            if (!fq.startsWith("{!collapse")) {
+              filtersToApply.add(fq);
+            }
+          }
+          params.set("fq", filtersToApply.toArray(new String[filtersToApply.size()]));
+        }      
 
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse = new ResponseBuilder(
@@ -149,7 +161,7 @@ public class SpellCheckCollator {
             checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);            
           }
           queryComponent.process(checkResponse);
-          hits = (Integer) checkResponse.rsp.getToLog().get("hits");
+          hits = ((Number) checkResponse.rsp.getToLog().get("hits")).longValue();
         } catch (EarlyTerminatingCollectorException etce) {
           assert (docCollectionLimit > 0);
           assert 0 < etce.getNumberScanned();
@@ -158,7 +170,7 @@ public class SpellCheckCollator {
           if (etce.getNumberScanned() == maxDocId) {
             hits = etce.getNumberCollected();
           } else {
-            hits = (int) ( ((float)( maxDocId * etce.getNumberCollected() )) 
+            hits = (long) ( ((float)( maxDocId * etce.getNumberCollected() )) 
                            / (float)etce.getNumberScanned() );
           }
         } catch (Exception e) {

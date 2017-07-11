@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,6 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -529,12 +527,16 @@ public class PhraseHelper {
     }
   }
 
+  //TODO move up; it's currently inbetween other inner classes that are related
   /**
+   * Needed to support the ability to highlight a query irrespective of the field a query refers to
+   * (aka requireFieldMatch=false).
    * This reader will just delegate every call to a single field in the wrapped
    * LeafReader. This way we ensure that all queries going through this reader target the same field.
-  */
+   */
   static final class SingleFieldFilterLeafReader extends FilterLeafReader {
     final String fieldName;
+
     SingleFieldFilterLeafReader(LeafReader in, String fieldName) {
       super(in);
       this.fieldName = fieldName;
@@ -542,27 +544,12 @@ public class PhraseHelper {
 
     @Override
     public FieldInfos getFieldInfos() {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException();//TODO merge them
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new FilterFields(super.fields()) {
-        @Override
-        public Terms terms(String field) throws IOException {
-          return super.terms(fieldName);
-        }
-
-        @Override
-        public Iterator<String> iterator() {
-          return Collections.singletonList(fieldName).iterator();
-        }
-
-        @Override
-        public int size() {
-          return 1;
-        }
-      };
+    public Terms terms(String field) throws IOException {
+      return super.terms(fieldName);
     }
 
     @Override

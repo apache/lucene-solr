@@ -1,0 +1,151 @@
+= Blob Store API
+:page-shortname: blob-store-api
+:page-permalink: blob-store-api.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Blob Store REST API provides REST methods to store, retrieve or list files in a Lucene index.
+
+It can be used to upload a jar file which contains standard solr components such as RequestHandlers, SearchComponents, or other custom code you have written for Solr. Schema components _do not_ yet support the Blob Store.
+
+When using the blob store, note that the API does not delete or overwrite a previous object if a new one is uploaded with the same name. It always adds a new version of the blob to the index. Deletes can be performed with standard REST delete commands.
+
+*The blob store is only available when running in SolrCloud mode.* Solr in standalone mode does not support use of a blob store.
+
+The blob store API is implemented as a requestHandler. A special collection named ".system" is used to store the blobs. This collection can be created in advance, but if it does not exist it will be created automatically.
+
+[[BlobStoreAPI-Aboutthe.systemCollection]]
+== About the .system Collection
+
+Before uploading blobs to the blob store, a special collection must be created and it must be named `.system`. Solr will automatically create this collection if it does not already exist, but you can also create it manually if you choose.
+
+The BlobHandler is automatically registered in the .system collection. The `solrconfig.xml`, Schema, and other configuration files for the collection are automatically provided by the system and don't need to be defined specifically.
+
+If you do not use the `-shards` or `-replicationFactor` options, then defaults of numShards=1 and replicationFactor=3 (or maximum nodes in the cluster) will be used.
+
+You can create the `.system` collection with the <<collections-api.adoc#collections-api,Collections API>>, as in this example:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/admin/collections?action=CREATE&name=.system&replicationFactor=2
+----
+
+IMPORTANT: The `bin/solr` script cannot be used to create the `.system` collection.
+
+[[BlobStoreAPI-UploadFilestoBlobStore]]
+== Upload Files to Blob Store
+
+After the `.system` collection has been created, files can be uploaded to the blob store with a request similar to the following:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @{filename} http://localhost:8983/solr/.system/blob/{blobname}
+----
+
+For example, to upload a file named "test1.jar" as a blob named "test", you would make a POST request like:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/octet-stream' --data-binary @test1.jar http://localhost:8983/solr/.system/blob/test
+----
+
+A GET request will return the list of blobs and other details:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/.system/blob?omitHeader=true
+----
+
+Output:
+
+[source,json]
+----
+{
+  "response":{"numFound":1,"start":0,"docs":[
+      {
+        "id":"test/1",
+        "md5":"20ff915fa3f5a5d66216081ae705c41b",
+        "blobName":"test",
+        "version":1,
+        "timestamp":"2015-02-04T16:45:48.374Z",
+        "size":13108}]
+  }
+}
+----
+
+Details on individual blobs can be accessed with a request similar to:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/.system/blob/{blobname}
+----
+
+For example, this request will return only the blob named 'test':
+
+[source,bash]
+----
+curl http://localhost:8983/solr/.system/blob/test?omitHeader=true
+----
+
+Output:
+
+[source,json]
+----
+{
+  "response":{"numFound":1,"start":0,"docs":[
+      {
+        "id":"test/1",
+        "md5":"20ff915fa3f5a5d66216081ae705c41b",
+        "blobName":"test",
+        "version":1,
+        "timestamp":"2015-02-04T16:45:48.374Z",
+        "size":13108}]
+  }
+}
+----
+
+The filestream response writer can return a particular version of a blob for download, as in:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/.system/blob/{blobname}/{version}?wt=filestream > {outputfilename}
+----
+
+For the latest version of a blob, the \{version} can be omitted,
+
+[source,bash]
+----
+curl http://localhost:8983/solr/.system/blob/{blobname}?wt=filestream > {outputfilename}
+----
+
+[[BlobStoreAPI-UseaBlobinaHandlerorComponent]]
+== Use a Blob in a Handler or Component
+
+To use the blob as the class for a request handler or search component, you create a request handler in `solrconfig.xml` as usual. You will need to define the following parameters:
+
+`class`:: the fully qualified class name. For example, if you created a new request handler class called CRUDHandler, you would enter `org.apache.solr.core.CRUDHandler`.
+`runtimeLib`:: Set to true to require that this component should be loaded from the classloader that loads the runtime jars.
+
+For example, to use a blob named test, you would configure `solrconfig.xml` like this:
+
+[source,xml]
+----
+<requestHandler name="/myhandler" class="org.apache.solr.core.myHandler" runtimeLib="true" version="1">
+</requestHandler>
+----
+
+If there are parameters available in the custom handler, you can define them in the same way as any other request handler definition.

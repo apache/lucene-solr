@@ -121,13 +121,12 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   @SuppressWarnings("unused")
   public void _testStandardConstants() {
     int x = StandardTokenizer.ALPHANUM;
-    x = StandardTokenizer.APOSTROPHE;
-    x = StandardTokenizer.ACRONYM;
-    x = StandardTokenizer.COMPANY;
-    x = StandardTokenizer.EMAIL;
-    x = StandardTokenizer.HOST;
     x = StandardTokenizer.NUM;
-    x = StandardTokenizer.CJ;
+    x = StandardTokenizer.SOUTHEAST_ASIAN;
+    x = StandardTokenizer.IDEOGRAPHIC;
+    x = StandardTokenizer.HIRAGANA;
+    x = StandardTokenizer.KATAKANA;
+    x = StandardTokenizer.HANGUL;
     String[] y = StandardTokenizer.TOKEN_TYPES;
   }
 

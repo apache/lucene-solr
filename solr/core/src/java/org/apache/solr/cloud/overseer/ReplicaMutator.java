@@ -271,11 +271,12 @@ public class ReplicaMutator {
 
     replicaProps.putAll(message.getProperties());
     if (slice != null) {
-      Replica oldReplica = slice.getReplicasMap().get(coreNodeName);
+      Replica oldReplica = slice.getReplica(coreNodeName);
       if (oldReplica != null) {
         if (oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
           replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
         }
+        replicaProps.put(ZkStateReader.REPLICA_TYPE, oldReplica.getType().toString());
         // Move custom props over.
         for (Map.Entry<String, Object> ent : oldReplica.getProperties().entrySet()) {
           if (ent.getKey().startsWith(COLL_PROP_PREFIX)) {
@@ -311,6 +312,8 @@ public class ReplicaMutator {
 
 
     Replica replica = new Replica(coreNodeName, replicaProps);
+    
+    log.debug("Will update state for replica: {}", replica);
 
     Map<String, Object> sliceProps = null;
     Map<String, Replica> replicas;
@@ -328,11 +331,11 @@ public class ReplicaMutator {
       sliceProps.put(ZkStateReader.STATE_PROP, shardState);
       sliceProps.put(Slice.PARENT, shardParent);
     }
-
     replicas.put(replica.getName(), replica);
     slice = new Slice(sliceName, replicas, sliceProps);
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
+    log.debug("Collection is now: {}", newCollection);
     return new ZkWriteCommand(collectionName, newCollection);
   }
 

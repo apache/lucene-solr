@@ -22,6 +22,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Properties;
 
 import com.google.common.collect.ImmutableMap;
@@ -33,6 +34,9 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.core.CoreContainer.CORE_DISCOVERY_COMPLETE;
+import static org.apache.solr.core.CoreContainer.INITIAL_CORE_LOAD_COMPLETE;
+import static org.apache.solr.core.CoreContainer.LOAD_COMPLETE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.internal.matchers.StringContains.containsString;
 
@@ -60,12 +64,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(null);
   }
 
-  private Properties makeCorePropFile(String name, boolean isLazy, boolean loadOnStartup, String... extraProps) {
+  private Properties makeCorePropFile(String name, boolean isTransient, boolean loadOnStartup, String... extraProps) {
     Properties props = new Properties();
     props.put(CoreDescriptor.CORE_NAME, name);
     props.put(CoreDescriptor.CORE_SCHEMA, "schema-tiny.xml");
     props.put(CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml");
-    props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isLazy));
+    props.put(CoreDescriptor.CORE_TRANSIENT, Boolean.toString(isTransient));
     props.put(CoreDescriptor.CORE_LOADONSTARTUP, Boolean.toString(loadOnStartup));
     props.put(CoreDescriptor.CORE_DATADIR, "${core.dataDir:stuffandnonsense}");
 
@@ -107,14 +111,23 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    final CoreContainer cores = new CoreContainer();
+    final CoreContainer container = new CoreContainer();
     try {
-      cores.load();
+      container.load();
     } catch (Exception e) {
-      cores.shutdown();
+      container.shutdown();
       throw e;
     }
-    return cores;
+
+    long status = container.getStatus();
+
+    assertTrue("Load complete flag should be set", 
+        (status & LOAD_COMPLETE) == LOAD_COMPLETE);
+    assertTrue("Core discovery should be complete", 
+        (status & CORE_DISCOVERY_COMPLETE) == CORE_DISCOVERY_COMPLETE);
+    assertTrue("Initial core loading should be complete", 
+        (status & INITIAL_CORE_LOAD_COMPLETE) == INITIAL_CORE_LOAD_COMPLETE);
+    return container;
   }
 
   @After
@@ -140,7 +153,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     try {
 
       TestLazyCores.checkInCores(cc, "core1");
-      TestLazyCores.checkNotInCores(cc, "lazy1", "core2", "collection1");
+      TestLazyCores.checkNotInCores(cc, Arrays.asList("lazy1", "core2"));
 
       // force loading of core2 and lazy1 by getting them from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");
@@ -200,7 +213,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc.load();
       // Just check that the proper number of cores are loaded since making the test depend on order would be fragile
       assertEquals("There should only be 3 cores loaded, coreLOS and two coreT? cores",
-          3, cc.getCoreNames().size());
+          3, cc.getLoadedCoreNames().size());
 
       SolrCore c1 = cc.getCore("coreT1");
       assertNotNull("Core T1 should NOT BE NULL", c1);
@@ -463,4 +476,5 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     NodeConfig absConfig = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
     assertThat(absConfig.getCoreRootDirectory().toString(), not(containsString(solrHomeDirectory.getAbsolutePath())));
   }
+  
 }

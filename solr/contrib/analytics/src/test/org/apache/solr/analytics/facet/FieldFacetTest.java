@@ -24,10 +24,11 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.w3c.dom.Node;
 
 
 public class FieldFacetTest extends AbstractAnalyticsFacetTest{
-  static String fileName = "/analytics/requestFiles/fieldFacets.txt";
+  static String fileName = "fieldFacets.txt";
 
   public static final int INT = 71;
   public static final int LONG = 36;
@@ -87,7 +88,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-analytics.xml");
+    initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
     
     defaults.put("int", new Integer(0));
@@ -140,6 +141,8 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
     multiStringTestMissing = new ArrayList<>();
     multiDateTestStart = new ArrayList<>();
     multiDateTestMissing = new ArrayList<>();
+    
+    boolean multiCanHaveDuplicates = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
@@ -151,32 +154,48 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       int dtm = j%DATEM;
       int s = j%STRING;
       int sm = j%STRINGM;
-      if (dt==0 && dtm == 0) {
-        assertU(adoc(filter("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59Z", "string_sd", "str" + s,
-          "long_ldm", "" + l, "long_ldm", ""+lm, "string_sdm", "str" + s, "string_sdm", "str"+sm)));
-      } else if (dt == 0) {
-        assertU(adoc(filter("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-            "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59Z", "string_sd", "str" + s,
-            "long_ldm", "" + l, "long_ldm", ""+lm, "string_sdm", "str" + s, "string_sdm", "str"+sm,
-            "date_dtdm", (1800+dtm) + "-12-31T23:59:59Z")));
-      } else if (dtm == 0) {
-        assertU(adoc(filter("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-            "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59Z", "string_sd", "str" + s,
-            "long_ldm", "" + l, "long_ldm", ""+lm, "string_sdm", "str" + s, "string_sdm", "str"+sm,
-            "date_dtdm", (1800+dt) + "-12-31T23:59:59Z")));
-      } else {
-        assertU(adoc(filter("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-            "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59Z", "string_sd", "str" + s,
-            "long_ldm", "" + l, "long_ldm", ""+lm, "string_sdm", "str" + s, "string_sdm", "str"+sm,
-            "date_dtdm", (1800+dt) + "-12-31T23:59:59Z", "date_dtdm", (1800+dtm) + "-12-31T23:59:59Z")));
-      }
       
-      if( dt != 0 ){
+
+      List<String> fields = new ArrayList<>();
+      fields.add("id"); fields.add("1000"+j);
+      
+      if( i != 0 ) {
+        fields.add("int_id"); fields.add("" + i);
+      }
+      if( l != 0l ) {
+        fields.add("long_ld"); fields.add("" + l);
+        fields.add("long_ldm"); fields.add("" + l);
+      }
+      if( lm != 0l ) {
+        fields.add("long_ldm"); fields.add("" + lm);
+      }
+      if( f != 0.0f ) {
+        fields.add("float_fd"); fields.add("" + f);
+      }
+      if( d != 0.0d ) {
+        fields.add("double_dd"); fields.add("" + d);
+      }
+      if( dt != 0 ) {
+        fields.add("date_dtd"); fields.add((1800+dt) + "-12-31T23:59:59Z");
+        fields.add("date_dtdm"); fields.add((1800+dt) + "-12-31T23:59:59Z");
+      }
+      if ( dtm != 0 ) {
+        fields.add("date_dtdm"); fields.add((1800+dtm) + "-12-31T23:59:59Z");
+      }
+      if ( s != 0 ) {
+        fields.add("string_sd"); fields.add("str" + s);
+        fields.add("string_sdm"); fields.add("str" + s);
+      }
+      if ( sm != 0 ) {
+        fields.add("string_sdm"); fields.add("str" + sm);
+      }
+      assertU(adoc(fields.toArray(new String[0])));
+      
+      if( dt != 0 ) {
         //Dates
-        if (j-DATE<0) {
+        if ( j-DATE < 0 ) {
           ArrayList<Integer> list1 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list1.add(i);
             intDateTestMissing.add(0l);
           } else {
@@ -184,7 +203,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           intDateTestStart.add(list1);
           ArrayList<Long> list2 = new ArrayList<>();
-          if( l != 0l ){
+          if( l != 0l ) {
             list2.add(l);
             longDateTestMissing.add(0l);
           } else {
@@ -192,7 +211,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           longDateTestStart.add(list2);
           ArrayList<Float> list3 = new ArrayList<>();
-          if ( f != 0.0f ){
+          if ( f != 0.0f ) {
             list3.add(f);
             floatDateTestMissing.add(0l);
           } else {
@@ -201,7 +220,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           floatDateTestStart.add(list3);
           ArrayList<Double> list4 = new ArrayList<>();
-          if( d != 0.0d ){
+          if( d != 0.0d ) {
             list4.add(d);
             doubleDateTestMissing.add(0l);
           } else {
@@ -209,7 +228,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           doubleDateTestStart.add(list4);
           ArrayList<Integer> list5 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list5.add(i);
             multiDateTestMissing.add(0l);
           } else {
@@ -226,24 +245,26 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
         }
       }
       
-      if (j-DATEM<0 && dtm!=dt && dtm!=0) {
-        ArrayList<Integer> list1 = new ArrayList<>();
-        if( i != 0 ){
-          list1.add(i);
-          multiDateTestMissing.add(0l);
-        } else {
-          multiDateTestMissing.add(1l);
+      if ( dtm != 0 ) {
+        if ( j-DATEM < 0 && dtm != dt ) {
+          ArrayList<Integer> list1 = new ArrayList<>();
+          if( i != 0 ) {
+            list1.add(i);
+            multiDateTestMissing.add(0l);
+          } else {
+            multiDateTestMissing.add(1l);
+          }
+          multiDateTestStart.add(list1);
+        } else if ( dtm != dt || multiCanHaveDuplicates ) {
+          if( i != 0 ) multiDateTestStart.get(dtm-1).add(i); else increment(multiDateTestMissing,dtm-1);
         }
-        multiDateTestStart.add(list1);
-      } else if (dtm!=dt && dtm!=0) {
-        if( i != 0 ) multiDateTestStart.get(dtm-1).add(i);
       }
       
       if( s != 0 ){
         //Strings
-        if (j-STRING<0) {
+        if ( j-STRING < 0 ) {
           ArrayList<Integer> list1 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list1.add(i);
             intStringTestMissing.add(0l);
           } else {
@@ -251,7 +272,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           intStringTestStart.add(list1);
           ArrayList<Long> list2 = new ArrayList<>();
-          if( l != 0l ){
+          if( l != 0l ) {
             list2.add(l);
             longStringTestMissing.add(0l);
           } else {
@@ -267,7 +288,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           floatStringTestStart.add(list3);
           ArrayList<Double> list4 = new ArrayList<>();
-          if( d != 0.0d ){
+          if( d != 0.0d ) {
             list4.add(d);
             doubleStringTestMissing.add(0l);
           } else {
@@ -275,7 +296,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           doubleStringTestStart.add(list4);
           ArrayList<Integer> list5 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list5.add(i);
             multiStringTestMissing.add(0l);
           } else {
@@ -293,7 +314,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       
       //Strings
       if( sm != 0 ){
-        if (j-STRINGM<0&&sm!=s) {
+        if ( j-STRINGM < 0 && sm != s ) {
           ArrayList<Integer> list1 = new ArrayList<>();
           if( i != 0 ){
             list1.add(i);
@@ -302,14 +323,14 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
             multiStringTestMissing.add(1l);
           }
           multiStringTestStart.add(list1);
-        } else if (sm!=s) {
+        } else if ( sm != s ) {
           if( i != 0 ) multiStringTestStart.get(sm-1).add(i); else increment(multiStringTestMissing,sm-1);
         }
       }
       
       //Int
-      if( i != 0 ){
-        if (j-INT<0) {
+      if( i != 0 ) {
+        if ( j-INT < 0 ) {
           ArrayList<String> list1 = new ArrayList<>();
           if( dt != 0 ){
             list1.add((1800+dt) + "-12-31T23:59:59Z");
@@ -319,7 +340,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           dateIntTestStart.add(list1);
           ArrayList<String> list2 = new ArrayList<>();
-          if( s != 0 ){
+          if( s != 0 ) {
             list2.add("str"+s);
             stringIntTestMissing.add(0l);
           } else {
@@ -333,8 +354,8 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       }
       
       //Long
-      if( l != 0 ){
-        if (j-LONG<0) {
+      if( l != 0 ) {
+        if ( j-LONG < 0 ) {
           ArrayList<String> list1 = new ArrayList<>();
           if( dt != 0 ){
             list1.add((1800+dt) + "-12-31T23:59:59Z");
@@ -344,7 +365,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           dateLongTestStart.add(list1);
           ArrayList<String> list2 = new ArrayList<>();
-          if( s != 0 ){
+          if( s != 0 ) {
             list2.add("str"+s);
             stringLongTestMissing.add(0l);
           } else {
@@ -352,7 +373,7 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
           }
           stringLongTestStart.add(list2);
           ArrayList<Integer> list3 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list3.add(i);
             multiLongTestMissing.add(0l);
           } else {
@@ -367,17 +388,17 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
       }
       
       //Long
-      if( lm != 0 ){
-        if (j-LONGM<0&&lm!=l) {
+      if( lm != 0 ) {
+        if ( j-LONGM < 0 && lm != l ) {
           ArrayList<Integer> list1 = new ArrayList<>();
-          if( i != 0 ){
+          if( i != 0 ) {
             list1.add(i);
             multiLongTestMissing.add(0l);
           } else {
             multiLongTestMissing.add(1l);
           }
           multiLongTestStart.add(list1);
-        } else if (lm!=l) {
+        } else if ( lm != l || multiCanHaveDuplicates ) {
           if( i != 0 ) multiLongTestStart.get((int)lm-1).add(i); else increment( multiLongTestMissing,(int)lm-1);
         }
       }
@@ -473,46 +494,6 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
     //Double String
     Collection<Double> doubleString = getDoubleList("mean","fieldFacets", "string_sd", "double", "double");
     ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "mean");
-    assertEquals(getRawResponse(),doubleString,doubleStringTest);
-  }
-  
-  @SuppressWarnings("unchecked")
-  @Test
-  public void sumOfSquaresFacetAscTest() throws Exception {
-    //Int Date
-    Collection<Double> intDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "int");
-    ArrayList<Double> intDateTest = calculateNumberStat(intDateTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),intDate,intDateTest);
-    //Int String
-    Collection<Double> intString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "int");
-    ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),intString,intStringTest);
-
-    //Long Date
-    Collection<Double> longDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "long");
-    ArrayList<Double> longDateTest = calculateNumberStat(longDateTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),longDate,longDateTest);
-    //Long String
-    Collection<Double> longString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "long");
-    ArrayList<Double> longStringTest = calculateNumberStat(longStringTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),longString,longStringTest);
-
-    //Float Date
-    Collection<Double> floatDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "float");
-    ArrayList<Double> floatDateTest = calculateNumberStat(floatDateTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),floatDate,floatDateTest);
-    //Float String
-    Collection<Double> floatString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "float");
-    ArrayList<Double> floatStringTest = calculateNumberStat(floatStringTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),floatString,floatStringTest);
-
-    //Double Date
-    Collection<Double> doubleDate = getDoubleList("sumOfSquares","fieldFacets", "date_dtd", "double", "double");
-    ArrayList<Double> doubleDateTest = calculateNumberStat(doubleDateTestStart, "sumOfSquares");
-    assertEquals(getRawResponse(),doubleDate,doubleDateTest);
-    //Double String
-    Collection<Double> doubleString = getDoubleList("sumOfSquares","fieldFacets", "string_sd", "double", "double");
-    ArrayList<Double> doubleStringTest = calculateNumberStat(doubleStringTestStart, "sumOfSquares");
     assertEquals(getRawResponse(),doubleString,doubleStringTest);
   }
   
@@ -1037,31 +1018,33 @@ public class FieldFacetTest extends AbstractAnalyticsFacetTest{
   public void missingFacetTest() throws Exception { 
     //int MultiDate
     String xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='date_dtdm']/lst[@name='(MISSING)']";
-    assertNotNull(getRawResponse(), getNode(xPath));
+    Node missingNodeXPath = getNode(xPath);
+    assertNotNull(getRawResponse(), missingNodeXPath);
 
     ArrayList<Double> string = getDoubleList("missingf", "fieldFacets", "date_dtdm", "double", "mean");
-    string.remove(0);
+    //super.removeNodes(xPath, string);
     ArrayList<Double> stringTest = calculateNumberStat(multiDateTestStart, "mean");
     assertEquals(getRawResponse(), string,stringTest);
-    
+
     //Int String
     xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='(MISSING)']";
-    assertNotNull(getRawResponse(), getNode(xPath));
+    missingNodeXPath = getNode(xPath);
+    String missingNodeXPathStr = xPath;
+    assertNotNull(getRawResponse(), missingNodeXPath);
 
     xPath = "/response/lst[@name='stats']/lst[@name='missingf']/lst[@name='fieldFacets']/lst[@name='string_sd']/lst[@name='str0']";
     assertNull(getRawResponse(), getNode(xPath));
+
     List<Double> intString = getDoubleList("missingf", "fieldFacets", "string_sd", "double", "mean");
-    intString.remove(0);
+    //removeNodes(missingNodeXPathStr, intString);
     ArrayList<Double> intStringTest = calculateNumberStat(intStringTestStart, "mean");
     assertEquals(getRawResponse(), intString,intStringTest);
-    
+
     //Int Date
     Collection<Double> intDate = getDoubleList("missingf", "fieldFacets", "date_dtd", "double", "mean");
     ArrayList<ArrayList<Double>> intDateMissingTestStart = (ArrayList<ArrayList<Double>>) intDateTestStart.clone();
     ArrayList<Double> intDateTest = calculateNumberStat(intDateMissingTestStart, "mean");
     assertEquals(getRawResponse(),intDate,intDateTest);
-    
-    
   }
 
   private void checkStddevs(ArrayList<Double> list1, ArrayList<Double> list2) {

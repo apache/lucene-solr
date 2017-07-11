@@ -508,6 +508,13 @@ public class JettySolrRunner {
   public SolrClient newClient() {
     return new HttpSolrClient.Builder(getBaseUrl().toString()).build();
   }
+  
+  public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
+    return new HttpSolrClient.Builder(getBaseUrl().toString())
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
+  }
 
   public DebugFilter getDebugFilter() {
     return (DebugFilter)debugFilter.getFilter();

@@ -278,10 +278,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
     
-    Thread thread = new Thread() {
+    Runnable recoveryTask = new Runnable() {
       @Override
       public void run() {
-        MDCLoggingContext.setCoreDescriptor(cd);
+        MDCLoggingContext.setCoreDescriptor(cc, cd);
         try {
           if (SKIP_AUTO_RECOVERY) {
             log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
@@ -355,7 +355,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // The recovery executor is not interrupted on shutdown.
       //
       // avoid deadlock: we can't use the recovery executor here
-      cc.getUpdateShardHandler().getUpdateExecutor().submit(thread);
+      cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
     }

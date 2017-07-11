@@ -226,7 +226,7 @@ public class TestStressLucene extends TestRTGBase {
                   if (tombstones) {
                     Document d = new Document();
                     d.add(new Field("id","-"+Integer.toString(id), idFt));
-                    d.add(new Field(field, Long.toString(nextVal), ft2));
+                    d.add(new Field(FIELD, Long.toString(nextVal), ft2));
                     verbose("adding tombstone for id",id,"val=",nextVal);
                     writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                   }
@@ -243,7 +243,7 @@ public class TestStressLucene extends TestRTGBase {
                   if (tombstones) {
                     Document d = new Document();
                     d.add(new Field("id","-"+Integer.toString(id), idFt));
-                    d.add(new Field(field, Long.toString(nextVal), ft2));
+                    d.add(new Field(FIELD, Long.toString(nextVal), ft2));
                     verbose("adding tombstone for id",id,"val=",nextVal);
                     writer.updateDocument(new Term("id", "-"+Integer.toString(id)), d);
                   }
@@ -258,7 +258,7 @@ public class TestStressLucene extends TestRTGBase {
                   // assertU(adoc("id",Integer.toString(id), field, Long.toString(nextVal)));
                   Document d = new Document();
                   d.add(new Field("id",Integer.toString(id), idFt));
-                  d.add(new Field(field, Long.toString(nextVal), ft2));
+                  d.add(new Field(FIELD, Long.toString(nextVal), ft2));
                   verbose("adding id",id,"val=",nextVal);
                   writer.updateDocument(new Term("id", Integer.toString(id)), d);
                   if (tombstones) {
@@ -337,7 +337,7 @@ public class TestStressLucene extends TestRTGBase {
                 }
                 assertTrue(docid >= 0);   // we should have found the document, or its tombstone
                 Document doc = r.document(docid);
-                long foundVal = Long.parseLong(doc.get(field));
+                long foundVal = Long.parseLong(doc.get(FIELD));
                 if (foundVal < Math.abs(val)) {
                   verbose("ERROR: id",id,"model_val=",val," foundVal=",foundVal,"reader=",reader);
                 }

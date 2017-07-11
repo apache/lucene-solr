@@ -2106,6 +2106,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     String[] uniqueValues = valueSet.toArray(new String[0]);
 
     // index some docs
+    if (VERBOSE) {
+      System.out.println("\nTEST: now add numDocs=" + numDocs);
+    }
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
@@ -2137,12 +2140,18 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     
     // delete some docs
     int numDeletions = random().nextInt(numDocs/10);
+    if (VERBOSE) {
+      System.out.println("\nTEST: now delete " + numDeletions + " docs");
+    }
     for (int i = 0; i < numDeletions; i++) {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
     
     // compare
+    if (VERBOSE) {
+      System.out.println("\nTEST: now get reader");
+    }
     DirectoryReader ir = writer.getReader();
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
@@ -2168,7 +2177,13 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
         }
       }
     }
+    if (VERBOSE) {
+      System.out.println("\nTEST: now close reader");
+    }
     ir.close();
+    if (VERBOSE) {
+      System.out.println("TEST: force merge");
+    }
     writer.forceMerge(1);
     
     // compare again
@@ -2195,8 +2210,17 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
         }
       }
     }
+    if (VERBOSE) {
+      System.out.println("TEST: close reader");
+    }
     ir.close();
+    if (VERBOSE) {
+      System.out.println("TEST: close writer");
+    }
     writer.close();
+    if (VERBOSE) {
+      System.out.println("TEST: close dir");
+    }
     dir.close();
   }
   

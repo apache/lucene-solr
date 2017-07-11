@@ -1,0 +1,186 @@
+= Authentication and Authorization Plugins
+:page-shortname: authentication-and-authorization-plugins
+:page-permalink: authentication-and-authorization-plugins.html
+:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin, rule-based-authorization-plugin
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr has security frameworks for supporting authentication and authorization of users. This allows for verifying a user's identity and for restricting access to resources in a Solr cluster.
+
+Solr includes some plugins out of the box, and additional plugins can be developed using the authentication and authorization frameworks described below.
+
+All authentication and authorization plugins can work with Solr whether they are running in SolrCloud mode or standalone mode. All authentication and authorization configuration, including users and permission rules, are stored in a file named `security.json`. When using Solr in standalone mode, this file must be in the `$SOLR_HOME` directory (usually `server/solr`). When using SolrCloud, this file must be located in ZooKeeper.
+
+The following section describes how to enable plugins with `security.json` and place them in the proper locations for your mode of operation.
+
+[[AuthenticationandAuthorizationPlugins-EnablePluginswithsecurity.json]]
+== Enable Plugins with security.json
+
+All of the information required to initialize either type of security plugin is stored in a `security.json` file. This file contains 2 sections, one each for authentication and authorization.
+
+.Sample security.json
+[source,json]
+----
+{
+  "authentication" : {
+    "class": "class.that.implements.authentication"
+  },
+  "authorization": {
+    "class": "class.that.implements.authorization"
+  }
+}
+----
+
+The `/security.json` file needs to be in the proper location before a Solr instance comes up so Solr starts with the security plugin enabled. See the section <<AuthenticationandAuthorizationPlugins-Usingsecurity.jsonwithSolr,Using security.json with Solr>> below for information on how to do this.
+
+Depending on the plugin(s) in use, other information will be stored in `security.json` such as user information or rules to create roles and permissions. This information is added through the APIs for each plugin provided by Solr, or, in the case of a custom plugin, the approach designed by you.
+
+Here is a more detailed `security.json` example. In this, the Basic authentication and rule-based authorization plugins are enabled, and some data has been added:
+
+[source,json]
+----
+{
+"authentication":{
+   "class":"solr.BasicAuthPlugin",
+   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="}
+},
+"authorization":{
+   "class":"solr.RuleBasedAuthorizationPlugin",
+   "permissions":[{"name":"security-edit",
+      "role":"admin"}],
+   "user-role":{"solr":"admin"}
+}}
+----
+
+[[AuthenticationandAuthorizationPlugins-Usingsecurity.jsonwithSolr]]
+== Using security.json with Solr
+
+[[AuthenticationandAuthorizationPlugins-InSolrCloudmode]]
+=== In SolrCloud Mode
+
+While configuring Solr to use an authentication or authorization plugin, you will need to upload a `security.json` file to ZooKeeper. The following command writes the file as it uploads it - you could also upload a file that you have already created locally.
+
+[source,bash]
+----
+>server/scripts/cloud-scripts/zkcli.sh -zkhost localhost:2181 -cmd put /security.json
+  '{"authentication": {"class": "org.apache.solr.security.KerberosPlugin"}}'
+----
+
+Note that this example defines the `KerberosPlugin` for authentication. You will want to modify this section as appropriate for the plugin you are using.
+
+This example also defines `security.json` on the command line, but you can also define a file locally and upload it to ZooKeeper.
+
+[WARNING]
+====
+Depending on the authentication and authorization plugin that you use, you may have user information stored in `security.json`. If so, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+====
+
+Once `security.json` has been uploaded to ZooKeeper, you should use the appropriate APIs for the plugins you're using to update it. You can edit it manually, but you must take care to remove any version data so it will be properly updated across all ZooKeeper nodes. The version data is found at the end of the `security.json` file, and will appear as the letter "v" followed by a number, such as `{"v":138}`.
+
+[[AuthenticationandAuthorizationPlugins-InStandaloneMode]]
+=== In Standalone Mode
+
+When running Solr in standalone mode, you need to create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
+
+If you are using <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>, you will need to place `security.json` on each node of the cluster.
+
+You can use the authentication and authorization APIs, but if you are using the legacy scaling model, you will need to make the same API requests on each node separately. You can also edit `security.json` by hand if you prefer.
+
+[[AuthenticationandAuthorizationPlugins-Authentication]]
+== Authentication
+
+Authentication plugins help in securing the endpoints of Solr by authenticating incoming requests. A custom plugin can be implemented by extending the AuthenticationPlugin class.
+
+An authentication plugin consists of two parts:
+
+. Server-side component, which intercepts and authenticates incoming requests to Solr using a mechanism defined in the plugin, such as Kerberos, Basic Auth or others.
+. Client-side component, i.e., an extension of `HttpClientConfigurer`, which enables a SolrJ client to make requests to a secure Solr instance using the authentication mechanism which the server understands.
+
+[[AuthenticationandAuthorizationPlugins-EnablingaPlugin]]
+=== Enabling a Plugin
+
+* Specify the authentication plugin in `/security.json` as in this example:
++
+[source,json]
+----
+{
+  "authentication": {
+    "class": "class.that.implements.authentication",
+    "other_data" : "..."}
+}
+----
+* All of the content in the authentication block of `security.json` would be passed on as a map to the plugin during initialization.
+* An authentication plugin can also be used with a standalone Solr instance by passing in `-DauthenticationPlugin=<plugin class name>` during startup.
+
+[[AuthenticationandAuthorizationPlugins-AvailableAuthenticationPlugins]]
+=== Available Authentication Plugins
+
+Solr has the following implementations of authentication plugins:
+
+* <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
+* <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
+* <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
+
+[[AuthenticationandAuthorizationPlugins-Authorization]]
+== Authorization
+
+An authorization plugin can be written for Solr by extending the {solr-javadocs}/solr-core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
+
+[[AuthenticationandAuthorizationPlugins-LoadingaCustomPlugin]]
+=== Loading a Custom Plugin
+
+* Make sure that the plugin implementation is in the classpath.
+* The plugin can then be initialized by specifying the same in `security.json` in the following manner:
+
+[source,json]
+----
+{
+  "authorization": {
+    "class": "org.apache.solr.security.MockAuthorizationPlugin",
+    "other_data" : "..."}
+}
+----
+
+All of the content in the `authorization` block of `security.json` would be passed on as a map to the plugin during initialization.
+
+[IMPORTANT]
+====
+The authorization plugin is only supported in SolrCloud mode. Also, reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
+====
+
+[[AuthenticationandAuthorizationPlugins-AvailableAuthorizationPlugins]]
+=== Available Authorization Plugins
+
+Solr has one implementation of an authorization plugin:
+
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+
+[[AuthenticationandAuthorizationPlugins-PKISecuringInter-NodeRequests]]
+
+[[AuthenticationandAuthorizationPlugins-PKI]]
+== Securing Inter-Node Requests
+
+There are a lot of requests that originate from the Solr nodes itself. For example, requests from overseer to nodes, recovery threads, etc. Each Authentication plugin declares whether it is capable of securing inter-node requests or not. If not, Solr will fall back to using a special internode authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes, described below.
+
+[[AuthenticationandAuthorizationPlugins-PKIAuthenticationPlugin]]
+=== PKIAuthenticationPlugin
+
+The PKIAuthenticationPlugin is used when there is any request going on between two Solr nodes, and the configured Authentication plugin does not wish to handle inter-node security.
+
+For each outgoing request `PKIAuthenticationPlugin` adds a special header `'SolrAuth'` which carries the timestamp and principal encrypted using the private key of that node. The public key is exposed through an API so that any node can read it whenever it needs it. Any node who gets the request with that header, would get the public key from the sender and decrypt the information. If it is able to decrypt the data, the request trusted. It is invalid if the timestamp is more than 5 secs old. This assumes that the clocks of different nodes in the cluster are synchronized.
+
+The timeout is configurable through a system property called `pkiauth.ttl`. For example, if you wish to bump up the time-to-live to 10 seconds (10000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.

@@ -20,6 +20,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,18 +38,16 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -68,12 +67,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean.Category;
+import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
@@ -83,6 +84,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
  */
 @Slow
 public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeCollectionsAPIDistributedZkTest() {
@@ -94,9 +96,11 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    String solrXml = IOUtils.toString(CollectionsAPIDistributedZkTest.class.getResourceAsStream("/solr/solr-jmxreporter.xml"), "UTF-8");
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .addConfig("conf2", configset("cloud-minimal-jmx"))
+        .withSolrXml(solrXml)
         .configure();
   }
 
@@ -150,16 +154,15 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
     final String collectionName = "halfdeletedcollection";
 
-    // create a core that simulates something left over from a partially-deleted collection
-    Create createCmd = new Create();
-    createCmd.setCoreName("halfdeletedcollection_shard1_replica1");
-    createCmd.setCollection(collectionName);
-    createCmd.setCollectionConfigName("conf");
+    assertEquals(0, CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .setCreateNodeSet("")
+        .process(cluster.getSolrClient()).getStatus());
     String dataDir = createTempDir().toFile().getAbsolutePath();
-    createCmd.setDataDir(dataDir);
-    createCmd.setNumShards(2);
-
-    createCmd.process(cluster.getSolrClient());
+    // create a core that simulates something left over from a partially-deleted collection
+    assertTrue(CollectionAdminRequest
+        .addReplicaToShard(collectionName, "shard1")
+        .setDataDir(dataDir)
+        .process(cluster.getSolrClient()).isSuccess());
 
     CollectionAdminRequest.deleteCollection(collectionName)
         .process(cluster.getSolrClient());
@@ -275,32 +278,21 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testCreateShouldFailOnExistingCore() throws Exception {
-    
-    // first we make a core with the core name the collections api
-    // will try and use - this will cause our mock fail
-    Create createCmd = new Create();
-    createCmd.setCoreName("halfcollection_shard1_replica1");
-    createCmd.setCollection("halfcollectionblocker");
-    String dataDir = createTempDir().toFile().getAbsolutePath();
-    createCmd.setDataDir(dataDir);
-    createCmd.setNumShards(1);
-    createCmd.setCollectionConfigName("conf");
+    assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker", "conf", 1, 1)
+        .setCreateNodeSet("")
+        .process(cluster.getSolrClient()).getStatus());
+    assertTrue(CollectionAdminRequest.addReplicaToShard("halfcollectionblocker", "shard1")
+        .setNode(cluster.getJettySolrRunner(0).getNodeName())
+        .setCoreName(Assign.buildCoreName("halfcollection", "shard1", Replica.Type.NRT, 1))
+        .process(cluster.getSolrClient()).isSuccess());
 
-    try (SolrClient client = cluster.getJettySolrRunner(0).newClient()) {
-      client.request(createCmd);
-    }
-
-    createCmd = new Create();
-    createCmd.setCoreName("halfcollection_shard1_replica1");
-    createCmd.setCollection("halfcollectionblocker2");
-    dataDir = createTempDir().toFile().getAbsolutePath();
-    createCmd.setDataDir(dataDir);
-    createCmd.setNumShards(1);
-    createCmd.setCollectionConfigName("conf");
-
-    try (SolrClient client = cluster.getJettySolrRunner(1).newClient()) {
-      client.request(createCmd);
-    }
+    assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker2", "conf",1, 1)
+        .setCreateNodeSet("")
+        .process(cluster.getSolrClient()).getStatus());
+    assertTrue(CollectionAdminRequest.addReplicaToShard("halfcollectionblocker2", "shard1")
+        .setNode(cluster.getJettySolrRunner(1).getNodeName())
+        .setCoreName(Assign.buildCoreName("halfcollection", "shard1", Replica.Type.NRT, 1))
+        .process(cluster.getSolrClient()).isSuccess());
 
     String nn1 = cluster.getJettySolrRunner(0).getNodeName();
     String nn2 = cluster.getJettySolrRunner(1).getNodeName();
@@ -321,73 +313,17 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testNoCollectionSpecified() throws Exception {
-
-    // TODO - should we remove this behaviour?
-
-    assertFalse(cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
-    assertFalse(cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
-    
-    // try and create a SolrCore with no collection name
-    Create createCmd = new Create();
-    createCmd.setCoreName("corewithnocollection");
-    createCmd.setCollection("");
-    String dataDir = createTempDir().toFile().getAbsolutePath();
-    createCmd.setDataDir(dataDir);
-    createCmd.setNumShards(1);
-    createCmd.setCollectionConfigName("conf");
-
-    cluster.getSolrClient().request(createCmd);
-    
-    // try and create a SolrCore with no collection name
-    createCmd.setCollection(null);
-    createCmd.setCoreName("corewithnocollection2");
-
-    cluster.getSolrClient().request(createCmd);
-    
-    // in both cases, the collection should have default to the core name
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection("corewithnocollection");
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection("corewithnocollection2");
-    assertTrue(cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("corewithnocollection"));
-    assertTrue(cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("corewithnocollection2"));
-  }
-
-  @Test
   public void testNoConfigSetExist() throws Exception {
 
-    final CloudSolrClient cloudClient = cluster.getSolrClient();
-
-    assertFalse(cloudClient.getZkStateReader().getClusterState().hasCollection("corewithnocollection3"));
-
-    // try and create a SolrCore with no collection name
-    Create createCmd = new Create();
-    createCmd.setCoreName("corewithnocollection3");
-    createCmd.setCollection("");
-    String dataDir = createTempDir().toFile().getAbsolutePath();
-    createCmd.setDataDir(dataDir);
-    createCmd.setNumShards(1);
-    createCmd.setCollectionConfigName("conf123");
-
     expectThrows(Exception.class, () -> {
-      cluster.getSolrClient().request(createCmd);
+      CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
+          .process(cluster.getSolrClient());
     });
 
     TimeUnit.MILLISECONDS.sleep(1000);
     // in both cases, the collection should have default to the core name
-    cloudClient.getZkStateReader().forceUpdateCollection("corewithnocollection3");
-
-    Collection<Slice> slices = cloudClient.getZkStateReader().getClusterState().getActiveSlices("corewithnocollection3");
-    int replicaCount = 0;
-    if (slices != null) {
-      for (Slice slice : slices) {
-        replicaCount += slice.getReplicas().size();
-      }
-    }
-    assertEquals("replicaCount", 0, replicaCount);
-
-    // TODO - WTF? shouldn't this *not* contain the collection?
-    assertTrue(CollectionAdminRequest.listCollections(cloudClient).contains("corewithnocollection3"));
-
+    cluster.getSolrClient().getZkStateReader().forceUpdateCollection("noconfig");
+    assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
   }
 
   @Test
@@ -549,7 +485,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     for (SolrCore core : theCores) {
 
       // look for core props file
-      Path instancedir = (Path) core.getStatistics().get("instanceDir");
+      Path instancedir = (Path) core.getResourceLoader().getInstancePath();
       assertTrue("Could not find expected core.properties file", Files.exists(instancedir.resolve("core.properties")));
 
       Path expected = Paths.get(jetty.getSolrHome()).toAbsolutePath().resolve(core.getName());
@@ -620,25 +556,22 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       Set<ObjectName> mbeans = new HashSet<>();
       mbeans.addAll(server.queryNames(null, null));
       for (final ObjectName mbean : mbeans) {
-        Object value;
-        Object indexDir;
-        Object name;
 
         try {
-          if (((value = server.getAttribute(mbean, "category")) != null && value
-              .toString().equals(Category.CORE.toString()))
-              && ((indexDir = server.getAttribute(mbean, "coreName")) != null)
-              && ((indexDir = server.getAttribute(mbean, "indexDir")) != null)
-              && ((name = server.getAttribute(mbean, "name")) != null)) {
-            if (!indexDirToShardNamesMap.containsKey(indexDir.toString())) {
-              indexDirToShardNamesMap.put(indexDir.toString(),
-                  new HashSet<String>());
+          Map<String, String> props = mbean.getKeyPropertyList();
+          String category = props.get("category");
+          String name = props.get("name");
+          if ((category != null && category.toString().equals(Category.CORE.toString())) &&
+              (name != null && name.equals("indexDir"))) {
+            String indexDir = server.getAttribute(mbean, "Value").toString();
+            String key = props.get("dom2") + "." + props.get("dom3") + "." + props.get("dom4");
+            if (!indexDirToShardNamesMap.containsKey(indexDir)) {
+              indexDirToShardNamesMap.put(indexDir.toString(), new HashSet<>());
             }
-            indexDirToShardNamesMap.get(indexDir.toString()).add(
-                name.toString());
+            indexDirToShardNamesMap.get(indexDir.toString()).add(key);
           }
         } catch (Exception e) {
-          // ignore, just continue - probably a "category" or "source" attribute
+          // ignore, just continue - probably a "Value" attribute
           // not found
         }
       }

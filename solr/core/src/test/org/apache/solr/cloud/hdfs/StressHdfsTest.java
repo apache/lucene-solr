@@ -107,7 +107,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       Timer timer = new Timer();
       
       try {
-        createCollection(DELETE_DATA_DIR_COLLECTION, 1, 1, 1);
+        createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", 1, 1, 1);
         
         waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
 
@@ -154,7 +154,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       if (nShards == 0) nShards = 1;
     }
     
-    createCollection(DELETE_DATA_DIR_COLLECTION, nShards, rep, maxReplicasPerNode);
+    createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", nShards, rep, maxReplicasPerNode);
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     
@@ -180,7 +180,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrClient client : clients) {
-      try (HttpSolrClient c = getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
+      try (HttpSolrClient c = getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION, 30000)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));
@@ -192,7 +192,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
           c.commit(true, true, true);
         }
         
-        c.setConnectionTimeout(30000);
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");

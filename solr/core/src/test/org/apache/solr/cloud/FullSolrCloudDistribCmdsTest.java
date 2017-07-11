@@ -157,13 +157,9 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
-    CollectionAdminRequest.Create createCollectionRequest = new CollectionAdminRequest.Create()
-            .setCollectionName("implicit_collection_without_routerfield")
-            .setRouterName("implicit")
-            .setNumShards(2)
-            .setShards("shard1,shard2")
-            .setReplicationFactor(2)
-            .setConfigName("conf1");
+    CollectionAdminRequest.Create createCollectionRequest
+      = CollectionAdminRequest.createCollectionWithImplicitRouter("implicit_collection_without_routerfield",
+                                                                  "conf1","shard1,shard2",2);
     response = createCollectionRequest.process(server);
 
     assertEquals(0, response.getStatus());
@@ -285,14 +281,10 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     CollectionAdminResponse response;
     Map<String, NamedList<Integer>> coresStatus;
 
-    response = new CollectionAdminRequest.Create()
-            .setCollectionName("compositeid_collection_with_routerfield")
+    response = CollectionAdminRequest.createCollection("compositeid_collection_with_routerfield","conf1",2,2)
             .setRouterName("compositeId")
             .setRouterField("routefield_s")
-            .setNumShards(2)
             .setShards("shard1,shard2")
-            .setReplicationFactor(2)
-            .setConfigName("conf1")
             .process(server);
 
     assertEquals(0, response.getStatus());
@@ -699,8 +691,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
     try (ConcurrentUpdateSolrClient concurrentClient = getConcurrentUpdateSolrClient(
-        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2)) {
-      concurrentClient.setConnectionTimeout(120000);
+        ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2, 120000)) {
       for (int i = 0; i < cnt; i++) {
         index_specific(concurrentClient, id, docId++, "text_t", "some text so that it not's negligent work to parse this doc, even though it's still a pretty short doc");
       }

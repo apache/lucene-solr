@@ -75,7 +75,13 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
     while (leftLon > rightLon) {
       rightLon += Math.PI * 2.0;
     }
-    final double middleLon = (leftLon + rightLon) * 0.5;
+    double middleLon = (leftLon + rightLon) * 0.5;
+    while (middleLon > Math.PI) {
+        middleLon -= Math.PI * 2.0;
+    }
+    while (middleLon < -Math.PI) {
+        middleLon += Math.PI * 2.0;
+    }
     this.centerPoint = new GeoPoint(planetModel, 0.0, middleLon);
 
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);

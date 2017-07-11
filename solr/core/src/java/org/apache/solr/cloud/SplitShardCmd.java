@@ -30,7 +30,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -205,7 +205,7 @@ public class SplitShardCmd implements Cmd {
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
         subSlices.add(subSlice);
-        String subShardName = collectionName + "_" + subSlice + "_replica1";
+        String subShardName = Assign.buildCoreName(collectionName, subSlice, Replica.Type.NRT, 1);
         subShardNames.add(subShardName);
       }
 
@@ -381,18 +381,19 @@ public class SplitShardCmd implements Cmd {
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
-
-      Map<ReplicaAssigner.Position, String> nodeMap = ocmh.identifyNodes(clusterState,
+      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
+          ocmh.zkStateReader, clusterState,
           new ArrayList<>(clusterState.getLiveNodes()),
+          collectionName,
           new ZkNodeProps(collection.getProperties()),
-          subSlices, repFactor - 1);
+          subSlices, repFactor - 1, 0, 0);
 
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
-      for (Map.Entry<ReplicaAssigner.Position, String> entry : nodeMap.entrySet()) {
-        String sliceName = entry.getKey().shard;
-        String subShardNodeName = entry.getValue();
-        String shardName = collectionName + "_" + sliceName + "_replica" + (entry.getKey().index);
+      for (ReplicaPosition replicaPosition : replicaPositions) {
+        String sliceName = replicaPosition.shard;
+        String subShardNodeName = replicaPosition.node;
+        String shardName = collectionName + "_" + sliceName + "_replica" + (replicaPosition.index);
 
         log.info("Creating replica shard " + shardName + " as part of slice " + sliceName + " of collection "
             + collectionName + " on " + subShardNodeName);

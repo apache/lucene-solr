@@ -117,9 +117,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     return mockLbclient;
   }
 
-  private CloudSolrClient.ClusterStateProvider getStateProvider(Set<String> livenodes,
+  private ClusterStateProvider getStateProvider(Set<String> livenodes,
                                                                 Map<String, ClusterState.CollectionRef> colls) {
-    return new CloudSolrClient.ClusterStateProvider() {
+    return new ClusterStateProvider() {
       @Override
       public ClusterState.CollectionRef getState(String collection) {
         return colls.get(collection);
@@ -128,11 +128,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       @Override
       public Set<String> liveNodes() {
         return livenodes;
-      }
-
-      @Override
-      public Map<String, Object> getClusterProperties() {
-        return Collections.EMPTY_MAP;
       }
 
       @Override
@@ -151,6 +146,16 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       @Override
       public void close() throws IOException {
 
+      }
+
+      @Override
+      public Object getClusterProperty(String propertyName) {
+        return null;
+      }
+
+      @Override
+      public Object getClusterProperty(String propertyName, String def) {
+        return def;
       }
     };
 

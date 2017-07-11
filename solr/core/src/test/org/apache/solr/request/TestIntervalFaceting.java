@@ -46,6 +46,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
   }
 
@@ -324,7 +326,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     SolrQueryRequest req = req(params);
     try {
-      SolrQueryResponse rsp = h.queryAndResponse("standard", req);
+      SolrQueryResponse rsp = h.queryAndResponse("", req);
       NamedList<Object> facetQueries = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_queries");
       NamedList<Object> facetIntervals = (NamedList<Object>) ((NamedList<Object>) (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts"))
           .get("facet_intervals")).get(field);

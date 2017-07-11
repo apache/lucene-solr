@@ -42,7 +42,7 @@
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
     <arr name="first-components">
       <str>component1</str>
@@ -52,9 +52,8 @@
     </arr>
   </requestHandler>
 
-  <!-- enable streaming for testing... -->
-  <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
+  <requestDispatcher>
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>

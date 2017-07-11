@@ -38,7 +38,7 @@ public class LocalStatsCache extends StatsCache {
 
   @Override
   public StatsSource get(SolrQueryRequest req) {
-    LOG.debug("## GET {}", req.toString());
+    LOG.debug("## GET {}", req);
     return new LocalStatsSource();
   }
 
@@ -49,31 +49,33 @@ public class LocalStatsCache extends StatsCache {
   // by returning null we don't create additional round-trip request.
   @Override
   public ShardRequest retrieveStatsRequest(ResponseBuilder rb) {
-    LOG.debug("## RDR {}", rb.req.toString());
+    LOG.debug("## RDR {}", rb.req);
     return null;
   }
 
   @Override
   public void mergeToGlobalStats(SolrQueryRequest req,
           List<ShardResponse> responses) {
-    LOG.debug("## MTGD {}", req.toString());
-    for (ShardResponse r : responses) {
-      LOG.debug(" - {}", r);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("## MTGD {}", req);
+      for (ShardResponse r : responses) {
+        LOG.debug(" - {}", r);
+      }
     }
   }
 
   @Override
   public void returnLocalStats(ResponseBuilder rb, SolrIndexSearcher searcher) {
-    LOG.debug("## RLD {}", rb.req.toString());
+    LOG.debug("## RLD {}", rb.req);
   }
 
   @Override
   public void receiveGlobalStats(SolrQueryRequest req) {
-    LOG.debug("## RGD {}", req.toString());
+    LOG.debug("## RGD {}", req);
   }
 
   @Override
   public void sendGlobalStats(ResponseBuilder rb, ShardRequest outgoing) {
-    LOG.debug("## SGD {}", outgoing.toString());
+    LOG.debug("## SGD {}", outgoing);
   }
 }

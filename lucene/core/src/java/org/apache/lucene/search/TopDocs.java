@@ -23,7 +23,7 @@ import org.apache.lucene.util.PriorityQueue;
 public class TopDocs {
 
   /** The total number of hits for the query. */
-  public int totalHits;
+  public long totalHits;
 
   /** The top hits for the query. */
   public ScoreDoc[] scoreDocs;
@@ -45,11 +45,11 @@ public class TopDocs {
   }
 
   /** Constructs a TopDocs with a default maxScore=Float.NaN. */
-  TopDocs(int totalHits, ScoreDoc[] scoreDocs) {
+  TopDocs(long totalHits, ScoreDoc[] scoreDocs) {
     this(totalHits, scoreDocs, Float.NaN);
   }
 
-  public TopDocs(int totalHits, ScoreDoc[] scoreDocs, float maxScore) {
+  public TopDocs(long totalHits, ScoreDoc[] scoreDocs, float maxScore) {
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;
     this.maxScore = maxScore;
@@ -266,7 +266,7 @@ public class TopDocs {
       queue = new MergeSortQueue(sort, shardHits);
     }
 
-    int totalHitCount = 0;
+    long totalHitCount = 0;
     int availHitCount = 0;
     float maxScore = Float.MIN_VALUE;
     for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {

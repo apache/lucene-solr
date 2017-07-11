@@ -28,6 +28,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.util.JmxUtil;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,11 +39,13 @@ import org.junit.Test;
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   int leaderRegistries;
   int clusterRegistries;
+  static int jmxReporter;
 
 
   @BeforeClass
   public static void configureDummyCluster() throws Exception {
     configureCluster(0).configure();
+    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
   }
 
   @Before
@@ -67,7 +70,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     cluster.getJettySolrRunners().forEach(jetty -> {
       CoreContainer cc = jetty.getCoreContainer();
       // verify registry names
-      for (String name : cc.getCoreNames()) {
+      for (String name : cc.getLoadedCoreNames()) {
         SolrCore core = cc.getCore(name);
         try {
           String registryName = core.getCoreMetricManager().getRegistryName();
@@ -75,7 +78,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
           String coreName = core.getName();
           String collectionName = core.getCoreDescriptor().getCollectionName();
           String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-          String replicaName = coreName.split("_")[3];
+          String replicaName = coreName.substring(coreName.indexOf("_replica_") + 1);
           String shardId = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 
           assertEquals("solr.core." + collectionName + "." + shardId + "." + replicaName, registryName);
@@ -97,7 +100,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
       assertEquals(5, sor.getPeriod());
       for (String registryName : metricManager.registryNames(".*\\.shard[0-9]\\.replica.*")) {
         reporters = metricManager.getReporters(registryName);
-        assertEquals(reporters.toString(), 1, reporters.size());
+        assertEquals(reporters.toString(), 1 + jmxReporter, reporters.size());
         reporter = null;
         for (String name : reporters.keySet()) {
           if (name.startsWith("test")) {
@@ -116,20 +119,20 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         assertEquals(reporters.toString(), 0, reporters.size());
         // verify specific metrics
         Map<String, Metric> metrics = metricManager.registry(registryName).getMetrics();
-        String key = "QUERY./select.requests.count";
+        String key = "QUERY./select.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "UPDATE./update/json.requests.count";
+        key = "UPDATE./update/json.requests";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
       if (metricManager.registryNames().contains("solr.cluster")) {
         clusterRegistries++;
         Map<String,Metric> metrics = metricManager.registry("solr.cluster").getMetrics();
-        String key = "jvm.memory.heap.init.value";
+        String key = "jvm.memory.heap.init";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
-        key = "leader.test_collection.shard1.UPDATE./update/json.requests.count.max";
+        key = "leader.test_collection.shard1.UPDATE./update/json.requests.max";
         assertTrue(key, metrics.containsKey(key));
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
@@ -156,7 +159,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
       assertEquals(reporters.toString(), 0, reporters.size());
       for (String registryName : metricManager.registryNames(".*\\.shard[0-9]\\.replica.*")) {
         reporters = metricManager.getReporters(registryName);
-        assertEquals(reporters.toString(), 0, reporters.size());
+        assertEquals(reporters.toString(), 0 + jmxReporter, reporters.size());
       }
     });
   }

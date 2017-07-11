@@ -107,12 +107,13 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  private void afterTest() throws Exception {
+    clearIndex();
+    assertU(commit());
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }
-
 
   public String getCoreName() {
     return "basic";
@@ -157,6 +158,19 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         "/response/docs==[" +
             "{'id':'xyz'}"
             + "]");
+  }
+  
+  @Test
+  public void testDuplicateMultiValued() throws Exception {
+    doTest("strTF", dvStringFieldName(3,true,false), "str", "X", "X", "Y");
+    doTest("strTT", dvStringFieldName(3,true,true), "str", "X", "X", "Y");
+    doTest("strFF", dvStringFieldName(3,false,false), "str", "X", "X", "Y");
+    doTest("int", "test_is_dvo", "int", "42", "42", "-666");
+    doTest("float", "test_fs_dvo", "float", "4.2", "4.2", "-66.666");
+    doTest("long", "test_ls_dvo", "long", "420", "420", "-6666666" );
+    doTest("double", "test_ds_dvo", "double", "0.0042", "0.0042", "-6.6666E-5");
+    doTest("date", "test_dts_dvo", "date", "2016-07-04T03:02:01Z", "2016-07-04T03:02:01Z", "1999-12-31T23:59:59Z" );
+    doTest("enum", "enums_dvo", "str", SEVERITY[0], SEVERITY[0], SEVERITY[1]);
   }
 
   @Test
@@ -225,7 +239,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testMultipleSearchResults() throws Exception {
-
     // Three documents with different numbers of values for a field
     assertU(adoc("id", "myid1", "test_is_dvo", "101", "test_is_dvo", "102", "test_is_dvo", "103"));
     assertU(adoc("id", "myid2", "test_is_dvo", "201", "test_is_dvo", "202"));
@@ -248,6 +261,34 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
             + "{'id':'myid4','test_s_dvo':'hello','test_is_dvo':[401,402]},"
             + "{'id':'myid5'},"
             + "{'id':'myid6','test_s_dvo':'hello'}"
+            + "]");
+  }
+  
+  @Test
+  public void testUseDocValuesAsStoredFalse() throws Exception {
+    SchemaField sf = h.getCore().getLatestSchema().getField("nonstored_dv_str");
+    assertNotNull(sf);
+    assertTrue(sf.hasDocValues());
+    assertFalse(sf.useDocValuesAsStored());
+    assertFalse(sf.stored());
+    assertU(adoc("id", "myid", "nonstored_dv_str", "dont see me"));
+    assertU(commit());
+    
+    assertJQ(req("q", "id:myid"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "*"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "id,nonstored_dv_*"),
+        "/response/docs==["
+            + "{'id':'myid'}"
+            + "]");
+    assertJQ(req("q", "id:myid", "fl", "id,nonstored_dv_str"),
+        "/response/docs==["
+            + "{'id':'myid','nonstored_dv_str':'dont see me'}"
             + "]");
   }
 
@@ -290,9 +331,14 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         xpaths[i] = "//arr[@name='" + field + "']/" + type + "[.='" + value[i] + "']";
       }
 
-      // Docvalues are sets, but stored values are ordered multisets, so cardinality depends on the value source
-      xpaths[value.length] = "*[count(//arr[@name='" + field + "']/" + type + ") = "
-          + (isStoredField(field) ? value.length : valueSet.size()) + "]";
+      // See SOLR-10924...
+      // Trie/String based Docvalues are sets, but stored values & Point DVs are ordered multisets,
+      // so cardinality depends on the value source
+      final int expectedCardinality =
+        (isStoredField(field) || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
+                                  && ! (field.startsWith("enum") || field.startsWith("test_s"))))
+        ? value.length : valueSet.size();
+      xpaths[value.length] = "*[count(//arr[@name='"+field+"']/"+type+")="+expectedCardinality+"]";
       assertU(adoc(fieldAndValues));
 
     } else {

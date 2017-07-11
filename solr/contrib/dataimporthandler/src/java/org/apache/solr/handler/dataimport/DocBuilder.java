@@ -314,7 +314,7 @@ public class DocBuilder {
   }
 
   void handleError(String message, Exception e) {
-    if (!dataImporter.getCore().getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+    if (!dataImporter.getCore().getCoreContainer().isZooKeeperAware()) {
       writer.rollback();
     }
 

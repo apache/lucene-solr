@@ -45,7 +45,7 @@ public interface DocList extends DocSet {
    * Hence it's always true that matches() &gt;= size()
    * @return number of matches for the search(query &amp; any filters)
    */
-  public int matches();
+  public long matches();
 
 
   /***

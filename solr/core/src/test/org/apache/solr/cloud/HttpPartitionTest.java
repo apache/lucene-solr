@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -85,8 +84,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
 
   /**
@@ -97,11 +96,11 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     CloudSolrClient client = new CloudSolrClient.Builder()
         .withZkHost(zkServer.getZkAddress())
         .sendDirectUpdatesToAnyShardReplica()
+        .withConnectionTimeout(30000)
+        .withSocketTimeout(60000)
         .build();
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    client.getLbClient().setConnectionTimeout(30000);
-    client.getLbClient().setSoTimeout(60000);
     return client;
   }
 
@@ -110,10 +109,10 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
    */
   @Override
   public JettySolrRunner createJetty(File solrHome, String dataDir,
-      String shardList, String solrConfigOverride, String schemaOverride)
+      String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
       throws Exception
   {
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride);
+    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
 
   @Test
@@ -153,7 +152,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testLeaderInitiatedRecoveryCRUD() throws Exception {
     String testCollectionName = "c8n_crud_1x2";
     String shardId = "shard1";
-    createCollectionRetry(testCollectionName, 1, 2, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
@@ -199,19 +198,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     zkClient.delete(znodePath, -1, false);
 
     // try to clean up
-    try {
-      new CollectionAdminRequest.Delete()
-              .setCollectionName(testCollectionName).process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
   protected void testMinRf() throws Exception {
     // create a collection that has 1 shard and 3 replicas
     String testCollectionName = "collMinRf_1x3";
-    createCollection(testCollectionName, 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     sendDoc(1, 2);
@@ -297,7 +290,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void testRf2() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x2";
-    createCollectionRetry(testCollectionName, 1, 2, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
     
     sendDoc(1);
@@ -387,19 +380,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("testRf2 succeeded ... deleting the "+testCollectionName+" collection");
 
     // try to clean up
-    try {
-      new CollectionAdminRequest.Delete()
-              .setCollectionName(testCollectionName).process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
   }
   
   protected void testRf3() throws Exception {
     // create a collection that has 1 shard but 2 replicas
     String testCollectionName = "c8n_1x3";
-    createCollectionRetry(testCollectionName, 1, 3, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 3, 1);
     
     cloudClient.setDefaultCollection(testCollectionName);
     
@@ -443,21 +430,14 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("testRf3 succeeded ... deleting the "+testCollectionName+" collection");
 
     // try to clean up
-    try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
   // test inspired by SOLR-6511
   protected void testLeaderZkSessionLoss() throws Exception {
 
     String testCollectionName = "c8n_1x2_leader_session_loss";
-    createCollectionRetry(testCollectionName, 1, 2, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     sendDoc(1);
@@ -534,14 +514,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     log.info("testLeaderZkSessionLoss succeeded ... deleting the "+testCollectionName+" collection");
 
     // try to clean up
-    try {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-    } catch (Exception e) {
-      // don't fail the test
-      log.warn("Could not delete collection {} after test completed", testCollectionName);
-    }
+    attemptCollectionDelete(cloudClient, testCollectionName);
   }
 
   protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) throws Exception {    
@@ -625,7 +598,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   @SuppressWarnings("rawtypes")
   protected void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
     NamedList rsp = realTimeGetDocId(solr, docId);
-    String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), new Integer(docId));
+    String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }
@@ -693,4 +666,5 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     log.info("Took {} ms to see replicas [{}] become active.", timer.getTime(), replicasToCheck);
   }
+
 }

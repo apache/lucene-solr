@@ -57,7 +57,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     h.coreName = DEFAULT_TEST_CORENAME;
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
-    assertEquals(2, reporters.size());
+    assertTrue(reporters.toString(), reporters.size() >= 2);
     SolrMetricReporter reporter = reporters.get("test1");
     assertNotNull(reporter);
     assertTrue(reporter instanceof SolrSlf4jReporter);

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -186,11 +185,6 @@ public class QueryComponent extends SearchComponent
       }
 
       rb.setSortSpec( parser.getSortSpec(true) );
-      for (SchemaField sf:rb.getSortSpec().getSchemaFields()) {
-        if (sf != null && sf.getType().isPointField() && !sf.hasDocValues()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Can't sort on a point field without docValues");
-        }
-      }
       rb.setQparser(parser);
 
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
@@ -1378,7 +1372,7 @@ public class QueryComponent extends SearchComponent
   }
 
   /////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -1389,11 +1383,6 @@ public class QueryComponent extends SearchComponent
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    return null;
   }
 
   /**

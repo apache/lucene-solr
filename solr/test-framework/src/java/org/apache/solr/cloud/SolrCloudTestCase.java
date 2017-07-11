@@ -22,11 +22,13 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -256,13 +258,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected void waitForState(String message, String collection, CollectionStatePredicate predicate) {
     AtomicReference<DocCollection> state = new AtomicReference<>();
+    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
       cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
         state.set(c);
+        liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
-      fail(message + "\n" + e.getMessage() + "\nLast available state: " + state.get());
+      fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
     }
   }
 

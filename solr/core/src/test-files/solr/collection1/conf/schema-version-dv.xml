@@ -16,14 +16,14 @@
  limitations under the License.
 -->
 <schema name="example" version="1.6">
-  <field name="_version_" type="long" indexed="false" stored="true" docValues="true"/>
+  <field name="_version_" type="long" indexed="false" docValues="true" stored="true"/>
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
   <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
   <uniqueKey>id</uniqueKey>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>

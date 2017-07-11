@@ -64,7 +64,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
     if (min == null) {
       actualMin = Integer.MIN_VALUE;
     } else {
-      actualMin = Integer.parseInt(min);
+      actualMin = parseIntFromUser(field.getName(), min);
       if (!minInclusive) {
         actualMin++;
       }
@@ -72,7 +72,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
     if (max == null) {
       actualMax = Integer.MAX_VALUE;
     } else {
-      actualMax = Integer.parseInt(max);
+      actualMax = parseIntFromUser(field.getName(), max);
       if (!maxInclusive) {
         actualMax--;
       }
@@ -97,16 +97,19 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return IntPoint.newExactQuery(field.getName(), Integer.parseInt(externalVal));
+    return IntPoint.newExactQuery(field.getName(), parseIntFromUser(field.getName(), externalVal));
   }
   
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     int[] values = new int[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Integer.parseInt(val);
+      values[i] = parseIntFromUser(field.getName(), val);
       i++;
     }
     return IntPoint.newSetQuery(field.getName(), values);
@@ -121,7 +124,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Integer.BYTES);
     result.setLength(Integer.BYTES);
-    IntPoint.encodeDimension(Integer.parseInt(val.toString()), result.bytes(), 0);
+    IntPoint.encodeDimension(parseIntFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
@@ -145,7 +148,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_INTEGER;
+      return null; 
     } else {
       return Type.INTEGER_POINT;
     }
@@ -159,8 +162,6 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     int intValue = (value instanceof Number) ? ((Number) value).intValue() : Integer.parseInt(value.toString());
     return new IntPoint(field.getName(), intValue);
   }

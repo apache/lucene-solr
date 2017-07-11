@@ -1031,7 +1031,7 @@ public class MultiDocValues {
     }
     
     @Override
-    public int ordValue() {
+    public int ordValue() throws IOException {
       return (int) mapping.getGlobalOrds(nextLeaf-1).get(currentValues.ordValue());
     }
  

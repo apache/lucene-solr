@@ -46,7 +46,7 @@ public class BlockJoinFacetRandomTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-blockjoinfacetcomponent.xml", "schema-blockjoinfacetcomponent.xml");
-    handler = random().nextBoolean() ? "blockJoinDocSetFacetRH":"blockJoinFacetRH";
+    handler = random().nextBoolean() ? "/blockJoinDocSetFacetRH":"/blockJoinFacetRH";
     facets = createFacets();
     createIndex();
   }
@@ -196,6 +196,7 @@ public class BlockJoinFacetRandomTest extends SolrTestCaseJ4 {
         BlockJoinFacetComponent.NO_TO_PARENT_BJQ_MESSAGE,
         req(
             "q", "t",
+            "df", "name",
             "qt", handler,
             BlockJoinFacetComponent.CHILD_FACET_FIELD_PARAMETER, facetFields[0]
         ),

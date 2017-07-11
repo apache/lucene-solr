@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -25,7 +26,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -35,8 +39,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.logging.LogWatcherConfig;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,12 +97,13 @@ public class SolrXmlConfig {
     NodeConfig.NodeConfigBuilder configBuilder = new NodeConfig.NodeConfigBuilder(nodeName, config.getResourceLoader());
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getShardHandlerFactoryPluginInfo(config));
+    configBuilder.setSolrCoreCacheFactoryConfig(getTransientCoreCacheFactoryPluginInfo(config));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(config, "solr/logging/*[@name]", "solr/logging/watcher/*[@name]"));
     configBuilder.setSolrProperties(loadProperties(config));
     if (cloudConfig != null)
       configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
-    configBuilder.setMetricReporterPlugins(getMetricReporterPluginInfos(config));
+    configBuilder.setMetricsConfig(getMetricsConfig(config));
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -283,6 +290,7 @@ public class SolrXmlConfig {
     int distributedSocketTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
     int distributedConnectionTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATECONNTIMEOUT;
     String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
+    int maxRecoveryThreads = UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS;
 
     Object muc = nl.remove("maxUpdateConnections");
     if (muc != null) {
@@ -314,10 +322,17 @@ public class SolrXmlConfig {
       defined = true;
     }
 
+    Object mrt = nl.remove("maxRecoveryThreads");
+    if (mrt != null)  {
+      maxRecoveryThreads = parseInt("maxRecoveryThreads", mrt.toString());
+      defined = true;
+    }
+
     if (!defined && !alwaysDefine)
       return null;
 
-    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout, distributedConnectionTimeout, metricNameStrategy);
+    return new UpdateShardHandlerConfig(maxUpdateConnections, maxUpdateConnectionsPerHost, distributedSocketTimeout,
+                                        distributedConnectionTimeout, metricNameStrategy, maxRecoveryThreads);
 
   }
 
@@ -445,16 +460,82 @@ public class SolrXmlConfig {
     return configs;
   }
 
+  private static MetricsConfig getMetricsConfig(Config config) {
+    MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
+    Node node = config.getNode("solr/metrics/suppliers/counter", false);
+    if (node != null) {
+      builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/suppliers/meter", false);
+    if (node != null) {
+      builder = builder.setMeterSupplier(new PluginInfo(node, "meterSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/suppliers/timer", false);
+    if (node != null) {
+      builder = builder.setTimerSupplier(new PluginInfo(node, "timerSupplier", false, false));
+    }
+    node = config.getNode("solr/metrics/suppliers/histogram", false);
+    if (node != null) {
+      builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
+    }
+    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
+    Set<String> hiddenSysProps = getHiddenSysProps(config);
+    return builder
+        .setMetricReporterPlugins(reporterPlugins)
+        .setHiddenSysProps(hiddenSysProps)
+        .build();
+  }
+
   private static PluginInfo[] getMetricReporterPluginInfos(Config config) {
     NodeList nodes = (NodeList) config.evaluate("solr/metrics/reporter", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0)
-      return new PluginInfo[0];
-    PluginInfo[] configs = new PluginInfo[nodes.getLength()];
-    for (int i = 0; i < nodes.getLength(); i++) {
-      // we don't require class in order to support predefined replica and node reporter classes
-      configs[i] = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
+    List<PluginInfo> configs = new ArrayList<>();
+    boolean hasJmxReporter = false;
+    if (nodes != null && nodes.getLength() > 0) {
+      for (int i = 0; i < nodes.getLength(); i++) {
+        // we don't require class in order to support predefined replica and node reporter classes
+        PluginInfo info = new PluginInfo(nodes.item(i), "SolrMetricReporter", true, false);
+        String clazz = info.className;
+        if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
+          hasJmxReporter = true;
+        }
+        configs.add(info);
+      }
     }
-    return configs;
+    // if there's an MBean server running but there was no JMX reporter then add a default one
+    MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
+    if (mBeanServer != null && !hasJmxReporter) {
+      log.info("MBean server found: " + mBeanServer + ", but no JMX reporters were configured - adding default JMX reporter.");
+      Map<String,Object> attributes = new HashMap<>();
+      attributes.put("name", "default");
+      attributes.put("class", SolrJmxReporter.class.getName());
+      PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+      configs.add(defaultPlugin);
+    }
+    return configs.toArray(new PluginInfo[configs.size()]);
+  }
+
+  private static Set<String> getHiddenSysProps(Config config) {
+    NodeList nodes = (NodeList) config.evaluate("solr/metrics/hiddenSysProps/str", XPathConstants.NODESET);
+    if (nodes == null || nodes.getLength() == 0) {
+      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    }
+    Set<String> props = new HashSet<>();
+    for (int i = 0; i < nodes.getLength(); i++) {
+      String prop = DOMUtil.getText(nodes.item(i));
+      if (prop != null && !prop.trim().isEmpty()) {
+        props.add(prop.trim());
+      }
+    }
+    if (props.isEmpty()) {
+      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    } else {
+      return props;
+    }
+  }
+
+  private static PluginInfo getTransientCoreCacheFactoryPluginInfo(Config config) {
+    Node node = config.getNode("solr/transientCoreCacheFactory", false);
+    return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
   }
 }
 

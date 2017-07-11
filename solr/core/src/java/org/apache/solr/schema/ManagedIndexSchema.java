@@ -109,8 +109,11 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   
-  /** Persist the schema to local storage or to ZooKeeper */
-  boolean persistManagedSchema(boolean createOnly) {
+  /**
+   * Persist the schema to local storage or to ZooKeeper
+   * @param createOnly set to false to allow update of existing schema
+   */
+  public boolean persistManagedSchema(boolean createOnly) {
     if (loader instanceof ZkSolrResourceLoader) {
       return persistManagedSchemaToZooKeeper(createOnly);
     }
@@ -1357,9 +1360,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     
     newSchema.name = name;
     newSchema.version = version;
-    newSchema.defaultSearchFieldName = defaultSearchFieldName;
-    newSchema.queryParserDefaultOperator = queryParserDefaultOperator;
-    newSchema.isExplicitQueryParserDefaultOperator = isExplicitQueryParserDefaultOperator;
     newSchema.similarity = similarity;
     newSchema.similarityFactory = similarityFactory;
     newSchema.isExplicitSimilarity = isExplicitSimilarity;

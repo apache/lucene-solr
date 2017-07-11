@@ -31,6 +31,11 @@
     <int name="connTimeout">${connTimeout:15000}</int>
   </shardHandlerFactory>
 
+  <transientCoreCacheFactory name="transientCoreCacheFactory" class="TransientSolrCoreCacheFactoryDefault">
+    <int name="transientCacheSize">4</int>
+  </transientCoreCacheFactory>
+
+
   <solrcloud>
     <str name="host">127.0.0.1</str>
     <int name="hostPort">${hostPort:8983}</int>
@@ -38,6 +43,7 @@
     <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="leaderVoteWait">${leaderVoteWait:10000}</int>
+    <int name="leaderConflictResolveWait">${leaderConflictResolveWait:180000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:45000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:340000}</int>
     <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>

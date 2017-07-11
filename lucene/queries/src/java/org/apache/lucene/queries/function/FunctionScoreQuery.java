@@ -113,22 +113,12 @@ public final class FunctionScoreQuery extends Query {
       Scorer scorer = inner.scorer(context);
       if (scorer.iterator().advance(doc) != doc)
         return Explanation.noMatch("No match");
-      DoubleValues scores = valueSource.getValues(context, DoubleValuesSource.fromScorer(scorer));
-      scores.advanceExact(doc);
-      Explanation scoreExpl = scoreExplanation(context, doc, scores);
+      Explanation scoreExplanation = inner.explain(context, doc);
+      Explanation expl = valueSource.explain(context, doc, scoreExplanation);
       if (boost == 1f)
-        return scoreExpl;
-      return Explanation.match(scoreExpl.getValue() * boost, "product of:",
-          Explanation.match(boost, "boost"), scoreExpl);
-    }
-
-    private Explanation scoreExplanation(LeafReaderContext context, int doc, DoubleValues scores) throws IOException {
-      if (valueSource.needsScores() == false)
-        return Explanation.match((float) scores.doubleValue(), valueSource.toString());
-      float score = (float) scores.doubleValue();
-      return Explanation.match(score, "computed from:",
-          Explanation.match(score, valueSource.toString()),
-          inner.explain(context, doc));
+        return expl;
+      return Explanation.match(expl.getValue() * boost, "product of:",
+          Explanation.match(boost, "boost"), expl);
     }
 
     @Override

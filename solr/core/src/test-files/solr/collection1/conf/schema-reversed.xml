@@ -22,10 +22,7 @@
   -->
 
 <schema name="test" version="1.0">
-
-
-  <fieldType name="long" class="solr.TrieLongField"/>
-  <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}"/>
   <fieldType name="string" class="solr.StrField"/>
 
   <fieldType name="text" class="solr.TextField">
@@ -66,7 +63,7 @@
   </fieldType>
 
 
-  <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="one" type="srev" indexed="true" stored="false"/>
   <field name="two" type="rev" indexed="true" stored="false"/>
   <field name="three" type="text" indexed="true" stored="false"/>
@@ -77,7 +74,6 @@
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
 
-  <defaultSearchField>one</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 
 

@@ -24,8 +24,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.legacy.LegacyNumericUtils;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -228,37 +229,32 @@ public class VersionInfo {
    */
   public Long getMaxVersionFromIndex(IndexSearcher searcher) throws IOException {
 
-    String versionFieldName = versionField.getName();
+    final String versionFieldName = versionField.getName();
 
     log.debug("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
-    long maxVersionInIndex = 0L;
-
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
-      LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
-      Terms versionTerms = leafReader.terms(versionFieldName);
-      Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
-      if (max != null) {
-        maxVersionInIndex = max.longValue();
-        log.debug("Found MAX value {} from Terms for {} in index", maxVersionInIndex, versionFieldName);
+      if (versionField.getType().isPointField()) {
+        return getMaxVersionFromIndexedPoints(searcher);
       } else {
-        log.debug("No terms found for {}, cannot seed version bucket highest value from index", versionFieldName);
-      }
-    } else {
-      ValueSource vs = versionField.getType().getValueSource(versionField, null);
-      Map funcContext = ValueSource.newContext(searcher);
-      vs.createWeight(funcContext, searcher);
-      // TODO: multi-thread this
-      for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
-        int maxDoc = ctx.reader().maxDoc();
-        FunctionValues fv = vs.getValues(funcContext, ctx);
-        for (int doc = 0; doc < maxDoc; doc++) {
-          long v = fv.longVal(doc);
-          maxVersionInIndex = Math.max(v, maxVersionInIndex);
-        }
+        return getMaxVersionFromIndexedTerms(searcher);
       }
     }
-
+    // else: not indexed, use docvalues via value source ...
+    
+    long maxVersionInIndex = 0L;
+    ValueSource vs = versionField.getType().getValueSource(versionField, null);
+    Map funcContext = ValueSource.newContext(searcher);
+    vs.createWeight(funcContext, searcher);
+    // TODO: multi-thread this
+    for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
+      int maxDoc = ctx.reader().maxDoc();
+      FunctionValues fv = vs.getValues(funcContext, ctx);
+      for (int doc = 0; doc < maxDoc; doc++) {
+        long v = fv.longVal(doc);
+        maxVersionInIndex = Math.max(v, maxVersionInIndex);
+      }
+    }
     return maxVersionInIndex;
   }
 
@@ -270,5 +266,39 @@ public class VersionInfo {
           buckets[i].highest = highestVersion;
       }
     }
+  }
+
+  private long getMaxVersionFromIndexedTerms(IndexSearcher searcher) throws IOException {
+    assert ! versionField.getType().isPointField();
+      
+    final String versionFieldName = versionField.getName();
+    final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
+    final Terms versionTerms = leafReader.terms(versionFieldName);
+    final Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
+    if (null != max) {
+      log.debug("Found MAX value {} from Terms for {} in index", max, versionFieldName);
+      return max.longValue();
+    }
+    return 0L;
+  }
+  
+  private long getMaxVersionFromIndexedPoints(IndexSearcher searcher) throws IOException {
+    assert versionField.getType().isPointField();
+    
+    final String versionFieldName = versionField.getName();
+    final byte[] maxBytes = PointValues.getMaxPackedValue(searcher.getIndexReader(), versionFieldName);
+    if (null == maxBytes) {
+      return 0L;
+    }
+    final Object maxObj = versionField.getType().toObject(versionField, new BytesRef(maxBytes));
+    if (null == maxObj || ! ( maxObj instanceof Number) ) {
+      // HACK: aparently nothing asserts that the FieldType is numeric (let alone a Long???)
+      log.error("Unable to convert MAX byte[] from Points for {} in index", versionFieldName);
+      return 0L;
+    }
+    
+    final long max = ((Number)maxObj).longValue();
+    log.debug("Found MAX value {} from Points for {} in index", max, versionFieldName);
+    return max;
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -25,6 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,7 +60,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
 
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
 
     args = new HashMap<>();
@@ -67,7 +69,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("dynamic source", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
 
     args = new HashMap<>();
@@ -76,7 +78,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("dynamic destination", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='10']"
+            ,"//result/doc[1]/str[@name='id'][.='10']"
             );
     clearIndex();
   }
@@ -95,20 +97,22 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     assertFalse(schema.getField("id").multiValued());
-    
+
+    final String dateClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Date.class);
+    final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
     // Test TrieDate fields. The following asserts are expecting a field type defined as:
-    String expectedDefinition = "<fieldtype name=\"tdatedv\" class=\"solr.TrieDateField\" " +
+    String expectedDefinition = "<fieldtype name=\"tdatedv\" class=\""+dateClass+"\" " +
         "precisionStep=\"6\" docValues=\"true\" multiValued=\"true\"/>";
     FieldType tdatedv = schema.getFieldType("foo_tdtdvs");
     assertTrue("Expecting a field type defined as " + expectedDefinition, 
-        tdatedv instanceof TrieDateField);
+               (usingPoints ? DatePointField.class : TrieDateField.class).isInstance(tdatedv));
     assertTrue("Expecting a field type defined as " + expectedDefinition,
-        tdatedv.hasProperty(FieldProperties.DOC_VALUES));
+               tdatedv.hasProperty(FieldProperties.DOC_VALUES));
     assertTrue("Expecting a field type defined as " + expectedDefinition,
-        tdatedv.isMultiValued());
-    assertEquals("Expecting a field type defined as " + expectedDefinition,
-        6, ((TrieDateField)tdatedv).getPrecisionStep());
+               tdatedv.isMultiValued());
+    if ( ! usingPoints ) {
+      assertEquals("Expecting a field type defined as " + expectedDefinition,
+                   6, ((TrieDateField)tdatedv).getPrecisionStep());
+    }
   }
-  
-  
 }

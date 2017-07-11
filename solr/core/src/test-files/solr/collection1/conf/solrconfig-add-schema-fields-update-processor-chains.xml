@@ -23,7 +23,7 @@
   -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
   <schemaFactory class="ManagedIndexSchemaFactory">
@@ -40,27 +40,27 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tint</str>
+        <str name="fieldType">pints</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">tfloat</str>
+        <str name="fieldType">pfloats</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">tdate</str>
+        <str name="fieldType">pdates</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tlong</str>
+        <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <arr name="valueClass">
           <str>java.lang.Double</str>
           <str>java.lang.Float</str>
         </arr>
-        <str name="fieldType">tdouble</str>
+        <str name="fieldType">pdoubles</str>
       </lst>
     </processor>
   </updateRequestProcessorChain>
@@ -69,29 +69,103 @@
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
       <str name="defaultFieldType">text</str>
       <lst name="typeMapping">
+        <str name="valueClass">java.lang.String</str>
+        <str name="fieldType">text</str>
+        <lst name="copyField">
+          <str name="dest">*_str</str>
+        </lst>
+      </lst>
+      <lst name="typeMapping">
         <str name="valueClass">java.lang.Boolean</str>
         <str name="fieldType">boolean</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tint</str>
+        <str name="fieldType">pints</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">tfloat</str>
+        <str name="fieldType">pfloats</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">tdate</str>
+        <str name="fieldType">pdates</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tlong</str>
+        <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">tdouble</str>
+        <str name="fieldType">pdoubles</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="add-fields-maxchars">
+    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      <str name="defaultFieldType">text</str>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.String</str>
+        <str name="fieldType">text</str>
+        <lst name="copyField">
+          <str name="dest">*_str</str>
+          <int name="maxChars">10</int>
+        </lst>
+        <lst name="copyField">
+          <str name="dest">*_t</str>
+          <int name="maxChars">20</int>
+        </lst>
+        <lst name="copyField">
+          <str name="dest">*2_t</str>
+          <int name="maxChars">20</int>
+        </lst>
+      </lst>
+    </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.DistributedUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+  
+  <!-- This chain has one of the typeMappings set as default=true, instead of falling back to the defaultFieldType -->
+  <updateRequestProcessorChain name="add-fields-default-mapping">
+    <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.String</str>
+        <str name="fieldType">text</str>
+        <lst name="copyField">
+          <str name="dest">*_str</str>
+          <int name="maxChars">10</int>
+        </lst>
+        <!-- Use as default mapping instead of defaultFieldType -->
+        <bool name="default">true</bool>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Boolean</str>
+        <str name="fieldType">boolean</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Integer</str>
+        <str name="fieldType">pints</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Float</str>
+        <str name="fieldType">pfloats</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.util.Date</str>
+        <str name="fieldType">pdates</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Long</str>
+        <str name="valueClass">java.lang.Integer</str>
+        <str name="fieldType">plongs</str>
+      </lst>
+      <lst name="typeMapping">
+        <str name="valueClass">java.lang.Number</str>
+        <str name="fieldType">pdoubles</str>
       </lst>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory" />
@@ -132,24 +206,24 @@
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tint</str>
+        <str name="fieldType">pints</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Float</str>
-        <str name="fieldType">tfloat</str>
+        <str name="fieldType">pfloats</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.util.Date</str>
-        <str name="fieldType">tdate</str>
+        <str name="fieldType">pdates</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Long</str>
         <str name="valueClass">java.lang.Integer</str>
-        <str name="fieldType">tlong</str>
+        <str name="fieldType">plongs</str>
       </lst>
       <lst name="typeMapping">
         <str name="valueClass">java.lang.Number</str>
-        <str name="fieldType">tdouble</str>
+        <str name="fieldType">pdoubles</str>
       </lst>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory" />

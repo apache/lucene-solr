@@ -17,6 +17,7 @@
 
 package org.apache.lucene.search;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -26,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -90,6 +92,14 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     assertEquals(vs1.hashCode(), vs2.hashCode());
     DoubleValuesSource v3 = DoubleValuesSource.fromLongField("long");
     assertFalse(vs1.equals(v3));
+
+    assertEquals(DoubleValuesSource.constant(5), DoubleValuesSource.constant(5));
+    assertEquals(DoubleValuesSource.constant(5).hashCode(), DoubleValuesSource.constant(5).hashCode());
+    assertFalse((DoubleValuesSource.constant(5).equals(DoubleValuesSource.constant(6))));
+
+    assertEquals(DoubleValuesSource.SCORES, DoubleValuesSource.SCORES);
+    assertFalse(DoubleValuesSource.constant(5).equals(DoubleValuesSource.SCORES));
+
   }
 
   public void testSimpleFieldSortables() throws Exception {
@@ -164,4 +174,59 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
     }
   }
+
+  static final Query[] testQueries = new Query[]{
+      new MatchAllDocsQuery(),
+      new TermQuery(new Term("oddeven", "odd")),
+      new BooleanQuery.Builder()
+          .add(new TermQuery(new Term("english", "one")), BooleanClause.Occur.MUST)
+          .add(new TermQuery(new Term("english", "two")), BooleanClause.Occur.MUST)
+          .build()
+  };
+
+  public void testExplanations() throws Exception {
+    for (Query q : testQueries) {
+      testExplanations(q, DoubleValuesSource.fromIntField("int"));
+      testExplanations(q, DoubleValuesSource.fromLongField("long"));
+      testExplanations(q, DoubleValuesSource.fromFloatField("float"));
+      testExplanations(q, DoubleValuesSource.fromDoubleField("double"));
+      testExplanations(q, DoubleValuesSource.fromDoubleField("onefield"));
+      testExplanations(q, DoubleValuesSource.constant(5.45));
+    }
+  }
+
+  private void testExplanations(Query q, DoubleValuesSource vs) throws IOException {
+    searcher.search(q, new SimpleCollector() {
+
+      DoubleValues v;
+      LeafReaderContext ctx;
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
+        this.ctx = context;
+      }
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        Explanation scoreExpl = searcher.explain(q, ctx.docBase + doc);
+        if (this.v.advanceExact(doc)) {
+          CheckHits.verifyExplanation("", doc, (float) v.doubleValue(), true, vs.explain(ctx, doc, scoreExpl));
+        }
+        else {
+          assertFalse(vs.explain(ctx, doc, scoreExpl).isMatch());
+        }
+      }
+
+      @Override
+      public boolean needsScores() {
+        return vs.needsScores();
+      }
+    });
+  }
+
 }

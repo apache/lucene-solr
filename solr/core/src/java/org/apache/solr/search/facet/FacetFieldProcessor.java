@@ -36,6 +36,8 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
+import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
+
 /**
  * Facet processing based on field values. (not range nor by query)
  * @see FacetField
@@ -127,7 +129,36 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
       sortAcc = indexOrderAcc;
       deferredAggs = freq.getFacetStats();
-    } else {
+    }
+
+    // If we are going to return all buckets and if there are no subfacets (that would need a domain), then don't defer
+    // any aggregation calculations to a second phase.  This way we can avoid calculating domains for each bucket, which
+    // can be expensive.
+    if (freq.limit == -1 && freq.subFacets.size() == 0) {
+      accs = new SlotAcc[ freq.getFacetStats().size() ];
+      int otherAccIdx = 0;
+      for (Map.Entry<String,AggValueSource> entry : freq.getFacetStats().entrySet()) {
+        AggValueSource agg = entry.getValue();
+        SlotAcc acc = agg.createSlotAcc(fcontext, numDocs, numSlots);
+        acc.key = entry.getKey();
+        accMap.put(acc.key, acc);
+        accs[otherAccIdx++] = acc;
+      }
+      if (accs.length == 1) {
+        collectAcc = accs[0];
+      } else {
+        collectAcc = new MultiAcc(fcontext, accs);
+      }
+
+      if (sortAcc == null) {
+        sortAcc = accMap.get(freq.sortVariable);
+        assert sortAcc != null;
+      }
+
+      deferredAggs = null;
+    }
+
+    if (sortAcc == null) {
       AggValueSource sortAgg = freq.getFacetStats().get(freq.sortVariable);
       if (sortAgg != null) {
         collectAcc = sortAgg.createSlotAcc(fcontext, numDocs, numSlots);
@@ -138,7 +169,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       deferredAggs.remove(freq.sortVariable);
     }
 
-    if (deferredAggs.size() == 0) {
+    if (deferredAggs == null || deferredAggs.size() == 0) {
       deferredAggs = null;
     }
 
@@ -208,10 +239,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
                                         IntFunction<Comparable> bucketValFromSlotNumFunc,
                                         Function<Comparable, String> fieldQueryValFunc) throws IOException {
     int numBuckets = 0;
-    List<Object> bucketVals = null;
-    if (freq.numBuckets && fcontext.isShard()) {
-      bucketVals = new ArrayList<>(100);
-    }
 
     final int off = fcontext.isShard() ? 0 : (int) freq.offset;
 
@@ -219,9 +246,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     if (freq.limit >= 0) {
       effectiveLimit = freq.limit;
       if (fcontext.isShard()) {
-        // add over-request if this is a shard request
         if (freq.overrequest == -1) {
-          effectiveLimit = (long) (effectiveLimit*1.1+4); // default: add 10% plus 4 (to overrequest for very small limits)
+          // add over-request if this is a shard request and if we have a small offset (large offsets will already be gathering many more buckets than needed)
+          if (freq.offset < 10) {
+            effectiveLimit = (long) (effectiveLimit * 1.1 + 4); // default: add 10% plus 4 (to overrequest for very small limits)
+          }
         } else {
           effectiveLimit += freq.overrequest;
         }
@@ -231,7 +260,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     final int sortMul = freq.sortDirection.getMultiplier();
 
-    int maxTopVals = (int) (effectiveLimit >= 0 ? Math.min(off + effectiveLimit, Integer.MAX_VALUE - 1) : Integer.MAX_VALUE - 1);
+    int maxTopVals = (int) (effectiveLimit >= 0 ? Math.min(freq.offset + effectiveLimit, Integer.MAX_VALUE - 1) : Integer.MAX_VALUE - 1);
     maxTopVals = Math.min(maxTopVals, slotCardinality);
     final SlotAcc sortAcc = this.sortAcc, indexOrderAcc = this.indexOrderAcc;
     final BiPredicate<Slot,Slot> orderPredicate;
@@ -255,16 +284,18 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     Slot bottom = null;
     Slot scratchSlot = new Slot();
     for (int slotNum = 0; slotNum < numSlots; slotNum++) {
-      // screen out buckets not matching mincount immediately (i.e. don't even increment numBuckets)
-      if (effectiveMincount > 0 && countAcc.getCount(slotNum) < effectiveMincount) {
-        continue;
+
+      // screen out buckets not matching mincount
+      if (effectiveMincount > 0) {
+        int count = countAcc.getCount(slotNum);
+        if (count  < effectiveMincount) {
+          if (count > 0)
+            numBuckets++;  // Still increment numBuckets as long as we have some count.  This is for consistency between distrib and non-distrib mode.
+          continue;
+        }
       }
 
       numBuckets++;
-      if (bucketVals != null && bucketVals.size()<100) {
-        Object val = bucketValFromSlotNumFunc.apply(slotNum);
-        bucketVals.add(val);
-      }
 
       if (bottom != null) {
         scratchSlot.slot = slotNum; // scratchSlot is only used to hold this slotNum for the following line
@@ -290,10 +321,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (!fcontext.isShard()) {
         res.add("numBuckets", numBuckets);
       } else {
-        SimpleOrderedMap<Object> map = new SimpleOrderedMap<>(2);
-        map.add("numBuckets", numBuckets);
-        map.add("vals", bucketVals);
-        res.add("numBuckets", map);
+        calculateNumBuckets(res);
       }
     }
 
@@ -318,7 +346,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // if we are deep paging, we don't have to order the highest "offset" counts.
     int collectCount = Math.max(0, queue.size() - off);
-    assert collectCount <= effectiveLimit;
+    assert collectCount <= maxTopVals;
     int[] sortedSlots = new int[collectCount];
     for (int i = collectCount - 1; i >= 0; i--) {
       sortedSlots[i] = queue.pop().slot;
@@ -342,6 +370,20 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     return res;
+  }
+
+  private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
+    DocSet domain = fcontext.base;
+    if (freq.prefix != null) {
+      Query prefixFilter = sf.getType().getPrefixQuery(null, sf, freq.prefix);
+      domain = fcontext.searcher.getDocSet(prefixFilter, domain);
+    }
+
+    HLLAgg agg = new HLLAgg(freq.field);
+    SlotAcc acc = agg.createSlotAcc(fcontext, domain.size(), 1);
+    acc.collect(domain, 0);
+    acc.key = "numBuckets";
+    acc.setValues(target, 0);
   }
 
   private static class Slot {
@@ -424,6 +466,54 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
   }
+
+  static class MultiAcc extends SlotAcc {
+    final SlotAcc[] subAccs;
+
+    MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
+      super(fcontext);
+      this.subAccs = subAccs;
+    }
+
+    @Override
+    public void collect(int doc, int slot) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.collect(doc, slot);
+      }
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reset() throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.reset();
+      }
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      for (SlotAcc acc : subAccs) {
+        acc.resize(resizer);
+      }
+    }
+
+    @Override
+    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.setValues(bucket, slotNum);
+      }
+    }
+  }
+
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
@@ -520,7 +610,6 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
      "all",
      {"cat3":{"_l":["A"]}}]]},
    "cat1":{"_l":["A"]}}}
-
    */
 
   static <T> List<T> asList(Object list) {
@@ -528,6 +617,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
+    boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
+
+
     List leaves = asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
     List<List> skip = asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
     List<List> partial = asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
@@ -563,6 +655,19 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       bucketList.add( refineBucket(bucketVal, false, facetInfo ) );
     }
 
+    if (freq.missing) {
+      Map<String,Object> bucketFacetInfo = (Map<String,Object>)fcontext.facetInfo.get("missing");
+
+      if (bucketFacetInfo != null || !skipThisFacet) {
+        SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
+        fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, skipThisFacet, bucketFacetInfo);
+        res.add("missing", missingBucket);
+      }
+    }
+
+    if (freq.numBuckets && !skipThisFacet) {
+      calculateNumBuckets(res);
+    }
 
     // If there are just a couple of leaves, and if the domain is large, then
     // going by term is likely the most efficient?
@@ -575,6 +680,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
     FieldType ft = sf.getType();
+    bucketVal = ft.toNativeType(bucketVal);  // refinement info passed in as JSON will cause int->long and float->double
     bucket.add("val", bucketVal);
     // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
 

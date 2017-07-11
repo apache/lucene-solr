@@ -127,12 +127,13 @@ public abstract class HttpClientBase implements Closeable {
     Throwable t;
     try {
       t = (Throwable) in.readObject();
+      assert t != null;
     } catch (Throwable th) { 
       throw new RuntimeException("Failed to read exception object: " + statusLine, th);
     } finally {
       in.close();
     }
-    IOUtils.reThrow(t);
+    throw IOUtils.rethrowAlways(t);
   }
   
   /**
@@ -260,9 +261,7 @@ public abstract class HttpClientBase implements Closeable {
         }
       }
     }
-    assert th != null; // extra safety - if we get here, it means the callable failed
-    IOUtils.reThrow(th);
-    return null; // silly, if we're here, IOUtils.reThrow always throws an exception 
+    throw IOUtils.rethrowAlways(th); 
   }
   
   @Override

@@ -29,7 +29,7 @@ public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatt
   @Override
   public Formatter getFormatter(String fieldName, SolrParams params ) 
   {
-    numRequests++;
+    numRequests.inc();
     params = SolrParams.wrapDefaults(params, defaults);
 
     return new SimpleHTMLFormatter(

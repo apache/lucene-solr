@@ -1,0 +1,88 @@
+#
+#
+#
+# NOTE: Ant converts _config.yml.template into create _config.yml and performs ant property substitution.
+#
+#
+#
+
+# Gems that are included for building the site. jekyll-asciidoc allows Jekyll to use Asciidoctor for variables and settings
+gems: [jekyll-asciidoc]
+
+destination: ../html-site
+
+# this property is useful for conditional filtering of content that is separate from the PDF.
+output: web
+
+# this appears on the top navigation bar next to the home button
+topnav_title: Solr Ref Guide
+
+# this appears in the html browser tab for the site title (seen mostly by search engines, not users)
+site_title: Apache Solr Reference Guide
+
+# this appears in the footer
+company_name: Apache Software Foundation
+
+
+# the preview server used. Leave as is.
+host: 127.0.0.1
+
+# the port where the preview is rendered. You can leave this as is unless you have other Jekyll builds using this same port that might cause conflicts. in that case, use another port such as 4006.
+port: 4015
+
+# these are the files and directories that jekyll will exclude from the build
+exclude:
+  - .idea/
+  - .gitignore
+  - pdf/
+
+# these are defaults used for the frontmatter for these file types
+defaults:
+  -
+    scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+      search: true
+
+  -
+    scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      search: true
+
+# needed for sitemap.xml
+url: https://lucene.apache.org/solr/guide/
+
+# Asciidoc settings - disabled so we can use asciidoctor instead
+asciidoc: {}
+
+# Custom Attributes for use in our templates & adoc files.
+#
+# Declared as a YAML reference so we can refer to them via site.solr-attributes.foo in liquid templates,
+# in addition to using them below in our asciidoctor attribute configurations
+# (see https://github.com/asciidoctor/jekyll-asciidoc/issues/137)
+#
+# NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
+# them to the <asciidoctor:convert/> ant task for building the PDF as well.
+solr-attributes: &solr-attributes-ref
+  solr-guide-draft-status: "${solr-guide-draft-status}"
+  solr-guide-version: "${solr-guide-version}"
+  solr-guide-version-path: "${solr-guide-version-path}"
+  solr-docs-version: "${solr-docs-version}"
+  solr-javadocs: "${solr-javadocs}"
+  lucene-javadocs: "${lucene-javadocs}"
+  build-date: "${DSTAMP}"
+  build-year: "${current.year}"
+
+asciidoctor:
+  attributes:
+    <<: *solr-attributes-ref
+    icons: "font"
+    source-highlighter: "pygments"
+    pygments-css: "style"
+    # NOTE: do *NOT* use an self-empty div tag (ie: <div/>) here - it will break jquery
+    section-toc: "<div class=\"toc section-toc\"></div>"

@@ -17,7 +17,10 @@
 package org.apache.solr.core;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
@@ -52,6 +55,8 @@ public class NodeConfig {
 
   private final Integer coreLoadThreads;
 
+  @Deprecated
+  // This should be part of the transientCacheConfig, remove in 7.0
   private final int transientCacheSize;
 
   private final boolean useSchemaCache;
@@ -60,7 +65,9 @@ public class NodeConfig {
 
   private final PluginInfo[] backupRepositoryPlugins;
 
-  private final PluginInfo[] metricReporterPlugins;
+  private final MetricsConfig metricsConfig;
+
+  private final PluginInfo transientCacheConfig;
 
   private NodeConfig(String nodeName, Path coreRootDirectory, Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
@@ -69,7 +76,7 @@ public class NodeConfig {
                      LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads,
                      int transientCacheSize, boolean useSchemaCache, String managementPath, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     PluginInfo[] metricReporterPlugins) {
+                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig) {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -89,7 +96,8 @@ public class NodeConfig {
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
-    this.metricReporterPlugins = metricReporterPlugins;
+    this.metricsConfig = metricsConfig;
+    this.transientCacheConfig = transientCacheConfig;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -178,9 +186,11 @@ public class NodeConfig {
     return backupRepositoryPlugins;
   }
 
-  public PluginInfo[] getMetricReporterPlugins() {
-    return metricReporterPlugins;
+  public MetricsConfig getMetricsConfig() {
+    return metricsConfig;
   }
+
+  public PluginInfo getTransientCachePluginInfo() { return transientCacheConfig; }
 
   public static class NodeConfigBuilder {
 
@@ -195,13 +205,16 @@ public class NodeConfig {
     private String configSetsHandlerClass = DEFAULT_CONFIGSETSHANDLERCLASS;
     private LogWatcherConfig logWatcherConfig = new LogWatcherConfig(true, null, null, 50);
     private CloudConfig cloudConfig;
-    private Integer coreLoadThreads;
+    private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
+    @Deprecated
+    //Remove in 7.0 and put it all in the transientCache element in solrconfig.xml
     private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
-    private PluginInfo[] metricReporterPlugins;
+    private MetricsConfig metricsConfig;
+    private PluginInfo transientCacheConfig;
 
     private final SolrResourceLoader loader;
     private final String nodeName;
@@ -210,18 +223,27 @@ public class NodeConfig {
     //No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
-    private static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
+    public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 
     private static final String DEFAULT_ADMINHANDLERCLASS = "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS = "org.apache.solr.handler.admin.InfoHandler";
     private static final String DEFAULT_COLLECTIONSHANDLERCLASS = "org.apache.solr.handler.admin.CollectionsHandler";
     private static final String DEFAULT_CONFIGSETSHANDLERCLASS = "org.apache.solr.handler.admin.ConfigSetsHandler";
 
+    public static final Set<String> DEFAULT_HIDDEN_SYS_PROPS = new HashSet<>(Arrays.asList(
+        "javax.net.ssl.keyStorePassword",
+        "javax.net.ssl.trustStorePassword",
+        "basicauth",
+        "zkDigestPassword",
+        "zkDigestReadonlyPassword"
+    ));
+
     public NodeConfigBuilder(String nodeName, SolrResourceLoader loader) {
       this.nodeName = nodeName;
       this.loader = loader;
       this.coreRootDirectory = loader.getInstancePath();
       this.configSetBaseDirectory = loader.getInstancePath().resolve("configsets");
+      this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
@@ -284,6 +306,8 @@ public class NodeConfig {
       return this;
     }
 
+    // Remove in Solr 7.0
+    @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
       this.transientCacheSize = transientCacheSize;
       return this;
@@ -309,8 +333,13 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
-      this.metricReporterPlugins = metricReporterPlugins;
+    public NodeConfigBuilder setMetricsConfig(MetricsConfig metricsConfig) {
+      this.metricsConfig = metricsConfig;
+      return this;
+    }
+    
+    public NodeConfigBuilder setSolrCoreCacheFactoryConfig(PluginInfo transientCacheConfig) {
+      this.transientCacheConfig = transientCacheConfig;
       return this;
     }
 
@@ -318,7 +347,7 @@ public class NodeConfig {
       return new NodeConfig(nodeName, coreRootDirectory, configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, transientCacheSize, useSchemaCache, managementPath, loader, solrProperties,
-                            backupRepositoryPlugins, metricReporterPlugins);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig);
     }
   }
 }

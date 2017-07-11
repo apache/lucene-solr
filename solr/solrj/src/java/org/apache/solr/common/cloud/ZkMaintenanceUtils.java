@@ -119,33 +119,36 @@ public class ZkMaintenanceUtils {
         throw new SolrServerException("Local path " + Paths.get(src).toAbsolutePath() + " is a directory and recurse is false");
       }
     }
-    if (srcIsZk == false && dstIsZk == false) {
-      throw new SolrServerException("At least one of the source and dest parameters must be prefixed with 'zk:' ");
-    }
+
     if (dstIsZk && dst.length() == 0) {
       dst = "/"; // for consistency, one can copy from zk: and send to zk:/
     }
-    dst = normalizeDest(src, dst);
+    dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
 
+    // ZK -> ZK copy.
     if (srcIsZk && dstIsZk) {
       traverseZkTree(zkClient, src, VISIT_ORDER.VISIT_PRE, new ZkCopier(zkClient, src, dst));
       return;
     }
+
+    //local -> ZK copy
     if (dstIsZk) {
       uploadToZK(zkClient, Paths.get(src), dst, null);
       return;
     }
 
-    // Copying individual files from ZK requires special handling since downloadFromZK assumes it's a directory.
+    // Copying individual files from ZK requires special handling since downloadFromZK assumes the node has children.
     // This is kind of a weak test for the notion of "directory" on Zookeeper.
+    // ZK -> local copy where ZK is a parent node
     if (zkClient.getChildren(src, null, true).size() > 0) {
       downloadFromZK(zkClient, src, Paths.get(dst));
       return;
     }
 
+    // Single file ZK -> local copy where ZK is a leaf node
     if (Files.isDirectory(Paths.get(dst))) {
-      if (dst.endsWith("/") == false) dst += "/";
-      dst = normalizeDest(src, dst);
+      if (dst.endsWith(File.separator) == false) dst += File.separator;
+      dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
     byte[] data = zkClient.getData(src, null, null, true);
     Path filename = Paths.get(dst);
@@ -154,31 +157,32 @@ public class ZkMaintenanceUtils {
     Files.write(filename, data);
   }
 
-  
-  private static String normalizeDest(String srcName, String dstName) {
+  // If the dest ends with a separator, it's a directory or non-leaf znode, so return the
+  // last element of the src to appended to the dstName.
+  private static String normalizeDest(String srcName, String dstName, boolean srcIsZk, boolean dstIsZk) {
     // Special handling for "."
     if (dstName.equals(".")) {
       return Paths.get(".").normalize().toAbsolutePath().toString();
     }
-    // Pull the last element of the src path and add it to the dst if the src does NOT end in a slash 
 
-    // If the source ends in a slash, do not append the last segment to the dest
-    
-    if (dstName.endsWith("/")) { // Dest is a directory.
-      int pos = srcName.lastIndexOf("/");
+    String dstSeparator = (dstIsZk) ? "/" : File.separator;
+    String srcSeparator = (srcIsZk) ? "/" : File.separator;
+
+    if (dstName.endsWith(dstSeparator)) { // Dest is a directory or non-leaf znode, append last element of the src path.
+      int pos = srcName.lastIndexOf(srcSeparator);
       if (pos < 0) {
         dstName += srcName;
       } else {
         dstName += srcName.substring(pos + 1);
       }
     }
-    
+
     log.info("copying from '{}' to '{}'", srcName, dstName);
     return dstName;
   }
 
   public static void moveZnode(SolrZkClient zkClient, String src, String dst) throws SolrServerException, KeeperException, InterruptedException {
-    String destName = normalizeDest(src, dst);
+    String destName = normalizeDest(src, dst, true, true);
 
     // Special handling if the source has no children, i.e. copying just a single file.
     if (zkClient.getChildren(src, null, true).size() == 0) {
@@ -384,12 +388,11 @@ public class ZkMaintenanceUtils {
     }
   }
 
-  // Take into account Windows file separaters when making a Znode's name.
+  // Take into account Windows file separators when making a Znode's name.
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans
-    String separator = root.getFileSystem().getSeparator();
-    if ("\\".equals(separator))
+    if ("\\".equals(File.separator))
       relativePath = relativePath.replaceAll("\\\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node

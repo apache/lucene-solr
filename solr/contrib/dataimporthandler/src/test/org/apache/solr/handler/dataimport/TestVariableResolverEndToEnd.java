@@ -73,14 +73,14 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
         "select " +
         " 1 as id, " +
         " 'SELECT' as SELECT_KEYWORD, " +
-        " CURRENT_TIMESTAMP as FIRST_TS " +
+        " {ts '2017-02-18 12:34:56'} as FIRST_TS " +
         "from DUAL \" >\n");
     sb.append("  <field column=\"SELECT_KEYWORD\" name=\"select_keyword_s\" /> \n");
     sb.append("  <entity name=\"SECOND\" processor=\"SqlEntityProcessor\" dataSource=\"hsqldb\" transformer=\"TemplateTransformer\" ");
     sb.append("   query=\"" +
         "${dataimporter.functions.encodeUrl(FIRST.SELECT_KEYWORD)} " +
         " 1 as SORT, " +
-        " CURRENT_TIMESTAMP as SECOND_TS, " +
+        " {ts '2017-02-18 12:34:56'} as SECOND_TS, " +
         " '${dataimporter.functions.formatDate(FIRST.FIRST_TS, 'yyyy'" + thirdLocaleParam + ")}' as SECOND1_S,  " +
         " 'PORK' AS MEAT, " +
         " 'GRILL' AS METHOD, " +
@@ -91,7 +91,7 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
         "UNION " +        
         "${dataimporter.functions.encodeUrl(FIRST.SELECT_KEYWORD)} " +
         " 2 as SORT, " +
-        " CURRENT_TIMESTAMP as SECOND_TS, " +
+        " {ts '2017-02-18 12:34:56'} as SECOND_TS, " +
         " '${dataimporter.functions.formatDate(FIRST.FIRST_TS, 'yyyy'" + thirdLocaleParam + ")}' as SECOND1_S,  " +
         " 'FISH' AS MEAT, " +
         " 'FRY' AS METHOD, " +
@@ -112,7 +112,7 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
     sb.append("</document> \n");
     sb.append("</dataConfig> \n");
     String config = sb.toString();
-    log.debug(config); 
+    log.info(config); 
     return config;
   }
   @Override

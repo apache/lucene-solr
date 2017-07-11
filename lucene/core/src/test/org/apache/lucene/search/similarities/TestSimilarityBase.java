@@ -40,6 +40,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests the {@link SimilarityBase}-based Similarities. Contains unit tests and 
@@ -586,77 +587,16 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   // LUCENE-5221
   public void testDiscountOverlapsBoost() throws IOException {
-    ClassicSimilarity expected = new ClassicSimilarity();
+    BM25Similarity expected = new BM25Similarity();
     SimilarityBase actual = new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
     expected.setDiscountOverlaps(false);
     actual.setDiscountOverlaps(false);
-    FieldInvertState state = new FieldInvertState("foo");
+    FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo");
     state.setLength(5);
     state.setNumOverlap(2);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
     expected.setDiscountOverlaps(true);
     actual.setDiscountOverlaps(true);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
-  }
-  
-  public void testSaneNormValues() {
-    for (SimilarityBase sim : sims) {
-      for (int i = 0; i < 256; i++) {
-        float len = sim.decodeNormValue((byte) i);
-        assertFalse("negative len: " + len + ", byte=" + i + ", sim=" + sim, len < 0.0f);
-        assertFalse("inf len: " + len + ", byte=" + i + ", sim=" + sim, Float.isInfinite(len));
-        assertFalse("nan len for byte=" + i + ", sim=" + sim, Float.isNaN(len));
-        if (i > 0) {
-          assertTrue("len is not decreasing: " + len + ",byte=" + i + ",sim=" + sim, len < sim.decodeNormValue((byte)(i-1)));
-        }
-      }
-    }
-  }
-  
-  /**
-   * make sure the similarity does not go crazy when tested against all possible norm values.
-   */
-  public void testCrazyIndexTimeBoosts() throws Exception {
-    long avgLength = 750;
-    long docCount = 500000;
-    long numTokens = docCount * avgLength;
-   
-    CollectionStatistics collectionStats = new CollectionStatistics("body", docCount, docCount, numTokens, numTokens);
-    
-    long docFreq = 2000;
-    long totalTermFreq = 2000 * avgLength;
-    
-    TermStatistics termStats = new TermStatistics(new BytesRef("term"), docFreq, totalTermFreq);
-    
-    for (SimilarityBase sim : sims) {
-      if (sim instanceof IBSimilarity) {
-        if (((IBSimilarity)sim).getDistribution() instanceof DistributionSPL) {
-          // score goes infinite for tiny doc lengths and negative for huge doc lengths
-          // TODO: fix this
-          continue;
-        }
-      } else if (sim instanceof DFRSimilarity) {
-        BasicModel model = ((DFRSimilarity)sim).getBasicModel();
-        if (model instanceof BasicModelD || model instanceof BasicModelP) {
-          // score goes NaN for tiny doc lengths
-          // TODO: fix this
-          continue;
-        } else if (model instanceof BasicModelBE) {
-          // score goes negative infinity for tiny doc lengths
-          // TODO: fix this
-          continue;
-        }
-      }
-      BasicStats stats = (BasicStats) sim.computeWeight(1f, collectionStats, termStats);
-      for (float tf = 1.0f; tf <= 10.0f; tf += 1.0f) {
-        for (int i = 0; i < 256; i++) {
-          float len = sim.decodeNormValue((byte) i);
-          float score = sim.score(stats, tf, len);
-          assertFalse("negative score for " + sim + ", len=" + len + ",score=" + score, score < 0.0f);
-          assertFalse("inf score for " + sim + ", len=" + len, Float.isInfinite(score));
-          assertFalse("nan score for " + sim + ", len=" + len, Float.isNaN(score));
-        }
-      }
-    }
   }
 }

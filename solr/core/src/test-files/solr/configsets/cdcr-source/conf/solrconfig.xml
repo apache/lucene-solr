@@ -64,8 +64,7 @@
     </updateLog>
   </updateHandler>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-  </requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler" />
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler">
     <lst name="defaults">

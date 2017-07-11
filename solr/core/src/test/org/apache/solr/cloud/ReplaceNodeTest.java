@@ -21,6 +21,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -29,6 +30,9 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,14 +64,26 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     Collections.shuffle(l, random());
     String emptyNode = l.remove(0);
     String node2bdecommissioned = l.get(0);
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 5, 2);
+    CollectionAdminRequest.Create create;
+    // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we never
+    // have to worry about null checking when comparing the Create command with the final Slices
+    create = pickRandom(
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2,0,0),
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,1,0),
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,1),
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,1),
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,2,0),
+                        // check also replicationFactor 1
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0),
+                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
+    );
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
     log.info("excluded_node : {}  ", emptyNode);
     new CollectionAdminRequest.ReplaceNode(node2bdecommissioned, emptyNode).processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
     boolean success = false;
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 300; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
@@ -98,7 +114,15 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     assertTrue(success);
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(emptyNode))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
-      assertTrue(status.getCoreStatus().size() == 0);
+      assertEquals("Expecting no cores but found some: " + status.getCoreStatus(), 0, status.getCoreStatus().size());
+    }
+    
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+    assertEquals(create.getNumShards().intValue(), collection.getSlices().size());
+    for (Slice s:collection.getSlices()) {
+      assertEquals(create.getNumNrtReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+      assertEquals(create.getNumTlogReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+      assertEquals(create.getNumPullReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
     }
   }
 }

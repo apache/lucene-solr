@@ -238,16 +238,6 @@ public abstract class QParser {
   /**
    * @param useGlobalParams look up sort, start, rows in global params if not in local params
    * @return the sort specification
-   * @deprecated Use the not misleadingly named getSortSpec() function instead.
-   */
-  @Deprecated
-  public SortSpec getSort(boolean useGlobalParams) throws SyntaxError {
-    return getSortSpec(useGlobalParams);
-  }
-
-  /**
-   * @param useGlobalParams look up sort, start, rows in global params if not in local params
-   * @return the sort specification
    */
   public SortSpec getSortSpec(boolean useGlobalParams) throws SyntaxError {
     getQuery(); // ensure query is parsed first

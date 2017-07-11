@@ -163,7 +163,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   // Just a random port, I'm not going to use it but just check that the Solr instance constructed from the XML
   // file in ZK overrides the default port.
-  private final String XML_FOR_ZK =
+  private static final String XML_FOR_ZK =
       "<solr>" +
           "  <solrcloud>" +
           "    <str name=\"host\">127.0.0.1</str>" +

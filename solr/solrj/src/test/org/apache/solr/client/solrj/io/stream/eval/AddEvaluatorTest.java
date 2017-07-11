@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,11 +66,6 @@ public class AddEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(3.2D, result);
-  }
-
-  @Test(expected = IOException.class)
-  public void addOneField() throws Exception{
-    factory.constructEvaluator("add(a)");
   }
   
   @Test

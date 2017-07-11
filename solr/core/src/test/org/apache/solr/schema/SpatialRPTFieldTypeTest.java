@@ -62,12 +62,12 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
   }
-  
-  final String INDEXED_COORDINATES = "25,82";
-  final String QUERY_COORDINATES = "24,81";
-  final String DISTANCE_DEGREES = "1.3520328";
-  final String DISTANCE_KILOMETERS = "150.33939";
-  final String DISTANCE_MILES = "93.416565";
+
+  static final String INDEXED_COORDINATES = "25,82";
+  static final String QUERY_COORDINATES = "24,81";
+  static final String DISTANCE_DEGREES = "1.3520328";
+  static final String DISTANCE_KILOMETERS = "150.33939";
+  static final String DISTANCE_MILES = "93.416565";
   
   public void testDistanceUnitsDegrees() throws Exception {
     setupRPTField("degrees", "true");

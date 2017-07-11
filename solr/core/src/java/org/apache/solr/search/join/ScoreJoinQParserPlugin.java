@@ -21,8 +21,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.cloud.ZkController;
@@ -86,10 +87,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
-      CoreContainer container = info.getReq().getCore().getCoreDescriptor().getCoreContainer();
+      CoreContainer container = info.getReq().getCore().getCoreContainer();
 
       final SolrCore fromCore = container.getCore(fromIndex);
 
@@ -106,7 +107,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         fromCore.close();
         fromHolder.decref();
       }
-      return joinQuery.rewrite(reader);
+      return joinQuery.rewrite(searcher.getIndexReader()).createWeight(searcher, needsScores, boost);
     }
 
     @Override
@@ -156,11 +157,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Query rewrite(IndexReader reader) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
       final Query jq = JoinUtil.createJoinQuery(fromField, true,
           toField, fromQuery, info.getReq().getSearcher(), scoreMode);
-      return jq.rewrite(reader);
+      return jq.rewrite(searcher.getIndexReader()).createWeight(searcher, needsScores, boost);
     }
 
 
@@ -222,7 +223,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         final String myCore = req.getCore().getCoreDescriptor().getName();
 
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
-          CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+          CoreContainer container = req.getCore().getCoreContainer();
 
           final String coreName = getCoreName(fromIndex, container);
           final SolrCore fromCore = container.getCore(coreName);

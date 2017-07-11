@@ -27,10 +27,9 @@
 
 <schema name="test" version="1.2">
 
-  <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="name" type="string" indexed="true" stored="true"/>
 
 

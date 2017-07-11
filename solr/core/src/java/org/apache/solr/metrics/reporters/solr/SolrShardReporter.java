@@ -30,10 +30,12 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.MetricFilter;
 
 /**
  * This class reports selected metrics from replicas to shard leader.
@@ -56,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *    &lt;/reporter&gt;
  * </pre>
  */
-public class SolrShardReporter extends SolrMetricReporter {
+public class SolrShardReporter extends FilteringSolrMetricReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
@@ -70,8 +72,6 @@ public class SolrShardReporter extends SolrMetricReporter {
   }};
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
-  private int period = SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD;
-  private List<String> filters = new ArrayList<>();
 
   private SolrReporter reporter;
 
@@ -90,31 +90,23 @@ public class SolrShardReporter extends SolrMetricReporter {
     this.handler = handler;
   }
 
-  public void setPeriod(int period) {
-    this.period = period;
-  }
-
-  public void setFilter(List<String> filterConfig) {
-    if (filterConfig == null || filterConfig.isEmpty()) {
-      return;
+  @Override
+  protected void doInit() {
+    if (filters.isEmpty()) {
+      filters = DEFAULT_FILTERS;
     }
-    filters = filterConfig;
+    // start in setCore(SolrCore) when core is available
   }
 
-  // for unit tests
-  int getPeriod() {
-    return period;
+  @Override
+  protected MetricFilter newMetricFilter() {
+    // unsupported here since setCore(SolrCore) directly uses the this.filters
+    throw new UnsupportedOperationException(getClass().getCanonicalName()+".newMetricFilter() is not supported");
   }
 
   @Override
   protected void validate() throws IllegalStateException {
-    if (period < 1) {
-      log.info("Turning off shard reporter, period=" + period);
-    }
-    if (filters.isEmpty()) {
-      filters = DEFAULT_FILTERS;
-    }
-    // start in inform(...) only when core is available
+    // (period < 1) means "don't start reporter" and so no (period > 0) validation needed
   }
 
   @Override
@@ -128,13 +120,17 @@ public class SolrShardReporter extends SolrMetricReporter {
     if (reporter != null) {
       reporter.close();
     }
+    if (!enabled) {
+      log.info("Reporter disabled for registry " + registryName);
+      return;
+    }
     if (core.getCoreDescriptor().getCloudDescriptor() == null) {
       // not a cloud core
       log.warn("Not initializing shard reporter for non-cloud core " + core.getName());
       return;
     }
     if (period < 1) { // don't start it
-      log.warn("Not starting shard reporter ");
+      log.warn("period=" + period + ", not starting shard reporter ");
       return;
     }
     // our id is coreNodeName
@@ -151,10 +147,11 @@ public class SolrShardReporter extends SolrMetricReporter {
         .convertDurationsTo(TimeUnit.MILLISECONDS)
         .withHandler(handler)
         .withReporterId(id)
+        .setCompact(true)
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }
@@ -172,7 +169,7 @@ public class SolrShardReporter extends SolrMetricReporter {
       if (cd == null) {
         return null;
       }
-      ClusterState state = core.getCoreDescriptor().getCoreContainer().getZkController().getClusterState();
+      ClusterState state = core.getCoreContainer().getZkController().getClusterState();
       DocCollection collection = state.getCollection(core.getCoreDescriptor().getCollectionName());
       Replica replica = collection.getLeader(core.getCoreDescriptor().getCloudDescriptor().getShardId());
       if (replica == null) {

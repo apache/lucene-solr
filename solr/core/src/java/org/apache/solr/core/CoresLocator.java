@@ -68,5 +68,4 @@ public interface CoresLocator {
    * @return a list of all CoreDescriptors found
    */
   public List<CoreDescriptor> discover(CoreContainer cc);
-
 }

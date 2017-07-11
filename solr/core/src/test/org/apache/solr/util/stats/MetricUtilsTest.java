@@ -18,6 +18,7 @@
 package org.apache.solr.util.stats;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +46,11 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
       timer.update(Math.abs(random().nextInt()) + 1, TimeUnit.NANOSECONDS);
     }
     // obtain timer metrics
-    NamedList lst = new NamedList(MetricUtils.convertTimer(timer, false));
+    Map<String,Object> map = new HashMap<>();
+    MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, (k, v) -> {
+      map.putAll((Map<String,Object>)v);
+    });
+    NamedList lst = new NamedList(map);
     // check that expected metrics were obtained
     assertEquals(14, lst.size());
     final Snapshot snapshot = timer.getSnapshot();
@@ -81,10 +86,10 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     am.set("bar", 2);
     Gauge<String> gauge = () -> "foobar";
     registry.register("gauge", gauge);
-    Gauge<Long> error = () -> {throw new InternalError("expected error");};
-    registry.register("expected.error", error);
+    Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
+    registry.register("memory.expected.error", error);
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        false, false, false, (k, o) -> {
+        MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
       Map v = (Map)o;
       if (k.startsWith("counter")) {
         assertEquals(1L, v.get("count"));
@@ -108,13 +113,13 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         update = (Map<String, Object>)values.get("bar");
         assertEquals(2, update.get("value"));
         assertEquals(2, update.get("updateCount"));
-      } else if (k.startsWith("expected.error")) {
+      } else if (k.startsWith("memory.expected.error")) {
         assertNull(v);
       }
     });
     // test compact format
     MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        false, false, true, (k, o) -> {
+        MetricUtils.PropertyFilter.ALL, false, false, true, false, (k, o) -> {
           if (k.startsWith("counter")) {
             assertTrue(o instanceof Long);
             assertEquals(1L, o);
@@ -147,7 +152,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
             update = (Map<String, Object>)values.get("bar");
             assertEquals(2, update.get("value"));
             assertEquals(2, update.get("updateCount"));
-          } else if (k.startsWith("expected.error")) {
+          } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
           } else {
             Map v = (Map)o;

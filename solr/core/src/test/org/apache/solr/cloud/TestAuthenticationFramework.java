@@ -32,7 +32,6 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.protocol.HttpContext;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -87,6 +86,7 @@ public class TestAuthenticationFramework extends LuceneTestCase {
 
   @Before
   public void setUp() throws Exception {
+    SolrTestCaseJ4.randomizeNumericTypesProperties(); // SOLR-10916
     setupAuthenticationPlugin();
     super.setUp();
   }
@@ -127,6 +127,7 @@ public class TestAuthenticationFramework extends LuceneTestCase {
 
   @After
   public void tearDown() throws Exception {
+    SolrTestCaseJ4.clearNumericTypesProperties(); // SOLR-10916
     System.clearProperty("authenticationPlugin");
     super.tearDown();
   }
@@ -149,15 +150,7 @@ public class TestAuthenticationFramework extends LuceneTestCase {
     collectionProperties.putIfAbsent("solr.tests.maxBufferedDocs", "100000");
     collectionProperties.putIfAbsent("solr.tests.ramBufferSizeMB", "100");
     // use non-test classes so RandomizedRunner isn't necessary
-    if (random().nextBoolean()) {
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, TieredMergePolicy.class.getName());
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
-    } else {
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
-    }
+    collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
     collectionProperties.putIfAbsent("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
     collectionProperties.putIfAbsent("solr.directoryFactory", (persistIndex ? "solr.StandardDirectoryFactory" : "solr.RAMDirectoryFactory"));
 

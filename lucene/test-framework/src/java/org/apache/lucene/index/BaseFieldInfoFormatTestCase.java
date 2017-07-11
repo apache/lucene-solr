@@ -347,7 +347,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
   
   /** Returns a new fake segment */
   protected static SegmentInfo newSegmentInfo(Directory dir, String name) {
-    return new SegmentInfo(dir, Version.LATEST, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+    Version minVersion = random().nextBoolean() ? null : Version.LATEST;
+    return new SegmentInfo(dir, Version.LATEST, minVersion, name, 10000, false, Codec.getDefault(), Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
   }
   
   @Override

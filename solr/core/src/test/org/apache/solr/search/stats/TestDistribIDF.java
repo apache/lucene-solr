@@ -78,14 +78,14 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     createCollection("onecollection_local", "conf2", ImplicitDocRouter.NAME);
 
     SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id", 1);
+    doc.setField("id", "1");
     doc.setField("cat", "football");
     doc.addField(ShardParams._ROUTE_, "a");
     solrCluster.getSolrClient().add("onecollection", doc);
     solrCluster.getSolrClient().add("onecollection_local", doc);
 
     doc = new SolrInputDocument();
-    doc.setField("id", 2);
+    doc.setField("id", "2");
     doc.setField("cat", "football");
     doc.addField(ShardParams._ROUTE_, "b");
     solrCluster.getSolrClient().add("onecollection", doc);
@@ -94,7 +94,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     int nDocs = TestUtil.nextInt(random(), 10, 100);
     for (int i=0; i<nDocs; i++) {
       doc = new SolrInputDocument();
-      doc.setField("id", 3 + i);
+      doc.setField("id", "" + (3 + i));
       String cat = TestUtil.randomSimpleString(random());
       if (!cat.equals("football")) { //Making sure no other document has the query term in it.
         doc.setField("cat", cat);
@@ -129,8 +129,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           query.setFields("*,score");
           queryResponse = solrClient_local.query("onecollection_local", query);
           assertEquals(2, queryResponse.getResults().getNumFound());
-          assertEquals(2, queryResponse.getResults().get(0).get("id"));
-          assertEquals(1, queryResponse.getResults().get(1).get("id"));
+          assertEquals("2", queryResponse.getResults().get(0).get("id"));
+          assertEquals("1", queryResponse.getResults().get(1).get("id"));
           float score1_local = (float) queryResponse.getResults().get(0).get("score");
           float score2_local = (float) queryResponse.getResults().get(1).get("score");
           assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
@@ -176,8 +176,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           query.setFields("*,score").add("collection", "collection1_local,collection2_local");
           queryResponse = solrClient_local.query("collection1_local", query);
           assertEquals(2, queryResponse.getResults().getNumFound());
-          assertEquals(2, queryResponse.getResults().get(0).get("id"));
-          assertEquals(1, queryResponse.getResults().get(1).get("id"));
+          assertEquals("2", queryResponse.getResults().get(0).get("id"));
+          assertEquals("1", queryResponse.getResults().get(1).get("id"));
           float score1_local = (float) queryResponse.getResults().get(0).get("score");
           float score2_local = (float) queryResponse.getResults().get(1).get("score");
           assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
@@ -196,20 +196,11 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   private void createCollection(String name, String config, String router) throws Exception {
     CollectionAdminResponse response;
     if (router.equals(ImplicitDocRouter.NAME)) {
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setConfigName(config);
-      create.setCollectionName(name);
-      create.setReplicationFactor(1);
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
       create.setMaxShardsPerNode(1);
-      create.setRouterName(router);
-      create.setShards("a,b,c");
       response = create.process(solrCluster.getSolrClient());
     } else {
-      CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-      create.setConfigName(config);
-      create.setCollectionName(name);
-      create.setNumShards(2);
-      create.setReplicationFactor(1);
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
       create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
     }

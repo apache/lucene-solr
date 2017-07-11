@@ -68,9 +68,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
     strategy = BBoxStrategy.newInstance(ctx, "bbox");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
-    strategy = BBoxStrategy.newLegacyInstance(ctx, "bbox_legacy");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
-
     strategy = new SerializedDVStrategy(ctx, "serialized");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
@@ -87,9 +84,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
     adoc("100", ctx.makePoint(2, 1));
     adoc("101", ctx.makePoint(-1, 4));
     adoc("103", (Shape)null);//test score for nothing
-    adoc("999", ctx.makePoint(2, 1));//test deleted
-    commit();
-    deleteDoc("999");
     commit();
     //FYI distances are in docid order
     checkDistValueSource(ctx.makePoint(4, 3), 2.8274937f, 5.0898066f, 180f);
@@ -103,9 +97,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
     Point p101 = ctx.makePoint(-1.001, 4.001);
     adoc("101", p101);
     adoc("103", (Shape)null);//test score for nothing
-    adoc("999", ctx.makePoint(2, 1));//test deleted
-    commit();
-    deleteDoc("999");
     commit();
 
     double dist = ctx.getDistCalc().distance(p100, p101);

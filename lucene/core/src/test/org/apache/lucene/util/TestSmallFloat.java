@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.util;
 
+import java.util.Arrays;
+
 public class TestSmallFloat extends LuceneTestCase {
 
   // original lucene byteToFloat
@@ -87,10 +89,6 @@ public class TestSmallFloat extends LuceneTestCase {
       float f3 = SmallFloat.byte315ToFloat((byte)i);
       assertEquals(f1,f2,0.0);
       assertEquals(f2,f3,0.0);
-
-      float f4 = SmallFloat.byteToFloat((byte)i,5,2);
-      float f5 = SmallFloat.byte52ToFloat((byte)i);
-      assertEquals(f4,f5,0.0);
     }
   }
 
@@ -121,10 +119,51 @@ public class TestSmallFloat extends LuceneTestCase {
       byte b3 = SmallFloat.floatToByte315(f);
       assertEquals(b1,b2);
       assertEquals(b2,b3);
+    }
+  }
 
-      byte b4 = SmallFloat.floatToByte(f,5,2);
-      byte b5 = SmallFloat.floatToByte52(f);
-      assertEquals(b4,b5);
+  public void testInt4() {
+    for (int i = 0; i <= 16; ++i) {
+      // all values in 0-16 are encoded accurately
+      assertEquals(i, SmallFloat.int4ToLong(SmallFloat.longToInt4(i)));
+    }
+    final int maxEncoded = SmallFloat.longToInt4(Long.MAX_VALUE);
+    for (int i = 1; i < maxEncoded; ++i) {
+      assertTrue(SmallFloat.int4ToLong(i) > SmallFloat.int4ToLong(i - 1));
+    }
+    final int iters = atLeast(1000);
+    for (int iter = 0; iter < iters; ++iter) {
+      final long l = TestUtil.nextLong(random(), 0, 1L << TestUtil.nextInt(random(), 5, 61));
+      int numBits = 64 - Long.numberOfLeadingZeros(l);
+      long expected = l;
+      if (numBits > 4) {
+        long mask = ~0L << (numBits - 4);
+        expected &= mask;
+      }
+      long l2 = SmallFloat.int4ToLong(SmallFloat.longToInt4(l));
+      assertEquals(expected, l2);
+    }
+  }
+
+  public void testByte4() {
+    int[] decoded = new int[256];
+    for (int b = 0; b < 256; ++b) {
+      decoded[b] = SmallFloat.byte4ToInt((byte) b);
+      assertEquals((byte) b, SmallFloat.intToByte4(decoded[b]));
+    }
+    for (int i = 1; i < 256; ++i) {
+      assertTrue(decoded[i] > decoded[i-1]);
+    }
+    assertEquals((byte) 255, SmallFloat.intToByte4(Integer.MAX_VALUE));
+    final int iters = atLeast(1000);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int i = random().nextInt(1 << TestUtil.nextInt(random(), 5, 30));
+      int idx = Arrays.binarySearch(decoded, i);
+      if (idx < 0) {
+        idx = -2 - idx;
+      }
+      assertTrue(decoded[idx] <= i);
+      assertEquals((byte) idx, SmallFloat.intToByte4(i));
     }
   }
 
@@ -146,5 +185,4 @@ public class TestSmallFloat extends LuceneTestCase {
     }
   }
   ***/
-
 }

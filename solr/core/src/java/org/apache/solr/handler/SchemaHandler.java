@@ -76,7 +76,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    SolrConfigHandler.setWt(req, JSON);
+    RequestHandlerUtils.setWt(req, JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     if ("POST".equals(httpMethod)) {
       if (isImmutableConfigSet) {
@@ -137,21 +137,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           rsp.add(IndexSchema.NAME, schemaName);
           break;
         }
-        case "/schema/defaultsearchfield": {
-          final String defaultSearchFieldName = req.getSchema().getDefaultSearchFieldName();
-          if (null == defaultSearchFieldName) {
-            final String message = "undefined " + IndexSchema.DEFAULT_SEARCH_FIELD;
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
-          }
-          rsp.add(IndexSchema.DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
-          break;
-        }
-        case "/schema/solrqueryparser": {
-          SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
-          rsp.add(IndexSchema.SOLR_QUERY_PARSER, props);
-          break;
-        }
         case "/schema/zkversion": {
           int refreshIfBelowVersion = -1;
           Object refreshParam = req.getParams().get("refreshIfBelowVersion");
@@ -173,10 +158,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             }
           }
           rsp.add("zkversion", zkVersion);
-          break;
-        }
-        case "/schema/solrqueryparser/defaultoperator": {
-          rsp.add(IndexSchema.DEFAULT_OPERATOR, req.getSchema().getQueryParserDefaultOperator());
           break;
         }
         default: {

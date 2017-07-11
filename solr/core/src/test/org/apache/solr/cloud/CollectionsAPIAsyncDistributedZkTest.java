@@ -24,11 +24,10 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,29 +52,19 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     final CloudSolrClient client = cluster.getSolrClient();
 
-    RequestStatusState state = new Create()
-        .setCollectionName("testasynccollectioncreation")
-        .setNumShards(1)
-        .setReplicationFactor(1)
-        .setConfigName("conf1")
+    RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation","conf1",1,1)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
-    state = new Create()
-        .setCollectionName("testasynccollectioncreation")
-        .setNumShards(1)
-        .setConfigName("conf1")
+    state = CollectionAdminRequest.createCollection("testasynccollectioncreation","conf1",1,1)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Recreating a collection with the same should have failed.", RequestStatusState.FAILED, state);
 
-    state = new CollectionAdminRequest.AddReplica()
-        .setCollectionName("testasynccollectioncreation")
-        .setShardName("shard1")
-        .processAndWait(client, MAX_TIMEOUT_SECONDS);
+    state = CollectionAdminRequest.addReplicaToShard("testasynccollectioncreation", "shard1")
+      .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
 
-    state = new SplitShard()
-        .setCollectionName("testasynccollectioncreation")
+    state = CollectionAdminRequest.splitShard("testasynccollectioncreation")
         .setShardName("shard1")
         .processAndWait(client, MAX_TIMEOUT_SECONDS * 2);
     assertEquals("Shard split did not complete. Last recorded state: " + state, RequestStatusState.COMPLETED, state);
@@ -88,12 +77,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     final String collection = "testAsyncOperations";
     final CloudSolrClient client = cluster.getSolrClient();
 
-    RequestStatusState state = new Create()
-        .setCollectionName(collection)
-        .setNumShards(1)
+    RequestStatusState state = CollectionAdminRequest.createCollection(collection,"conf1",1,1)
         .setRouterName("implicit")
         .setShards("shard1")
-        .setConfigName("conf1")
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
@@ -113,14 +99,11 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     query.set("shards", "shard1");
     assertEquals(numDocs, client.query(collection, query).getResults().getNumFound());
 
-    state = new CollectionAdminRequest.Reload()
-        .setCollectionName(collection)
+    state = CollectionAdminRequest.reloadCollection(collection)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("ReloadCollection did not complete", RequestStatusState.COMPLETED, state);
 
-    state = new CollectionAdminRequest.CreateShard()
-        .setCollectionName(collection)
-        .setShardName("shard2")
+    state = CollectionAdminRequest.createShard(collection,"shard2")
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
@@ -134,16 +117,11 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     query.set("shards", "shard2");
     assertEquals(1, client.query(collection, query).getResults().getNumFound());
 
-    state = new CollectionAdminRequest.DeleteShard()
-        .setCollectionName(collection)
-        .setShardName("shard2")
-        .processAndWait(client, MAX_TIMEOUT_SECONDS);
+    state = CollectionAdminRequest.deleteShard(collection,"shard2").processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteShard did not complete", RequestStatusState.COMPLETED, state);
 
-    state = new CollectionAdminRequest.AddReplica()
-        .setCollectionName(collection)
-        .setShardName("shard1")
-        .processAndWait(client, MAX_TIMEOUT_SECONDS);
+    state = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+      .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     //cloudClient watch might take a couple of seconds to reflect it
@@ -156,9 +134,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       Thread.sleep(100);
     }
 
-    state = new CollectionAdminRequest.CreateAlias()
-        .setAliasName("myalias")
-        .setAliasedCollections(collection)
+    state = CollectionAdminRequest.createAlias("myalias",collection)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateAlias did not complete", RequestStatusState.COMPLETED, state);
 
@@ -166,8 +142,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     query.set("shards", "shard1");
     assertEquals(numDocs, client.query("myalias", query).getResults().getNumFound());
 
-    state = new CollectionAdminRequest.DeleteAlias()
-        .setAliasName("myalias")
+    state = CollectionAdminRequest.deleteAlias("myalias")
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteAlias did not complete", RequestStatusState.COMPLETED, state);
 
@@ -178,16 +153,23 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       //expected
     }
 
-    String replica = shard1.getReplicas().iterator().next().getName();
-    state = new CollectionAdminRequest.DeleteReplica()
-        .setCollectionName(collection)
-        .setShardName("shard1")
-        .setReplica(replica)
-        .processAndWait(client, MAX_TIMEOUT_SECONDS);
+    Replica replica = shard1.getReplicas().iterator().next();
+    for (String liveNode : client.getZkStateReader().getClusterState().getLiveNodes()) {
+      if (!replica.getNodeName().equals(liveNode)) {
+        state = new CollectionAdminRequest.MoveReplica(collection, replica.getName(), liveNode)
+            .processAndWait(client, MAX_TIMEOUT_SECONDS);
+        assertSame("MoveReplica did not complete", RequestStatusState.COMPLETED, state);
+        break;
+      }
+    }
+
+    shard1 = client.getZkStateReader().getClusterState().getSlice(collection, "shard1");
+    String replicaName = shard1.getReplicas().iterator().next().getName();
+    state = CollectionAdminRequest.deleteReplica(collection, "shard1", replicaName)
+      .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
-    state = new CollectionAdminRequest.Delete()
-        .setCollectionName(collection)
+    state = CollectionAdminRequest.deleteCollection(collection)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
   }

@@ -49,6 +49,34 @@ public class GeoPolygonFactory {
     return makeGeoPolygon(planetModel, pointList, null);
   }
 
+  /** Create a GeoConcavePolygon using the specified points. The polygon must have
+   * a maximum extent larger than PI. The siding of the polygon is chosen so that any
+   * adjacent point to a segment provides an exterior measurement and therefore,
+   * the polygon is a truly concave polygon. Note that this method should only be used when there is certainty
+   * that we are dealing with a concave polygon, e.g. the polygon has been serialized.
+   * If there is not such certainty, please refer to @{@link GeoPolygonFactory#makeGeoPolygon(PlanetModel, List)}.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @return a GeoPolygon corresponding to what was specified.
+   */
+  public static GeoPolygon makeGeoConcavePolygon(final PlanetModel planetModel,
+                                                        final List<GeoPoint> pointList) {
+    return new GeoConcavePolygon(planetModel, pointList);
+  }
+
+  /** Create a GeoConvexPolygon using the specified points. The polygon must have
+   * a maximum extent no larger than PI. The siding of the polygon is chosen so that any  adjacent
+   * point to a segment provides an interior measurement and therefore
+   * the polygon is a truly convex polygon. Note that this method should only be used when
+   * there is certainty that we are dealing with a convex polygon, e.g. the polygon has been serialized.
+   * If there is not such certainty, please refer to @{@link GeoPolygonFactory#makeGeoPolygon(PlanetModel, List)}.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @return a GeoPolygon corresponding to what was specified.
+   */
+  public static GeoPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
+                                                      final List<GeoPoint> pointList) {
+    return new GeoConvexPolygon(planetModel, pointList);
+  }
+
   /** Create a GeoPolygon using the specified points and holes, using order to determine 
    * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
    * on the same side of the shape as being inside, and counter-clockwise to indicate the
@@ -65,6 +93,41 @@ public class GeoPolygonFactory {
     final List<GeoPoint> pointList,
     final List<GeoPolygon> holes) {
     return makeGeoPolygon(planetModel, pointList, holes, 0.0);
+  }
+
+
+  /** Create a GeoConcavePolygon using the specified points and holes. The polygon must have
+   * a maximum extent larger than PI. The siding of the polygon is chosen so that any  adjacent
+   * point to a segment provides an exterior measurement and therefore
+   * the polygon is a truly concave polygon. Note that this method should only be used when
+   * there is certainty that we are dealing with a concave polygon, e.g. the polygon has been serialized.
+   * If there is not such certainty, please refer to {@link GeoPolygonFactory#makeGeoPolygon(PlanetModel, List, List)}.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
+   *  each hole as being "in set".  Null == none.
+   * @return a GeoPolygon corresponding to what was specified.
+   */
+  public static GeoPolygon makeGeoConcavePolygon(final PlanetModel planetModel,
+                                                        final List<GeoPoint> pointList,
+                                                        final List<GeoPolygon> holes) {
+    return new GeoConcavePolygon(planetModel,pointList, holes);
+  }
+
+  /** Create a GeoConvexPolygon using the specified points and holes. The polygon must have
+   * a maximum extent no larger than PI. The siding of the polygon is chosen so that any adjacent
+   * point to a segment provides an interior measurement and therefore
+   * the polygon is a truly convex polygon. Note that this method should only be used when
+   * there is certainty that we are dealing with a convex polygon, e.g. the polygon has been serialized.
+   * If there is not such certainty, please refer to {@link GeoPolygonFactory#makeGeoPolygon(PlanetModel, List, List)}.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
+   *  each hole as being "in set".  Null == none.
+   * @return a GeoPolygon corresponding to what was specified.
+   */
+  public static GeoPolygon makeGeoConvexPolygon(final PlanetModel planetModel,
+                                                      final List<GeoPoint> pointList,
+                                                      final List<GeoPolygon> holes) {
+    return new GeoConvexPolygon(planetModel,pointList, holes);
   }
   
   /** Create a GeoPolygon using the specified points and holes, using order to determine 

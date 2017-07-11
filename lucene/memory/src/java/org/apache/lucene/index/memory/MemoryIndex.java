@@ -40,7 +40,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
@@ -58,6 +57,7 @@ import org.apache.lucene.util.IntBlockPool.SliceWriter;
 import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util.RecyclingIntBlockAllocator;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -868,20 +868,27 @@ public class MemoryIndex {
 
           final int numDimensions = fieldInfo.getPointDimensionCount();
           final int numBytesPerDimension = fieldInfo.getPointNumBytes();
-          minPackedValue = pointValues[0].bytes.clone();
-          maxPackedValue = pointValues[0].bytes.clone();
-
-          for (int i = 0; i < pointValuesCount; i++) {
-            BytesRef pointValue = pointValues[i];
-            assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
-
-            for (int dim = 0; dim < numDimensions; ++dim) {
-              int offset = dim * numBytesPerDimension;
-              if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
-                System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
-              }
-              if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
-                System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+          if (numDimensions == 1) {
+            // PointInSetQuery.MergePointVisitor expects values to be visited in increasing order,
+            // this is a 1d optimization which has to be done here too. Otherwise we emit values
+            // out of order which causes mismatches.
+            Arrays.sort(pointValues, 0, pointValuesCount);
+            minPackedValue = pointValues[0].bytes.clone();
+            maxPackedValue = pointValues[pointValuesCount - 1].bytes.clone();
+          } else {
+            minPackedValue = pointValues[0].bytes.clone();
+            maxPackedValue = pointValues[0].bytes.clone();
+            for (int i = 0; i < pointValuesCount; i++) {
+              BytesRef pointValue = pointValues[i];
+              assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
+              for (int dim = 0; dim < numDimensions; ++dim) {
+                int offset = dim * numBytesPerDimension;
+                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, minPackedValue, offset) < 0) {
+                  System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
+                }
+                if (StringHelper.compare(numBytesPerDimension, pointValue.bytes, offset, maxPackedValue, offset) > 0) {
+                  System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+                }
               }
             }
           }
@@ -892,7 +899,7 @@ public class MemoryIndex {
 
     NumericDocValues getNormDocValues() {
       if (norm == null) {
-        FieldInvertState invertState = new FieldInvertState(fieldInfo.name, fieldInfo.number,
+        FieldInvertState invertState = new FieldInvertState(Version.LATEST.major, fieldInfo.name, fieldInfo.number,
             numTokens, numOverlapTokens, 0);
         final long value = normSimilarity.computeNorm(invertState);
         if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
@@ -931,11 +938,11 @@ public class MemoryIndex {
     MemoryDocValuesIterator it = new MemoryDocValuesIterator();
     return new SortedNumericDocValues() {
 
-      int value = 0;
+      int ord = 0;
 
       @Override
       public long nextValue() throws IOException {
-        return values[value++];
+        return values[ord++];
       }
 
       @Override
@@ -945,6 +952,7 @@ public class MemoryIndex {
 
       @Override
       public boolean advanceExact(int target) throws IOException {
+        ord = 0;
         return it.advance(target) == target;
       }
 
@@ -1075,6 +1083,7 @@ public class MemoryIndex {
 
       @Override
       public boolean advanceExact(int target) throws IOException {
+        ord = 0;
         return it.advance(target) == target;
       }
 
@@ -1127,7 +1136,7 @@ public class MemoryIndex {
    */
   private final class MemoryIndexReader extends LeafReader {
 
-    private Fields memoryFields = new MemoryFields(fields);
+    private final MemoryFields memoryFields = new MemoryFields(fields);
 
     private MemoryIndexReader() {
       super(); // avoid as much superclass baggage as possible
@@ -1217,7 +1226,7 @@ public class MemoryIndex {
     @Override
     public PointValues getPointValues(String fieldName) {
       Info info = fields.get(fieldName);
-      if (info.pointValues == null) {
+      if (info == null || info.pointValues == null) {
         return null;
       }
       return new MemoryIndexPointValues(info);
@@ -1229,8 +1238,8 @@ public class MemoryIndex {
     }
 
     @Override
-    public Fields fields() {
-      return memoryFields;
+    public Terms terms(String field) throws IOException {
+      return memoryFields.terms(field);
     }
 
     private class MemoryFields extends Fields {
@@ -1529,6 +1538,7 @@ public class MemoryIndex {
 
       MemoryIndexPointValues(Info info) {
         this.info = Objects.requireNonNull(info);
+        Objects.requireNonNull(info.pointValues, "Field does not have points");
       }
 
       @Override
@@ -1548,12 +1558,7 @@ public class MemoryIndex {
 
       @Override
       public byte[] getMinPackedValue() throws IOException {
-        BytesRef[] values = info.pointValues;
-        if (values != null) {
-          return info.minPackedValue;
-        } else {
-          return null;
-        }
+        return info.minPackedValue;
       }
 
       @Override
@@ -1586,7 +1591,7 @@ public class MemoryIndex {
     @Override
     public Fields getTermVectors(int docID) {
       if (docID == 0) {
-        return fields();
+        return memoryFields;
       } else {
         return null;
       }
@@ -1625,8 +1630,8 @@ public class MemoryIndex {
     }
 
     @Override
-    public Sort getIndexSort() {
-      return null;
+    public LeafMetaData getMetaData() {
+      return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
     }
 
     @Override

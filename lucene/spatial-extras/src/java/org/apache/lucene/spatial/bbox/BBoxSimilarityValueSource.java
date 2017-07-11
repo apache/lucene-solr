@@ -17,78 +17,58 @@
 package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-
+import org.apache.lucene.spatial.ShapeValues;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * A base class for calculating a spatial relevance rank per document from a provided
- * {@link ValueSource} in which {@link FunctionValues#objectVal(int)} returns a {@link
- * org.locationtech.spatial4j.shape.Rectangle}.
+ * {@link ShapeValuesSource} returning a {@link
+ * org.locationtech.spatial4j.shape.Rectangle} per-document.
  * <p>
  * Implementers: remember to implement equals and hashCode if you have
  * fields!
  *
  * @lucene.experimental
  */
-public abstract class BBoxSimilarityValueSource extends ValueSource {
+public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
 
-  private final ValueSource bboxValueSource;
+  private final ShapeValuesSource bboxValueSource;
 
-  public BBoxSimilarityValueSource(ValueSource bboxValueSource) {
+  public BBoxSimilarityValueSource(ShapeValuesSource bboxValueSource) {
     this.bboxValueSource = bboxValueSource;
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    bboxValueSource.createWeight(context, searcher);
+  public String toString() {
+    return getClass().getSimpleName()+"(" + bboxValueSource.toString() + "," + similarityDescription() + ")";
   }
 
-  @Override
-  public String description() {
-    return getClass().getSimpleName()+"(" + bboxValueSource.description() + "," + similarityDescription() + ")";
-  }
-
-  /** A comma-separated list of configurable items of the subclass to put into {@link #description()}. */
+  /** A comma-separated list of configurable items of the subclass to put into {@link #toString()}. */
   protected abstract String similarityDescription();
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
 
-    final FunctionValues shapeValues = bboxValueSource.getValues(context, readerContext);
-
-    return new DoubleDocValues(this) {
+    final ShapeValues shapeValues = bboxValueSource.getValues(readerContext);
+    return DoubleValues.withDefault(new DoubleValues() {
       @Override
-      public double doubleVal(int doc) throws IOException {
-        //? limit to Rect or call getBoundingBox()? latter would encourage bad practice
-        final Rectangle rect = (Rectangle) shapeValues.objectVal(doc);
-        return rect==null ? 0 : score(rect, null);
+      public double doubleValue() throws IOException {
+        return score((Rectangle) shapeValues.value(), null);
       }
 
       @Override
-      public boolean exists(int doc) throws IOException {
-        return shapeValues.exists(doc);
+      public boolean advanceExact(int doc) throws IOException {
+        return shapeValues.advanceExact(doc);
       }
+    }, 0);
 
-      @Override
-      public Explanation explain(int doc) throws IOException {
-        final Rectangle rect = (Rectangle) shapeValues.objectVal(doc);
-        if (rect == null) {
-          return Explanation.noMatch("no rect");
-        }
-        AtomicReference<Explanation> explanation = new AtomicReference<>();
-        score(rect, explanation);
-        return explanation.get();
-      }
-    };
   }
 
   /**
@@ -114,5 +94,24 @@ public abstract class BBoxSimilarityValueSource extends ValueSource {
   @Override
   public int hashCode() {
     return bboxValueSource.hashCode();
+  }
+
+  @Override
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));
+    if (dv.advanceExact(docId)) {
+      AtomicReference<Explanation> explanation = new AtomicReference<>();
+      final ShapeValues shapeValues = bboxValueSource.getValues(ctx);
+      if (shapeValues.advanceExact(docId)) {
+        score((Rectangle) shapeValues.value(), explanation);
+        return explanation.get();
+      }
+    }
+    return Explanation.noMatch(this.toString());
+  }
+
+  @Override
+  public boolean needsScores() {
+    return false;
   }
 }

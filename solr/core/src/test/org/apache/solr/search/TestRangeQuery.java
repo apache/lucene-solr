@@ -135,8 +135,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // simple test of a function rather than just the field
     assertQ(req("{!frange l=0 u=2}id"), "*[count(//doc)=3]");
-    assertQ(req("{!frange l=0 u=2}product(id,2)"), "*[count(//doc)=2]");
-    assertQ(req("{!frange l=100 u=102}sum(id,100)"), "*[count(//doc)=3]");
+    assertQ(req("{!frange l=0 u=2}product(id_i,2)"), "*[count(//doc)=2]");
+    assertQ(req("{!frange l=100 u=102}sum(id_i,100)"), "*[count(//doc)=3]");
 
 
     for (Map.Entry<String,String[]> entry : norm_fields.entrySet()) {
@@ -303,7 +303,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
     // now build some random queries (against *any* field) and validate that using it in a DBQ changes
     // the index by the expected number of docs
-    int numDocsLeftInIndex = numDocs;
+    long numDocsLeftInIndex = numDocs;
     final int numDBQs= atLeast(10);
     for (int i=0; i < numDBQs; i++) {
       int lower = TestUtil.nextInt(random(), 2 * l, u);
@@ -337,10 +337,52 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       assertU(commit());
       try (SolrQueryRequest req = req("q","*:*","rows","0","_trace_after_dbq",dbq)) {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
-        final int allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
+        final long allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
         assertEquals(dbq, numDocsLeftInIndex, allDocsFound);
       }
     }
+  }
+  
+  public void testRangeQueryEndpointTO() throws Exception {
+    assertEquals("[to TO to]", QParser.getParser("[to TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[to TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[TO TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[TO TO TO]", req("df", "text")).getQuery().toString("text"));
+
+    assertEquals("[to TO to]", QParser.getParser("[\"TO\" TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[\"TO\" TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO to]", QParser.getParser("[TO TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+
+    assertEquals("[to TO xx]", QParser.getParser("[to TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO xx]", QParser.getParser("[\"TO\" TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[to TO xx]", QParser.getParser("[TO TO xx]", req("df", "text")).getQuery().toString("text"));
+
+    assertEquals("[xx TO to]", QParser.getParser("[xx TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[xx TO to]", QParser.getParser("[xx TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[xx TO to]", QParser.getParser("[xx TO TO]", req("df", "text")).getQuery().toString("text"));
+  }
+
+  public void testRangeQueryRequiresTO() throws Exception {
+    assertEquals("{a TO b}", QParser.getParser("{A TO B}", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[a TO b}", QParser.getParser("[A TO B}", req("df", "text")).getQuery().toString("text"));
+    assertEquals("{a TO b]", QParser.getParser("{A TO B]", req("df", "text")).getQuery().toString("text"));
+    assertEquals("[a TO b]", QParser.getParser("[A TO B]", req("df", "text")).getQuery().toString("text"));
+
+    // " TO " is required between range endpoints
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A B]", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A B]", req("df", "text")).getQuery());
+
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B]", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B]", req("df", "text")).getQuery());
+
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO}", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO]", req("df", "text")).getQuery());
+    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
   }
 
   static boolean sameDocs(String msg, DocSet a, DocSet b) {

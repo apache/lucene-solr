@@ -22,22 +22,23 @@ import java.util.concurrent.TimeUnit;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.ganglia.GangliaReporter;
 import info.ganglia.gmetric4j.gmetric.GMetric;
+
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 
 /**
  *
  */
-public class SolrGangliaReporter extends SolrMetricReporter {
+public class SolrGangliaReporter extends FilteringSolrMetricReporter {
 
   private String host = null;
   private int port = -1;
   private boolean multicast;
-  private int period = 60;
   private String instancePrefix = null;
-  private String filterPrefix = null;
   private boolean testing;
   private GangliaReporter reporter;
+
+  private static final ReporterClientCache<GMetric> serviceRegistry = new ReporterClientCache<>();
 
   // for unit tests
   GMetric ganglia = null;
@@ -65,15 +66,6 @@ public class SolrGangliaReporter extends SolrMetricReporter {
     this.instancePrefix = prefix;
   }
 
-  public void setFilter(String filter) {
-    this.filterPrefix = filter;
-  }
-
-
-  public void setPeriod(int period) {
-    this.period = period;
-  }
-
   public void setMulticast(boolean multicast) {
     this.multicast = multicast;
   }
@@ -88,6 +80,13 @@ public class SolrGangliaReporter extends SolrMetricReporter {
   }
 
   @Override
+  protected void doInit() {
+    if (!testing) {
+      start();
+    }
+  }
+
+  @Override
   protected void validate() throws IllegalStateException {
     if (host == null) {
       throw new IllegalStateException("Init argument 'host' must be set to a valid Ganglia server name.");
@@ -98,20 +97,17 @@ public class SolrGangliaReporter extends SolrMetricReporter {
     if (period < 1) {
       throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
-    if (!testing) {
-      start();
-    }
   }
 
   //this is a separate method for unit tests
   void start() {
     if (!testing) {
-      try {
-        ganglia = new GMetric(host, port,
-            multicast ? GMetric.UDPAddressingMode.MULTICAST : GMetric.UDPAddressingMode.UNICAST,
-            1);
-      } catch (IOException ioe) {
-        throw new IllegalStateException("Exception connecting to Ganglia", ioe);
+      String id = host + ":" + port + ":" + multicast;
+      ganglia = serviceRegistry.getOrCreate(id, () -> new GMetric(host, port,
+          multicast ? GMetric.UDPAddressingMode.MULTICAST : GMetric.UDPAddressingMode.UNICAST,
+          1));
+      if (ganglia == null) {
+        return;
       }
     }
     if (instancePrefix == null) {
@@ -124,12 +120,7 @@ public class SolrGangliaReporter extends SolrMetricReporter {
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS)
         .prefixedWith(instancePrefix);
-    MetricFilter filter;
-    if (filterPrefix != null) {
-      filter = new SolrMetricManager.PrefixFilter(filterPrefix);
-    } else {
-      filter = MetricFilter.ALL;
-    }
+    final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
     reporter = builder.build(ganglia);
     reporter.start(period, TimeUnit.SECONDS);

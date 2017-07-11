@@ -364,7 +364,7 @@ final class IndexFileDeleter implements Closeable {
    * Remove the CommitPoints in the commitsToDelete List by
    * DecRef'ing all files from each SegmentInfos.
    */
-  private void deleteCommits() {
+  private void deleteCommits() throws IOException {
 
     int size = commitsToDelete.size();
 
@@ -388,8 +388,9 @@ final class IndexFileDeleter implements Closeable {
       }
       commitsToDelete.clear();
 
-      // NOTE: does nothing if firstThrowable is null
-      IOUtils.reThrowUnchecked(firstThrowable);
+      if (firstThrowable != null) {
+        throw IOUtils.rethrowAlways(firstThrowable);
+      }
 
       // Now compact commits to remove deleted ones (preserving the sort):
       size = commits.size();
@@ -509,9 +510,8 @@ final class IndexFileDeleter implements Closeable {
     assert locked();
 
     assert Thread.holdsLock(writer);
-    long t0 = 0;
+    long t0 = System.nanoTime();
     if (infoStream.isEnabled("IFD")) {
-      t0 = System.nanoTime();
       infoStream.message("IFD", "now checkpoint \"" + writer.segString(writer.toLiveInfos(segmentInfos)) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
@@ -599,8 +599,9 @@ final class IndexFileDeleter implements Closeable {
       }
     }
 
-    // NOTE: does nothing if firstThrowable is null
-    IOUtils.reThrow(firstThrowable);
+    if (firstThrowable != null) {
+      throw IOUtils.rethrowAlways(firstThrowable);
+    }
   }
 
   /** Decrefs all provided files, ignoring any exceptions hit; call this if
@@ -696,7 +697,9 @@ final class IndexFileDeleter implements Closeable {
     ensureOpen();
 
     if (infoStream.isEnabled("IFD")) {
-      infoStream.message("IFD", "delete " + names + "");
+      if (names.size() > 0) {
+        infoStream.message("IFD", "delete " + names + "");
+      }
     }
 
     // We make two passes, first deleting any segments_N files, second deleting the rest.  We do this so that if we throw exc or JVM

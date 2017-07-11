@@ -20,19 +20,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestAxiomaticSimilarity extends LuceneTestCase {
 
-  public void testSaneNormValues() {
-    Axiomatic sim = new AxiomaticF2EXP();
-    for (int i = 0; i < 256; i++) {
-      float len = sim.decodeNormValue((byte) i);
-      assertFalse("negative len: " + len + ", byte=" + i, len < 0.0f);
-      assertFalse("inf len: " + len + ", byte=" + i, Float.isInfinite(len));
-      assertFalse("nan len for byte=" + i, Float.isNaN(len));
-      if (i > 0) {
-        assertTrue("len is not decreasing: " + len + ",byte=" + i, len < sim.decodeNormValue((byte) (i - 1)));
-      }
-    }
-  }
-
   public void testIllegalS() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new AxiomaticF2EXP(Float.POSITIVE_INFINITY, 0.1f);

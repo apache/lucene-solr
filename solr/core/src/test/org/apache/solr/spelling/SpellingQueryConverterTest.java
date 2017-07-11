@@ -16,15 +16,14 @@
  */
 package org.apache.solr.spelling;
 
-import org.apache.lucene.analysis.Token;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 
 /**
@@ -94,6 +93,16 @@ public class SpellingQueryConverterTest extends LuceneTestCase {
     assertTrue("tokens is null and it shouldn't be", tokens != null);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
+    
+    String firstKeyword = "value1";
+    String secondKeyword = "value2";
+    original = "field-with-parenthesis:(" + firstKeyword + " " + secondKeyword + ")";
+    tokens = converter.convert(original);
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
+    assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
+    assertTrue("first Token is not " + firstKeyword, new ArrayList<>(tokens).get(0).toString().equals(firstKeyword));
+    assertTrue("second Token is not " + secondKeyword, new ArrayList<>(tokens).get(1).toString().equals(secondKeyword));    
   }
 
   private boolean isOffsetCorrect(String s, Collection<Token> tokens) {

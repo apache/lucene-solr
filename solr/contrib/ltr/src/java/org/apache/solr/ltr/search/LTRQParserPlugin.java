@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.search;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -46,8 +45,6 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Plug into solr a rerank model.
@@ -59,8 +56,6 @@ import org.slf4j.LoggerFactory;
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
   private static Query defaultQuery = new MatchAllDocsQuery();
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // params for setting custom external info that features can use, like query
   // intent

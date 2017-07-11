@@ -24,7 +24,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   public void testGetFieldType() throws Exception {
     assertQ("/schema/fieldtypes/float?indent=on&wt=xml&showDefaults=true",
             "count(/response/lst[@name='fieldType']) = 1",
-            "count(/response/lst[@name='fieldType']/*) = 16",
+            "count(/response/lst[@name='fieldType']/*) = 17",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
             "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TrieFloatField'",
             "/response/lst[@name='fieldType']/str[@name='precisionStep'] ='0'",
@@ -39,6 +39,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
             "/response/lst[@name='fieldType']/bool[@name='omitPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='storeOffsetsWithPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='multiValued'] = 'false'",
+            "/response/lst[@name='fieldType']/bool[@name='large'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'false'");
   }
 

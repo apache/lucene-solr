@@ -41,10 +41,10 @@ public class TestFieldSortValues extends SolrTestCaseJ4 {
 
     // payload is backed by a custom sort field which returns the payload value mod 3
     assertQ(req("q", "*:*", "fl", "id", "sort", "payload asc, id asc", "fsv", "true")
-        , "//result/doc[int='2'  and position()=1]"
-        , "//result/doc[int='3'  and position()=2]"
-        , "//result/doc[int='5'  and position()=3]"
-        , "//result/doc[int='1'  and position()=4]"
-        , "//result/doc[int='4'  and position()=5]");
+        , "//result/doc[str='2'  and position()=1]"
+        , "//result/doc[str='3'  and position()=2]"
+        , "//result/doc[str='5'  and position()=3]"
+        , "//result/doc[str='1'  and position()=4]"
+        , "//result/doc[str='4'  and position()=5]");
   }
 }

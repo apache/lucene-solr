@@ -31,8 +31,9 @@ import java.util.Scanner;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
-import org.apache.solr.analytics.util.PercentileCalculator;
+import org.apache.solr.analytics.util.OrdinalCalculator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -52,6 +53,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10949")
 public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
   
@@ -91,9 +93,10 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
   private NodeList getNodes(String n1, String n2, String n3, String element, String n4) throws XPathExpressionException {
     // Construct the XPath expression. The form better not change or all these will fail.
-    StringBuilder sb = new StringBuilder("/response/lst[@name='stats']/lst[@name='").append(n1).append("']");
+    StringBuilder sb = new StringBuilder("/response/lst[@name='"+AnalyticsResponseHeadings.COMPLETED_OLD_HEADER+"']/lst[@name='").append(n1).append("']");
     sb.append("/lst[@name='").append(n2).append("']");
     sb.append("/lst[@name='").append(n3).append("']");
+    sb.append("/lst[@name!='(MISSING)']");
     sb.append("//").append(element).append("[@name='").append(n4).append("']");
     return (NodeList)xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
 
@@ -228,11 +231,14 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   public <T extends Comparable<T>> ArrayList calculateStat(ArrayList<ArrayList<T>> lists, String stat) {
     ArrayList result;
     if (stat.contains("perc_")) {
-      double[] perc = new double[]{Double.parseDouble(stat.substring(5))/100};
       result = new ArrayList<T>();
       for (List<T> list : lists) {
         if( list.size() == 0) continue;
-        result.add(PercentileCalculator.getPercentiles(list, perc).get(0));
+        int ord = (int) Math.ceil(Double.parseDouble(stat.substring(5))/100 * list.size()) - 1;
+        ArrayList<Integer> percs = new ArrayList<>(1);
+        percs.add(ord);
+        OrdinalCalculator.putOrdinalsInPosition(list, percs);
+        result.add(list.get(ord));
       }
     } else if (stat.equals("count")) {
       result = new ArrayList<Long>();
@@ -293,7 +299,7 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   
   public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
-    InputStream in = clazz.getResourceAsStream(fileName);
+    InputStream in = clazz.getResourceAsStream("/solr/analytics/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
     try { 
@@ -303,7 +309,14 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
         if (line.length()<2) {
           continue;
         }
+        int commentStart = line.indexOf("//");
+        if (commentStart >= 0) {
+          line = line.substring(0,commentStart);
+        }
         String[] param = line.split("=");
+        if (param.length != 2) {
+          continue;
+        }
         strList.add(param[0]);
         strList.add(param[1]);
       }
@@ -312,4 +325,19 @@ public class AbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
       IOUtils.closeWhileHandlingException(file, in);
     }
   }
+  
+  protected void removeNodes(String xPath, List<Double> string) throws XPathExpressionException {
+    NodeList missingNodes = getNodes(xPath);
+    List<Double> result = new ArrayList<Double>();
+    for (int idx = 0; idx < missingNodes.getLength(); ++idx) {
+      result.add(Double.parseDouble(missingNodes.item(idx).getTextContent()));
+    }
+    string.removeAll(result);
+  }
+
+  protected NodeList getNodes(String xPath) throws XPathExpressionException {
+    StringBuilder sb = new StringBuilder(xPath);
+    return (NodeList) xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
+  }
+  
 }

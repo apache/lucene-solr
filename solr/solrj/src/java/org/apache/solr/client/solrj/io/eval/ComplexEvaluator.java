@@ -20,8 +20,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -31,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public abstract class ComplexEvaluator implements StreamEvaluator {
   protected static final long serialVersionUID = 1L;
+  protected StreamContext streamContext;
   
   protected UUID nodeId = UUID.randomUUID();
   
@@ -38,6 +42,10 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
   protected List<StreamEvaluator> subEvaluators = new ArrayList<StreamEvaluator>();
   
   public ComplexEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+    this(expression, factory, new ArrayList<>());
+  }
+  
+  public ComplexEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
     constructingFactory = factory;
     
     // We have to do this because order of the parameters matter
@@ -73,8 +81,16 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
       }
     }
     
-    if(expression.getParameters().size() != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators or field names", expression));
+    Set<String> namedParameters = factory.getNamedOperands(expression).stream().map(param -> param.getName()).collect(Collectors.toSet());
+    long ignorableCount = ignoredNamedParameters.stream().filter(name -> namedParameters.contains(name)).count();
+    
+    if(0 != expression.getParameters().size() - subEvaluators.size() - ignorableCount){
+      if(namedParameters.isEmpty()){
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators or field names", expression));
+      }
+      else{
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators, field names, or named parameters [%s]", expression, namedParameters.stream().collect(Collectors.joining(","))));
+      }
     }
   }
 
@@ -95,5 +111,16 @@ public abstract class ComplexEvaluator implements StreamEvaluator {
       .withFunctionName(factory.getFunctionName(getClass()))
       .withImplementingClass(getClass().getName())
       .withExpression(toExpression(factory).toString());
+  }
+  
+  public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
+    
+    for(StreamEvaluator subEvaluator : subEvaluators){
+      subEvaluator.setStreamContext(context);
+    }
+  }
+  public StreamContext getStreamContext(){
+    return streamContext;
   }
 }

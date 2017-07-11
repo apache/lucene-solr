@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
@@ -61,9 +60,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    // we need DVs on point fields to compute stats & facets
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    
     // force LogDocMergePolicy so that we get a predictable doc order
     // when doing unsorted group collection
-    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
@@ -72,7 +73,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicy();
     systemClearPropertySolrTestsMergePolicyFactory();
   }
 
@@ -838,7 +838,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         Object realResponse = ObjectBuilder.fromJSON(strResponse);
         String err = JSONTestUtil.matchObj("/grouped/" + groupField, realResponse, modelResponse);
         if (err != null) {
-          log.error("GROUPING MISMATCH: " + err
+          log.error("GROUPING MISMATCH (" + queryIter + "): " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
            + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
@@ -854,7 +854,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         // assert post / pre grouping facets
         err = JSONTestUtil.matchObj("/facet_counts/facet_fields/"+FOO_STRING_FIELD, realResponse, expectedFacetResponse);
         if (err != null) {
-          log.error("GROUPING MISMATCH: " + err
+          log.error("GROUPING MISMATCH (" + queryIter + "): " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
            + "\n\texpected="+ JSONUtil.toJSON(expectedFacetResponse)

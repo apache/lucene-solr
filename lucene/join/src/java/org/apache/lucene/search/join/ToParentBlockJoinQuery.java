@@ -312,7 +312,7 @@ public class ToParentBlockJoinQuery extends Query {
               score = Math.min(score, childScore);
               break;
             case Max:
-              score = Math.min(score, childScore);
+              score = Math.max(score, childScore);
               break;
             case None:
               break;

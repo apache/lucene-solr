@@ -18,14 +18,17 @@ package org.apache.lucene.queries.payloads;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.FilterSpans;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
@@ -62,6 +65,15 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     SpanWeight matchWeight = match.createWeight(searcher, false, boost);
     return new SpanPayloadCheckWeight(searcher, needsScores ? getTermContexts(matchWeight) : null, matchWeight, boost);
+  }
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    Query matchRewritten = match.rewrite(reader);
+    if (match != matchRewritten && matchRewritten instanceof SpanQuery) {
+      return new SpanPayloadCheckQuery((SpanQuery)matchRewritten, payloadToMatch);
+    }
+    return super.rewrite(reader);
   }
 
   /**
@@ -161,7 +173,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    buffer.append("spanPayCheck(");
+    buffer.append("SpanPayloadCheckQuery(");
     buffer.append(match.toString(field));
     buffer.append(", payloadRef: ");
     for (BytesRef bytes : payloadToMatch) {
@@ -175,11 +187,15 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
-           payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch);
+           payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch) &&
+           match.equals(((SpanPayloadCheckQuery) other).match);
   }
 
   @Override
   public int hashCode() {
-    return classHash() ^ payloadToMatch.hashCode();
+    int result = classHash();
+    result = 31 * result + Objects.hashCode(match);
+    result = 31 * result + Objects.hashCode(payloadToMatch);
+    return result;
   }
 }

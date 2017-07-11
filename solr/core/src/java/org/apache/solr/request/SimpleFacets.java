@@ -37,12 +37,10 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -52,10 +50,10 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
-import org.apache.lucene.search.grouping.term.TermAllGroupsCollector;
-import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
+import org.apache.lucene.search.grouping.AllGroupsCollector;
+import org.apache.lucene.search.grouping.TermGroupFacetCollector;
+import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
@@ -332,7 +330,7 @@ public class SimpleFacets {
       );
     }
 
-    TermAllGroupsCollector collector = new TermAllGroupsCollector(groupField);
+    AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
     Filter mainQueryFilter = docSet.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
     Query filteredFacetQuery = new BooleanQuery.Builder()
         .add(facetQuery, Occur.MUST)
@@ -851,17 +849,9 @@ public class SimpleFacets {
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
     NamedList<Integer> res = new NamedList<>();
-    if (ft.isPointField()) {
-      for (String term : terms) {
-        int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
-        res.add(term, count);
-      }
-    } else {
-      for (String term : terms) {
-        String internal = ft.toInternal(term);
-        int count = searcher.numDocs(new TermQuery(new Term(field, internal)), parsed.docs);
-        res.add(term, count);
-      }
+    for (String term : terms) {
+      int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
+      res.add(term, count);
     }
     return res;    
   }
@@ -944,8 +934,7 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Fields fields = r.fields();
-    Terms terms = fields==null ? null : fields.terms(field);
+    Terms terms = r.terms(field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;

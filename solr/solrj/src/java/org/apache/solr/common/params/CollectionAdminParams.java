@@ -28,6 +28,16 @@ public interface CollectionAdminParams {
 
   String COUNT_PROP = "count";
 
+  /**
+   * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore operation).
+   */
+  public static final String CREATE_NODE_SET_PARAM = "createNodeSet";
+
+  /**
+   * A parameter which specifies if the provided list of Solr nodes (via {@linkplain #CREATE_NODE_SET_PARAM})
+   * should be shuffled before being used.
+   */
+  public static final String CREATE_NODE_SET_SHUFFLE_PARAM = "createNodeSet.shuffle";
 
   /**
    * A parameter to specify the name of the index backup strategy to be used.

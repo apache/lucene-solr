@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -173,8 +172,8 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void finish() throws IOException {
 
       Map<Integer, double[]> docVectors = new HashMap<>();
-      Terms terms = MultiFields.getFields(searcher.getIndexReader()).terms(trainingParams.feature);
-      TermsEnum termsEnum = terms.iterator();
+      Terms terms = ((SolrIndexSearcher)searcher).getSlowAtomicReader().terms(trainingParams.feature);
+      TermsEnum termsEnum = terms == null ? TermsEnum.EMPTY : terms.iterator();
       PostingsEnum postingsEnum = null;
       int termIndex = 0;
       for (String termStr : trainingParams.terms) {

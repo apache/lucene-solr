@@ -37,8 +37,9 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
-import org.apache.solr.analytics.util.PercentileCalculator;
+import org.apache.solr.analytics.util.OrdinalCalculator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,6 +49,7 @@ import org.xml.sax.SAXException;
 
 import com.google.common.collect.ObjectArrays;
 
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10949")
 public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
@@ -106,7 +108,7 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   public Object getStatResult(String section, String name, VAL_TYPE type) throws XPathExpressionException {
 
     // Construct the XPath expression. The form better not change or all these will fail.
-    StringBuilder sb = new StringBuilder("/response/lst[@name='stats']/lst[@name='").append(section).append("']");
+    StringBuilder sb = new StringBuilder("/response/lst[@name='"+AnalyticsResponseHeadings.COMPLETED_OLD_HEADER+"']/lst[@name='").append(section).append("']");
 
     // This is a little fragile in that it demands the elements have the same name as type, i.e. when looking for a
     // VAL_TYPE.DOUBLE, the element in question is <double name="blah">47.0</double>.
@@ -169,8 +171,11 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   public <T extends Comparable<T>> Object calculateStat(ArrayList<T> list, String stat) {
     Object result;
     if (stat.contains("perc_")) {
-      double[] perc = new double[]{Double.parseDouble(stat.substring(5))/100};
-      result = PercentileCalculator.getPercentiles(list, perc).get(0);
+      ArrayList<Integer> percs = new ArrayList<>(1);
+      int ord = (int) Math.ceil(Double.parseDouble(stat.substring(5))/100 * list.size()) - 1;
+      percs.add(ord);
+      OrdinalCalculator.putOrdinalsInPosition(list, percs);
+      result = list.get(percs.get(0));
     } else if (stat.equals("count")) {
       result = Long.valueOf(list.size());
     } else if (stat.equals("unique")) {
@@ -206,7 +211,7 @@ public class AbstractAnalyticsStatsTest extends SolrTestCaseJ4 {
   }
 
   public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
-    InputStream in = clazz.getResourceAsStream(fileName);
+    InputStream in = clazz.getResourceAsStream("/solr/analytics/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
     try { 

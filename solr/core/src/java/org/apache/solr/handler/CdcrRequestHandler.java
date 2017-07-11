@@ -108,6 +108,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   private SolrCore core;
   private String collection;
+  private String shard;
   private String path;
 
   private SolrParams updateLogSynchronizerConfiguration;
@@ -242,9 +243,10 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   public void inform(SolrCore core) {
     this.core = core;
     collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 
     // Make sure that the core is ZKAware
-    if (!core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+    if (!core.getCoreContainer().isZooKeeperAware()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Solr instance is not running in SolrCloud mode.");
     }
@@ -321,9 +323,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       @Override
       public void preClose(SolrCore core) {
-        String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-        String shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
-        log.info("Solr core is being closed - shutting down CDCR handler @ {}:{}", collectionName, shard);
+        log.info("Solr core is being closed - shutting down CDCR handler @ {}:{}", collection, shard);
 
         updateLogSynchronizer.shutdown();
         replicatorManager.shutdown();
@@ -390,7 +390,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private void handleCollectionCheckpointAction(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
-    ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = core.getCoreContainer().getZkController();
     try {
       zkController.getZkStateReader().forceUpdateCollection(collection);
     } catch (Exception e) {
@@ -638,7 +638,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           running.set(true);
           String masterUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
           bootstrapCallable = new BootstrapCallable(masterUrl, core);
-          bootstrapFuture = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(bootstrapCallable);
+          bootstrapFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(bootstrapCallable);
           try {
             bootstrapFuture.get();
           } catch (InterruptedException e) {
@@ -659,7 +659,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     };
 
     try {
-      core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(runnable);
+      core.getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(runnable);
       rsp.add(RESPONSE_STATUS, "submitted");
     } catch (RejectedExecutionException ree)  {
       // no problem, we're probably shutting down
@@ -789,8 +789,9 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     private void commitOnLeader(String leaderUrl) throws SolrServerException,
         IOException {
-      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl).build()) {
-        client.setConnectionTimeout(30000);
+      try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
+          .withConnectionTimeout(30000)
+          .build()) {
         UpdateRequest ureq = new UpdateRequest();
         ureq.setParams(new ModifiableSolrParams());
         ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -827,9 +828,10 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public Long call() throws Exception {
-      try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl).build()) {
-        server.setConnectionTimeout(15000);
-        server.setSoTimeout(60000);
+      try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl)
+          .withConnectionTimeout(15000)
+          .withSocketTimeout(60000)
+          .build()) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.ACTION, CdcrParams.CdcrAction.SHARDCHECKPOINT.toString());

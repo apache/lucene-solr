@@ -23,26 +23,26 @@ import java.util.Random;
 
 import com.codahale.metrics.Counter;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 
 public final class SolrMetricTestUtils {
 
   private static final int                    MAX_ITERATIONS = 100;
-  private static final SolrInfoMBean.Category CATEGORIES[]   = SolrInfoMBean.Category.values();
+  private static final SolrInfoBean.Category CATEGORIES[]   = SolrInfoBean.Category.values();
 
   public static String getRandomScope(Random random) {
     return getRandomScope(random, random.nextBoolean());
   }
 
   public static String getRandomScope(Random random, boolean shouldDefineScope) {
-    return shouldDefineScope ? TestUtil.randomSimpleString(random, 1, 10) : null; // must be simple string for JMX publishing
+    return shouldDefineScope ? TestUtil.randomSimpleString(random, 5, 10) : null; // must be simple string for JMX publishing
   }
 
-  public static SolrInfoMBean.Category getRandomCategory(Random random) {
+  public static SolrInfoBean.Category getRandomCategory(Random random) {
     return getRandomCategory(random, random.nextBoolean());
   }
 
-  public static SolrInfoMBean.Category getRandomCategory(Random random, boolean shouldDefineCategory) {
+  public static SolrInfoBean.Category getRandomCategory(Random random, boolean shouldDefineCategory) {
     return shouldDefineCategory ? CATEGORIES[TestUtil.nextInt(random, 0, CATEGORIES.length - 1)] : null;
   }
 
@@ -65,7 +65,7 @@ public final class SolrMetricTestUtils {
       boolean shouldReplaceMetric = !existing.isEmpty() && random.nextBoolean();
       String name = shouldReplaceMetric
           ? existingKeys.get(TestUtil.nextInt(random, 0, existingKeys.size() - 1))
-          : TestUtil.randomSimpleString(random, 1, 10) + SUFFIX; // must be simple string for JMX publishing
+          : TestUtil.randomSimpleString(random, 5, 10) + SUFFIX; // must be simple string for JMX publishing
 
       Counter counter = new Counter();
       counter.inc(random.nextLong());
@@ -75,7 +75,7 @@ public final class SolrMetricTestUtils {
     return metrics;
   }
 
-  public static SolrMetricProducer getProducerOf(SolrMetricManager metricManager, SolrInfoMBean.Category category, String scope, Map<String, Counter> metrics) {
+  public static SolrMetricProducer getProducerOf(SolrMetricManager metricManager, SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
     return new SolrMetricProducer() {
       @Override
       public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
@@ -86,7 +86,7 @@ public final class SolrMetricTestUtils {
           return;
         }
         for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-          manager.counter(registry, entry.getKey(), category.toString(), scope);
+          manager.counter(null, registry, entry.getKey(), category.toString(), scope);
         }
       }
 

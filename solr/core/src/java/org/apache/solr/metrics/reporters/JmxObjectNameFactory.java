@@ -51,6 +51,20 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
   }
 
   /**
+   * Return current domain.
+   */
+  public String getDomain() {
+    return domain;
+  }
+
+  /**
+   * Return current reporterName.
+   */
+  public String getReporterName() {
+    return reporterName;
+  }
+
+  /**
    * Create a hierarchical name.
    *
    * @param type    metric class, eg. "counters", may be null for non-metric MBeans
@@ -60,7 +74,8 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
   @Override
   public ObjectName createName(String type, String currentDomain, String name) {
     SolrMetricInfo metricInfo = SolrMetricInfo.of(name);
-
+    String safeName = metricInfo != null ? metricInfo.name : name;
+    safeName = safeName.replaceAll(":", "_");
     // It turns out that ObjectName(String) mostly preserves key ordering
     // as specified in the constructor (except for the 'type' key that ends
     // up at top level) - unlike ObjectName(String, Map) constructor
@@ -90,24 +105,42 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
       sb.append(currentDomain);
       sb.append(':');
     }
-    sb.append("reporter=");
-    sb.append(reporterName);
-    sb.append(',');
+    if (props != null && props.length > 0) {
+      boolean added = false;
+      for (int i = 0; i < props.length; i += 2) {
+        if (props[i] == null || props[i].isEmpty()) {
+          continue;
+        }
+        if (props[i + 1] == null || props[i + 1].isEmpty()) {
+          continue;
+        }
+        sb.append(',');
+        sb.append(props[i]);
+        sb.append('=');
+        sb.append(props[i + 1]);
+        added = true;
+      }
+      if (added) {
+        sb.append(',');
+      }
+    }
     if (metricInfo != null) {
       sb.append("category=");
       sb.append(metricInfo.category.toString());
-      sb.append(",scope=");
-      sb.append(metricInfo.scope);
+      if (metricInfo.scope != null) {
+        sb.append(",scope=");
+        sb.append(metricInfo.scope);
+      }
       // we could also split by type, but don't call it 'type' :)
       // if (type != null) {
       //   sb.append(",class=");
       //   sb.append(type);
       // }
       sb.append(",name=");
-      sb.append(metricInfo.name);
+      sb.append(safeName);
     } else {
       // make dotted names into hierarchies
-      String[] path = name.split("\\.");
+      String[] path = safeName.split("\\.");
       for (int i = 0; i < path.length - 1; i++) {
         if (i > 0) {
           sb.append(',');
@@ -126,20 +159,6 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
       // }
       sb.append("name=");
       sb.append(path[path.length - 1]);
-    }
-    if (props != null && props.length > 0) {
-      for (int i = 0; i < props.length; i += 2) {
-        if (props[i] == null || props[i].isEmpty()) {
-          continue;
-        }
-        if (props[i + 1] == null || props[i + 1].isEmpty()) {
-          continue;
-        }
-        sb.append(',');
-        sb.append(props[i]);
-        sb.append('=');
-        sb.append(props[i + 1]);
-      }
     }
 
     ObjectName objectName;

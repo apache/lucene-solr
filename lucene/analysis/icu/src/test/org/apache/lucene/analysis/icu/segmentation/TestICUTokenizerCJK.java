@@ -53,7 +53,14 @@ public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
         new String[] { "我", "购买", "了", "道具", "和", "服装" }
     );
   }
-  
+
+  public void testTraditionalChinese() throws Exception {
+    assertAnalyzesTo(a, "我購買了道具和服裝。",
+        new String[] { "我", "購買", "了", "道具", "和", "服裝"});
+    assertAnalyzesTo(a, "定義切分字串的基本單位是訂定分詞標準的首要工作", // From http://godel.iis.sinica.edu.tw/CKIP/paper/wordsegment_standard.pdf
+        new String[] { "定義", "切", "分", "字串", "的", "基本", "單位", "是", "訂定", "分詞", "標準", "的", "首要", "工作" });
+  }
+
   public void testChineseNumerics() throws Exception {
     assertAnalyzesTo(a, "９４８３", new String[] { "９４８３" });
     assertAnalyzesTo(a, "院內分機９４８３。",

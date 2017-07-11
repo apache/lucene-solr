@@ -17,13 +17,19 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.sql.Array;
+import java.math.BigDecimal;
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,16 +57,64 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * Connects to a datasource using a registered JDBC driver and execute a query. The results of
  * that query will be returned as tuples. An EOF tuple will indicate that all have been read.
  * 
- * Supported Datatypes
- * JDBC Type     | Tuple Type
- * --------------|---------------
- * String        | String
- * Short         | Long
- * Integer       | Long
- * Long          | Long
- * Float         | Double
- * Double        | Double
- * Boolean       | Boolean
+ * Supported Datatypes for most types vary by JDBC driver based on the specific 
+ * java type as reported by {@link java.sql.ResultSetMetaData#getColumnClassName(int)}. 
+ * The exception are {@link Types#DATE}, {@link Types#TIME} or {@link Types#TIMESTAMP}
+ * which are determined by the JDBC type.
+ * 
+ * <table rules="all" frame="box" cellpadding="3" summary="Supported Java Types">
+ * <tr>
+ *   <th>Java or JDBC Type</th>
+ *   <th>Tuple Type</th>
+ *   <th>Notes</th>
+ * </tr>
+ * <tr>
+ *   <td>Boolean</td>
+ *   <td>Boolean</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>String</td>
+ *   <td>String</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>Short, Integer, Long</td>
+ *   <td>Long</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>Float, Double</td>
+ *   <td>Double</td>
+ *   <td></td>
+ * </tr>
+ * <tr>
+ *   <td>{@link Clob} and subclasses</td>
+ *   <td>String</td>
+ *   <td>Clobs up to length 2<sup>31</sup>-1 are supported.</td>
+ * </tr>
+ * <tr>
+ *   <td>Other subclasses of {@link Number}</td>
+ *   <td>Long, Double</td>
+ *   <td>Tuple Type based on {@link BigDecimal#scale()}.</td>
+ * </tr>
+ * <tr>
+ *   <td>JDBC {@link Types#DATE}</td>
+ *   <td>String</td>
+ *   <td>yyyy-MM-dd, calls {@link Date#toString}</td>
+ * </tr>
+ * <tr>
+ *   <td>JDBC {@link Types#TIME}</td>
+ *   <td>String</td>
+ *   <td>hh:mm:ss, calls {@link Time#toString}</td>
+ * </tr>
+ * <tr>
+ *   <td>JDBC {@link Types#TIMESTAMP}</td>
+ *   <td>String</td>
+ *   <td>See {@link DateTimeFormatter#ISO_INSTANT}</td>
+ * </tr>
+ * </table>
+ * 
  **/
 
 public class JDBCStream extends TupleStream implements Expressible {
@@ -227,91 +281,200 @@ public class JDBCStream extends TupleStream implements Expressible {
   }
 
   private ResultSetValueSelector[] constructValueSelectors(ResultSetMetaData metadata) throws SQLException{
-    ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[metadata.getColumnCount()];
-    
-    for(int columnIdx = 0; columnIdx < metadata.getColumnCount(); ++columnIdx){
-      final int columnNumber = columnIdx + 1; // cause it starts at 1
-      // Use getColumnLabel instead of getColumnName to make sure fields renamed with AS as picked up properly
-      final String columnName = metadata.getColumnLabel(columnNumber);
-      String className = metadata.getColumnClassName(columnNumber);
-      String typeName = metadata.getColumnTypeName(columnNumber);
-      
-      if(directSupportedTypes.contains(className)){
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Object obj = resultSet.getObject(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            if(obj instanceof String) {
-              String s = (String)obj;
-              if(s.indexOf(sep) > -1) {
-                s = s.substring(1);
-                return s.split(sep);
-              }
-            }
-
-            return obj;
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      } else if(Short.class.getName().equals(className)) {
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Short obj = resultSet.getShort(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj.longValue();
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      } else if(Integer.class.getName().equals(className)) {
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Integer obj = resultSet.getInt(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj.longValue();
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      } else if(Float.class.getName().equals(className)) {
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Float obj = resultSet.getFloat(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            return obj.doubleValue();
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      } else if(Array.class.getName().equals(className)) {
-        valueSelectors[columnIdx] = new ResultSetValueSelector() {
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Object o = resultSet.getObject(columnNumber);
-            if(resultSet.wasNull()){ return null; }
-            if(o instanceof Array) {
-              Array array = (Array)o;
-              return array.getArray();
-            } else {
-              return o;
-            }
-          }
-          public String getColumnName() {
-            return columnName;
-          }
-        };
-      } else {
+    ResultSetValueSelector[] valueSelectors = new ResultSetValueSelector[metadata.getColumnCount()];    
+    for (int columnIdx = 0; columnIdx < metadata.getColumnCount(); ++columnIdx) {      
+      ResultSetValueSelector valueSelector = determineValueSelector(columnIdx, metadata);
+      if(valueSelector==null) {
+        int columnNumber = columnIdx + 1;
+        String columnName = metadata.getColumnLabel(columnNumber);
+        String className = metadata.getColumnClassName(columnNumber);
+        String typeName = metadata.getColumnTypeName(columnNumber);
         throw new SQLException(String.format(Locale.ROOT,
             "Unable to determine the valueSelector for column '%s' (col #%d) of java class '%s' and type '%s'",
             columnName, columnNumber, className, typeName));
       }
-    }
-    
+      valueSelectors[columnIdx] = valueSelector;
+    }        
     return valueSelectors;
+  }
+  
+  protected ResultSetValueSelector determineValueSelector(int columnIdx, ResultSetMetaData metadata) throws SQLException {
+    final int columnNumber = columnIdx + 1; // cause it starts at 1
+    // Use getColumnLabel instead of getColumnName to make sure fields renamed with AS as picked up properly
+    final String columnName = metadata.getColumnLabel(columnNumber);
+    final int jdbcType = metadata.getColumnType(columnNumber);      
+    final String className = metadata.getColumnClassName(columnNumber);
+    ResultSetValueSelector valueSelector = null;
+    
+    // Directly supported types can be just directly returned - no conversion really necessary
+    if(directSupportedTypes.contains(className)){
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Object obj = resultSet.getObject(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          if(obj instanceof String) {
+            String s = (String)obj;
+            if(s.indexOf(sep) > -1) {
+              s = s.substring(1);
+              return s.split(sep);
+            }
+          }
+
+          return obj;
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } 
+    // We're checking the Java class names because there are lots of SQL types across
+    // lots of database drivers that can be mapped to standard Java types. Basically, 
+    // this makes it easier and we don't have to worry about esoteric type names in the 
+    // JDBC family of types
+    else if(Short.class.getName().equals(className)) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Short obj = resultSet.getShort(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          return obj.longValue();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if(Integer.class.getName().equals(className)) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Integer obj = resultSet.getInt(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          return obj.longValue();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if(Float.class.getName().equals(className)) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Float obj = resultSet.getFloat(columnNumber);
+          if(resultSet.wasNull()){ return null; }
+          return obj.doubleValue();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } 
+    // Here we are switching to check against the SQL type because date/times are
+    // notorious for not being consistent. We don't know if the driver is mapping
+    // to a java.time.* type or some old-school type. 
+    else if (jdbcType == Types.DATE) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Date sqlDate = resultSet.getDate(columnNumber);
+          return resultSet.wasNull() ? null : sqlDate.toString();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if (jdbcType == Types.TIME ) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Time sqlTime = resultSet.getTime(columnNumber);
+          return resultSet.wasNull() ? null : sqlTime.toString();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } else if (jdbcType == Types.TIMESTAMP) {
+      valueSelector = new ResultSetValueSelector() {
+        @Override
+        public Object selectValue(ResultSet resultSet) throws SQLException {
+          Timestamp sqlTimestamp = resultSet.getTimestamp(columnNumber);
+          return resultSet.wasNull() ? null : sqlTimestamp.toInstant().toString();
+        }
+        @Override
+        public String getColumnName() {
+          return columnName;
+        }
+      };
+    } 
+    // Now we're going to start seeing if things are assignable from the returned type
+    // to a more general type - this allows us to cover cases where something we weren't 
+    // explicitly expecting, but can handle, is being returned.
+    else {
+      Class<?> clazz;
+      try {
+        clazz = Class.forName(className, false, getClass().getClassLoader());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      final int scale = metadata.getScale(columnNumber);
+      if (Number.class.isAssignableFrom(clazz)) {
+        if (scale > 0) {
+          valueSelector = new ResultSetValueSelector() {
+            @Override
+            public Object selectValue(ResultSet resultSet) throws SQLException {
+              BigDecimal bd = resultSet.getBigDecimal(columnNumber);
+              return resultSet.wasNull() ? null : bd.doubleValue();                
+            }
+            @Override
+            public String getColumnName() {
+              return columnName;
+            }
+          };            
+        } else {
+          valueSelector = new ResultSetValueSelector() {
+            @Override
+            public Object selectValue(ResultSet resultSet) throws SQLException {
+              BigDecimal bd = resultSet.getBigDecimal(columnNumber);
+              return resultSet.wasNull() ? null : bd.longValue();
+            }
+            @Override
+            public String getColumnName() {
+              return columnName;
+            }
+          };            
+        }          
+      } else if (Clob.class.isAssignableFrom(clazz)) {
+        valueSelector = new ResultSetValueSelector() {
+          @Override
+          public Object selectValue(ResultSet resultSet) throws SQLException {
+            Clob c = resultSet.getClob(columnNumber);
+            if (resultSet.wasNull()) {
+              return null;
+            }
+            long length = c.length();
+            int lengthInt = (int) length;
+            if (length != lengthInt) {
+              throw new SQLException(String.format(Locale.ROOT,
+                  "Encountered a clob of length #%l in column '%s' (col #%d).  Max supported length is #%i.",
+                  length, columnName, columnNumber, Integer.MAX_VALUE));
+            }
+            return c.getSubString(1, lengthInt);
+          }
+          @Override
+          public String getColumnName() {
+            return columnName;
+          }
+        };
+      } 
+    }
+    return valueSelector;
   }
   
   /**
@@ -432,9 +595,10 @@ public class JDBCStream extends TupleStream implements Expressible {
     // it's already in the sqlQuery but there's no way we can reliably determine the sort from the query.
     return definedSort;
   }
+  
+  public interface ResultSetValueSelector {
+    String getColumnName();
+    Object selectValue(ResultSet resultSet) throws SQLException;
+  }
 }
 
-interface ResultSetValueSelector {
-  String getColumnName();
-  Object selectValue(ResultSet resultSet) throws SQLException;
-}

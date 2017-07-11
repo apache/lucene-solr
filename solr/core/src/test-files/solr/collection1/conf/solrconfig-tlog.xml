@@ -31,6 +31,9 @@
     <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</str>
   </directoryFactory>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
+  <requestDispatcher>
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
   
   <dataDir>${solr.data.dir:}</dataDir>
 
@@ -44,8 +47,7 @@
    <processor class="solr.RunUpdateProcessorFactory" />
  </updateRequestProcessorChain>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
-  </requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler" />
   
   <peerSync>
     <useRangeVersions>${solr.peerSync.useRangeVersions:true}</useRangeVersions>
@@ -157,5 +159,19 @@
       regenerator="solr.NoOpRegenerator" />
 
   </query>
+
+  <initParams path="/select">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
+
+  <valueSourceParser name="nvl" class="org.apache.solr.search.function.NvlValueSourceParser">
+    <float name="nvlFloatValue">0.0</float>
+  </valueSourceParser>
+  <valueSourceParser name="agg_debug" class="org.apache.solr.search.facet.DebugAgg$Parser">
+  </valueSourceParser>
+
 
 </config>

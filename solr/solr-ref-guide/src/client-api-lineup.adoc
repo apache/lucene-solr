@@ -1,0 +1,45 @@
+= Client API Lineup
+:page-shortname: client-api-lineup
+:page-permalink: client-api-lineup.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Solr Wiki contains a list of client APIs at http://wiki.apache.org/solr/IntegratingSolr.
+
+Here is the list of client APIs, current at this writing (November 2011):
+
+// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+
+[cols="20,20,60",options="header"]
+|===
+|Name |Environment |URL
+|SolRuby |Ruby |https://github.com/rsolr/rsolr
+|DelSolr |Ruby |https://github.com/avvo/delsolr
+|acts_as_solr |Rails |http://acts-as-solr.rubyforge.org/, http://rubyforge.org/projects/background-solr/
+|Flare |Rails |http://wiki.apache.org/solr/Flare
+|SolPHP |PHP |http://wiki.apache.org/solr/SolPHP
+|SolrJ |Java |http://wiki.apache.org/solr/SolJava
+|Python API |Python |http://wiki.apache.org/solr/SolPython
+|PySolr |Python |http://code.google.com/p/pysolr/
+|SolPerl |Perl |http://wiki.apache.org/solr/SolPerl
+|Solr.pm |Perl |http://search.cpan.org/~garafola/Solr-0.03/lib/Solr.pm
+|SolrForrest |Forrest/Cocoon |http://wiki.apache.org/solr/SolrForrest
+|SolrSharp |C# |http://www.codeplex.com/solrsharp
+|SolColdfusion |ColdFusion |http://solcoldfusion.riaforge.org/
+|SolrNet |.NET |https://github.com/mausch/SolrNet
+|AJAX Solr |AJAX |http://github.com/evolvingweb/ajax-solr/wiki
+|===

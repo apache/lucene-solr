@@ -433,6 +433,7 @@ public class JsonRecordReader {
           for (String fld : valuesAddedinThisFrame) {
             values.remove(fld);
           }
+          values.remove(null);
         }
       }
     }

@@ -155,7 +155,7 @@ public class IndexFetcher {
 
   private boolean useExternalCompression = false;
 
-  private boolean fetchFromLeader = false;
+  boolean fetchFromLeader = false;
 
   private final HttpClient myHttpClient;
 
@@ -178,11 +178,13 @@ public class IndexFetcher {
     public static final IndexFetchResult INDEX_FETCH_FAILURE = new IndexFetchResult("Fetching lastest index is failed", false, null);
     public static final IndexFetchResult INDEX_FETCH_SUCCESS = new IndexFetchResult("Fetching latest index is successful", true, null);
     public static final IndexFetchResult LOCK_OBTAIN_FAILED = new IndexFetchResult("Obtaining SnapPuller lock failed", false, null);
+    public static final IndexFetchResult CONTAINER_IS_SHUTTING_DOWN = new IndexFetchResult("I was asked to replicate but CoreContainer is shutting down", false, null);
     public static final IndexFetchResult MASTER_VERSION_ZERO = new IndexFetchResult("Index in peer is empty and never committed yet", true, null);
     public static final IndexFetchResult NO_INDEX_COMMIT_EXIST = new IndexFetchResult("No IndexCommit in local index", false, null);
     public static final IndexFetchResult PEER_INDEX_COMMIT_DELETED = new IndexFetchResult("No files to download because IndexCommit in peer was deleted", false, null);
     public static final IndexFetchResult LOCAL_ACTIVITY_DURING_REPLICATION = new IndexFetchResult("Local index modification during replication", false, null);
     public static final IndexFetchResult EXPECTING_NON_LEADER = new IndexFetchResult("Replicating from leader but I'm the shard leader", false, null);
+    public static final IndexFetchResult LEADER_IS_NOT_ACTIVE = new IndexFetchResult("Replicating from leader but leader is not active", false, null);
 
     IndexFetchResult(String message, boolean successful, Throwable exception) {
       this.message = message;
@@ -215,7 +217,7 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
 
-    return HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager(), true);
+    return HttpClientUtil.createClient(httpClientParams, core.getCoreContainer().getUpdateShardHandler().getConnectionManager(), true);
   }
 
   public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
@@ -274,9 +276,11 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new Builder(masterUrl).withHttpClient(myHttpClient).build()) {
-      client.setSoTimeout(soTimeout);
-      client.setConnectionTimeout(connTimeout);
+    try (HttpSolrClient client = new Builder(masterUrl)
+        .withHttpClient(myHttpClient)
+        .withConnectionTimeout(connTimeout)
+        .withSocketTimeout(soTimeout)
+        .build()) {
 
       return client.request(req);
     } catch (SolrServerException e) {
@@ -296,9 +300,11 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
-      client.setSoTimeout(soTimeout);
-      client.setConnectionTimeout(connTimeout);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+        .withHttpClient(myHttpClient)
+        .withConnectionTimeout(connTimeout)
+        .withSocketTimeout(soTimeout)
+        .build()) {
       NamedList response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
@@ -352,17 +358,32 @@ public class IndexFetcher {
       // when we are a bit more confident we may want to try a partial replication
       // if the error is connection related or something, but we have to be careful
       forceReplication = true;
+      LOG.info("Last replication failed, so I'll force replication");
     }
 
     try {
       if (fetchFromLeader) {
+        assert !solrCore.isClosed(): "Replication should be stopped before closing the core";
         Replica replica = getLeaderReplica();
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
         if (cd.getCoreNodeName().equals(replica.getName())) {
           return IndexFetchResult.EXPECTING_NON_LEADER;
         }
-        masterUrl = replica.getCoreUrl();
-        LOG.info("Updated masterUrl to " + masterUrl);
+        if (replica.getState() != Replica.State.ACTIVE) {
+          LOG.info("Replica {} is leader but it's state is {}, skipping replication", replica.getName(), replica.getState());
+          return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
+        }
+        if (!solrCore.getCoreContainer().getZkController().getClusterState().liveNodesContain(replica.getNodeName())) {
+          LOG.info("Replica {} is leader but it's not hosted on a live node, skipping replication", replica.getName());
+          return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
+        }
+        if (!replica.getCoreUrl().equals(masterUrl)) {
+          masterUrl = replica.getCoreUrl();
+          LOG.info("Updated masterUrl to {}", masterUrl);
+          // TODO: Do we need to set forceReplication = true?
+        } else {
+          LOG.debug("masterUrl didn't change");
+        }
       }
       //get the current 'replicateable' index version in the master
       NamedList response;
@@ -410,6 +431,7 @@ public class IndexFetcher {
         if (forceReplication && commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
+          LOG.info("New index in Master. Deleting mine...");
           RefCounted<IndexWriter> iw = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
           try {
             iw.get().deleteAll();
@@ -422,6 +444,7 @@ public class IndexFetcher {
 
         //there is nothing to be replicated
         successfulInstall = true;
+        LOG.debug("Nothing to replicate, master's version is 0");
         return IndexFetchResult.MASTER_VERSION_ZERO;
       }
 
@@ -482,7 +505,7 @@ public class IndexFetcher {
           // because of soft commits (which open a searcher on IW's data)
           // so we need to close the existing searcher on the last commit
           // and wait until we are able to clean up all unused lucene files
-          if (solrCore.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+          if (solrCore.getCoreContainer().isZooKeeperAware()) {
             solrCore.closeSearcher();
           }
 
@@ -639,7 +662,7 @@ public class IndexFetcher {
   }
 
   private Replica getLeaderReplica() throws InterruptedException {
-    ZkController zkController = solrCore.getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = solrCore.getCoreContainer().getZkController();
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
     Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
         cd.getCollectionName(), cd.getShardId());
@@ -658,7 +681,7 @@ public class IndexFetcher {
         }
       }
 
-      if (core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+      if (core.getCoreContainer().isZooKeeperAware()) {
         // we only track replication success in SolrCloud mode
         core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
       }
@@ -846,7 +869,7 @@ public class IndexFetcher {
     IndexCommit commitPoint;
     // must get the latest solrCore object because the one we have might be closed because of a reload
     // todo stop keeping solrCore around
-    SolrCore core = solrCore.getCoreDescriptor().getCoreContainer().getCore(solrCore.getName());
+    SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
       Future[] waitSearcher = new Future[1];
       searcher = core.getSearcher(true, true, waitSearcher, true);
@@ -874,7 +897,7 @@ public class IndexFetcher {
     final CountDownLatch latch = new CountDownLatch(1);
     new Thread(() -> {
       try {
-        solrCore.getCoreDescriptor().getCoreContainer().reload(solrCore.getName());
+        solrCore.getCoreContainer().reload(solrCore.getName());
       } catch (Exception e) {
         LOG.error("Could not reload core ", e);
       } finally {
@@ -1672,9 +1695,9 @@ public class IndexFetcher {
       try (HttpSolrClient client = new Builder(masterUrl)
           .withHttpClient(myHttpClient)
           .withResponseParser(null)
+          .withConnectionTimeout(connTimeout)
+          .withSocketTimeout(soTimeout)
           .build()) {
-        client.setSoTimeout(soTimeout);
-        client.setConnectionTimeout(connTimeout);
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
         is = (InputStream) response.get("stream");
@@ -1781,9 +1804,11 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     // TODO use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
-      client.setSoTimeout(soTimeout);
-      client.setConnectionTimeout(connTimeout);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+        .withHttpClient(myHttpClient)
+        .withConnectionTimeout(connTimeout)
+        .withSocketTimeout(soTimeout)
+        .build()) {
       QueryRequest request = new QueryRequest(params);
       return client.request(request);
     }

@@ -19,7 +19,7 @@
 <schema name="example core zero" version="1.1">
 
    <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <!-- general -->
   <field name="id"        type="string"   indexed="true"  stored="true"  multiValued="false" required="true"/>
   <field name="type"      type="string"   indexed="true"  stored="true"  multiValued="false" /> 
@@ -29,11 +29,5 @@
 
  <!-- field to use to determine and enforce document uniqueness. -->
  <uniqueKey>id</uniqueKey>
-
- <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>name</defaultSearchField>
-
- <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
- <solrQueryParser defaultOperator="OR"/>
 </schema>
 

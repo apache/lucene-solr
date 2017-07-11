@@ -124,6 +124,7 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
         final SegmentInfo si = new SegmentInfo(
             dir, // dir
             Version.LATEST, // version
+            Version.LATEST, // min version
             TestUtil.randomSimpleString(random()), // name
             random().nextInt(), // maxDoc
             random().nextBoolean(), // isCompoundFile

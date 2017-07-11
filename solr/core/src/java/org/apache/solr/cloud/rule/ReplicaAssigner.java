@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
@@ -57,29 +58,6 @@ public class ReplicaAssigner {
   List<String> participatingLiveNodes;
   Set<String> tagNames = new HashSet<>();
   private Map<String, AtomicInteger> nodeVsCores = new HashMap<>();
-
-
-  public static class Position implements Comparable<Position> {
-    public final String shard;
-    public final int index;
-
-    public Position(String shard, int replicaIdx) {
-      this.shard = shard;
-      this.index = replicaIdx;
-    }
-
-    @Override
-    public int compareTo(Position that) {
-      //this is to ensure that we try one replica from each shard first instead of
-      // all replicas from same shard
-      return that.index > index ? -1 : that.index == index ? 0 : 1;
-    }
-
-    @Override
-    public String toString() {
-      return shard + ":" + index;
-    }
-  }
 
 
   /**
@@ -126,8 +104,8 @@ public class ReplicaAssigner {
    * For each shard return a new set of nodes where the replicas need to be created satisfying
    * the specified rule
    */
-  public Map<Position, String> getNodeMappings() {
-    Map<Position, String> result = getNodeMappings0();
+  public Map<ReplicaPosition, String> getNodeMappings() {
+    Map<ReplicaPosition, String> result = getNodeMappings0();
     if (result == null) {
       String msg = "Could not identify nodes matching the rules " + rules;
       if (!failedNodes.isEmpty()) {
@@ -147,7 +125,7 @@ public class ReplicaAssigner {
 
   }
 
-  Map<Position, String> getNodeMappings0() {
+  Map<ReplicaPosition, String> getNodeMappings0() {
     List<String> shardNames = new ArrayList<>(shardVsReplicaCount.keySet());
     int[] shardOrder = new int[shardNames.size()];
     for (int i = 0; i < shardNames.size(); i++) shardOrder[i] = i;
@@ -166,17 +144,17 @@ public class ReplicaAssigner {
       }
     }
 
-    Map<Position, String> result = tryAllPermutations(shardNames, shardOrder, nonWildCardShardRules, false);
+    Map<ReplicaPosition, String> result = tryAllPermutations(shardNames, shardOrder, nonWildCardShardRules, false);
     if (result == null && hasFuzzyRules) {
       result = tryAllPermutations(shardNames, shardOrder, nonWildCardShardRules, true);
     }
     return result;
   }
 
-  private Map<Position, String> tryAllPermutations(List<String> shardNames,
-                                                   int[] shardOrder,
-                                                   int nonWildCardShardRules,
-                                                   boolean fuzzyPhase) {
+  private Map<ReplicaPosition, String> tryAllPermutations(List<String> shardNames,
+                                                          int[] shardOrder,
+                                                          int nonWildCardShardRules,
+                                                          boolean fuzzyPhase) {
 
 
     Iterator<int[]> shardPermutations = nonWildCardShardRules > 0 ?
@@ -185,16 +163,16 @@ public class ReplicaAssigner {
 
     for (; shardPermutations.hasNext(); ) {
       int[] p = shardPermutations.next();
-      List<Position> positions = new ArrayList<>();
+      List<ReplicaPosition> replicaPositions = new ArrayList<>();
       for (int pos : p) {
         for (int j = 0; j < shardVsReplicaCount.get(shardNames.get(pos)); j++) {
-          positions.add(new Position(shardNames.get(pos), j));
+          replicaPositions.add(new ReplicaPosition(shardNames.get(pos), j, Replica.Type.NRT));
         }
       }
-      Collections.sort(positions);
+      Collections.sort(replicaPositions);
       for (Iterator<int[]> it = permutations(rules.size()); it.hasNext(); ) {
         int[] permutation = it.next();
-        Map<Position, String> result = tryAPermutationOfRules(permutation, positions, fuzzyPhase);
+        Map<ReplicaPosition, String> result = tryAPermutationOfRules(permutation, replicaPositions, fuzzyPhase);
         if (result != null) return result;
       }
     }
@@ -203,13 +181,13 @@ public class ReplicaAssigner {
   }
 
 
-  private Map<Position, String> tryAPermutationOfRules(int[] rulePermutation, List<Position> positions, boolean fuzzyPhase) {
+  private Map<ReplicaPosition, String> tryAPermutationOfRules(int[] rulePermutation, List<ReplicaPosition> replicaPositions, boolean fuzzyPhase) {
     Map<String, Map<String, Object>> nodeVsTagsCopy = getDeepCopy(nodeVsTags, 2);
-    Map<Position, String> result = new LinkedHashMap<>();
+    Map<ReplicaPosition, String> result = new LinkedHashMap<>();
     int startPosition = 0;
     Map<String, Map<String, Integer>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
     List<String> sortedLiveNodes = new ArrayList<>(this.participatingLiveNodes);
-    Collections.sort(sortedLiveNodes, (n1, n2) -> {
+    Collections.sort(sortedLiveNodes, (String n1, String n2) -> {
       int result1 = 0;
       for (int i = 0; i < rulePermutation.length; i++) {
         Rule rule = rules.get(rulePermutation[i]);
@@ -230,7 +208,7 @@ public class ReplicaAssigner {
       return result1;
     });
     forEachPosition:
-    for (Position position : positions) {
+    for (ReplicaPosition replicaPosition : replicaPositions) {
       //trying to assign a node by verifying each rule in this rulePermutation
       forEachNode:
       for (int j = 0; j < sortedLiveNodes.size(); j++) {
@@ -240,16 +218,16 @@ public class ReplicaAssigner {
           Rule rule = rules.get(rulePermutation[i]);
           //trying to assign a replica into this node in this shard
           Rule.MatchStatus status = rule.tryAssignNodeToShard(liveNode,
-              copyOfCurrentState, nodeVsTagsCopy, position.shard, fuzzyPhase ? FUZZY_ASSIGN : ASSIGN);
+              copyOfCurrentState, nodeVsTagsCopy, replicaPosition.shard, fuzzyPhase ? FUZZY_ASSIGN : ASSIGN);
           if (status == Rule.MatchStatus.CANNOT_ASSIGN_FAIL) {
             continue forEachNode;//try another node for this position
           }
         }
         //We have reached this far means this node can be applied to this position
         //and all rules are fine. So let us change the currentState
-        result.put(position, liveNode);
-        Map<String, Integer> nodeNames = copyOfCurrentState.get(position.shard);
-        if (nodeNames == null) copyOfCurrentState.put(position.shard, nodeNames = new HashMap<>());
+        result.put(replicaPosition, liveNode);
+        Map<String, Integer> nodeNames = copyOfCurrentState.get(replicaPosition.shard);
+        if (nodeNames == null) copyOfCurrentState.put(replicaPosition.shard, nodeNames = new HashMap<>());
         Integer n = nodeNames.get(liveNode);
         n = n == null ? 1 : n + 1;
         nodeNames.put(liveNode, n);
@@ -265,11 +243,11 @@ public class ReplicaAssigner {
       return null;
     }
 
-    if (positions.size() > result.size()) {
+    if (replicaPositions.size() > result.size()) {
       return null;
     }
 
-    for (Map.Entry<Position, String> e : result.entrySet()) {
+    for (Map.Entry<ReplicaPosition, String> e : result.entrySet()) {
       for (int i = 0; i < rulePermutation.length; i++) {
         Rule rule = rules.get(rulePermutation[i]);
         Rule.MatchStatus matchStatus = rule.tryAssignNodeToShard(e.getValue(),

@@ -43,8 +43,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,7 +54,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    TestInjection.prepRecoveryOpPauseForever = "true:30";
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
 
@@ -66,17 +63,11 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     onlyLeaderIndexes = random().nextBoolean();
     CollectionAdminRequest
-        .createCollection(COLLECTION, "config", 2, 2)
-        .setRealtimeReplicas(onlyLeaderIndexes? 1: -1)
+        .createCollection(COLLECTION, "config", 2, onlyLeaderIndexes?0:2,onlyLeaderIndexes?2:0,0)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    TestInjection.reset();
   }
 
   @Before
@@ -111,7 +102,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     assertEquals(4, resp.getResults().getNumFound());
     // Make sure all nodes is recover from tlog
     if (onlyLeaderIndexes) {
-      // Leader election can be kicked off, so 2 append replicas will replay its tlog before becoming new leader
+      // Leader election can be kicked off, so 2 tlog replicas will replay its tlog before becoming new leader
       assertTrue( countReplayLog.get() >=2);
     } else {
       assertEquals(4, countReplayLog.get());

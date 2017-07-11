@@ -451,7 +451,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return buildUrl(port, context);
   }
 
-  protected void addFields(SolrInputDocument doc, Object... fields) {
+  protected static void addFields(SolrInputDocument doc, Object... fields) {
     for (int i = 0; i < fields.length; i += 2) {
       doc.addField((String) (fields[i]), fields[i + 1]);
     }
@@ -1116,19 +1116,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected void setupJettySolrHome(File jettyHome) throws IOException {
     seedSolrHome(jettyHome);
 
-    Properties coreProperties = new Properties();
-    coreProperties.setProperty("name", "collection1");
-    coreProperties.setProperty("shard", "${shard:}");
-    coreProperties.setProperty("collection", "${collection:collection1}");
-    coreProperties.setProperty("config", "${solrconfig:solrconfig.xml}");
-    coreProperties.setProperty("schema", "${schema:schema.xml}");
-    coreProperties.setProperty("coreNodeName", "${coreNodeName:}");
-
-    writeCoreProperties(jettyHome.toPath().resolve("cores").resolve("collection1"), coreProperties, "collection1");
-
-     //   <core name="collection1" instanceDir="collection1" shard="${shard:}"
-     // collection="${collection:collection1}" config="${solrconfig:solrconfig.xml}" schema="${schema:schema.xml}"
-    //coreNodeName="${coreNodeName:}"/>
+    Files.createDirectories(jettyHome.toPath().resolve("cores").resolve("collection1"));
   }
 
 }

@@ -176,8 +176,8 @@ public class DocumentBuilder {
                 // check if the copy field is a multivalued or not
                 if (!destinationField.multiValued() && destHasValues) {
                   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                      "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
-                          destinationField.getName() + ": " + v);
+                      "Multiple values encountered for non multiValued copy field " +
+                      destinationField.getName() + ": " + v);
                 }
 
                 used = true;
@@ -198,7 +198,9 @@ public class DocumentBuilder {
         }
       }
       catch( SolrException ex ) {
-        throw ex;
+        throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()),
+            "ERROR: "+getID(doc, schema)+"Error adding field '" + 
+              field.getName() + "'='" +field.getValue()+"' msg=" + ex.getMessage(), ex );
       }
       catch( Exception ex ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,

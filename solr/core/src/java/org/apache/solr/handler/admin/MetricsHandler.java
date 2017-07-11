@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +34,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -51,6 +53,14 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   final SolrMetricManager metricManager;
 
   public static final String COMPACT_PARAM = "compact";
+  public static final String PREFIX_PARAM = "prefix";
+  public static final String REGEX_PARAM = "regex";
+  public static final String PROPERTY_PARAM = "property";
+  public static final String REGISTRY_PARAM = "registry";
+  public static final String GROUP_PARAM = "group";
+  public static final String TYPE_PARAM = "type";
+
+  public static final String ALL = "all";
 
   public MetricsHandler() {
     this.container = null;
@@ -73,39 +83,77 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Core container instance not initialized");
     }
 
-    boolean compact = req.getParams().getBool(COMPACT_PARAM, false);
+    boolean compact = req.getParams().getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(req);
+    MetricUtils.PropertyFilter propertyFilter = parsePropertyFilter(req);
     List<MetricType> metricTypes = parseMetricTypes(req);
     List<MetricFilter> metricFilters = metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
     Set<String> requestedRegistries = parseRegistries(req);
 
-    NamedList response = new NamedList();
+    NamedList response = new SimpleOrderedMap();
     for (String registryName : requestedRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
-      response.add(registryName, MetricUtils.toNamedList(registry, metricFilters, mustMatchFilter, false,
-          false, compact, null));
+      SimpleOrderedMap result = new SimpleOrderedMap();
+      MetricUtils.toMaps(registry, metricFilters, mustMatchFilter, propertyFilter, false,
+          false, compact, false, (k, v) -> result.add(k, v));
+      if (result.size() > 0) {
+        response.add(registryName, result);
+      }
     }
     rsp.getValues().add("metrics", response);
   }
 
   private MetricFilter parseMustMatchFilter(SolrQueryRequest req) {
-    String[] prefixes = req.getParams().getParams("prefix");
-    MetricFilter mustMatchFilter;
+    String[] prefixes = req.getParams().getParams(PREFIX_PARAM);
+    MetricFilter prefixFilter = null;
     if (prefixes != null && prefixes.length > 0) {
       Set<String> prefixSet = new HashSet<>();
       for (String prefix : prefixes) {
         prefixSet.addAll(StrUtils.splitSmart(prefix, ','));
       }
-      mustMatchFilter = new SolrMetricManager.PrefixFilter((String[])prefixSet.toArray(new String[prefixSet.size()]));
-    } else  {
+      prefixFilter = new SolrMetricManager.PrefixFilter(prefixSet);
+    }
+    String[] regexes = req.getParams().getParams(REGEX_PARAM);
+    MetricFilter regexFilter = null;
+    if (regexes != null && regexes.length > 0) {
+      regexFilter = new SolrMetricManager.RegexFilter(regexes);
+    }
+    MetricFilter mustMatchFilter;
+    if (prefixFilter == null && regexFilter == null) {
       mustMatchFilter = MetricFilter.ALL;
+    } else {
+      if (prefixFilter == null) {
+        mustMatchFilter = regexFilter;
+      } else if (regexFilter == null) {
+        mustMatchFilter = prefixFilter;
+      } else {
+        mustMatchFilter = new SolrMetricManager.OrFilter(prefixFilter, regexFilter);
+      }
     }
     return mustMatchFilter;
   }
 
+  private MetricUtils.PropertyFilter parsePropertyFilter(SolrQueryRequest req) {
+    String[] props = req.getParams().getParams(PROPERTY_PARAM);
+    if (props == null || props.length == 0) {
+      return MetricUtils.PropertyFilter.ALL;
+    }
+    final Set<String> filter = new HashSet<>();
+    for (String prop : props) {
+      if (prop != null && !prop.trim().isEmpty()) {
+        filter.add(prop.trim());
+      }
+    }
+    if (filter.isEmpty()) {
+      return MetricUtils.PropertyFilter.ALL;
+    } else {
+      return (name) -> filter.contains(name);
+    }
+  }
+
   private Set<String> parseRegistries(SolrQueryRequest req) {
-    String[] groupStr = req.getParams().getParams("group");
-    String[] registryStr = req.getParams().getParams("registry");
+    String[] groupStr = req.getParams().getParams(GROUP_PARAM);
+    String[] registryStr = req.getParams().getParams(REGISTRY_PARAM);
     if ((groupStr == null || groupStr.length == 0) && (registryStr == null || registryStr.length == 0)) {
       // return all registries
       return container.getMetricManager().registryNames();
@@ -117,7 +165,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       for (String g : groupStr) {
         List<String> split = StrUtils.splitSmart(g, ',');
         for (String s : split) {
-          if (s.trim().equals("all")) {
+          if (s.trim().equals(ALL)) {
             allRegistries = true;
             break;
           }
@@ -136,7 +184,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       for (String r : registryStr) {
         List<String> split = StrUtils.splitSmart(r, ',');
         for (String s : split) {
-          if (s.trim().equals("all")) {
+          if (s.trim().equals(ALL)) {
             allRegistries = true;
             break;
           }
@@ -160,7 +208,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private List<MetricType> parseMetricTypes(SolrQueryRequest req) {
-    String[] typeStr = req.getParams().getParams("type");
+    String[] typeStr = req.getParams().getParams(TYPE_PARAM);
     List<String> types = Collections.emptyList();
     if (typeStr != null && typeStr.length > 0)  {
       types = new ArrayList<>();
@@ -175,7 +223,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         metricTypes = types.stream().map(String::trim).map(MetricType::valueOf).collect(Collectors.toList());
       }
     } catch (IllegalArgumentException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid metric type in: " + types + " specified. Must be one of (all, meter, timer, histogram, counter, gauge)", e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid metric type in: " + types +
+          " specified. Must be one of " + MetricType.SUPPORTED_TYPES_MSG, e);
     }
     return metricTypes;
   }
@@ -197,6 +246,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     counter(Counter.class),
     gauge(Gauge.class),
     all(null);
+
+    public static final String SUPPORTED_TYPES_MSG = EnumSet.allOf(MetricType.class).toString();
 
     private final Class klass;
 

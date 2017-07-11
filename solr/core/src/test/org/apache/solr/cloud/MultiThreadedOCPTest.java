@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -31,7 +32,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -116,12 +116,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       for(int i = 1 ; i <= NUM_COLLECTIONS ; i++) {
-        new Create()
-                .setCollectionName("ocptest" + i)
-                .setNumShards(4)
-                .setConfigName("conf1")
-                .setAsyncId(String.valueOf(i))
-                .process(client);
+        CollectionAdminRequest.createCollection("ocptest" + i,"conf1",4,1).processAsync(String.valueOf(i), client);
       }
   
       boolean pass = false;
@@ -158,12 +153,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         "/overseer/collection-queue-work", new Overseer.Stats());
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 
-      Create createCollectionRequest = new Create()
-              .setCollectionName("ocptest_shardsplit")
-              .setNumShards(4)
-              .setConfigName("conf1")
-              .setAsyncId("1000");
-      createCollectionRequest.process(client);
+      Create createCollectionRequest = CollectionAdminRequest.createCollection("ocptest_shardsplit","conf1",4,1);
+      createCollectionRequest.processAsync("1000",client);
 
       distributedQueue.offer(Utils.toJSON(Utils.makeMap(
           "collection", "ocptest_shardsplit",
@@ -215,36 +206,21 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      new Create()
-              .setCollectionName("ocptest_shardsplit2")
-              .setNumShards(4)
-              .setConfigName("conf1")
-              .setAsyncId("3000")
-              .process(client);
+      CollectionAdminRequest.createCollection("ocptest_shardsplit2","conf1",4,1).processAsync("3000",client);
   
-      SplitShard splitShardRequest = new SplitShard()
-              .setCollectionName("ocptest_shardsplit2")
-              .setShardName(SHARD1)
-              .setAsyncId("3001");
-      splitShardRequest.process(client);
-  
-      splitShardRequest = new SplitShard()
-              .setCollectionName("ocptest_shardsplit2")
-              .setShardName(SHARD2)
-              .setAsyncId("3002");
-      splitShardRequest.process(client);
+      SplitShard splitShardRequest = CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD1);
+      splitShardRequest.processAsync("3001",client);
+      
+      splitShardRequest = CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD2);
+      splitShardRequest.processAsync("3002",client);
   
       // Now submit another task with the same id. At this time, hopefully the previous 3002 should still be in the queue.
-      splitShardRequest = new SplitShard()
-              .setCollectionName("ocptest_shardsplit2")
-              .setShardName(SHARD1)
-              .setAsyncId("3002");
-      CollectionAdminResponse response = splitShardRequest.process(client);
-  
-      NamedList r = response.getResponse();
-      assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
-          "Task with the same requestid already exists.", r.get("error"));
-  
+      expectThrows(SolrServerException.class, () -> {
+          CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD1).processAsync("3002",client);
+          // more helpful assertion failure
+          fail("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.");
+        });
+      
       for (int i = 3001; i <= 3002; i++) {
         final RequestStatusState state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
         assertSame("Task " + i + " did not complete, final state: " + state, RequestStatusState.COMPLETED, state);
@@ -271,11 +247,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     indexThread.start();
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 
-      SplitShard splitShardRequest = new SplitShard()
-              .setCollectionName("collection1")
-              .setShardName(SHARD1)
-              .setAsyncId("2000");
-      splitShardRequest.process(client);
+      SplitShard splitShardRequest = CollectionAdminRequest.splitShard("collection1").setShardName(SHARD1);
+      splitShardRequest.processAsync("2000",client);
 
       RequestStatusState state = getRequestState("2000", client);
       while (state ==  RequestStatusState.SUBMITTED) {

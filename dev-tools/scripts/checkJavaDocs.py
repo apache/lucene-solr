@@ -296,7 +296,7 @@ def checkSummary(fullPath):
         print()
         print(fullPath)
         printed = True
-      print('  missing: %s' % unescapeHTML(lastHREF))
+      print('  missing description: %s' % unescapeHTML(lastHREF))
       anyMissing = True
     elif lineLower.find('licensed to the apache software foundation') != -1 or lineLower.find('copyright 2004 the apache software foundation') != -1:
       if not printed:

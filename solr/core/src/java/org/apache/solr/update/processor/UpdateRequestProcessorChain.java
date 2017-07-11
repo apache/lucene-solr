@@ -21,13 +21,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -270,11 +273,12 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       if (s.isEmpty()) continue;
       UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
       if (p == null) {
-        try {
-          p = core.createInstance(s + "UpdateProcessorFactory", UpdateRequestProcessorFactory.class,
-              "updateProcessor", null, core.getMemClassLoader());
-          core.getUpdateProcessors().put(s, p);
-        } catch (SolrException e) {
+        Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
+        if(factoryClass != null) {
+          PluginInfo pluginInfo = new PluginInfo("updateProcessor",
+              Utils.makeMap("name", s,
+                  "class", factoryClass.getName()));
+          core.getUpdateProcessors().put(s, p = core.getUpdateProcessors().createPlugin(pluginInfo).get());
         }
         if (p == null)
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
@@ -313,5 +317,10 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
           Objects.equals(this.postProcessor, that.postProcessor);
     }
   }
+
+  public static final Map<String, Class> implicits = new ImmutableMap.Builder()
+      .put(TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class)
+      .put(AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class)
+      .build();
 
 }

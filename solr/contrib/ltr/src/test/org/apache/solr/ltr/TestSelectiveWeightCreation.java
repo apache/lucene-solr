@@ -70,16 +70,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     return features;
   }
 
-  private static Map<String,Object> makeFeatureWeights(List<Feature> features) {
-    final Map<String,Object> nameParams = new HashMap<String,Object>();
-    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
-    for (final Feature feat : features) {
-      modelWeights.put(feat.getName(), 0.1);
-    }
-    nameParams.put("weights", modelWeights);
-    return nameParams;
-  }
-
   private LTRScoringQuery.ModelWeight performQuery(TopDocs hits,
       IndexSearcher searcher, int docid, LTRScoringQuery model) throws IOException,
       ModelException {
@@ -168,7 +158,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // when features are NOT requested in the response, only the modelFeature weights should be created
     final LTRScoringModel ltrScoringModel1 = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
+        TestLinearModel.makeFeatureWeights(features));
     LTRScoringQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel1, false)); // features not requested in response
     LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
@@ -185,7 +175,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // when features are requested in the response, weights should be created for all features
     final LTRScoringModel ltrScoringModel2 = TestLinearModel.createLinearModel("test",
         features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
+        TestLinearModel.makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new LTRScoringQuery(ltrScoringModel2, true)); // features requested in response
     featuresInfo = modelWeight.getFeaturesInfo();
@@ -210,14 +200,14 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
-    final String docs0fv_sparse = FeatureLoggerTestUtils.toFeatureVector(
-        "matchedTitle","1.0", "titlePhraseMatch","0.6103343");
-    final String docs0fv_dense = FeatureLoggerTestUtils.toFeatureVector(
-        "matchedTitle","1.0", "titlePhraseMatch","0.6103343", "titlePhrasesMatch","0.0");
-    final String docs0fv_fstore4= FeatureLoggerTestUtils.toFeatureVector(
-        "popularity","3.0", "originalScore","1.0");
-
-    final String docs0fv = chooseDefaultFeatureVector(docs0fv_dense, docs0fv_sparse);
+//    final String docs0fv_sparse = FeatureLoggerTestUtils.toFeatureVector(
+//        "matchedTitle","1.0", "titlePhraseMatch","0.6103343");
+//    final String docs0fv_dense = FeatureLoggerTestUtils.toFeatureVector(
+//        "matchedTitle","1.0", "titlePhraseMatch","0.6103343", "titlePhrasesMatch","0.0");
+//    final String docs0fv_fstore4= FeatureLoggerTestUtils.toFeatureVector(
+//        "popularity","3.0", "originalScore","1.0");
+//
+//    final String docs0fv = chooseDefaultFeatureVector(docs0fv_dense, docs0fv_sparse);
 
     // extract all features in externalmodel's store (default store)
     // rerank using externalmodel (default store)
@@ -227,11 +217,12 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.add("rows", "5");
     query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3 efi.userTitlePhrase1=w2 efi.userTitlePhrase2=w1}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");    
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv+"'"); 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.33873552");    
+    // SOLR-10710, feature based on query with term w3 now scores higher on doc 4, updated
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");
+    // FIXME design better way to test this, we can't rely on absolute scores
+    // assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv+"'");
 
     // extract all features from fstore4
     // rerank using externalmodel (default store)
@@ -240,11 +231,12 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.add("fl", "*,score,fv:[fv store=fstore4 efi.myPop=3]");
     query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3}");
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");    
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.33873552");
+    // SOLR-10710, feature based on query with term w3 now scores higher on doc 4, updated
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='1'");
+    // FIXME design better way to test this, we can't rely on absolute scores
+    // assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'");
 
     // extract all features from fstore4
     // rerank using externalmodel2 (fstore2)
@@ -255,9 +247,9 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='5'"); 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='4'"); 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'"); 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==2.5");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
+    // FIXME design better way to test this, we can't rely on absolute scores
+    // assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_fstore4+"'");
   }
 }
 

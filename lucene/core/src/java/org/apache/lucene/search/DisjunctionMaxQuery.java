@@ -178,6 +178,14 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
       return disjuncts[0];
     }
 
+    if (tieBreakerMultiplier == 1.0f) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (Query sub : disjuncts) {
+        builder.add(sub, BooleanClause.Occur.SHOULD);
+      }
+      return builder.build();
+    }
+
     boolean actuallyRewritten = false;
     List<Query> rewrittenDisjuncts = new ArrayList<>();
     for (Query sub : disjuncts) {

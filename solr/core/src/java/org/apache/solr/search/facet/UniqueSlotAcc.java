@@ -37,15 +37,15 @@ abstract class UniqueSlotAcc extends SlotAcc {
   int[] counts;  // populated with the cardinality once
   int nTerms;
 
-  public UniqueSlotAcc(FacetContext fcontext, String field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
     super(fcontext);
     this.factory = factory;
     arr = new FixedBitSet[numSlots];
-    this.field = fcontext.searcher.getSchema().getField(field);
+    this.field = field;
   }
 
   @Override
-  public void reset() {
+  public void reset() throws IOException {
     counts = null;
     for (FixedBitSet bits : arr) {
       if (bits == null) continue;

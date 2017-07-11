@@ -18,7 +18,7 @@ package org.apache.solr.servlet;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.CommandOperation;
+import org.apache.solr.common.util.CommandOperation;
 import org.slf4j.Logger;
 
 import java.io.PrintWriter;

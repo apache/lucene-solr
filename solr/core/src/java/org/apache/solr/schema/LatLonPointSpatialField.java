@@ -18,16 +18,15 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.LeafFieldComparator;
@@ -156,16 +155,16 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
       if (shape instanceof Circle) {
         Circle circle = (Circle) shape;
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
-        return LatLonDocValuesField.newDistanceQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
             circle.getCenter().getY(), circle.getCenter().getX(),
             radiusMeters);
       } else if (shape instanceof Rectangle) {
         Rectangle rect = (Rectangle) shape;
-        return LatLonDocValuesField.newBoxQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowBoxQuery(getFieldName(),
             rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
       } else if (shape instanceof Point) {
         Point point = (Point) shape;
-        return LatLonDocValuesField.newDistanceQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
             point.getY(), point.getX(), 0);
       } else {
         throw new UnsupportedOperationException("Shape " + shape.getClass() + " is not supported by " + getClass());
@@ -177,7 +176,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     }
 
     @Override
-    public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+    public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
       if (!docValues) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             getFieldName() + " must have docValues enabled to support this feature");
@@ -191,7 +190,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     /**
      * A {@link ValueSource} based around {@code LatLonDocValuesField#newDistanceSort(String, double, double)}.
      */
-    private static class DistanceSortValueSource extends ValueSource {
+    private static class DistanceSortValueSource extends DoubleValuesSource {
       private final String fieldName;
       private final Point queryPoint;
       private final double multiplier;
@@ -218,41 +217,38 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
       }
 
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-        return new DoubleDocValues(this) {
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return new DoubleValues() {
+
           @SuppressWarnings("unchecked")
           final FieldComparator<Double> comparator =
               (FieldComparator<Double>) getSortField(false).getComparator(1, 1);
-          final LeafFieldComparator leafComparator = comparator.getLeafComparator(readerContext);
+          final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
           final double mult = multiplier; // so it's a local field
 
-          // Since this computation is expensive, it's worth caching it just in case.
-          double cacheDoc = -1;
-          double cacheVal = Double.POSITIVE_INFINITY;
+          double value = Double.POSITIVE_INFINITY;
 
           @Override
-          public double doubleVal(int doc) {
-            if (cacheDoc != doc) {
-              try {
-                leafComparator.copy(0, doc);
-                cacheVal = comparator.value(0) * mult;
-                cacheDoc = doc;
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            }
-            return cacheVal;
+          public double doubleValue() throws IOException {
+            return value;
           }
 
           @Override
-          public boolean exists(int doc) {
-            return !Double.isInfinite(doubleVal(doc));
+          public boolean advanceExact(int doc) throws IOException {
+            leafComparator.copy(0, doc);
+            value = comparator.value(0) * mult;
+            return true;
           }
         };
       }
 
       @Override
-      public String description() {
+      public boolean needsScores() {
+        return false;
+      }
+
+      @Override
+      public String toString() {
         return "distSort(" + fieldName + ", " + queryPoint + ", mult:" + multiplier + ")";
       }
 

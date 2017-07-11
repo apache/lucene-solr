@@ -34,14 +34,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStateProvider {
+public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
   ZkStateReader zkStateReader;
+  private boolean closeZkStateReader = true;
   String zkHost;
   int zkConnectTimeout = 10000;
   int zkClientTimeout = 10000;
+
+  public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
+    this.zkStateReader = zkStateReader;
+    this.closeZkStateReader =  false;
+  }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
     zkHost = buildZkHostString(zkHosts,chroot);
@@ -55,6 +61,9 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
   public ClusterState.CollectionRef getState(String collection) {
     return zkStateReader.getClusterState().getCollectionRef(collection);
   }
+  public ZkStateReader getZkStateReader(){
+    return zkStateReader;
+  }
 
   @Override
   public Set<String> liveNodes() {
@@ -63,14 +72,24 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
 
 
   @Override
-  public String getAlias(String collection) {
+  public String getAlias(String alias) {
     Aliases aliases = zkStateReader.getAliases();
-    return aliases.getCollectionAlias(collection);
+    return aliases.getCollectionAlias(alias);
   }
 
   @Override
-  public Map<String, Object> getClusterProperties() {
-    return zkStateReader.getClusterProperties();
+  public Object getClusterProperty(String propertyName) {
+    Map<String, Object> props = zkStateReader.getClusterProperties();
+    return props.get(propertyName);
+  }
+
+  @Override
+  public Object getClusterProperty(String propertyName, String def) {
+    Map<String, Object> props = zkStateReader.getClusterProperties();
+    if (props.containsKey(propertyName)) {
+      return props.get(propertyName);
+    }
+    return def;
   }
 
   @Override
@@ -141,7 +160,7 @@ public class ZkClientClusterStateProvider implements CloudSolrClient.ClusterStat
 
   @Override
   public void close() throws IOException {
-    if (zkStateReader != null) {
+    if (zkStateReader != null && closeZkStateReader) {
       synchronized (this) {
         if (zkStateReader != null)
           zkStateReader.close();

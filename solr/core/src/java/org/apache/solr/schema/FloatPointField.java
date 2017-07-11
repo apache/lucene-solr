@@ -61,7 +61,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     if (min == null) {
       actualMin = Float.NEGATIVE_INFINITY;
     } else {
-      actualMin = Float.parseFloat(min);
+      actualMin = parseFloatFromUser(field.getName(), min);
       if (!minInclusive) {
         actualMin = FloatPoint.nextUp(actualMin);
       }
@@ -69,7 +69,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     if (max == null) {
       actualMax = Float.POSITIVE_INFINITY;
     } else {
-      actualMax = Float.parseFloat(max);
+      actualMax = parseFloatFromUser(field.getName(), max);
       if (!maxInclusive) {
         actualMax = FloatPoint.nextDown(actualMax);
       }
@@ -100,16 +100,19 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return FloatPoint.newExactQuery(field.getName(), Float.parseFloat(externalVal));
+    return FloatPoint.newExactQuery(field.getName(), parseFloatFromUser(field.getName(), externalVal));
   }
 
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     float[] values = new float[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Float.parseFloat(val);
+      values[i] = parseFloatFromUser(field.getName(), val);
       i++;
     }
     return FloatPoint.newSetQuery(field.getName(), values);
@@ -124,7 +127,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Float.BYTES);
     result.setLength(Float.BYTES);
-    FloatPoint.encodeDimension(Float.parseFloat(val.toString()), result.bytes(), 0);
+    FloatPoint.encodeDimension(parseFloatFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
@@ -148,7 +151,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_FLOAT;
+      return null;
     } else {
       return Type.FLOAT_POINT;
     }
@@ -167,8 +170,6 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     float floatValue = (value instanceof Number) ? ((Number) value).floatValue() : Float.parseFloat(value.toString());
     return new FloatPoint(field.getName(), floatValue);
   }

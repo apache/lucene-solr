@@ -18,12 +18,15 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.schema.DoubleValueFieldType;
+import org.apache.solr.schema.FloatValueFieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IntValueFieldType;
+import org.apache.solr.schema.LongValueFieldType;
+import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -33,17 +36,23 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   /** Initializes core and does some sanity checking of schema */
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-functionquery.xml","schema11.xml");
 
+    initCore("solrconfig-functionquery.xml","schema11.xml");
+    checkFields(new String[] {"i", "l", "f", "d"}, new String [] {"_p", "_ni_p"});
+    checkFields(new String[] {"ti", "tl", "tf", "td"}, new String [] {"", "_dv", "_ni_dv"});
+  }
+  
+  private static void checkFields(String[] types, String[] suffixes) {
     // sanity check the expected properties of our fields (ie: who broke the schema?)
     IndexSchema schema = h.getCore().getLatestSchema();
-    for (String type : new String[] {"i", "l", "f", "d"}) {
-      for (String suffix : new String [] {"", "_dv", "_ni_dv"}) {
-        String f = "val_t" + type + "s" + suffix;
+    for (String type : types) {
+      for (String suffix : suffixes) {
+        String f = "val_" + type + "s" + suffix;
         SchemaField sf = schema.getField(f);
         assertTrue(f + " is not multivalued", sf.multiValued());
         assertEquals(f + " doesn't have expected docValues status",
-                     f.contains("dv"), sf.hasDocValues());
+                     f.contains("dv") || f.endsWith("_p")
+                     || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP), sf.hasDocValues());
         assertEquals(f + " doesn't have expected index status",
                      ! f.contains("ni"), sf.indexed());
       }
@@ -56,49 +65,62 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
   }
-
+  
   public void testBasics() throws Exception {
+    testBasics("val_tis_dv", "val_tls_dv", "val_tfs_dv", "val_tds_dv");
+    testBasics("val_tis_ni_dv", "val_tls_ni_dv", "val_tfs_ni_dv", "val_tds_ni_dv");
+    testBasics("val_is_p", "val_ls_p", "val_fs_p", "val_ds_p");
+    testBasics("val_is_ni_p", "val_ls_ni_p", "val_fs_ni_p", "val_ds_ni_p");
+  }
+
+  private void testBasics(String intField, String longField, String floatField, String doubleField) throws Exception {
+    assertTrue("Unexpected int field", h.getCore().getLatestSchema().getField(intField).getType() instanceof IntValueFieldType);
+    assertTrue("Unexpected long field", h.getCore().getLatestSchema().getField(longField).getType() instanceof LongValueFieldType);
+    assertTrue("Unexpected float field", h.getCore().getLatestSchema().getField(floatField).getType() instanceof FloatValueFieldType);
+    assertTrue("Unexpected double field", h.getCore().getLatestSchema().getField(doubleField).getType() instanceof DoubleValueFieldType);
+
+    assertU(delQ("*:*"));
     assertU(adoc(sdoc("id", "1"
                       // int
-                      ,"val_tis_dv", "42"
-                      ,"val_tis_dv", "9"
-                      ,"val_tis_dv", "-54"
+                      ,intField, "42"
+                      ,intField, "9"
+                      ,intField, "-54"
                       // long
-                      ,"val_tls_dv", "420"
-                      ,"val_tls_dv", "90"
-                      ,"val_tls_dv", "-540"
+                      ,longField, "420"
+                      ,longField, "90"
+                      ,longField, "-540"
                       // float
-                      ,"val_tfs_dv", "-42.5"
-                      ,"val_tfs_dv", "-4.5"
-                      ,"val_tfs_dv", "-13.5"
+                      ,floatField, "-42.5"
+                      ,floatField, "-4.5"
+                      ,floatField, "-13.5"
                       // double
-                      ,"val_tds_dv", "-420.5"
-                      ,"val_tds_dv", "-40.5"
-                      ,"val_tds_dv", "-130.5"
+                      ,doubleField, "-420.5"
+                      ,doubleField, "-40.5"
+                      ,doubleField, "-130.5"
                       )));
     assertU(commit());
 
     assertQ(req("q","id:1"
                 // int
-                ,"fl","exists_min_i:exists(field(val_tis_dv,min))"
-                ,"fl","exists_max_i:exists(field(val_tis_dv,max))"
-                ,"fl","min_i:field(val_tis_dv,min)"
-                ,"fl","max_i:field(val_tis_dv,max)"
+                ,"fl","exists_min_i:exists(field(" + intField + ",min))"
+                ,"fl","exists_max_i:exists(field(" + intField + ",max))"
+                ,"fl","min_i:field(" + intField + ",min)"
+                ,"fl","max_i:field(" + intField + ",max)"
                 // long
-                ,"fl","exists_min_l:exists(field(val_tls_dv,min))"
-                ,"fl","exists_max_l:exists(field(val_tls_dv,max))"
-                ,"fl","min_l:field(val_tls_dv,min)"
-                ,"fl","max_l:field(val_tls_dv,max)"
+                ,"fl","exists_min_l:exists(field(" + longField + ",min))"
+                ,"fl","exists_max_l:exists(field(" + longField + ",max))"
+                ,"fl","min_l:field(" + longField + ",min)"
+                ,"fl","max_l:field(" + longField + ",max)"
                 // float
-                ,"fl","exists_min_f:exists(field(val_tfs_dv,min))"
-                ,"fl","exists_max_f:exists(field(val_tfs_dv,max))"
-                ,"fl","min_f:field(val_tfs_dv,min)"
-                ,"fl","max_f:field(val_tfs_dv,max)"
+                ,"fl","exists_min_f:exists(field(" + floatField + ",min))"
+                ,"fl","exists_max_f:exists(field(" + floatField + ",max))"
+                ,"fl","min_f:field(" + floatField + ",min)"
+                ,"fl","max_f:field(" + floatField + ",max)"
                 // double
-                ,"fl","exists_min_d:exists(field(val_tds_dv,min))"
-                ,"fl","exists_max_d:exists(field(val_tds_dv,max))"
-                ,"fl","min_d:field(val_tds_dv,min)"
-                ,"fl","max_d:field(val_tds_dv,max)"
+                ,"fl","exists_min_d:exists(field(" + doubleField + ",min))"
+                ,"fl","exists_max_d:exists(field(" + doubleField + ",max))"
+                ,"fl","min_d:field(" + doubleField + ",min)"
+                ,"fl","max_d:field(" + doubleField + ",max)"
                 
                 )
             ,"//*[@numFound='1']"
@@ -127,10 +149,14 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   }
 
-  
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
   public void testIntFieldCache() {
     testSimpleInt("val_tis");
+  }
+  
+  public void testPointInt() {
+    testSimpleInt("val_is_p");
+    testSimpleInt("val_is_ni_p");
   }
   
   public void testIntDocValues() {
@@ -147,6 +173,11 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testSimpleLong("val_tls_dv");
     testSimpleLong("val_tls_ni_dv");
   }
+  
+  public void testPointLong() {
+    testSimpleLong("val_ls_p");
+    testSimpleLong("val_ls_ni_p");
+  }
 
 
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
@@ -159,6 +190,11 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testSimpleFloat("val_tfs_ni_dv");
   }
   
+  public void testPointFloat() {
+    testSimpleFloat("val_fs_p");
+    testSimpleFloat("val_fs_ni_p");
+  }
+  
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
   public void testDoubleFieldCache() {
     testSimpleDouble("val_tds");
@@ -169,6 +205,11 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testSimpleDouble("val_tds_ni_dv");
   }
 
+  public void testPointDouble() {
+    testSimpleDouble("val_ds_p");
+    testSimpleDouble("val_ds_ni_p");
+  }
+
   public void testBadRequests() {
 
     // useful error msg when bogus selector is requested (ie: not min or max)
@@ -176,19 +217,26 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
               "hoss",
               req("q","*:*", "fl", "field(val_tds_dv,'hoss')"),
               SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("no error asking for bogus selector",
+        "hoss",
+        req("q","*:*", "fl", "field(val_ds_p,'hoss')"),
+        SolrException.ErrorCode.BAD_REQUEST);
     
     // useful error until/unless LUCENE-6709
+    assertFalse(h.getCore().getLatestSchema().getField("val_is_ndv_p").hasDocValues());
+    assertTrue(h.getCore().getLatestSchema().getField("val_is_ndv_p").multiValued());
     assertQEx("no error asking for max on a non docVals field",
-              "val_tds",
-              req("q","*:*", "fl", "field(val_tds,'max')"),
+              "val_is_ndv_p",
+              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     assertQEx("no error asking for max on a non docVals field",
               "max",
-              req("q","*:*", "fl", "field(val_tds,'max')"),
+              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     assertQEx("no error asking for max on a non docVals field",
               "docValues",
-              req("q","*:*", "fl", "field(val_tds,'max')"),
+              req("q","*:*", "fl", "field(val_is_ndv_p,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
     
     // useful error if min/max is unsupported for fieldtype
@@ -200,7 +248,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
               "string",
               req("q","*:*", "fl", "field(cat_docValues,'max')"),
               SolrException.ErrorCode.BAD_REQUEST);
-
+    
   }
 
   public void testRandom() throws Exception {
@@ -212,12 +260,18 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
       vals[i] = random().nextInt();
     }
     testSimpleValues("val_tis_dv", int.class, vals);
+    testSimpleValues("val_is_p", int.class, vals);
+    testSimpleValues("val_tis_ni_dv", int.class, vals);
+    testSimpleValues("val_is_ni_p", int.class, vals);
 
     // random longs
     for (int i = 0; i < vals.length; i++) {
       vals[i] = random().nextLong();
     }
     testSimpleValues("val_tls_dv", long.class, vals);
+    testSimpleValues("val_ls_p", long.class, vals);
+    testSimpleValues("val_tls_ni_dv", long.class, vals);
+    testSimpleValues("val_ls_ni_p", long.class, vals);
     
     // random floats
     for (int i = 0; i < vals.length; i++) {
@@ -229,6 +283,9 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
       vals[i] = f;
     }
     testSimpleValues("val_tfs_dv", float.class, vals);
+    testSimpleValues("val_fs_p", float.class, vals);
+    testSimpleValues("val_tfs_ni_dv", float.class, vals);
+    testSimpleValues("val_fs_ni_p", float.class, vals);
     
     // random doubles
     for (int i = 0; i < vals.length; i++) {
@@ -240,6 +297,9 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
       vals[i] = d;
     }
     testSimpleValues("val_tds_dv", double.class, vals);
+    testSimpleValues("val_ds_p", double.class, vals);
+    testSimpleValues("val_tds_ni_dv", double.class, vals);
+    testSimpleValues("val_ds_ni_p", double.class, vals);
 
   }
 
@@ -309,7 +369,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   }
   
   /** Tests a single doc with a few explicit values, as well as testing exists with and w/o values */
-  protected void testSimpleValues(final String fieldname, final Class clazz, final Comparable... vals) {
+  protected void testSimpleValues(final String fieldname, final Class<?> clazz, final Comparable... vals) {
     clearIndex();
     
     assert 0 < vals.length;
@@ -372,8 +432,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
                       "sort", func + " " + dir)
                   ,"//*[@numFound='2']"
                   // no assumptions about order for now, see bug: SOLR-8005
-                  ,"//float[@name='id']='1.0'"
-                  ,"//float[@name='id']='2.0'"
+                  ,"//str[@name='id']='1'"
+                  ,"//str[@name='id']='2'"
                   );
         }
       }
@@ -430,7 +490,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertQ(sort,
             req("q","*:*", "rows", ""+numDocs, "sort", sort)
             ,"//result[@numFound='"+numDocs+"']"
-            ,"//result/doc[1]/float[@name='id']='0.0'"
+            ,"//result/doc[1]/str[@name='id']='0'"
             );
   }
   /** helper for testSimpleSort */
@@ -438,7 +498,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertQ(sort,
             req("q","*:*", "rows", ""+numDocs, "sort", sort)
             ,"//result[@numFound='"+numDocs+"']"
-            ,"//result/doc["+numDocs+"]/float[@name='id']='0.0'"
+            ,"//result/doc["+numDocs+"]/str[@name='id']='0'"
             );
   }
   

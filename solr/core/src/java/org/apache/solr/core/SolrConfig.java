@@ -123,6 +123,7 @@ public class SolrConfig extends Config implements MapSerializable {
   private int formUploadLimitKB;
 
   private boolean enableRemoteStreams;
+  private boolean enableStreamBody;
 
   private boolean handleSelect;
 
@@ -276,18 +277,12 @@ public class SolrConfig extends Config implements MapSerializable {
     hashSetInverseLoadFactor = 1.0f / getFloat("//HashDocSet/@loadFactor", 0.75f);
     hashDocSetMaxSize = getInt("//HashDocSet/@maxSize", 3000);
 
+    if (get("jmx", null) != null) {
+      log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
+    }
+
     httpCachingConfig = new HttpCachingConfig(this);
 
-    Node jmx = getNode("jmx", false);
-    if (jmx != null) {
-      jmxConfig = new JmxConfiguration(true,
-          get("jmx/@agentId", null),
-          get("jmx/@serviceUrl", null),
-          get("jmx/@rootName", null));
-
-    } else {
-      jmxConfig = new JmxConfiguration(false, null, null, null);
-    }
     maxWarmingSearchers = getInt("query/maxWarmingSearchers", 1);
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
@@ -304,17 +299,21 @@ public class SolrConfig extends Config implements MapSerializable {
     updateHandlerInfo = loadUpdatehandlerInfo();
 
     multipartUploadLimitKB = getInt(
-        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048);
+        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", Integer.MAX_VALUE);
+    if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
     formUploadLimitKB = getInt(
-        "requestDispatcher/requestParsers/@formdataUploadLimitInKB", 2048);
+        "requestDispatcher/requestParsers/@formdataUploadLimitInKB", Integer.MAX_VALUE);
+    if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
     enableRemoteStreams = getBool(
         "requestDispatcher/requestParsers/@enableRemoteStreaming", false);
 
-    // Let this filter take care of /select?xxx format
+    enableStreamBody = getBool(
+        "requestDispatcher/requestParsers/@enableStreamBody", false);
+
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", true);
+        "requestDispatcher/@handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
 
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);
@@ -371,10 +370,21 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
+    // Raise the Lucene static limit so we can control this with higher granularity.  See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+
     Map<String, SolrPluginInfo> map = new HashMap<>();
     for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
+
+  {
+    // non-static setMaxClauseCount because the test framework sometimes reverts the value on us and
+    // the static setting above is only executed once.  This re-sets the value every time a SolrConfig
+    // obect is created. See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+  }
+
 
   public static class SolrPluginInfo {
 
@@ -510,46 +520,10 @@ public class SolrConfig extends Config implements MapSerializable {
   protected String dataDir;
   public final int slowQueryThresholdMillis;  // threshold above which a query is considered slow
 
-  //JMX configuration
-  public final JmxConfiguration jmxConfig;
-
   private final HttpCachingConfig httpCachingConfig;
 
   public HttpCachingConfig getHttpCachingConfig() {
     return httpCachingConfig;
-  }
-
-  public static class JmxConfiguration implements MapSerializable {
-    public boolean enabled = false;
-    public String agentId;
-    public String serviceUrl;
-    public String rootName;
-
-    public JmxConfiguration(boolean enabled,
-                            String agentId,
-                            String serviceUrl,
-                            String rootName) {
-      this.enabled = enabled;
-      this.agentId = agentId;
-      this.serviceUrl = serviceUrl;
-      this.rootName = rootName;
-
-      if (agentId != null && serviceUrl != null) {
-        throw new SolrException
-            (SolrException.ErrorCode.SERVER_ERROR,
-                "Incorrect JMX Configuration in solrconfig.xml, " +
-                    "both agentId and serviceUrl cannot be specified at the same time");
-      }
-
-    }
-
-    @Override
-    public Map<String, Object> toMap(Map<String, Object> map) {
-      map.put("agentId", agentId);
-      map.put("serviceUrl", serviceUrl);
-      map.put("rootName", rootName);
-      return map;
-    }
   }
 
   public static class HttpCachingConfig implements MapSerializable {
@@ -814,6 +788,10 @@ public class SolrConfig extends Config implements MapSerializable {
     return enableRemoteStreams;
   }
 
+  public boolean isEnableStreamBody() {
+    return enableStreamBody;
+  }
+
   @Override
   public int getInt(String path) {
     return getInt(path, 0);
@@ -858,7 +836,6 @@ public class SolrConfig extends Config implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
-    if (jmxConfig != null) result.put("jmx", jmxConfig);
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
@@ -884,7 +861,6 @@ public class SolrConfig extends Config implements MapSerializable {
 
 
     addCacheConfig(m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
-    if (jmxConfig != null) result.put("jmx", jmxConfig);
     m = new LinkedHashMap();
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);

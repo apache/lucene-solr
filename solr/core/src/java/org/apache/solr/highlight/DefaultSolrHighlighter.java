@@ -84,6 +84,12 @@ import org.slf4j.LoggerFactory;
 public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized
 {
 
+  /** 
+   * This constant was formerly part of HighlightParams.  After deprecation it was removed so clients 
+   * would no longer use it, but we still support it server side.
+   */
+  private static final String USE_FVH = HighlightParams.HIGHLIGHT + ".useFastVectorHighlighter";
+  
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCore solrCore;
@@ -128,40 +134,58 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Load the fragmenters
     SolrFragmenter frag = solrCore.initPlugins(info.getChildren("fragmenter") , fragmenters,SolrFragmenter.class,null);
-    if (frag == null) frag = new GapFragmenter();
+    if (frag == null) {
+      frag = new GapFragmenter();
+      solrCore.initDefaultPlugin(frag, SolrFragmenter.class);
+    }
     fragmenters.put("", frag);
     fragmenters.put(null, frag);
 
     // Load the formatters
     SolrFormatter fmt = solrCore.initPlugins(info.getChildren("formatter"), formatters,SolrFormatter.class,null);
-    if (fmt == null) fmt = new HtmlFormatter();
+    if (fmt == null) {
+      fmt = new HtmlFormatter();
+      solrCore.initDefaultPlugin(fmt, SolrFormatter.class);
+    }
     formatters.put("", fmt);
     formatters.put(null, fmt);
 
     // Load the encoders
     SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
-    if (enc == null) enc = new DefaultEncoder();
+    if (enc == null) {
+      enc = new DefaultEncoder();
+      solrCore.initDefaultPlugin(enc, SolrEncoder.class);
+    }
     encoders.put("", enc);
     encoders.put(null, enc);
 
     // Load the FragListBuilders
     SolrFragListBuilder fragListBuilder = solrCore.initPlugins(info.getChildren("fragListBuilder"),
         fragListBuilders, SolrFragListBuilder.class, null );
-    if( fragListBuilder == null ) fragListBuilder = new SimpleFragListBuilder();
+    if( fragListBuilder == null ) {
+      fragListBuilder = new SimpleFragListBuilder();
+      solrCore.initDefaultPlugin(fragListBuilder, SolrFragListBuilder.class);
+    }
     fragListBuilders.put( "", fragListBuilder );
     fragListBuilders.put( null, fragListBuilder );
 
     // Load the FragmentsBuilders
     SolrFragmentsBuilder fragsBuilder = solrCore.initPlugins(info.getChildren("fragmentsBuilder"),
         fragmentsBuilders, SolrFragmentsBuilder.class, null);
-    if( fragsBuilder == null ) fragsBuilder = new ScoreOrderFragmentsBuilder();
+    if( fragsBuilder == null ) {
+      fragsBuilder = new ScoreOrderFragmentsBuilder();
+      solrCore.initDefaultPlugin(fragsBuilder, SolrFragmentsBuilder.class);
+    }
     fragmentsBuilders.put( "", fragsBuilder );
     fragmentsBuilders.put( null, fragsBuilder );
 
     // Load the BoundaryScanners
     SolrBoundaryScanner boundaryScanner = solrCore.initPlugins(info.getChildren("boundaryScanner"),
         boundaryScanners, SolrBoundaryScanner.class, null);
-    if(boundaryScanner == null) boundaryScanner = new SimpleBoundaryScanner();
+    if(boundaryScanner == null) {
+      boundaryScanner = new SimpleBoundaryScanner();
+      solrCore.initDefaultPlugin(boundaryScanner, SolrBoundaryScanner.class);
+    }
     boundaryScanners.put("", boundaryScanner);
     boundaryScanners.put(null, boundaryScanner);
 
@@ -221,7 +245,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     try {
       // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute isn't a good
       // indicator.
-      final Terms terms = request.getSearcher().getSlowAtomicReader().fields().terms(fieldName);
+      final Terms terms = request.getSearcher().getSlowAtomicReader().terms(fieldName);
       if (terms != null) {
         defaultPayloads = terms.hasPayloads();
       }
@@ -474,7 +498,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     boolean methodFvh =
         HighlightComponent.HighlightMethod.FAST_VECTOR.getMethodName().equals(
             params.getFieldParam(schemaField.getName(), HighlightParams.METHOD))
-        || params.getFieldBool(schemaField.getName(), HighlightParams.USE_FVH, false);
+        || params.getFieldBool(schemaField.getName(), USE_FVH, false);
     if (!methodFvh) return false;
     boolean termPosOff = schemaField.storeTermPositions() && schemaField.storeTermOffsets();
     if (!termPosOff) {

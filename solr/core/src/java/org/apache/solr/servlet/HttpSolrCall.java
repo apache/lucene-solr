@@ -101,8 +101,8 @@ import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.apache.solr.util.CommandOperation;
-import org.apache.solr.util.JsonSchemaValidator;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -327,6 +327,8 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
+        invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
+
         if (usingAliases) {
           processAliases(aliases, collectionsList);
         }
@@ -388,8 +390,6 @@ public class HttpSolrCall {
 
   /**
    * Extract handler from the URL path if not set.
-   * This returns true if the action is set.
-   * 
    */
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
@@ -411,14 +411,12 @@ public class HttpSolrCall {
             return;
           }
         }
-
       }
-      // no handler yet but allowed to handle select; let's check
 
+      // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
           solrReq = parser.parse(core, path, req);
-          invalidStates = checkStateIsValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
           String qt = solrReq.getParams().get(CommonParams.QT);
           handler = core.getRequestHandler(qt);
           if (handler == null) {
@@ -438,7 +436,7 @@ public class HttpSolrCall {
     if (core == null && idx > 0) {
       coreUrl = getRemotCoreUrl(corename, origCorename);
       // don't proxy for internal update requests
-      invalidStates = checkStateIsValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+      invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
       if (coreUrl != null
           && queryParams
           .get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
@@ -687,7 +685,7 @@ public class HttpSolrCall {
         solrReq = new SolrQueryRequestBase(core, solrParams) {
         };
       }
-      QueryResponseWriter writer = core.getQueryResponseWriter(solrReq);
+      QueryResponseWriter writer = getResponseWriter();
       writeResponse(solrResp, writer, Method.GET);
     } catch (Exception e) { // This error really does not matter
       exp = e;
@@ -813,7 +811,8 @@ public class HttpSolrCall {
     }
   }
 
-  private Map<String, Integer> checkStateIsValid(String stateVer) {
+  /** Returns null if the state ({@link CloudSolrClient#STATE_VERSION}) is good; otherwise returns state problems. */
+  private Map<String, Integer> checkStateVersionsAreValid(String stateVer) {
     Map<String, Integer> result = null;
     String[] pairs;
     if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
@@ -1028,7 +1027,7 @@ public class HttpSolrCall {
     return new AuthorizationContext() {
       @Override
       public SolrParams getParams() {
-        return solrReq.getParams();
+        return null == solrReq ? null : solrReq.getParams();
       }
 
       @Override
@@ -1081,7 +1080,7 @@ public class HttpSolrCall {
           response.delete(response.length() - 1, response.length());
         
         response.append("], Path: [").append(resource).append("]");
-        response.append(" path : ").append(path).append(" params :").append(solrReq.getParams());
+        response.append(" path : ").append(path).append(" params :").append(getParams());
         return response.toString();
       }
 
@@ -1108,14 +1107,7 @@ public class HttpSolrCall {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
       if (contentStreams == null) parsedCommands = Collections.EMPTY_LIST;
       else {
-        for (ContentStream contentStream : contentStreams) {
-          try {
-            parsedCommands = ApiBag.getCommandOperations(contentStream.getReader(), getValidators(), validateInput);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Error reading commands");
-          }
-          break;
-        }
+        parsedCommands = ApiBag.getCommandOperations(contentStreams.iterator().next(), getValidators(), validateInput);
       }
     }
     return CommandOperation.clone(parsedCommands);

@@ -29,6 +29,11 @@
 
   <codecFactory class="solr.SchemaCodecFactory"/>
 
+  <requestDispatcher>
+    <!-- Tests rely on stream.body -->
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
+  
   <query>
     <filterCache
         enabled="${filterCache.enabled:false}"
@@ -60,7 +65,7 @@
     </updateLog> 
   </updateHandler>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <bool name="httpCaching">true</bool>
   </requestHandler>
 
@@ -71,5 +76,11 @@
       <str name="b">${my.custom.variable.b:B}</str>
     </lst>
   </requestHandler>
+
+  <initParams path="/select">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
 
 </config>

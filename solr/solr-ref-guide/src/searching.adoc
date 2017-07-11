@@ -1,0 +1,57 @@
+= Searching
+:page-shortname: searching
+:page-permalink: searching.html
+:page-children: overview-of-searching-in-solr, velocity-search-ui, relevance, query-syntax-and-parsing, faceting, highlighting, spell-checking, query-re-ranking, transforming-result-documents, suggester, morelikethis, pagination-of-results, collapse-and-expand-results, result-grouping, result-clustering, spatial-search, the-terms-component, the-term-vector-component, the-stats-component, the-query-elevation-component, response-writers, near-real-time-searching, realtime-get, exporting-result-sets, streaming-expressions, parallel-sql-interface
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section describes how Solr works with search requests. It covers the following topics:
+
+* <<overview-of-searching-in-solr.adoc#overview-of-searching-in-solr,Overview of Searching in Solr>>: An introduction to searching with Solr.
+* <<velocity-search-ui.adoc#velocity-search-ui,Velocity Search UI>>: A simple search UI using the VelocityResponseWriter.
+* <<relevance.adoc#relevance,Relevance>>: Conceptual information about understanding relevance in search results.
+* <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>: A brief conceptual overview of query syntax and parsing. It also contains the following sub-sections:
+** <<common-query-parameters.adoc#common-query-parameters,Common Query Parameters>>: No matter the query parser, there are several parameters that are common to all of them.
+** <<the-standard-query-parser.adoc#the-standard-query-parser,The Standard Query Parser>>: Detailed information about the standard Lucene query parser.
+** <<the-dismax-query-parser.adoc#the-dismax-query-parser,The DisMax Query Parser>>: Detailed information about Solr's DisMax query parser.
+** <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,The Extended DisMax Query Parser>>: Detailed information about Solr's Extended DisMax (eDisMax) Query Parser.
+** <<function-queries.adoc#function-queries,Function Queries>>: Detailed information about parameters for generating relevancy scores using values from one or more numeric fields.
+** <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters in Queries>>: How to add local arguments to queries.
+** <<other-parsers.adoc#other-parsers,Other Parsers>>: More parsers designed for use in specific situations.
+* <<faceting.adoc#faceting,Faceting>>: Detailed information about categorizing search results based on indexed terms.
+* <<highlighting.adoc#highlighting,Highlighting>>: Detailed information about Solr's highlighting capabilities, including multiple underlying highlighter implementations.
+* <<spell-checking.adoc#spell-checking,Spell Checking>>: Detailed information about Solr's spelling checker.
+* <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>>: Detailed information about re-ranking top scoring documents from simple queries using more complex scores.
+** <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>>: How to use LTR to run machine learned ranking models in Solr.
+
+* <<transforming-result-documents.adoc#transforming-result-documents,Transforming Result Documents>>: Detailed information about using `DocTransformers` to add computed information to individual documents
+* <<suggester.adoc#suggester,Suggester>>: Detailed information about Solr's powerful autosuggest component.
+* <<morelikethis.adoc#morelikethis,MoreLikeThis>>: Detailed information about Solr's similar results query component.
+* <<pagination-of-results.adoc#pagination-of-results,Pagination of Results>>: Detailed information about fetching paginated results for display in a UI, or for fetching all documents matching a query.
+* <<result-grouping.adoc#result-grouping,Result Grouping>>: Detailed information about grouping results based on common field values.
+* <<result-clustering.adoc#result-clustering,Result Clustering>>: Detailed information about grouping search results based on cluster analysis applied to text fields. A bit like "unsupervised" faceting.
+* <<spatial-search.adoc#spatial-search,Spatial Search>>: How to use Solr's spatial search capabilities.
+* <<the-terms-component.adoc#the-terms-component,The Terms Component>>: Detailed information about accessing indexed terms and the documents that include them.
+* <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>: How to get term information about specific documents.
+* <<the-stats-component.adoc#the-stats-component,The Stats Component>>: How to return information from numeric fields within a document set.
+* <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>: How to force documents to the top of the results for certain queries.
+* <<response-writers.adoc#response-writers,Response Writers>>: Detailed information about configuring and using Solr's response writers.
+* <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>: How to include documents in search results nearly immediately after they are indexed.
+* <<realtime-get.adoc#realtime-get,RealTime Get>>: How to get the latest version of a document without opening a searcher.
+* <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>: Functionality to export large result sets out of Solr.
+* <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
+* <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>>: An interface for sending SQL statements to Solr, and using advanced parallel query processing and relational algebra for complex data analysis.

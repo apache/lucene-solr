@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.CodecReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
@@ -165,8 +164,7 @@ public class SolrIndexSplitter {
     }
     Bits liveDocs = reader.getLiveDocs();
 
-    Fields fields = reader.fields();
-    Terms terms = fields==null ? null : fields.terms(field.getName());
+    Terms terms = reader.terms(field.getName());
     TermsEnum termsEnum = terms==null ? null : terms.iterator();
     if (termsEnum == null) return docSets;
 

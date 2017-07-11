@@ -178,6 +178,11 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation);
+      if (replicaFailures) {
+        // In this case one of the Solr servers would be down. Hence we need to increase
+        // max_shards_per_node property for restore command to succeed.
+        restore.setMaxShardsPerNode(2);
+      }
       if (random().nextBoolean()) {
         assertEquals(0, restore.process(solrClient).getStatus());
       } else {

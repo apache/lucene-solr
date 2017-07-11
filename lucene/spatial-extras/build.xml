@@ -31,9 +31,6 @@
   <path id="classpath">
     <path refid="base.classpath"/>
     <path refid="spatialjar"/>
-    <pathelement path="${backward-codecs.jar}" />
-    <pathelement path="${queries.jar}" />
-    <pathelement path="${misc.jar}" />
     <pathelement path="${spatial3d.jar}" />
   </path>
 
@@ -43,15 +40,12 @@
     <pathelement path="src/test-files" />
   </path>
 
-  <target name="compile-core" depends="jar-backward-codecs,jar-queries,jar-misc,jar-spatial3d,common.compile-core" />
+  <target name="compile-core" depends="jar-spatial3d,common.compile-core" />
 
-  <target name="javadocs" depends="javadocs-backward-codecs,javadocs-queries,javadocs-misc,javadocs-spatial3d,compile-core,check-javadocs-uptodate"
+  <target name="javadocs" depends="javadocs-spatial3d,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
-        <link href="../backward-codecs"/>
-        <link href="../queries"/>
-        <link href="../misc"/>
         <link href="../spatial3d"/>
       </links>
     </invoke-module-javadoc>

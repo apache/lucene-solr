@@ -16,15 +16,19 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -69,9 +73,9 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
@@ -82,10 +86,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 public class RealTimeGetComponent extends SearchComponent
 {
@@ -106,7 +106,21 @@ public class RealTimeGetComponent extends SearchComponent
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
     SolrParams params = req.getParams();
+    CloudDescriptor cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
 
+    if (cloudDesc != null) {
+      Replica.Type replicaType = cloudDesc.getReplicaType();
+      if (replicaType != null) {
+        if (replicaType == Replica.Type.PULL) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, 
+              String.format(Locale.ROOT, "%s can't handle realtime get requests. Replicas of type %s do not support these type of requests", 
+                  cloudDesc.getCoreNodeName(),
+                  Replica.Type.PULL));
+        } 
+        // non-leader TLOG replicas should not respond to distrib /get requests, but internal requests are OK
+      }
+    }
+    
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
@@ -140,7 +154,7 @@ public class RealTimeGetComponent extends SearchComponent
               .getNewestSearcher(false);
           SolrIndexSearcher searcher = searchHolder.get();
           try {
-            log.debug(req.getCore().getCoreDescriptor()
+            log.debug(req.getCore()
                 .getCoreContainer().getZkController().getNodeName()
                 + " min count to sync to (from most recent searcher view) "
                 + searcher.search(new MatchAllDocsQuery(), 1).totalHits);
@@ -761,7 +775,7 @@ public class RealTimeGetComponent extends SearchComponent
           out.add(f);
         }
       } else {
-        log.debug("Don't know how to handle field " + f);
+        log.debug("Don't know how to handle field {}", f);
       }
     }
 
@@ -789,7 +803,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {
@@ -927,7 +941,7 @@ public class RealTimeGetComponent extends SearchComponent
                                                                                                
 
   ////////////////////////////////////////////
-  ///  SolrInfoMBean
+  ///  SolrInfoBean
   ////////////////////////////////////////////
 
   @Override
@@ -940,13 +954,6 @@ public class RealTimeGetComponent extends SearchComponent
     return Category.QUERY;
   }
 
-  @Override
-  public URL[] getDocs() {
-    return null;
-  }
-
-  
-  
   public void processGetFingeprint(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();

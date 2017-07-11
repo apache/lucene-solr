@@ -28,6 +28,7 @@
     <path refid="base.classpath"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${grouping.jar}"/>
+    <pathelement path="${analyzers-common.jar}"/>
   </path>
 
   <path id="test.classpath">
@@ -45,6 +46,7 @@
     <invoke-module-javadoc>
       <links>
         <link href="../queries"/>
+        <link href="../analyzers-common"/>
         <link href="../grouping"/>
       </links>
     </invoke-module-javadoc>

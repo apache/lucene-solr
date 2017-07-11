@@ -25,24 +25,18 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyDoubleField;
-import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
-import org.apache.lucene.legacy.LegacyNumericType;
-import org.apache.lucene.legacy.LegacyNumericUtils;
-import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.spatial.ShapeValuesSource;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
@@ -88,8 +82,6 @@ public class BBoxStrategy extends SpatialStrategy {
    */
   public static FieldType DEFAULT_FIELDTYPE;
 
-  @Deprecated
-  public static LegacyFieldType LEGACY_FIELDTYPE;
   static {
     // Default: pointValues + docValues
     FieldType type = new FieldType();
@@ -98,15 +90,6 @@ public class BBoxStrategy extends SpatialStrategy {
     type.setStored(false);
     type.freeze();
     DEFAULT_FIELDTYPE = type;
-    // Legacy default: legacyNumerics + docValues
-    LegacyFieldType legacyType = new LegacyFieldType();
-    legacyType.setIndexOptions(IndexOptions.DOCS);
-    legacyType.setNumericType(LegacyNumericType.DOUBLE);
-    legacyType.setNumericPrecisionStep(8);// same as solr default
-    legacyType.setDocValuesType(DocValuesType.NUMERIC);//docValues
-    legacyType.setStored(false);
-    legacyType.freeze();
-    LEGACY_FIELDTYPE = legacyType;
   }
 
   public static final String SUFFIX_MINX = "__minX";
@@ -131,8 +114,6 @@ public class BBoxStrategy extends SpatialStrategy {
   private final boolean hasStored;
   private final boolean hasDocVals;
   private final boolean hasPointVals;
-  // equiv to "hasLegacyNumerics":
-  private final LegacyFieldType legacyNumericFieldType; // not stored; holds precision step.
   private final FieldType xdlFieldType;
 
   /**
@@ -140,15 +121,6 @@ public class BBoxStrategy extends SpatialStrategy {
    */
   public static BBoxStrategy newInstance(SpatialContext ctx, String fieldNamePrefix) {
     return new BBoxStrategy(ctx, fieldNamePrefix, DEFAULT_FIELDTYPE);
-  }
-
-  /**
-   * Creates a new {@link BBoxStrategy} instance that uses {@link LegacyDoubleField} for backwards compatibility
-   * @deprecated LegacyNumerics will be removed
-   */
-  @Deprecated
-  public static BBoxStrategy newLegacyInstance(SpatialContext ctx, String fieldNamePrefix) {
-    return new BBoxStrategy(ctx, fieldNamePrefix, LEGACY_FIELDTYPE);
   }
 
   /**
@@ -179,23 +151,8 @@ public class BBoxStrategy extends SpatialStrategy {
     if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
       numQuads++;
     }
-    if (fieldType.indexOptions() != IndexOptions.NONE && fieldType instanceof LegacyFieldType && ((LegacyFieldType)fieldType).numericType() != null) {
-      if (hasPointVals) {
-        throw new IllegalArgumentException("pointValues and LegacyNumericType are mutually exclusive");
-      }
-      final LegacyFieldType legacyType = (LegacyFieldType) fieldType;
-      if (legacyType.numericType() != LegacyNumericType.DOUBLE) {
-        throw new IllegalArgumentException(getClass() + " does not support " + legacyType.numericType());
-      }
-      numQuads++;
-      legacyNumericFieldType = new LegacyFieldType(LegacyDoubleField.TYPE_NOT_STORED);
-      legacyNumericFieldType.setNumericPrecisionStep(legacyType.numericPrecisionStep());
-      legacyNumericFieldType.freeze();
-    } else {
-      legacyNumericFieldType = null;
-    }
 
-    if (hasPointVals || legacyNumericFieldType != null) { // if we have an index...
+    if (hasPointVals) { // if we have an index...
       xdlFieldType = new FieldType(StringField.TYPE_NOT_STORED);
       xdlFieldType.setIndexOptions(IndexOptions.DOCS);
       xdlFieldType.freeze();
@@ -242,12 +199,6 @@ public class BBoxStrategy extends SpatialStrategy {
       fields[++idx] = new DoublePoint(field_maxX, bbox.getMaxX());
       fields[++idx] = new DoublePoint(field_maxY, bbox.getMaxY());
     }
-    if (legacyNumericFieldType != null) {
-      fields[++idx] = new LegacyDoubleField(field_minX, bbox.getMinX(), legacyNumericFieldType);
-      fields[++idx] = new LegacyDoubleField(field_minY, bbox.getMinY(), legacyNumericFieldType);
-      fields[++idx] = new LegacyDoubleField(field_maxX, bbox.getMaxX(), legacyNumericFieldType);
-      fields[++idx] = new LegacyDoubleField(field_maxY, bbox.getMaxY(), legacyNumericFieldType);
-    }
     if (xdlFieldType != null) {
       fields[++idx] = new Field(field_xdl, bbox.getCrossesDateLine()?"T":"F", xdlFieldType);
     }
@@ -261,23 +212,21 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   /**
-   * Provides access to each rectangle per document as a ValueSource in which
-   * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)} returns a {@link
-   * Shape}.
+   * Provides access to each rectangle per document as a {@link ShapeValuesSource}
    */ //TODO raise to SpatialStrategy
-  public ValueSource makeShapeValueSource() {
+  public ShapeValuesSource makeShapeValueSource() {
     return new BBoxValueSource(this);
   }
 
   @Override
-  public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+  public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
     //TODO if makeShapeValueSource gets lifted to the top; this could become a generic impl.
     return new DistanceToShapeValueSource(makeShapeValueSource(), queryPoint, multiplier, ctx);
   }
 
   /** Returns a similarity based on {@link BBoxOverlapRatioValueSource}. This is just a
    * convenience method. */
-  public ValueSource makeOverlapRatioValueSource(Rectangle queryBox, double queryTargetProportion) {
+  public DoubleValuesSource makeOverlapRatioValueSource(Rectangle queryBox, double queryTargetProportion) {
     return new BBoxOverlapRatioValueSource(
         makeShapeValueSource(), ctx.isGeo(), queryBox, queryTargetProportion, 0.0);
   }
@@ -664,17 +613,12 @@ public class BBoxStrategy extends SpatialStrategy {
   private Query makeNumberTermQuery(String field, double number) {
     if (hasPointVals) {
       return DoublePoint.newExactQuery(field, number);
-    } else if (legacyNumericFieldType != null) {
-      BytesRefBuilder bytes = new BytesRefBuilder();
-      LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(number), 0, bytes);
-      return new TermQuery(new Term(field, bytes.get()));
     }
     throw new UnsupportedOperationException("An index is required for this operation.");
   }
 
   /**
    * Returns a numeric range query based on FieldType
-   * {@link LegacyNumericRangeQuery} is used for indexes created using {@code FieldType.LegacyNumericType}
    * {@link DoublePoint#newRangeQuery} is used for indexes created using {@link DoublePoint} fields
    *
    * @param fieldname field name. must not be <code>null</code>.
@@ -702,8 +646,6 @@ public class BBoxStrategy extends SpatialStrategy {
       }
 
       return DoublePoint.newRangeQuery(fieldname, min, max);
-    } else if (legacyNumericFieldType != null) {// todo remove legacy numeric support in 7.0
-      return LegacyNumericRangeQuery.newDoubleRange(fieldname, legacyNumericFieldType.numericPrecisionStep(), min, max, minInclusive, maxInclusive);
     }
     throw new UnsupportedOperationException("An index is required for this operation.");
   }

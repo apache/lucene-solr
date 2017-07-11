@@ -131,8 +131,8 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField( "home", "2.2,3.3" );
     Document out = DocumentBuilder.toDocument( doc, core.getLatestSchema() );
     assertNotNull( out.get( "home" ) );//contains the stored value and term vector, if there is one
-    assertNotNull( out.getField( "home_0" + FieldType.POLY_FIELD_SEPARATOR + System.getProperty("solr.tests.doubleClass", "pdouble") ) );
-    assertNotNull( out.getField( "home_1" + FieldType.POLY_FIELD_SEPARATOR + System.getProperty("solr.tests.doubleClass", "pdouble") ) );
+    assertNotNull( out.getField( "home_0" + FieldType.POLY_FIELD_SEPARATOR + "double") );
+    assertNotNull( out.getField( "home_1" + FieldType.POLY_FIELD_SEPARATOR + "double") );
   }
   
   /**

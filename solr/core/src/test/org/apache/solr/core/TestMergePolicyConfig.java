@@ -50,7 +50,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     final boolean useCompoundFile = random().nextBoolean();
     System.setProperty("testSetNoCFSMergePolicyConfig.useCompoundFile", String.valueOf(useCompoundFile));
     try {
-      initCore(random().nextBoolean() ? "solrconfig-mergepolicy-nocfs.xml" : "solrconfig-mergepolicyfactory-nocfs.xml","schema-minimal.xml");
+      initCore("solrconfig-mergepolicyfactory-nocfs.xml","schema-minimal.xml");
       IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
       assertEquals(useCompoundFile, iwc.getUseCompoundFile());
 
@@ -84,8 +84,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
 
-    assertEquals(7, tieredMP.getMaxMergeAtOnce());
-    assertEquals(7.0D, tieredMP.getSegmentsPerTier(), 0.0D);
+    assertEquals(10, tieredMP.getMaxMergeAtOnce());
+    assertEquals(10.0D, tieredMP.getSegmentsPerTier(), 0.0D);
 
     assertCommitSomeNewDocs();
     assertCompoundSegments(h.getCore(), expectCFS);
@@ -95,7 +95,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     final boolean expectCFS 
       = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
-    initCore(random().nextBoolean() ? "solrconfig-tieredmergepolicy.xml" : "solrconfig-tieredmergepolicyfactory.xml","schema-minimal.xml");
+    initCore("solrconfig-tieredmergepolicyfactory.xml","schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
@@ -146,16 +146,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     initCore("solrconfig-nomergepolicyfactory.xml","schema-minimal.xml");
     iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(mergePolicy, iwc.getMergePolicy());
-  }
-
-  public void testLogMergePolicyConfig() throws Exception {
-    
-    final Class<? extends LogMergePolicy> mpClass = random().nextBoolean()
-      ? LogByteSizeMergePolicy.class : LogDocMergePolicy.class;
-
-    System.setProperty("solr.test.log.merge.policy", mpClass.getName());
-
-    implTestLogMergePolicyConfig("solrconfig-logmergepolicy.xml", mpClass);
   }
 
   public void testLogMergePolicyFactoryConfig() throws Exception {

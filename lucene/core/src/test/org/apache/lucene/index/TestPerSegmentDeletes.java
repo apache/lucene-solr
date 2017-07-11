@@ -68,10 +68,11 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
     writer.deleteDocuments(new Term("id", "11"));
 
-    // flushing without applying deletes means
-    // there will still be deletes in the segment infos
     writer.flush(false, false);
-    assertTrue(writer.bufferedUpdatesStream.any());
+
+    // deletes are now resolved on flush, so there shouldn't be
+    // any deletes after flush
+    assertFalse(writer.bufferedUpdatesStream.any());
 
     // get reader flushes pending deletes
     // so there should not be anymore
@@ -221,9 +222,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
   public int[] toDocsArray(Term term, Bits bits, IndexReader reader)
       throws IOException {
-    Fields fields = MultiFields.getFields(reader);
-    Terms cterms = fields.terms(term.field);
-    TermsEnum ctermsEnum = cterms.iterator();
+    TermsEnum ctermsEnum = MultiFields.getTerms(reader, term.field).iterator();
     if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
       PostingsEnum postingsEnum = TestUtil.docs(random(), ctermsEnum, null, PostingsEnum.NONE);
       return toArray(postingsEnum);

@@ -16,33 +16,21 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
@@ -51,8 +39,6 @@ import org.slf4j.LoggerFactory;
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
@@ -73,7 +59,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
 
-  private int clientSoTimeout;
+  private int clientSoTimeout = 60000;
   
   public String[] getFieldNames() {
     return fieldNames;
@@ -106,19 +92,32 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     }
     fixShardCount(numShards);
 
-    // None of the operations used here are particularly costly, so this should work.
-    // Using this low timeout will also help us catch index stalling.
-    clientSoTimeout = 5000;
+
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
+  }
+
+  @Override
+  protected CloudSolrClient createCloudClient(String defaultCollection) {
+    return this.createCloudClient(defaultCollection, this.clientSoTimeout);
+  }
+  
+  protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, socketTimeout);
+    client.setParallelUpdates(random().nextBoolean());
+    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
+    return client;
   }
 
   @Test
   public void test() throws Exception {
-    cloudClient.setSoTimeout(clientSoTimeout);
+    // None of the operations used here are particularly costly, so this should work.
+    // Using this low timeout will also help us catch index stalling.
+    clientSoTimeout = 5000;
+    cloudClient = createCloudClient(DEFAULT_COLLECTION);
     boolean testSuccessful = false;
     try {
       handle.clear();
@@ -158,8 +157,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // it's currently hard to know what requests failed when using ConcurrentSolrUpdateServer
       boolean runFullThrottle = random().nextBoolean();
       if (runFullThrottle) {
-        FullThrottleStoppableIndexingThread ftIndexThread = new FullThrottleStoppableIndexingThread(
-            clients, "ft1", true);
+        FullThrottleStoppableIndexingThread ftIndexThread = 
+            new FullThrottleStoppableIndexingThread(controlClient, cloudClient, clients, "ft1", true, this.clientSoTimeout);
         threads.add(ftIndexThread);
         ftIndexThread.start();
       }
@@ -255,7 +254,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         restartZk(1000 * (5 + random().nextInt(4)));
       }
 
-      try (CloudSolrClient client = createCloudClient("collection1")) {
+      try (CloudSolrClient client = createCloudClient("collection1", 30000)) {
           createCollection(null, "testcollection",
               1, 1, 1, client, null, "conf1");
 
@@ -289,111 +288,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     return deleteFails;
   }
 
-  class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
-    private CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
-    private volatile boolean stop = false;
-    int clientIndex = 0;
-    private ConcurrentUpdateSolrClient cusc;
-    private List<SolrClient> clients;
-    private AtomicInteger fails = new AtomicInteger();
-    
-    public FullThrottleStoppableIndexingThread(List<SolrClient> clients,
-                                               String id, boolean doDeletes) {
-      super(controlClient, cloudClient, id, doDeletes);
-      setName("FullThrottleStopableIndexingThread");
-      setDaemon(true);
-      this.clients = clients;
-
-      cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8, 2);
-      cusc.setConnectionTimeout(10000);
-      cusc.setSoTimeout(clientSoTimeout);
-    }
-    
-    @Override
-    public void run() {
-      int i = 0;
-      int numDeletes = 0;
-      int numAdds = 0;
-
-      while (true && !stop) {
-        String id = this.id + "-" + i;
-        ++i;
-        
-        if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
-          String delete = deletes.remove(0);
-          try {
-            numDeletes++;
-            cusc.deleteById(delete);
-          } catch (Exception e) {
-            changeUrlOnError(e);
-            fails.incrementAndGet();
-          }
-        }
-        
-        try {
-          numAdds++;
-          if (numAdds > (TEST_NIGHTLY ? 4002 : 197))
-            continue;
-          SolrInputDocument doc = getDoc(
-              "id",
-              id,
-              i1,
-              50,
-              t1,
-              "Saxon heptarchies that used to rip around so in old times and raise Cain.  My, you ought to seen old Henry the Eight when he was in bloom.  He WAS a blossom.  He used to marry a new wife every day, and chop off her head next morning.  And he would do it just as indifferent as if ");
-          cusc.add(doc);
-        } catch (Exception e) {
-          changeUrlOnError(e);
-          fails.incrementAndGet();
-        }
-        
-        if (doDeletes && random().nextBoolean()) {
-          deletes.add(id);
-        }
-        
-      }
-
-      log.info("FT added docs:" + numAdds + " with " + fails + " fails" + " deletes:" + numDeletes);
-    }
-
-    private void changeUrlOnError(Exception e) {
-      if (e instanceof ConnectException) {
-        clientIndex++;
-        if (clientIndex > clients.size() - 1) {
-          clientIndex = 0;
-        }
-        cusc.shutdownNow();
-        cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(clientIndex)).getBaseURL(),
-            httpClient, 30, 3);
-      }
-    }
-    
-    @Override
-    public void safeStop() {
-      stop = true;
-      cusc.blockUntilFinished();
-      cusc.shutdownNow();
-      IOUtils.closeQuietly(httpClient);
-    }
-
-    @Override
-    public int getFailCount() {
-      return fails.get();
-    }
-    
-    @Override
-    public Set<String> getAddFails() {
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public Set<String> getDeleteFails() {
-      throw new UnsupportedOperationException();
-    }
-    
-  };
-  
-  
   // skip the randoms - they can deadlock...
   @Override
   protected void indexr(Object... fields) throws Exception {
@@ -401,13 +295,4 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     indexDoc(doc);
   }
 
-  static class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
-    public ErrorLoggingConcurrentUpdateSolrClient(String serverUrl, HttpClient httpClient, int queueSize, int threadCount) {
-      super(serverUrl, httpClient, queueSize, threadCount, null, false);
-    }
-    @Override
-    public void handleError(Throwable ex) {
-      log.warn("cusc error", ex);
-    }
-  }
 }

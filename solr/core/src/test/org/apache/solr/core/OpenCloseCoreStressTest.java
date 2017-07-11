@@ -66,7 +66,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
   final int indexingThreads = TEST_NIGHTLY ? 9 : 5;
   final int queryThreads = TEST_NIGHTLY ? 9 : 5;
 
-  final int resetInterval = 30 * 60; // minutes to report then delete everything
+  static final int RESET_INTERVAL = 30 * 60; // minutes to report then delete everything
   long cumulativeDocs = 0;
 
   String url;
@@ -136,15 +136,11 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     // Mostly to keep annoying logging messages from being sent out all the time.
 
     for (int idx = 0; idx < indexingThreads; ++idx) {
-      HttpSolrClient client = getHttpSolrClient(url);
-      client.setConnectionTimeout(30000);
-      client.setSoTimeout(60000);
+      HttpSolrClient client = getHttpSolrClient(url, 30000, 60000);
       indexingClients.add(client);
     }
     for (int idx = 0; idx < queryThreads; ++idx) {
-      HttpSolrClient client = getHttpSolrClient(url);
-      client.setConnectionTimeout(30000);
-      client.setSoTimeout(30000);
+      HttpSolrClient client = getHttpSolrClient(url, 30000, 30000);
       queryingClients.add(client);
     }
 
@@ -165,7 +161,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
       int secondsRemaining = secondsToRun;
       do {
 
-        int cycleSeconds = Math.min(resetInterval, secondsRemaining);
+        int cycleSeconds = Math.min(RESET_INTERVAL, secondsRemaining);
         log.info(String.format(Locale.ROOT, "\n\n\n\n\nStarting a %,d second cycle, seconds left: %,d. Seconds run so far: %,d.",
             cycleSeconds, secondsRemaining, secondsRun));
 
@@ -177,7 +173,7 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
 
         queries.waitOnThreads();
 
-        secondsRemaining = Math.max(secondsRemaining - resetInterval, 0);
+        secondsRemaining = Math.max(secondsRemaining - RESET_INTERVAL, 0);
 
         checkResults(queryingClients.get(0), queries, idxer);
 

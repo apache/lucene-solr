@@ -214,15 +214,11 @@
 
   </query>
 
-  <!-- 
-    Let the dispatch filter handler /select?qt=XXX
-    handleSelect=true will use consistent error handling for /select and /update
-    handleSelect=false will use solr1.1 style error formatting
+  <requestDispatcher>
+    <!--Make sure your system has some authentication before enabling remote streaming!
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
     -->
-  <requestDispatcher handleSelect="true" >
-    <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
-        
+
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           
          To get the behaviour of Solr 1.2 (ie: no caching related headers)
@@ -259,17 +255,8 @@
        <!-- <cacheControl>max-age=30, public</cacheControl> -->
     </httpCaching>
   </requestDispatcher>
-  
-      
-  <!-- requestHandler plugins... incoming queries will be dispatched to the
-     correct handler based on the path or the 'qt' param.
-     Names starting with a '/' are accessed with the a path equal to the 
-     registered name.  Names without a leading '/' are accessed with:
-      http://host/app/select?qt=name
-     If no qt is defined, the requestHandler that declares default="true"
-     will be used.
-  -->
-  <requestHandler name="standard" class="solr.SearchHandler" default="true">
+
+  <requestHandler name="/select" class="solr.SearchHandler">
     <!-- default values for query parameters -->
      <lst name="defaults">
        <str name="echoParams">explicit</str>

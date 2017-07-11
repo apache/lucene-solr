@@ -217,18 +217,20 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       // TEST OffsetsEnums & Passage visibility
 
       // this code never runs; just for compilation
-      OffsetsEnum oe = new OffsetsEnum(null, EMPTY);
-      oe.getTerm();
-      oe.getPostingsEnum();
-      oe.freq();
-      oe.hasMorePositions();
-      oe.nextPosition();
-      oe.startOffset();
-      oe.endOffset();
-      oe.getWeight();
-      oe.setWeight(2f);
+      Passage p;
+      try (OffsetsEnum oe = new OffsetsEnum(null, EMPTY)) {
+        oe.getTerm();
+        oe.getPostingsEnum();
+        oe.freq();
+        oe.hasMorePositions();
+        oe.nextPosition();
+        oe.startOffset();
+        oe.endOffset();
+        oe.getWeight();
+        oe.setWeight(2f);
+      }
 
-      Passage p = new Passage();
+      p = new Passage();
       p.setStartOffset(0);
       p.setEndOffset(9);
       p.setScore(1f);

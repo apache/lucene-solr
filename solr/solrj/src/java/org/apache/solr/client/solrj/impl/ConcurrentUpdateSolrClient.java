@@ -96,79 +96,55 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   AtomicInteger emptyQueueLoops;
   
   /**
-   * Uses an internally managed HttpClient instance.
-   * 
-   * @param solrServerUrl
-   *          The Solr server URL
-   * @param queueSize
-   *          The buffer size before the documents are sent to the server
-   * @param threadCount
-   *          The number of background threads used to empty the queue
-   *          
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl, int queueSize,
-                                    int threadCount) {
-    this(solrServerUrl, null, queueSize, threadCount);
-    shutdownExecutor = true;
-    internalHttpClient = true;
-  }
-  
-  /**
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount) {
-    this(solrServerUrl, client, queueSize, threadCount, ExecutorUtil.newMDCAwareCachedThreadPool(
-        new SolrjNamedThreadFactory("concurrentUpdateScheduler")));
-    shutdownExecutor = true;
-  }
-
-  /**
    * Uses the supplied HttpClient to send documents to the Solr server.
    * 
-   * @deprecated use {@link Builder} instead.
+   * @deprecated use {@link ConcurrentUpdateSolrClient#ConcurrentUpdateSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
   @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es) {
-    this(solrServerUrl, client, queueSize, threadCount, es, false);
-  }
-  
-  /**
-   * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link Builder} instead.  This will soon be a
-   * protected method, and will only be available for use in implementing subclasses.
-   */
-  @Deprecated
-  public ConcurrentUpdateSolrClient(String solrServerUrl,
-                                    HttpClient client, int queueSize, int threadCount, ExecutorService es, boolean streamDeletes) {
-    this.internalHttpClient = (client == null);
-    this.client = new HttpSolrClient.Builder(solrServerUrl)
+  protected ConcurrentUpdateSolrClient(String solrServerUrl,
+                                       HttpClient client, int queueSize, int threadCount,
+                                       ExecutorService es, boolean streamDeletes) {
+    this((streamDeletes) ?
+        new Builder(solrServerUrl)
         .withHttpClient(client)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .withExecutorService(es)
+        .alwaysStreamDeletes() :
+          new Builder(solrServerUrl)
+          .withHttpClient(client)
+          .withQueueSize(queueSize)
+          .withThreadCount(threadCount)
+          .withExecutorService(es)
+          .neverStreamDeletes());
+  }
+  
+  protected ConcurrentUpdateSolrClient(Builder builder) {
+    this.internalHttpClient = (builder.httpClient == null);
+    this.client = new HttpSolrClient.Builder(builder.baseSolrUrl)
+        .withHttpClient(builder.httpClient)
         .build();
     this.client.setFollowRedirects(false);
-    queue = new LinkedBlockingQueue<>(queueSize);
-    this.threadCount = threadCount;
-    runners = new LinkedList<>();
-    this.streamDeletes = streamDeletes;
+    this.queue = new LinkedBlockingQueue<>(builder.queueSize);
+    this.threadCount = builder.threadCount;
+    this.runners = new LinkedList<>();
+    this.streamDeletes = builder.streamDeletes;
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     
-    if (es != null) {
-      scheduler = es;
-      shutdownExecutor = false;
+    if (builder.executorService != null) {
+      this.scheduler = builder.executorService;
+      this.shutdownExecutor = false;
     } else {
-      scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
-      shutdownExecutor = true;
+      this.scheduler = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("concurrentUpdateScheduler"));
+      this.shutdownExecutor = true;
     }
     
     if (log.isDebugEnabled()) {
-      pollInterrupts = new AtomicInteger();
-      pollExits = new AtomicInteger();
-      blockLoops = new AtomicInteger();
-      emptyQueueLoops = new AtomicInteger();
+      this.pollInterrupts = new AtomicInteger();
+      this.pollExits = new AtomicInteger();
+      this.blockLoops = new AtomicInteger();
+      this.emptyQueueLoops = new AtomicInteger();
     }
   }
 
@@ -449,9 +425,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     try {
       Runner r = new Runner();
       runners.add(r);
-      
-      scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
-
+      try {
+        scheduler.execute(r);  // this can throw an exception if the scheduler has been shutdown, but that should be fine.
+      } catch (RuntimeException e) {
+        runners.remove(r);
+        throw e;
+      }
     } finally {
       MDC.remove("ConcurrentUpdateSolrClient.url");
     }
@@ -640,9 +619,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   private void waitForEmptyQueue() {
+    boolean threadInterrupted = Thread.currentThread().isInterrupted();
 
     while (!queue.isEmpty()) {
       if (log.isDebugEnabled()) emptyQueueLoops.incrementAndGet();
+      if (scheduler.isTerminated()) {
+        log.warn("The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. "
+            + "Queue size: {}, Runners: {}. Current thread Interrupted? {}", scheduler, queue.size(), runners.size(), threadInterrupted);
+        break;
+      }
 
       synchronized (runners) {
         int queueSize = queue.size();
@@ -656,9 +641,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         try {
           queue.wait(250);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          // If we set the thread as interrupted again, the next time the wait it's called i t's going to return immediately
+          threadInterrupted = true;
+          log.warn("Thread interrupted while waiting for update queue to be empty. There are still {} elements in the queue.", 
+              queue.size());
         }
       }
+    }
+    if (threadInterrupted) {
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -714,6 +705,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
   
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.connectionTimeout = timeout;
   }
@@ -721,7 +716,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
    * not for indexing.
+   * 
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
    */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     this.soTimeout = timeout;
   }
@@ -772,29 +770,36 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * Constructs {@link ConcurrentUpdateSolrClient} instances from provided configuration.
    */
-  public static class Builder {
-    private String baseSolrUrl;
-    private HttpClient httpClient;
-    private int queueSize;
-    private int threadCount;
-    private ExecutorService executorService;
-    private boolean streamDeletes;
+  public static class Builder extends SolrClientBuilder<Builder> {
+    protected String baseSolrUrl;
+    protected int queueSize;
+    protected int threadCount;
+    protected ExecutorService executorService;
+    protected boolean streamDeletes;
 
     /**
      * Create a Builder object, based on the provided Solr URL.
      * 
-     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created clients.
+     * Two different paths can be specified as a part of this URL:
+     * 
+     * 1) A path pointing directly at a particular core
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     * Note that when a core is provided in the base URL, queries and other requests can be made without mentioning the
+     * core explicitly.  However, the client can only send requests to that core.
+     * 
+     * 2) The path of the root Solr path ("/solr")
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     * In this case the client is more flexible and can be used to send requests to any cores.  This flexibility though
+     * requires that the core be specified on all requests. 
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
-    }
-
-    /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
     }
     
     /**
@@ -852,7 +857,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
       
-      return new ConcurrentUpdateSolrClient(baseSolrUrl, httpClient, queueSize, threadCount, executorService, streamDeletes);
+      return new ConcurrentUpdateSolrClient(this);
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }

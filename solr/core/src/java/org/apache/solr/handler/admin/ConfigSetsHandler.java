@@ -238,6 +238,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         props.put(param, params.get(param));
       }
     }
+
+    // The configset created via an API should be mutable.
+    props.put("immutable", "false");
+
     return props;
   }
 
@@ -306,13 +310,15 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   @Override
   public Name getPermissionName(AuthorizationContext ctx) {
-    switch (ctx.getHttpMethod()) {
-      case "GET":
-        return Name.CONFIG_READ_PERM;
-      case "POST":
+    String a = ctx.getParams().get(ConfigSetParams.ACTION);
+    if (a != null) {
+      ConfigSetAction action = ConfigSetAction.get(a);
+      if (action == ConfigSetAction.CREATE || action == ConfigSetAction.DELETE || action == ConfigSetAction.UPLOAD) {
         return Name.CONFIG_EDIT_PERM;
-      default:
-        return null;
+      } else if (action == ConfigSetAction.LIST) {
+        return Name.CONFIG_READ_PERM;
+      }
     }
+    return null;
   }
 }

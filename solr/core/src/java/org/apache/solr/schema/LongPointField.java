@@ -63,7 +63,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     if (min == null) {
       actualMin = Long.MIN_VALUE;
     } else {
-      actualMin = Long.parseLong(min);
+      actualMin = parseLongFromUser(field.getName(), min);
       if (!minInclusive) {
         actualMin++;
       }
@@ -71,7 +71,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     if (max == null) {
       actualMax = Long.MAX_VALUE;
     } else {
-      actualMax = Long.parseLong(max);
+      actualMax = parseLongFromUser(field.getName(), max);
       if (!maxInclusive) {
         actualMax--;
       }
@@ -96,16 +96,19 @@ public class LongPointField extends PointField implements LongValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(field.getName(), Long.parseLong(externalVal));
+    return LongPoint.newExactQuery(field.getName(), parseLongFromUser(field.getName(), externalVal));
   }
   
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
+    if (!field.indexed()) {
+      return super.getSetQuery(parser, field, externalVal);
+    }
     long[] values = new long[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Long.parseLong(val);
+      values[i] = parseLongFromUser(field.getName(), val);
       i++;
     }
     return LongPoint.newSetQuery(field.getName(), values);
@@ -120,7 +123,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Long.BYTES);
     result.setLength(Long.BYTES);
-    LongPoint.encodeDimension(Long.parseLong(val.toString()), result.bytes(), 0);
+    LongPoint.encodeDimension(parseLongFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
@@ -144,7 +147,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return Type.SORTED_LONG;
+      return null;
     } else {
       return Type.LONG_POINT;
     }
@@ -164,8 +167,6 @@ public class LongPointField extends PointField implements LongValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    if (!isFieldUsed(field)) return null;
-
     long longValue = (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
     return new LongPoint(field.getName(), longValue);
   }

@@ -39,24 +39,9 @@ import java.util.List;
 @Slow
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
-  protected Throwable handledException = null;
-
   @BeforeClass
   public static void beforeTest() throws Exception {
     createJetty(legacyExampleCollection1SolrHome());
-  }
-  
-  public class ErrorTrackingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
-    public Throwable lastError = null;
-
-    public ErrorTrackingConcurrentUpdateSolrClient(String solrServerUrl, int queueSize, int threadCount) {
-      super(solrServerUrl, queueSize, threadCount);
-    }
-    
-    @Override
-    public void handleError(Throwable ex) {
-      handledException = lastError = ex;
-    }
   }
 
   @Override
@@ -66,7 +51,10 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       // setup the server...
       String url = jetty.getBaseUrl().toString() + "/collection1";
       // smaller queue size hits locks more often
-      ConcurrentUpdateSolrClient concurrentClient = new ErrorTrackingConcurrentUpdateSolrClient( url, 2, 5 );
+      ConcurrentUpdateSolrClient concurrentClient = new ErrorTrackingConcurrentUpdateSolrClient.Builder(url)
+          .withQueueSize(2)
+          .withThreadCount(5)
+          .build();
       concurrentClient.setParser(new XMLResponseParser());
       concurrentClient.setRequestWriter(new RequestWriter());
       return concurrentClient;
@@ -81,7 +69,10 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
     final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
-    try (ConcurrentUpdateSolrClient concurrentClient = new FailureRecordingConcurrentUpdateSolrClient(serverUrl, 2, 2)) {
+    try (ConcurrentUpdateSolrClient concurrentClient = new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
+        .withQueueSize(2)
+        .withThreadCount(2)
+        .build()) {
       int docId = 42;
       for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
@@ -108,14 +99,49 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   static class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
     private final List<Throwable> failures = new ArrayList<>();
     
-    public FailureRecordingConcurrentUpdateSolrClient(String serverUrl, int queueSize, int numThreads) {
-      super(serverUrl, null, queueSize, numThreads, null, false);
+    public FailureRecordingConcurrentUpdateSolrClient(Builder builder) {
+      super(builder);
     }
     
     @Override
     public void handleError(Throwable ex) {
       failures.add(ex);
     }
+    
+    static class Builder extends ConcurrentUpdateSolrClient.Builder {
+      public Builder(String baseSolrUrl) {
+        super(baseSolrUrl);
+      }
+   
+      @Override
+      public FailureRecordingConcurrentUpdateSolrClient build() {
+        return new FailureRecordingConcurrentUpdateSolrClient(this);
+      }
+    }
   }
+  
+  public static class ErrorTrackingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+    public Throwable lastError = null;
+    
+    public ErrorTrackingConcurrentUpdateSolrClient(Builder builder) {
+      super(builder);
+    }
+        
+    @Override
+    public void handleError(Throwable ex) {
+      lastError = ex;
+    }
+    
+    public static class Builder extends ConcurrentUpdateSolrClient.Builder {
 
+      public Builder(String baseSolrUrl) {
+        super(baseSolrUrl);
+      }
+      
+      @Override
+      public ErrorTrackingConcurrentUpdateSolrClient build() {
+        return new ErrorTrackingConcurrentUpdateSolrClient(this);
+      }
+    }
+  }
 }

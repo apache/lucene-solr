@@ -1,0 +1,250 @@
+<?xml version="1.0"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
+<project name="solr-ref-guide" default="default" xmlns:asciidoctor="antlib:org.asciidoctor.ant" >
+
+  <import file="../common-build.xml"/>
+  <!-- properties to use in our docs -->
+  <loadresource property="solr-docs-version">
+    <!-- NOTE: this is specifically only the "major.minor", it does not include the ".bugfix"
+         This is because we (currently) only release the guide for minor versions.
+    -->
+    <propertyresource name="version"/>
+    <filterchain>
+      <tokenfilter>
+        <filetokenizer/>
+        <replaceregex pattern="^(\d+\.\d+)(|\..*)$" replace="\1" flags="s"/>
+      </tokenfilter>
+    </filterchain>
+  </loadresource>
+  <loadresource property="solr-docs-version-path">
+    <!-- NOTE: This is the ${solr-docs-version} as a path suitbale for linking to javadocs -->
+    <propertyresource name="solr-docs-version"/>
+    <filterchain>
+      <tokenfilter>
+        <filetokenizer/>
+        <replaceregex pattern="^(\d+)\.(\d+)(|\..*)$" replace="\1_\2_0" flags="s"/>
+      </tokenfilter>
+    </filterchain>
+  </loadresource>
+  <!-- NOTE: ${solr-guide-version} is the version of this ref-guide.
+
+       By default, we assume this is the same as ${solr-docs-version} with a "-DRAFT" suffix
+       When releasing, specify an explicit value of this property on the command line.
+
+       NOTE: the ${solr-guide-version} used *may* be different from the version of Solr the guide
+       covers if we decide to do a bug-fix release of the ref-guide
+
+       Examples: (assume branch_6_1 where version=6.1.SOMETHING)
+
+       Basic nightly/local build of the 6.1 guide...
+
+       => ant build-pdf
+
+       Official release build of the 6.1 guide...
+
+       => ant build-pdf -Dsolr-guide-version=6.1
+
+       Release of a "6.1.1" ref guide, correcting some serious error in the docs
+       (even if there is no 6.1.1 version - or if we've alreayd released up to 6.1.5 - of Solr itself)
+
+       => ant build-pdf -Dsolr-guide-version=6.1.1
+
+  -->
+  <property name="solr-guide-version" value="${solr-docs-version}-DRAFT" />
+  <condition property="solr-guide-draft-status" value="" else="DRAFT">
+    <matches pattern="^\d+\.\d+(|\.\d+)$" string="${solr-guide-version}" />
+  </condition>
+
+  <loadresource property="solr-guide-version-path">
+    <!-- NOTE: This is the ${solr-guide-version} as a path suitable for use publishing the HTML -->
+    <propertyresource name="solr-guide-version"/>
+    <filterchain>
+      <tokenfilter>
+        <filetokenizer/>
+        <replaceregex pattern="^(\d+)\.(\d+)(-DRAFT)?.*" replace="\1_\2\3" flags="s"/>
+      </tokenfilter>
+    </filterchain>
+  </loadresource>
+
+  <property name="solr-javadocs" value="https://lucene.apache.org/solr/${solr-docs-version-path}/" />
+  <property name="lucene-javadocs" value="https://lucene.apache.org/core/${solr-docs-version-path}/" />
+
+  <property name="build.content.dir" location="${build.dir}/content" />
+  <property name="main-page" value="index" />
+  <property name="pdf-filename" value="apache-solr-ref-guide-${solr-guide-version}.pdf" />
+
+  <!-- ====== TOOLS FOR GENERATING/VALIDATING BITS OF THE SITE / PDF ======= -->
+  <property name="tools-jar-name" value="solr-ref-guide-tools.jar" />
+  <path id="tools-compile-classpath">
+    <fileset dir="lib">
+      <include name="**/*.jar"/>
+      <exclude name="**/${tools-jar-name}" />
+    </fileset>
+  </path>
+  <path id="tools-run-classpath">
+    <fileset dir="lib">
+      <include name="**/*.jar"/>
+    </fileset>
+    <fileset dir="${build.dir}">
+      <include name="**/*.jar"/>
+    </fileset>
+  </path>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+  </target>
+
+  <target name="build-tools-jar" depends="resolve" description="Builds the custom java tools use use for generating some data files from page metdata">
+    <mkdir dir="${build.dir}/classes"/>
+    <javac debug="yes"
+           debuglevel="source,lines,vars"
+           destdir="${build.dir}/classes"
+           includeantruntime="false">
+      <compilerarg value="-Xlint:all"/>
+      <classpath refid="tools-compile-classpath"/>
+      <src path="tools/"/>
+    </javac>
+    <jar destfile="${build.dir}/${tools-jar-name}">
+      <fileset dir="${build.dir}/classes"
+               includes="**/*.class"/>
+    </jar>
+  </target>
+
+  <target name="build-init" description="Prepares the build's 'content' dir, copying over src files and transforming *.template files in the process">
+    <delete dir="${build.content.dir}" />
+    <mkdir dir="${build.content.dir}" />
+    <echo>Copying all non template files from src ...</echo>
+    <copy todir="${build.content.dir}">
+      <fileset dir="src">
+        <exclude name="**/*.template"/>
+      </fileset>
+    </copy>
+    <echo>Copy (w/prop replacement) any template files from src...</echo>
+    <copy todir="${build.content.dir}">
+      <fileset dir="src">
+        <include name="**/*.template"/>
+      </fileset>
+      <mapper type="glob" from="*.template" to="*"/>
+      <filterchain>
+        <expandproperties/>
+      </filterchain>
+    </copy>
+  </target>
+
+  <target name="build-nav-data-files" depends="build-init,build-tools-jar" description="creates nav based data files needed by both the html and pdf artifacts">
+    <mkdir dir="${build.content.dir}/_data"/>
+    <java classname="BuildNavAndPDFBody"
+          failonerror="true"
+          fork="true">
+      <classpath refid="tools-run-classpath"/>
+      <arg value="${build.content.dir}"/>
+      <arg value="${main-page}"/>
+    </java>
+  </target>
+
+  <target name="check-links-and-anchors" depends="build-init,build-tools-jar" description="Parse the HTML site files to check for problematic links or anchors">
+    <java classname="CheckLinksAndAnchors"
+          failonerror="true"
+          fork="true">
+      <classpath refid="tools-run-classpath"/>
+      <arg value="${build.dir}/html-site"/>
+    </java>
+  </target>
+
+  <!-- ====== PDF Build ======= -->
+  <target name="build-pdf" depends="-build-raw-pdf,-reduce-pdf-size" description="Builds a PDF">
+    <echo>Finished Building ${build.dir}/${pdf-filename}</echo>
+  </target>
+  <target name="-build-raw-pdf"
+          depends="build-nav-data-files,resolve">
+    <mkdir dir="${build.dir}/pdf-tmp"/>
+    <taskdef uri="antlib:org.asciidoctor.ant" resource="org/asciidoctor/ant/antlib.xml"
+             classpathref="tools-run-classpath"/>
+    <asciidoctor:convert
+                 sourceDirectory="${build.content.dir}/pdf"
+                 sourceDocumentName="SolrRefGuide-all.adoc"
+                 baseDir="${build.content.dir}"
+                 outputDirectory="${build.dir}/pdf-tmp"
+                 backend="pdf"
+                 extensions="adoc"
+                 sourceHighlighter="coderay"
+                 imagesDir="${build.content.dir}"
+                 doctype="book"
+                 safemode="unsafe">
+      <attribute key="section-toc" value='' /><!-- we don't use these in the pdf -->
+      <attribute key="icons" value="font" />
+      <attribute key="icon-set" value="fa" />
+      <attribute key="pdf-stylesDir" value="./pdf/themes"/>
+      <attribute key="pdf-style" value="refguide"/>
+      <attribute key="pdf-fontsDir" value="./fonts"/>
+      <attribute key="figure-caption!" value='' />
+      <attribute key="idprefix" value='' />
+      <attribute key="idseparator" value='-' />
+      <!-- attributes used in adoc files -->
+      <!-- NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
+           them to the _config.yml.template file for building the jekyll site as well
+      -->
+      <attribute key="solr-guide-draft-status" value="${solr-guide-draft-status}" />
+      <attribute key="solr-guide-version" value="${solr-guide-version}" />
+      <attribute key="solr-docs-version" value="${solr-docs-version}" />
+      <attribute key="solr-javadocs" value="${solr-javadocs}" />
+      <attribute key="lucene-javadocs" value="${lucene-javadocs}" />
+      <attribute key="build-date" value="${DSTAMP}" />
+      <attribute key="build-year" value="${current.year}" />
+    </asciidoctor:convert>
+    <move file="${build.dir}/pdf-tmp/SolrRefGuide-all.pdf" tofile="${build.dir}/pdf-tmp/RAW-${pdf-filename}" />
+  </target>
+  <target name="-reduce-pdf-size" depends="build-init,build-tools-jar">
+    <java classname="ReducePDFSize"
+          failonerror="true"
+          fork="true">
+      <classpath refid="tools-run-classpath"/>
+      <arg value="${build.dir}/pdf-tmp/RAW-${pdf-filename}"/>
+      <arg value="${build.dir}/${pdf-filename}"/>
+    </java>
+  </target>
+
+
+
+  <!-- ======= HTML Site Build =======
+       Builds site with Jekyll.
+       This (for now) assumes that Jekyll (http://jekyllrb.com) is installed locally. -->
+  <target name="build-site"
+          depends="-build-site,check-links-and-anchors"
+          description="Builds an HTML Site w/Jekyll and verifies the anchors+links are valid" >
+    <echo>Ready to browse site: ${build.dir}/html-site/${main-page}.html</echo>
+  </target>
+  <target name="-build-site"
+          depends="build-init,build-nav-data-files"
+          description="Builds an HTML Site w/Jekyll">
+    <echo>Running Jekyll...</echo>
+    <exec executable="jekyll" dir="${build.content.dir}">
+      <arg value="build"/>
+    </exec>
+  </target>
+
+  <target name="default"
+          description="Builds both a PDF and HTML versions of the ref guide"
+          depends="build-pdf,build-site">
+    <echo>PDF: ${build.dir}/${pdf-filename}</echo>
+    <echo>SITE: ${build.dir}/html-site/${main-page}.html</echo>
+  </target>
+
+</project>

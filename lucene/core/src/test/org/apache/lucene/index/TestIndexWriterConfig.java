@@ -62,7 +62,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(OpenMode.CREATE_OR_APPEND, conf.getOpenMode());
     // we don't need to assert this, it should be unspecified
     assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
-    assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS, conf.getMaxBufferedDeleteTerms());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, conf.getRAMBufferSizeMB(), 0.0);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS, conf.getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
@@ -176,7 +175,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
     assertEquals(16.0, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 0.0);
-    assertEquals(false, IndexWriterConfig.DEFAULT_READER_POOLING);
+    assertEquals(true, IndexWriterConfig.DEFAULT_READER_POOLING);
     assertEquals(true, IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM);
   }
 
@@ -231,10 +230,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
     // Test IndexingChain
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
-
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setMaxBufferedDeleteTerms(0);
-    });
 
     expectThrows(IllegalArgumentException.class, () -> {
       conf.setMaxBufferedDocs(1);

@@ -148,8 +148,10 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     final StringBuilder errors = new StringBuilder();     
     
     @SuppressWarnings("serial")
-    ConcurrentUpdateSolrClient concurrentClient = new OutcomeCountingConcurrentUpdateSolrClient(serverUrl, cussQueueSize,
-        cussThreadCount, successCounter, errorCounter, errors);
+    ConcurrentUpdateSolrClient concurrentClient = new OutcomeCountingConcurrentUpdateSolrClient.Builder(serverUrl, successCounter, errorCounter, errors)
+      .withQueueSize(cussQueueSize)
+      .withThreadCount(cussThreadCount)
+      .build();
     
     concurrentClient.setPollQueueTime(0);
     
@@ -194,7 +196,11 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int cussThreadCount = 2;
     int cussQueueSize = 10;
 
-    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString(), cussQueueSize, cussThreadCount)) {
+    try (ConcurrentUpdateSolrClient concurrentClient
+         = (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
+         .withQueueSize(cussQueueSize)
+         .withThreadCount(cussThreadCount).build()) {
+      
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
       concurrentClient.add("collection1", doc);
@@ -203,7 +209,11 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
       assertEquals(1, concurrentClient.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
-    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString() + "/collection1", cussQueueSize, cussThreadCount)) {
+    try (ConcurrentUpdateSolrClient concurrentClient
+         = (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1"))
+         .withQueueSize(cussQueueSize)
+         .withThreadCount(cussThreadCount).build()) {
+         
       assertEquals(1, concurrentClient.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
@@ -218,7 +228,10 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int numRunnables = 5;
     int expected = numDocs * numRunnables;
 
-    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString(), cussQueueSize, cussThreadCount)) {
+    try (ConcurrentUpdateSolrClient concurrentClient
+         = (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
+         .withQueueSize(cussQueueSize)
+         .withThreadCount(cussThreadCount).build()) {
       concurrentClient.setPollQueueTime(0);
 
       // ensure it doesn't block where there's nothing to do yet
@@ -246,7 +259,11 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
       concurrentClient.shutdownNow();
     }
 
-    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString() + "/collection1", cussQueueSize, cussThreadCount)) {
+    try (ConcurrentUpdateSolrClient concurrentClient
+         = (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1"))
+         .withQueueSize(cussQueueSize)
+         .withThreadCount(cussThreadCount).build()) {
+
       assertEquals(expected, concurrentClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -294,13 +311,12 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     private final AtomicInteger successCounter;
     private final AtomicInteger failureCounter;
     private final StringBuilder errors;
-    public OutcomeCountingConcurrentUpdateSolrClient(String serverUrl, int queueSize, int threadCount,
-        AtomicInteger successCounter, AtomicInteger failureCounter, StringBuilder errors) {
-      super(serverUrl, null, queueSize, threadCount, null, false);
-      
-      this.successCounter = successCounter;
-      this.failureCounter = failureCounter;
-      this.errors = errors;
+    
+    public OutcomeCountingConcurrentUpdateSolrClient(Builder builder) {
+      super(builder);
+      this.successCounter = builder.successCounter;
+      this.failureCounter = builder.failureCounter;
+      this.errors = builder.errors;
     }
     
     @Override
@@ -311,6 +327,23 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     @Override
     public void onSuccess(HttpResponse resp) {
       successCounter.incrementAndGet();
+    }
+    
+    static class Builder extends ConcurrentUpdateSolrClient.Builder {
+      protected final AtomicInteger successCounter;
+      protected final AtomicInteger failureCounter;
+      protected final StringBuilder errors;
+
+      public Builder(String baseSolrUrl, AtomicInteger successCounter, AtomicInteger failureCounter, StringBuilder errors) {
+        super(baseSolrUrl);
+        this.successCounter = successCounter;
+        this.failureCounter = failureCounter;
+        this.errors = errors;
+      }
+      
+      public OutcomeCountingConcurrentUpdateSolrClient build() {
+        return new OutcomeCountingConcurrentUpdateSolrClient(this);
+      }
     }
   }
 }

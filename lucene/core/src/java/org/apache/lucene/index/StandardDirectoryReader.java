@@ -61,7 +61,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
         boolean success = false;
         try {
           for (int i = sis.size()-1; i >= 0; i--) {
-            readers[i] = new SegmentReader(sis.info(i), IOContext.READ);
+            readers[i] = new SegmentReader(sis.info(i), sis.getIndexCreatedVersionMajor(), IOContext.READ);
           }
 
           // This may throw CorruptIndexException if there are too many docs, so
@@ -181,7 +181,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
         if (oldReader == null || commitInfo.info.getUseCompoundFile() != oldReader.getSegmentInfo().info.getUseCompoundFile()) {
 
           // this is a new reader; in case we hit an exception we can decRef it safely
-          newReader = new SegmentReader(commitInfo, IOContext.READ);
+          newReader = new SegmentReader(commitInfo, infos.getIndexCreatedVersionMajor(), IOContext.READ);
           newReaders[i] = newReader;
         } else {
           if (oldReader.isNRT) {
@@ -391,7 +391,9 @@ public final class StandardDirectoryReader extends DirectoryReader {
     }
 
     // throw the first exception
-    IOUtils.reThrow(firstExc);
+    if (firstExc != null) {
+      throw IOUtils.rethrowAlways(firstExc);
+    }
   }
 
   @Override
@@ -484,7 +486,8 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
     @Override
     public void addClosedListener(ClosedListener listener) {
-        readerClosedListeners.add(listener);
+      ensureOpen();
+      readerClosedListeners.add(listener);
     }
 
   };
@@ -503,7 +506,10 @@ public final class StandardDirectoryReader extends DirectoryReader {
           }
         }
       }
-      IOUtils.reThrow(th);
+      
+      if (th != null) {
+        throw IOUtils.rethrowAlways(th);
+      }
     }
   }
 

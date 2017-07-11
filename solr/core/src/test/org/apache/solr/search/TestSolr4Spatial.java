@@ -20,14 +20,10 @@ import java.text.ParseException;
 import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.legacy.BBoxStrategy;
 import org.apache.solr.schema.BBoxField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -35,6 +31,10 @@ import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * Test Solr 4's new spatial capabilities from the new Lucene spatial module. Don't thoroughly test it here because
@@ -53,7 +53,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(new Object[][]{
-        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}
+        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}
     });
   }
 
@@ -178,8 +178,14 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     checkHits(fieldName, true, pt, distKM, sphereRadius, count, docIds);
   }
 
+  private boolean isBBoxField(String fieldName) {
+    return fieldName.equalsIgnoreCase("bbox") 
+        || fieldName.equalsIgnoreCase("pbbox")
+        || fieldName.equalsIgnoreCase("bbox_ndv"); 
+  }
+  
   private void checkHits(String fieldName, boolean exact, String ptStr, double distKM, double sphereRadius, int count, int ... docIds) throws ParseException {
-    if (exact && fieldName.equalsIgnoreCase("bbox")) {
+    if (exact && isBBoxField(fieldName)) {
       return; // bbox field only supports rectangular query
     }
     String [] tests = new String[docIds != null && docIds.length > 0 ? docIds.length + 1 : 1];
@@ -369,9 +375,9 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   private String radiusQuery(double lat, double lon, double dDEG, String score, String filter) {
     //Choose between the Solr/Geofilt syntax, and the Lucene spatial module syntax
-    if (fieldName.equals("bbox") || random().nextBoolean()) {
+    if (isBBoxField(fieldName) || random().nextBoolean()) {
       //we cheat for bbox strategy which doesn't do radius, only rect.
-      final String qparser = fieldName.equals("bbox") ? "bbox" : "geofilt";
+      final String qparser = isBBoxField(fieldName) ? "bbox" : "geofilt";
       return "{!" + qparser + " " +
           "sfield=" + fieldName + " "
           + (score != null ? "score="+score : "") + " "
@@ -389,7 +395,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   public void testSortMultiVal() throws Exception {
     assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
     assumeFalse("Multivalue not supported for this field",
-        fieldName.equals("pointvector") || fieldName.equals("bbox"));
+        fieldName.equals("pointvector") || isBBoxField(fieldName));
 
     assertU(adoc("id", "100", fieldName, "1,2"));//1 point
     assertU(adoc("id", "101", fieldName, "4,-1", fieldName, "3,5"));//2 points, 2nd is pretty close to query point

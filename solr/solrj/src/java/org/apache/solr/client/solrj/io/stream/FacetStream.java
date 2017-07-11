@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -71,21 +70,6 @@ public class FacetStream extends TupleStream implements Expressible  {
   private String collection;
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
-
-  /*
-   *
-   * @deprecated. Use the form that takes a SolrParams rather than Map&ltString, String&gt;
-   */
-  @Deprecated
-  public FacetStream(String zkHost,
-                     String collection,
-                     Map<String, String> props,
-                     Bucket[] buckets,
-                     Metric[] metrics,
-                     FieldComparator[] bucketSorts,
-                     int bucketSizeLimit) throws IOException {
-    init(collection, new MapSolrParams(props), buckets, bucketSorts, metrics, bucketSizeLimit, zkHost);
-  }
 
   public FacetStream(String zkHost,
                      String collection,
@@ -493,6 +477,9 @@ public class FacetStream extends TupleStream implements Expressible  {
     for(int b=0; b<allBuckets.size(); b++) {
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
+      if (val instanceof Integer) {
+        val=((Integer)val).longValue();  // calcite currently expects Long values here
+      }
       Tuple t = currentTuple.clone();
       t.put(bucketName, val);
       int nextLevel = level+1;

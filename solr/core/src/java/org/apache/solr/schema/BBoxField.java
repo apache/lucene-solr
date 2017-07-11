@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.legacy.LegacyFieldType;
-import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.spatial.bbox.BBoxOverlapRatioValueSource;
-import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.legacy.BBoxStrategy;
+import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.search.QParser;
 import org.locationtech.spatial4j.shape.Rectangle;
 
@@ -89,8 +89,8 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     if (!(booleanType instanceof BoolField)) {
       throw new RuntimeException("Must be a BoolField: " + booleanType);
     }
-    if (!(numberType instanceof TrieDoubleField)) { // TODO support TrieField (any trie) once BBoxStrategy does
-      throw new RuntimeException("Must be TrieDoubleField: " + numberType);
+    if (numberType.getNumberType() != NumberType.DOUBLE) {
+      throw new RuntimeException("Must be Double number type: " + numberType);
     }
 
     //note: this only works for explicit fields, not dynamic fields
@@ -138,6 +138,9 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
     final SchemaField solrNumField = new SchemaField("_", numberType);//dummy temp
     org.apache.lucene.document.FieldType luceneType =
         (org.apache.lucene.document.FieldType) solrNumField.createField(0.0).fieldType();
+    if ( ! (luceneType instanceof LegacyFieldType)) {
+      luceneType = new org.apache.lucene.document.FieldType(luceneType);
+    }
     luceneType.setStored(storeSubFields);
     
     //and annoyingly this Field isn't going to have a docValues format because Solr uses a separate Field for that
@@ -153,7 +156,7 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   }
 
   @Override
-  protected ValueSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String scoreParam, BBoxStrategy strategy) {
+  protected DoubleValuesSource getValueSourceFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs, String scoreParam, BBoxStrategy strategy) {
     if (scoreParam == null) {
       return null;
     }

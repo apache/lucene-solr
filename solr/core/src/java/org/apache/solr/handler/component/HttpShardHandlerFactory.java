@@ -36,7 +36,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -97,6 +97,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int maximumPoolSize = Integer.MAX_VALUE;
   int keepAliveTime = 5;
   int queueSize = -1;
+  int   permittedLoadBalancerRequestsMinimumAbsolute = 0;
+  float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
   boolean accessPolicy = false;
 
   private String scheme = null;
@@ -122,12 +124,14 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   // If the threadpool uses a backing queue, what is its maximum size (-1) to use direct handoff
   static final String INIT_SIZE_OF_QUEUE = "sizeOfQueue";
 
+  // The minimum number of replicas that may be used
+  static final String LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE = "loadBalancerRequestsMinimumAbsolute";
+
+  // The maximum proportion of replicas to be used
+  static final String LOAD_BALANCER_REQUESTS_MAX_FRACTION = "loadBalancerRequestsMaximumFraction";
+
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
-  
-  // Turn on retries for certain IOExceptions, many of which can happen
-  // due to connection pooling limitations / races
-  static final String USE_RETRIES = "useRetries";
 
   /**
    * Get {@link ShardHandler} that uses the default http client.
@@ -168,6 +172,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.maximumPoolSize = getParameter(args, INIT_MAX_POOL_SIZE, maximumPoolSize,sb);
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime,sb);
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize,sb);
+    this.permittedLoadBalancerRequestsMinimumAbsolute = getParameter(
+        args,
+        LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE,
+        permittedLoadBalancerRequestsMinimumAbsolute,
+        sb);
+    this.permittedLoadBalancerRequestsMaximumFraction = getParameter(
+        args,
+        LOAD_BALANCER_REQUESTS_MAX_FRACTION,
+        permittedLoadBalancerRequestsMaximumFraction,
+        sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     log.debug("created with {}",sb);
     
@@ -210,9 +224,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
     LBHttpSolrClient client = new Builder()
         .withHttpClient(httpClient)
+        .withConnectionTimeout(connectionTimeout)
+        .withSocketTimeout(soTimeout)
         .build();
-    client.setConnectionTimeout(connectionTimeout);
-    client.setSoTimeout(soTimeout);
     return client;
   }
 
@@ -256,7 +270,15 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    */
   public LBHttpSolrClient.Rsp makeLoadBalancedRequest(final QueryRequest req, List<String> urls)
     throws SolrServerException, IOException {
-    return loadbalancer.request(new LBHttpSolrClient.Req(req, urls));
+    return loadbalancer.request(newLBHttpSolrClientReq(req, urls));
+  }
+
+  protected LBHttpSolrClient.Req newLBHttpSolrClientReq(final QueryRequest req, List<String> urls) {
+    int numServersToTry = (int)Math.floor(urls.size() * this.permittedLoadBalancerRequestsMaximumFraction);
+    if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
+      numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
+    }
+    return new LBHttpSolrClient.Req(req, urls, numServersToTry);
   }
 
   /**
@@ -324,7 +346,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     if (params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false)) {
       final CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
-      final ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
+      final ZkController zkController = req.getCore().getCoreContainer().getZkController();
       final String preferredHostAddress = (zkController != null) ? zkController.getBaseUrl() : null;
       if (preferredHostAddress == null) {
         log.warn("Couldn't determine current host address to prefer local shards");
@@ -377,10 +399,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoMBean.Category.QUERY.name());
+    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
     clientConnectionManager.initializeMetrics(manager, registry, expandedScope);
     httpRequestExecutor.initializeMetrics(manager, registry, expandedScope);
-    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor,
+    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
         manager.registry(registry),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }

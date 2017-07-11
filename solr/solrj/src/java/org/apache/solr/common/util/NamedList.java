@@ -122,12 +122,17 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * When using this constructor, runtime type safety is only guaranteed if
    * all even numbered elements of the input list are of type "T".
    * </p>
-   *
-   * @param nameValuePairs underlying List which should be used to implement a NamedList
-   * @deprecated Use {@link #NamedList(java.util.Map.Entry[])} for the NamedList instantiation
+   * <p>
+   * This method is package protected and exists solely so SimpleOrderedMap and clone() can utilize it
+   * </p>
+   * <p>
+   * TODO: this method was formerly public, now that it's not we can change the impl details of 
+   * this class to be based on a Map.Entry[] 
+   * </p>
+   * @lucene.internal
+   * @see #nameValueMapToList
    */
-  @Deprecated
-  public NamedList(List<Object> nameValuePairs) {
+  NamedList(List<Object> nameValuePairs) {
     nvPairs=nameValuePairs;
   }
 
@@ -136,12 +141,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * indexed elements (0,2,4. ..etc) are Strings and odd elements (1,3,5,) are of
    * the type "T".
    *
-   * @return Modified List as per the above description
-   * @deprecated This a temporary placeholder method until the guts of the class
+   * <p>
+   * NOTE: This a temporary placeholder method until the guts of the class
    * are actually replaced by List&lt;String, ?&gt;.
+   * </p>
+   *
+   * @return Modified List as per the above description
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-912">SOLR-912</a>
    */
-  @Deprecated
   private List<Object> nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
     List<Object> result = new ArrayList<>();
     for (Map.Entry<String, ?> ent : nameValuePairs) {

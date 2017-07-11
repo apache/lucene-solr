@@ -38,14 +38,14 @@
        These are provided more for backward compatability, allowing one
        to create a schema that matches an existing lucene index.
   -->
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
     -->
-  <fieldType name="date" class="solr.TrieDateField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="boolean" class="solr.BoolField"/>
   <fieldType name="string" class="solr.StrField"/>
@@ -53,7 +53,10 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
 
-  <field name="id" type="int" required="true"/>
+  <field name="id" type="string" required="true"/>
+  <!-- int varient of id, adding this here simplifies some indexing to do numeric sorting -->
+  <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />
+  <copyField source="id" dest="id_i" />
 
   <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" default="1"/>
   <field name="intdv" type="int" indexed="false" stored="false" docValues="true" default="2"/>

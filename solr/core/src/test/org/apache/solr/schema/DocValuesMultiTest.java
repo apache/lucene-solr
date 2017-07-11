@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class DocValuesMultiTest extends SolrTestCaseJ4 {
-
+  
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig-basic.xml", "schema-docValuesMulti.xml");
@@ -55,6 +55,10 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDocValues() throws IOException {
+
+    final DocValuesType expectedNumericDvType = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) ?
+      DocValuesType.SORTED_NUMERIC : DocValuesType.SORTED_SET;
+    
     assertU(adoc("id", "1", "floatdv", "4.5", "intdv", "-1", "intdv", "3",
         "stringdv", "value1", "stringdv", "value2",
         "booldv", "false", "booldv", "true"));
@@ -68,8 +72,8 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         final FieldInfos infos = reader.getFieldInfos();
         assertEquals(DocValuesType.SORTED_SET, infos.fieldInfo("stringdv").getDocValuesType());
         assertEquals(DocValuesType.SORTED_SET, infos.fieldInfo("booldv").getDocValuesType());
-        assertEquals(DocValuesType.SORTED_SET, infos.fieldInfo("floatdv").getDocValuesType());
-        assertEquals(DocValuesType.SORTED_SET, infos.fieldInfo("intdv").getDocValuesType());
+        assertEquals(expectedNumericDvType, infos.fieldInfo("floatdv").getDocValuesType());
+        assertEquals(expectedNumericDvType, infos.fieldInfo("intdv").getDocValuesType());
 
         SortedSetDocValues dv = reader.getSortedSetDocValues("stringdv");
         assertEquals(0, dv.nextDoc());

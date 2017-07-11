@@ -16,14 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.lucene.index.IndexOptions.DOCS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -84,6 +78,10 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.lucene.index.IndexOptions.DOCS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -368,7 +366,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (sfield != null && schema.isDynamicField(sfield.getName()) && schema.getDynamicPattern(sfield.getName()) != null) {
         fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
-      Terms terms = reader.fields().terms(fieldName);
+      Terms terms = reader.terms(fieldName);
       if (terms == null) { // Not indexed, so we need to report what we can (it made it through the fl param if specified)
         finfo.add( fieldName, fieldMap );
         continue;
@@ -474,7 +472,6 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     finfo.add("uniqueKeyField",
         null == uniqueField ? null : uniqueField.getName());
-    finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
     finfo.add("similarity", getSimilarityInfo(schema.getSimilarity()));
     finfo.add("types", types);
     return finfo;
@@ -705,14 +702,6 @@ public class LukeRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
-  }
-
-  @Override
-  public URL[] getDocs() {
-    try {
-      return new URL[] { new URL("http://wiki.apache.org/solr/LukeRequestHandler") };
-    }
-    catch( MalformedURLException ex ) { return null; }
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

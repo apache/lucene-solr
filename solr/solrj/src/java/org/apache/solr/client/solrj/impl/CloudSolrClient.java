@@ -16,12 +16,10 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,16 +48,18 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.ToleratedUpdateError;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterState.CollectionRef;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -84,8 +84,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
  * SolrJ client class to communicate with SolrCloud.
@@ -195,6 +195,10 @@ public class CloudSolrClient extends SolrClient {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }
 
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     lbClient.setSoTimeout(timeout);
   }
@@ -233,259 +237,59 @@ public class CloudSolrClient extends SolrClient {
       retriedAt = System.nanoTime();
     }
   }
-
-  /**
-   * Create a new client object that connects to Zookeeper and is always aware
-   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
-   * SolrCloud has enough replicas for every shard in a collection, there is no
-   * single point of failure. Updates will be sent to shard leaders by default.
-   * 
-   * @param zkHost
-   *          The client endpoint of the zookeeper quorum containing the cloud
-   *          state. The full specification for this string is one or more comma
-   *          separated HOST:PORT values, followed by an optional chroot value
-   *          that starts with a forward slash. Using a chroot allows multiple
-   *          applications to coexist in one ensemble. For full details, see the
-   *          Zookeeper documentation. Some examples:
-   *          <p>
-   *          "host1:2181"
-   *          <p>
-   *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
-   *          <p>
-   *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
-   *          
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(String zkHost) {
-    this.stateProvider = new ZkClientClusterStateProvider(zkHost);
-      this.clientIsInternal = true;
-      this.myClient = HttpClientUtil.createClient(null);
-      this.lbClient = new LBHttpSolrClient.Builder()
-          .withHttpClient(myClient)
-          .build();
-      this.lbClient.setRequestWriter(new BinaryRequestWriter());
-      this.lbClient.setParser(new BinaryResponseParser());
-      this.updatesToLeaders = true;
-      this.directUpdatesToLeadersOnly = false;
-      shutdownLBHttpSolrServer = true;
-      lbClient.addQueryParams(STATE_VERSION);
-  }
-
-  /**
-   * Create a new client object that connects to Zookeeper and is always aware
-   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
-   * SolrCloud has enough replicas for every shard in a collection, there is no
-   * single point of failure. Updates will be sent to shard leaders by default.
-   *
-   * @param zkHost
-   *          The client endpoint of the zookeeper quorum containing the cloud
-   *          state. The full specification for this string is one or more comma
-   *          separated HOST:PORT values, followed by an optional chroot value
-   *          that starts with a forward slash. Using a chroot allows multiple
-   *          applications to coexist in one ensemble. For full details, see the
-   *          Zookeeper documentation. Some examples:
-   *          <p>
-   *          "host1:2181"
-   *          <p>
-   *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
-   *          <p>
-   *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
-   * @param httpClient
-   *          the {@link HttpClient} instance to be used for all requests. The
-   *          provided httpClient should use a multi-threaded connection manager.
-   *          
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(String zkHost, HttpClient httpClient) {
-    this.stateProvider = new ZkClientClusterStateProvider(zkHost);
-    this.clientIsInternal = httpClient == null;
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.lbClient = createLBHttpSolrClient(myClient);
-    this.updatesToLeaders = true;
-    this.directUpdatesToLeadersOnly = false;
-    shutdownLBHttpSolrServer = true;
-    lbClient.addQueryParams(STATE_VERSION);
-  }
-  
-  /**
-   * Create a new client object using multiple string values in a Collection
-   * instead of a standard zkHost connection string. Note that this method will
-   * not be used if there is only one String argument - that will use
-   * {@link #CloudSolrClient(String)} instead.
-   * 
-   * @param zkHosts
-   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
-   *          each host in the zookeeper ensemble. Note that with certain
-   *          Collection types like HashSet, the order of hosts in the final
-   *          connect string may not be in the same order you added them.
-   * @param chroot
-   *          A chroot value for zookeeper, starting with a forward slash. If no
-   *          chroot is required, use null.
-   * @throws IllegalArgumentException
-   *           if the chroot value does not start with a forward slash.
-   * @see #CloudSolrClient(String)
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(Collection<String> zkHosts, String chroot) {
-    this(zkHosts, chroot, null);
-  }
-
-  /**
-   * Create a new client object using multiple string values in a Collection
-   * instead of a standard zkHost connection string. Note that this method will
-   * not be used if there is only one String argument - that will use
-   * {@link #CloudSolrClient(String)} instead.
-   *
-   * @param zkHosts
-   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
-   *          each host in the zookeeper ensemble. Note that with certain
-   *          Collection types like HashSet, the order of hosts in the final
-   *          connect string may not be in the same order you added them.
-   * @param chroot
-   *          A chroot value for zookeeper, starting with a forward slash. If no
-   *          chroot is required, use null.
-   * @param httpClient
-   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
-   *          multi-threaded connection manager.
-   * @throws IllegalArgumentException
-   *           if the chroot value does not start with a forward slash.
-   * @see #CloudSolrClient(String)
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient) {
-    this.stateProvider = new ZkClientClusterStateProvider(zkHosts, chroot);
-    this.clientIsInternal = httpClient == null;
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.lbClient = createLBHttpSolrClient(myClient);
-    this.updatesToLeaders = true;
-    this.directUpdatesToLeadersOnly = false;
-    shutdownLBHttpSolrServer = true;
-  }
   
   /**
    * Create a new client object that connects to Zookeeper and is always aware
    * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
    * SolrCloud has enough replicas for every shard in a collection, there is no
    * single point of failure. Updates will be sent to shard leaders by default.
-   * 
-   * @param zkHosts
-   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
-   *          each host in the zookeeper ensemble. Note that with certain
-   *          Collection types like HashSet, the order of hosts in the final
-   *          connect string may not be in the same order you added them.
-   * @param chroot
-   *          A chroot value for zookeeper, starting with a forward slash. If no
-   *          chroot is required, use null.
-   * @param httpClient
-   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
-   *          multi-threaded connection manager.  If null, a default HttpClient will be used.
-   * @param lbSolrClient
-   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
-   * @param updatesToLeaders
-   *          If true, sends updates to shard leaders.
    *
-   * @deprecated use {@link Builder} instead.  This will soon be a protected method, and will only
-   * be available for use in implementing subclasses.
+   * @param builder a {@link CloudSolrClient.Builder} with the options used to create the client.
    */
-  @Deprecated
-  public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient, LBHttpSolrClient lbSolrClient, boolean updatesToLeaders) {
-    this(zkHosts, chroot, httpClient, lbSolrClient, null, updatesToLeaders, false, null);
-  }
-
-  /**
-   * Create a new client object that connects to Zookeeper and is always aware
-   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
-   * SolrCloud has enough replicas for every shard in a collection, there is no
-   * single point of failure. Updates will be sent to shard leaders by default.
-   *
-   * @param zkHosts
-   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
-   *          each host in the zookeeper ensemble. Note that with certain
-   *          Collection types like HashSet, the order of hosts in the final
-   *          connect string may not be in the same order you added them.
-   * @param chroot
-   *          A chroot value for zookeeper, starting with a forward slash. If no
-   *          chroot is required, use null.
-   * @param httpClient
-   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
-   *          multi-threaded connection manager.  If null, a default HttpClient will be used.
-   * @param lbSolrClient
-   *          LBHttpSolrClient instance for requests.  If null, a default LBHttpSolrClient will be used.
-   * @param lbHttpSolrClientBuilder
-   *          LBHttpSolrClient builder to construct the LBHttpSolrClient. If null, a default builder will be used.
-   * @param updatesToLeaders
-   *          If true, sends updates to shard leaders.
-   * @param directUpdatesToLeadersOnly
-   *          If true, sends direct updates to shard leaders only.
-   */
-  private CloudSolrClient(Collection<String> zkHosts,
-                          String chroot,
-                          HttpClient httpClient,
-                          LBHttpSolrClient lbSolrClient,
-                          LBHttpSolrClient.Builder lbHttpSolrClientBuilder,
-                          boolean updatesToLeaders,
-                          boolean directUpdatesToLeadersOnly,
-                          ClusterStateProvider stateProvider
-
-  ) {
-    if (stateProvider == null) {
-      this.stateProvider = new ZkClientClusterStateProvider(zkHosts, chroot);
+  protected CloudSolrClient(Builder builder) {
+    if (builder.stateProvider == null) {
+      if (builder.zkHosts != null && builder.solrUrls != null) {
+        throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
+      }
+      if (builder.zkHosts != null) {
+        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
+        try {
+          this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
+        } catch (Exception e) {
+          throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
+              + "Solr server(s), "  + builder.solrUrls + ", down?)", e);
+        }
+      } else {
+        throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
+      }
     } else {
-      this.stateProvider = stateProvider;
+      this.stateProvider = builder.stateProvider;
     }
-    this.clientIsInternal = httpClient == null;
-    this.shutdownLBHttpSolrServer = lbSolrClient == null;
-    if(lbHttpSolrClientBuilder != null) lbSolrClient = lbHttpSolrClientBuilder.build();
-    if(lbSolrClient != null) httpClient = lbSolrClient.getHttpClient();
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    if (lbSolrClient == null) lbSolrClient = createLBHttpSolrClient(myClient);
-    this.lbClient = lbSolrClient;
-    this.updatesToLeaders = updatesToLeaders;
-    this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
+    this.clientIsInternal = builder.httpClient == null;
+    this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
+    if(builder.lbClientBuilder != null) {
+      propagateLBClientConfigOptions(builder);
+      builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
+    }
+    if(builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
+    this.myClient = (builder.httpClient == null) ? HttpClientUtil.createClient(null) : builder.httpClient;
+    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, myClient);
+    this.lbClient = builder.loadBalancedSolrClient;
+    this.updatesToLeaders = builder.shardLeadersOnly;
+    this.directUpdatesToLeadersOnly = builder.directUpdatesToLeadersOnly;
   }
   
-  /**
-   * @param zkHost
-   *          A zookeeper client endpoint.
-   * @param updatesToLeaders
-   *          If true, sends updates only to shard leaders.
-   * @see #CloudSolrClient(String) for full description and details on zkHost
-   * @deprecated use {@link CloudSolrClient.Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(String zkHost, boolean updatesToLeaders) {
-    this(zkHost, updatesToLeaders, null);
-  }
-
-  /**
-   * @param zkHost
-   *          A zookeeper client endpoint.
-   * @param updatesToLeaders
-   *          If true, sends updates only to shard leaders.
-   * @param httpClient
-   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
-   *          multi-threaded connection manager.
-   * @see #CloudSolrClient(String) for full description and details on zkHost
-   * @deprecated use {@link CloudSolrClient.Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(String zkHost, boolean updatesToLeaders, HttpClient httpClient) {
-    this.stateProvider = new ZkClientClusterStateProvider(zkHost);
-    this.clientIsInternal = httpClient == null;
-    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.lbClient = new LBHttpSolrClient.Builder()
-        .withHttpClient(myClient)
-        .build();
-    this.lbClient.setRequestWriter(new BinaryRequestWriter());
-    this.lbClient.setParser(new BinaryResponseParser());
-    this.updatesToLeaders = updatesToLeaders;
-    this.directUpdatesToLeadersOnly = false;
-    shutdownLBHttpSolrServer = true;
-    lbClient.addQueryParams(STATE_VERSION);
+  private void propagateLBClientConfigOptions(Builder builder) {
+    final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
+    
+    if (builder.connectionTimeoutMillis != null) {
+      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis);
+    }
+    
+    if (builder.socketTimeoutMillis != null) {
+      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
+    }
   }
 
   /**Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -496,40 +300,6 @@ public class CloudSolrClient extends SolrClient {
     this.collectionStateCache.timeToLive = seconds * 1000L;
   }
 
-  /**
-   * @param zkHost
-   *          A zookeeper client endpoint.
-   * @param lbClient
-   *          LBHttpSolrServer instance for requests.
-   * @see #CloudSolrClient(String) for full description and details on zkHost
-   * @deprecated use {@link CloudSolrClient.Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(String zkHost, LBHttpSolrClient lbClient) {
-    this(zkHost, lbClient, true);
-  }
-  
-  /**
-   * @param zkHost
-   *          A zookeeper client endpoint.
-   * @param lbClient
-   *          LBHttpSolrServer instance for requests.
-   * @param updatesToLeaders
-   *          If true, sends updates only to shard leaders.
-   * @see #CloudSolrClient(String) for full description and details on zkHost
-   * @deprecated use {@link Builder} instead.
-   */
-  @Deprecated
-  public CloudSolrClient(String zkHost, LBHttpSolrClient lbClient, boolean updatesToLeaders) {
-    this.lbClient = lbClient;
-    this.stateProvider = new ZkClientClusterStateProvider(zkHost);
-    this.updatesToLeaders = updatesToLeaders;
-    this.directUpdatesToLeadersOnly = false;
-    shutdownLBHttpSolrServer = false;
-    this.clientIsInternal = false;
-    lbClient.addQueryParams(STATE_VERSION);
-  }
-  
   public ResponseParser getParser() {
     return lbClient.getParser();
   }
@@ -564,6 +334,7 @@ public class CloudSolrClient extends SolrClient {
   public ZkStateReader getZkStateReader() {
     if (stateProvider instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) stateProvider;
+      stateProvider.connect();
       return provider.zkStateReader;
     }
     throw new IllegalStateException("This has no Zk stateReader");
@@ -640,44 +411,12 @@ public class CloudSolrClient extends SolrClient {
     this.parallelUpdates = parallelUpdates;
   }
 
-  /**
-   * Upload a set of config files to Zookeeper and give it a name
-   *
-   * NOTE: You should only allow trusted users to upload configs.  If you
-   * are allowing client access to zookeeper, you should protect the
-   * /configs node against unauthorised write access.
-   *
-   *  @deprecated Please use {@link ZkClientClusterStateProvider#uploadConfig(Path, String)} instead
-   *
-   * @param configPath {@link java.nio.file.Path} to the config files
-   * @param configName the name of the config
-   * @throws IOException if an IO error occurs
-   */
-  @Deprecated
-  public void uploadConfig(Path configPath, String configName) throws IOException {
-    stateProvider.connect();
-    assertZKStateProvider().uploadConfig(configPath, configName);
-  }
-
   private ZkClientClusterStateProvider assertZKStateProvider() {
     if (stateProvider instanceof ZkClientClusterStateProvider) {
       return (ZkClientClusterStateProvider) stateProvider;
     }
     throw new IllegalArgumentException("This client does not use ZK");
 
-  }
-
-  /**
-   * Download a named config from Zookeeper to a location on the filesystem
-   *
-   * @deprecated Please use {@link ZkClientClusterStateProvider#downloadConfig(String, Path)} instead
-   * @param configName    the name of the config
-   * @param downloadPath  the path to write config files to
-   * @throws IOException  if an I/O exception occurs
-   */
-  @Deprecated
-  public void downloadConfig(String configName, Path downloadPath) throws IOException {
-    assertZKStateProvider().downloadConfig(configName, downloadPath);
   }
 
   /**
@@ -1061,6 +800,7 @@ public class CloudSolrClient extends SolrClient {
    */
   protected NamedList<Object> requestWithRetryOnStaleState(SolrRequest request, int retryCount, String collection)
       throws SolrServerException, IOException {
+    SolrRequest originalRequest = request;
 
     connect(); // important to call this before you start working with the ZkStateReader
 
@@ -1070,8 +810,15 @@ public class CloudSolrClient extends SolrClient {
     // collections is stale and needs to be refreshed ... this code has no impact on internal collections
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
+    boolean isCollectionRequestOfV2 = false;
+    if (request instanceof V2RequestSupport) {
+      request = ((V2RequestSupport) request).getV2Request();
+    }
+    if (request instanceof V2Request) {
+      isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
+    }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
-    if (collection != null &&  !isAdmin) { // don't do _stateVer_ checking for admin requests
+    if (collection != null &&  !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
       Set<String> requestedCollectionNames = getCollectionNames(collection);
 
       StringBuilder stateVerParamBuilder = null;
@@ -1128,8 +875,10 @@ public class CloudSolrClient extends SolrClient {
     } catch (Exception exc) {
 
       Throwable rootCause = SolrException.getRootCause(exc);
-      // don't do retry support for admin requests or if the request doesn't have a collection specified
-      if (collection == null || isAdmin) {
+      // don't do retry support for admin requests
+      // or if the request doesn't have a collection specified
+      // or request is v2 api and its method is not GET
+      if (collection == null || isAdmin || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
         if (exc instanceof SolrServerException) {
           throw (SolrServerException)exc;
         } else if (exc instanceof IOException) {
@@ -1255,11 +1004,19 @@ public class CloudSolrClient extends SolrClient {
       reqParams = new ModifiableSolrParams();
     }
     List<String> theUrlList = new ArrayList<>();
-    if (ADMIN_PATHS.contains(request.getPath())) {
+    if (request instanceof V2Request) {
+      Set<String> liveNodes = stateProvider.liveNodes();
+      if (!liveNodes.isEmpty()) {
+        List<String> liveNodesList = new ArrayList<>(liveNodes);
+        Collections.shuffle(liveNodesList, rand);
+        theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNodesList.get(0),
+            (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+      }
+    } else if (ADMIN_PATHS.contains(request.getPath())) {
       Set<String> liveNodes = stateProvider.liveNodes();
       for (String liveNode : liveNodes) {
         theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNode,
-            (String) stateProvider.getClusterProperties().getOrDefault(ZkStateReader.URL_SCHEME,"http")));
+            (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
       }
     } else {
       
@@ -1365,14 +1122,14 @@ public class CloudSolrClient extends SolrClient {
     return rsp.getResponse();
   }
 
-  Set<String> getCollectionNames(String collection) {
+  private Set<String> getCollectionNames(String collection) {
     // Extract each comma separated collection name and store in a List.
     List<String> rawCollectionsList = StrUtils.splitSmart(collection, ",", true);
     Set<String> collectionNames = new HashSet<>();
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (stateProvider.getState(collectionName) == null) {
-        String alias = stateProvider.getAlias(collection);
+        String alias = stateProvider.getAlias(collectionName);
         if (alias != null) {
           List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
           collectionNames.addAll(aliasList);
@@ -1445,7 +1202,7 @@ public class CloudSolrClient extends SolrClient {
           && !cacheEntry.shoulRetry()) return col;
     }
 
-    ClusterState.CollectionRef ref = getCollectionRef(collection);
+    CollectionRef ref = getCollectionRef(collection);
     if (ref == null) {
       //no such collection exists
       return null;
@@ -1480,7 +1237,7 @@ public class CloudSolrClient extends SolrClient {
     }
   }
 
-  ClusterState.CollectionRef getCollectionRef(String collection) {
+  CollectionRef getCollectionRef(String collection) {
     return stateProvider.getState(collection);
   }
 
@@ -1554,6 +1311,10 @@ public class CloudSolrClient extends SolrClient {
     return results;
   }
   
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.lbClient.setConnectionTimeout(timeout); 
   }
@@ -1587,10 +1348,16 @@ public class CloudSolrClient extends SolrClient {
     return true;
   }
 
-  private static LBHttpSolrClient createLBHttpSolrClient(HttpClient httpClient) {
-    final LBHttpSolrClient lbClient = new LBHttpSolrClient.Builder()
-        .withHttpClient(httpClient)
-        .build();
+  private static LBHttpSolrClient createLBHttpSolrClient(Builder cloudSolrClientBuilder, HttpClient httpClient) {
+    final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
+    lbBuilder.withHttpClient(httpClient);
+    if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
+      lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
+    }
+    if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
+      lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
+    }
+    final LBHttpSolrClient lbClient = lbBuilder.build();
     lbClient.setRequestWriter(new BinaryRequestWriter());
     lbClient.setParser(new BinaryResponseParser());
     
@@ -1600,19 +1367,20 @@ public class CloudSolrClient extends SolrClient {
   /**
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
-  public static class Builder {
-    private Collection<String> zkHosts;
-    private HttpClient httpClient;
-    private String zkChroot;
-    private LBHttpSolrClient loadBalancedSolrClient;
-    private LBHttpSolrClient.Builder lbClientBuilder;
-    private boolean shardLeadersOnly;
-    private boolean directUpdatesToLeadersOnly;
-    private ClusterStateProvider stateProvider;
+  public static class Builder extends SolrClientBuilder<Builder> {
+    protected Collection<String> zkHosts;
+    protected List<String> solrUrls;
+    protected String zkChroot;
+    protected LBHttpSolrClient loadBalancedSolrClient;
+    protected LBHttpSolrClient.Builder lbClientBuilder;
+    protected boolean shardLeadersOnly;
+    protected boolean directUpdatesToLeadersOnly;
+    protected ClusterStateProvider stateProvider;
 
 
     public Builder() {
       this.zkHosts = new ArrayList();
+      this.solrUrls = new ArrayList();
       this.shardLeadersOnly = true;
     }
     
@@ -1629,7 +1397,34 @@ public class CloudSolrClient extends SolrClient {
       this.zkHosts.add(zkHost);
       return this;
     }
-    
+
+    /**
+     * Provide a Solr URL to be used when configuring {@link CloudSolrClient} instances.
+     *
+     * Method may be called multiple times. One of the provided values will be used to fetch
+     * the list of live Solr nodes that the underlying {@link HttpClusterStateProvider} would be maintaining.
+     * 
+     * Provided Solr URL is expected to point to the root Solr path ("http://hostname:8983/solr"); it should not
+     * include any collections, cores, or other path components.
+     */
+    public Builder withSolrUrl(String solrUrl) {
+      this.solrUrls.add(solrUrl);
+      return this;
+    }
+
+    /**
+     * Provide a list of Solr URL to be used when configuring {@link CloudSolrClient} instances.
+     * One of the provided values will be used to fetch the list of live Solr
+     * nodes that the underlying {@link HttpClusterStateProvider} would be maintaining.
+     * 
+     * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); they should not
+     * include any collections, cores, or other path components.
+     */
+    public Builder withSolrUrl(Collection<String> solrUrls) {
+      this.solrUrls.addAll(solrUrls);
+      return this;
+    }
+
     /**
      * Provides a {@link HttpClient} for the builder to use when creating clients.
      */
@@ -1637,15 +1432,6 @@ public class CloudSolrClient extends SolrClient {
       this.lbClientBuilder = lbHttpSolrClientBuilder;
       return this;
     }
-
-    /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
-    }
-
 
     /**
      * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
@@ -1716,31 +1502,32 @@ public class CloudSolrClient extends SolrClient {
       this.stateProvider = stateProvider;
       return this;
     }
-
+    
     /**
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */
     public CloudSolrClient build() {
       if (stateProvider == null) {
-        stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+        if (!zkHosts.isEmpty()) {
+          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+        }
+        else if (!this.solrUrls.isEmpty()) {
+          try {
+            stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);
+          } catch (Exception e) {
+            throw new RuntimeException("Couldn't initialize a HttpClusterStateProvider (is/are the "
+                + "Solr server(s), "  + solrUrls + ", down?)", e);
+          }
+        } else {
+          throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
+        }
       }
-      return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient, lbClientBuilder,
-          shardLeadersOnly, directUpdatesToLeadersOnly, stateProvider);
+      return new CloudSolrClient(this);
     }
-  }
 
-  interface ClusterStateProvider extends Closeable {
-
-    ClusterState.CollectionRef getState(String collection);
-
-    Set<String> liveNodes();
-
-    String getAlias(String collection);
-
-    String getCollectionName(String name);
-
-    Map<String, Object> getClusterProperties();
-
-    void connect();
+    @Override
+    public Builder getThis() {
+      return this;
+    }
   }
 }

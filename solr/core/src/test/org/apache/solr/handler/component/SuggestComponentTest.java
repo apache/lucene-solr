@@ -516,7 +516,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
       waitForWarming();
     }
     
-    assertQ(req("qt", "standard", 
+    assertQ(req("qt", "/select",
         "q", "*:*"), 
         "//*[@numFound='11']"
         );

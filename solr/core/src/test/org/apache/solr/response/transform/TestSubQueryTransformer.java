@@ -372,28 +372,27 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     johnTwoFL.setParams(params);
     
     final NamedList<Object> unmarshalled;
-    {
-      SolrCore core = johnTwoFL.getCore();
-      SolrQueryResponse rsp = new SolrQueryResponse();
-      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(johnTwoFL, rsp));
-    
+    SolrCore core = johnTwoFL.getCore();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrRequestInfo.setRequestInfo(new SolrRequestInfo(johnTwoFL, rsp));
+
     SolrQueryResponse response = h.queryAndResponse(
         johnTwoFL.getParams().get(CommonParams.QT), johnTwoFL);
-    
+
     BinaryQueryResponseWriter responseWriter = (BinaryQueryResponseWriter) core.getQueryResponseWriter(johnTwoFL);
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    responseWriter.write(bytes,johnTwoFL,response);
-    
-    unmarshalled = (NamedList<Object>) new JavaBinCodec().unmarshal(
-        new ByteArrayInputStream(bytes.toByteArray()));
-    
-      johnTwoFL.close();
-      SolrRequestInfo.clearRequestInfo();
+    responseWriter.write(bytes, johnTwoFL, response);
+
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      unmarshalled = (NamedList<Object>) jbc.unmarshal(
+          new ByteArrayInputStream(bytes.toByteArray()));
     }
+
+    johnTwoFL.close();
+    SolrRequestInfo.clearRequestInfo();
     
     SolrDocumentList resultDocs = (SolrDocumentList)(unmarshalled.get("response"));
     
-    {
       Map<String,String> engText = new HashMap<>();
       engText.put("text_t", "These guys develop stuff");
       
@@ -414,7 +413,6 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
                 expectedDept.equals(deptDoc));
           }
       }
-    }
     }
   }
   

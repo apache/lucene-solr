@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
@@ -38,6 +40,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -108,7 +111,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("query with ignored field",
             req("bar_ignored:yo id:42")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='42']"
+            ,"//str[@name='id'][.='42']"
             );
   }
   
@@ -119,13 +122,17 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     // test that we got the expected config, not just hardcoded defaults
-    assertNotNull(core.getRequestHandler("mock"));
+    assertNotNull(core.getRequestHandler("/mock"));
 
     // test stats call
-    NamedList stats = core.getStatistics();
-    assertEquals("collection1", stats.get("coreName"));
-    assertTrue(stats.get("refCount") != null);
-    
+    SolrMetricManager manager = core.getCoreContainer().getMetricManager();
+    String registry = core.getCoreMetricManager().getRegistryName();
+    Map<String, Metric> metrics = manager.registry(registry).getMetrics();
+    assertTrue(metrics.containsKey("CORE.coreName"));
+    assertTrue(metrics.containsKey("CORE.refCount"));
+    Gauge<Number> g = (Gauge<Number>)metrics.get("CORE.refCount");
+    assertTrue(g.getValue().intValue() > 0);
+
     lrf.args.put(CommonParams.VERSION,"2.2");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
@@ -143,13 +150,13 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ("backslash escaping semicolon",
             req("id:42 AND val_s:aa\\;bb")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='42']"
+            ,"//str[@name='id'][.='42']"
             );
 
     assertQ("quote escaping semicolon",
             req("id:42 AND val_s:\"aa;bb\"")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='42']"
+            ,"//str[@name='id'][.='42']"
             );
 
     assertQ("no escaping semicolon",
@@ -268,15 +275,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
     assertQ(req("{!lucene q.op=AND df=text}grape green")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='103']"
+            ,"//str[@name='id'][.='103']"
              );
     assertQ(req("-_val_:\"{!lucene q.op=AND df=text}grape green\"")
             ,"//*[@numFound='5']"
-            ,"//int[@name='id'][.='101']"
-            ,"//int[@name='id'][.='102']"
-            ,"//int[@name='id'][.='104']"
-            ,"//int[@name='id'][.='105']"
-            ,"//int[@name='id'][.='106']"
+            ,"//str[@name='id'][.='101']"
+            ,"//str[@name='id'][.='102']"
+            ,"//str[@name='id'][.='104']"
+            ,"//str[@name='id'][.='105']"
+            ,"//str[@name='id'][.='106']"
             );
 
     // tests
@@ -291,26 +298,26 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("*:*")
             ,"//*[@numFound='4']"
-            ,"//int[@name='id'][.='101']"
-            ,"//int[@name='id'][.='102']"
-            ,"//int[@name='id'][.='103']"
-            ,"//int[@name='id'][.='106']"
+            ,"//str[@name='id'][.='101']"
+            ,"//str[@name='id'][.='102']"
+            ,"//str[@name='id'][.='103']"
+            ,"//str[@name='id'][.='106']"
             );
 
     assertU(delQ("{!term f=id}106"));
     assertU(commit());
     assertQ(req("*:*")
             ,"//*[@numFound='3']"
-            ,"//int[@name='id'][.='101']"
-            ,"//int[@name='id'][.='102']"
-            ,"//int[@name='id'][.='103']"
+            ,"//str[@name='id'][.='101']"
+            ,"//str[@name='id'][.='102']"
+            ,"//str[@name='id'][.='103']"
             );
 
     assertU(delQ("-_val_:\"{!lucene q.op=AND df=text}grape green\""));
     assertU(commit());
     assertQ(req("*:*")
             ,"//*[@numFound='1']"
-            ,"//int[@name='id'][.='103']"
+            ,"//str[@name='id'][.='103']"
             );
 
     assertU(delQ("-text:doesnotexist"));
@@ -334,6 +341,59 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testClientErrorOnMalformedDate() throws Exception {
+    final String BAD_VALUE = "NOT_A_DATE";
+    ignoreException(BAD_VALUE);
+
+    final List<String> FIELDS = new LinkedList<>();
+    for (String type : new String[] {
+        "tdt", "tdt1", "tdtdv", "tdtdv1",
+        "dt_dv", "dt_dvo", "dt", "dt1", "dt_os"
+        }) {
+      FIELDS.add("malformed_" + type);
+    }
+
+    // test that malformed numerics cause client error not server error
+    for (String field : FIELDS) {
+      try {
+        h.update(add( doc("id","100", field, BAD_VALUE)));
+        fail("Didn't encounter an error trying to add a bad date: " + field);
+      } catch (SolrException e) {
+        String msg = e.toString();
+        assertTrue("not an (update) client error on field: " + field +" : "+ msg,
+                   400 <= e.code() && e.code() < 500);
+        assertTrue("(update) client error does not mention bad value: " + msg,
+                   msg.contains(BAD_VALUE));
+        assertTrue("client error does not mention document id: " + msg,
+                   msg.contains("[doc=100]"));
+      }
+      SchemaField sf = h.getCore().getLatestSchema().getField(field); 
+      if (!sf.hasDocValues() && !sf.indexed()) {
+        continue;
+      }
+      try {
+        h.query(req("q",field + ":" + BAD_VALUE));
+        fail("Didn't encounter an error trying to query a bad date: " + field);
+      } catch (SolrException e) {
+        String msg = e.toString();
+        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
+                   400 <= e.code() && e.code() < 500);
+        assertTrue("(search) client error does not mention bad value: " + msg,
+                   msg.contains(BAD_VALUE));
+      }
+      try {
+        h.query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"));
+        fail("Didn't encounter an error trying to query a bad date: " + field);
+      } catch (SolrException e) {
+        String msg = e.toString();
+        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
+                   400 <= e.code() && e.code() < 500);
+        assertTrue("(search) client error does not mention bad value: " + msg,
+                   msg.contains(BAD_VALUE));
+      }
+    }
+  }
 
   @Test
   public void testClientErrorOnMalformedNumbers() throws Exception {
@@ -342,7 +402,13 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     ignoreException(BAD_VALUE);
 
     final List<String> FIELDS = new LinkedList<>();
-    for (String type : new String[] { "ti", "tf", "td", "tl" }) {
+    for (String type : new String[] {
+        "ti", "tf", "td", "tl",
+        "i", "f", "d", "l",
+        "i_dv", "f_dv", "d_dv", "l_dv",
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo",
+        "i_os", "f_os", "d_os", "l_os"
+        }) {
       FIELDS.add("malformed_" + type);
     }
 
@@ -357,9 +423,25 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                    400 <= e.code() && e.code() < 500);
         assertTrue("(update) client error does not mention bad value: " + msg,
                    msg.contains(BAD_VALUE));
+        assertTrue("client error does not mention document id",
+                   msg.contains("[doc=100]"));
+      }
+      SchemaField sf = h.getCore().getLatestSchema().getField(field); 
+      if (!sf.hasDocValues() && !sf.indexed()) {
+        continue;
       }
       try {
         h.query(req("q",field + ":" + BAD_VALUE));
+        fail("Didn't encounter an error trying to query a non-number: " + field);
+      } catch (SolrException e) {
+        String msg = e.toString();
+        assertTrue("not a (search) client error on field: " + field +" : "+ msg,
+                   400 <= e.code() && e.code() < 500);
+        assertTrue("(search) client error does not mention bad value: " + msg,
+                   msg.contains(BAD_VALUE));
+      }
+      try {
+        h.query(req("q",field + ":[10 TO " + BAD_VALUE + "]"));
         fail("Didn't encounter an error trying to query a non-number: " + field);
       } catch (SolrException e) {
         String msg = e.toString();
@@ -377,8 +459,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrRequestHandler handler = new RequestHandlerBase() {
         @Override
         public String getDescription() { return tmp; }
-        @Override
-        public String getSource() { return tmp; }
         @Override
         public void handleRequestBody
           ( SolrQueryRequest req, SolrQueryResponse rsp ) {
@@ -676,12 +756,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             );
 
     assertQ("defaults handler returns fewer matches",
-            req("q", "id:[42 TO 47]",   "qt","defaults"),
+            req("q", "id:[42 TO 47]",   "qt","/defaults"),
             "*[count(//doc)=4]"
             );
 
     assertQ("defaults handler includes highlighting",
-            req("q", "name:Zapp OR title:General",   "qt","defaults"),
+            req("q", "name:Zapp OR title:General",   "qt","/defaults"),
             "//lst[@name='highlighting']"
             );
 
@@ -827,7 +907,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       assertQ("check math on field query: " + q,
               req("q", q),
               "*[count(//doc)=1]",
-              "//int[@name='id'][.='1']");
+              "//str[@name='id'][.='1']");
     }
 
     // range queries using date math

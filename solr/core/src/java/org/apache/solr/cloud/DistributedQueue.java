@@ -43,7 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A distributed queue.
+ * A distributed queue. Optimized for single-consumer,
+ * multiple-producer: if there are multiple consumers on the same ZK queue,
+ * the results should be correct but inefficient
  */
 public class DistributedQueue {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -86,10 +88,9 @@ public class DistributedQueue {
    */
   private final Condition changed = updateLock.newCondition();
 
-  /**
-   * If non-null, the last watcher to listen for child changes.  If null, the in-memory contents are dirty.
-   */
-  private ChildWatcher lastWatcher = null;
+  private boolean isDirty = true;
+
+  private int watcherCount = 0;
 
   public DistributedQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Overseer.Stats());
@@ -227,21 +228,18 @@ public class DistributedQueue {
   }
 
   /**
-   * Inserts data into queue.  Successfully calling this method does NOT guarantee
-   * that the element will be immediately available in the in-memory queue. In particular,
-   * calling this method on an empty queue will not necessarily cause {@link #poll()} to
-   * return the offered element.  Use a blocking method if you must wait for the offered
-   * element to become visible.
+   * Inserts data into queue.  If there are no other queue consumers, the offered element
+   * will be immediately visible when this method returns.
    */
   public void offer(byte[] data) throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_offer");
     try {
       while (true) {
         try {
-          // We don't need to explicitly set isDirty here; if there is a watcher, it will
-          // see the update and set the bit itself; if there is no watcher we can defer
-          // the update anyway.
+          // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
+          // This will get set again when the watcher actually fires, but that's ok.
           zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
+          isDirty = true;
           return;
         } catch (KeeperException.NoNodeException e) {
           try {
@@ -266,18 +264,26 @@ public class DistributedQueue {
    * The caller must double check that the actual node still exists, since the in-memory
    * list is inherently stale.
    */
-  private String firstChild(boolean remove) throws KeeperException, InterruptedException {
+  private String firstChild(boolean remove, boolean refetchIfDirty) throws KeeperException, InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      // If we're not in a dirty state, and we have in-memory children, return from in-memory.
-      if (lastWatcher != null && !knownChildren.isEmpty()) {
+      // We always return from cache first, the cache will be cleared if the node is not exist
+      if (!knownChildren.isEmpty() && !(isDirty && refetchIfDirty)) {
         return remove ? knownChildren.pollFirst() : knownChildren.first();
       }
 
-      // Try to fetch an updated list of children from ZK.
-      ChildWatcher newWatcher = new ChildWatcher();
+      if (!isDirty && knownChildren.isEmpty()) {
+        return null;
+      }
+
+      // Dirty, try to fetch an updated list of children from ZK.
+      // Only set a new watcher if there isn't already a watcher.
+      ChildWatcher newWatcher = (watcherCount == 0) ? new ChildWatcher() : null;
       knownChildren = fetchZkChildren(newWatcher);
-      lastWatcher = newWatcher; // only set after fetchZkChildren returns successfully
+      if (newWatcher != null) {
+        watcherCount++; // watcher was successfully set
+      }
+      isDirty = false;
       if (knownChildren.isEmpty()) {
         return null;
       }
@@ -323,9 +329,10 @@ public class DistributedQueue {
   Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     List<String> foundChildren = new ArrayList<>();
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
+    boolean first = true;
     while (true) {
-      // Trigger a fetch if needed.
-      firstChild(false);
+      // Trigger a refresh, but only force it if this is not the first iteration.
+      firstChild(false, !first);
 
       updateLock.lockInterruptibly();
       try {
@@ -340,6 +347,13 @@ public class DistributedQueue {
         if (waitNanos <= 0) {
           break;
         }
+
+        // If this is our first time through, force a refresh before waiting.
+        if (first) {
+          first = false;
+          continue;
+        }
+
         waitNanos = changed.awaitNanos(waitNanos);
       } finally {
         updateLock.unlock();
@@ -381,7 +395,7 @@ public class DistributedQueue {
    */
   private byte[] firstElement() throws KeeperException, InterruptedException {
     while (true) {
-      String firstChild = firstChild(false);
+      String firstChild = firstChild(false, false);
       if (firstChild == null) {
         return null;
       }
@@ -391,7 +405,9 @@ public class DistributedQueue {
         // Another client deleted the node first, remove the in-memory and retry.
         updateLock.lockInterruptibly();
         try {
-          knownChildren.remove(firstChild);
+          // Efficient only for single-consumer
+          knownChildren.clear();
+          isDirty = true;
         } finally {
           updateLock.unlock();
         }
@@ -401,7 +417,7 @@ public class DistributedQueue {
 
   private byte[] removeFirst() throws KeeperException, InterruptedException {
     while (true) {
-      String firstChild = firstChild(true);
+      String firstChild = firstChild(true, false);
       if (firstChild == null) {
         return null;
       }
@@ -409,12 +425,15 @@ public class DistributedQueue {
         String path = dir + "/" + firstChild;
         byte[] result = zookeeper.getData(path, null, null, true);
         zookeeper.delete(path, -1, true);
+        stats.setQueueLength(knownChildren.size());
         return result;
       } catch (KeeperException.NoNodeException e) {
         // Another client deleted the node first, remove the in-memory and retry.
         updateLock.lockInterruptibly();
         try {
-          knownChildren.remove(firstChild);
+          // Efficient only for single-consumer
+          knownChildren.clear();
+          isDirty = true;
         } finally {
           updateLock.unlock();
         }
@@ -422,16 +441,25 @@ public class DistributedQueue {
     }
   }
 
-  @VisibleForTesting boolean hasWatcher() throws InterruptedException {
+  @VisibleForTesting int watcherCount() throws InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      return lastWatcher != null;
+      return watcherCount;
     } finally {
       updateLock.unlock();
     }
   }
 
-  private class ChildWatcher implements Watcher {
+  @VisibleForTesting boolean isDirty() throws InterruptedException {
+    updateLock.lockInterruptibly();
+    try {
+      return isDirty;
+    } finally {
+      updateLock.unlock();
+    }
+  }
+
+  @VisibleForTesting class ChildWatcher implements Watcher {
 
     @Override
     public void process(WatchedEvent event) {
@@ -441,10 +469,8 @@ public class DistributedQueue {
       }
       updateLock.lock();
       try {
-        // this watcher is automatically cleared when fired
-        if (lastWatcher == this) {
-          lastWatcher = null;
-        }
+        isDirty = true;
+        watcherCount--;
         // optimistically signal any waiters that the queue may not be empty now, so they can wake up and retry
         changed.signalAll();
       } finally {
