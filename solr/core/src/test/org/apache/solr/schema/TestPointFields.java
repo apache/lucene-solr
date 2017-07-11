@@ -2183,6 +2183,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   
   private void testPointStats(String field, String dvField, String[] numbers, double min, double max, int count, int missing, double delta) {
+    clearIndex();
+    assertU(commit());
+
     String minMin = String.valueOf(min - Math.abs(delta*min));
     String maxMin = String.valueOf(min + Math.abs(delta*min));
     String minMax = String.valueOf(max - Math.abs(delta*max));
