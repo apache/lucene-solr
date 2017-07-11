@@ -42,6 +42,7 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws Exception {
+    System.clearProperty("solr.plugins.dir");
     pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
   }
 
@@ -140,15 +141,21 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testResourceLoading() throws Exception {
+    // Spin up a Solr core with custom solr.plugins.dir (so it can be writeable)
+    // Test that classes and resources are loaded through SolrResourceLoader
+    System.setProperty("solr.plugins.dir", testFolder.getRoot().getAbsolutePath());
     initCore("solrconfig.xml","schema.xml");
-
-    assertTrue(pluginBundleManager.install("extraction"));
-    assertTrue(pluginBundleManager.install("request-sanitizer"));
-    assertEquals(2, pluginBundleManager.listInstalled().size());
+    // Use coreContainer's instance of pluginBunldeManager, not the one created in init
+    PluginBundleManager pluginBundleManagerFromSolr = h.getCoreContainer().getPluginBundleManager();
+    
+    assertTrue(pluginBundleManagerFromSolr.install("extraction"));
+    assertTrue(pluginBundleManagerFromSolr.install("request-sanitizer"));
+    assertEquals(2, pluginBundleManagerFromSolr.listInstalled().size());
     SolrResourceLoader l = h.getCoreContainer().getResourceLoader();
     assertNotNull(l.findClass("org.apache.solr.handler.extraction.ExtractingRequestHandler", RequestHandlerBase.class));
-
-    assertNotNull(l.getClassLoader().getResource("org.apache.pdfbox.multipdf.PDFMergerUtility.class"));
     assertNotNull(l.findClass("com.cominvent.solr.RequestSanitizerComponent", SearchComponent.class));
+
+    // Now get a resource from extraction dependency jar tika-core-1.13.jar 
+    assertNotNull(l.openResource("org/apache/tika/mime/tika-mimetypes.xml"));
   }
 }

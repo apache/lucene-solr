@@ -21,48 +21,24 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.pf4j.DefaultPluginDescriptorFinder;
-import ro.fortsoft.pf4j.DefaultPluginFactory;
-import ro.fortsoft.pf4j.DefaultPluginLoader;
-import ro.fortsoft.pf4j.DefaultPluginManager;
-import ro.fortsoft.pf4j.DefaultPluginRepository;
-import ro.fortsoft.pf4j.ManifestPluginDescriptorFinder;
-import ro.fortsoft.pf4j.Plugin;
-import ro.fortsoft.pf4j.PluginClassLoader;
-import ro.fortsoft.pf4j.PluginClasspath;
-import ro.fortsoft.pf4j.PluginDescriptor;
-import ro.fortsoft.pf4j.PluginDescriptorFinder;
 import ro.fortsoft.pf4j.PluginException;
-import ro.fortsoft.pf4j.PluginFactory;
-import ro.fortsoft.pf4j.PluginLoader;
 import ro.fortsoft.pf4j.PluginManager;
-import ro.fortsoft.pf4j.PluginRepository;
 import ro.fortsoft.pf4j.PluginWrapper;
-import ro.fortsoft.pf4j.PropertiesPluginDescriptorFinder;
 import ro.fortsoft.pf4j.update.PluginInfo;
 import ro.fortsoft.pf4j.update.UpdateManager;
 import ro.fortsoft.pf4j.update.UpdateRepository;
-import ro.fortsoft.pf4j.util.AndFileFilter;
-import ro.fortsoft.pf4j.util.DirectoryFileFilter;
-import ro.fortsoft.pf4j.util.JarFileFilter;
-import ro.fortsoft.pf4j.util.NotFileFilter;
-import ro.fortsoft.pf4j.util.StringUtils;
 
 /**
  * Discovers and loads plugins from plugin folder using PF4J
@@ -83,7 +59,8 @@ public class PluginBundleManager {
       systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
 //      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
-      repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
+      //repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
+      repos.add(new PluginUpdateRepository("local", new URL("file:///Users/janhoy/Cominvent/Code/plugins/")));
       repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);
@@ -251,164 +228,6 @@ public class PluginBundleManager {
       return Collections.enumeration(resources);
     }
 
-  }
-
-  /**
-   * Plugin manager for Solr that changes how to read manifest mm
-   */
-  public static class SolrPluginManager extends DefaultPluginManager {
-    private static final Logger log = LoggerFactory.getLogger(SolrPluginManager.class);
-
-    public SolrPluginManager(Path pluginsRoot) {
-      super(pluginsRoot);
-    }
-
-    @Override
-    protected PluginDescriptorFinder createPluginDescriptorFinder() {
-      return new AutoPluginDescriptorFinder();
-    }
-
-    @Override
-    protected PluginRepository createPluginRepository() {
-      return new AutoPluginRepository(getPluginsRoot(), isDevelopment());
-    }
-
-    @Override
-    protected void validatePluginDescriptor(PluginDescriptor descriptor) throws PluginException {
-      if (StringUtils.isEmpty(descriptor.getPluginId())) {
-        throw new PluginException("id cannot be empty");
-      }
-      if (descriptor.getVersion() == null) {
-        throw new PluginException("version cannot be empty");
-      }
-    }
-
-    @Override
-    protected PluginFactory createPluginFactory() {
-      return new DefaultPluginFactory() {
-        @Override
-        public Plugin create(final PluginWrapper pluginWrapper) {
-          if (pluginWrapper.getDescriptor().getPluginClass() == null) {
-            log.debug("Plugin " + pluginWrapper.getPluginId() + " has no PluginClass, creating NOP placeholder");
-            return new Plugin(pluginWrapper) { /* NOP PLUGIN */ };
-          } else {
-            return super.create(pluginWrapper);
-          }
-        }
-      };
-    }
-
-    @Override
-    protected PluginLoader createPluginLoader() {
-      return new AutoPluginLoader(this, pluginClasspath);
-    }
-
-    /*
-     * Override super to make access public
-     */
-    @Override
-    public Map<String, ClassLoader> getPluginClassLoaders() {
-      return super.getPluginClassLoaders();
-    }
-
-    static class JarPluginDescriptorFinder extends ManifestPluginDescriptorFinder {
-
-        @Override
-        public Manifest readManifest(Path pluginPath) throws PluginException {
-            try {
-                return new JarFile(pluginPath.toFile()).getManifest();
-            } catch (IOException e) {
-                throw new PluginException(e);
-            }
-        }
-
-    }
-
-    static class JarPluginLoader extends DefaultPluginLoader {
-
-        public JarPluginLoader(PluginManager pluginManager, PluginClasspath pluginClasspath) {
-            super(pluginManager, pluginClasspath);
-        }
-
-        @Override
-        public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
-            PluginClassLoader pluginClassLoader = new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
-            pluginClassLoader.addFile(pluginPath.toFile());
-
-            return pluginClassLoader;
-        }
-
-    }
-
-    /**
-     * Descriptor finder that determines what to look for based on the given path
-     */
-    private class AutoPluginDescriptorFinder implements PluginDescriptorFinder {
-      private final DefaultPluginDescriptorFinder manifestFinder;
-      private final PropertiesPluginDescriptorFinder propertiesFinder;
-      private final JarPluginDescriptorFinder jarFinder;
-
-
-      public AutoPluginDescriptorFinder() {
-        manifestFinder = new DefaultPluginDescriptorFinder(pluginClasspath);
-        propertiesFinder = new PropertiesPluginDescriptorFinder();
-        jarFinder = new JarPluginDescriptorFinder();
-      }
-
-      @Override
-      public PluginDescriptor find(Path pluginPath) throws PluginException {
-        if (pluginPath.toString().endsWith(".jar")) {
-          return (jarFinder.find(pluginPath));
-        } else if (Files.isDirectory(pluginPath)) {
-          try {
-            return propertiesFinder.find(pluginPath);
-          } catch (Exception e) {
-            return manifestFinder.find(pluginPath);
-          }
-        } else {
-          return manifestFinder.find(pluginPath);
-        }
-      }
-    }
-
-    /**
-     * Plugin loader that can load both jar and zip plugins
-     */
-    private class AutoPluginLoader implements PluginLoader {
-      private final SolrPluginManager solrPluginManager;
-      private final PluginClasspath pluginClasspath;
-      private final JarPluginLoader jarLoader;
-      private final DefaultPluginLoader defaultLoader;
-
-      public AutoPluginLoader(SolrPluginManager solrPluginManager, PluginClasspath pluginClasspath) {
-        this.solrPluginManager = solrPluginManager;
-        this.pluginClasspath = pluginClasspath;
-        jarLoader = new JarPluginLoader(solrPluginManager, pluginClasspath);
-        defaultLoader = new DefaultPluginLoader(solrPluginManager, pluginClasspath);
-      }
-
-      @Override
-      public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
-        if (pluginPath.toString().endsWith(".jar")) {
-          return jarLoader.loadPlugin(pluginPath, pluginDescriptor);
-        } else {
-          return defaultLoader.loadPlugin(pluginPath, pluginDescriptor);
-        }
-      }
-    }
-
-    /**
-     * Repository that loads both zip files, unpacked zip files and jar plugins
-     */
-    private class AutoPluginRepository extends DefaultPluginRepository {
-      public AutoPluginRepository(Path pluginsRoot, boolean development) {
-        super(pluginsRoot, development);
-        AndFileFilter pluginsFilter = new AndFileFilter(new DirectoryFileFilter());
-        pluginsFilter.addFileFilter(new NotFileFilter(createHiddenPluginFilter(isDevelopment())));
-        pluginsFilter.addFileFilter(new JarFileFilter());
-        setFilter(pluginsFilter);
-      }
-    }
   }
 
 }
