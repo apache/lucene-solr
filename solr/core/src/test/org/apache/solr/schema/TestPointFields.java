@@ -1185,7 +1185,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     do {
       values = getRandomLongs(numValues, false);
       sortedValues = values.stream().sorted().collect(Collectors.toList());
-    } while ((max = sortedValues.get(sortedValues.size() - 1)) >= Integer.MAX_VALUE - numValues); // leave room for rounding 
+    } while ((max = sortedValues.get(sortedValues.size() - 1)) >= Long.MAX_VALUE - numValues); // leave room for rounding 
     long min = sortedValues.get(0);
     long gap = BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
         .divide(BigInteger.valueOf(numBuckets)).longValueExact();
@@ -2183,9 +2183,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   
   private void testPointStats(String field, String dvField, String[] numbers, double min, double max, int count, int missing, double delta) {
-    clearIndex();
-    assertU(commit());
-
     String minMin = String.valueOf(min - Math.abs(delta*min));
     String maxMin = String.valueOf(min + Math.abs(delta*min));
     String minMax = String.valueOf(max - Math.abs(delta*max));
@@ -2198,7 +2195,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertTrue(h.getCore().getLatestSchema().getField(dvField).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
     assertQ(req("q", "*:*", "fl", "id, " + dvField, "stats", "true", "stats.field", dvField), 
-        "//*[@numFound='11']",
+        "//*[@numFound='" + (numbers.length + 1) + "']",
         "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/double[@name='min'][.>=" + minMin + "]",
         "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/double[@name='min'][.<=" + maxMin+ "]",
         "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/double[@name='max'][.>=" + minMax + "]",
@@ -3303,7 +3300,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertTrue(h.getCore().getLatestSchema().getField(dvField).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
     assertQ(req("q", "*:*", "fl", "id, " + dvField, "stats", "true", "stats.field", dvField),
-        "//*[@numFound='11']",
+        "//*[@numFound='" + (dates.length + 1) + "']",
         "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/date[@name='min'][.='" + dates[0] + "']",
         "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/date[@name='max'][.='" + dates[dates.length-1] + "']",
         "//lst[@name='stats']/lst[@name='stats_fields']/lst[@name='" + dvField+ "']/long[@name='count'][.='" + dates.length + "']",
