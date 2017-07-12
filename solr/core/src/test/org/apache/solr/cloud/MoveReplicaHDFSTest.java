@@ -16,24 +16,14 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.common.cloud.ClusterStateUtil;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  *
@@ -62,42 +52,6 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
     cluster.shutdown(); // need to close before the MiniDFSCluster
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
-  }
-
-  @Test
-  public void testDataDirAndUlogAreMaintained() throws IOException, SolrServerException {
-    String coll = "movereplicatest_coll2";
-    CollectionAdminRequest.createCollection(coll, "conf1", 1, 1)
-        .setCreateNodeSet("")
-        .process(cluster.getSolrClient());
-    String hdfsUri = HdfsTestUtil.getURI(dfsCluster);
-    String dataDir = hdfsUri + "/dummyFolder/dataDir";
-    String ulogDir = hdfsUri + "/dummyFolder2/ulogDir";
-    CollectionAdminResponse res = CollectionAdminRequest
-        .addReplicaToShard(coll, "shard1")
-        .setDataDir(dataDir)
-        .setUlogDir(ulogDir)
-        .setNode(cluster.getJettySolrRunner(0).getNodeName())
-        .process(cluster.getSolrClient());
-
-    ulogDir += "/tlog";
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000);
-    DocCollection docCollection = zkStateReader.getClusterState().getCollection(coll);
-    Replica replica = docCollection.getReplicas().iterator().next();
-    assertTrue(replica.getStr("ulogDir"), replica.getStr("ulogDir").equals(ulogDir) || replica.getStr("ulogDir").equals(ulogDir+'/'));
-    assertTrue(replica.getStr("dataDir"),replica.getStr("dataDir").equals(dataDir) || replica.getStr("dataDir").equals(dataDir+'/'));
-
-    new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
-        .process(cluster.getSolrClient());
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000);
-    docCollection = zkStateReader.getClusterState().getCollection(coll);
-    assertEquals(1, docCollection.getSlice("shard1").getReplicas().size());
-    replica = docCollection.getReplicas().iterator().next();
-    assertEquals(replica.getNodeName(), cluster.getJettySolrRunner(1).getNodeName());
-    assertTrue(replica.getStr("ulogDir"), replica.getStr("ulogDir").equals(ulogDir) || replica.getStr("ulogDir").equals(ulogDir+'/'));
-    assertTrue(replica.getStr("dataDir"),replica.getStr("dataDir").equals(dataDir) || replica.getStr("dataDir").equals(dataDir+'/'));
-
   }
 
   public static class ForkJoinThreadsFilter implements ThreadFilter {
