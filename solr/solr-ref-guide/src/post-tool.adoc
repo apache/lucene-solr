@@ -31,7 +31,6 @@ bin/post -c gettingstarted example/films/films.json
 
 This will contact the server at `localhost:8983`. Specifying the `collection/core name` is *mandatory*. The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/post -help)`.
 
-
 == Using the bin/post Tool
 
 Specifying either the `collection/core name` or the full update `url` is *mandatory* when using `bin/post`.
@@ -74,8 +73,7 @@ OPTIONS
 ...
 ----
 
-[[bin_post_examples]]
-== Examples
+== Examples Using bin/post
 
 There are several ways to use `bin/post`. This section presents several examples.
 

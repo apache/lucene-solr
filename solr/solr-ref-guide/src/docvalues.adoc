@@ -28,7 +28,6 @@ For other features that we now commonly associate with search, such as sorting, 
 
 In Lucene 4.0, a new approach was introduced. DocValue fields are now column-oriented fields with a document-to-value mapping built at index time. This approach promises to relieve some of the memory requirements of the fieldCache and make lookups for faceting, sorting, and grouping much faster.
 
-[[DocValues-EnablingDocValues]]
 == Enabling DocValues
 
 To use docValues, you only need to enable it for a field that you will use it with. As with all schema design, you need to define a field type and then define fields of that type with docValues enabled. All of these actions are done in `schema.xml`.
@@ -76,7 +75,6 @@ Lucene index back-compatibility is only supported for the default codec. If you 
 
 If `docValues="true"` for a field, then DocValues will automatically be used any time the field is used for <<common-query-parameters.adoc#CommonQueryParameters-ThesortParameter,sorting>>, <<faceting.adoc#faceting,faceting>> or <<function-queries.adoc#function-queries,function queries>>.
 
-[[DocValues-RetrievingDocValuesDuringSearch]]
 === Retrieving DocValues During Search
 
 Field values retrieved during search queries are typically returned from stored values. However, non-stored docValues fields will be also returned along with other stored fields when all fields (or pattern matching globs) are specified to be returned (e.g. "`fl=*`") for search queries depending on the effective value of the `useDocValuesAsStored` parameter for each field. For schema versions >= 1.6, the implicit default is `useDocValuesAsStored="true"`. See <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties,Field Type Definitions and Properties>> & <<defining-fields.adoc#defining-fields,Defining Fields>> for more details.

@@ -26,7 +26,6 @@ Preventing duplicate or near duplicate documents from entering an index or taggi
 * Lookup3Signature: 64-bit hash used for exact duplicate detection. This is much faster than MD5 and smaller to index.
 * http://wiki.apache.org/solr/TextProfileSignature[TextProfileSignature]: Fuzzy hashing implementation from Apache Nutch for near duplicate detection. It's tunable but works best on longer text.
 
-
 Other, more sophisticated algorithms for fuzzy/near hashing can be added later.
 
 [IMPORTANT]
@@ -36,12 +35,10 @@ Adding in the de-duplication process will change the `allowDups` setting so that
 Of course the `signatureField` could be the unique field, but generally you want the unique field to be unique. When a document is added, a signature will automatically be generated and attached to the document in the specified `signatureField`.
 ====
 
-[[De-Duplication-ConfigurationOptions]]
 == Configuration Options
 
 There are two places in Solr to configure de-duplication: in `solrconfig.xml` and in `schema.xml`.
 
-[[De-Duplication-Insolrconfig.xml]]
 === In solrconfig.xml
 
 The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` as part of an <<update-request-processors.adoc#update-request-processors,Update Request Processor Chain>>, as in this example:
@@ -84,8 +81,6 @@ Set to *false* to disable de-duplication processing. The default is *true*.
 overwriteDupes::
 If true, the default, when a document exists that already matches this signature, it will be overwritten.
 
-
-[[De-Duplication-Inschema.xml]]
 === In schema.xml
 
 If you are using a separate field for storing the signature, you must have it indexed:

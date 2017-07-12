@@ -40,7 +40,6 @@ For example, if you only have two ZooKeeper nodes and one goes down, 50% of avai
 
 More information on ZooKeeper clusters is available from the ZooKeeper documentation at http://zookeeper.apache.org/doc/r3.4.10/zookeeperAdmin.html#sc_zkMulitServerSetup.
 
-[[SettingUpanExternalZooKeeperEnsemble-DownloadApacheZooKeeper]]
 == Download Apache ZooKeeper
 
 The first step in setting up Apache ZooKeeper is, of course, to download the software. It's available from http://zookeeper.apache.org/releases.html.
@@ -52,15 +51,12 @@ When using stand-alone ZooKeeper, you need to take care to keep your version of 
 Solr currently uses Apache ZooKeeper v3.4.10.
 ====
 
-[[SettingUpanExternalZooKeeperEnsemble-SettingUpaSingleZooKeeper]]
 == Setting Up a Single ZooKeeper
 
-[[SettingUpanExternalZooKeeperEnsemble-Createtheinstance]]
-=== Create the instance
+=== Create the Instance
 Creating the instance is a simple matter of extracting the files into a specific target directory. The actual directory itself doesn't matter, as long as you know where it is, and where you'd like to have ZooKeeper store its internal data.
 
-[[SettingUpanExternalZooKeeperEnsemble-Configuretheinstance]]
-=== Configure the instance
+=== Configure the Instance
 The next step is to configure your ZooKeeper instance. To do that, create the following file: `<ZOOKEEPER_HOME>/conf/zoo.cfg`. To this file, add the following information:
 
 [source,bash]
@@ -80,15 +76,13 @@ The parameters are as follows:
 
 Once this file is in place, you're ready to start the ZooKeeper instance.
 
-[[SettingUpanExternalZooKeeperEnsemble-Runtheinstance]]
-=== Run the instance
+=== Run the Instance
 
 To run the instance, you can simply use the `ZOOKEEPER_HOME/bin/zkServer.sh` script provided, as with this command: `zkServer.sh start`
 
 Again, ZooKeeper provides a great deal of power through additional configurations, but delving into them is beyond the scope of this tutorial. For more information, see the ZooKeeper http://zookeeper.apache.org/doc/r3.4.5/zookeeperStarted.html[Getting Started] page. For this example, however, the defaults are fine.
 
-[[SettingUpanExternalZooKeeperEnsemble-PointSolrattheinstance]]
-=== Point Solr at the instance
+=== Point Solr at the Instance
 
 Pointing Solr at the ZooKeeper instance you've created is a simple matter of using the `-z` parameter when using the bin/solr script. For example, in order to point the Solr instance to the ZooKeeper you've started on port 2181, this is what you'd need to do:
 
@@ -108,12 +102,10 @@ bin/solr start -cloud -s <path to solr home for new node> -p 8987 -z localhost:2
 
 NOTE: When you are not using an example to start solr, make sure you upload the configuration set to ZooKeeper before creating the collection.
 
-[[SettingUpanExternalZooKeeperEnsemble-ShutdownZooKeeper]]
-=== Shut down ZooKeeper
+=== Shut Down ZooKeeper
 
 To shut down ZooKeeper, use the zkServer script with the "stop" command: `zkServer.sh stop`.
 
-[[SettingUpanExternalZooKeeperEnsemble-SettingupaZooKeeperEnsemble]]
 == Setting up a ZooKeeper Ensemble
 
 With an external ZooKeeper ensemble, you need to set things up just a little more carefully as compared to the Getting Started example.
@@ -188,8 +180,7 @@ Once these servers are running, you can reference them from Solr just as you did
 bin/solr start -e cloud -z localhost:2181,localhost:2182,localhost:2183 -noprompt
 ----
 
-[[SettingUpanExternalZooKeeperEnsemble-SecuringtheZooKeeperconnection]]
-== Securing the ZooKeeper connection
+== Securing the ZooKeeper Connection
 
 You may also want to secure the communication between ZooKeeper and Solr.
 
