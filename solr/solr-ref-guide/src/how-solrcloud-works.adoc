@@ -27,13 +27,11 @@ The following sections cover provide general information about how various SolrC
 
 If you are already familiar with SolrCloud concepts and basic functionality, you can skip to the section covering <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>.
 
-[[HowSolrCloudWorks-KeySolrCloudConcepts]]
 == Key SolrCloud Concepts
 
 A SolrCloud cluster consists of some "logical" concepts layered on top of some "physical" concepts.
 
-[[HowSolrCloudWorks-Logical]]
-=== Logical
+=== Logical Concepts
 
 * A Cluster can host multiple Collections of Solr Documents.
 * A collection can be partitioned into multiple Shards, which contain a subset of the Documents in the Collection.
@@ -41,8 +39,7 @@ A SolrCloud cluster consists of some "logical" concepts layered on top of some "
 ** The theoretical limit to the number of Documents that Collection can reasonably contain.
 ** The amount of parallelization that is possible for an individual search request.
 
-[[HowSolrCloudWorks-Physical]]
-=== Physical
+=== Physical Concepts
 
 * A Cluster is made up of one or more Solr Nodes, which are running instances of the Solr server process.
 * Each Node can host multiple Cores.

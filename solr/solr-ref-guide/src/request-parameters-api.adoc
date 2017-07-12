@@ -33,12 +33,10 @@ When might you want to use this feature?
 * To mix and match parameter sets at request time.
 * To avoid a reload of your collection for small parameter changes.
 
-[[RequestParametersAPI-TheRequestParametersEndpoint]]
 == The Request Parameters Endpoint
 
 All requests are sent to the `/config/params` endpoint of the Config API.
 
-[[RequestParametersAPI-SettingRequestParameters]]
 == Setting Request Parameters
 
 The request to set, unset, or update request parameters is sent as a set of Maps with names. These objects can be directly used in a request or a request handler definition.
@@ -88,7 +86,6 @@ curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:appl
 }'
 ----
 
-[[RequestParametersAPI-UsingRequestParameterswithRequestHandlers]]
 == Using Request Parameters with RequestHandlers
 
 After creating the `my_handler_params` paramset in the above section, it is possible to define a request handler as follows:
@@ -119,12 +116,10 @@ It will be equivalent to a standard request handler definition such as this one:
 </requestHandler>
 ----
 
-[[RequestParametersAPI-ImplicitRequestHandlers]]
-=== Implicit RequestHandlers
+=== Implicit RequestHandlers with the Request Parameters API
 
 Solr ships with many out-of-the-box request handlers that may only be configured via the Request Parameters API, because their configuration is not present in `solrconfig.xml`. See <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> for the paramset to use when configuring an implicit request handler.
 
-[[RequestParametersAPI-ViewingExpandedParamsetsandEffectiveParameterswithRequestHandlers]]
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 
 To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request param. E.g. for the `/export` request handler:
@@ -134,7 +129,6 @@ To see the expanded paramset and the resulting effective parameters for a Reques
 curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/export&expandParams=true
 ----
 
-[[RequestParametersAPI-ViewingRequestParameters]]
 == Viewing Request Parameters
 
 To see the paramsets that have been created, you can use the `/config/params` endpoint to read the contents of `params.json`, or use the name in the request:
@@ -147,7 +141,6 @@ curl http://localhost:8983/solr/techproducts/config/params
 curl http://localhost:8983/solr/techproducts/config/params/myQueries
 ----
 
-[[RequestParametersAPI-TheuseParamsParameter]]
 == The useParams Parameter
 
 When making a request, the `useParams` parameter applies the request parameters sent to the request. This is translated at request time to the actual parameters.
@@ -192,12 +185,10 @@ To summarize, parameters are applied in this order:
 * parameter sets defined in `params.json` that have been defined in the request handler.
 * parameters defined in `<defaults>` in `solrconfig.xml`.
 
-[[RequestParametersAPI-PublicAPIs]]
 == Public APIs
 
 The RequestParams Object can be accessed using the method `SolrConfig#getRequestParams()`. Each paramset can be accessed by their name using the method `RequestParams#getRequestParams(String name)`.
 
-[[RequestParametersAPI-Examples]]
-== Examples
+== Examples Using the Request Parameters API
 
-The Solr "films" example demonstrates the use of the parameters API. See https://github.com/apache/lucene-solr/tree/master/solr/example/films for details.
+The Solr "films" example demonstrates the use of the parameters API. You can use this example in your Solr installation (in the `example/films` directory) or view the files in the Apache GitHub mirror at https://github.com/apache/lucene-solr/tree/master/solr/example/films.
