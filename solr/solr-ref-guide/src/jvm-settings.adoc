@@ -24,7 +24,6 @@ Configuring your JVM can be a complex topic and a full discussion is beyond the 
 
 For more general information about improving Solr performance, see https://wiki.apache.org/solr/SolrPerformanceFactors.
 
-[[JVMSettings-ChoosingMemoryHeapSettings]]
 == Choosing Memory Heap Settings
 
 The most important JVM configuration settings are those that determine the amount of memory it is allowed to allocate. There are two primary command-line options that set memory limits for the JVM. These are `-Xms`, which sets the initial size of the JVM's memory heap, and `-Xmx`, which sets the maximum size to which the heap is allowed to grow.
@@ -41,12 +40,10 @@ When setting the maximum heap size, be careful not to let the JVM consume all av
 
 On systems with many CPUs/cores, it can also be beneficial to tune the layout of the heap and/or the behavior of the garbage collector. Adjusting the relative sizes of the generational pools in the heap can affect how often GC sweeps occur and whether they run concurrently. Configuring the various settings of how the garbage collector should behave can greatly reduce the overall performance impact when it does run. There is a lot of good information on this topic available on Sun's website. A good place to start is here: http://www.oracle.com/technetwork/java/javase/tech/index-jsp-140228.html[Oracle's Java HotSpot Garbage Collection].
 
-[[JVMSettings-UsetheServerHotSpotVM]]
 == Use the Server HotSpot VM
 
 If you are using Sun's JVM, add the `-server` command-line option when you start Solr. This tells the JVM that it should optimize for a long running, server process. If the Java runtime on your system is a JRE, rather than a full JDK distribution (including `javac` and other development tools), then it is possible that it may not support the `-server` JVM option. Test this by running `java -help` and look for `-server` as an available option in the displayed usage message.
 
-[[JVMSettings-CheckingJVMSettings]]
 == Checking JVM Settings
 
 A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `solr/admin/system`. This request handler will display a wealth of server statistics and settings.

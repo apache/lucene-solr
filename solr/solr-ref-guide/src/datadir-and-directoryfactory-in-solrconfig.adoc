@@ -35,7 +35,6 @@ If you are using replication to replicate the Solr index (as described in <<lega
 
 NOTE: If the environment variable `SOLR_DATA_HOME` if defined, or if `solr.data.home` is configured for your DirectoryFactory, the location of data directory will be `<SOLR_DATA_HOME>/<instance_name>/data`.
 
-[[DataDirandDirectoryFactoryinSolrConfig-SpecifyingtheDirectoryFactoryForYourIndex]]
 == Specifying the DirectoryFactory For Your Index
 
 The default {solr-javadocs}/solr-core/org/apache/solr/core/StandardDirectoryFactory.html[`solr.StandardDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or config options by specifying {solr-javadocs}/solr-core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`], {solr-javadocs}/solr-core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`], or {solr-javadocs}/solr-core/org/apache/solr/core/SimpleFSDirectoryFactory.html[`solr.SimpleFSDirectoryFactory`].
@@ -57,7 +56,5 @@ The {solr-javadocs}/solr-core/org/apache/solr/core/RAMDirectoryFactory.html[`sol
 
 [NOTE]
 ====
-
 If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/solr-core/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations. For more details, see the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>.
-
 ====

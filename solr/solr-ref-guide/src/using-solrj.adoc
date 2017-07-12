@@ -45,7 +45,6 @@ SolrClient solr = new CloudSolrClient.Builder().withSolrUrl("http://localhost:89
 
 Once you have a `SolrClient`, you can use it by calling methods like `query()`, `add()`, and `commit()`.
 
-[[UsingSolrJ-BuildingandRunningSolrJApplications]]
 == Building and Running SolrJ Applications
 
 The SolrJ API is included with Solr, so you do not have to download or install anything else. However, in order to build and run applications that use SolrJ, you have to add some libraries to the classpath.
@@ -69,7 +68,6 @@ You can sidestep a lot of the messing around with the JAR files by using Maven i
 
 If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.
 
-[[UsingSolrJ-SpecifyingSolrUrl]]
 == Specifying Solr Base URLs
 
 Most `SolrClient` implementations (with the notable exception of `CloudSolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
@@ -77,7 +75,6 @@ Most `SolrClient` implementations (with the notable exception of `CloudSolrClien
 . A URL with a path pointing to a specific core or collection (e.g. `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
 . A URL with a generic path pointing to the root Solr path (e.g. `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
 
-[[UsingSolrJ-SettingXMLResponseParser]]
 == Setting XMLResponseParser
 
 SolrJ uses a binary format, rather than XML, as its default response format. If you are trying to mix Solr and SolrJ versions where one is version 1.x and the other is 3.x or later, then you MUST use the XML response parser. The binary format changed in 3.x, and the two javabin versions are entirely incompatible. The following code will make this change:
@@ -87,7 +84,6 @@ SolrJ uses a binary format, rather than XML, as its default response format. If 
 solr.setParser(new XMLResponseParser());
 ----
 
-[[UsingSolrJ-PerformingQueries]]
 == Performing Queries
 
 Use `query()` to have Solr search for results. You have to pass a `SolrQuery` object that describes the query, and you will get back a QueryResponse (from the `org.apache.solr.client.solrj.response` package).
@@ -132,7 +128,6 @@ The `QueryResponse` is a collection of documents that satisfy the query paramete
 SolrDocumentList list = response.getResults();
 ----
 
-[[UsingSolrJ-IndexingDocuments]]
 == Indexing Documents
 
 Other operations are just as simple. To index (add) a document, all you need to do is create a `SolrInputDocument` and pass it along to the `SolrClient` 's `add()` method. This example assumes that the SolrClient object called 'solr' is already created based on the examples shown earlier.
@@ -150,7 +145,6 @@ UpdateResponse response = solr.add(document);
 solr.commit();
 ----
 
-[[UsingSolrJ-UploadingContentinXMLorBinaryFormats]]
 === Uploading Content in XML or Binary Formats
 
 SolrJ lets you upload content in binary format instead of the default XML format. Use the following code to upload using binary format, which is the same format SolrJ uses to fetch results. If you are trying to mix Solr and SolrJ versions where one is version 1.x and the other is 3.x or later, then you MUST stick with the XML request writer. The binary format changed in 3.x, and the two javabin versions are entirely incompatible.
@@ -160,12 +154,10 @@ SolrJ lets you upload content in binary format instead of the default XML format
 solr.setRequestWriter(new BinaryRequestWriter());
 ----
 
-[[UsingSolrJ-UsingtheConcurrentUpdateSolrClient]]
 === Using the ConcurrentUpdateSolrClient
 
 When implementing java applications that will be bulk loading a lot of documents at once, {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] is an alternative to consider instead of using `HttpSolrClient`. The `ConcurrentUpdateSolrClient` buffers all added documents and writes them into open HTTP connections. This class is thread safe. Although any SolrClient request can be made with this implementation, it is only recommended to use the `ConcurrentUpdateSolrClient` for `/update` requests.
 
-[[UsingSolrJ-EmbeddedSolrServer]]
 == EmbeddedSolrServer
 
 The {solr-javadocs}/solr-core/org/apache/solr/client/solrj/embedded/EmbeddedSolrServer.html[`EmbeddedSolrServer`] class provides an implementation of the `SolrClient` client API talking directly to an micro-instance of Solr running directly in your Java application. This embedded approach is not recommended in most cases and fairly limited in the set of features it supports – in particular it can not be used with <<solrcloud.adoc#solrcloud,SolrCloud>> or <<index-replication.adoc#index-replication,Index Replication>>. `EmbeddedSolrServer` exists primarily to help facilitate testing.

@@ -22,8 +22,7 @@ The TermVectorComponent is a search component designed to return additional info
 
 For each document in the response, the TermVectorCcomponent can return the term vector, the term frequency, inverse document frequency, position, and offset information.
 
-[[TheTermVectorComponent-Configuration]]
-== Configuration
+== Term Vector Component Configuration
 
 The TermVectorComponent is not enabled implicitly in Solr - it must be explicitly configured in your `solrconfig.xml` file. The examples on this page show how it is configured in Solr's "```techproducts```" example:
 
@@ -67,7 +66,6 @@ Once your handler is defined, you may use in conjunction with any schema (that h
        termOffsets="true" />
 ----
 
-[[TheTermVectorComponent-InvokingtheTermVectorComponent]]
 == Invoking the Term Vector Component
 
 The example below shows an invocation of this component using the above configuration:
@@ -124,8 +122,7 @@ The example below shows an invocation of this component using the above configur
 </lst>
 ----
 
-[[TheTermVectorComponent-RequestParameters]]
-=== Request Parameters
+=== Term Vector Request Parameters
 
 The example below shows some of the available request parameters for this component:
 
@@ -168,7 +165,6 @@ To learn more about TermVector component output, see the Wiki page: http://wiki.
 
 For schema requirements, see also the section  <<field-properties-by-use-case.adoc#field-properties-by-use-case, Field Properties by Use Case>>.
 
-[[TheTermVectorComponent-SolrJandtheTermVectorComponent]]
 == SolrJ and the Term Vector Component
 
 Neither the `SolrQuery` class nor the `QueryResponse` class offer specific method calls to set Term Vector Component parameters or get the "termVectors" output. However, there is a patch for it: https://issues.apache.org/jira/browse/SOLR-949[SOLR-949].

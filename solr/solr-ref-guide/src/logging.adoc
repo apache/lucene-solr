@@ -27,7 +27,6 @@ image::images/logging/logging.png[image,width=621,height=250]
 
 While this example shows logged messages for only one core, if you have multiple cores in a single instance, they will each be listed, with the level for each.
 
-[[Logging-SelectingaLoggingLevel]]
 == Selecting a Logging Level
 
 When you select the *Level* link on the left, you see the hierarchy of classpaths and classnames for your instance. A row highlighted in yellow indicates that the class has logging capabilities. Click on a highlighted row, and a menu will appear to allow you to change the log level for that class. Characters in boldface indicate that the class will not be affected by level changes to root.

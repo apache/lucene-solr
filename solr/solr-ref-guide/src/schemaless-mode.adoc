@@ -26,7 +26,6 @@ These Solr features, all controlled via `solrconfig.xml`, are:
 . Field value class guessing: Previously unseen fields are run through a cascading set of value-based parsers, which guess the Java class of field values - parsers for Boolean, Integer, Long, Float, Double, and Date are currently available.
 . Automatic schema field addition, based on field value class(es): Previously unseen fields are added to the schema, based on field value Java classes, which are mapped to schema field types - see <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
 
-[[SchemalessMode-UsingtheSchemalessExample]]
 == Using the Schemaless Example
 
 The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,config set>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
@@ -67,12 +66,10 @@ You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to co
       "uniqueKey":true}]}
 ----
 
-[[SchemalessMode-ConfiguringSchemalessMode]]
 == Configuring Schemaless Mode
 
 As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `_default` config set included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
 
-[[SchemalessMode-EnableManagedSchema]]
 === Enable Managed Schema
 
 As described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>, Managed Schema support is enabled by default, unless your configuration specifies that `ClassicIndexSchemaFactory` should be used.
@@ -87,7 +84,6 @@ You can configure the `ManagedIndexSchemaFactory` (and control the resource file
 </schemaFactory>
 ----
 
-[[SchemalessMode-DefineanUpdateRequestProcessorChain]]
 === Define an UpdateRequestProcessorChain
 
 The UpdateRequestProcessorChain allows Solr to guess field types, and you can define the default field type classes to use. To start, you should define it as follows (see the javadoc links below for update processor factory documentation):
@@ -174,7 +170,6 @@ Javadocs for update processor factories mentioned above:
 * {solr-javadocs}/solr-core/org/apache/solr/update/processor/ParseDateFieldUpdateProcessorFactory.html[ParseDateFieldUpdateProcessorFactory]
 * {solr-javadocs}/solr-core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]
 
-[[SchemalessMode-MaketheUpdateRequestProcessorChaintheDefaultfortheUpdateRequestHandler]]
 === Make the UpdateRequestProcessorChain the Default for the UpdateRequestHandler
 
 Once the UpdateRequestProcessorChain has been defined, you must instruct your UpdateRequestHandlers to use it when working with index updates (i.e., adding, removing, replacing documents). There are two ways to do this. The update chain shown above has a `default=true` attribute which will use it for any update handler. An alternative, more explicit way is to use <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams>> to set the defaults on all `/update` request handlers:
@@ -193,7 +188,6 @@ Once the UpdateRequestProcessorChain has been defined, you must instruct your Up
 After each of these changes have been made, Solr should be restarted (or, you can reload the cores to load the new `solrconfig.xml` definitions).
 ====
 
-[[SchemalessMode-ExamplesofIndexedDocuments]]
 == Examples of Indexed Documents
 
 Once the schemaless mode has been enabled (whether you configured it manually or are using `_default`), documents that include fields that are not defined in your schema will be indexed, using the guessed field types which are automatically added to the schema.
@@ -243,13 +237,14 @@ The fields now in the schema (output from `curl \http://localhost:8983/solr/gett
       "name":"Sold",
       "type":"plongs"},
     {
-      "name":"_root_" ...}
+      "name":"_root_", ...},
     {
-      "name":"_text_" ...}
+      "name":"_text_", ...},
     {
-      "name":"_version_" ...}
+      "name":"_version_", ...},
     {
-      "name":"id" ...}
+      "name":"id", ...}
+]}
 ----
 
 In addition string versions of the text fields are indexed, using copyFields to a `*_str` dynamic field: (output from `curl \http://localhost:8983/solr/gettingstarted/schema/copyfields` ):
@@ -277,7 +272,7 @@ Even if you want to use schemaless mode for most fields, you can still use the <
 
 Internally, the Schema API and the Schemaless Update Processors both use the same <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Managed Schema>> functionality.
 
-Also, if you do not need the `*_str` version of a text field, you can simply remove the `copyField` definition from the auto-generated schema and it will not be re-added since the original field is now defined. 
+Also, if you do not need the `*_str` version of a text field, you can simply remove the `copyField` definition from the auto-generated schema and it will not be re-added since the original field is now defined.
 ====
 
 Once a field has been added to the schema, its field type is fixed. As a consequence, adding documents with field value(s) that conflict with the previously guessed field type will fail. For example, after adding the above document, the "```Sold```" field has the fieldType `plongs`, but the document below has a non-integral decimal value in this field:

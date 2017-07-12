@@ -27,7 +27,6 @@ The sample queries in this section assume you are running the "```techproducts``
 bin/solr -e techproducts
 ----
 
-[[TheStatsComponent-StatsComponentParameters]]
 == Stats Component Parameters
 
 The Stats Component accepts the following parameters:
@@ -41,8 +40,7 @@ Specifies a field for which statistics should be generated. This parameter may b
 <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> may be used to indicate which subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name. See the examples below.
 
 
-[[TheStatsComponent-Example]]
-=== Example
+=== Stats Component Example
 
 The query below demonstrates computing stats against two different fields numeric fields, as well as stats over the results of a `termfreq()` function call using the `text` field:
 
@@ -89,10 +87,9 @@ The query below demonstrates computing stats against two different fields numeri
 </lst>
 ----
 
-[[TheStatsComponent-StatisticsSupported]]
 == Statistics Supported
 
-The table below explains the statistics supported by the Stats component. Not all statistics are supported for all field types, and not all statistics are computed by default (see <<TheStatsComponent-LocalParameters,Local Parameters>> below for details)
+The table below explains the statistics supported by the Stats component. Not all statistics are supported for all field types, and not all statistics are computed by default (see <<Local Parameters with the Stats Component>> below for details)
 
 `min`::
 The minimum value of the field/function in all documents in the set. This statistic is computed for all field types and is computed by default.
@@ -134,14 +131,13 @@ Input for this option can be floating point number between `0.0` and `1.0` indic
 +
 This statistic is computed for all field types but is not computed by default.
 
-[[TheStatsComponent-LocalParameters]]
-== Local Parameters
+== Local Parameters with the Stats Component
 
 Similar to the <<faceting.adoc#faceting,Facet Component>>, the `stats.field` parameter supports local parameters for:
 
 * Tagging & Excluding Filters: `stats.field={!ex=filterA}price`
 * Changing the Output Key: `stats.field={!key=my_price_stats}price`
-* Tagging stats for <<TheStatsComponent-TheStatsComponentandFaceting,use with `facet.pivot`>>: `stats.field={!tag=my_pivot_stats}price`
+* Tagging stats for <<The Stats Component and Faceting,use with `facet.pivot`>>: `stats.field={!tag=my_pivot_stats}price`
 
 Local parameters can also be used to specify individual statistics by name, overriding the set of statistics computed by default, eg: `stats.field={!min=true max=true percentiles='99,99.9,99.99'}price`
 
@@ -159,8 +155,7 @@ Additional "Expert" local params are supported in some cases for affecting the b
 ** `hllLog2m` - an integer value specifying an explicit "log2m" value to use, overriding the heuristic value determined by the cardinality local param and the field type – see the https://github.com/aggregateknowledge/java-hll/[java-hll] documentation for more details
 ** `hllRegwidth` - an integer value specifying an explicit "regwidth" value to use, overriding the heuristic value determined by the cardinality local param and the field type – see the https://github.com/aggregateknowledge/java-hll/[java-hll] documentation for more details
 
-[[TheStatsComponent-Examples]]
-=== Examples
+=== Examples with Local Parameters
 
 Here we compute some statistics for the price field. The min, max, mean, 90th, and 99th percentile price values are computed against all products that are in stock (`q=*:*` and `fq=inStock:true`), and independently all of the default statistics are computed against all products regardless of whether they are in stock or not (by excluding that filter).
 
@@ -193,7 +188,6 @@ Here we compute some statistics for the price field. The min, max, mean, 90th, a
 </lst>
 ----
 
-[[TheStatsComponent-TheStatsComponentandFaceting]]
 == The Stats Component and Faceting
 
 Sets of `stats.field` parameters can be referenced by `'tag'` when using Pivot Faceting to compute multiple statistics at every level (i.e.: field) in the tree of pivot constraints.

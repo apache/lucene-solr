@@ -34,8 +34,7 @@ Specifies whether statistics are returned with results. You can override the `st
 `wt`::
 The output format. This operates the same as the <<response-writers.adoc#response-writers,`wt` parameter in a query>>. The default is `xml`.
 
-[[MBeanRequestHandler-Examples]]
-== Examples
+== MBeanRequestHandler Examples
 
 The following examples assume you are running Solr's `techproducts` example configuration:
 

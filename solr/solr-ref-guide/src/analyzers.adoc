@@ -60,7 +60,6 @@ In this case, no Analyzer class was specified on the `<analyzer>` element. Rathe
 The output of an Analyzer affects the _terms_ indexed in a given field (and the terms used when parsing queries against those fields) but it has no impact on the _stored_ value for the fields. For example: an analyzer might split "Brown Cow" into two indexed terms "brown" and "cow", but the stored value will still be a single String: "Brown Cow"
 ====
 
-[[Analyzers-AnalysisPhases]]
 == Analysis Phases
 
 Analysis takes place in two contexts. At index time, when a field is being created, the token stream that results from analysis is added to an index and defines the set of terms (including positions, sizes, and so on) for the field. At query time, the values being searched for are analyzed and the terms that result are matched against those that are stored in the field's index.
@@ -89,7 +88,6 @@ In this theoretical example, at index time the text is tokenized, the tokens are
 
 At query time, the only normalization that happens is to convert the query terms to lowercase. The filtering and mapping steps that occur at index time are not applied to the query terms. Queries must then, in this example, be very precise, using only the normalized terms that were stored at index time.
 
-[[Analyzers-AnalysisforMulti-TermExpansion]]
 === Analysis for Multi-Term Expansion
 
 In some types of queries (ie: Prefix, Wildcard, Regex, etc...) the input provided by the user is not natural language intended for Analysis. Things like Synonyms or Stop word filtering do not work in a logical way in these types of Queries.

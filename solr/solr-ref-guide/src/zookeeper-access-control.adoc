@@ -20,7 +20,6 @@
 
 This section describes using ZooKeeper access control lists (ACLs) with Solr. For information about ZooKeeper ACLs, see the ZooKeeper documentation at http://zookeeper.apache.org/doc/r3.4.10/zookeeperProgrammers.html#sc_ZooKeeperAccessControl.
 
-[[ZooKeeperAccessControl-AboutZooKeeperACLs]]
 == About ZooKeeper ACLs
 
 SolrCloud uses ZooKeeper for shared information and for coordination.
@@ -44,7 +43,6 @@ Protecting ZooKeeper itself could mean many different things. **This section is 
 
 But this content is also available to "the outside" via the ZooKeeper API. Outside processes can connect to ZooKeeper and create/update/delete/read content; for example, a Solr node in a SolrCloud cluster wants to create/update/delete/read, and a SolrJ client wants to read from the cluster. It is the responsibility of the outside processes that create/update content to setup ACLs on the content. ACLs describe who is allowed to read, update, delete, create, etc. Each piece of information (znode/content) in ZooKeeper has its own set of ACLs, and inheritance or sharing is not possible. The default behavior in Solr is to add one ACL on all the content it creates - one ACL that gives anyone the permission to do anything (in ZooKeeper terms this is called "the open-unsafe ACL").
 
-[[ZooKeeperAccessControl-HowtoEnableACLs]]
 == How to Enable ACLs
 
 We want to be able to:
@@ -55,7 +53,6 @@ We want to be able to:
 
 Solr nodes, clients and tools (e.g. ZkCLI) always use a java class called {solr-javadocs}/solr-solrj/org/apache/solr/common/cloud/SolrZkClient.html[`SolrZkClient`] to deal with their ZooKeeper stuff. The implementation of the solution described here is all about changing `SolrZkClient`. If you use `SolrZkClient` in your application, the descriptions below will be true for your application too.
 
-[[ZooKeeperAccessControl-ControllingCredentials]]
 === Controlling Credentials
 
 You control which credentials provider will be used by configuring the `zkCredentialsProvider` property in `solr.xml` 's `<solrcloud>` section to the name of a class (on the classpath) implementing the {solr-javadocs}/solr-solrj/org/apache/solr/common/cloud/ZkCredentialsProvider[`ZkCredentialsProvider`] interface. `server/solr/solr.xml` in the Solr distribution defines the `zkCredentialsProvider` such that it will take on the value of the same-named `zkCredentialsProvider` system property if it is defined (e.g. by uncommenting the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd` - see below), or if not, default to the `DefaultZkCredentialsProvider` implementation.
@@ -69,12 +66,10 @@ You can always make you own implementation, but Solr comes with two implementati
 ** The schema is "digest". The username and password are defined by system properties `zkDigestUsername` and `zkDigestPassword`. This set of credentials will be added to the list of credentials returned by `getCredentials()` if both username and password are provided.
 ** If the one set of credentials above is not added to the list, this implementation will fall back to default behavior and use the (empty) credentials list from `DefaultZkCredentialsProvider`.
 
-[[ZooKeeperAccessControl-ControllingACLs]]
 === Controlling ACLs
 
 You control which ACLs will be added by configuring `zkACLProvider` property in `solr.xml` 's `<solrcloud>` section to the name of a class (on the classpath) implementing the {solr-javadocs}//solr-solrj/org/apache/solr/common/cloud/ZkACLProvider[`ZkACLProvider`] interface. `server/solr/solr.xml` in the Solr distribution defines the `zkACLProvider` such that it will take on the value of the same-named `zkACLProvider` system property if it is defined (e.g. by uncommenting the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `solr.in.sh/.cmd` - see below), or if not, default to the `DefaultZkACLProvider` implementation.
 
-[[ZooKeeperAccessControl-OutoftheBoxImplementations]]
 ==== Out of the Box ACL Implementations
 
 You can always make you own implementation, but Solr comes with:
@@ -97,8 +92,6 @@ Notice the overlap in system property names with credentials provider `VMParamsS
 
 You can give the readonly credentials to "clients" of your SolrCloud cluster - e.g. to be used by SolrJ clients. They will be able to read whatever is necessary to run a functioning SolrJ client, but they will not be able to modify any content in ZooKeeper.
 
-
-[[ZooKeeperAccessControl-bin_solr_solr.cmd_server_scripts_cloud-scripts_zkcli.sh_zkcli.bat]]
 === ZooKeeper ACLs in Solr Scripts
 
 There are two scripts that impact ZooKeeper ACLs:
@@ -150,7 +143,6 @@ REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 ----
 
-[[ZooKeeperAccessControl-ChangingACLSchemes]]
 == Changing ACL Schemes
 
 Over the lifetime of operating your Solr cluster, you may decide to move from an unsecured ZooKeeper to a secured instance. Changing the configured `zkACLProvider` in `solr.xml` will ensure that newly created nodes are secure, but will not protect the already existing data. To modify all existing ACLs, you can use the `updateacls` command with Solr's ZkCLI. First uncomment the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in `server/scripts/cloud-scripts/zkcli.sh` (or `zkcli.bat` on Windows) and fill in the passwords for the admin-user and the readonly-user - see above - then run `server/scripts/cloud-scripts/zkcli.sh -cmd updateacls /zk-path`, or on Windows run `server\scripts\cloud-scripts\zkcli.bat cmd updateacls /zk-path`.

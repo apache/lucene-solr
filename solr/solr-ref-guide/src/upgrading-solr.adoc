@@ -20,7 +20,6 @@
 
 If you are already using Solr 6.5, Solr 6.6 should not present any major problems. However, you should review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package for changes and updates that may effect your existing implementation. Detailed steps for upgrading a Solr cluster can be found in the appendix: <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
-[[UpgradingSolr-Upgradingfrom6.5.x]]
 == Upgrading from 6.5.x
 
 * Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
@@ -29,7 +28,6 @@ If you are already using Solr 6.5, Solr 6.6 should not present any major problem
 
 * ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
 
-[[UpgradingSolr-Upgradingfromearlier6.xversions]]
 == Upgrading from earlier 6.x versions
 
 * If you use historical dates, specifically on or before the year 1582, you should re-index after upgrading to this version.
@@ -52,7 +50,6 @@ If you are already using Solr 6.5, Solr 6.6 should not present any major problem
 * Index-time boosts are now deprecated. As a replacement, index-time scoring factors should be indexed in a separate field and combined with the query score using a function query. These boosts will be removed in Solr 7.0.
 * Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change the default aggregation mode has been changed to facet rather than map_reduce. There have also been changes to the SQL aggregate response and some SQL syntax changes. Consult the <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>> documentation for full details.
 
-[[UpgradingSolr-Upgradingfrom5.5.x]]
 == Upgrading from 5.5.x
 
 * The deprecated `SolrServer` and subclasses have been removed, use <<using-solrj.adoc#using-solrj,`SolrClient`>> instead.
@@ -74,7 +71,6 @@ If you are already using Solr 6.5, Solr 6.6 should not present any major problem
 * <<using-solrj.adoc#using-solrj,SolrJ>> no longer includes `DateUtil`. If for some reason you need to format or parse dates, simply use `Instant.format()` and `Instant.parse()`.
 * If you are using spatial4j, please upgrade to 0.6 and <<spatial-search.adoc#spatial-search,edit your `spatialContextFactory`>> to replace `com.spatial4j.core` with `org.locationtech.spatial4j` .
 
-[[UpgradingSolr-UpgradingfromOlderVersionsofSolr]]
 == Upgrading from Older Versions of Solr
 
 Users upgrading from older versions are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.

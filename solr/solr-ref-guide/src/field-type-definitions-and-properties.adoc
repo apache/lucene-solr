@@ -27,7 +27,6 @@ A field type definition can include four types of information:
 * If the field type is `TextField`, a description of the field analysis for the field type.
 * Field type properties - depending on the implementation class, some properties may be mandatory.
 
-[[FieldTypeDefinitionsandProperties-FieldTypeDefinitionsinschema.xml]]
 == Field Type Definitions in schema.xml
 
 Field types are defined in `schema.xml`. Each field type is defined between `fieldType` elements. They can optionally be grouped within a `types` element. Here is an example of a field type definition for a type called `text_general`:
@@ -137,7 +136,6 @@ The default values for each property depend on the underlying `FieldType` class,
 
 // TODO: SOLR-10655 END
 
-[[FieldTypeDefinitionsandProperties-FieldTypeSimilarity]]
 == Field Type Similarity
 
 A field type may optionally specify a `<similarity/>` that will be used when scoring documents that refer to fields with this type, as long as the "global" similarity for the collection allows it.
