@@ -1364,6 +1364,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String routeKey;
     protected String instanceDir;
     protected String dataDir;
+    protected String ulogDir;
     protected Properties properties;
     protected Replica.Type type;
 
@@ -1408,6 +1409,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return instanceDir;
     }
 
+    public String getUlogDir() {
+      return ulogDir;
+    }
+
     public AddReplica setInstanceDir(String instanceDir) {
       this.instanceDir = instanceDir;
       return this;
@@ -1432,6 +1437,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public AddReplica setUlogDir(String ulogDir) {
+      this.ulogDir = ulogDir;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -1451,6 +1461,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (ulogDir != null) {
+        params.add("ulogDir", ulogDir);
       }
       if (coreName != null) {
         params.add("name", coreName);
