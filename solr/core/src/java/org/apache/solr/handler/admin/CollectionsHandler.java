@@ -126,6 +126,7 @@ import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
@@ -633,6 +634,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CoreAdminParams.NAME,
           INSTANCE_DIR,
           DATA_DIR,
+          ULOG_DIR,
           REPLICA_TYPE);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),

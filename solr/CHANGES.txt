@@ -264,6 +264,8 @@ Bug Fixes
 
 * SOLR-11039: Next button in Solr admin UI for collection list pagination does not work. (janhoy)
 
+* SOLR-11041: MoveReplicaCmd do not specify ulog dir in case of HDFS (Cao Manh Dat) 
+
 Optimizations
 ----------------------
 

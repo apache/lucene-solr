@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.update.UpdateLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,11 +135,13 @@ public class MoveReplicaCmd implements Cmd{
       return;
     }
 
+    String ulogDir = replica.getStr(CoreAdminParams.ULOG_DIR);
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
         CoreAdminParams.NAME, newCoreName,
+        CoreAdminParams.ULOG_DIR, ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
         CoreAdminParams.DATA_DIR, dataDir);
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
