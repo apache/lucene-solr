@@ -1187,15 +1187,20 @@ public class TestPointFields extends SolrTestCaseJ4 {
       sortedValues = values.stream().sorted().collect(Collectors.toList());
     } while ((max = sortedValues.get(sortedValues.size() - 1)) >= Long.MAX_VALUE - numValues); // leave room for rounding 
     long min = sortedValues.get(0);
-    long gap = BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
-        .divide(BigInteger.valueOf(numBuckets)).longValueExact();
+    BigInteger bigIntGap =  BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
+        .divide(BigInteger.valueOf(numBuckets));
+    long gap = bigIntGap.longValueExact();
     int[] bucketCount = new int[numBuckets];
     int bucketNum = 0;
     long minBucketVal = min;
+    System.err.println("min:" + min + "   max: " + max + "   gap: " + gap);
+    System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
     for (Long value : sortedValues) {
-      while (value - minBucketVal >= gap) {
+      System.err.println("value: " + value);
+      while (BigInteger.valueOf(value).subtract(BigInteger.valueOf(minBucketVal)).compareTo(bigIntGap) > 0) {
         ++bucketNum;
         minBucketVal += gap;
+        System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
       }
       ++bucketCount[bucketNum];
     }
