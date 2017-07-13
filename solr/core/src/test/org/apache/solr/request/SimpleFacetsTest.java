@@ -16,6 +16,7 @@
  */
 package org.apache.solr.request;
 
+import com.fasterxml.jackson.core.JsonParser.NumberType;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -185,7 +186,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   public void testDvMethodNegativeFloatRangeFacet() throws Exception {
     String field = "negative_num_f1_dv";
-    assertTrue(h.getCore().getLatestSchema().getField(field).hasDocValues());
+    assertTrue("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).hasDocValues());
+    assertEquals("Unexpected schema configuration", NumberType.FLOAT, h.getCore().getLatestSchema().getField(field).getType().getNumberType());
+    assertFalse("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).getType().isMultiValued());
 
     final String[] commonParams = { 
         "q", "*:*", "facet", "true", "facet.range.start", "-2", "facet.range.end", "0", "facet.range.gap", "2"
@@ -197,10 +200,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertQ(req(commonParams, "facet.range", field, "facet.range.method", "filter"),
-        String.format(countAssertion, field)
+        String.format(Locale.ROOT, countAssertion, field)
         );
     assertQ(req(commonParams, "facet.range", field, "facet.range.method", "dv"),
-        String.format(countAssertion, field)
+        String.format(Locale.ROOT, countAssertion, field)
         );
   }
 
