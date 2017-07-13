@@ -18,14 +18,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-[[Errata-ErrataForThisDocumentation]]
 == Errata For This Documentation
 
 Any mistakes found in this documentation after its release will be listed on the on-line version of this page:
 
 https://lucene.apache.org/solr/guide/{solr-docs-version}/errata.html
 
-[[Errata-ErrataForPastVersionsofThisDocumentation]]
 == Errata For Past Versions of This Documentation
 
 Any known mistakes in past releases of this documentation will be noted below.

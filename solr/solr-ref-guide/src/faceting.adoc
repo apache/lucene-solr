@@ -21,7 +21,7 @@
 
 Faceting is the arrangement of search results into categories based on indexed terms.
 
-Searchers are presented with the indexed terms, along with numerical counts of how many matching documents were found were each term. Faceting makes it easy for users to explore search results, narrowing in on exactly the results they are looking for.
+Searchers are presented with the indexed terms, along with numerical counts of how many matching documents were found for each term. Faceting makes it easy for users to explore search results, narrowing in on exactly the results they are looking for.
 
 [[Faceting-GeneralParameters]]
 == General Parameters
@@ -351,7 +351,7 @@ The `facet.mincount` parameter, the same one as used in field faceting is also a
 [NOTE]
 ====
 
-Range faceting on date fields is a common situation where the <<working-with-dates.adoc#WorkingwithDates-TZ,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
+Range faceting on date fields is a common situation where the <<working-with-dates.adoc#tz,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
 
 For more information, see the examples in the <<working-with-dates.adoc#working-with-dates,Working with Dates>> section.
 

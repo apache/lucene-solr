@@ -18,14 +18,14 @@
 
 <schema name="add-schema-fields-update-processor" version="1.6">
 
-  <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
-  <fieldType name="tdate" class="solr.TrieDateField" precisionStep="6" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" multiValued="true" positionIncrementGap="0"/>
+  <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="6" multiValued="true" positionIncrementGap="0"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="text" class="solr.TextField" multiValued="true" positionIncrementGap="100">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory"/>

@@ -249,6 +249,7 @@ var graphSubController = function ($scope, Zookeeper, isRadial) {
     };
 
     $scope.initGraph();
+    $scope.pos = 0;   
 };
 
 solrAdminApp.directive('graph', function(Constants) {

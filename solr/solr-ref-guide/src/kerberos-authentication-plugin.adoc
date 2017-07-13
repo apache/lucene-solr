@@ -29,17 +29,14 @@ Support for the Kerberos authentication plugin is available in SolrCloud mode or
 If you are using Solr with a Hadoop cluster secured with Kerberos and intend to store your Solr indexes in HDFS, also see the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>> for additional steps to configure Solr for that purpose. The instructions on this page apply only to scenarios where Solr will be secured with Kerberos. If you only need to store your indexes in a Kerberized HDFS system, please see the other section referenced above.
 ====
 
-[[KerberosAuthenticationPlugin-HowSolrWorksWithKerberos]]
 == How Solr Works With Kerberos
 
 When setting up Solr to use Kerberos, configurations are put in place for Solr to use a _service principal_, or a Kerberos username, which is registered with the Key Distribution Center (KDC) to authenticate requests. The configurations define the service principal name and the location of the keytab file that contains the credentials.
 
-[[KerberosAuthenticationPlugin-security.json]]
 === security.json
 
 The Solr authentication model uses a file called `security.json`. A description of this file and how it is created and maintained is covered in the section <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Authentication and Authorization Plugins>>. If this file is created after an initial startup of Solr, a restart of each node of the system is required.
 
-[[KerberosAuthenticationPlugin-ServicePrincipalsandKeytabFiles]]
 === Service Principals and Keytab Files
 
 Each Solr node must have a service principal registered with the Key Distribution Center (KDC). The Kerberos plugin uses SPNego to negotiate authentication.
@@ -56,7 +53,6 @@ Along with the service principal, each Solr node needs a keytab file which shoul
 
 Since a Solr cluster requires internode communication, each node must also be able to make Kerberos enabled requests to other nodes. By default, Solr uses the same service principal and keytab as a 'client principal' for internode communication. You may configure a distinct client principal explicitly, but doing so is not recommended and is not covered in the examples below.
 
-[[KerberosAuthenticationPlugin-KerberizedZooKeeper]]
 === Kerberized ZooKeeper
 
 When setting up a kerberized SolrCloud cluster, it is recommended to enable Kerberos security for ZooKeeper as well.
@@ -65,15 +61,13 @@ In such a setup, the client principal used to authenticate requests with ZooKeep
 
 See the <<ZooKeeper Configuration>> section below for an example of starting ZooKeeper in Kerberos mode.
 
-[[KerberosAuthenticationPlugin-BrowserConfiguration]]
 === Browser Configuration
 
 In order for your browser to access the Solr Admin UI after enabling Kerberos authentication, it must be able to negotiate with the Kerberos authenticator service to allow you access. Each browser supports this differently, and some (like Chrome) do not support it at all. If you see 401 errors when trying to access the Solr Admin UI after enabling Kerberos authentication, it's likely your browser has not been configured properly to know how or where to negotiate the authentication request.
 
 Detailed information on how to set up your browser is beyond the scope of this documentation; please see your system administrators for Kerberos for details on how to configure your browser.
 
-[[KerberosAuthenticationPlugin-PluginConfiguration]]
-== Plugin Configuration
+== Kerberos Authentication Configuration
 
 .Consult Your Kerberos Admins!
 [WARNING]
@@ -97,7 +91,6 @@ We'll walk through each of these steps below.
 To use host names instead of IP addresses, use the `SOLR_HOST` configuration in `bin/solr.in.sh` or pass a `-Dhost=<hostname>` system parameter during Solr startup. This guide uses IP addresses. If you specify a hostname, replace all the IP addresses in the guide with the Solr hostname as appropriate.
 ====
 
-[[KerberosAuthenticationPlugin-GetServicePrincipalsandKeytabs]]
 === Get Service Principals and Keytabs
 
 Before configuring Solr, make sure you have a Kerberos service principal for each Solr host and ZooKeeper (if ZooKeeper has not already been configured) available in the KDC server, and generate a keytab file as shown below.
@@ -128,7 +121,6 @@ Copy the keytab file from the KDC server’s `/tmp/107.keytab` location to the S
 
 You might need to take similar steps to create a ZooKeeper service principal and keytab if it has not already been set up. In that case, the example below shows a different service principal for ZooKeeper, so the above might be repeated with `zookeeper/host1` as the service principal for one of the nodes
 
-[[KerberosAuthenticationPlugin-ZooKeeperConfiguration]]
 === ZooKeeper Configuration
 
 If you are using a ZooKeeper that has already been configured to use Kerberos, you can skip the ZooKeeper-related steps shown here.
@@ -173,7 +165,6 @@ Once all of the pieces are in place, start ZooKeeper with the following paramete
 bin/zkServer.sh start -Djava.security.auth.login.config=/etc/zookeeper/conf/jaas-client.conf
 ----
 
-[[KerberosAuthenticationPlugin-Createsecurity.json]]
 === Create security.json
 
 Create the `security.json` file.
@@ -194,7 +185,6 @@ More details on how to use a `/security.json` file in Solr are available in the 
 If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> available in Solr.
 ====
 
-[[KerberosAuthenticationPlugin-DefineaJAASConfigurationFile]]
 === Define a JAAS Configuration File
 
 The JAAS configuration file defines the properties to use for authentication, such as the service principal and the location of the keytab file. Other properties can also be set to ensure ticket caching and other features.
@@ -227,7 +217,6 @@ The main properties we are concerned with are the `keyTab` and `principal` prope
 * `debug`: this boolean property will output debug messages for help in troubleshooting.
 * `principal`: the name of the service principal to be used.
 
-[[KerberosAuthenticationPlugin-SolrStartupParameters]]
 === Solr Startup Parameters
 
 While starting up Solr, the following host-specific parameters need to be passed. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
@@ -252,7 +241,6 @@ The app name (section name) within the JAAS configuration file which is required
 `java.security.auth.login.config`::
 Path to the JAAS configuration file for configuring a Solr client for internode communication. This parameter is required.
 
-
 Here is an example that could be added to `bin/solr.in.sh`. Make sure to change this example to use the right hostname and the keytab file path.
 
 [source,bash]
@@ -273,7 +261,6 @@ For Java 1.8, this is available here: http://www.oracle.com/technetwork/java/jav
 Replace the `local_policy.jar` present in `JAVA_HOME/jre/lib/security/` with the new `local_policy.jar` from the downloaded package and restart the Solr node.
 ====
 
-[[KerberosAuthenticationPlugin-UsingDelegationTokens]]
 === Using Delegation Tokens
 
 The Kerberos plugin can be configured to use delegation tokens, which allow an application to reuse the authentication of an end-user or another application.
@@ -304,7 +291,6 @@ The ZooKeeper path where the secret provider information is stored. This is in t
 `solr.kerberos.delegation.token.secret.manager.znode.working.path`::
 The ZooKeeper path where token information is stored. This is in the form of the path + /security/zkdtsm. The path can include the chroot or the chroot can be omitted if you are not using it. This example includes the chroot: `server1:9983,server2:9983,server3:9983/solr/security/zkdtsm`.
 
-[[KerberosAuthenticationPlugin-StartSolr]]
 === Start Solr
 
 Once the configuration is complete, you can start Solr with the `bin/solr` script, as in the example below, which is for users in SolrCloud mode only. This example assumes you modified `bin/solr.in.sh` or `bin/solr.in.cmd`, with the proper values, but if you did not, you would pass the system parameters along with the start command. Note you also need to customize the `-z` property as appropriate for the location of your ZooKeeper nodes.
@@ -314,7 +300,6 @@ Once the configuration is complete, you can start Solr with the `bin/solr` scrip
 bin/solr -c -z server1:2181,server2:2181,server3:2181/solr
 ----
 
-[[KerberosAuthenticationPlugin-TesttheConfiguration]]
 === Test the Configuration
 
 . Do a `kinit` with your username. For example, `kinit \user@EXAMPLE.COM`.
@@ -325,7 +310,6 @@ bin/solr -c -z server1:2181,server2:2181,server3:2181/solr
 curl --negotiate -u : "http://192.168.0.107:8983/solr/"
 ----
 
-[[KerberosAuthenticationPlugin-UsingSolrJwithaKerberizedSolr]]
 == Using SolrJ with a Kerberized Solr
 
 To use Kerberos authentication in a SolrJ application, you need the following two lines before you create a SolrClient:
@@ -353,7 +337,6 @@ SolrJClient {
 };
 ----
 
-[[KerberosAuthenticationPlugin-DelegationTokenswithSolrJ]]
 === Delegation Tokens with SolrJ
 
 Delegation tokens are also supported with SolrJ, in the following ways:

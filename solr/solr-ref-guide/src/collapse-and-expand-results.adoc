@@ -24,10 +24,9 @@ The Collapsing query parser groups documents (collapsing the result set) accordi
 
 [IMPORTANT]
 ====
-In order to use these features with SolrCloud, the documents must be located on the same shard. To ensure document co-location, you can define the `router.name` parameter as `compositeId` when creating the collection. For more information on this option, see the section <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,Document Routing>>.
+In order to use these features with SolrCloud, the documents must be located on the same shard. To ensure document co-location, you can define the `router.name` parameter as `compositeId` when creating the collection. For more information on this option, see the section <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>>.
 ====
 
-[[CollapseandExpandResults-CollapsingQueryParser]]
 == Collapsing Query Parser
 
 The `CollapsingQParser` is really a _post filter_ that provides more performant field collapsing than Solr's standard approach when the number of distinct groups in the result set is high. This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components. So all downstream components (faceting, highlighting, etc...) will work with the collapsed result set.
@@ -121,7 +120,6 @@ fq={!collapse field=group_field hint=top_fc}
 
 The CollapsingQParserPlugin fully supports the QueryElevationComponent.
 
-[[CollapseandExpandResults-ExpandComponent]]
 == Expand Component
 
 The ExpandComponent can be used to expand the groups that were collapsed by the http://heliosearch.org/the-collapsingqparserplugin-solrs-new-high-performance-field-collapsing-postfilter/[CollapsingQParserPlugin].

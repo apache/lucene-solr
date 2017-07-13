@@ -20,7 +20,7 @@
 
 Several query parsers share supported query parameters.
 
-The table below summarizes Solr's common query parameters, which are supported by the <<requesthandlers-and-searchcomponents-in-solrconfig#RequestHandlersandSearchComponentsinSolrConfig-SearchHandlers,Search RequestHandlers>>
+The table below summarizes Solr's common query parameters, which are supported by the <<requesthandlers-and-searchcomponents-in-solrconfig#searchhandlers,Search RequestHandlers>>
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -249,7 +249,7 @@ As this check is periodically performed, the actual time for which a request can
 
 This parameter may be set to either true or false.
 
-If set to true, and if <<indexconfig-in-solrconfig.adoc#IndexConfiginSolrConfig-mergePolicyFactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option which is compatible with <<CommonQueryParameters-ThesortParameter,the sort parameter>> specified for this query, then Solr will attempt to use an {lucene-javadocs}/core/org/apache/lucene/search/EarlyTerminatingSortingCollector.html[`EarlyTerminatingSortingCollector`].
+If set to true, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option which is compatible with <<CommonQueryParameters-ThesortParameter,the sort parameter>> specified for this query, then Solr will attempt to use an {lucene-javadocs}/core/org/apache/lucene/search/EarlyTerminatingSortingCollector.html[`EarlyTerminatingSortingCollector`].
 
 If early termination is used, a `segmentTerminatedEarly` header will be included in the `responseHeader`.
 

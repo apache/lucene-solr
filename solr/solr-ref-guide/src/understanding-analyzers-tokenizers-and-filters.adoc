@@ -25,16 +25,12 @@ The following sections describe how Solr breaks down and works with textual data
 * <<about-tokenizers.adoc#about-tokenizers,Tokenizers>> break field data into lexical units, or _tokens_.
 * <<about-filters.adoc#about-filters,Filters>> examine a stream of tokens and keep them, transform or discard them, or create new ones. Tokenizers and filters may be combined to form pipelines, or _chains_, where the output of one is input to the next. Such a sequence of tokenizers and filters is called an _analyzer_ and the resulting output of an analyzer is used to match query results or build indices.
 
-
-[[UnderstandingAnalyzers_Tokenizers_andFilters-UsingAnalyzers_Tokenizers_andFilters]]
 == Using Analyzers, Tokenizers, and Filters
 
 Although the analysis process is used for both indexing and querying, the same analysis process need not be used for both operations. For indexing, you often want to simplify, or normalize, words. For example, setting all letters to lowercase, eliminating punctuation and accents, mapping words to their stems, and so on. Doing so can increase recall because, for example, "ram", "Ram" and "RAM" would all match a query for "ram". To increase query-time precision, a filter could be employed to narrow the matches by, for example, ignoring all-cap acronyms if you're interested in male sheep, but not Random Access Memory.
 
 The tokens output by the analysis process define the values, or _terms_, of that field and are used either to build an index of those terms when a new document is added, or to identify which documents contain the terms you are querying for.
 
-
-[[UnderstandingAnalyzers_Tokenizers_andFilters-ForMoreInformation]]
 === For More Information
 
 These sections will show you how to configure field analyzers and also serves as a reference for the details of configuring each of the available tokenizer and filter classes. It also serves as a guide so that you can configure your own analysis classes if you have special needs that cannot be met with the included filters or tokenizers.

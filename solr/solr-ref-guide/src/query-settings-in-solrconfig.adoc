@@ -29,7 +29,6 @@ These settings are all configured in child elements of the `<query>` element in 
 </query>
 ----
 
-[[QuerySettingsinSolrConfig-Caches]]
 == Caches
 
 Solr caches are associated with a specific instance of an Index Searcher, a specific view of an index that doesn't change during the lifetime of that searcher. As long as that Index Searcher is being used, any items in its cache will be valid and available for reuse. Caching in Solr differs from caching in many other applications in that cached Solr objects do not expire after a time interval; instead, they remain valid for the lifetime of the Index Searcher.
@@ -54,7 +53,6 @@ FastLRUCache and LFUCache support `showItems` attribute. This is the number of c
 
 Details of each cache are described below.
 
-[[QuerySettingsinSolrConfig-filterCache]]
 === filterCache
 
 This cache is used by `SolrIndexSearcher` for filters (DocSets) for unordered sets of all documents that match a query. The numeric attributes control the number of entries in the cache.
@@ -71,7 +69,6 @@ Solr also uses this cache for faceting when the configuration parameter `facet.m
              autowarmCount="128"/>
 ----
 
-[[QuerySettingsinSolrConfig-queryResultCache]]
 === queryResultCache
 
 This cache holds the results of previous searches: ordered lists of document IDs (DocList) based on a query, a sort, and the range of documents requested.
@@ -87,7 +84,6 @@ The `queryResultCache` has an additional (optional) setting to limit the maximum
                   maxRamMB="1000"/>
 ----
 
-[[QuerySettingsinSolrConfig-documentCache]]
 === documentCache
 
 This cache holds Lucene Document objects (the stored fields for each document). Since Lucene internal document IDs are transient, this cache is not auto-warmed. The size for the `documentCache` should always be greater than `max_results` times the `max_concurrent_queries`, to ensure that Solr does not need to refetch a document during a request. The more fields you store in your documents, the higher the memory usage of this cache will be.
@@ -100,7 +96,6 @@ This cache holds Lucene Document objects (the stored fields for each document). 
                autowarmCount="0"/>
 ----
 
-[[QuerySettingsinSolrConfig-UserDefinedCaches]]
 === User Defined Caches
 
 You can also define named caches for your own application code to use. You can locate and use your cache object by name by calling the `SolrIndexSearcher` methods `getCache()`, `cacheLookup()` and `cacheInsert()`.
@@ -116,10 +111,8 @@ You can also define named caches for your own application code to use. You can l
 
 If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as`: regenerator="solr.NoOpRegenerator"`.
 
-[[QuerySettingsinSolrConfig-QuerySizingandWarming]]
 == Query Sizing and Warming
 
-[[QuerySettingsinSolrConfig-maxBooleanClauses]]
 === maxBooleanClauses
 
 This sets the maximum number of clauses allowed in a boolean query. This can affect range or prefix queries that expand to a query with a large number of boolean terms. If this limit is exceeded, an exception is thrown.
@@ -134,7 +127,6 @@ This sets the maximum number of clauses allowed in a boolean query. This can aff
 This option modifies a global property that effects all Solr cores. If multiple `solrconfig.xml` files disagree on this property, the value at any point in time will be based on the last Solr core that was initialized.
 ====
 
-[[QuerySettingsinSolrConfig-enableLazyFieldLoading]]
 === enableLazyFieldLoading
 
 If this parameter is set to true, then fields that are not directly requested will be loaded lazily as needed. This can boost performance if the most common queries only need a small subset of fields, especially if infrequently accessed fields are large in size.
@@ -144,7 +136,6 @@ If this parameter is set to true, then fields that are not directly requested wi
 <enableLazyFieldLoading>true</enableLazyFieldLoading>
 ----
 
-[[QuerySettingsinSolrConfig-useFilterForSortedQuery]]
 === useFilterForSortedQuery
 
 This parameter configures Solr to use a filter to satisfy a search. If the requested sort does not include "score", the `filterCache` will be checked for a filter matching the query. For most situations, this is only useful if the same search is requested often with different sort options and none of them ever use "score".
@@ -154,7 +145,6 @@ This parameter configures Solr to use a filter to satisfy a search. If the reque
 <useFilterForSortedQuery>true</useFilterForSortedQuery>
 ----
 
-[[QuerySettingsinSolrConfig-queryResultWindowSize]]
 === queryResultWindowSize
 
 Used with the `queryResultCache`, this will cache a superset of the requested number of document IDs. For example, if the a search in response to a particular query requests documents 10 through 19, and `queryWindowSize` is 50, documents 0 through 49 will be cached.
@@ -164,7 +154,6 @@ Used with the `queryResultCache`, this will cache a superset of the requested nu
 <queryResultWindowSize>20</queryResultWindowSize>
 ----
 
-[[QuerySettingsinSolrConfig-queryResultMaxDocsCached]]
 === queryResultMaxDocsCached
 
 This parameter sets the maximum number of documents to cache for any entry in the `queryResultCache`.
@@ -174,7 +163,6 @@ This parameter sets the maximum number of documents to cache for any entry in th
 <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 ----
 
-[[QuerySettingsinSolrConfig-useColdSearcher]]
 === useColdSearcher
 
 This setting controls whether search requests for which there is not a currently registered searcher should wait for a new searcher to warm up (false) or proceed immediately (true). When set to "false", requests will block until the searcher has warmed its caches.
@@ -184,7 +172,6 @@ This setting controls whether search requests for which there is not a currently
 <useColdSearcher>false</useColdSearcher>
 ----
 
-[[QuerySettingsinSolrConfig-maxWarmingSearchers]]
 === maxWarmingSearchers
 
 This parameter sets the maximum number of searchers that may be warming up in the background at any given time. Exceeding this limit will raise an error. For read-only slaves, a value of two is reasonable. Masters should probably be set a little higher.
@@ -194,10 +181,9 @@ This parameter sets the maximum number of searchers that may be warming up in th
 <maxWarmingSearchers>2</maxWarmingSearchers>
 ----
 
-[[QuerySettingsinSolrConfig-Query-RelatedListeners]]
 == Query-Related Listeners
 
-As described in the section on <<QuerySettingsinSolrConfig-Caches,Caches>>, new Index Searchers are cached. It's possible to use the triggers for listeners to perform query-related tasks. The most common use of this is to define queries to further "warm" the Index Searchers while they are starting. One benefit of this approach is that field caches are pre-populated for faster sorting.
+As described in the section on <<Caches>>, new Index Searchers are cached. It's possible to use the triggers for listeners to perform query-related tasks. The most common use of this is to define queries to further "warm" the Index Searchers while they are starting. One benefit of this approach is that field caches are pre-populated for faster sorting.
 
 Good query selection is key with this type of listener. It's best to choose your most common and/or heaviest queries and include not just the keywords used, but any other parameters such as sorting or filtering requests.
 

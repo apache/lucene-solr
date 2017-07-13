@@ -20,7 +20,7 @@
 
 Solr includes a simple command line tool for POSTing various types of content to a Solr server.
 
-The tool is `bin/post`. The bin/post tool is a Unix shell script; for Windows (non-Cygwin) usage, see the <<PostTool-WindowsSupport,Windows section>> below.
+The tool is `bin/post`. The bin/post tool is a Unix shell script; for Windows (non-Cygwin) usage, see the section <<Post Tool Windows Support>> below.
 
 To run it, open a window and enter:
 
@@ -30,7 +30,6 @@ bin/post -c gettingstarted example/films/films.json
 ----
 
 This will contact the server at `localhost:8983`. Specifying the `collection/core name` is *mandatory*. The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/post -help)`.
-
 
 == Using the bin/post Tool
 
@@ -74,8 +73,7 @@ OPTIONS
 ...
 ----
 
-[[bin_post_examples]]
-== Examples
+== Examples Using bin/post
 
 There are several ways to use `bin/post`. This section presents several examples.
 
@@ -118,7 +116,7 @@ Index a tab-separated file into `gettingstarted`:
 bin/post -c signals -params "separator=%09" -type text/csv data.tsv
 ----
 
-The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is. The <<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVFormattedIndexUpdates,CSV handler>> supports the `separator` parameter, and is passed through using the `-params` setting.
+The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is. The <<uploading-data-with-index-handlers.adoc#csv-formatted-index-updates,CSV handler>> supports the `separator` parameter, and is passed through using the `-params` setting.
 
 === Indexing JSON
 
@@ -161,8 +159,7 @@ Index a pdf as the user solr with password `SolrRocks`:
 bin/post -u solr:SolrRocks -c gettingstarted a.pdf
 ----
 
-[[PostTool-WindowsSupport]]
-== Windows Support
+== Post Tool Windows Support
 
 `bin/post` exists currently only as a Unix shell script, however it delegates its work to a cross-platform capable Java program. The <<SimplePostTool>> can be run directly in supported environments, including Windows.
 

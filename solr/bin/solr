@@ -555,20 +555,23 @@ function print_usage() {
     echo ""
     echo "Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>]"
     echo "       solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>]"
+    echo "       solr auth enable -type kerberos -config "<kerberos configs>" [-updateIncludeFileOnly <true|false>]"
     echo "       solr auth disable [-updateIncludeFileOnly <true|false>]"
     echo ""
-    echo "  -type <type>                           The authentication mechanism to enable. Defaults to 'basicAuth'."
+    echo "  -type <type>                           The authentication mechanism (basicAuth or kerberos) to enable. Defaults to 'basicAuth'."
     echo ""
-    echo "  -credentials <user:pass>               The username and password of the initial user"
+    echo "  -credentials <user:pass>               The username and password of the initial user. Applicable for basicAuth only."
     echo "                                         Note: only one of -prompt or -credentials must be provided"
     echo ""
-    echo "  -prompt <true|false>                   Prompts the user to provide the credentials"
+    echo "  -config "<configs>"                    Configuration parameters (Solr startup parameters). Required and applicable only for Kerberos"
+    echo ""
+    echo "  -prompt <true|false>                   Prompts the user to provide the credentials. Applicable for basicAuth only."
     echo "                                         Note: only one of -prompt or -credentials must be provided"
     echo ""
     echo "  -blockUnknown <true|false>             When true, this blocks out access to unauthenticated users. When not provided,"
     echo "                                         this defaults to false (i.e. unauthenticated users can access all endpoints, except the"
     echo "                                         operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference"
-    echo "                                         guide for Basic Authentication for more details."
+    echo "                                         guide for Basic Authentication for more details. Applicable for basicAuth only."
     echo ""
     echo "  -updateIncludeFileOnly <true|false>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
     echo "                                         authentication (i.e. don't update security.json)"
@@ -975,6 +978,14 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     exit 1
   fi
 
+  if [ "$CREATE_CONFDIR" == "_default" ]; then
+    echo "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is"
+    echo "         NOT RECOMMENDED for production use."
+    echo
+    echo "         To turn it off:"
+    echo "            curl http://$SOLR_TOOL_HOST:$CREATE_PORT/solr/$CREATE_NAME/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'"
+  fi
+
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
     echo "WARNING: Creating cores as the root user can cause Solr to fail and is not advisable. Exiting."
     echo "         If you started Solr as root (not advisable either), force core creation by adding argument -force"
@@ -1240,6 +1251,11 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         -credentials)
             AUTH_CREDENTIALS="$2"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-credentials" "$AUTH_CREDENTIALS")
+            shift 2
+        ;;
+        -config)
+            AUTH_CONFIG="`echo $2| base64`"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-config" "$AUTH_CONFIG")
             shift 2
         ;;
         -solrIncludeFile)

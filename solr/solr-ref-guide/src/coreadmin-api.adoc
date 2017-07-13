@@ -29,7 +29,7 @@ CoreAdmin actions can be executed by via HTTP requests that specify an `action` 
 
 All action names are uppercase, and are defined in depth in the sections below.
 
-[[CoreAdminAPI-STATUS]]
+[[coreadmin-status]]
 == STATUS
 
 The `STATUS` action returns the status of all running Solr cores, or status for only the named core.
@@ -44,7 +44,7 @@ The name of a core, as listed in the "name" attribute of a `<core>` element in `
 `indexInfo`::
 If `false`, information about the index will not be returned with a core STATUS request. In Solr implementations with a large number of cores (i.e., more than hundreds), retrieving the index information for each core can take a lot of time and isn't always required. The default is `true`.
 
-[[CoreAdminAPI-CREATE]]
+[[coreadmin-create]]
 == CREATE
 
 The `CREATE` action creates a new core and registers it.
@@ -102,7 +102,7 @@ WARNING: While it's possible to create a core for a non-existent collection, thi
 The shard id this core represents. Normally you want to be auto-assigned a shard id.
 
 `property._name_=_value_`::
-Sets the core property _name_ to _value_. See the section on defining <<defining-core-properties.adoc#Definingcore.properties-core.properties_files,core.properties file contents>>.
+Sets the core property _name_ to _value_. See the section on defining <<defining-core-properties.adoc#defining-core-properties-files,core.properties file contents>>.
 
 `async`::
 Request ID to track this action which will be processed asynchronously.
@@ -115,7 +115,7 @@ Use `collection.configName=_configname_` to point to the config for a new collec
 http://localhost:8983/solr/admin/cores?action=CREATE&name=my_core&collection=my_collection&shard=shard2
 
 
-[[CoreAdminAPI-RELOAD]]
+[[coreadmin-reload]]
 == RELOAD
 
 The RELOAD action loads a new core from the configuration of an existing, registered Solr core. While the new core is initializing, the existing one will continue to handle requests. When the new Solr core is ready, it takes over and the old core is unloaded.
@@ -134,7 +134,7 @@ RELOAD performs "live" reloads of SolrCore, reusing some existing objects. Some 
 `core`::
 The name of the core, as listed in the "name" attribute of a `<core>` element in `solr.xml`. This parameter is required.
 
-[[CoreAdminAPI-RENAME]]
+[[coreadmin-rename]]
 == RENAME
 
 The `RENAME` action changes the name of a Solr core.
@@ -153,7 +153,7 @@ The new name for the Solr core. If the persistent attribute of `<solr>` is `true
 Request ID to track this action which will be processed asynchronously.
 
 
-[[CoreAdminAPI-SWAP]]
+[[coreadmin-swap]]
 == SWAP
 
 `SWAP` atomically swaps the names used to access two existing Solr cores. This can be used to swap new content into production. The prior core remains available and can be swapped back, if necessary. Each core will be known by the name of the other, after the swap.
@@ -162,9 +162,7 @@ Request ID to track this action which will be processed asynchronously.
 
 [IMPORTANT]
 ====
-
 Do not use `SWAP` with a SolrCloud node. It is not supported and can result in the core being unusable.
-
 ====
 
 === SWAP Parameters
@@ -179,7 +177,7 @@ The name of one of the cores to be swapped. This parameter is required.
 Request ID to track this action which will be processed asynchronously.
 
 
-[[CoreAdminAPI-UNLOAD]]
+[[coreadmin-unload]]
 == UNLOAD
 
 The `UNLOAD` action removes a core from Solr. Active requests will continue to be processed, but no new requests will be sent to the named core. If a core is registered under more than one name, only the given name is removed.
@@ -210,8 +208,7 @@ If `true`, removes everything related to the core, including the index directory
 `async`::
 Request ID to track this action which will be processed asynchronously.
 
-
-[[CoreAdminAPI-MERGEINDEXES]]
+[[coreadmin-mergeindexes]]
 == MERGEINDEXES
 
 The `MERGEINDEXES` action merges one or more indexes to another index. The indexes must have completed commits, and should be locked against writes until the merge is complete or the resulting merged index may become corrupted. The target core index must already exist and have a compatible schema with the one or more indexes that will be merged to it. Another commit on the target core should also be performed after the merge is complete.
@@ -243,7 +240,7 @@ Multi-valued, source cores that would be merged.
 Request ID to track this action which will be processed asynchronously
 
 
-[[CoreAdminAPI-SPLIT]]
+[[coreadmin-split]]
 == SPLIT
 
 The `SPLIT` action splits an index into two or more indexes. The index being split can continue to handle requests. The split pieces can be placed into a specified directory on the server's filesystem or it can be merged into running Solr cores.
@@ -269,7 +266,6 @@ The key to be used for splitting the index. If this parameter is used, `ranges` 
 
 `async`::
 Request ID to track this action which will be processed asynchronously.
-
 
 === SPLIT Examples
 
@@ -305,9 +301,9 @@ This example uses the `ranges` parameter with hash ranges 0-500, 501-1000 and 10
 
 The `targetCore` must already exist and must have a compatible schema with the `core` index. A commit is automatically called on the `core` index before it is split.
 
-This command is used as part of the <<collections-api.adoc#CollectionsAPI-splitshard,SPLITSHARD>> command but it can be used for non-cloud Solr cores as well. When used against a non-cloud core without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents. If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
+This command is used as part of the <<collections-api.adoc#splitshard,SPLITSHARD>> command but it can be used for non-cloud Solr cores as well. When used against a non-cloud core without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents. If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
 
-[[CoreAdminAPI-REQUESTSTATUS]]
+[[coreadmin-requeststatus]]
 == REQUESTSTATUS
 
 Request the status of an already submitted asynchronous CoreAdmin API call.
@@ -326,7 +322,7 @@ The call below will return the status of an already submitted asynchronous CoreA
 [source,bash]
 http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=1
 
-[[CoreAdminAPI-REQUESTRECOVERY]]
+[[coreadmin-requestrecovery]]
 == REQUESTRECOVERY
 
 The `REQUESTRECOVERY` action manually asks a core to recover by synching with the leader. This should be considered an "expert" level command and should be used in situations where the node (SorlCloud replica) is unable to become active automatically.
@@ -338,7 +334,6 @@ The `REQUESTRECOVERY` action manually asks a core to recover by synching with th
 `core`::
 The name of the core to re-sync. This parameter is required.
 
-[[CoreAdminAPI-Examples.1]]
 === REQUESTRECOVERY Examples
 
 [source,bash]

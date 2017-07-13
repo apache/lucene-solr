@@ -51,14 +51,12 @@ We've covered the options in the following sections:
 * <<update-request-processors.adoc#update-request-processors,Update Request Processors>>
 * <<codec-factory.adoc#codec-factory,Codec Factory>>
 
-[[Configuringsolrconfig.xml-SubstitutingPropertiesinSolrConfigFiles]]
 == Substituting Properties in Solr Config Files
 
 Solr supports variable substitution of property values in config files, which allows runtime specification of various configuration options in `solrconfig.xml`. The syntax is `${propertyname[:option default value]`}. This allows defining a default that can be overridden when Solr is launched. If a default value is not specified, then the property _must_ be specified at runtime or the configuration file will generate an error when parsed.
 
 There are multiple methods for specifying properties that can be used in configuration files. Of those below, strongly consider "config overlay" as the preferred approach, as it stays local to the config set and because it's easy to modify.
 
-[[Configuringsolrconfig.xml-JVMSystemProperties]]
 === JVM System Properties
 
 Any JVM System properties, usually specified using the `-D` flag when starting the JVM, can be used as variables in any XML configuration file in Solr.
@@ -79,8 +77,7 @@ bin/solr start -Dsolr.lock.type=none
 
 In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax. Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`). For more information about how the Solr include file works, refer to: <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>.
 
-[[Configuringsolrconfig.xml-ConfigAPI]]
-=== Config API
+=== Config API to Override solrconfig.xml
 
 The <<config-api.adoc#config-api,Config API>> allows you to use an API to modify Solr's configuration, specifically user defined properties. Changes made with this API are stored in a file named `configoverlay.json`. This file should only be edited with the API, but will look like this example:
 
@@ -94,7 +91,6 @@ The <<config-api.adoc#config-api,Config API>> allows you to use an API to modify
 
 For more details, see the section <<config-api.adoc#config-api,Config API>>.
 
-[[Configuringsolrconfig.xml-solrcore.properties]]
 === solrcore.properties
 
 If the configuration directory for a Solr core contains a file named `solrcore.properties` that file can contain any arbitrary user defined property names and values using the Java standard https://en.wikipedia.org/wiki/.properties[properties file format], and those properties can be used as variables in the XML configuration files for that Solr core.
@@ -120,7 +116,6 @@ The path and name of the `solrcore.properties` file can be overridden using the 
 
 ====
 
-[[Configuringsolrconfig.xml-Userdefinedpropertiesfromcore.properties]]
 === User-Defined Properties in core.properties
 
 Every Solr core has a `core.properties` file, automatically created when using the APIs. When you create a SolrCloud collection, you can pass through custom parameters to go into each core.properties that will be created, by prefixing the parameter name with "property." as a URL parameter. Example:
@@ -148,7 +143,6 @@ The `my.custom.prop` property can then be used as a variable, such as in `solrco
 </requestHandler>
 ----
 
-[[Configuringsolrconfig.xml-ImplicitCoreProperties]]
 === Implicit Core Properties
 
 Several attributes of a Solr core are available as "implicit" properties that can be used in variable substitution, independent of where or how they underlying value is initialized. For example: regardless of whether the name for a particular Solr core is explicitly configured in `core.properties` or inferred from the name of the instance directory, the implicit property `solr.core.name` is available for use as a variable in that core's configuration file...

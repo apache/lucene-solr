@@ -208,9 +208,9 @@ public class Overseer implements Closeable {
                 @Override
                 public void onEnqueue() throws Exception {
                   if (!itemWasMoved[0]) {
+                    workQueue.offer(data);
                     stateUpdateQueue.poll();
                     itemWasMoved[0] = true;
-                    workQueue.offer(data);
                   }
                 }
 

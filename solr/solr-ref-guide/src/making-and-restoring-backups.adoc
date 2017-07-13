@@ -28,12 +28,12 @@ Support for backups when running SolrCloud is provided with the <<collections-ap
 
 Two commands are available:
 
-* `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#CollectionsAPI-backup,Backup Collection>>.
-* `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collections-api.adoc#CollectionsAPI-restore,Restore Collection>>.
+* `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#backup,Backup Collection>>.
+* `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collections-api.adoc#restore,Restore Collection>>.
 
 == Standalone Mode Backups
 
-Backups and restoration uses Solr's replication handler. Out of the box, Solr includes implicit support for replication so this API can be used. Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml` . For details on configuring the replication handler, see the section <<index-replication.adoc#IndexReplication-ConfiguringtheReplicationHandler,Configuring the ReplicationHandler>>.
+Backups and restoration uses Solr's replication handler. Out of the box, Solr includes implicit support for replication so this API can be used. Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml` . For details on configuring the replication handler, see the section <<index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
 
 === Backup API
 
@@ -58,7 +58,7 @@ The path where the backup will be created. If the path is not absolute then the 
 |name |The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name would have the following format: `snapshot.<yyyyMMddHHmmssSSS>`.
 
 `numberToKeep`::
-The number of backups to keep. If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error. Also, this parameter is not taken into consideration if the backup name is specified. More information about `maxNumberOfBackups` can be found in the section <<index-replication.adoc#IndexReplication-ConfiguringtheReplicationHandler,Configuring the ReplicationHandler>>.
+The number of backups to keep. If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error. Also, this parameter is not taken into consideration if the backup name is specified. More information about `maxNumberOfBackups` can be found in the section <<index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
 
 `repository`::
 The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
