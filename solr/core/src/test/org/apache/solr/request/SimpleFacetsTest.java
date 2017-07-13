@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-import com.fasterxml.jackson.core.JsonParser.NumberType;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +35,7 @@ import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
@@ -188,7 +188,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     String field = "negative_num_f1_dv";
     assertTrue("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).hasDocValues());
     assertEquals("Unexpected schema configuration", NumberType.FLOAT, h.getCore().getLatestSchema().getField(field).getType().getNumberType());
-    assertFalse("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).getType().isMultiValued());
+    assertFalse("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).multiValued());
 
     final String[] commonParams = { 
         "q", "*:*", "facet", "true", "facet.range.start", "-2", "facet.range.end", "0", "facet.range.gap", "2"
