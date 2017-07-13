@@ -39,7 +39,6 @@ public class AutoScaling {
   }
 
   public enum EventProcessorStage {
-    WAITING,
     STARTED,
     ABORTED,
     SUCCEEDED,
