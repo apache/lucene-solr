@@ -114,7 +114,7 @@ Solr also provides a number of useful examples to help you learn about key featu
 bin/solr -e techproducts
 ----
 
-Currently, the available examples you can run are: techproducts, dih, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#SolrControlScriptReference-RunningwithExampleConfigurations,Running with Example Configurations>> for details on each example.
+Currently, the available examples you can run are: techproducts, dih, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#running-with-example-configurations,Running with Example Configurations>> for details on each example.
 
 .Getting Started with SolrCloud
 [NOTE]
@@ -171,7 +171,7 @@ You may want to add a few sample documents before trying to index your own conte
 
 In the `bin/` directory is the post script, a command line tool which can be used to index different types of documents. Do not worry too much about the details for now. The <<indexing-and-basic-data-operations.adoc#indexing-and-basic-data-operations,Indexing and Basic Data Operations>> section has all the details on indexing.
 
-To see some information about the usage of `bin/post`, use the `-help` option. Windows users, see the section for <<post-tool.adoc#PostTool-WindowsSupport,Post Tool on Windows>>.
+To see some information about the usage of `bin/post`, use the `-help` option. Windows users, see the section for <<post-tool.adoc#post-tool-windows-support,Post Tool on Windows>>.
 
 `bin/post` can post various types of content to Solr, including files in Solr's native XML and JSON formats, CSV files, a directory tree of rich documents, or even a simple short web crawl. See the examples at the end of `bin/post -help` for various commands to easily get started posting your content into Solr.
 

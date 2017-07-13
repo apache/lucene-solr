@@ -33,7 +33,7 @@ Where possible, terms are linked to relevant parts of the Solr Reference Guide f
 [[SolrGlossary-A]]
 === A
 
-[[atomicupdates]]<<updating-parts-of-documents.adoc#UpdatingPartsofDocuments-AtomicUpdates,Atomic updates>>::
+[[atomicupdates]]<<updating-parts-of-documents.adoc#atomic-updates,Atomic updates>>::
 An approach to updating only one or more fields of a document, instead of reindexing the entire document.
 
 
@@ -120,7 +120,7 @@ A JVM instance running Solr. Also known as a Solr server.
 [[SolrGlossary-O]]
 === O
 
-[[optimisticconcurrency]]<<updating-parts-of-documents.adoc#UpdatingPartsofDocuments-OptimisticConcurrency,Optimistic concurrency>>::
+[[optimisticconcurrency]]<<updating-parts-of-documents.adoc#optimistic-concurrency,Optimistic concurrency>>::
 Also known as "optimistic locking", this is an approach that allows for updates to documents currently in the index while retaining locking or version control.
 
 [[overseer]]Overseer::

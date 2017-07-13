@@ -18,7 +18,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has an optional Ruby response format that extends the <<response-writers.adoc#ResponseWriters-JSONResponseWriter,JSON output>> to allow the response to be safely eval'd by Ruby's interpreter
+Solr has an optional Ruby response format that extends the <<response-writers.adoc#json-response-writer,JSON output>> to allow the response to be safely eval'd by Ruby's interpreter
 
 This Ruby response format differs from JSON in the following ways:
 

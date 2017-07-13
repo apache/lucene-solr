@@ -127,7 +127,7 @@ curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
   -H "Content-Type: text/xml" --data-binary '<add><doc><field name="id">testdoc</field></doc></add>'
 ----
 
-WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#RequestDispatcherinSolrConfig-requestParsersElement,RequestDispatcher in SolrConfig>> for details.
+WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> for details.
 
 === Changing Default commitWithin Behavior
 

@@ -20,7 +20,6 @@
 
 Solr ships with many out-of-the-box RequestHandlers, which are called implicit because they are not configured in `solrconfig.xml`.
 
-[[ImplicitRequestHandlers-ListofImplicitlyAvailableEndpoints]]
 == List of Implicitly Available Endpoints
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
@@ -44,19 +43,18 @@ Solr ships with many out-of-the-box RequestHandlers, which are called implicit b
 |`/debug/dump` |{solr-javadocs}/solr-core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP` |Echo the request contents back to the client.
 |<<exporting-result-sets.adoc#exporting-result-sets,`/export`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_EXPORT` |Export full sorted result sets.
 |<<realtime-get.adoc#realtime-get,`/get`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/RealTimeGetHandler.html[RealTimeGetHandler] |`_GET` |Real-time get: low-latency retrieval of the latest version of a document.
-|<<graph-traversal.adoc#GraphTraversal-ExportingGraphMLtoSupportGraphVisualization,`/graph`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH` |Return http://graphml.graphdrawing.org/[GraphML] formatted output from a <<graph-traversal.adoc#graph-traversal,`gather` `Nodes` streaming expression>>.
+|<<graph-traversal.adoc#exporting-graphml-to-support-graph-visualization,`/graph`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH` |Return http://graphml.graphdrawing.org/[GraphML] formatted output from a <<graph-traversal.adoc#graph-traversal,`gather` `Nodes` streaming expression>>.
 |<<index-replication.adoc#index-replication,`/replication`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/ReplicationHandler.html[ReplicationHandler] |`_REPLICATION` |Replicate indexes for SolrCloud recovery and Master/Slave index distribution.
 |<<schema-api.adoc#schema-api,`/schema`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA` |Retrieve/modify Solr schema.
 |<<parallel-sql-interface.adoc#sql-request-handler,`/sql`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/SQLHandler.html[SQLHandler] |`_SQL` |Front end of the Parallel SQL interface.
-|<<streaming-expressions.adoc#StreamingExpressions-StreamingRequestsandResponses,`/stream`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM` |Distributed stream processing.
-|<<the-terms-component.adoc#TheTermsComponent-UsingtheTermsComponentinaRequestHandler,`/terms`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS` |Return a field's indexed terms and the number of documents containing each term.
+|<<streaming-expressions.adoc#streaming-requests-and-responses,`/stream`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM` |Distributed stream processing.
+|<<the-terms-component.adoc#using-the-terms-component-in-a-request-handler,`/terms`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS` |Return a field's indexed terms and the number of documents containing each term.
 |<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,`/update`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE` |Add, delete and update indexed documents formatted as SolrXML, CSV, SolrJSON or javabin.
-|<<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths,`/update/csv`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV` |Add and update CSV-formatted documents.
-|<<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths,`/update/json`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON` |Add, delete and update SolrJSON-formatted documents.
+|<<uploading-data-with-index-handlers.adoc#csv-update-convenience-paths,`/update/csv`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV` |Add and update CSV-formatted documents.
+|<<uploading-data-with-index-handlers.adoc#csv-update-convenience-paths,`/update/json`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON` |Add, delete and update SolrJSON-formatted documents.
 |<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,`/update/json/docs`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS` |Add and update custom JSON-formatted documents.
 |===
 
-[[ImplicitRequestHandlers-HowtoViewtheConfiguration]]
 == How to View the Configuration
 
 You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>. E.g. for the `gettingstarted` collection:
@@ -71,7 +69,6 @@ To include the expanded paramset in the response, as well as the effective param
 
 `curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true"`
 
-[[ImplicitRequestHandlers-HowtoEdittheConfiguration]]
 == How to Edit the Configuration
 
 Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via<<request-parameters-api.adoc#request-parameters-api, Request Parameters API>> using the paramset listed in the above table. However, other parameters, including SearchHandler components, may not be modified. The invariants and appends specified in the implicit configuration cannot be overridden.

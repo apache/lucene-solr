@@ -52,7 +52,7 @@ The base address for the API is `\http://<host>:<port>/solr/<collection_name>`. 
 bin/solr -e cloud -noprompt
 ----
 
-== API Entry Points
+== Schema API Entry Points
 
 * `/schema`: <<Retrieve the Entire Schema,retrieve>> the schema, or <<Modify the Schema,modify>> the schema to add, remove, or replace fields, dynamic fields, copy fields, or field types
 * `/schema/fields`: <<List Fields,retrieve information>> about all defined fields or a specific named field
@@ -408,14 +408,12 @@ The query parameters should be added to the API request after '?'.
 `wt`::
 Defines the format of the response. The options are *json*, *xml* or *schema.xml*. If not specified, JSON will be returned by default.
 
-[[SchemaAPI-OUTPUT]]
 ==== Retrieve Schema Response
 
 *Output Content*
 
 The output will include all fields, field types, dynamic rules and copy field rules, in the format requested (JSON or XML). The schema name and version are also included.
 
-[[SchemaAPI-EXAMPLES]]
 ==== Retrieve Schema Examples
 
 Get the entire schema in JSON.

@@ -29,7 +29,6 @@ A minimal `core.properties` file looks like the example below. However, it can a
 name=my_core_name
 ----
 
-[[Definingcore.properties-Placementofcore.properties]]
 == Placement of core.properties
 
 Solr cores are configured by placing a file named `core.properties` in a sub-directory under `solr.home`. There are no a-priori limits to the depth of the tree, nor are there limits to the number of cores that can be defined. Cores may be anywhere in the tree with the exception that cores may _not_ be defined under an existing core. That is, the following is not allowed:
@@ -61,10 +60,7 @@ Your `core.properties` file can be empty if necessary. Suppose `core.properties`
 You can run Solr without configuring any cores.
 ====
 
-[[Definingcore.properties-Definingcore.propertiesFiles]]
 == Defining core.properties Files
-
-[[Definingcore.properties-core.properties_files]]
 
 The minimal `core.properties` file is an empty file, in which case all of the properties are defaulted appropriately.
 
@@ -98,4 +94,4 @@ The following properties are available:
 
 `roles`:: Future parameter for SolrCloud or a way for users to mark nodes for their own use.
 
-Additional user-defined properties may be specified for use as variables. For more information on how to define local properties, see the section <<configuring-solrconfig-xml.adoc#Configuringsolrconfig.xml-SubstitutingPropertiesinSolrConfigFiles,Substituting Properties in Solr Config Files>>.
+Additional user-defined properties may be specified for use as variables. For more information on how to define local properties, see the section <<configuring-solrconfig-xml.adoc#substituting-properties-in-solr-config-files,Substituting Properties in Solr Config Files>>.

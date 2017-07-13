@@ -28,7 +28,7 @@ Once defined through the API, roles are stored in `security.json`.
 
 == Enable the Authorization Plugin
 
-The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#AuthenticationandAuthorizationPlugins-EnablePluginswithsecurity.json,Enable Plugins with security.json>>.
+The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
 
 This file has two parts, the `authentication` part and the `authorization` part. The `authentication` part stores information about the class being used for authentication.
 
@@ -104,8 +104,8 @@ The pre-defined permissions are:
 ** OVERSEERSTATUS
 ** CLUSTERSTATUS
 ** REQUESTSTATUS
-* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-UpdateRequestHandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
-* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-SearchHandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#updaterequesthandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
+* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
 * *all*: Any requests coming to Solr.
 
 == Authorization API

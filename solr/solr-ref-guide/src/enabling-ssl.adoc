@@ -154,7 +154,7 @@ server/scripts/cloud-scripts/zkcli.sh -zkhost localhost:2181 -cmd clusterprop -n
 server\scripts\cloud-scripts\zkcli.bat -zkhost localhost:2181 -cmd clusterprop -name urlScheme -val https
 ----
 
-If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#TakingSolrtoProduction-ZooKeeperchroot,chroot for Solr>> , make sure you use the correct `zkhost` string with `zkcli`, e.g. `-zkhost localhost:2181/solr`.
+If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#zookeeper-chroot,chroot for Solr>> , make sure you use the correct `zkhost` string with `zkcli`, e.g. `-zkhost localhost:2181/solr`.
 
 === Run SolrCloud with SSL
 

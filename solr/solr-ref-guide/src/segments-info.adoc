@@ -22,4 +22,4 @@ The Segments Info screen lets you see a visualization of the various segments in
 
 image::images/segments-info/segments_info.png[image,width=486,height=250]
 
-This information may be useful for people to help make decisions about the optimal <<indexconfig-in-solrconfig.adoc#IndexConfiginSolrConfig-MergingIndexSegments,merge settings>> for their data.
+This information may be useful for people to help make decisions about the optimal <<indexconfig-in-solrconfig.adoc#merging-index-segments,merge settings>> for their data.
