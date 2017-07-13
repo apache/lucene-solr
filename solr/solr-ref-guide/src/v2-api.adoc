@@ -34,7 +34,6 @@ The old API and the v2 API differ in three principle ways:
 .  Endpoint structure: The v2 API endpoint structure has been rationalized and regularized.
 .  Documentation: The v2 APIs are self-documenting: append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
 
-[[v2API-v2APIPathPrefixes]]
 == v2 API Path Prefixes
 
 Following are some v2 API URL paths and path prefixes, along with some of the operations that are supported at these paths and their sub-paths.
@@ -57,7 +56,6 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 |`/v2/c/.system/blob` |Upload and download blobs and metadata.
 |===
 
-[[v2API-Introspect]]
 == Introspect
 
 Append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
@@ -72,7 +70,6 @@ Most endpoints support commands provided in a body sent via POST. To limit the i
 
 `\http://localhost:8983/v2/c/gettingstarted/_introspect?method=POST&command=modify`
 
-[[v2API-InterpretingtheIntrospectOutput]]
 === Interpreting the Introspect Output
 
 Example : `\http://localhost:8983/v2/c/gettingstarted/get/_introspect`
@@ -154,13 +151,11 @@ Example of introspect for a POST API: `\http://localhost:8983/v2/c/gettingstarte
     "/c/gettingstarted/update":["POST"]},
 
 [... more sub-paths ...]
-
 }
 ----
 
 The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a json object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
 
-[[v2API-InvocationExamples]]
 == Invocation Examples
 
 For the "gettingstarted" collection, set the replication factor and whether to automatically add replicas (see above for the introspect output for the `"modify"` command used here):

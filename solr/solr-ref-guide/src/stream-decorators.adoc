@@ -382,7 +382,7 @@ cartesianProduct(
 }
 ----
 
-As you can see in the examples above, the `cartesianProduct` function does support flattening tuples across multiple fields and/or evaluators. 
+As you can see in the examples above, the `cartesianProduct` function does support flattening tuples across multiple fields and/or evaluators.
 
 == classify
 
@@ -615,8 +615,6 @@ eval(expr)
 In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
 executes the string Streaming Expression in the epxr_s field.
 
-
-[[StreamingExpressions-executor]]
 == executor
 
 The `executor` function wraps a stream source that contains streaming expressions, and executes the expressions in parallel. The `executor` function looks for the expression in the `expr_s` field in each tuple. The `executor` function has an internal thread pool that runs tasks that compile and run expressions in parallel on the same worker node. This function can also be parallelized across worker nodes by wrapping it in the <<parallel,`parallel`>> function to provide parallel execution of expressions across a cluster.
@@ -984,7 +982,6 @@ The worker nodes can be from the same collection as the data, or they can be a d
 * `zkHost`: (Optional) The ZooKeeper connect string where the worker collection resides.
 * `sort`: The sort criteria for ordering tuples returned by the worker nodes.
 
-[[StreamingExpressions-Syntax.25]]
 === parallel Syntax
 
 [source,text]
@@ -1000,10 +997,9 @@ The worker nodes can be from the same collection as the data, or they can be a d
 
 The expression above shows a `parallel` function wrapping a `reduce` function. This will cause the `reduce` function to be run in parallel across 20 worker nodes.
 
-[[StreamingExpressions-priority]]
 == priority
 
-The `priority` function is a simple priority scheduler for the <<StreamingExpressions-executor,executor>> function. The executor function doesn't directly have a concept of task prioritization; instead it simply executes tasks in the order that they are read from it's underlying stream. The `priority` function provides the ability to schedule a higher priority task ahead of lower priority tasks that were submitted earlier.
+The `priority` function is a simple priority scheduler for the <<executor>> function. The `executor` function doesn't directly have a concept of task prioritization; instead it simply executes tasks in the order that they are read from it's underlying stream. The `priority` function provides the ability to schedule a higher priority task ahead of lower priority tasks that were submitted earlier.
 
 The `priority` function wraps two <<stream-sources.adoc#topic,topics>> that are both emitting tuples that contain streaming expressions to execute. The first topic is considered the higher priority task queue.
 
@@ -1011,14 +1007,12 @@ Each time the `priority` function is called, it checks the higher priority task 
 
 The `priority` function will only emit a batch of tasks from one of the queues each time it is called. This ensures that no lower priority tasks are executed until the higher priority queue has no tasks to run.
 
-[[StreamingExpressions-Parameters.25]]
-=== Parameters
+=== priority Parameters
 
 * `topic expression`: (Mandatory) the high priority task queue
 * `topic expression`: (Mandatory) the lower priority task queue
 
-[[StreamingExpressions-Syntax.26]]
-=== Syntax
+=== priority Syntax
 
 [source,text]
 ----
@@ -1092,7 +1086,7 @@ The example about shows the rollup function wrapping the search function. Notice
 
 == scoreNodes
 
-See section in <<graph-traversal.adoc#GraphTraversal-UsingthescoreNodesFunctiontoMakeaRecommendation,graph traversal>>.
+See section in <<graph-traversal.adoc#using-the-scorenodes-function-to-make-a-recommendation,graph traversal>>.
 
 == select
 

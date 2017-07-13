@@ -20,8 +20,7 @@
 
 Fields are defined in the fields element of `schema.xml`. Once you have the field types set up, defining the fields themselves is simple.
 
-[[DefiningFields-Example]]
-== Example
+== Example Field Definition
 
 The following example defines a field named `price` with a type named `float` and a default value of `0.0`; the `indexed` and `stored` properties are explicitly set to `true`, while any other properties specified on the `float` field type are inherited.
 
@@ -30,7 +29,6 @@ The following example defines a field named `price` with a type named `float` an
 <field name="price" type="float" default="0.0" indexed="true" stored="true"/>
 ----
 
-[[DefiningFields-FieldProperties]]
 == Field Properties
 
 Field definitions can have the following properties:
@@ -44,7 +42,6 @@ The name of the `fieldType` for this field. This will be found in the `name` att
 `default`::
 A default value that will be added automatically to any document that does not have a value in this field when it is indexed. If this property is not specified, there is no default.
 
-[[DefiningFields-OptionalFieldTypeOverrideProperties]]
 == Optional Field Type Override Properties
 
 Fields can have many of the same properties as field types. Properties from the table below which are specified on an individual field will override any explicit value for that property specified on the the `fieldType` of the field, or any implicit default property value provided by the underlying `fieldType` implementation. The table below is reproduced from <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties,Field Type Definitions and Properties>>, which has more details:

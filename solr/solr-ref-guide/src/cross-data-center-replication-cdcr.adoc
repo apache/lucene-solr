@@ -140,8 +140,6 @@ The CDCR replication logic requires modification to the maintenance logic of the
 
 If the communication with one of the target data center is slow, the Updates Log on the source data center can grow to a substantial size. In such a scenario, it is necessary for the Updates Log to be able to efficiently find a given update operation given its identifier. Given that its identifier is an incremental number, it is possible to implement an efficient search strategy. Each transaction log file contains as part of its filename the version number of the first element. This is used to quickly traverse all the transaction log files and find the transaction log file containing one specific version number.
 
-
-[[CrossDataCenterReplication_CDCR_-Monitoring]]
 === Monitoring
 
 CDCR provides the following monitoring capabilities over the replication operations:
@@ -155,24 +153,19 @@ Information about the lifecycle and statistics will be provided on a per-shard b
 
 The CDC Replicator is a background thread that is responsible for replicating updates from a Source data center to one or more target data centers. It is responsible in providing monitoring information on a per-shard basis. As there can be a large number of collections and shards in a cluster, we will use a fixed-size pool of CDC Replicator threads that will be shared across shards.
 
-
-[[CrossDataCenterReplication_CDCR_-Limitations]]
-=== Limitations
+=== CDCR Limitations
 
 The current design of CDCR has some limitations. CDCR will continue to evolve over time and many of these limitations will be addressed. Among them are:
 
 * CDCR is unlikely to be satisfactory for bulk-load situations where the update rate is high, especially if the bandwidth between the Source and target clusters is restricted. In this scenario, the initial bulk load should be performed, the Source and target data centers synchronized and CDCR be utilized for incremental updates.
 * CDCR is currently only active-passive; data is pushed from the Source cluster to the target cluster. There is active work being done in this area in the 6x code line to remove this limitation.
 * CDCR works most robustly with the same number of shards in the Source and target collection. The shards in the two collections may have different numbers of replicas.
+* Running CDCR with the indexes on HDFS is not currently supported, see the https://issues.apache.org/jira/browse/SOLR-9861[Solr CDCR over HDFS] JIRA issue.
 
-
-[[CrossDataCenterReplication_CDCR_-Configuration]]
-== Configuration
+== CDCR Configuration
 
 The source and target configurations differ in the case of the data centers being in separate clusters. "Cluster" here means separate ZooKeeper ensembles controlling disjoint Solr instances. Whether these data centers are physically separated or not is immaterial for this discussion.
 
-
-[[CrossDataCenterReplication_CDCR_-SourceConfiguration]]
 === Source Configuration
 
 Here is a sample of a source configuration file, a section in `solrconfig.xml`. The presence of the <replica> section causes CDCR to use this cluster as the Source and should not be present in the target collections in the cluster-to-cluster case. Details about each setting are after the two examples:
@@ -211,8 +204,6 @@ Here is a sample of a source configuration file, a section in `solrconfig.xml`. 
 </updateHandler>
 ----
 
-
-[[CrossDataCenterReplication_CDCR_-TargetConfiguration]]
 === Target Configuration
 
 Here is a typical target configuration.
@@ -255,7 +246,6 @@ The configuration details, defaults and options are as follows:
 ==== The Replica Element
 
 CDCR can be configured to forward update requests to one or more replicas. A replica is defined with a “replica” list as follows:
-
 
 `zkHost`::
 The host address for ZooKeeper of the target SolrCloud. Usually this is a comma-separated list of addresses to each node in the target ZooKeeper ensemble. This parameter is required.
@@ -303,41 +293,27 @@ Monitor actions are performed at a core level, i.e., by using the following base
 
 Currently, none of the CDCR API calls have parameters.
 
-
 === API Entry Points (Control)
 
-* `<collection>/cdcr?action=STATUS`: <<CrossDataCenterReplication_CDCR_-STATUS,Returns the current state>> of CDCR.
-* `<collection>/cdcr?action=START`: <<CrossDataCenterReplication_CDCR_-START,Starts CDCR>> replication
-* `<collection>/cdcr?action=STOP`: <<CrossDataCenterReplication_CDCR_-STOP,Stops CDCR>> replication.
-* `<collection>/cdcr?action=ENABLEBUFFER`: <<CrossDataCenterReplication_CDCR_-ENABLEBUFFER,Enables the buffering>> of updates.
-* `<collection>/cdcr?action=DISABLEBUFFER`: <<CrossDataCenterReplication_CDCR_-DISABLEBUFFER,Disables the buffering>> of updates.
-
+* `<collection>/cdcr?action=STATUS`: <<CDCR STATUS,Returns the current state>> of CDCR.
+* `<collection>/cdcr?action=START`: <<CDCR START,Starts CDCR>> replication
+* `<collection>/cdcr?action=STOP`: <<CDCR STOP,Stops CDCR>> replication.
+* `<collection>/cdcr?action=ENABLEBUFFER`: <<ENABLEBUFFER,Enables the buffering>> of updates.
+* `<collection>/cdcr?action=DISABLEBUFFER`: <<DISABLEBUFFER,Disables the buffering>> of updates.
 
 === API Entry Points (Monitoring)
 
-* `core/cdcr?action=QUEUES`: <<CrossDataCenterReplication_CDCR_-QUEUES,Fetches statistics about the queue>> for each replica and about the update logs.
-* `core/cdcr?action=OPS`: <<CrossDataCenterReplication_CDCR_-OPS,Fetches statistics about the replication performance>> (operations per second) for each replica.
-* `core/cdcr?action=ERRORS`: <<CrossDataCenterReplication_CDCR_-ERRORS,Fetches statistics and other information about replication errors>> for each replica.
+* `core/cdcr?action=QUEUES`: <<QUEUES,Fetches statistics about the queue>> for each replica and about the update logs.
+* `core/cdcr?action=OPS`: <<OPS,Fetches statistics about the replication performance>> (operations per second) for each replica.
+* `core/cdcr?action=ERRORS`: <<ERRORS,Fetches statistics and other information about replication errors>> for each replica.
 
 === Control Commands
 
-[[CrossDataCenterReplication_CDCR_-STATUS]]
-==== STATUS
+==== CDCR STATUS
 
 `/collection/cdcr?action=STATUS`
 
-===== Input
-
-*Query Parameters:* There are no parameters to this command.
-
-===== Output
-
-*Output Content*
-
-The current state of the CDCR, which includes the state of the replication process and the state of the buffer.
-
-[[cdcr_examples]]
-===== Examples
+===== CDCR Status Example
 
 *Input*
 
@@ -362,22 +338,15 @@ The current state of the CDCR, which includes the state of the replication proce
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-ENABLEBUFFER]]
 ==== ENABLEBUFFER
 
 `/collection/cdcr?action=ENABLEBUFFER`
 
-===== Input
+===== Enable Buffer Response
 
-*Query Parameters:* There are no parameters to this command.
+The status of the process and an indication of whether the buffer is enabled.
 
-===== Output
-
-*Output Content*
-
-The status of the process and an indication of whether the buffer is enabled
-
-===== Examples
+===== Enable Buffer Example
 
 *Input*
 
@@ -402,20 +371,15 @@ The status of the process and an indication of whether the buffer is enabled
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-DISABLEBUFFER]]
 ==== DISABLEBUFFER
 
 `/collection/cdcr?action=DISABLEBUFFER`
 
-===== Input
+===== Disable Buffer Response
 
-*Query Parameters:* There are no parameters to this command
+The status of CDCR and an indication that the buffer is disabled.
 
-===== Output
-
-*Output Content:* The status of CDCR and an indication that the buffer is disabled.
-
-===== Examples
+===== Disable Buffer Example
 
 *Input*
 
@@ -440,20 +404,15 @@ http://host:8983/solr/<collection_name>/cdcr?action=DISABLEBUFFER
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-START]]
-==== START
+==== CDCR START
 
 `/collection/cdcr?action=START`
 
-===== Input
+===== CDCR Start Response
 
-*Query Parameters:* There are no parameters for this action
+Confirmation that CDCR is started and the status of buffering
 
-===== Output
-
-*Output Content:* Confirmation that CDCR is started and the status of buffering
-
-===== Examples
+===== CDCR Start Examples
 
 *Input*
 
@@ -478,20 +437,15 @@ http://host:8983/solr/<collection_name>/cdcr?action=START
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-STOP]]
-==== STOP
+==== CDCR STOP
 
 `/collection/cdcr?action=STOP`
 
-===== Input
+===== CDCR Stop Response
 
-*Query Parameters:* There are no parameters for this command.
+The status of CDCR, including the confirmation that CDCR is stopped.
 
-===== Output
-
-*Output Content:* The status of CDCR, including the confirmation that CDCR is stopped
-
-===== Examples
+===== CDCR Stop Examples
 
 *Input*
 
@@ -517,19 +471,13 @@ http://host:8983/solr/<collection_name>/cdcr?action=START
 ----
 
 
-[[CrossDataCenterReplication_CDCR_-Monitoringcommands]]
-=== Monitoring commands
+=== CDCR Monitoring Commands
 
-[[CrossDataCenterReplication_CDCR_-QUEUES]]
 ==== QUEUES
 
 `/core/cdcr?action=QUEUES`
 
-===== Input
-
-*Query Parameters:* There are no parameters for this command
-
-===== Output
+===== QUEUES Response
 
 *Output Content*
 
@@ -537,7 +485,7 @@ The output is composed of a list “queues” which contains a list of (ZooKeepe
 
 The “queues” object also contains information about the updates log, such as the size (in bytes) of the updates log on disk (“tlogTotalSize”), the number of transaction log files (“tlogTotalCount”) and the status of the updates log synchronizer (“updateLogSynchronizer”).
 
-===== Examples
+===== QUEUES Examples
 
 *Input*
 
@@ -569,20 +517,15 @@ The “queues” object also contains information about the updates log, such as
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-OPS]]
 ==== OPS
 
 `/core/cdcr?action=OPS`
 
-===== Input
+===== OPS Response
 
-*Query Parameters:* There are no parameters for this command.
+The output is composed of `operationsPerSecond` which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, the average number of processed operations per second since the start of the replication process is provided. The operations are further broken down into two groups: add and delete operations.
 
-===== Output
-
-*Output Content:* The output is composed of a list “operationsPerSecond” which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, the average number of processed operations per second since the start of the replication process is provided. The operations are further broken down into two groups: add and delete operations.
-
-===== Examples
+===== OPS Examples
 
 *Input*
 
@@ -612,20 +555,15 @@ The “queues” object also contains information about the updates log, such as
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-ERRORS]]
 ==== ERRORS
 
 `/core/cdcr?action=ERRORS`
 
-===== Input
+===== ERRORS Response
 
-*Query Parameters:* There are no parameters for this command.
+The output is composed of a list “errors” which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, information about errors encountered during the replication is provided, such as the number of consecutive errors encountered by the replicator thread, the number of bad requests or internal errors since the start of the replication process, and a list of the last errors encountered ordered by timestamp.
 
-===== Output
-
-*Output Content:* The output is composed of a list “errors” which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, information about errors encountered during the replication is provided, such as the number of consecutive errors encountered by the replicator thread, the number of bad requests or internal errors since the start of the replication process, and a list of the last errors encountered ordered by timestamp.
-
-===== Examples
+===== ERRORS Examples
 
 *Input*
 
@@ -728,7 +666,6 @@ http://host:port/solr/collection_name/cdcr?action=DISABLEBUFFER
 +
 * Renable indexing
 
-[[CrossDataCenterReplication_CDCR_-Monitoring.1]]
 == Monitoring
 
 .  Network and disk space monitoring are essential. Ensure that the system has plenty of available storage to queue up changes if there is a disconnect between the Source and Target. A network outage between the two data centers can cause your disk usage to grow.
@@ -763,8 +700,3 @@ curl http://<Source>/solr/cloud1/update -H 'Content-type:application/json' -d '[
 #check the Target
 curl "http://<Target>:8983/solr/<collection_name>/select?q=SKU:ABC&wt=json&indent=true"
 ----
-
-[[CrossDataCenterReplication_CDCR_-Limitations.1]]
-== Limitations
-
-* Running CDCR with the indexes on HDFS is not currently supported, see: https://issues.apache.org/jira/browse/SOLR-9861[Solr CDCR over HDFS].

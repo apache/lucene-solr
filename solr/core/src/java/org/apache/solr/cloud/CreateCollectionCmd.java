@@ -294,6 +294,15 @@ public class CreateCollectionCmd implements Cmd {
           ocmh.forwardToAutoScaling(AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_DSL);
         }
         log.debug("Finished create command on all shards for collection: {}", collectionName);
+
+        // Emit a warning about production use of data driven functionality
+        boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
+            message.getStr(COLL_CONF).equals(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
+        if (defaultConfigSetUsed) {
+          results.add("warning", "Using _default configset. Data driven schema functionality"
+              + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"
+              + " curl http://{host:port}/solr/" + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
+        }
       }
     } catch (SolrException ex) {
       throw ex;

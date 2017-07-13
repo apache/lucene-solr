@@ -28,7 +28,6 @@ When using the blob store, note that the API does not delete or overwrite a prev
 
 The blob store API is implemented as a requestHandler. A special collection named ".system" is used to store the blobs. This collection can be created in advance, but if it does not exist it will be created automatically.
 
-[[BlobStoreAPI-Aboutthe.systemCollection]]
 == About the .system Collection
 
 Before uploading blobs to the blob store, a special collection must be created and it must be named `.system`. Solr will automatically create this collection if it does not already exist, but you can also create it manually if you choose.
@@ -46,7 +45,6 @@ curl http://localhost:8983/solr/admin/collections?action=CREATE&name=.system&rep
 
 IMPORTANT: The `bin/solr` script cannot be used to create the `.system` collection.
 
-[[BlobStoreAPI-UploadFilestoBlobStore]]
 == Upload Files to Blob Store
 
 After the `.system` collection has been created, files can be uploaded to the blob store with a request similar to the following:
@@ -132,7 +130,6 @@ For the latest version of a blob, the \{version} can be omitted,
 curl http://localhost:8983/solr/.system/blob/{blobname}?wt=filestream > {outputfilename}
 ----
 
-[[BlobStoreAPI-UseaBlobinaHandlerorComponent]]
 == Use a Blob in a Handler or Component
 
 To use the blob as the class for a request handler or search component, you create a request handler in `solrconfig.xml` as usual. You will need to define the following parameters:

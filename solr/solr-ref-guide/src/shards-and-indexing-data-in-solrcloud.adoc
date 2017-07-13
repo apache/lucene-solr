@@ -36,10 +36,9 @@ If a leader goes down, one of the other replicas is automatically elected as the
 
 When a document is sent to a Solr node for indexing, the system first determines which Shard that document belongs to, and then which node is currently hosting the leader for that shard. The document is then forwarded to the current leader for indexing, and the leader forwards the update to all of the other replicas.
 
-[[ShardsandIndexingDatainSolrCloud-DocumentRouting]]
 == Document Routing
 
-Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collections-api.adoc#CollectionsAPI-create,creating your collection>>.
+Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collections-api.adoc#create,creating your collection>>.
 
 If you use the (default) "```compositeId```" router, you can send documents with a prefix in the document ID which will be used to calculate the hash Solr uses to determine the shard a document is sent to for indexing. The prefix can be anything you'd like it to be (it doesn't have to be the shard name, for example), but it must be consistent so Solr behaves consistently. For example, if you wanted to co-locate documents for a customer, you could use the customer name or ID as the prefix. If your customer is "IBM", for example, with a document with the ID "12345", you would insert the prefix into the document id field: "IBM!12345". The exclamation mark ('!') is critical here, as it distinguishes the prefix used to determine which shard to direct the document to.
 
@@ -55,16 +54,14 @@ If you do not want to influence how documents are stored, you don't need to spec
 
 If you created the collection and defined the "implicit" router at the time of creation, you can additionally define a `router.field` parameter to use a field from each document to identify a shard where the document belongs. If the field specified is missing in the document, however, the document will be rejected. You could also use the `\_route_` parameter to name a specific shard.
 
-[[ShardsandIndexingDatainSolrCloud-ShardSplitting]]
 == Shard Splitting
 
 When you create a collection in SolrCloud, you decide on the initial number shards to be used. But it can be difficult to know in advance the number of shards that you need, particularly when organizational requirements can change at a moment's notice, and the cost of finding out later that you chose wrong can be high, involving creating new cores and re-indexing all of your data.
 
 The ability to split shards is in the Collections API. It currently allows splitting a shard into two pieces. The existing shard is left as-is, so the split action effectively makes two copies of the data as new shards. You can delete the old shard at a later time when you're ready.
 
-More details on how to use shard splitting is in the section on the Collection API's <<collections-api.adoc#CollectionsAPI-splitshard,SPLITSHARD command>>.
+More details on how to use shard splitting is in the section on the Collection API's <<collections-api.adoc#splitshard,SPLITSHARD command>>.
 
-[[ShardsandIndexingDatainSolrCloud-IgnoringCommitsfromClientApplicationsinSolrCloud]]
 == Ignoring Commits from Client Applications in SolrCloud
 
 In most cases, when running in SolrCloud mode, indexing client applications should not send explicit commit requests. Rather, you should configure auto commits with `openSearcher=false` and auto soft-commits to make recent updates visible in search requests. This ensures that auto commits occur on a regular schedule in the cluster.

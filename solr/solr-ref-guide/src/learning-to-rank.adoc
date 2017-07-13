@@ -22,21 +22,17 @@ With the *Learning To Rank* (or *LTR* for short) contrib module you can configur
 
 The module also supports feature extraction inside Solr. The only thing you need to do outside Solr is train your own ranking model.
 
-[[LearningToRank-Concepts]]
-== Concepts
+== Learning to Rank Concepts
 
-[[LearningToRank-Re-Ranking]]
 === Re-Ranking
 
-Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, complex query. This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>> page.
+Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, more complex query. This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>> page.
 
-[[LearningToRank-LearningToRank]]
-=== Learning To Rank
+=== Learning To Rank Models
 
 In information retrieval systems, https://en.wikipedia.org/wiki/Learning_to_rank[Learning to Rank] is used to re-rank the top N retrieved documents using trained machine learning models. The hope is that such sophisticated models can make more nuanced ranking decisions than standard ranking functions like https://en.wikipedia.org/wiki/Tf%E2%80%93idf[TF-IDF] or https://en.wikipedia.org/wiki/Okapi_BM25[BM25].
 
-[[LearningToRank-Model]]
-==== Model
+==== Ranking Model
 
 A ranking model computes the scores used to rerank documents. Irrespective of any particular algorithm or implementation, a ranking model's computation can use three types of inputs:
 
@@ -44,27 +40,23 @@ A ranking model computes the scores used to rerank documents. Irrespective of an
 * features that represent the document being scored
 * features that represent the query for which the document is being scored
 
-[[LearningToRank-Feature]]
 ==== Feature
 
 A feature is a value, a number, that represents some quantity or quality of the document being scored or of the query for which documents are being scored. For example documents often have a 'recency' quality and 'number of past purchases' might be a quantity that is passed to Solr as part of the search query.
 
-[[LearningToRank-Normalizer]]
 ==== Normalizer
 
 Some ranking models expect features on a particular scale. A normalizer can be used to translate arbitrary feature values into normalized values e.g. on a 0..1 or 0..100 scale.
 
-[[LearningToRank-Training]]
-=== Training
+=== Training Models
 
-[[LearningToRank-Featureengineering]]
-==== Feature engineering
+==== Feature Engineering
 
 The LTR contrib module includes several feature classes as well as support for custom features. Each feature class's javadocs contain an example to illustrate use of that class. The process of https://en.wikipedia.org/wiki/Feature_engineering[feature engineering] itself is then entirely up to your domain expertise and creativity.
 
 [cols=",,,",options="header",]
 |===
-|Feature |Class |Example parameters |<<LearningToRank-ExternalFeatureInformation,External Feature Information>>
+|Feature |Class |Example parameters |<<External Feature Information>>
 |field length |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
 |field value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
 |original score |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
@@ -84,12 +76,10 @@ The LTR contrib module includes several feature classes as well as support for c
 |(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
 |===
 
-[[LearningToRank-Featureextraction]]
 ==== Feature Extraction
 
 The ltr contrib module includes a <<transforming-result-documents.adoc#transforming-result-documents,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
 
-[[LearningToRank-Featureselectionandmodeltraining]]
 ==== Feature Selection and Model Training
 
 Feature selection and model training take place offline and outside Solr. The ltr contrib module supports two generalized forms of models as well as custom models. Each model class's javadocs contain an example to illustrate configuration of that class. In the form of JSON files your trained model or models (e.g. different models for different customer geographies) can then be directly uploaded into Solr using provided REST APIs.
@@ -102,8 +92,7 @@ Feature selection and model training take place offline and outside Solr. The lt
 |(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
-[[LearningToRank-QuickStartExample]]
-== Quick Start Example
+== Quick Start with LTR
 
 The `"techproducts"` example included with Solr is pre-configured with the plugins required for learning-to-rank, but they are disabled by default.
 
@@ -114,7 +103,6 @@ To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property
 bin/solr start -e techproducts -Dsolr.ltr.enabled=true
 ----
 
-[[LearningToRank-Uploadingfeatures]]
 === Uploading Features
 
 To upload features in a `/path/myFeatures.json` file, please run:
@@ -154,7 +142,6 @@ To view the features you just uploaded please open the following URL in a browse
 ]
 ----
 
-[[LearningToRank-Extractingfeatures]]
 === Extracting Features
 
 To extract features as part of a query, add `[features]` to the `fl` parameter, for example:
@@ -184,7 +171,6 @@ The output XML will include feature values as a comma-separated list, resembling
   }}
 ----
 
-[[LearningToRank-Uploadingamodel]]
 === Uploading a Model
 
 To upload the model in a `/path/myModel.json` file, please run:
@@ -219,7 +205,6 @@ To view the model you just uploaded please open the following URL in a browser:
 }
 ----
 
-[[LearningToRank-Runningarerankquery]]
 === Running a Rerank Query
 
 To rerank the results of a query, add the `rq` parameter to your search, for example:
@@ -258,12 +243,10 @@ The output XML will include feature values as a comma-separated list, resembling
   }}
 ----
 
-[[LearningToRank-ExternalFeatureInformation]]
 === External Feature Information
 
 The {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
 
-[[LearningToRank-Uploadingfeatures.1]]
 ==== Uploading Features
 
 To upload features in a `/path/myEfiFeatures.json` file, please run:
@@ -308,9 +291,8 @@ To view the features you just uploaded please open the following URL in a browse
 ]
 ----
 
-As an aside, you may have noticed that the `myEfiFeatures.json` example uses `"store":"myEfiFeatureStore"` attributes: read more about feature `store` in the <<Lifecycle>> section of this page.
+As an aside, you may have noticed that the `myEfiFeatures.json` example uses `"store":"myEfiFeatureStore"` attributes: read more about feature `store` in the <<LTR Lifecycle>> section of this page.
 
-[[LearningToRank-Extractingfeatures.1]]
 ==== Extracting Features
 
 To extract `myEfiFeatureStore` features as part of a query, add `efi.*` parameters to the `[features]` part of the `fl` parameter, for example:
@@ -321,7 +303,6 @@ http://localhost:8983/solr/techproducts/query?q=test&fl=id,cat,manu,score,[featu
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&fl=id,cat,manu,score,[features store=myEfiFeatureStore efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=0 efi.answer=13]
 
-[[LearningToRank-Uploadingamodel.1]]
 ==== Uploading a Model
 
 To upload the model in a `/path/myEfiModel.json` file, please run:
@@ -359,7 +340,6 @@ To view the model you just uploaded please open the following URL in a browser:
 }
 ----
 
-[[LearningToRank-Runningarerankquery.1]]
 ==== Running a Rerank Query
 
 To obtain the feature values computed during reranking, add `[features]` to the `fl` parameter and `efi.*` parameters to the `rq` parameter, for example:
@@ -368,39 +348,34 @@ To obtain the feature values computed during reranking, add `[features]` to the 
 http://localhost:8983/solr/techproducts/query?q=test&rq=\{!ltr model=myEfiModel efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=1}&fl=id,cat,manu,score,[features]] link:[]
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq=\{!ltr model=myEfiModel efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=0 efi.answer=13}&fl=id,cat,manu,score,[features]]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myEfiModel efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=0 efi.answer=13}&fl=id,cat,manu,score,[features]
 
 Notice the absence of `efi.*` parameters in the `[features]` part of the `fl` parameter.
 
-[[LearningToRank-Extractingfeatureswhilstreranking]]
 ==== Extracting Features While Reranking
 
 To extract features for `myEfiFeatureStore` features while still reranking with `myModel`:
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq=\{!ltr model=myModel}&fl=id,cat,manu,score,[features store=myEfiFeatureStore efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=1]] link:[]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel}&fl=id,cat,manu,score,[features store=myEfiFeatureStore efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=1]
 
-Notice the absence of `efi.*` parameters in the `rq` parameter (because `myModel` does not use `efi` feature) and the presence of `efi.*` parameters in the `[features]` part of the `fl` parameter (because `myEfiFeatureStore` contains `efi` features).
+Notice the absence of `efi.\*` parameters in the `rq` parameter (because `myModel` does not use `efi` feature) and the presence of `efi.*` parameters in the `[features]` part of the `fl` parameter (because `myEfiFeatureStore` contains `efi` features).
 
-Read more about model evolution in the <<Lifecycle>> section of this page.
+Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
-[[LearningToRank-Trainingexample]]
 === Training Example
 
 Example training data and a demo 'train and upload model' script can be found in the `solr/contrib/ltr/example` folder in the https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git[Apache lucene-solr git repository] which is mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/6.4.0/solr/contrib/ltr/example[github.com] (the `solr/contrib/ltr/example` folder is not shipped in the solr binary release).
 
-[[LearningToRank-Installation]]
-== Installation
+== Installation of LTR
 
 The ltr contrib module requires the `dist/solr-ltr-*.jar` JARs.
 
-[[LearningToRank-Configuration]]
-== Configuration
+== LTR Configuration
 
 Learning-To-Rank is a contrib module and therefore its plugins must be configured in `solrconfig.xml`.
 
-[[LearningToRank-Minimumrequirements]]
-=== Minimum requirements
+=== Minimum Requirements
 
 * Include the required contrib JARs. Note that by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
 +
@@ -437,15 +412,12 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 </transformer>
 ----
 
-[[LearningToRank-Advancedoptions]]
 === Advanced Options
 
-[[LearningToRank-LTRThreadModule]]
 ==== LTRThreadModule
 
 A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights. For details, please refer to the {solr-javadocs}/solr-ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
 
-[[LearningToRank-Featurevectorcustomization]]
 ==== Feature Vector Customization
 
 The features transformer returns dense CSV values such as `featureA=0.1,featureB=0.2,featureC=0.3,featureD=0.0`.
@@ -462,7 +434,6 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 </transformer>
 ----
 
-[[LearningToRank-Implementationandcontributions]]
 ==== Implementation and Contributions
 
 .How does Solr Learning-To-Rank work under the hood?
@@ -481,10 +452,8 @@ Contributions for further models, features and normalizers are welcome. Related 
 * http://wiki.apache.org/lucene-java/HowToContribute
 ====
 
-[[LearningToRank-Lifecycle]]
-== Lifecycle
+== LTR Lifecycle
 
-[[LearningToRank-Featurestores]]
 === Feature Stores
 
 It is recommended that you organise all your features into stores which are akin to namespaces:
@@ -501,7 +470,6 @@ To inspect the content of the `commonFeatureStore` feature store:
 
 `\http://localhost:8983/solr/techproducts/schema/feature-store/commonFeatureStore`
 
-[[LearningToRank-Models]]
 === Models
 
 * A model uses features from exactly one feature store.
@@ -537,13 +505,11 @@ To delete the `currentFeatureStore` feature store:
 curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/feature-store/currentFeatureStore'
 ----
 
-[[LearningToRank-Applyingchanges]]
 === Applying Changes
 
 The feature store and the model store are both <<managed-resources.adoc#managed-resources,Managed Resources>>. Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
-[[LearningToRank-Examples]]
-=== Examples
+=== LTR Examples
 
 ==== One Feature Store, Multiple Ranking Models
 
@@ -628,7 +594,6 @@ The feature store and the model store are both <<managed-resources.adoc#managed-
 }
 ----
 
-[[LearningToRank-Modelevolution]]
 ==== Model Evolution
 
 * `linearModel201701` uses features from `featureStore201701`
@@ -752,8 +717,7 @@ The feature store and the model store are both <<managed-resources.adoc#managed-
 }
 ----
 
-[[LearningToRank-AdditionalResources]]
-== Additional Resources
+== Additional LTR Resources
 
 * "Learning to Rank in Solr" presentation at Lucene/Solr Revolution 2015 in Austin:
 ** Slides: http://www.slideshare.net/lucidworks/learning-to-rank-in-solr-presented-by-michael-nilsson-diego-ceccarelli-bloomberg-lp

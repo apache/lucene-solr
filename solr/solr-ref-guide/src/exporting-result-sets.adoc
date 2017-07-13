@@ -25,19 +25,16 @@ This feature uses a stream sorting technique that begins to send records within 
 
 The cases where this functionality may be useful include: session analysis, distributed merge joins, time series roll-ups, aggregations on high cardinality fields, fully distributed field collapsing, and sort based stats.
 
-[[ExportingResultSets-FieldRequirements]]
 == Field Requirements
 
 All the fields being sorted and exported must have docValues set to true. For more information, see the section on <<docvalues.adoc#docvalues,DocValues>>.
 
-[[ExportingResultSets-The_exportRequestHandler]]
 == The /export RequestHandler
 
 The `/export` request handler with the appropriate configuration is one of Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> for more information.
 
 Note that this request handler's properties are defined as "invariants", which means they cannot be overridden by other properties passed at another time (such as at query time).
 
-[[ExportingResultSets-RequestingResultsExport]]
 == Requesting Results Export
 
 You can use `/export` to make requests to export the result set of a query.
@@ -53,19 +50,16 @@ Here is an example of an export request of some indexed log data:
 http://localhost:8983/solr/core_name/export?q=my-query&sort=severity+desc,timestamp+desc&fl=severity,timestamp,msg
 ----
 
-[[ExportingResultSets-SpecifyingtheSortCriteria]]
 === Specifying the Sort Criteria
 
 The `sort` property defines how documents will be sorted in the exported result set. Results can be sorted by any field that has a field type of int,long, float, double, string. The sort fields must be single valued fields.
 
 Up to four sort fields can be specified per request, with the 'asc' or 'desc' properties.
 
-[[ExportingResultSets-SpecifyingtheFieldList]]
 === Specifying the Field List
 
 The `fl` property defines the fields that will be exported with the result set. Any of the field types that can be sorted (i.e., int, long, float, double, string, date, boolean) can be used in the field list. The fields can be single or multi-valued. However, returning scores and wildcards are not supported at this time.
 
-[[ExportingResultSets-DistributedSupport]]
 == Distributed Support
 
 See the section <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>> for distributed support.

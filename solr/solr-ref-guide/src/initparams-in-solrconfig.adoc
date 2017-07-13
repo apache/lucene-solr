@@ -55,8 +55,7 @@ For example, if an `<initParams>` section has the name "myParams", you can call 
 [source,xml]
 <requestHandler name="/dump1" class="DumpRequestHandler" initParams="myParams"/>
 
-[[InitParamsinSolrConfig-Wildcards]]
-== Wildcards
+== Wildcards in initParams
 
 An `<initParams>` section can support wildcards to define nested paths that should use the parameters defined. A single asterisk (\*) denotes that a nested path one level deeper should use the parameters. Double asterisks (**) denote all nested paths no matter how deep should use the parameters.
 

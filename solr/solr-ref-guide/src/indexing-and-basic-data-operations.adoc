@@ -43,7 +43,6 @@ This section describes how Solr adds data to its index. It covers the following 
 
 * *<<uima-integration.adoc#uima-integration,UIMA Integration>>*: Information about integrating Solr with Apache's Unstructured Information Management Architecture (UIMA). UIMA lets you define custom pipelines of Analysis Engines that incrementally add metadata to your documents as annotations.
 
-[[IndexingandBasicDataOperations-IndexingUsingClientAPIs]]
 == Indexing Using Client APIs
 
 Using client APIs, such as <<using-solrj.adoc#using-solrj,SolrJ>>, from your applications is an important option for updating Solr indexes. See the <<client-apis.adoc#client-apis,Client APIs>> section for more information.

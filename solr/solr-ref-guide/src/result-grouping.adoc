@@ -54,8 +54,7 @@ Object 3
 
 If you ask Solr to group these documents by "product_range", then the total amount of groups is 2, but the facets for ppm are 2 for 62 and 1 for 65.
 
-[[ResultGrouping-RequestParameters]]
-== Request Parameters
+== Grouping Parameters
 
 Result Grouping takes the following request parameters. Any number of these request parameters can be included in a single request:
 
@@ -68,7 +67,7 @@ The name of the field by which to group results. The field must be single-valued
 `group.func`::
 Group based on the unique values of a function query.
 +
-NOTE: This option does not work with <<ResultGrouping-DistributedResultGroupingCaveats,distributed searches>>.
+NOTE: This option does not work with <<Distributed Result Grouping Caveats,distributed searches>>.
 
 `group.query`::
 Return a single group of documents that match the given query.
@@ -100,7 +99,7 @@ If `true`, the result of the first field grouping command is used as the main re
 `group.ngroups`::
 If `true`, Solr includes the number of groups that have matched the query in the results. The default value is false.
 +
-See below for <<ResultGrouping-DistributedResultGroupingCaveats,Distributed Result Grouping Caveats>> when using sharded indexes
+See below for <<Distributed Result Grouping Caveats>> when using sharded indexes.
 
 `group.truncate`::
 If `true`, facet counts are based on the most relevant document of each group matching the query. The default value is `false`.
@@ -110,7 +109,7 @@ Determines whether to compute grouped facets for the field facets specified in f
 +
 WARNING: There can be a heavy performance cost to this option.
 +
-See below for <<ResultGrouping-DistributedResultGroupingCaveats,Distributed Result Grouping Caveats>> when using sharded indexes.
+See below for <<Distributed Result Grouping Caveats>> when using sharded indexes.
 
 `group.cache.percent`::
 Setting this parameter to a number greater than 0 enables caching for result grouping. Result Grouping executes two searches; this option caches the second search. The default value is `0`. The maximum value is `100`.
@@ -119,12 +118,10 @@ Testing has shown that group caching only improves search time with Boolean, wil
 
 Any number of group commands (e.g., `group.field`, `group.func`, `group.query`, etc.) may be specified in a single request.
 
-[[ResultGrouping-Examples]]
-== Examples
+== Grouping Examples
 
 All of the following sample queries work with Solr's "`bin/solr -e techproducts`" example.
 
-[[ResultGrouping-GroupingResultsbyField]]
 === Grouping Results by Field
 
 In this example, we will group results based on the `manu_exact` field, which specifies the manufacturer of the items in the sample dataset.
@@ -217,7 +214,6 @@ We can run the same query with the request parameter `group.main=true`. This wil
 }
 ----
 
-[[ResultGrouping-GroupingbyQuery]]
 === Grouping by Query
 
 In this example, we will use the `group.query` parameter to find the top three results for "memory" in two different price ranges: 0.00 to 99.99, and over 100.
@@ -267,7 +263,6 @@ In this example, we will use the `group.query` parameter to find the top three r
 
 In this case, Solr found five matches for "memory," but only returns four results grouped by price. This is because one result for "memory" did not have a price assigned to it.
 
-[[ResultGrouping-DistributedResultGroupingCaveats]]
 == Distributed Result Grouping Caveats
 
 Grouping is supported for <<solrcloud.adoc#solrcloud,distributed searches>>, with some caveats:

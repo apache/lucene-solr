@@ -18,9 +18,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes an output format specifically for <<response-writers.adoc#ResponseWriters-PythonResponseWriter,Python>>, but <<response-writers.adoc#ResponseWriters-JSONResponseWriter,JSON output>> is a little more robust.
+Solr includes an output format specifically for <<response-writers.adoc#python-response-writer,Python>>, but <<response-writers.adoc#json-response-writer,JSON output>> is a little more robust.
 
-[[UsingPython-SimplePython]]
 == Simple Python
 
 Making a query is a simple matter. First, tell Python you will need to make HTTP connections.
@@ -50,7 +49,6 @@ for document in response['response']['docs']:
   print "  Name =", document['name']
 ----
 
-[[UsingPython-PythonwithJSON]]
 == Python with JSON
 
 JSON is a more robust response format, but you will need to add a Python package in order to use it. At a command line, install the simplejson package like this:

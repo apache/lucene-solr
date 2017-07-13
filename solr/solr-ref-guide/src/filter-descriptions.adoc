@@ -50,7 +50,6 @@ The following sections describe the filter factories that are included in this r
 
 For user tips about Solr's filters, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
 
-[[FilterDescriptions-ASCIIFoldingFilter]]
 == ASCII Folding Filter
 
 This filter converts alphabetic, numeric, and symbolic Unicode characters which are not in the Basic Latin Unicode block (the first 127 ASCII characters) to their ASCII equivalents, if one exists. This filter converts characters from the following Unicode blocks:
@@ -92,10 +91,9 @@ This filter converts alphabetic, numeric, and symbolic Unicode characters which 
 
 *Out:* "a" (ASCII character 97)
 
-[[FilterDescriptions-Beider-MorseFilter]]
 == Beider-Morse Filter
 
-Implements the Beider-Morse Phonetic Matching (BMPM) algorithm, which allows identification of similar names, even if they are spelled differently or in different languages. More information about how this works is available in the section on <<phonetic-matching.adoc#PhoneticMatching-Beider-MorsePhoneticMatching_BMPM_,Phonetic Matching>>.
+Implements the Beider-Morse Phonetic Matching (BMPM) algorithm, which allows identification of similar names, even if they are spelled differently or in different languages. More information about how this works is available in the section on <<phonetic-matching.adoc#beider-morse-phonetic-matching-bmpm,Phonetic Matching>>.
 
 [IMPORTANT]
 ====
@@ -125,10 +123,9 @@ BeiderMorseFilter changed its behavior in Solr 5.0 due to an update to version 3
 </analyzer>
 ----
 
-[[FilterDescriptions-ClassicFilter]]
 == Classic Filter
 
-This filter takes the output of the <<tokenizers.adoc#Tokenizers-ClassicTokenizer,Classic Tokenizer>> and strips periods from acronyms and "'s" from possessives.
+This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic Tokenizer>> and strips periods from acronyms and "'s" from possessives.
 
 *Factory class:* `solr.ClassicFilterFactory`
 
@@ -150,7 +147,6 @@ This filter takes the output of the <<tokenizers.adoc#Tokenizers-ClassicTokenize
 
 *Out:* "IBM", "cat", "can't"
 
-[[FilterDescriptions-CommonGramsFilter]]
 == Common Grams Filter
 
 This filter creates word shingles by combining common tokens such as stop words with regular tokens. This is useful for creating phrase queries containing common words, such as "the cat." Solr normally ignores stop words in queried phrases, so searching for "the cat" would return all matches for the word "cat."
@@ -181,12 +177,10 @@ This filter creates word shingles by combining common tokens such as stop words 
 
 *Out:* "the_cat"
 
-[[FilterDescriptions-CollationKeyFilter]]
 == Collation Key Filter
 
-Collation allows sorting of text in a language-sensitive way. It is usually used for sorting, but can also be used with advanced searches. We've covered this in much more detail in the section on <<language-analysis.adoc#LanguageAnalysis-UnicodeCollation,Unicode Collation>>.
+Collation allows sorting of text in a language-sensitive way. It is usually used for sorting, but can also be used with advanced searches. We've covered this in much more detail in the section on <<language-analysis.adoc#unicode-collation,Unicode Collation>>.
 
-[[FilterDescriptions-Daitch-MokotoffSoundexFilter]]
 == Daitch-Mokotoff Soundex Filter
 
 Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of similar names, even if they are spelled differently. More information about how this works is available in the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
@@ -207,7 +201,6 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 </analyzer>
 ----
 
-[[FilterDescriptions-DoubleMetaphoneFilter]]
 == Double Metaphone Filter
 
 This filter creates tokens using the http://commons.apache.org/codec/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec. For more information, see the <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>> section.
@@ -260,7 +253,6 @@ Discard original token (`inject="false"`).
 
 Note that "Kuczewski" has two encodings, which are added at the same position.
 
-[[FilterDescriptions-EdgeN-GramFilter]]
 == Edge N-Gram Filter
 
 This filter generates edge n-gram tokens of sizes within the given range.
@@ -327,7 +319,6 @@ A range of 4 to 6.
 
 *Out:* "four", "scor", "score", "twen", "twent", "twenty"
 
-[[FilterDescriptions-EnglishMinimalStemFilter]]
 == English Minimal Stem Filter
 
 This filter stems plural English words to their singular form.
@@ -352,7 +343,6 @@ This filter stems plural English words to their singular form.
 
 *Out:* "dog", "cat"
 
-[[FilterDescriptions-EnglishPossessiveFilter]]
 == English Possessive Filter
 
 This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g. the *s'* in "divers' snorkels", are not removed by this filter.
@@ -377,7 +367,6 @@ This filter removes singular possessives (trailing *'s*) from words. Note that p
 
 *Out:* "Man", "dog", "bites", "dogs'", "man"
 
-[[FilterDescriptions-FingerprintFilter]]
 == Fingerprint Filter
 
 This filter outputs a single token which is a concatenation of the sorted and de-duplicated set of input tokens. This can be useful for clustering/linking use cases.
@@ -406,7 +395,6 @@ This filter outputs a single token which is a concatenation of the sorted and de
 
 *Out:* "brown_dog_fox_jumped_lazy_over_quick_the"
 
-[[FilterDescriptions-FlattenGraphFilter]]
 == Flatten Graph Filter
 
 This filter must be included on index-time analyzer specifications that include at least one graph-aware filter, including Synonym Graph Filter and Word Delimiter Graph Filter.
@@ -417,7 +405,6 @@ This filter must be included on index-time analyzer specifications that include 
 
 See the examples below for <<Synonym Graph Filter>> and <<Word Delimiter Graph Filter>>.
 
-[[FilterDescriptions-HunspellStemFilter]]
 == Hunspell Stem Filter
 
 The `Hunspell Stem Filter` provides support for several languages. You must provide the dictionary (`.dic`) and rules (`.aff`) files for each language you wish to use with the Hunspell Stem Filter. You can download those language files http://wiki.services.openoffice.org/wiki/Dictionaries[here].
@@ -456,7 +443,6 @@ Be aware that your results will vary widely based on the quality of the provided
 
 *Out:* "jump", "jump", "jump"
 
-[[FilterDescriptions-HyphenatedWordsFilter]]
 == Hyphenated Words Filter
 
 This filter reconstructs hyphenated words that have been tokenized as two tokens because of a line break or other intervening whitespace in the field test. If a token ends with a hyphen, it is joined with the following token and the hyphen is discarded.
@@ -483,10 +469,9 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 *Out:* "A", "hyphenated", "word"
 
-[[FilterDescriptions-ICUFoldingFilter]]
 == ICU Folding Filter
 
-This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode Technical Report 30] in addition to the `NFKC_Casefold` normalization form as described in <<FilterDescriptions-ICUNormalizer2Filter,ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<FilterDescriptions-ASCIIFoldingFilter,ASCII Folding Filter>>, <<FilterDescriptions-LowerCaseFilter,Lower Case Filter>>, and <<FilterDescriptions-ICUNormalizer2Filter,ICU Normalizer 2 Filter>>.
+This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode Technical Report 30] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
 To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`. For more information about adding jars, see the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in Solrconfig>>.
 
@@ -506,7 +491,6 @@ To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructio
 
 For detailed information on this normalization form, see http://www.unicode.org/reports/tr30/tr30-4.html.
 
-[[FilterDescriptions-ICUNormalizer2Filter]]
 == ICU Normalizer 2 Filter
 
 This filter factory normalizes text according to one of five Unicode Normalization Forms as described in http://unicode.org/reports/tr15/[Unicode Standard Annex #15]:
@@ -539,7 +523,6 @@ For detailed information about these Unicode Normalization Forms, see http://uni
 
 To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
 
-[[FilterDescriptions-ICUTransformFilter]]
 == ICU Transform Filter
 
 This filter applies http://userguide.icu-project.org/transforms/general[ICU Tranforms] to text. This filter supports only ICU System Transforms. Custom rule sets are not supported.
@@ -564,7 +547,6 @@ For detailed information about ICU Transforms, see http://userguide.icu-project.
 
 To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
 
-[[FilterDescriptions-KeepWordFilter]]
 == Keep Word Filter
 
 This filter discards all tokens except those that are listed in the given word list. This is the inverse of the Stop Words Filter. This filter can be useful for building specialized indices for a constrained set of terms.
@@ -638,7 +620,6 @@ Using LowerCaseFilterFactory before filtering for keep words, no `ignoreCase` fl
 
 *Out:* "happy", "funny"
 
-[[FilterDescriptions-KStemFilter]]
 == KStem Filter
 
 KStem is an alternative to the Porter Stem Filter for developers looking for a less aggressive stemmer. KStem was written by Bob Krovetz, ported to Lucene by Sergio Guzman-Lara (UMASS Amherst). This stemmer is only appropriate for English language text.
@@ -663,7 +644,6 @@ KStem is an alternative to the Porter Stem Filter for developers looking for a l
 
 *Out:* "jump", "jump", "jump"
 
-[[FilterDescriptions-LengthFilter]]
 == Length Filter
 
 This filter passes tokens whose length falls within the min/max limit specified. All other tokens are discarded.
@@ -694,7 +674,6 @@ This filter passes tokens whose length falls within the min/max limit specified.
 
 *Out:* "turn", "right"
 
-[[FilterDescriptions-LimitTokenCountFilter]]
 == Limit Token Count Filter
 
 This filter limits the number of accepted tokens, typically useful for index analysis.
@@ -726,7 +705,6 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 *Out:* "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
 
-[[FilterDescriptions-LimitTokenOffsetFilter]]
 == Limit Token Offset Filter
 
 This filter limits tokens to those before a configured maximum start character offset. This can be useful to limit highlighting, for example.
@@ -758,7 +736,6 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 *Out:* "0", "2", "4", "6", "8", "A"
 
-[[FilterDescriptions-LimitTokenPositionFilter]]
 == Limit Token Position Filter
 
 This filter limits tokens to those before a configured maximum token position.
@@ -790,7 +767,6 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 *Out:* "1", "2", "3"
 
-[[FilterDescriptions-LowerCaseFilter]]
 == Lower Case Filter
 
 Converts any uppercase letters in a token to the equivalent lowercase token. All other characters are left unchanged.
@@ -815,10 +791,9 @@ Converts any uppercase letters in a token to the equivalent lowercase token. All
 
 *Out:* "down", "with", "camelcase"
 
-[[FilterDescriptions-ManagedStopFilter]]
 == Managed Stop Filter
 
-This is specialized version of the <<FilterDescriptions-StopFilter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> that uses a set of stop words that are <<managed-resources.adoc#managed-resources,managed from a REST API.>>
 
 *Arguments:*
 
@@ -836,12 +811,11 @@ With this configuration the set of words is named "english" and can be managed v
 </analyzer>
 ----
 
-See <<FilterDescriptions-StopFilter,Stop Filter>> for example input/output.
+See <<Stop Filter>> for example input/output.
 
-[[FilterDescriptions-ManagedSynonymFilter]]
 == Managed Synonym Filter
 
-This is specialized version of the <<FilterDescriptions-SynonymFilter,Synonym Filter Factory>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
 
 .Managed Synonym Filter has been Deprecated
 [WARNING]
@@ -851,12 +825,11 @@ Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Fil
 
 *Factory class:* `solr.ManagedSynonymFilterFactory`
 
-For arguments and examples, see the Managed Synonym Graph Filter below.
+For arguments and examples, see the <<Managed Synonym Graph Filter>> below.
 
-[[FilterDescriptions-ManagedSynonymGraphFilter]]
 == Managed Synonym Graph Filter
 
-This is specialized version of the <<FilterDescriptions-SynonymGraphFilter,Synonym Graph Filter Factory>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
+This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is <<managed-resources.adoc#managed-resources,managed from a REST API.>>
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Managed Synonym Filter, which produces incorrect graphs for multi-token synonyms.
 
@@ -881,9 +854,8 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 
-See <<FilterDescriptions-ManagedSynonymFilter,Managed Synonym Filter>> for example input/output.
+See <<Managed Synonym Filter>> for example input/output.
 
-[[FilterDescriptions-N-GramFilter]]
 == N-Gram Filter
 
 Generates n-gram tokens of sizes in the given range. Note that tokens are ordered by position and then by gram size.
@@ -950,7 +922,6 @@ A range of 3 to 5.
 
 *Out:* "fou", "four", "our", "sco", "scor", "score", "cor", "core", "ore"
 
-[[FilterDescriptions-NumericPayloadTokenFilter]]
 == Numeric Payload Token Filter
 
 This filter adds a numeric floating point payload value to tokens that match a given type. Refer to the Javadoc for the `org.apache.lucene.analysis.Token` class for more information about token types and payloads.
@@ -979,7 +950,6 @@ This filter adds a numeric floating point payload value to tokens that match a g
 
 *Out:* "bing"[0.75], "bang"[0.75], "boom"[0.75]
 
-[[FilterDescriptions-PatternReplaceFilter]]
 == Pattern Replace Filter
 
 This filter applies a regular expression to each token and, for those that match, substitutes the given replacement string in place of the matched pattern. Tokens which do not match are passed though unchanged.
@@ -1048,7 +1018,6 @@ More complex pattern with capture group reference in the replacement. Tokens tha
 
 *Out:* "cat", "foo_1234", "9987", "blah1234foo"
 
-[[FilterDescriptions-PhoneticFilter]]
 == Phonetic Filter
 
 This filter creates tokens using one of the phonetic encoding algorithms in the `org.apache.commons.codec.language` package. For more information, see the section on <<phonetic-matching.adoc#phonetic-matching,Phonetic Matching>>.
@@ -1119,7 +1088,6 @@ Default Soundex encoder.
 
 *Out:* "four"(1), "F600"(1), "score"(2), "S600"(2), "and"(3), "A530"(3), "twenty"(4), "T530"(4)
 
-[[FilterDescriptions-PorterStemFilter]]
 == Porter Stem Filter
 
 This filter applies the Porter Stemming Algorithm for English. The results are similar to using the Snowball Porter Stemmer with the `language="English"` argument. But this stemmer is coded directly in Java and is not based on Snowball. It does not accept a list of protected words and is only appropriate for English language text. However, it has been benchmarked as http://markmail.org/thread/d2c443z63z37rwf6[four times faster] than the English Snowball stemmer, so can provide a performance enhancement.
@@ -1144,7 +1112,6 @@ This filter applies the Porter Stemming Algorithm for English. The results are s
 
 *Out:* "jump", "jump", "jump"
 
-[[FilterDescriptions-RemoveDuplicatesTokenFilter]]
 == Remove Duplicates Token Filter
 
 The filter removes duplicate tokens in the stream. Tokens are considered to be duplicates ONLY if they have the same text and position values.
@@ -1223,7 +1190,6 @@ This filter reverses tokens to provide faster leading wildcard and prefix querie
 
 *Out:* "oof*", "rab*"
 
-[[FilterDescriptions-ShingleFilter]]
 == Shingle Filter
 
 This filter constructs shingles, which are token n-grams, from the token stream. It combines runs of tokens into a single token.
@@ -1278,7 +1244,6 @@ A shingle size of four, do not include original token.
 
 *Out:* "To be"(1), "To be or"(1), "To be or not"(1), "be or"(2), "be or not"(2), "be or not to"(2), "or not"(3), "or not to"(3), "or not to be"(3), "not to"(4), "not to be"(4), "to be"(5)
 
-[[FilterDescriptions-SnowballPorterStemmerFilter]]
 == Snowball Porter Stemmer Filter
 
 This filter factory instantiates a language-specific stemmer generated by Snowball. Snowball is a software package that generates pattern-based word stemmers. This type of stemmer is not as accurate as a table-based stemmer, but is faster and less complex. Table-driven stemmers are labor intensive to create and maintain and so are typically commercial products.
@@ -1349,7 +1314,6 @@ Spanish stemmer, Spanish words:
 
 *Out:* "cant", "cant"
 
-[[FilterDescriptions-StandardFilter]]
 == Standard Filter
 
 This filter removes dots from acronyms and the substring "'s" from the end of tokens. This filter depends on the tokens being tagged with the appropriate term-type to recognize acronyms and words with apostrophes.
@@ -1363,7 +1327,6 @@ This filter removes dots from acronyms and the substring "'s" from the end of to
 This filter is no longer operational in Solr when the `luceneMatchVersion` (in `solrconfig.xml`) is higher than "3.1".
 ====
 
-[[FilterDescriptions-StopFilter]]
 == Stop Filter
 
 This filter discards, or _stops_ analysis of, tokens that are on the given stop words list. A standard stop words list is included in the Solr `conf` directory, named `stopwords.txt`, which is appropriate for typical English language text.
@@ -1414,10 +1377,9 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
 
 *Out:* "what"(4)
 
-[[FilterDescriptions-SuggestStopFilter]]
 == Suggest Stop Filter
 
-Like <<FilterDescriptions-StopFilter,Stop Filter>>, this filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
+Like <<Stop Filter>>, this filter discards, or _stops_ analysis of, tokens that are on the given stop words list.
 
 Suggest Stop Filter differs from Stop Filter in that it will not remove the last token unless it is followed by a token separator. For example, a query `"find the"` would preserve the `'the'` since it was not followed by a space, punctuation etc., and mark it as a `KEYWORD` so that following filters will not change or remove it.
 
@@ -1455,7 +1417,6 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 *Out:* "the"(2)
 
-[[FilterDescriptions-SynonymFilter]]
 == Synonym Filter
 
 This filter does synonym mapping. Each token is looked up in the list of synonyms and if a match is found, then the synonym is emitted in place of the token. The position value of the new tokens are set such they all occur at the same position as the original token.
@@ -1470,7 +1431,6 @@ Synonym Filter has been deprecated in favor of Synonym Graph Filter, which is re
 
 For arguments and examples, see the Synonym Graph Filter below.
 
-[[FilterDescriptions-SynonymGraphFilter]]
 == Synonym Graph Filter
 
 This filter maps single- or multi-token synonyms, producing a fully correct graph output. This filter is a replacement for the Synonym Filter, which produces incorrect graphs for multi-token synonyms.
@@ -1542,7 +1502,6 @@ small => tiny,teeny,weeny
 
 *Out:* "the"(1), "large"(2), "large"(3), "couch"(4), "sofa"(4), "divan"(4)
 
-[[FilterDescriptions-TokenOffsetPayloadFilter]]
 == Token Offset Payload Filter
 
 This filter adds the numeric character offsets of the token as a payload value for that token.
@@ -1567,7 +1526,6 @@ This filter adds the numeric character offsets of the token as a payload value f
 
 *Out:* "bing"[0,4], "bang"[5,9], "boom"[10,14]
 
-[[FilterDescriptions-TrimFilter]]
 == Trim Filter
 
 This filter trims leading and/or trailing whitespace from tokens. Most tokenizers break tokens at whitespace, so this filter is most often used for special situations.
@@ -1596,7 +1554,6 @@ The PatternTokenizerFactory configuration used here splits the input on simple c
 
 *Out:* "one", "two", "three", "four"
 
-[[FilterDescriptions-TypeAsPayloadFilter]]
 == Type As Payload Filter
 
 This filter adds the token's type, as an encoded byte sequence, as its payload.
@@ -1621,10 +1578,9 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 
 *Out:* "Pay"[<ALPHANUM>], "Bob's"[<APOSTROPHE>], "I.O.U."[<ACRONYM>]
 
-[[FilterDescriptions-TypeTokenFilter]]
 == Type Token Filter
 
-This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them. For example, the <<tokenizers.adoc#Tokenizers-UAX29URLEmailTokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types. This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
+This filter blacklists or whitelists a specified list of token types, assuming the tokens have type metadata associated with them. For example, the <<tokenizers.adoc#uax29-url-email-tokenizer,UAX29 URL Email Tokenizer>> emits "<URL>" and "<EMAIL>" typed tokens, as well as other types. This filter would allow you to pull out only e-mail addresses from text as tokens, if you wish.
 
 *Factory class:* `solr.TypeTokenFilterFactory`
 
@@ -1645,7 +1601,6 @@ This filter blacklists or whitelists a specified list of token types, assuming t
 </analyzer>
 ----
 
-[[FilterDescriptions-WordDelimiterFilter]]
 == Word Delimiter Filter
 
 This filter splits tokens at word delimiters.
@@ -1660,7 +1615,6 @@ Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filte
 
 For a full description, including arguments and examples, see the Word Delimiter Graph Filter below.
 
-[[FilterDescriptions-WordDelimiterGraphFilter]]
 == Word Delimiter Graph Filter
 
 This filter splits tokens at word delimiters.

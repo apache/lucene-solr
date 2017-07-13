@@ -58,7 +58,10 @@ New Features
 ----------------------
 
 * SOLR-11019: Add addAll Stream Evaluator (Joel Bernstein)
+
 * SOLR-10996: Implement TriggerListener API (ab, shalin)
+
+* SOLR-11046: Add residuals Stream Evaluator (Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -68,7 +71,8 @@ Bug Fixes
 Optimizations
 ----------------------
 
-(No Changes)
+* SOLR-10985: Remove unnecessary toString() calls in solr-core's search package's debug logging.
+  (Michael Braun via Christine Poerschke)
 
 Other Changes
 ----------------------
@@ -79,6 +83,8 @@ Other Changes
   instead of the resource loader from getCore(). (Christine Poerschke)
 
 * SOLR-10748: Make stream.body configurable and disabled by default (janhoy)
+
+* SOLR-10964: Reduce SolrIndexSearcher casting in LTRRescorer. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 
@@ -289,6 +295,8 @@ New Features
 * SOLR-10965: New ExecutePlanAction for autoscaling which executes the operations computed by ComputePlanAction
   against the cluster. (shalin)
 
+* SOLR-10282: bin/solr support for enabling Kerberos authentication (Ishan Chattopadhyaya)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -346,6 +354,13 @@ Bug Fixes
 * SOLR-10983: Fix DOWNNODE -> queue-work explosion (Scott Blum, Joshua Humphries)
 
 * SOLR-10826: Fix CloudSolrClient to expand the collection parameter correctly (Tim Owen via Varun Thacker)
+
+* SOLR-11039: Next button in Solr admin UI for collection list pagination does not work. (janhoy)
+
+* SOLR-11041: MoveReplicaCmd do not specify ulog dir in case of HDFS (Cao Manh Dat) 
+
+* SOLR-11045: The new replica created by MoveReplica will have to have same name and coreName as the 
+  old one in case of HDFS (Cao Manh Dat)
 
 Optimizations
 ----------------------
@@ -482,6 +497,10 @@ Other Changes
   - SOLR-10977: Randomize the usage of Points based numerics in schema15.xml and all impacted tests (hossman)
   - SOLR-10979: Randomize PointFields in schema-docValues*.xml and all affected tests (hossman)
   - SOLR-10989: Randomize PointFields and general cleanup in schema files where some Trie fields were unused (hossman)
+  - SOLR-11048: Randomize PointsFields in schema-add-schema-fields-update-processor.xml in solr-core collection1 and
+    all affected tests (Anshum Gupta)
+  - SOLR-11059: Randomize PointFields in schema-blockjoinfacetcomponent.xml and all related tests (Anshum Gupta)
+  - SOLR-11060: Randomize PointFields in schema-custom-field.xml and all related tests (Anshum Gupta)
 
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
@@ -497,6 +516,13 @@ Other Changes
   field from the examples and a few dynamic fields (Varun Thacker)
 
 * SOLR-11016: Fix TestCloudJSONFacetJoinDomain test-only bug (hossman)
+
+* SOLR-11021: The elevate.xml config-file is made optional in the ElevationComponent.
+  The default configset doesn't ship with a elevate.xml file anymore (Varun Thacker)
+
+* SOLR-10898: Fix SOLR-10898 to not deterministicly fail 1/512 runs (hossman)
+
+* SOLR-10796: TestPointFields: increase randomized testing of non-trivial values.  (Steve Rowe)
 
 ==================  6.7.0 ==================
 
@@ -629,6 +655,8 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
   CoreDescriptor/CoreContainer references (Erick Erickson)
 
 * SOLR-10914: RecoveryStrategy's sendPrepRecoveryCmd can get stuck for 5 minutes if leader is unloaded. (shalin)
+
+* SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
 
 Optimizations
 ----------------------

@@ -83,7 +83,7 @@ The available options are:
 * dih
 * schemaless
 +
-See the section <<SolrControlScriptReference-RunningwithExampleConfigurations,Running with Example Configurations>> below for more details on the example configurations.
+See the section <<Running with Example Configurations>> below for more details on the example configurations.
 +
 *Example*: `bin/solr start -e schemaless`
 
@@ -185,7 +185,6 @@ When starting in SolrCloud mode, the interactive script session will prompt you 
 
 For more information about starting Solr in SolrCloud mode, see also the section <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
 
-[[SolrControlScriptReference-RunningwithExampleConfigurations]]
 ==== Running with Example Configurations
 
 `bin/solr start -e <name>`
@@ -297,7 +296,6 @@ Solr process 39827 running on port 8865
     "collections":"2"}}
 ----
 
-[[SolrControlScriptReference-Healthcheck]]
 === Healthcheck
 
 The `healthcheck` command generates a JSON-formatted health report for a collection when running in SolrCloud mode. The health report provides information about the state of every replica for all shards in a collection, including the number of committed documents and its current state.
@@ -306,7 +304,6 @@ The `healthcheck` command generates a JSON-formatted health report for a collect
 
 `bin/solr healthcheck -help`
 
-[[SolrControlScriptReference-AvailableParameters.2]]
 ==== Healthcheck Parameters
 
 `-c <collection>`::
@@ -371,7 +368,6 @@ Below is an example healthcheck request and response using a non-standard ZooKee
           "leader":true}]}]}
 ----
 
-[[SolrControlScriptReference-CollectionsandCores]]
 == Collections and Cores
 
 The `bin/solr` script can also help you create new collections (in SolrCloud mode) or cores (in standalone mode), or delete collections.
@@ -566,7 +562,6 @@ If the `-updateIncludeFileOnly` option is set to *true*, then only the settings 
 
 If the `-updateIncludeFileOnly` option is set to *false*, then the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will be removed. However, the `basicAuth.conf` file is not removed with either option.
 
-[[SolrControlScriptReference-ZooKeeperOperations]]
 == ZooKeeper Operations
 
 The `bin/solr` script allows certain operations affecting ZooKeeper. These operations are for SolrCloud mode only. The operations are available as sub-commands, which each have their own set of options.
@@ -577,7 +572,6 @@ The `bin/solr` script allows certain operations affecting ZooKeeper. These opera
 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects. Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
 
-[[SolrControlScriptReference-UploadaConfigurationSet]]
 === Upload a Configuration Set
 
 Use the `zk upconfig` command to upload one of the pre-configured configuration set or a customized configuration set to ZooKeeper.
@@ -618,10 +612,9 @@ bin/solr zk upconfig -z 111.222.333.444:2181 -n mynewconfig -d /path/to/configse
 .Reload Collections When Changing Configurations
 [WARNING]
 ====
-This command does *not* automatically make changes effective! It simply uploads the configuration sets to ZooKeeper. You can use the Collection API's <<collections-api.adoc#CollectionsAPI-reload,RELOAD command>> to reload any collections that uses this configuration set.
+This command does *not* automatically make changes effective! It simply uploads the configuration sets to ZooKeeper. You can use the Collection API's <<collections-api.adoc#reload,RELOAD command>> to reload any collections that uses this configuration set.
 ====
 
-[[SolrControlScriptReference-DownloadaConfigurationSet]]
 === Download a Configuration Set
 
 Use the `zk downconfig` command to download a configuration set from ZooKeeper to the local filesystem.
@@ -791,12 +784,10 @@ An example of this command with the parameters is:
 `bin/solr zk ls /collections`
 
 
-[[SolrControlScriptReference-Createaznode_supportschroot_]]
 === Create a znode (supports chroot)
 
 Use the `zk mkroot` command to create a znode. The primary use-case for this command to support ZooKeeper's "chroot" concept. However, it can also be used to create arbitrary paths.
 
-[[SolrControlScriptReference-AvailableParameters.9]]
 ==== Create znode Parameters
 
 `<path>`::

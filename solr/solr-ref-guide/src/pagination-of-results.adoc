@@ -24,7 +24,7 @@ In most search applications, the "top" matching results (sorted by score, or som
 In many applications the UI for these sorted results are displayed to the user in "pages" containing a fixed number of matching results, and users don't typically look at results past the first few pages worth of results.
 
 == Basic Pagination
-In Solr, this basic paginated searching is supported using the `start` and `rows` parameters, and performance of this common behaviour can be tuned by utilizing the <<query-settings-in-solrconfig.adoc#QuerySettingsinSolrConfig-queryResultCache,`queryResultCache`>> and adjusting the <<query-settings-in-solrconfig.adoc#QuerySettingsinSolrConfig-queryResultWindowSize,`queryResultWindowSize`>> configuration options based on your expected page sizes.
+In Solr, this basic paginated searching is supported using the `start` and `rows` parameters, and performance of this common behaviour can be tuned by utilizing the <<query-settings-in-solrconfig.adoc#queryresultcache,`queryResultCache`>> and adjusting the <<query-settings-in-solrconfig.adoc#queryresultwindowsize,`queryResultWindowSize`>> configuration options based on your expected page sizes.
 
 === Basic Pagination Examples
 
@@ -103,7 +103,7 @@ There are a few important constraints to be aware of when using `cursorMark` par
 * If `id` is your uniqueKey field, then sort params like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
 . Sorts including <<working-with-dates.adoc#working-with-dates,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request. This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
 +
-In this situation, choose & re-use a fixed value for the <<working-with-dates.adoc#WorkingwithDates-NOW,`NOW` request param>> in all of your cursor requests.
+In this situation, choose & re-use a fixed value for the <<working-with-dates.adoc#now,`NOW` request param>> in all of your cursor requests.
 
 Cursor mark values are computed based on the sort values of each document in the result, which means multiple documents with identical sort values will produce identical Cursor mark values if one of them is the last document on a page of results. In that situation, the subsequent request using that `cursorMark` would not know which of the documents with the identical mark values should be skipped. Requiring that the uniqueKey field be used as a clause in the sort criteria guarantees that a deterministic ordering will be returned, and that every `cursorMark` value will identify a unique point in the sequence of documents.
 

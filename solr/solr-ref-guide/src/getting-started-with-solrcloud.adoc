@@ -33,10 +33,8 @@ In this section you will learn how to start a SolrCloud cluster using startup sc
 This tutorial assumes that you're already familiar with the basics of using Solr. If you need a refresher, please see the <<getting-started.adoc#getting-started,Getting Started section>> to get a grounding in Solr concepts. If you load documents as part of that exercise, you should start over with a fresh Solr installation for these SolrCloud tutorials.
 ====
 
-[[GettingStartedwithSolrCloud-SolrCloudExample]]
 == SolrCloud Example
 
-[[GettingStartedwithSolrCloud-InteractiveStartup]]
 === Interactive Startup
 
 The `bin/solr` script makes it easy to get started with SolrCloud as it walks you through the process of launching Solr nodes in cloud mode and adding a collection. To get started, simply do:
@@ -120,7 +118,6 @@ To stop Solr in SolrCloud mode, you would use the `bin/solr` script and issue th
 bin/solr stop -all
 ----
 
-[[GettingStartedwithSolrCloud-Startingwith-noprompt]]
 === Starting with -noprompt
 
 You can also get SolrCloud started with all the defaults instead of the interactive session using the following command:
@@ -130,7 +127,6 @@ You can also get SolrCloud started with all the defaults instead of the interact
 bin/solr -e cloud -noprompt
 ----
 
-[[GettingStartedwithSolrCloud-RestartingNodes]]
 === Restarting Nodes
 
 You can restart your SolrCloud nodes using the `bin/solr` script. For instance, to restart node1 running on port 8983 (with an embedded ZooKeeper server), you would do:
@@ -149,7 +145,6 @@ bin/solr restart -c -p 7574 -z localhost:9983 -s example/cloud/node2/solr
 
 Notice that you need to specify the ZooKeeper address (`-z localhost:9983`) when starting node2 so that it can join the cluster with node1.
 
-[[GettingStartedwithSolrCloud-Addinganodetoacluster]]
 === Adding a node to a cluster
 
 Adding a node to an existing cluster is a bit advanced and involves a little more understanding of Solr. Once you startup a SolrCloud cluster using the startup scripts, you can add a new node to it by:

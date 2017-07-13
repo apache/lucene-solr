@@ -31,7 +31,6 @@ Schemaless mode requires enabling the Managed Schema if it is not already, but f
 
 While the "read" features of the Schema API are supported for all schema types, support for making schema modifications programatically depends on the `<schemaFactory/>` in use.
 
-[[SchemaFactoryDefinitioninSolrConfig-SolrUsesManagedSchemabyDefault]]
 == Solr Uses Managed Schema by Default
 
 When a `<schemaFactory/>` is not explicitly declared in a `solrconfig.xml` file, Solr implicitly uses a `ManagedIndexSchemaFactory`, which is by default `"mutable"` and keeps schema information in a `managed-schema` file.
@@ -54,7 +53,6 @@ If you wish to explicitly configure `ManagedIndexSchemaFactory` the following op
 
 With the default configuration shown above, you can use the <<schema-api.adoc#schema-api,Schema API>> to modify the schema as much as you want, and then later change the value of `mutable` to *false* if you wish to "lock" the schema in place and prevent future changes.
 
-[[SchemaFactoryDefinitioninSolrConfig-Classicschema.xml]]
 == Classic schema.xml
 
 An alternative to using a managed schema is to explicitly configure a `ClassicIndexSchemaFactory`. `ClassicIndexSchemaFactory` requires the use of a `schema.xml` configuration file, and disallows any programatic changes to the Schema at run time. The `schema.xml` file must be edited manually and is only loaded only when the collection is loaded.
@@ -64,7 +62,6 @@ An alternative to using a managed schema is to explicitly configure a `ClassicIn
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 ----
 
-[[SchemaFactoryDefinitioninSolrConfig-Switchingfromschema.xmltoManagedSchema]]
 === Switching from schema.xml to Managed Schema
 
 If you have an existing Solr collection that uses `ClassicIndexSchemaFactory`, and you wish to convert to use a managed schema, you can simply modify the `solrconfig.xml` to specify the use of the `ManagedIndexSchemaFactory`.
@@ -78,7 +75,6 @@ Once Solr is restarted and it detects that a `schema.xml` file exists, but the `
 
 You are now free to use the <<schema-api.adoc#schema-api,Schema API>> as much as you want to make changes, and remove the `schema.xml.bak`.
 
-[[SchemaFactoryDefinitioninSolrConfig-SwitchingfromManagedSchematoManuallyEditedschema.xml]]
 === Switching from Managed Schema to Manually Edited schema.xml
 
 If you have started Solr with managed schema enabled and you would like to switch to manually editing a `schema.xml` file, you should take the following steps:
@@ -89,7 +85,7 @@ If you have started Solr with managed schema enabled and you would like to switc
 .. Add a `ClassicIndexSchemaFactory` definition as shown above
 . Reload the core(s).
 
-If you are using SolrCloud, you may need to modify the files via ZooKeeper. The `bin/solr` script provides an easy way to download the files from ZooKeeper and upload them back after edits. See the section <<solr-control-script-reference.adoc#SolrControlScriptReference-ZooKeeperOperations,ZooKeeper Operations>> for more information.
+If you are using SolrCloud, you may need to modify the files via ZooKeeper. The `bin/solr` script provides an easy way to download the files from ZooKeeper and upload them back after edits. See the section <<solr-control-script-reference.adoc#zookeeper-operations,ZooKeeper Operations>> for more information.
 
 [TIP]
 ====

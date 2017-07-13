@@ -24,10 +24,8 @@ This section describes enabling SSL using a self-signed certificate.
 
 For background on SSL certificates and keys, see http://www.tldp.org/HOWTO/SSL-Certificates-HOWTO/.
 
-[[EnablingSSL-BasicSSLSetup]]
 == Basic SSL Setup
 
-[[EnablingSSL-Generateaself-signedcertificateandakey]]
 === Generate a Self-Signed Certificate and a Key
 
 To generate a self-signed certificate and a single key that will be used to authenticate both the server and the client, we'll use the JDK https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html[`keytool`] command and create a separate keystore. This keystore will also be used as a truststore below. It's possible to use the keystore that comes with the JDK for these purposes, and to use a separate truststore, but those options aren't covered here.
@@ -45,7 +43,6 @@ keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -s
 
 The above command will create a keystore file named `solr-ssl.keystore.jks` in the current directory.
 
-[[EnablingSSL-ConvertthecertificateandkeytoPEMformatforusewithcURL]]
 === Convert the Certificate and Key to PEM Format for Use with cURL
 
 cURL isn't capable of using JKS formatted keystores, so the JKS keystore needs to be converted to PEM format, which cURL understands.
@@ -73,7 +70,6 @@ If you want to use cURL on OS X Yosemite (10.10), you'll need to create a certif
 openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
 ----
 
-[[EnablingSSL-SetcommonSSLrelatedsystemproperties]]
 === Set Common SSL-Related System Properties
 
 The Solr Control Script is already setup to pass SSL-related Java system properties to the JVM. To activate the SSL settings, uncomment and update the set of properties beginning with SOLR_SSL_* in `bin/solr.in.sh`. (or `bin\solr.in.cmd` on Windows).
@@ -116,7 +112,6 @@ REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
 ----
 
-[[EnablingSSL-RunSingleNodeSolrusingSSL]]
 === Run Single Node Solr using SSL
 
 Start Solr using the command shown below; by default clients will not be required to authenticate:
@@ -133,12 +128,10 @@ bin/solr -p 8984
 bin\solr.cmd -p 8984
 ----
 
-[[EnablingSSL-SolrCloud]]
 == SSL with SolrCloud
 
 This section describes how to run a two-node SolrCloud cluster with no initial collections and a single-node external ZooKeeper. The commands below assume you have already created the keystore described above.
 
-[[EnablingSSL-ConfigureZooKeeper]]
 === Configure ZooKeeper
 
 NOTE: ZooKeeper does not support encrypted communication with clients like Solr. There are several related JIRA tickets where SSL support is being planned/worked on: https://issues.apache.org/jira/browse/ZOOKEEPER-235[ZOOKEEPER-235]; https://issues.apache.org/jira/browse/ZOOKEEPER-236[ZOOKEEPER-236]; https://issues.apache.org/jira/browse/ZOOKEEPER-1000[ZOOKEEPER-1000]; and https://issues.apache.org/jira/browse/ZOOKEEPER-2120[ZOOKEEPER-2120].
@@ -161,12 +154,10 @@ server/scripts/cloud-scripts/zkcli.sh -zkhost localhost:2181 -cmd clusterprop -n
 server\scripts\cloud-scripts\zkcli.bat -zkhost localhost:2181 -cmd clusterprop -name urlScheme -val https
 ----
 
-If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#TakingSolrtoProduction-ZooKeeperchroot,chroot for Solr>> , make sure you use the correct `zkhost` string with `zkcli`, e.g. `-zkhost localhost:2181/solr`.
+If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#zookeeper-chroot,chroot for Solr>> , make sure you use the correct `zkhost` string with `zkcli`, e.g. `-zkhost localhost:2181/solr`.
 
-[[EnablingSSL-RunSolrCloudwithSSL]]
 === Run SolrCloud with SSL
 
-[[EnablingSSL-CreateSolrhomedirectoriesfortwonodes]]
 ==== Create Solr Home Directories for Two Nodes
 
 Create two copies of the `server/solr/` directory which will serve as the Solr home directories for each of your two SolrCloud nodes:
@@ -187,7 +178,6 @@ xcopy /E server\solr cloud\node1\
 xcopy /E server\solr cloud\node2\
 ----
 
-[[EnablingSSL-StartthefirstSolrnode]]
 ==== Start the First Solr Node
 
 Next, start the first Solr node on port 8984. Be sure to stop the standalone server first if you started it when working through the previous section on this page.
@@ -220,7 +210,6 @@ bin/solr -cloud -s cloud/node1 -z localhost:2181 -p 8984 -Dsolr.ssl.checkPeerNam
 bin\solr.cmd -cloud -s cloud\node1 -z localhost:2181 -p 8984 -Dsolr.ssl.checkPeerName=false
 ----
 
-[[EnablingSSL-StartthesecondSolrnode]]
 ==== Start the Second Solr Node
 
 Finally, start the second Solr node on port 7574 - again, to skip hostname verification, add `-Dsolr.ssl.checkPeerName=false`;
@@ -237,14 +226,13 @@ bin/solr -cloud -s cloud/node2 -z localhost:2181 -p 7574
 bin\solr.cmd -cloud -s cloud\node2 -z localhost:2181 -p 7574
 ----
 
-[[EnablingSSL-ExampleClientActions]]
 == Example Client Actions
 
 [IMPORTANT]
 ====
 cURL on OS X Mavericks (10.9) has degraded SSL support. For more information and workarounds to allow one-way SSL, see http://curl.haxx.se/mail/archive-2013-10/0036.html. cURL on OS X Yosemite (10.10) is improved - 2-way SSL is possible - see http://curl.haxx.se/mail/archive-2014-10/0053.html .
 
-The cURL commands in the following sections will not work with the system `curl` on OS X Yosemite (10.10). Instead, the certificate supplied with the `-E` param must be in PKCS12 format, and the file supplied with the `--cacert` param must contain only the CA certificate, and no key (see <<EnablingSSL-ConvertthecertificateandkeytoPEMformatforusewithcURL,above>> for instructions on creating this file):
+The cURL commands in the following sections will not work with the system `curl` on OS X Yosemite (10.10). Instead, the certificate supplied with the `-E` param must be in PKCS12 format, and the file supplied with the `--cacert` param must contain only the CA certificate, and no key (see <<Convert the Certificate and Key to PEM Format for Use with cURL,above>> for instructions on creating this file):
 
 [source,bash]
 curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...
@@ -271,7 +259,6 @@ bin\solr.cmd create -c mycollection -shards 2
 
 The `create` action will pass the `SOLR_SSL_*` properties set in your include file to the SolrJ code used to create the collection.
 
-[[EnablingSSL-RetrieveSolrCloudclusterstatususingcURL]]
 === Retrieve SolrCloud Cluster Status using cURL
 
 To get the resulting cluster status (again, if you have not enabled client authentication, remove the `-E solr-ssl.pem:secret` option):
@@ -317,7 +304,6 @@ You should get a response that looks like this:
     "properties":{"urlScheme":"https"}}}
 ----
 
-[[EnablingSSL-Indexdocumentsusingpost.jar]]
 === Index Documents using post.jar
 
 Use `post.jar` to index some example documents to the SolrCloud collection created above:
@@ -329,7 +315,6 @@ cd example/exampledocs
 java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.jks -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.jks -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
 ----
 
-[[EnablingSSL-QueryusingcURL]]
 === Query Using cURL
 
 Use cURL to query the SolrCloud collection created above, from a directory containing the PEM formatted certificate and key created above (e.g. `example/etc/`) - if you have not enabled client authentication (system property `-Djetty.ssl.clientAuth=true)`, then you can remove the `-E solr-ssl.pem:secret` option:
@@ -339,8 +324,7 @@ Use cURL to query the SolrCloud collection created above, from a directory conta
 curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*&wt=json&indent=on"
 ----
 
-[[EnablingSSL-IndexadocumentusingCloudSolrClient]]
-=== Index a document using CloudSolrClient
+=== Index a Document using CloudSolrClient
 
 From a java client using SolrJ, index a document. In the code below, the `javax.net.ssl.*` system properties are set programmatically, but you could instead specify them on the java command line, as in the `post.jar` example above:
 

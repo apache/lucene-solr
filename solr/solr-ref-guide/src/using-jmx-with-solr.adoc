@@ -22,7 +22,6 @@ http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[Ja
 
 Solr, like any other good citizen of the Java universe, can be controlled via a JMX interface. You can enable JMX support by adding lines to `solrconfig.xml`. You can use a JMX client, like jconsole, to connect with Solr. Check out the Wiki page http://wiki.apache.org/solr/SolrJmx for more information. You may also find the following overview of JMX to be useful: http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
 
-[[UsingJMXwithSolr-ConfiguringJMX]]
 == Configuring JMX
 
 JMX configuration is provided in `solrconfig.xml`. Please see the http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX Technology Home Page] for more details.
@@ -36,7 +35,6 @@ Enabling/disabling JMX and securing access to MBeanServers is left up to the use
 
 ====
 
-[[UsingJMXwithSolr-ConfiguringanExistingMBeanServer]]
 === Configuring an Existing MBeanServer
 
 The command:
@@ -48,7 +46,6 @@ The command:
 
 enables JMX support in Solr if and only if an existing MBeanServer is found. Use this if you want to configure JMX with JVM parameters. Remove this to disable exposing Solr configuration and statistics to JMX. If this is specified, Solr will try to list all available MBeanServers and use the first one to register MBeans.
 
-[[UsingJMXwithSolr-ConfiguringanExistingMBeanServerwithagentId]]
 === Configuring an Existing MBeanServer with agentId
 
 The command:
@@ -60,7 +57,6 @@ The command:
 
 enables JMX support in Solr if and only if an existing MBeanServer is found matching the given agentId. If multiple servers are found, the first one is used. If none is found, an exception is raised and depending on the configuration, Solr may refuse to start.
 
-[[UsingJMXwithSolr-ConfiguringaNewMBeanServer]]
 === Configuring a New MBeanServer
 
 The command:
@@ -72,8 +68,7 @@ The command:
 
 creates a new MBeanServer exposed for remote monitoring at the specific service URL. If the JMXConnectorServer can't be started (probably because the serviceUrl is bad), an exception is thrown.
 
-[[UsingJMXwithSolr-Example]]
-==== Example
+==== MBean Server Example
 
 Solr's `sample_techproducts_configs` config set uses the simple `<jmx />` configuration option. If you start the example with the necessary JVM system properties to launch an internal MBeanServer, Solr will register with it and you can connect using a tool like `jconsole`:
 
@@ -87,7 +82,6 @@ bin/solr -e techproducts -Dcom.sun.management.jmxremote
 3.  Connect to the "`start.jar`" shown in the list of local processes.
 4.  Switch to the "MBeans" tab. You should be able to see "`solr/techproducts`" listed there, at which point you can drill down and see details of every solr plugin.
 
-[[UsingJMXwithSolr-ConfiguringaRemoteConnectiontoSolrJMX]]
 === Configuring a Remote Connection to Solr JMX
 
 If you need to attach a JMX-enabled Java profiling tool, such as JConsole or VisualVM, to a remote Solr server, then you need to enable remote JMX access when starting the Solr server. Simply change the `ENABLE_REMOTE_JMX_OPTS` property in the include file to true. You’ll also need to choose a port for the JMX RMI connector to bind to, such as 18983. For example, if your Solr include script sets:
@@ -118,7 +112,5 @@ http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html
 
 [IMPORTANT]
 ====
-
 Making JMX connections into machines running behind NATs (e.g. Amazon's EC2 service) is not a simple task. The `java.rmi.server.hostname` system property may help, but running `jconsole` on the server itself and using a remote desktop is often the simplest solution. See http://web.archive.org/web/20130525022506/http://jmsbrdy.com/monitoring-java-applications-running-on-ec2-i.
-
 ====

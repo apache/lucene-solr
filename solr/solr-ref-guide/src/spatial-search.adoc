@@ -42,7 +42,6 @@ There are four main field types available for spatial search:
 
 Some esoteric details that are not in this guide can be found at http://wiki.apache.org/solr/SpatialSearch.
 
-[[SpatialSearch-LatLonPointSpatialField]]
 == LatLonPointSpatialField
 
 Here's how `LatLonPointSpatialField` (LLPSF) should usually be configured in the schema:
@@ -52,7 +51,6 @@ Here's how `LatLonPointSpatialField` (LLPSF) should usually be configured in the
 
 LLPSF supports toggling `indexed`, `stored`, `docValues`, and `multiValued`. LLPSF internally uses a 2-dimensional Lucene "Points" (BDK tree) index when "indexed" is enabled (the default). When "docValues" is enabled, a latitude and longitudes pair are bit-interleaved into 64 bits and put into Lucene DocValues. The accuracy of the docValues data is about a centimeter.
 
-[[SpatialSearch-IndexingPoints]]
 == Indexing Points
 
 For indexing geodetic points (latitude and longitude), supply it in "lat,lon" order (comma separated).
@@ -61,7 +59,6 @@ For indexing non-geodetic points, it depends. Use `x y` (a space) if RPT. For Po
 
 If you'd rather use a standard industry format, Solr supports WKT and GeoJSON. However it's much bulkier than the raw coordinates for such simple data. (Not supported by the deprecated LatLonType or PointType)
 
-[[SpatialSearch-SearchingwithQueryParsers]]
 == Searching with Query Parsers
 
 There are two spatial Solr "query parsers" for geospatial search: `geofilt` and `bbox`. They take the following parameters:
@@ -100,7 +97,6 @@ When used with `BBoxField`, additional options are supported:
 (Advanced option; not supported by LatLonType (deprecated) or PointType). If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
 
 
-[[SpatialSearch-geofilt]]
 === geofilt
 
 The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter `&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5`. This filter returns all results within a circle of the given radius around the initial point:
@@ -108,7 +104,6 @@ The `geofilt` filter allows you to retrieve results based on the geospatial dist
 image::images/spatial-search/circle.png[5KM radius]
 
 
-[[SpatialSearch-bbox]]
 === bbox
 
 The `bbox` filter is very similar to `geofilt` except it uses the _bounding box_ of the calculated circle. See the blue box in the diagram below. It takes the same parameters as geofilt.
@@ -126,7 +121,6 @@ image::images/spatial-search/bbox.png[Bounding box]
 When a bounding box includes a pole, the bounding box ends up being a "bounding bowl" (a _spherical cap_) that includes all values north of the lowest latitude of the circle if it touches the north pole (or south of the highest latitude if it touches the south pole).
 ====
 
-[[SpatialSearch-Filteringbyanarbitraryrectangle]]
 === Filtering by an Arbitrary Rectangle
 
 Sometimes the spatial search requirement calls for finding everything in a rectangular area, such as the area covered by a map the user is looking at. For this case, geofilt and bbox won't cut it. This is somewhat of a trick, but you can use Solr's range query syntax for this by supplying the lower-left corner as the start of the range and the upper-right corner as the end of the range.
@@ -138,7 +132,6 @@ Here's an example:
 LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g. `"x y"`.
 
 
-[[SpatialSearch-Optimizing_CacheorNot]]
 === Optimizing: Cache or Not
 
 It's most common to put a spatial query into an "fq" parameter – a filter query. By default, Solr will cache the query in the filter cache.
@@ -149,7 +142,6 @@ If you know the filter query (be it spatial or not) is fairly unique and not lik
 
 LLPSF does not support Solr's "PostFilter".
 
-[[SpatialSearch-DistanceSortingorBoosting_FunctionQueries_]]
 == Distance Sorting or Boosting (Function Queries)
 
 There are four distance function queries:
@@ -161,7 +153,6 @@ There are four distance function queries:
 
 For more information about these function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
 
-[[SpatialSearch-geodist]]
 === geodist
 
 `geodist` is a distance function that takes three optional parameters: `(sfield,latitude,longitude)`. You can use the `geodist` function to sort results by distance or score return results.
@@ -170,19 +161,16 @@ For example, to sort your results by ascending distance, enter `...&q=*:*&fq={!g
 
 To return the distance as the document score, enter `...&q={!func}geodist()&sfield=store&pt=45.15,-93.85&sort=score+asc`.
 
-[[SpatialSearch-MoreExamples]]
-== More Examples
+== More Spatial Search Examples
 
 Here are a few more useful examples of what you can do with spatial search in Solr.
 
-[[SpatialSearch-UseasaSub-QuerytoExpandSearchResults]]
 === Use as a Sub-Query to Expand Search Results
 
 Here we will query for results in Jacksonville, Florida, or within 50 kilometers of 45.15,-93.85 (near Buffalo, Minnesota):
 
 `&q=*:*&fq=(state:"FL" AND city:"Jacksonville") OR {!geofilt}&sfield=store&pt=45.15,-93.85&d=50&sort=geodist()+asc`
 
-[[SpatialSearch-FacetbyDistance]]
 === Facet by Distance
 
 To facet by distance, you can use the Frange query parser:
@@ -191,14 +179,12 @@ To facet by distance, you can use the Frange query parser:
 
 There are other ways to do it too, like using a \{!geofilt} in each facet.query.
 
-[[SpatialSearch-BoostNearestResults]]
 === Boost Nearest Results
 
 Using the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
 
 `&q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc`
 
-[[SpatialSearch-RPT]]
 == RPT
 
 RPT refers to either `SpatialRecursivePrefixTreeFieldType` (aka simply RPT) and an extended version: `RptWithGeometrySpatialField` (aka RPT with Geometry). RPT offers several functional improvements over LatLonPointSpatialField:
@@ -215,8 +201,7 @@ RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are
 * Sort/boost via `geodist`
 * Well-Known-Text (WKT) shape syntax (required for specifying polygons & other complex shapes), and GeoJSON too. In addition to indexing and searching, this works with the `wt=geojson` (GeoJSON Solr response-writer) and `[geo f=myfield]` (geo Solr document-transformer).
 
-[[SpatialSearch-Schemaconfiguration]]
-=== Schema Configuration
+=== Schema Configuration for RPT
 
 To use RPT, the field type must be registered and configured in `schema.xml`. There are many options for this field type.
 
@@ -266,7 +251,6 @@ A third choice is `packedQuad`, which is generally more efficient than `quad`, p
 
 *_And there are others:_* `normWrapLongitude`, `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`. For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
 
-[[SpatialSearch-JTSandPolygons]]
 === JTS and Polygons
 
 As indicated above, `spatialContextFactory` must be set to `JTS` for polygon support, including multi-polygon.
@@ -297,7 +281,6 @@ Inside the parenthesis following the search predicate is the shape definition. T
 
 Beyond this Reference Guide and Spatila4j's docs, there are some details that remain at the Solr Wiki at http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4.
 
-[[SpatialSearch-RptWithGeometrySpatialField]]
 === RptWithGeometrySpatialField
 
 The `RptWithGeometrySpatialField` field type is a derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry internally in Lucene DocValues, which it uses to achieve accurate search. It can also be used for indexed point fields. The Intersects predicate (the default) is particularly fast, since many search results can be returned as an accurate hit without requiring a geometry check. This field type is configured just like RPT except that the default `distErrPct` is 0.15 (higher than 0.025) because the grid squares are purely for performance and not to fundamentally represent the shape.
@@ -316,7 +299,6 @@ An optional in-memory cache can be defined in `solrconfig.xml`, which should be 
 
 When using this field type, you will likely _not_ want to mark the field as stored because it's redundant with the DocValues data and surely larger because of the formatting (be it WKT or GeoJSON). To retrieve the spatial data in search results from DocValues, use the `[geo]` transformer -- <<transforming-result-documents.adoc#transforming-result-documents,Transforming Result Documents>>.
 
-[[SpatialSearch-HeatmapFaceting]]
 === Heatmap Faceting
 
 The RPT field supports generating a 2D grid of facet counts for documents having spatial data in each grid cell. For high-detail grids, this can be used to plot points, and for lesser detail it can be used for heatmap generation. The grid cells are determined at index-time based on RPT's configuration. At facet counting time, the indexed cells in the region of interest are traversed and a grid of counters corresponding to each cell are incremented. Solr can return the data in a straight-forward 2D array of integers or in a PNG which compresses better for larger data sets but must be decoded.
@@ -365,7 +347,6 @@ The `counts_ints2D` key has a 2D array of integers. The initial outer level is i
 
 If `format=png` then the output key is `counts_png`. It's a base-64 encoded string of a 4-byte PNG. The PNG logically holds exactly the same data that the ints2D format does. Note that the alpha channel byte is flipped to make it easier to view the PNG for diagnostic purposes, since otherwise counts would have to exceed 2^24 before it becomes non-opague. Thus counts greater than this value will become opaque.
 
-[[SpatialSearch-BBoxField]]
 == BBoxField
 
 The `BBoxField` field type indexes a single rectangle (bounding box) per document field and supports searching via a bounding box. It supports most spatial search predicates, it has enhanced relevancy modes based on the overlap or area between the search rectangle and the indexed rectangle. It's particularly useful for its relevancy modes. To configure it in the schema, use a configuration like this:
