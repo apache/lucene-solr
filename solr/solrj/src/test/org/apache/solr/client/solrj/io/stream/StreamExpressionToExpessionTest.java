@@ -74,12 +74,15 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     String expressionString;
     
     // Basic test
-    stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")"), factory);
+    stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", fq=\"a_s:one\", fq=\"a_s:two\")"), factory);
     expressionString = stream.toExpression(factory).toString();
+    System.out.println("ExpressionString: " + expressionString.toString());
     assertTrue(expressionString.contains("search(collection1,"));
     assertTrue(expressionString.contains("q=\"*:*\""));
     assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
     assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+    assertTrue(expressionString.contains("fq=\"a_s:one\""));
+    assertTrue(expressionString.contains("fq=\"a_s:two\""));
     
     // Basic w/aliases
     stream = new CloudSolrStream(StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"id=izzy,a_s=kayden\")"), factory);
