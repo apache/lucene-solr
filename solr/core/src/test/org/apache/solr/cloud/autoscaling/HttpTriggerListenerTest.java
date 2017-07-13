@@ -98,7 +98,7 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
         "{" +
         "'name' : 'foo'," +
         "'trigger' : 'node_added_trigger'," +
-        "'stage' : ['WAITING', 'STARTED','ABORTED','SUCCEEDED', 'FAILED']," +
+        "'stage' : ['STARTED','ABORTED','SUCCEEDED', 'FAILED']," +
         "'beforeAction' : 'test'," +
         "'afterAction' : ['test']," +
         "'class' : '" + HttpTriggerListener.class.getName() + "'," +
