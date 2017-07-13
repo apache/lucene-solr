@@ -2184,10 +2184,7 @@ public class ZkController {
       DocCollection collection = clusterState.getCollectionOrNull(desc
           .getCloudDescriptor().getCollectionName());
       if (collection != null) {
-        boolean autoAddReplicas = ClusterStateUtil.isAutoAddReplicas(getZkStateReader(), collection.getName());
-        if (autoAddReplicas) {
-          CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
-        }
+        CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
       }
     }
   }
