@@ -608,7 +608,6 @@ public class OfflineSorter {
 
         int count = 0;
         while ((spare = iter.next()) != null) {
-          assert spare.length <= Short.MAX_VALUE;
           out.write(spare);
           count++;
         }
