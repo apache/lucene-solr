@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.RANDOM;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -94,8 +96,25 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
     if (!skipCreateReplicaInClusterState) {
-      node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
-          ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
+      if (CreateShardCmd.usePolicyFramework(coll, ocmh)) {
+        if (node == null) {
+          if(coll.getPolicyName() != null) message.getProperties().put(Policy.POLICY, coll.getPolicyName());
+          node = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
+              ocmh.zkStateReader,
+              clusterState,
+              Collections.emptyList(),
+              collection,
+              message,
+              Collections.singletonList(shard),
+              replicaType == Replica.Type.NRT ? 0 : 1,
+              replicaType == Replica.Type.TLOG ? 0 : 1,
+              replicaType == Replica.Type.PULL ? 0 : 1
+          ).get(0).node;
+        }
+      } else {
+        node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
+            ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
+      }
     }
     log.info("Node Identified {} for creating new replica", node);
 

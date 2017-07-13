@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Constants;
@@ -30,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
@@ -45,6 +45,9 @@ import org.junit.BeforeClass;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 @LuceneTestCase.Slow
 public class TestPolicyCloud extends SolrCloudTestCase {
@@ -71,7 +74,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     int port = jetty.getLocalPort();
 
-    String commands =  "{set-policy :{c1 : [{replica:2 , shard:'#EACH', port: '" + port + "'}]}}";
+    String commands =  "{set-policy :{c1 : [{replica:0 , shard:'#EACH', port: '!" + port + "'}]}}";
     cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
@@ -106,7 +109,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     String collectionName = "testCreateCollectionSplitShard";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPolicy("c1")
-        .setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
 
     DocCollection docCollection = getCollectionState(collectionName);
@@ -131,6 +133,47 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     assertEquals("Expected exactly three replica of collection on node with port: " + firstNodePort, 3, replicasOnNode1);
     assertEquals("Expected exactly three replica of collection on node with port: " + secondNodePort, 3, replicasOnNode2);
+  }
+
+  public void testCreateCollectionWithPolicyAndMaxShardsPerNode() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    Map original = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    Map data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    List clusterPolicy = (List) data.get("cluster-policy");
+    assertNotNull(clusterPolicy);
+    assertEquals(3, clusterPolicy.size());
+
+    CollectionAdminRequest.createCollection("myColl", "conf", 1, 2)
+        .process(cluster.getSolrClient());
+    data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    assertEquals("Did create unexpected new policy  " + Utils.toJSONString(data),
+       null,  Utils.getObjectByPath(data, false, "policies/COLL_POLICY_myColl"));
+    CollectionAdminRequest.createCollection("myColl2", "conf", 1, 2)
+        .setMaxShardsPerNode(4)
+        .process(cluster.getSolrClient());
+    data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+
+    assertEquals("Did not create expected new policy  " + Utils.toJSONString(data),
+        "<5",  Utils.getObjectByPath(data, false, "policies/COLL_POLICY_myColl2[0]/replica"));
+
+    CollectionAdminRequest.deleteCollection("myColl2").process(cluster.getSolrClient());
+
+    data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    assertEquals("Did not delete new policy  " + Utils.toJSONString(data),
+        null,  Utils.getObjectByPath(data, false, "policies/COLL_POLICY_myColl2"));
+
+    solrClient.getZkStateReader().getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(original), true);
+
   }
 
   public void testCreateCollectionAddShardWithReplicaTypeUsingPolicy() throws Exception {
@@ -164,7 +207,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
         Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
 
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
-        .setMaxShardsPerNode(5)
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState("policiesTest");

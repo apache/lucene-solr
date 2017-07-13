@@ -157,7 +157,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeLost",
         "conf",1, 2);
-    create.setMaxShardsPerNode(1);
+//    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -231,7 +231,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeWithMultipleReplicasLost",
         "conf",2, 3);
-    create.setMaxShardsPerNode(2);
+//    create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -309,7 +309,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeAdded",
         "conf",1, 2);
-    create.setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",

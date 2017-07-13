@@ -677,7 +677,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     // lets create a collection which violates the rule replicas < 2
     CollectionAdminResponse adminResponse = CollectionAdminRequest.Create
         .createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6)
-        .setMaxShardsPerNode(10)
         .process(solrClient);
     assertTrue(adminResponse.isSuccess());
 

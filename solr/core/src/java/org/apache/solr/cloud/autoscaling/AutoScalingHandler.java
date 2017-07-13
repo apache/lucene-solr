@@ -222,7 +222,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     rsp.getValues().add("result", "success");
   }
 
-  private void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
+  public void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op)
+      throws KeeperException, InterruptedException, IOException {
     String policyName = (String) op.getCommandData();
 
     if (policyName.trim().length() == 0) {
@@ -238,7 +239,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     rsp.getValues().add("result", "success");
   }
 
-  private void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
+  public void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     Map<String, Object> policies = op.getDataMap();
     for (Map.Entry<String, Object> policy : policies.entrySet()) {
       String policyName = policy.getKey();

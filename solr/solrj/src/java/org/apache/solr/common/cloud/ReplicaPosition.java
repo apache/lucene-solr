@@ -45,7 +45,7 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
 
   @Override
   public String toString() {
-    return shard + ":" + index;
+    return shard + ":" + index + "["+ type +"] @" + node;
   }
 
   public ReplicaPosition setNode(String node) {
