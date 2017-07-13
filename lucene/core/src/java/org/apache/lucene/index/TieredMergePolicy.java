@@ -300,9 +300,12 @@ public class TieredMergePolicy extends MergePolicy {
     
     Collections.sort(infosSorted, new SegmentByteSizeDescending(sizeInBytes));
 
-    // Compute total index bytes & print details about the index
+    // Compute total index bytes (excluding too big segments) & print details about the index
     long totIndexBytes = 0;
     long minSegmentBytes = Long.MAX_VALUE;
+    // If we have too-large segments, grace them out
+    // of the maxSegmentCount:
+    int tooBigCount = 0;
     for(SegmentCommitInfo info : infosSorted) {
       final long segBytes = sizeInBytes.get(info);
       if (verbose(writer)) {
@@ -315,21 +318,13 @@ public class TieredMergePolicy extends MergePolicy {
         message("  seg=" + writer.segString(info) + " size=" + String.format(Locale.ROOT, "%.3f", segBytes/1024/1024.) + " MB" + extra, writer);
       }
 
-      minSegmentBytes = Math.min(segBytes, minSegmentBytes);
-      // Accum total byte size
-      totIndexBytes += segBytes;
-    }
-
-    // If we have too-large segments, grace them out
-    // of the maxSegmentCount:
-    int tooBigCount = 0;
-    while (tooBigCount < infosSorted.size()) {
-      long segBytes = sizeInBytes.get(infosSorted.get(tooBigCount));
       if (segBytes < maxMergedSegmentBytes/2.0) {
-        break;
+        minSegmentBytes = Math.min(segBytes, minSegmentBytes);
+        // Accum total byte size
+        totIndexBytes += segBytes;
+      } else {
+        tooBigCount++;
       }
-      totIndexBytes -= segBytes;
-      tooBigCount++;
     }
 
     minSegmentBytes = floorSize(minSegmentBytes);
@@ -380,7 +375,7 @@ public class TieredMergePolicy extends MergePolicy {
         return spec;
       }
 
-      if (eligible.size() > allowedSegCountInt) {
+      if ((eligible.size() + (spec == null ? 0 : spec.merges.size())) > allowedSegCountInt) {
 
         // OK we are over budget -- find best merge!
         MergeScore bestScore = null;
