@@ -37,7 +37,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 
 public class PolicyHelper {
-  public static List<ReplicaPosition> getReplicaLocations(String collName, Map<String, Object> autoScalingJson,
+  public static List<ReplicaPosition> getReplicaLocations(String collName, AutoScalingConfig autoScalingConfig,
                                                           ClusterDataProvider cdp,
                                                           Map<String, String> optionalPolicyMapping,
                                                           List<String> shardNames,
@@ -73,8 +73,7 @@ public class PolicyHelper {
       };
     }
 
-    Policy policy = new Policy(autoScalingJson);
-    Policy.Session session = policy.createSession(cdp);
+    Policy.Session session = autoScalingConfig.getPolicy().createSession(cdp);
     Map<Replica.Type, Integer> typeVsCount = new EnumMap<>(Replica.Type.class);
     typeVsCount.put(Replica.Type.NRT, nrtReplicas);
     typeVsCount.put(Replica.Type.TLOG, tlogReplicas);

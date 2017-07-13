@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Trigger for the {@link AutoScaling.EventType#NODELOST} event
+ * Trigger for the {@link TriggerEventType#NODELOST} event
  */
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -52,10 +53,10 @@ public class NodeLostTrigger extends TriggerBase {
   private final Map<String, Object> properties;
   private final CoreContainer container;
   private final List<TriggerAction> actions;
-  private final AtomicReference<AutoScaling.EventProcessor> processorRef;
+  private final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef;
   private final boolean enabled;
   private final int waitForSecond;
-  private final AutoScaling.EventType eventType;
+  private final TriggerEventType eventType;
   private final TimeSource timeSource;
 
   private boolean isClosed = false;
@@ -86,7 +87,7 @@ public class NodeLostTrigger extends TriggerBase {
     log.debug("Initial livenodes: {}", lastLiveNodes);
     this.enabled = (boolean) properties.getOrDefault("enabled", true);
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
-    this.eventType = AutoScaling.EventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
+    this.eventType = TriggerEventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
   }
 
   @Override
@@ -117,12 +118,12 @@ public class NodeLostTrigger extends TriggerBase {
   }
 
   @Override
-  public void setProcessor(AutoScaling.EventProcessor processor) {
+  public void setProcessor(AutoScaling.TriggerEventProcessor processor) {
     processorRef.set(processor);
   }
 
   @Override
-  public AutoScaling.EventProcessor getProcessor() {
+  public AutoScaling.TriggerEventProcessor getProcessor() {
     return processorRef.get();
   }
 
@@ -132,7 +133,7 @@ public class NodeLostTrigger extends TriggerBase {
   }
 
   @Override
-  public AutoScaling.EventType getEventType() {
+  public TriggerEventType getEventType() {
     return eventType;
   }
 
@@ -249,7 +250,7 @@ public class NodeLostTrigger extends TriggerBase {
         Long timeRemoved = entry.getValue();
         if (TimeUnit.SECONDS.convert(timeSource.getTime() - timeRemoved, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           // fire!
-          AutoScaling.EventProcessor processor = processorRef.get();
+          AutoScaling.TriggerEventProcessor processor = processorRef.get();
           if (processor != null) {
             log.debug("NodeLostTrigger firing registered processor for lost node: {}", nodeName);
             if (processor.process(new NodeLostEvent(getEventType(), getName(), timeRemoved, nodeName)))  {
@@ -292,7 +293,7 @@ public class NodeLostTrigger extends TriggerBase {
 
   public static class NodeLostEvent extends TriggerEvent {
 
-    public NodeLostEvent(AutoScaling.EventType eventType, String source, long nodeLostTime, String nodeRemoved) {
+    public NodeLostEvent(TriggerEventType eventType, String source, long nodeLostTime, String nodeRemoved) {
       super(eventType, source, nodeLostTime, Collections.singletonMap(NODE_NAME, nodeRemoved));
     }
   }

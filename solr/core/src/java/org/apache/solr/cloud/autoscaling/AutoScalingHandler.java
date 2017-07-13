@@ -30,19 +30,23 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
@@ -57,10 +61,11 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.AutoScalingParams.*;
@@ -73,7 +78,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer container;
   private final List<Map<String, String>> DEFAULT_ACTIONS = new ArrayList<>(3);
-  private static ImmutableSet<String> singletonCommands = ImmutableSet.of("set-cluster-preferences", "set-cluster-policy");
+  private static Set<String> singletonCommands = Stream.of("set-cluster-preferences", "set-cluster-policy")
+      .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
   private static final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
 
@@ -110,11 +116,18 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown path: " + path);
         }
 
-        Map<String, Object> map = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
+        AutoScalingConfig autoScalingConf = container.getZkController().zkStateReader.getAutoScalingConfig();
         if (parts.size() == 2)  {
-          rsp.getValues().addAll(map);
+          autoScalingConf.writeMap(new MapWriter.EntryWriter() {
+
+            @Override
+            public MapWriter.EntryWriter put(String k, Object v) throws IOException {
+              rsp.getValues().add(k, v);
+              return this;
+            }
+          });
         } else if (parts.size() == 3 && DIAGNOSTICS.equals(parts.get(2))) {
-          handleDiagnostics(rsp, map);
+          handleDiagnostics(rsp, autoScalingConf);
         }
       } else {
         if (req.getContentStreams() == null) {
@@ -125,42 +138,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           // errors have already been added to the response so there's nothing left to do
           return;
         }
-        for (CommandOperation op : ops) {
-          switch (op.name) {
-            case CMD_SET_TRIGGER:
-              handleSetTrigger(req, rsp, op);
-              break;
-            case CMD_REMOVE_TRIGGER:
-              handleRemoveTrigger(req, rsp, op);
-              break;
-            case CMD_SET_LISTENER:
-              handleSetListener(req, rsp, op);
-              break;
-            case CMD_REMOVE_LISTENER:
-              handleRemoveListener(req, rsp, op);
-              break;
-            case CMD_SUSPEND_TRIGGER:
-              handleSuspendTrigger(req, rsp, op);
-              break;
-            case CMD_RESUME_TRIGGER:
-              handleResumeTrigger(req, rsp, op);
-              break;
-            case CMD_SET_POLICY:
-              handleSetPolicies(req, rsp, op);
-              break;
-            case CMD_REMOVE_POLICY:
-              handleRemovePolicy(req, rsp, op);
-              break;
-            case CMD_SET_CLUSTER_PREFERENCES:
-              handleSetClusterPreferences(req, rsp, op);
-              break;
-            case CMD_SET_CLUSTER_POLICY:
-              handleSetClusterPolicy(req, rsp, op);
-              break;
-            default:
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + op.name);
-          }
-        }
+        processOps(req, rsp, ops);
       }
     } catch (Exception e) {
       rsp.getValues().add("result", "failure");
@@ -170,8 +148,65 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void handleDiagnostics(SolrQueryResponse rsp, Map<String, Object> autoScalingConf) throws IOException {
-    Policy policy = new Policy(autoScalingConf);
+  public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops) throws KeeperException, InterruptedException, IOException {
+    while (true) {
+      AutoScalingConfig initialConfig = container.getZkController().zkStateReader.getAutoScalingConfig();
+      AutoScalingConfig currentConfig = initialConfig;
+      for (CommandOperation op : ops) {
+        switch (op.name) {
+          case CMD_SET_TRIGGER:
+            currentConfig = handleSetTrigger(req, rsp, op, currentConfig);
+            break;
+          case CMD_REMOVE_TRIGGER:
+            currentConfig = handleRemoveTrigger(req, rsp, op, currentConfig);
+            break;
+          case CMD_SET_LISTENER:
+            currentConfig = handleSetListener(req, rsp, op, currentConfig);
+            break;
+          case CMD_REMOVE_LISTENER:
+            currentConfig = handleRemoveListener(req, rsp, op, currentConfig);
+            break;
+          case CMD_SUSPEND_TRIGGER:
+            currentConfig = handleSuspendTrigger(req, rsp, op, currentConfig);
+            break;
+          case CMD_RESUME_TRIGGER:
+            currentConfig = handleResumeTrigger(req, rsp, op, currentConfig);
+            break;
+          case CMD_SET_POLICY:
+            currentConfig = handleSetPolicies(req, rsp, op, currentConfig);
+            break;
+          case CMD_REMOVE_POLICY:
+            currentConfig = handleRemovePolicy(req, rsp, op, currentConfig);
+            break;
+          case CMD_SET_CLUSTER_PREFERENCES:
+            currentConfig = handleSetClusterPreferences(req, rsp, op, currentConfig);
+            break;
+          case CMD_SET_CLUSTER_POLICY:
+            currentConfig = handleSetClusterPolicy(req, rsp, op, currentConfig);
+            break;
+          default:
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + op.name);
+        }
+      }
+      if (!currentConfig.equals(initialConfig)) {
+        // update in ZK
+        if (zkSetAutoScalingConfig(container.getZkController().getZkStateReader(), currentConfig)) {
+          break;
+        } else {
+          // someone else updated the config, get the latest one and re-apply our ops
+          rsp.getValues().add("retry", "initialVersion=" + initialConfig.getZkVersion());
+          continue;
+        }
+      } else {
+        // no changes
+        break;
+      }
+    }
+    rsp.getValues().add("result", "success");
+  }
+
+  private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
+    Policy policy = autoScalingConf.getPolicy();
     try (CloudSolrClient build = new CloudSolrClient.Builder()
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
@@ -204,91 +239,103 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  private void handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
-    List clusterPolicy = (List) op.getCommandData();
+  private AutoScalingConfig handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                                   AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
+    List<Map<String, Object>> clusterPolicy = (List<Map<String, Object>>) op.getCommandData();
     if (clusterPolicy == null || !(clusterPolicy instanceof List)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster policies was not found");
     }
-    zkSetClusterPolicy(container.getZkController().getZkStateReader(), clusterPolicy);
-    rsp.getValues().add("result", "success");
+    List<Clause> cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+    Policy p = currentConfig.getPolicy().withClusterPolicy(cp);
+    currentConfig = currentConfig.withPolicy(p);
+    return currentConfig;
   }
 
-  private void handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
-    List preferences = (List) op.getCommandData();
+  private AutoScalingConfig handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                                        AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
+    List<Map<String, Object>> preferences = (List<Map<String, Object>>) op.getCommandData();
     if (preferences == null || !(preferences instanceof List)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster preferences not found");
     }
-    zkSetPreferences(container.getZkController().getZkStateReader(), preferences);
-    rsp.getValues().add("result", "success");
+    List<Preference> prefs = preferences.stream().map(Preference::new).collect(Collectors.toList());
+    Policy p = currentConfig.getPolicy().withClusterPreferences(prefs);
+    currentConfig = currentConfig.withPolicy(p);
+    return currentConfig;
   }
 
-  public void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op)
-      throws KeeperException, InterruptedException, IOException {
+  private AutoScalingConfig handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                               AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     String policyName = (String) op.getCommandData();
 
     if (policyName.trim().length() == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be empty");
     }
-    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-    Map<String, Object> policies = (Map<String, Object>) autoScalingConf.get("policies");
+    Map<String, List<Clause>> policies = currentConfig.getPolicy().getPolicies();
     if (policies == null || !policies.containsKey(policyName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No policy exists with name: " + policyName);
     }
-
-    zkSetPolicies(container.getZkController().getZkStateReader(), policyName, null);
-    rsp.getValues().add("result", "success");
+    policies = new HashMap<>(policies);
+    policies.remove(policyName);
+    Policy p = currentConfig.getPolicy().withPolicies(policies);
+    currentConfig = currentConfig.withPolicy(p);
+    return currentConfig;
   }
 
-  public void handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
-    Map<String, Object> policies = op.getDataMap();
-    for (Map.Entry<String, Object> policy : policies.entrySet()) {
+  private AutoScalingConfig handleSetPolicies(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                              AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
+    Map<String, Object> policiesMap = op.getDataMap();
+    for (Map.Entry<String, Object> policy : policiesMap.entrySet()) {
       String policyName = policy.getKey();
       if (policyName == null || policyName.trim().length() == 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");
       }
     }
-
-    zkSetPolicies(container.getZkController().getZkStateReader(), null, policies);
-
-    rsp.getValues().add("result", "success");
+    List<String> params = new ArrayList<>(currentConfig.getPolicy().getParams());
+    Map<String, List<Clause>> mergedPolicies = new HashMap<>(currentConfig.getPolicy().getPolicies());
+    Map<String, List<Clause>> newPolicies = Policy.policiesFromMap((Map<String, List<Map<String, Object>>>)op.getCommandData(),
+            params);
+    mergedPolicies.putAll(newPolicies);
+    Policy p = currentConfig.getPolicy().withPolicies(mergedPolicies).withParams(params);
+    currentConfig = currentConfig.withPolicy(p);
+    return currentConfig;
   }
 
-  private void handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private AutoScalingConfig handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                                AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
 
     if (triggerName == null || triggerName.trim().length() == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
     }
-    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
+    Map<String, AutoScalingConfig.TriggerConfig> triggers = currentConfig.getTriggerConfigs();
     Set<String> changed = new HashSet<>();
-    if (triggers == null) {
-      if (Policy.EACH.equals(triggerName)) {
-        // no harm no foul
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
-      }
-    } else {
-      if (!Policy.EACH.equals(triggerName) && !triggers.containsKey(triggerName)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
-      }
-      for (Map.Entry<String, Object> entry : triggers.entrySet()) {
-        if (Policy.EACH.equals(triggerName) || triggerName.equals(entry.getKey())) {
-          Map<String, Object> triggerProps = (Map<String, Object>) entry.getValue();
-          Boolean enabled = (Boolean)triggerProps.get(ENABLED);
-          if (enabled != null && !enabled) {
-            triggerProps.put(ENABLED, true);
-            zkSetTrigger(container.getZkController().getZkStateReader(), entry.getKey(), triggerProps);
-            changed.add(entry.getKey());
-          }
+    if (!Policy.EACH.equals(triggerName) && !triggers.containsKey(triggerName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+    }
+    Map<String, AutoScalingConfig.TriggerConfig> newTriggers = new HashMap<>();
+    for (Map.Entry<String, AutoScalingConfig.TriggerConfig> entry : triggers.entrySet()) {
+      if (Policy.EACH.equals(triggerName) || triggerName.equals(entry.getKey())) {
+        AutoScalingConfig.TriggerConfig trigger = entry.getValue();
+        if (!trigger.enabled) {
+          trigger = trigger.withEnabled(true);
+          newTriggers.put(entry.getKey(), trigger);
+          changed.add(entry.getKey());
+        } else {
+          newTriggers.put(entry.getKey(), entry.getValue());
         }
+      } else {
+        newTriggers.put(entry.getKey(), entry.getValue());
       }
     }
     rsp.getValues().add("changed", changed);
-    rsp.getValues().add("result", "success");
+    if (!changed.isEmpty()) {
+      currentConfig = currentConfig.withTriggerConfigs(newTriggers);
+    }
+    return currentConfig;
   }
 
-  private void handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private AutoScalingConfig handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                                 AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
 
     if (triggerName == null || triggerName.trim().length() == 0) {
@@ -307,55 +354,54 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
     }
 
-    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
+    Map<String, AutoScalingConfig.TriggerConfig> triggers = currentConfig.getTriggerConfigs();
     Set<String> changed = new HashSet<>();
 
-    if (triggers == null) {
-      if (Policy.EACH.equals(triggerName)) {
-      // no harm no foul
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
-      }
-    } else {
-      if (!Policy.EACH.equals(triggerName) && !triggers.containsKey(triggerName)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
-      }
-      for (Map.Entry<String, Object> entry : triggers.entrySet()) {
-        if (Policy.EACH.equals(triggerName) || triggerName.equals(entry.getKey())) {
-          Map<String, Object> triggerProps = (Map<String, Object>) entry.getValue();
-          Boolean enabled = (Boolean)triggerProps.get(ENABLED);
-          if (enabled == null || enabled) {
-            triggerProps.put(ENABLED, false);
-            if (resumeTime != null) {
-              triggerProps.put(RESUME_AT, resumeTime.getTime());
-            }
-            zkSetTrigger(container.getZkController().getZkStateReader(), entry.getKey(), triggerProps);
-            changed.add(entry.getKey());
+    if (!Policy.EACH.equals(triggerName) && !triggers.containsKey(triggerName)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+    }
+    Map<String, AutoScalingConfig.TriggerConfig> newTriggers = new HashMap<>();
+    for (Map.Entry<String, AutoScalingConfig.TriggerConfig> entry : triggers.entrySet()) {
+      if (Policy.EACH.equals(triggerName) || triggerName.equals(entry.getKey())) {
+        AutoScalingConfig.TriggerConfig trigger = entry.getValue();
+        if (trigger.enabled) {
+          trigger = trigger.withEnabled(false);
+          if (resumeTime != null) {
+            trigger = trigger.withProperty(RESUME_AT, resumeTime.getTime());
           }
+          newTriggers.put(entry.getKey(), trigger);
+          changed.add(trigger.name);
+        } else {
+          newTriggers.put(entry.getKey(), entry.getValue());
         }
+      } else {
+        newTriggers.put(entry.getKey(), entry.getValue());
       }
     }
     rsp.getValues().add("changed", changed);
-    rsp.getValues().add("result", "success");
+    if (!changed.isEmpty()) {
+      currentConfig = currentConfig.withTriggerConfigs(newTriggers);
+    }
+    return currentConfig;
   }
 
-  private void handleRemoveListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private AutoScalingConfig handleRemoveListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                    AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String listenerName = op.getStr(NAME);
 
     if (listenerName == null || listenerName.trim().length() == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The listener name cannot be null or empty");
     }
-    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-    Map<String, Object> listeners = (Map<String, Object>) autoScalingConf.get("listeners");
+    Map<String, AutoScalingConfig.TriggerListenerConfig> listeners = currentConfig.getTriggerListenerConfigs();
     if (listeners == null || !listeners.containsKey(listenerName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No listener exists with name: " + listenerName);
     }
-    zkSetListener(container.getZkController().getZkStateReader(), listenerName, null);
-    rsp.getValues().add("result", "success");
+    currentConfig = currentConfig.withoutTriggerListenerConfig(listenerName);
+    return currentConfig;
   }
 
-  private void handleSetListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private AutoScalingConfig handleSetListener(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                 AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String listenerName = op.getStr(NAME);
     String triggerName = op.getStr(TRIGGER);
     List<String> stageNames = op.getStrs(STAGE, Collections.emptyList());
@@ -367,12 +413,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The listener name cannot be null or empty");
     }
 
-    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
+    Map<String, AutoScalingConfig.TriggerConfig> triggers = currentConfig.getTriggerConfigs();
     if (triggers == null || !triggers.containsKey(triggerName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A trigger with the name " + triggerName + " does not exist");
     }
-    Map<String, Object> triggerProps = (Map<String, Object>) triggers.get(triggerName);
+    AutoScalingConfig.TriggerConfig triggerConfig = triggers.get(triggerName);
 
     if (stageNames.isEmpty() && beforeActions.isEmpty() && afterActions.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either 'stage' or 'beforeAction' or 'afterAction' must be specified");
@@ -380,7 +425,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
     for (String stage : stageNames) {
       try {
-        AutoScaling.EventProcessorStage.valueOf(stage);
+        TriggerEventProcessorStage.valueOf(stage);
       } catch (IllegalArgumentException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid stage name: " + stage);
       }
@@ -397,47 +442,25 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Listener not found: " + listenerClass, e);
     }
 
-    List<Map<String, String>> actions = (List<Map<String, String>>) triggerProps.get("actions");
     Set<String> actionNames = new HashSet<>();
     actionNames.addAll(beforeActions);
     actionNames.addAll(afterActions);
-    for (Map<String, String> action : actions) {
-      actionNames.remove(action.get(NAME));
+    for (AutoScalingConfig.ActionConfig action : triggerConfig.actions) {
+      actionNames.remove(action.name);
     }
     if (!actionNames.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger '" + triggerName + "' does not have actions named: " + actionNames);
     }
-
+    AutoScalingConfig.TriggerListenerConfig listener = new AutoScalingConfig.TriggerListenerConfig(listenerName, op.getValuesExcluding("name"));
     // todo - handle races between competing set-trigger and set-listener invocations
-    zkSetListener(container.getZkController().getZkStateReader(), listenerName, op.getValuesExcluding("name"));
-    rsp.getValues().add("result", "success");
+    currentConfig = currentConfig.withTriggerListenerConfig(listener);
+    return currentConfig;
   }
 
-  private void zkSetListener(ZkStateReader reader, String listenerName, Map<String, Object> listenerProperties) throws KeeperException, InterruptedException {
-    while (true) {
-      Stat stat = new Stat();
-      ZkNodeProps loaded = null;
-      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
-      loaded = ZkNodeProps.load(data);
-      Map<String, Object> listeners = (Map<String, Object>) loaded.get("listeners");
-      if (listeners == null) listeners = new HashMap<>(1);
-      if (listenerProperties != null) {
-        listeners.put(listenerName, listenerProperties);
-      } else {
-        listeners.remove(listenerName);
-      }
-      loaded = loaded.plus("listeners", listeners);
-      try {
-        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
-      } catch (KeeperException.BadVersionException bve) {
-        // somebody else has changed the configuration so we must retry
-        continue;
-      }
-      break;
-    }
-  }
-
-  private void handleSetTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private AutoScalingConfig handleSetTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                             AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
+    // we're going to modify the op - use a copy
+    op = new CommandOperation(op.name, Utils.getDeepCopy((Map)op.getCommandData(), 10));
     String triggerName = op.getStr(NAME);
 
     if (triggerName == null || triggerName.trim().length() == 0) {
@@ -448,7 +471,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (eventTypeStr == null || eventTypeStr.trim().length() == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The event type cannot be null or empty in trigger: " + triggerName);
     }
-    AutoScaling.EventType eventType = AutoScaling.EventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
+    TriggerEventType eventType = TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
 
     String waitForStr = op.getStr(WAIT_FOR, null);
     if (waitForStr != null) {
@@ -456,7 +479,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       try {
         seconds = parseHumanTime(waitForStr);
       } catch (IllegalArgumentException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'waitFor' value in trigger: " + triggerName);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'waitFor' value '" + waitForStr + "' in trigger: " + triggerName);
       }
       op.getDataMap().put(WAIT_FOR, seconds);
     }
@@ -483,9 +506,9 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Action not found: " + klass, e);
       }
     }
-
-    zkSetTrigger(container.getZkController().getZkStateReader(), triggerName, op.getValuesExcluding("name"));
-    rsp.getValues().add("result", "success");
+    AutoScalingConfig.TriggerConfig trigger = new AutoScalingConfig.TriggerConfig(triggerName, op.getValuesExcluding("name"));
+    currentConfig = currentConfig.withTriggerConfig(trigger);
+    return currentConfig;
   }
 
   private int parseHumanTime(String timeStr) {
@@ -508,141 +531,59 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return seconds;
   }
 
-  private void handleRemoveTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException {
+  private AutoScalingConfig handleRemoveTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
+                                   AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
     boolean removeListeners = op.getBoolean(REMOVE_LISTENERS, false);
 
     if (triggerName == null || triggerName.trim().length() == 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
     }
-    Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
-    Map<String, Object> triggers = (Map<String, Object>) autoScalingConf.get("triggers");
-    if (triggers == null || !triggers.containsKey(triggerName)) {
+    Map<String, AutoScalingConfig.TriggerConfig> triggerConfigs = currentConfig.getTriggerConfigs();
+    if (!triggerConfigs.containsKey(triggerName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
     }
-
-    Map<String, Map<String, Object>> listeners = (Map<String, Map<String, Object>>) autoScalingConf.get("listeners");
+    triggerConfigs = new HashMap<>(triggerConfigs);
     Set<String> activeListeners = new HashSet<>();
-    if (listeners != null) {
-      for (Map.Entry<String, Map<String, Object>> entry : listeners.entrySet()) {
-        Map<String, Object> listenerProps = entry.getValue();
-        if (triggerName.equals(listenerProps.get(TRIGGER)) && !removeListeners) {
-          activeListeners.add(entry.getKey());
-        }
+    Map<String, AutoScalingConfig.TriggerListenerConfig> listeners = currentConfig.getTriggerListenerConfigs();
+    for (AutoScalingConfig.TriggerListenerConfig listener : listeners.values()) {
+      if (triggerName.equals(listener.trigger)) {
+        activeListeners.add(listener.name);
       }
     }
-    if (removeListeners) {
-      for (String activeListener : activeListeners) {
-        zkSetListener(container.getZkController().getZkStateReader(), activeListener, null);
-      }
-    } else if (!activeListeners.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Cannot remove trigger: " + triggerName + " because it has active listeners: " + activeListeners);
-    }
-
-    zkSetTrigger(container.getZkController().getZkStateReader(), triggerName, null);
-    rsp.getValues().add("result", "success");
-  }
-
-  private void zkSetTrigger(ZkStateReader reader, String triggerName, Map<String, Object> triggerProperties) throws KeeperException, InterruptedException {
-    while (true) {
-      Stat stat = new Stat();
-      ZkNodeProps loaded = null;
-      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
-      loaded = ZkNodeProps.load(data);
-      Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
-      if (triggers == null) triggers = new HashMap<>(1);
-      if (triggerProperties != null) {
-        triggers.put(triggerName, triggerProperties);
+    if (!activeListeners.isEmpty()) {
+      if (removeListeners) {
+        listeners = new HashMap<>(listeners);
+        listeners.keySet().removeAll(activeListeners);
       } else {
-        triggers.remove(triggerName);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Cannot remove trigger: " + triggerName + " because it has active listeners: " + activeListeners);
       }
-      loaded = loaded.plus("triggers", triggers);
-      try {
-        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
-      } catch (KeeperException.BadVersionException bve) {
-        // somebody else has changed the configuration so we must retry
-        continue;
-      }
-      break;
     }
+    triggerConfigs.remove(triggerName);
+    currentConfig = currentConfig.withTriggerConfigs(triggerConfigs).withTriggerListenerConfigs(listeners);
+    return currentConfig;
   }
 
-  private void zkSetPolicies(ZkStateReader reader, String policyBeRemoved, Map<String, Object> newPolicies) throws KeeperException, InterruptedException, IOException {
-    while (true) {
-      Stat stat = new Stat();
-      ZkNodeProps loaded = null;
-      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
-      loaded = ZkNodeProps.load(data);
-      Map<String, Object> policies = (Map<String, Object>) loaded.get("policies");
-      if (policies == null) policies = new HashMap<>(1);
-      if (newPolicies != null) {
-        policies.putAll(newPolicies);
-      } else {
-        policies.remove(policyBeRemoved);
-      }
-      loaded = loaded.plus("policies", policies);
-      verifyAutoScalingConf(loaded.getProperties());
-      try {
-        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
-      } catch (KeeperException.BadVersionException bve) {
-        // somebody else has changed the configuration so we must retry
-        continue;
-      }
-      break;
+
+  private boolean zkSetAutoScalingConfig(ZkStateReader reader, AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
+    verifyAutoScalingConf(currentConfig);
+    try {
+      reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(currentConfig), currentConfig.getZkVersion(), true);
+    } catch (KeeperException.BadVersionException bve) {
+      // somebody else has changed the configuration so we must retry
+      return false;
     }
+    return true;
   }
 
-  private void zkSetPreferences(ZkStateReader reader, List preferences) throws KeeperException, InterruptedException, IOException {
-    while (true) {
-      Stat stat = new Stat();
-      ZkNodeProps loaded = null;
-      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
-      loaded = ZkNodeProps.load(data);
-      loaded = loaded.plus("cluster-preferences", preferences);
-      verifyAutoScalingConf(loaded.getProperties());
-      try {
-        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
-      } catch (KeeperException.BadVersionException bve) {
-        // somebody else has changed the configuration so we must retry
-        continue;
-      }
-      break;
-    }
-  }
-
-  private void zkSetClusterPolicy(ZkStateReader reader, List clusterPolicy) throws KeeperException, InterruptedException, IOException {
-    while (true) {
-      Stat stat = new Stat();
-      ZkNodeProps loaded = null;
-      byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
-      loaded = ZkNodeProps.load(data);
-      loaded = loaded.plus("cluster-policy", clusterPolicy);
-      verifyAutoScalingConf(loaded.getProperties());
-      try {
-        reader.getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(loaded), stat.getVersion(), true);
-      } catch (KeeperException.BadVersionException bve) {
-        // somebody else has changed the configuration so we must retry
-        continue;
-      }
-      break;
-    }
-  }
-
-  private void verifyAutoScalingConf(Map<String, Object> autoScalingConf) throws IOException {
+  private void verifyAutoScalingConf(AutoScalingConfig autoScalingConf) throws IOException {
     try (CloudSolrClient build = new CloudSolrClient.Builder()
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      Policy policy = new Policy(autoScalingConf);
-      Policy.Session session = policy.createSession(new SolrClientDataProvider(build));
+      Policy.Session session = autoScalingConf.getPolicy().createSession(new SolrClientDataProvider(build));
       log.debug("Verified autoscaling configuration");
     }
-  }
-
-  private Map<String, Object> zkReadAutoScalingConf(ZkStateReader reader) throws KeeperException, InterruptedException {
-    byte[] data = reader.getZkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
-    ZkNodeProps loaded = ZkNodeProps.load(data);
-    return loaded.getProperties();
   }
 
   @Override

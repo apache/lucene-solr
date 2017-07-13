@@ -53,8 +53,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
-import org.apache.solr.cloud.autoscaling.AutoScaling;
-import org.apache.solr.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -179,7 +178,7 @@ public class ZkController {
 
   private final SolrZkClient zkClient;
   private final ZkCmdExecutor cmdExecutor;
-  private final ZkStateReader zkStateReader;
+  public final ZkStateReader zkStateReader;
 
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
@@ -578,16 +577,6 @@ public class ZkController {
   }
 
   /**
-   *
-   * @return current configuration from <code>autoscaling.json</code>. NOTE:
-   * this data is retrieved from ZK on each call.
-   */
-  public AutoScalingConfig getAutoScalingConfig() throws KeeperException, InterruptedException {
-    Map<String, Object> jsonMap = Utils.getJson(zkClient, ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
-    return new AutoScalingConfig(jsonMap);
-  }
-
-  /**
    * Returns config file data (in bytes)
    */
   public byte[] getConfigFileData(String zkConfigName, String fileName)
@@ -839,7 +828,7 @@ public class ZkController {
       // then don't create markers
       boolean createNodes = false;
       try {
-        createNodes = getAutoScalingConfig().hasTriggerForEvents(AutoScaling.EventType.NODELOST);
+        createNodes = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODELOST);
       } catch (KeeperException | InterruptedException e1) {
         log.warn("Unable to read autoscaling.json", e1);
       }
@@ -938,7 +927,7 @@ public class ZkController {
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
     // if there are nodeAdded triggers don't create nodeAdded markers
-    boolean createMarkerNode = getAutoScalingConfig().hasTriggerForEvents(AutoScaling.EventType.NODEADDED);
+    boolean createMarkerNode = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODEADDED);
     if (createMarkerNode && !zkClient.exists(nodeAddedPath, true)) {
       // use EPHEMERAL so that it disappears if this node goes down
       // and no other action is taken

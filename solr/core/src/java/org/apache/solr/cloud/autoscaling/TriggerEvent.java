@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.util.IdUtils;
 
@@ -33,15 +34,15 @@ public class TriggerEvent implements MapWriter {
   protected final String id;
   protected final String source;
   protected final long eventTime;
-  protected final AutoScaling.EventType eventType;
+  protected final TriggerEventType eventType;
   protected final Map<String, Object> properties = new HashMap<>();
 
-  public TriggerEvent(AutoScaling.EventType eventType, String source, long eventTime,
+  public TriggerEvent(TriggerEventType eventType, String source, long eventTime,
                       Map<String, Object> properties) {
     this(IdUtils.timeRandomId(eventTime), eventType, source, eventTime, properties);
   }
 
-  public TriggerEvent(String id, AutoScaling.EventType eventType, String source, long eventTime,
+  public TriggerEvent(String id, TriggerEventType eventType, String source, long eventTime,
                       Map<String, Object> properties) {
     this.id = id;
     this.eventType = eventType;
@@ -92,7 +93,7 @@ public class TriggerEvent implements MapWriter {
   /**
    * Event type.
    */
-  public AutoScaling.EventType getEventType() {
+  public TriggerEventType getEventType() {
     return eventType;
   }
 

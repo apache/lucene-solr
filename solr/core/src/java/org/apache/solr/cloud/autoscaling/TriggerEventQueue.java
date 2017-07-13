@@ -3,6 +3,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -91,7 +92,7 @@ public class TriggerEventQueue extends DistributedQueue {
     String id = (String)map.get("id");
     String source = (String)map.get("source");
     long eventTime = ((Number)map.get("eventTime")).longValue();
-    AutoScaling.EventType eventType = AutoScaling.EventType.valueOf((String)map.get("eventType"));
+    TriggerEventType eventType = TriggerEventType.valueOf((String)map.get("eventType"));
     Map<String, Object> properties = (Map<String, Object>)map.get("properties");
     TriggerEvent res = new TriggerEvent(id, eventType, source, eventTime, properties);
     res.getProperties().put(DEQUEUE_TIME, timeSource.getTime());

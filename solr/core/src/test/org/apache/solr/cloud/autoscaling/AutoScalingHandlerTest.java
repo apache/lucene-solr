@@ -22,10 +22,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -41,6 +44,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.data.Stat;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -182,7 +186,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(response.get("result").toString(), "success");
     assertEquals(response.get("changed").toString(), "[node_lost_trigger]");
 
-    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    Stat stat = new Stat();
+    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, stat, true);
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
@@ -370,7 +375,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertEquals(1, listeners.size());
     assertTrue(listeners.containsKey("xyz"));
     Map<String, Object> xyzListener = (Map<String, Object>) listeners.get("xyz");
-    assertEquals(5, xyzListener.size());
+    assertEquals(6, xyzListener.size());
     assertEquals("org.apache.solr.cloud.autoscaling.HttpTriggerListener", xyzListener.get("class").toString());
 
     String removeTriggerCommand = "{" +
@@ -709,6 +714,53 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
     }
+  }
+
+  @Test
+  public void testConcurrentUpdates() throws Exception {
+    int COUNT = 50;
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CountDownLatch updateLatch = new CountDownLatch(COUNT * 2);
+    Runnable r = () -> {
+      for (int i = 0; i < COUNT; i++) {
+        String setTriggerCommand = "{" +
+            "'set-trigger' : {" +
+            "'name' : 'node_added_trigger1'," +
+            "'event' : 'nodeAdded'," +
+            "'waitFor' : '0s'," +
+            "'enabled' : true" +
+            "}}";
+        SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+        NamedList<Object> response = null;
+        try {
+          response = solrClient.request(req);
+          assertEquals(response.get("result").toString(), "success");
+        } catch (Exception e) {
+          fail(e.toString());
+        } finally {
+          updateLatch.countDown();
+        }
+      }
+    };
+    Thread t1 = new Thread(r);
+    Thread t2 = new Thread(r);
+    t1.start();
+    t2.start();
+    boolean await = updateLatch.await(60, TimeUnit.SECONDS);
+    assertTrue("not all updates executed in time, remaining=" + updateLatch.getCount(), await);
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    NamedList<Object> response = solrClient.request(req);
+
+    Map triggers = (Map) response.get("triggers");
+    assertNotNull(triggers);
+    assertEquals(1, triggers.size());
+    assertTrue(triggers.containsKey("node_added_trigger1"));
+    Map node_added_trigger1 = (Map) triggers.get("node_added_trigger1");
+    assertEquals(4, node_added_trigger1.size());
+    assertEquals(0L, node_added_trigger1.get("waitFor"));
+    assertEquals(true, node_added_trigger1.get("enabled"));
+    assertEquals(3, ((List)node_added_trigger1.get("actions")).size());
+
   }
 
 

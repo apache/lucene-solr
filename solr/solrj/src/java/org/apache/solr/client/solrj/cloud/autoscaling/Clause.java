@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,14 +52,14 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 // a set of conditions in a policy
 public class Clause implements MapWriter, Comparable<Clause> {
-  public Map<String, Object> original;
-  public Condition collection, shard, replica, tag, globalTag;
-  public final Replica.Type type;
+  final Map<String, Object> original;
+  Condition collection, shard, replica, tag, globalTag;
+  final Replica.Type type;
 
   boolean strict = true;
 
   public Clause(Map<String, Object> m) {
-    this.original = m;
+    this.original = Utils.getDeepCopy(m, 10);
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
@@ -74,7 +75,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       collection = parse(COLLECTION, m);
       shard = parse(SHARD, m);
-      if(m.get(REPLICA) == null){
+      if (m.get(REPLICA) == null) {
         throw new RuntimeException(StrUtils.formatString("'replica' is required in {0}", Utils.toJSONString(m)));
       }
       this.replica = parse(REPLICA, m);
@@ -126,10 +127,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       return 0;
     }
-
   }
 
-  void addTags(List<String> params) {
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Clause that = (Clause)o;
+    return compareTo(that) == 0;
+  }
+
+  void addTags(Collection<String> params) {
     if (globalTag != null && !params.contains(globalTag.name)) params.add(globalTag.name);
     if (tag != null && !params.contains(tag.name)) params.add(tag.name);
   }

@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -925,17 +928,17 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(1, events.size());
     TriggerEvent ev = events.iterator().next();
     assertEquals(overseerLeader, ev.getProperty(TriggerEvent.NODE_NAME));
-    assertEquals(AutoScaling.EventType.NODELOST, ev.getEventType());
+    assertEquals(TriggerEventType.NODELOST, ev.getEventType());
   }
 
   private static class TestEvent {
     final AutoScalingConfig.TriggerListenerConfig config;
-    final AutoScaling.EventProcessorStage stage;
+    final TriggerEventProcessorStage stage;
     final String actionName;
     final TriggerEvent event;
     final String message;
 
-    TestEvent(AutoScalingConfig.TriggerListenerConfig config, AutoScaling.EventProcessorStage stage, String actionName, TriggerEvent event, String message) {
+    TestEvent(AutoScalingConfig.TriggerListenerConfig config, TriggerEventProcessorStage stage, String actionName, TriggerEvent event, String message) {
       this.config = config;
       this.stage = stage;
       this.actionName = actionName;
@@ -967,7 +970,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
 
     @Override
-    public synchronized void onEvent(TriggerEvent event, AutoScaling.EventProcessorStage stage, String actionName,
+    public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<TestEvent> lst = listenerEvents.get(config.name);
       if (lst == null) {
@@ -1058,34 +1061,34 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertNotNull("foo events: " + testEvents, testEvents);
     assertEquals("foo events: " + testEvents, 5, testEvents.size());
 
-    assertEquals(AutoScaling.EventProcessorStage.STARTED, testEvents.get(0).stage);
+    assertEquals(TriggerEventProcessorStage.STARTED, testEvents.get(0).stage);
 
-    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(1).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, testEvents.get(1).stage);
     assertEquals("test", testEvents.get(1).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(2).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, testEvents.get(2).stage);
     assertEquals("test", testEvents.get(2).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(3).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, testEvents.get(3).stage);
     assertEquals("test1", testEvents.get(3).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.SUCCEEDED, testEvents.get(4).stage);
+    assertEquals(TriggerEventProcessorStage.SUCCEEDED, testEvents.get(4).stage);
 
     // check bar events
     testEvents = listenerEvents.get("bar");
     assertNotNull("bar events", testEvents);
     assertEquals("bar events", 4, testEvents.size());
 
-    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(0).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, testEvents.get(0).stage);
     assertEquals("test", testEvents.get(0).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(1).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, testEvents.get(1).stage);
     assertEquals("test", testEvents.get(1).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(2).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, testEvents.get(2).stage);
     assertEquals("test1", testEvents.get(2).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.SUCCEEDED, testEvents.get(3).stage);
+    assertEquals(TriggerEventProcessorStage.SUCCEEDED, testEvents.get(3).stage);
 
     // reset
     triggerFired.set(false);
@@ -1104,15 +1107,15 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertNotNull("foo events: " + testEvents, testEvents);
     assertEquals("foo events: " + testEvents, 4, testEvents.size());
 
-    assertEquals(AutoScaling.EventProcessorStage.STARTED, testEvents.get(0).stage);
+    assertEquals(TriggerEventProcessorStage.STARTED, testEvents.get(0).stage);
 
-    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(1).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, testEvents.get(1).stage);
     assertEquals("test", testEvents.get(1).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(2).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, testEvents.get(2).stage);
     assertEquals("test", testEvents.get(2).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.FAILED, testEvents.get(3).stage);
+    assertEquals(TriggerEventProcessorStage.FAILED, testEvents.get(3).stage);
     assertEquals("test1", testEvents.get(3).actionName);
 
     // check bar events
@@ -1120,16 +1123,16 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertNotNull("bar events", testEvents);
     assertEquals("bar events", 4, testEvents.size());
 
-    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(0).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, testEvents.get(0).stage);
     assertEquals("test", testEvents.get(0).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.AFTER_ACTION, testEvents.get(1).stage);
+    assertEquals(TriggerEventProcessorStage.AFTER_ACTION, testEvents.get(1).stage);
     assertEquals("test", testEvents.get(1).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.BEFORE_ACTION, testEvents.get(2).stage);
+    assertEquals(TriggerEventProcessorStage.BEFORE_ACTION, testEvents.get(2).stage);
     assertEquals("test1", testEvents.get(2).actionName);
 
-    assertEquals(AutoScaling.EventProcessorStage.FAILED, testEvents.get(3).stage);
+    assertEquals(TriggerEventProcessorStage.FAILED, testEvents.get(3).stage);
     assertEquals("test1", testEvents.get(3).actionName);
   }
 }

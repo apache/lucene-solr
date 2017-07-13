@@ -14,34 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.autoscaling;
-
-import java.io.IOException;
-
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.core.CoreContainer;
+package org.apache.solr.client.solrj.cloud.autoscaling;
 
 /**
- * Base class for implementations of {@link TriggerListener}.
+ * Enum that represents the stages of trigger event processing.
  */
-public abstract class TriggerListenerBase implements TriggerListener {
-
-  protected AutoScalingConfig.TriggerListenerConfig config;
-  protected CoreContainer coreContainer;
-
-  @Override
-  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
-    this.coreContainer = coreContainer;
-    this.config = config;
-  }
-
-  @Override
-  public AutoScalingConfig.TriggerListenerConfig getConfig() {
-    return config;
-  }
-
-  @Override
-  public void close() throws IOException {
-
-  }
+public enum TriggerEventProcessorStage {
+  WAITING,
+  STARTED,
+  ABORTED,
+  SUCCEEDED,
+  FAILED,
+  BEFORE_ACTION,
+  AFTER_ACTION
 }

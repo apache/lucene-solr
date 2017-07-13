@@ -38,6 +38,7 @@ public interface AutoScalingParams {
   String AFTER_ACTION = "afterAction";
   String TIMEOUT = "timeout";
   String REMOVE_LISTENERS = "removeListeners";
+  String ZK_VERSION = "zkVersion";
 
   // commands
   String CMD_SET_TRIGGER = "set-trigger";

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Charsets;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -261,7 +262,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     TriggerEvent triggerEvent = eventRef.get();
     assertNotNull(triggerEvent);
-    assertEquals(AutoScaling.EventType.NODELOST, triggerEvent.getEventType());
+    assertEquals(TriggerEventType.NODELOST, triggerEvent.getEventType());
     assertEquals(stoppedNodeName, triggerEvent.getProperty(TriggerEvent.NODE_NAME));
 
     Map context = actionContextPropsRef.get();

@@ -46,6 +46,7 @@ import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 /*The class that reads, parses and applies policies specified in
@@ -61,55 +62,78 @@ public class Policy implements MapWriter {
   public static final String POLICY = "policy";
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
+  public static final String POLICIES = "policies";
   public static final String CLUSTER_POLICY = "cluster-policy";
-  public static final String CLUSTER_PREFERENCE = "cluster-preferences";
+  public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
-  final Map<String, List<Clause>> policies = new HashMap<>();
+  public static final Preference DEFAULT_PREFERENCE = new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}"));
+  final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
   final List<String> params;
 
+  public Policy() {
+    this(Collections.emptyMap());
+  }
 
   public Policy(Map<String, Object> jsonMap) {
 
-    clusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCE, emptyList())).stream()
+    List<Preference> initialClusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCES, emptyList())).stream()
         .map(Preference::new)
         .collect(toList());
-    for (int i = 0; i < clusterPreferences.size() - 1; i++) {
-      Preference preference = clusterPreferences.get(i);
-      preference.next = clusterPreferences.get(i + 1);
+    for (int i = 0; i < initialClusterPreferences.size() - 1; i++) {
+      Preference preference = initialClusterPreferences.get(i);
+      preference.next = initialClusterPreferences.get(i + 1);
     }
-    if (clusterPreferences.isEmpty()) {
-      clusterPreferences.add(new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")));
+    if (initialClusterPreferences.isEmpty()) {
+      initialClusterPreferences.add(DEFAULT_PREFERENCE);
     }
-    SortedSet<String> paramsOfInterest = new TreeSet<>();
+    this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
+    final SortedSet<String> paramsOfInterest = new TreeSet<>();
     for (Preference preference : clusterPreferences) {
       if (paramsOfInterest.contains(preference.name.name())) {
         throw new RuntimeException(preference.name + " is repeated");
       }
       paramsOfInterest.add(preference.name.toString());
     }
-    this.params = new ArrayList<>(paramsOfInterest);
-
+    List<String> newParams = new ArrayList<>(paramsOfInterest);
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)
         .filter(clause -> {
-          clause.addTags(params);
+          clause.addTags(newParams);
           return true;
         })
-        .collect(Collectors.toList());
+        .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-    ((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault("policies", emptyMap())).forEach((s, l1) ->
-        this.policies.put(s, l1.stream()
-            .map(Clause::new)
-            .filter(clause -> {
-              if (!clause.isPerCollectiontag())
-                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
-              clause.addTags(params);
-              return true;
-            })
-            .sorted()
-            .collect(toList())));
+    this.policies = Collections.unmodifiableMap(
+        policiesFromMap((Map<String, List<Map<String, Object>>>)jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
+    this.params = Collections.unmodifiableList(newParams);
+
+  }
+
+  private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences,
+                 List<String> params) {
+    this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
+    this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
+    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) :
+        Collections.singletonList(DEFAULT_PREFERENCE);
+    this.params = params != null ? Collections.unmodifiableList(params) : Collections.emptyList();
+  }
+
+  public Policy withPolicies(Map<String, List<Clause>> policies) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
+  }
+
+  public Policy withClusterPreferences(List<Preference> clusterPreferences) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
+  }
+
+  public Policy withClusterPolicy(List<Clause> clusterPolicy) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
+  }
+
+  public Policy withParams(List<String> params) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
   }
 
   public List<Clause> getClusterPolicy() {
@@ -123,24 +147,43 @@ public class Policy implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     if (!policies.isEmpty()) {
-      ew.put("policies", (MapWriter) ew1 -> {
+      ew.put(POLICIES, (MapWriter) ew1 -> {
         for (Map.Entry<String, List<Clause>> e : policies.entrySet()) {
           ew1.put(e.getKey(), e.getValue());
         }
       });
     }
     if (!clusterPreferences.isEmpty()) {
-      ew.put("preferences", (IteratorWriter) iw -> {
+      ew.put(CLUSTER_PREFERENCES, (IteratorWriter) iw -> {
         for (Preference p : clusterPreferences) iw.add(p);
       });
     }
+    if (!clusterPolicy.isEmpty()) {
+      ew.put(CLUSTER_POLICY, (IteratorWriter) iw -> {
+        for (Clause c : clusterPolicy) {
+          iw.add(c);
+        }
+      });
+    }
+  }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Policy policy = (Policy) o;
+
+    if (!getPolicies().equals(policy.getPolicies())) return false;
+    if (!getClusterPolicy().equals(policy.getClusterPolicy())) return false;
+    if (!getClusterPreferences().equals(policy.getClusterPreferences())) return false;
+    return params.equals(policy.params);
   }
 
   /*This stores the logical state of the system, given a policy and
-   * a cluster state.
-   *
-   */
+     * a cluster state.
+     *
+     */
   public class Session implements MapWriter {
     final List<String> nodes;
     final ClusterDataProvider dataProvider;
@@ -461,6 +504,22 @@ public class Policy implements MapWriter {
 
   }
 
+  public static Map<String, List<Clause>> policiesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
+    Map<String, List<Clause>> newPolicies = new HashMap<>();
+    map.forEach((s, l1) ->
+        newPolicies.put(s, l1.stream()
+            .map(Clause::new)
+            .filter(clause -> {
+              if (!clause.isPerCollectiontag())
+                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
+              clause.addTags(newParams);
+              return true;
+            })
+            .sorted()
+            .collect(collectingAndThen(toList(), Collections::unmodifiableList))));
+    return newPolicies;
+  }
+
   public static List<Clause> mergePolicies(String coll,
                                     List<Clause> collPolicy,
                                     List<Clause> globalPolicy) {
@@ -498,5 +557,9 @@ public class Policy implements MapWriter {
 
   public Map<String, List<Clause>> getPolicies() {
     return policies;
+  }
+
+  public List<String> getParams() {
+    return params;
   }
 }

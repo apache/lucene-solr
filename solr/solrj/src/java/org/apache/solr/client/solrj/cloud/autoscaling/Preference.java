@@ -30,10 +30,10 @@ public class Preference implements MapWriter {
   Integer precision;
   final Policy.Sort sort;
   Preference next;
-  public int idx;
+  private int idx;
   private final Map original;
 
-  Preference(Map<String, Object> m) {
+  public Preference(Map<String, Object> m) {
     this.original = Utils.getDeepCopy(m,3);
     sort = Policy.Sort.get(m);
     name = Policy.SortParam.get(m.get(sort.name()).toString());
@@ -84,6 +84,21 @@ public class Preference implements MapWriter {
       Map.Entry e = (Map.Entry) o;
       ew.put(String.valueOf(e.getKey()), e.getValue());
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Preference that = (Preference) o;
+
+    if (idx != that.idx) return false;
+    if (getName() != that.getName()) return false;
+    if (precision != null ? !precision.equals(that.precision) : that.precision != null) return false;
+    if (sort != that.sort) return false;
+    if (next != null ? !next.equals(that.next) : that.next != null) return false;
+    return original.equals(that.original);
   }
 
   public Policy.SortParam getName() {

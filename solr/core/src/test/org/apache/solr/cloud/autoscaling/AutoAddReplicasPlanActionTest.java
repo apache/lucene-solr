@@ -20,11 +20,11 @@ package org.apache.solr.cloud.autoscaling;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -126,7 +126,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
   private List<SolrRequest> getOperations(JettySolrRunner actionJetty, String lostNodeName) {
     AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction();
-    TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(AutoScaling.EventType.NODELOST, ".auto_add_replicas", System.currentTimeMillis(), lostNodeName);
+    TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", System.currentTimeMillis(), lostNodeName);
     ActionContext context = new ActionContext(actionJetty.getCoreContainer(), null, new HashMap<>());
     action.process(lostNode, context);
     List<SolrRequest> operations = (List) context.getProperty("operations");

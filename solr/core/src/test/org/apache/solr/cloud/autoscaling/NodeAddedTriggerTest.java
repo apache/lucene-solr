@@ -43,7 +43,7 @@ public class NodeAddedTriggerTest extends SolrCloudTestCase {
   private static AtomicBoolean actionInitCalled = new AtomicBoolean(false);
   private static AtomicBoolean actionCloseCalled = new AtomicBoolean(false);
 
-  private AutoScaling.EventProcessor noFirstRunProcessor = event -> {
+  private AutoScaling.TriggerEventProcessor noFirstRunProcessor = event -> {
     fail("Did not expect the listener to fire on first run!");
     return true;
   };

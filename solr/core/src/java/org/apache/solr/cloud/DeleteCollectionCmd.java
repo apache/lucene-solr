@@ -19,6 +19,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -129,7 +130,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             .getRequestHandler(AutoScalingHandler.HANDLER_PATH);
         SolrQueryResponse rsp = new SolrQueryResponse();
         try {
-          ash.handleRemovePolicy(null, rsp, new CommandOperation(AutoScalingParams.CMD_REMOVE_POLICY, collectionSpecificPolicy));
+          ash.processOps(null, rsp, Collections.singletonList(new CommandOperation(AutoScalingParams.CMD_REMOVE_POLICY, collectionSpecificPolicy)));
         } catch (SolrException e) {
           if (e.getMessage().contains("No policy exists with name")) {
             log.warn("The policy: " + collectionSpecificPolicy + " does not exist to be removed");

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Trigger for the {@link org.apache.solr.cloud.autoscaling.AutoScaling.EventType#NODEADDED} event
+ * Trigger for the {@link TriggerEventType#NODEADDED} event
  */
 public class NodeAddedTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -52,10 +53,10 @@ public class NodeAddedTrigger extends TriggerBase {
   private final Map<String, Object> properties;
   private final CoreContainer container;
   private final List<TriggerAction> actions;
-  private final AtomicReference<AutoScaling.EventProcessor> processorRef;
+  private final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef;
   private final boolean enabled;
   private final int waitForSecond;
-  private final AutoScaling.EventType eventType;
+  private final TriggerEventType eventType;
   private final TimeSource timeSource;
 
   private boolean isClosed = false;
@@ -86,7 +87,7 @@ public class NodeAddedTrigger extends TriggerBase {
     log.debug("Initial livenodes: {}", lastLiveNodes);
     this.enabled = (boolean) properties.getOrDefault("enabled", true);
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
-    this.eventType = AutoScaling.EventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
+    this.eventType = TriggerEventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
     log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);
   }
 
@@ -119,12 +120,12 @@ public class NodeAddedTrigger extends TriggerBase {
   }
 
   @Override
-  public void setProcessor(AutoScaling.EventProcessor processor) {
+  public void setProcessor(AutoScaling.TriggerEventProcessor processor) {
     processorRef.set(processor);
   }
 
   @Override
-  public AutoScaling.EventProcessor getProcessor() {
+  public AutoScaling.TriggerEventProcessor getProcessor() {
     return processorRef.get();
   }
 
@@ -134,7 +135,7 @@ public class NodeAddedTrigger extends TriggerBase {
   }
 
   @Override
-  public AutoScaling.EventType getEventType() {
+  public TriggerEventType getEventType() {
     return eventType;
   }
 
@@ -254,7 +255,7 @@ public class NodeAddedTrigger extends TriggerBase {
         long now = timeSource.getTime();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
           // fire!
-          AutoScaling.EventProcessor processor = processorRef.get();
+          AutoScaling.TriggerEventProcessor processor = processorRef.get();
           if (processor != null) {
             log.debug("NodeAddedTrigger {} firing registered processor for node: {} added at time {} , now: {}", name, nodeName, timeAdded, now);
             if (processor.process(new NodeAddedEvent(getEventType(), getName(), timeAdded, nodeName))) {
@@ -297,7 +298,7 @@ public class NodeAddedTrigger extends TriggerBase {
 
   public static class NodeAddedEvent extends TriggerEvent {
 
-    public NodeAddedEvent(AutoScaling.EventType eventType, String source, long nodeAddedTime, String nodeAdded) {
+    public NodeAddedEvent(TriggerEventType eventType, String source, long nodeAddedTime, String nodeAdded) {
       super(eventType, source, nodeAddedTime, Collections.singletonMap(NODE_NAME, nodeAdded));
     }
   }

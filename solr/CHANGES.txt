@@ -74,6 +74,8 @@ Optimizations
 * SOLR-10985: Remove unnecessary toString() calls in solr-core's search package's debug logging.
   (Michael Braun via Christine Poerschke)
 
+* SOLR-11000: Changes made via AutoScalingHandler should be atomic. (ab, shalin)
+
 Other Changes
 ----------------------
 

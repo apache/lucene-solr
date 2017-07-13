@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -106,7 +107,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       action.init(Collections.singletonMap("name", "execute_plan"));
       CollectionAdminRequest.MoveReplica moveReplica = new CollectionAdminRequest.MoveReplica(collectionName, replicas.get(0).getName(), survivor.getNodeName());
       List<SolrRequest> operations = Collections.singletonList(moveReplica);
-      NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(AutoScaling.EventType.NODELOST,
+      NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
           "mock_trigger_name", TimeSource.CURRENT_TIME.getTime(), sourceNodeName);
       ActionContext actionContext = new ActionContext(survivor.getCoreContainer(), null,
           new HashMap<>(Collections.singletonMap("operations", operations)));

@@ -188,9 +188,9 @@ public class CreateCollectionCmd implements Cmd {
             Map newPolicy = Utils.makeMap(REPLICA, "<" + (maxShardsPerNode + 1), SHARD, Policy.EACH, "node", Policy.ANY);
             SolrQueryResponse rsp = new SolrQueryResponse();
             policy = "COLL_POLICY_" + collectionName;
-            ash.handleSetPolicies(null, rsp, new CommandOperation(AutoScalingParams.CMD_SET_POLICY, singletonMap(
+            ash.processOps(null, rsp, Collections.singletonList(new CommandOperation(AutoScalingParams.CMD_SET_POLICY, singletonMap(
                 policy
-                , Collections.singletonList(newPolicy))));
+                , Collections.singletonList(newPolicy)))));
             if (!"success".equals(rsp.getValues().get("result"))) {
               throw new SolrException(ErrorCode.SERVER_ERROR, "unable to create new policy");
             }

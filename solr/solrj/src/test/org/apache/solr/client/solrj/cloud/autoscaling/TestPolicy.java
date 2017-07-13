@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
-import org.apache.solr.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -984,7 +983,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
-        "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
+        "newColl", new AutoScalingConfig((Map<String, Object>)Utils.fromJSONString(autoScaleJson)),
         dataProvider, Collections.singletonMap("newColl", "c1"), Arrays.asList("shard1", "shard2"), 1, 0, 0, null);
 
     assertTrue(locations.stream().allMatch(it -> it.node.equals("127.0.0.1:50096_solr")) );
@@ -1041,7 +1040,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     };
     List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations(
-        "newColl", (Map<String, Object>) Utils.fromJSONString(autoScaleJson),
+        "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
         dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3,0,0, null);
     assertTrue(locations.stream().allMatch(it -> ImmutableList.of("node2", "node1", "node3").contains(it.node)) );
   }
