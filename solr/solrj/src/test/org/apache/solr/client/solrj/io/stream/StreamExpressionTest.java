@@ -6021,6 +6021,30 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(8).intValue() == 9);
   }
 
+
+  @Test
+  public void testResiduals() throws Exception {
+    String cexpr = "let(a=array(1,2,3,4,5,6), b=array(2,4,6,8,10,12), c=regress(a,b), tuple(res=residuals(c,a,a)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("res");
+    assertTrue(out.size() == 6);
+    assertTrue(out.get(0).intValue() == -1);
+    assertTrue(out.get(1).intValue() == -2);
+    assertTrue(out.get(2).intValue() == -3);
+    assertTrue(out.get(3).intValue() == -4);
+    assertTrue(out.get(4).intValue() == -5);
+    assertTrue(out.get(5).intValue() == -6);
+  }
+
+
   @Test
   public void testAnova() throws Exception {
     String cexpr = "anova(array(1,2,3,5,4,6), array(5,2,3,5,4,6), array(1,2,7,5,4,6))";

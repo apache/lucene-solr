@@ -269,7 +269,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     int numValues = 10 * RANDOM_MULTIPLIER;
     // don't produce numbers with exponents, since XPath comparison operators can't handle them
     List<Integer> values  = getRandomInts(numValues, false, 9999999);
-    System.err.println(Arrays.toString(values.toArray(new Integer[values.size()])));
+    // System.err.println(Arrays.toString(values.toArray(new Integer[values.size()])));
     List<Integer> sortedValues = values.stream().sorted().collect(Collectors.toList());
     double min = (double)sortedValues.get(0);
     double max = (double)sortedValues.get(sortedValues.size() - 1);
@@ -680,7 +680,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // don't produce numbers with exponents, since XPath comparison operators can't handle them: 7 digits of precision
     List<Float> values  = getRandomInts(numValues, false, 9999999).stream()
         .map(v -> (float)((double)v * Math.pow(10D, -1 * random().nextInt(8)))).collect(Collectors.toList());
-    System.err.println(Arrays.toString(values.toArray(new Float[values.size()])));
+    // System.err.println(Arrays.toString(values.toArray(new Float[values.size()])));
     List<Float> sortedValues = values.stream().sorted().collect(Collectors.toList());
     double min = (double)sortedValues.get(0);
     double max = (double)sortedValues.get(sortedValues.size() - 1);
@@ -980,7 +980,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // don't produce numbers with exponents, since XPath comparison operators can't handle them: 7 digits of precision
     List<Float> values  = getRandomInts(numValues, false, 9999999).stream()
         .map(v -> (float)((double)v * Math.pow(10D, -1 * random().nextInt(8)))).collect(Collectors.toList());
-    System.err.println(Arrays.toString(values.toArray(new Float[values.size()])));
+    // System.err.println(Arrays.toString(values.toArray(new Float[values.size()])));
     List<Float> sortedValues = values.stream().sorted().collect(Collectors.toList());
     double min = (double)sortedValues.get(0);
     double max = (double)sortedValues.get(sortedValues.size() - 1);
@@ -1187,15 +1187,20 @@ public class TestPointFields extends SolrTestCaseJ4 {
       sortedValues = values.stream().sorted().collect(Collectors.toList());
     } while ((max = sortedValues.get(sortedValues.size() - 1)) >= Long.MAX_VALUE - numValues); // leave room for rounding 
     long min = sortedValues.get(0);
-    long gap = BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
-        .divide(BigInteger.valueOf(numBuckets)).longValueExact();
+    BigInteger bigIntGap =  BigInteger.valueOf(max + numValues).subtract(BigInteger.valueOf(min))
+        .divide(BigInteger.valueOf(numBuckets));
+    long gap = bigIntGap.longValueExact();
     int[] bucketCount = new int[numBuckets];
     int bucketNum = 0;
     long minBucketVal = min;
+    // System.err.println("min:" + min + "   max: " + max + "   gap: " + gap);
+    // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
     for (Long value : sortedValues) {
-      while (value - minBucketVal >= gap) {
+      // System.err.println("value: " + value);
+      while (BigInteger.valueOf(value).subtract(BigInteger.valueOf(minBucketVal)).compareTo(bigIntGap) > 0) {
         ++bucketNum;
         minBucketVal += gap;
+        // System.err.println("bucketNum: " + bucketNum + "   minBucketVal: " + minBucketVal);
       }
       ++bucketCount[bucketNum];
     }
