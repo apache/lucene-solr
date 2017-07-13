@@ -216,9 +216,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
               public long longValue() throws IOException {
-                long bits = super.longValue();
-                if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                return bits;
+                return NumericUtils.sortableFloatBits((int)super.longValue());
               }
             };
             break;
@@ -227,9 +225,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
               @Override
               public long longValue() throws IOException {
-                long bits = super.longValue();
-                if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                return bits;
+               return NumericUtils.sortableDoubleBits(super.longValue());
               }
             };
             break;

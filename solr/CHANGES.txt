@@ -337,6 +337,9 @@ Bug Fixes
 * SOLR-11045: The new replica created by MoveReplica will have to have same name and coreName as the 
   old one in case of HDFS (Cao Manh Dat)
 
+* SOLR-11043: Fix facet.range.method=dv and interval facets on negative single-valued float fields.
+  (Tomás Fernández Löbbe, Steve Rowe)
+
 Optimizations
 ----------------------
 

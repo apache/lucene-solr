@@ -904,7 +904,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11043")
   public void testFloatPointFieldRangeFacet() throws Exception {
     String docValuesField = "number_p_f_dv";
     String nonDocValuesField = "number_p_f";
