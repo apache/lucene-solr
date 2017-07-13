@@ -184,7 +184,7 @@ public interface CommonParams {
   String METRICS_PATH = "/admin/metrics";
   String AUTOSCALING_PATH = "/admin/autoscaling";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
-  String MODULES_PATH = "/admin/modules";
+  String PLUGIN_BUNDLE_PATH = "/admin/pluginbundles";
 
   Set<String> ADMIN_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       CORES_HANDLER_PATH,

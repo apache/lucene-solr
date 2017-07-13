@@ -24,12 +24,13 @@ import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
-import static org.apache.solr.common.params.CommonParams.MODULES_PATH;
+import static org.apache.solr.common.params.CommonParams.PLUGIN_BUNDLE_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -105,7 +106,9 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.plugin.bundle.PluginBundleClassLoader;
 import org.apache.solr.util.plugin.bundle.PluginBundleManager;
+import org.apache.solr.util.plugin.bundle.SolrPluginManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -504,17 +507,21 @@ public class CoreContainer {
       }
     }
 
-    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
-
-    // Initialize the module system and load plugins
+    // Initialize the plugin bundles and load plugins
     usePlugins = !"false".equals(System.getProperty("solr.plugins.active"));
     if (usePlugins()) {
-      pluginBundleManager = new PluginBundleManager(Paths.get(getSolrHome()).resolve(System.getProperty("solr.plugins.dir", "plugins")));
+      pluginBundleManager = new PluginBundleManager(Paths.get(getSolrHome())
+          .resolve(System.getProperty("solr.plugins.dir", "plugins")));
+      ClassLoader oldLoader = loader.getClassLoader();
+      URLClassLoader newLoader = new PluginBundleClassLoader(oldLoader, 
+          (SolrPluginManager)pluginBundleManager.getPluginManager(), 
+          null);
+      pluginBundleManager.setUberClassLoader(newLoader);
+      loader.setClassLoader(newLoader);
       pluginBundleManager.load();
-      loader.setModulesClassLoader(pluginBundleManager.getUberClassLoader(null));
     }
 
-    metricManager = new SolrMetricManager();
+    metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
 
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
@@ -564,8 +571,8 @@ public class CoreContainer {
     if(pkiAuthenticationPlugin != null)
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
     if (usePlugins()) {
-      pluginBundleHandler = createHandler(MODULES_PATH, PluginBundleHandler.class.getName(), PluginBundleHandler.class);
-      pluginBundleHandler.initializeModules(getPluginBundleManager());
+      pluginBundleHandler = createHandler(PLUGIN_BUNDLE_PATH, PluginBundleHandler.class.getName(), PluginBundleHandler.class);
+      pluginBundleHandler.initializePlugins(getPluginBundleManager());
     }
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();

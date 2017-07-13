@@ -97,7 +97,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
 
   protected URLClassLoader classLoader;
-  protected ClassLoader modulesClassLoader;
   private final Path instanceDir;
   private String dataDir;
   
@@ -404,14 +403,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       is = classLoader.getResourceAsStream(("conf/" + resource).replace(File.separatorChar, '/'));
     }
 
-    if (is == null && modulesClassLoader != null) {
-      log.debug("Attempting to load resource {} from modules class loader", resource);
-      is = modulesClassLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
-      if (is == null) {
-        log.warn("Can't find resource {} in modules classpaths", resource);
-      }
-    }
-
     if (is == null) {
       throw new SolrResourceNotFoundException("Can't find resource '" + resource + "' in classpath or '" + instanceDir + "'");
     }
@@ -549,12 +540,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       try {
         return clazz = Class.forName(cname, true, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
-        if (modulesClassLoader != null) {
-          log.debug("Attempting load class {} from modules class loader", cname);
-          try {
-            return clazz = Class.forName(cname, true, modulesClassLoader).asSubclass(expectedType);
-          } catch (ClassNotFoundException e1) {}
-        }
         String newName = cname;
         if (newName.startsWith(project)) {
           newName = cname.substring(project.length() + 1);
@@ -564,16 +549,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           log.trace("Trying class name " + name);
           try {
             return clazz = Class.forName(name, true, classLoader).asSubclass(expectedType);
-          } catch (ClassNotFoundException e2) {
-            if (modulesClassLoader != null) {
-              log.debug("Attempting load class {} from modules class loader", name);
-              try {
-                return clazz = Class.forName(name, true, modulesClassLoader).asSubclass(expectedType);
-              } catch (ClassNotFoundException e3) {
-                // Fall-through
-              }
-            }
-          }
+          } catch (ClassNotFoundException ignored) {}
         }
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error loading class '" + cname + "'", e);
       }
@@ -937,10 +913,9 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   }
 
   /**
-   * If the modules system is in use, set modules class loader
-   * @param classLoader
+   * Replace class loader (warning: dangerous)
    */
-  public void setModulesClassLoader(ClassLoader classLoader) {
-    modulesClassLoader = classLoader;
+  public void setClassLoader(URLClassLoader loader) {
+    classLoader = loader;
   }
 }

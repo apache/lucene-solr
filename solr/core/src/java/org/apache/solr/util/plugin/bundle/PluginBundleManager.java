@@ -17,14 +17,11 @@
 
 package org.apache.solr.util.plugin.bundle;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -65,6 +62,7 @@ public class PluginBundleManager {
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(systemVersion);
+      setUberClassLoader(new PluginBundleClassLoader(getClass().getClassLoader(), pluginManager, null));
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -134,11 +132,12 @@ public class PluginBundleManager {
     return pluginManager;
   }
 
-  public ClassLoader getUberClassLoader(ClassLoader parent) {
-    if (uberLoader == null) {
-      uberLoader = new PluginBundleClassLoader(parent, pluginManager, null);
-    }
+  public ClassLoader getUberClassLoader() {
     return uberLoader;
+  }
+  
+  public void setUberClassLoader(ClassLoader parent) {
+    uberLoader = parent;
   }
   
   public void addUpdateRepository(String id, URL url) {
@@ -178,56 +177,6 @@ public class PluginBundleManager {
     } catch (PluginException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to update plugin with id " + id, e);
     }
-  }
-
-  /**
-   * A class loader that loads classes from all plugins in manager
-   */
-  public static class PluginBundleClassLoader extends URLClassLoader {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    private final SolrPluginManager manager;
-
-    public PluginBundleClassLoader(ClassLoader parent, SolrPluginManager manager, URL[] urls) {
-      super(urls == null ? new URL[] {} : urls, parent);
-      this.manager = manager;
-    }
-
-    @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
-      // First try Solr URLs
-//      try {
-//        return super.findClass(name);
-//      } catch (ClassNotFoundException ignored) {}
-      for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
-        try {
-          return loader.loadClass(name);
-        } catch (ClassNotFoundException ignore) {}
-      }
-      throw new ClassNotFoundException("Class " + name + " not found in any plugin. Tried: " + manager.getPluginClassLoaders().keySet());
-    }
-
-    @Override
-    public URL findResource(String name) {
-      for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
-        URL url = loader.getResource(name);
-        if (url != null) {
-          return url;
-        }
-      }
-
-      return null;
-    }
-
-    @Override
-    public Enumeration<URL> findResources(String name) throws IOException {
-      List<URL> resources = new ArrayList<URL>();
-      for (ClassLoader loader : manager.getPluginClassLoaders().values()) {
-        resources.addAll(Collections.list(loader.getResources(name)));
-      }
-
-      return Collections.enumeration(resources);
-    }
-
   }
 
 }

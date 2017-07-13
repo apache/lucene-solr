@@ -48,6 +48,7 @@ import ro.fortsoft.pf4j.util.AndFileFilter;
 import ro.fortsoft.pf4j.util.DirectoryFileFilter;
 import ro.fortsoft.pf4j.util.JarFileFilter;
 import ro.fortsoft.pf4j.util.NotFileFilter;
+import ro.fortsoft.pf4j.util.OrFileFilter;
 import ro.fortsoft.pf4j.util.StringUtils;
 
 /**
@@ -200,10 +201,11 @@ public class SolrPluginManager extends DefaultPluginManager {
   private class AutoPluginRepository extends DefaultPluginRepository {
     public AutoPluginRepository(Path pluginsRoot, boolean development) {
       super(pluginsRoot, development);
-      AndFileFilter pluginsFilter = new AndFileFilter(new DirectoryFileFilter());
-      pluginsFilter.addFileFilter(new NotFileFilter(createHiddenPluginFilter(isDevelopment())));
-      pluginsFilter.addFileFilter(new JarFileFilter());
-      setFilter(pluginsFilter);
+      OrFileFilter directoryOrJar = new OrFileFilter(new DirectoryFileFilter());
+      directoryOrJar.addFileFilter(new JarFileFilter());
+      AndFileFilter topFilter = new AndFileFilter(directoryOrJar, new NotFileFilter(createHiddenPluginFilter(isDevelopment())));
+      
+      setFilter(topFilter);
     }
   }
 }

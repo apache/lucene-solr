@@ -44,6 +44,10 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
   public void before() throws Exception {
     System.clearProperty("solr.plugins.dir");
     pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
+//    pluginBundleManager.setUberClassLoader(
+//        new PluginBundleManager.PluginBundleClassLoader(getClass().getClassLoader(), 
+//              (SolrPluginManager)pluginBundleManager.getPluginManager(), 
+//              null));
   }
 
   @Test
@@ -134,7 +138,7 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
 
     // Load another class through uber loader
     pluginBundleManager.install("request-sanitizer");
-    ClassLoader uberClassLoader = pluginBundleManager.getUberClassLoader(getClass().getClassLoader());
+    ClassLoader uberClassLoader = pluginBundleManager.getUberClassLoader();
     uberClassLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent");
     uberClassLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
   }
