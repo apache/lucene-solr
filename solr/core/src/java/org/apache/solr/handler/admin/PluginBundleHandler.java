@@ -41,25 +41,24 @@ public class PluginBundleHandler extends RequestHandlerBase
 {
   private PluginBundleManager pluginBundleManager;
 
-  public void initializeModules(PluginBundleManager pluginBundleManager) {
+  public void initializePlugins(PluginBundleManager pluginBundleManager) {
     this.pluginBundleManager = pluginBundleManager;
   }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
-    SolrParams params = req.getParams();
     if (pluginBundleManager == null) {
       throw new SolrException(INVALID_STATE, "Not initialized");
     }
     pluginBundleManager.getUpdateManager().refresh();
     pluginBundleManager.getPluginManager().loadPlugins();
     pluginBundleManager.getPluginManager().startPlugins();
-    rsp.add( "modules", getModulesInfo(pluginBundleManager));
+    rsp.add( "bundles", getInfo(pluginBundleManager));
     rsp.setHttpCaching(false);
   }
 
-  private SimpleOrderedMap<Object> getModulesInfo(PluginBundleManager pluginBundleManager)
+  private SimpleOrderedMap<Object> getInfo(PluginBundleManager pluginBundleManager)
   {
     SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
     List<Object> repositories = new ArrayList<>();

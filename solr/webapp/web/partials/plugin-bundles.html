@@ -14,12 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-    <div id="modules">
-      <div ng-show="modules.updates.length">
+    <div id="bundles">
+      <div ng-show="bundles.updates.length">
         <h3>Available updates</h3>
         <table class="table">
           <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="10%">Repo</th><th width="100"><button>Update all</button></th></tr>
-          <tr ng-repeat="p in modules.updates">
+          <tr ng-repeat="p in bundles.updates">
             <td ng-bind-html="p.id | unsafe"></td>
             <td ng-bind-html="p.name | unsafe"></td>
             <td ng-bind-html="p.description | unsafe"></td>
@@ -35,7 +35,7 @@ limitations under the License.
       <h3>Installed</h3>
       <table class="table">
         <tr><th>Id</th><th>Name</th><th>Description</th><th>Version</th><th>State</th><th>Path</th><th width="80"></th></tr>
-        <tr ng-repeat="p in modules.installed">
+        <tr ng-repeat="p in bundles.installed">
           <td ng-bind-html="p.id | unsafe"></td>
           <td ng-bind-html="p.name | unsafe"></td>
           <td ng-bind-html="p.description | unsafe"></td>
@@ -49,7 +49,7 @@ limitations under the License.
       <h3>Available in repositories</h3>
       <table class="table">
         <tr><th width="10%">Id</th><th width="20%">Name</th><th width="*">Description</th><th width="10%">Version</th><th width="80">Date</th><th width="10%">Provider</th><th width="10%">Repo</th><th width="80"></th></tr>
-        <tr ng-repeat="p in modules.available">
+        <tr ng-repeat="p in bundles.available">
           <td ng-bind-html="p.id | unsafe"></td>
           <td ng-bind-html="p.name | unsafe"></td>
           <td ng-bind-html="p.description | unsafe"></td>
@@ -64,7 +64,7 @@ limitations under the License.
       <h3>Repositories</h3>
       <table class="table">
         <tr><th>Id</th><th>Location</th><th width="80"></th></tr>
-        <tr ng-repeat="r in modules.repositories">
+        <tr ng-repeat="r in bundles.repositories">
           <td ng-bind-html="r.id | unsafe"></td>
           <td>{{r.url}}</td>
           <td><button>Remove</button></td>

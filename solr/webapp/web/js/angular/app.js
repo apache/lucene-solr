@@ -67,9 +67,9 @@ solrAdminApp.config([
         templateUrl: 'partials/java-properties.html',
         controller: 'JavaPropertiesController'
       }).
-      when('/~modules', {
-        templateUrl: 'partials/modules.html',
-        controller: 'ModulesController'
+      when('/~pluginbundles', {
+        templateUrl: 'partials/plugin-bundles.html',
+        controller: 'PluginBundleController'
       }).
       when('/:core', {
         templateUrl: 'partials/core_overview.html',

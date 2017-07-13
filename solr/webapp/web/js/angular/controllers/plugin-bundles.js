@@ -15,13 +15,12 @@
  limitations under the License.
 */
 
-solrAdminApp.controller('ModulesController',
-  function($scope, Modules, Constants){
-    $scope.resetMenu("modules", Constants.IS_ROOT_PAGE);
+solrAdminApp.controller('PluginBundleController',
+  function($scope, PluginBundles, Constants){
+    $scope.resetMenu("bundles", Constants.IS_ROOT_PAGE);
     $scope.refresh = function() {
-      Modules.get(function(data) {
-        var modules = data["modules"];
-        $scope.modules = modules;
+      PluginBundles.get(function(data) {
+        $scope.bundles = data["bundles"];
       });
     };
 
