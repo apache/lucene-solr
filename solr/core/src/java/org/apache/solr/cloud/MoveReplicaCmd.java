@@ -35,6 +35,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,8 +116,6 @@ public class MoveReplicaCmd implements Cmd{
 
   private void moveHdfsReplica(ClusterState clusterState, NamedList results, String dataDir, String targetNode, String async,
                                  DocCollection coll, Replica replica, Slice slice, int timeout) throws Exception {
-    String newCoreName = Assign.buildCoreName(coll, slice.getName(), replica.getType());
-
     ZkNodeProps removeReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
@@ -135,17 +134,32 @@ public class MoveReplicaCmd implements Cmd{
       return;
     }
 
+    TimeOut timeOut = new TimeOut(20L, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut()) {
+      coll = ocmh.zkStateReader.getClusterState().getCollection(coll.getName());
+      if (coll.getReplica(replica.getName()) != null) {
+        Thread.sleep(100);
+      } else {
+        break;
+      }
+    }
+    if (timeOut.hasTimedOut()) {
+      results.add("failure", "Still see deleted replica in clusterstate!");
+      return;
+    }
+
     String ulogDir = replica.getStr(CoreAdminParams.ULOG_DIR);
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
-        CoreAdminParams.NAME, newCoreName,
+        CoreAdminParams.CORE_NODE_NAME, replica.getName(),
+        CoreAdminParams.NAME, replica.getCoreName(),
         CoreAdminParams.ULOG_DIR, ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
         CoreAdminParams.DATA_DIR, dataDir);
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
-    ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
+    ocmh.addReplica(ocmh.zkStateReader.getClusterState(), addReplicasProps, addResult, null);
     if (addResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
           " on node=%s", coll.getName(), slice.getName(), targetNode);
@@ -154,7 +168,7 @@ public class MoveReplicaCmd implements Cmd{
       return;
     } else {
       String successString = String.format(Locale.ROOT, "MOVEREPLICA action completed successfully, moved replica=%s at node=%s " +
-          "to replica=%s at node=%s", replica.getCoreName(), replica.getNodeName(), newCoreName, targetNode);
+          "to replica=%s at node=%s", replica.getCoreName(), replica.getNodeName(), replica.getCoreName(), targetNode);
       results.add("success", successString);
     }
   }
