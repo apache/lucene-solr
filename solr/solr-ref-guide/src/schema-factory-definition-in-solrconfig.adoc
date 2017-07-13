@@ -89,7 +89,7 @@ If you have started Solr with managed schema enabled and you would like to switc
 .. Add a `ClassicIndexSchemaFactory` definition as shown above
 . Reload the core(s).
 
-If you are using SolrCloud, you may need to modify the files via ZooKeeper. The `bin/solr` script provides an easy way to download the files from ZooKeeper and upload them back after edits. See the section <<solr-control-script-reference.adoc#SolrControlScriptReference-ZooKeeperOperations,ZooKeeper Operations>> for more information.
+If you are using SolrCloud, you may need to modify the files via ZooKeeper. The `bin/solr` script provides an easy way to download the files from ZooKeeper and upload them back after edits. See the section <<solr-control-script-reference.adoc#zookeeper-operations,ZooKeeper Operations>> for more information.
 
 [TIP]
 ====

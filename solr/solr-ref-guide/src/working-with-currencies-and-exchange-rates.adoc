@@ -77,7 +77,7 @@ In the above example, the raw amount field will use the `"*_l_ns"` dynamic field
 .Atomic Updates won't work if dynamic sub-fields are stored
 [NOTE]
 ====
-As noted on <<updating-parts-of-documents.adoc#UpdatingPartsofDocuments-FieldStorage,Updating Parts of Documents>>, stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates. To avoid this problem, specify `stored="false"` on those dynamic fields.
+As noted on <<updating-parts-of-documents.adoc#field-storage,Updating Parts of Documents>>, stored dynamic sub-fields will cause indexing to fail when you use Atomic Updates. To avoid this problem, specify `stored="false"` on those dynamic fields.
 ====
 
 [[WorkingwithCurrenciesandExchangeRates-ExchangeRates]]

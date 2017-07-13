@@ -85,7 +85,7 @@ To update or change your SolrCloud configuration files:
 [[UsingZooKeepertoManageConfigurationFiles-PreparingZooKeeperbeforefirstclusterstart]]
 == Preparing ZooKeeper before first cluster start
 
-If you will share the same ZooKeeper instance with other applications you should use a _chroot_ in ZooKeeper. Please see <<taking-solr-to-production.adoc#TakingSolrtoProduction-ZooKeeperchroot,ZooKeeper chroot>> for instructions.
+If you will share the same ZooKeeper instance with other applications you should use a _chroot_ in ZooKeeper. Please see <<taking-solr-to-production.adoc#zookeeper-chroot,ZooKeeper chroot>> for instructions.
 
 There are certain configuration files containing cluster wide configuration. Since some of these are crucial for the cluster to function properly, you may need to upload such files to ZooKeeper before starting your Solr cluster for the first time. Examples of such configuration files (not exhaustive) are `solr.xml`, `security.json` and `clusterprops.json`.
 

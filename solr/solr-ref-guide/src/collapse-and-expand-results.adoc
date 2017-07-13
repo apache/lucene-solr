@@ -24,7 +24,7 @@ The Collapsing query parser groups documents (collapsing the result set) accordi
 
 [IMPORTANT]
 ====
-In order to use these features with SolrCloud, the documents must be located on the same shard. To ensure document co-location, you can define the `router.name` parameter as `compositeId` when creating the collection. For more information on this option, see the section <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,Document Routing>>.
+In order to use these features with SolrCloud, the documents must be located on the same shard. To ensure document co-location, you can define the `router.name` parameter as `compositeId` when creating the collection. For more information on this option, see the section <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,Document Routing>>.
 ====
 
 [[CollapseandExpandResults-CollapsingQueryParser]]

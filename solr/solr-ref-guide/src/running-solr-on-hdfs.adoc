@@ -28,13 +28,11 @@ To use HDFS rather than a local filesystem, you must be using Hadoop 2.x and you
 * Modify `solr.in.sh` (or `solr.in.cmd` on Windows) to pass the JVM arguments automatically when using `bin/solr` without having to set them manually.
 * Define the properties in `solrconfig.xml`. These configuration changes would need to be repeated for every collection, so is a good option if you only want some of your collections stored in HDFS.
 
-[[RunningSolronHDFS-StartingSolronHDFS]]
 == Starting Solr on HDFS
 
-[[RunningSolronHDFS-StandaloneSolrInstances]]
 === Standalone Solr Instances
 
-For standalone Solr instances, there are a few parameters you should be sure to modify before starting Solr. These can be set in `solrconfig.xml`(more on that <<RunningSolronHDFS-HdfsDirectoryFactoryParameters,below>>), or passed to the `bin/solr` script at startup.
+For standalone Solr instances, there are a few parameters you should be sure to modify before starting Solr. These can be set in `solrconfig.xml`(more on that <<HdfsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
 
 * You need to use an `HdfsDirectoryFactory` and a data dir of the form `hdfs://host:port/path`
 * You need to specify an UpdateLog location of the form `hdfs://host:port/path`
@@ -50,9 +48,8 @@ bin/solr start -Dsolr.directoryFactory=HdfsDirectoryFactory
      -Dsolr.updatelog=hdfs://host:port/path
 ----
 
-This example will start Solr in standalone mode, using the defined JVM properties (explained in more detail <<RunningSolronHDFS-HdfsDirectoryFactoryParameters,below>>).
+This example will start Solr in standalone mode, using the defined JVM properties (explained in more detail <<HdfsDirectoryFactory Parameters,below>>).
 
-[[RunningSolronHDFS-SolrCloudInstances]]
 === SolrCloud Instances
 
 In SolrCloud mode, it's best to leave the data and update log directories as the defaults Solr comes with and simply specify the `solr.hdfs.home`. All dynamically created collections will create the appropriate directories automatically under the `solr.hdfs.home` root directory.
@@ -70,7 +67,6 @@ bin/solr start -c -Dsolr.directoryFactory=HdfsDirectoryFactory
 This command starts Solr in SolrCloud mode, using the defined JVM properties.
 
 
-[[RunningSolronHDFS-Modifyingsolr.in.sh_nix_orsolr.in.cmd_Windows_]]
 === Modifying solr.in.sh (*nix) or solr.in.cmd (Windows)
 
 The examples above assume you will pass JVM arguments as part of the start command every time you use `bin/solr` to start Solr. However, `bin/solr` looks for an include file named `solr.in.sh` (`solr.in.cmd` on Windows) to set environment variables. By default, this file is found in the `bin` directory, and you can modify it to permanently add the `HdfsDirectoryFactory` settings and ensure they are used every time Solr is started.
@@ -85,7 +81,6 @@ For example, to set JVM arguments to always use HDFS when running in SolrCloud m
 -Dsolr.hdfs.home=hdfs://host:port/path \
 ----
 
-[[RunningSolronHDFS-TheBlockCache]]
 == The Block Cache
 
 For performance, the HdfsDirectoryFactory uses a Directory that will cache HDFS blocks. This caching mechanism is meant to replace the standard file system cache that Solr utilizes so much. By default, this cache is allocated off heap. This cache will often need to be quite large and you may need to raise the off heap memory limit for the specific JVM you are running Solr in. For the Oracle/OpenJDK JVMs, the follow is an example command line parameter that you can use to raise the limit when starting Solr:
@@ -95,18 +90,15 @@ For performance, the HdfsDirectoryFactory uses a Directory that will cache HDFS 
 -XX:MaxDirectMemorySize=20g
 ----
 
-[[RunningSolronHDFS-HdfsDirectoryFactoryParameters]]
 == HdfsDirectoryFactory Parameters
 
 The `HdfsDirectoryFactory` has a number of settings that are defined as part of the `directoryFactory` configuration.
 
-[[RunningSolronHDFS-SolrHDFSSettings]]
 === Solr HDFS Settings
 
 `solr.hdfs.home`::
 A root location in HDFS for Solr to write collection data to. Rather than specifying an HDFS location for the data directory or update log directory, use this to specify one root location and have everything automatically created within this HDFS location. The structure of this parameter is `hdfs://host:port/path/solr`.
 
-[[RunningSolronHDFS-BlockCacheSettings]]
 === Block Cache Settings
 
 `solr.hdfs.blockcache.enabled`::
@@ -124,7 +116,6 @@ Number of memory slabs to allocate. Each slab is 128 MB in size. The default is 
 `solr.hdfs.blockcache.global`::
 Enable/Disable using one global cache for all SolrCores. The settings used will be from the first HdfsDirectoryFactory created. The default is `true`.
 
-[[RunningSolronHDFS-NRTCachingDirectorySettings]]
 === NRTCachingDirectory Settings
 
 `solr.hdfs.nrtcachingdirectory.enable`:: true |
@@ -136,13 +127,11 @@ NRTCachingDirectory max segment size for merges. The default is `16`.
 `solr.hdfs.nrtcachingdirectory.maxcachedmb`::
 NRTCachingDirectory max cache size. The default is `192`.
 
-[[RunningSolronHDFS-HDFSClientConfigurationSettings]]
 === HDFS Client Configuration Settings
 
 `solr.hdfs.confdir`::
 Pass the location of HDFS client configuration files - needed for HDFS HA for example.
 
-[[RunningSolronHDFS-KerberosAuthenticationSettings]]
 === Kerberos Authentication Settings
 
 Hadoop can be configured to use the Kerberos protocol to verify user identity when trying to access core services like HDFS. If your HDFS directories are protected using Kerberos, then you need to configure Solr's HdfsDirectoryFactory to authenticate using Kerberos in order to read and write to HDFS. To enable Kerberos authentication from Solr, you need to set the following parameters:
@@ -157,8 +146,7 @@ This file will need to be present on all Solr servers at the same path provided 
 `solr.hdfs.security.kerberos.principal`::
 The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`.
 
-[[RunningSolronHDFS-Example]]
-== Example
+== Example solrconfig.xml for HDFS
 
 Here is a sample `solrconfig.xml` configuration for storing Solr indexes on HDFS:
 
@@ -189,7 +177,6 @@ If using Kerberos, you will need to add the three Kerberos related properties to
 </directoryFactory>
 ----
 
-[[RunningSolronHDFS-AutomaticallyAddReplicasinSolrCloud]]
 == Automatically Add Replicas in SolrCloud
 
 One benefit to running Solr in HDFS is the ability to automatically add new replicas when the Overseer notices that a shard has gone down. Because the "gone" index shards are stored in HDFS, the a new core will be created and the new core will point to the existing indexes in HDFS.
@@ -205,7 +192,6 @@ The minimum time (in ms) to wait for initiating replacement of a replica after f
 `autoReplicaFailoverBadNodeExpiration`::
 The delay (in ms) after which a replica marked as down would be unmarked. The default is `60000`.
 
-[[RunningSolronHDFS-TemporarilydisableautoAddReplicasfortheentirecluster]]
 === Temporarily Disable autoAddReplicas for the Entire Cluster
 
 When doing offline maintenance on the cluster and for various other use cases where an admin would like to temporarily disable auto addition of replicas, the following APIs will disable and re-enable autoAddReplicas for *all collections in the cluster*:

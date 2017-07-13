@@ -25,7 +25,6 @@ The recommended way to configure and use request handlers is with path based nam
 
 A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the <<content-streams.adoc#content-streams,ContentStream>>.
 
-[[UploadingDatawithIndexHandlers-UpdateRequestHandlerConfiguration]]
 == UpdateRequestHandler Configuration
 
 The default configuration file has the update request handler configured by default.
@@ -35,12 +34,10 @@ The default configuration file has the update request handler configured by defa
 <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 ----
 
-[[UploadingDatawithIndexHandlers-XMLFormattedIndexUpdates]]
 == XML Formatted Index Updates
 
 Index update commands can be sent as XML message to the update handler using `Content-type: application/xml` or `Content-type: text/xml`.
 
-[[UploadingDatawithIndexHandlers-AddingDocuments]]
 === Adding Documents
 
 The XML schema recognized by the update handler for adding documents is very straightforward:
@@ -84,11 +81,9 @@ If the document schema defines a unique key, then by default an `/update` operat
 
 If you have a unique key field, but you feel confident that you can safely bypass the uniqueness check (e.g., you build your indexes in batch, and your indexing code guarantees it never adds the same document more than once) you can specify the `overwrite="false"` option when adding your documents.
 
-[[UploadingDatawithIndexHandlers-XMLUpdateCommands]]
 === XML Update Commands
 
-[[UploadingDatawithIndexHandlers-CommitandOptimizeOperations]]
-==== Commit and Optimize Operations
+==== Commit and Optimize During Updates
 
 The `<commit>` operation writes all documents loaded since the last commit to one or more segment files on the disk. Before a commit has been issued, newly indexed content is not visible to searches. The commit operation opens a new searcher, and triggers any event listeners that have been configured.
 
@@ -114,7 +109,6 @@ Here are examples of <commit> and <optimize> using optional attributes:
 <optimize waitSearcher="false"/>
 ----
 
-[[UploadingDatawithIndexHandlers-DeleteOperations]]
 ==== Delete Operations
 
 Documents can be deleted from the index in two ways. "Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema. "Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
@@ -136,12 +130,10 @@ When using the Join query parser in a Delete By Query, you should use the `score
 
 ====
 
-[[UploadingDatawithIndexHandlers-RollbackOperations]]
 ==== Rollback Operations
 
 The rollback command rolls back all add and deletes made to the index since the last commit. It neither calls any event listeners nor creates a new searcher. Its syntax is simple: `<rollback/>`.
 
-[[UploadingDatawithIndexHandlers-UsingcurltoPerformUpdates]]
 === Using curl to Perform Updates
 
 You can use the `curl` utility to perform any of the above commands, using its `--data-binary` option to append the XML message to the `curl` command, and generating a HTTP POST request. For example:
@@ -168,7 +160,7 @@ For posting XML messages contained in a file, you can use the alternative form:
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" --data-binary @myfile.xml
 ----
 
-Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher-in-solrconfig.adoc#RequestDispatcherinSolrConfig-requestParsersElement,RequestDispatcher in SolrConfig>> element, URL-encoding the request, as in the following. Note the escaping of "<" and ">":
+Short requests can also be sent using a HTTP GET command, if enabled in <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> element, URL-encoding the request, as in the following. Note the escaping of "<" and ">":
 
 [source,bash]
 ----
@@ -189,7 +181,6 @@ Responses from Solr take the form shown here:
 
 The status field will be non-zero in case of failure.
 
-[[UploadingDatawithIndexHandlers-UsingXSLTtoTransformXMLIndexUpdates]]
 === Using XSLT to Transform XML Index Updates
 
 The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,config set>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
@@ -250,23 +241,20 @@ You can also use the stylesheet in `XsltUpdateRequestHandler` to transform an in
 curl "http://localhost:8983/solr/my_collection/update?commit=true&tr=updateXml.xsl" -H "Content-Type: text/xml" --data-binary @myexporteddata.xml
 ----
 
-[[UploadingDatawithIndexHandlers-JSONFormattedIndexUpdates]]
 == JSON Formatted Index Updates
 
 Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents. If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described below in the section <<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>.
 
-[[UploadingDatawithIndexHandlers-Solr-StyleJSON]]
 === Solr-Style JSON
 
 JSON formatted update requests may be sent to Solr's `/update` handler using `Content-Type: application/json` or `Content-Type: text/json`.
 
 JSON formatted updates can take 3 basic forms, described in depth below:
 
-* <<UploadingDatawithIndexHandlers-AddingaSingleJSONDocument,A single document to add>>, expressed as a top level JSON Object. To differentiate this from a set of commands, the `json.command=false` request parameter is required.
-* <<UploadingDatawithIndexHandlers-AddingMultipleJSONDocuments,A list of documents to add>>, expressed as a top level JSON Array containing a JSON Object per document.
-* <<UploadingDatawithIndexHandlers-SendingJSONUpdateCommands,A sequence of update commands>>, expressed as a top level JSON Object (aka: Map).
+* <<Adding a Single JSON Document,A single document to add>>, expressed as a top level JSON Object. To differentiate this from a set of commands, the `json.command=false` request parameter is required.
+* <<Adding Multiple JSON Documents,A list of documents to add>>, expressed as a top level JSON Array containing a JSON Object per document.
+* <<Sending JSON Update Commands,A sequence of update commands>>, expressed as a top level JSON Object (aka: Map).
 
-[[UploadingDatawithIndexHandlers-AddingaSingleJSONDocument]]
 ==== Adding a Single JSON Document
 
 The simplest way to add Documents via JSON is to send each document individually as a JSON Object, using the `/update/json/docs` path:
@@ -280,7 +268,6 @@ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/my_
 }'
 ----
 
-[[UploadingDatawithIndexHandlers-AddingMultipleJSONDocuments]]
 ==== Adding Multiple JSON Documents
 
 Adding multiple documents at one time via JSON can be done via a JSON Array of JSON Objects, where each object represents a document:
@@ -307,7 +294,6 @@ A sample JSON file is provided at `example/exampledocs/books.json` and contains 
 curl 'http://localhost:8983/solr/techproducts/update?commit=true' --data-binary @example/exampledocs/books.json -H 'Content-type:application/json'
 ----
 
-[[UploadingDatawithIndexHandlers-SendingJSONUpdateCommands]]
 ==== Sending JSON Update Commands
 
 In general, the JSON update syntax supports all of the update commands that the XML update handler supports, through a straightforward mapping. Multiple commands, adding and deleting documents, may be contained in one message:
@@ -377,7 +363,6 @@ You can also specify `\_version_` with each "delete":
 
 You can specify the version of deletes in the body of the update request as well.
 
-[[UploadingDatawithIndexHandlers-JSONUpdateConveniencePaths]]
 === JSON Update Convenience Paths
 
 In addition to the `/update` handler, there are a few additional JSON specific request handler paths available by default in Solr, that implicitly override the behavior of some request parameters:
@@ -395,13 +380,11 @@ In addition to the `/update` handler, there are a few additional JSON specific r
 
 The `/update/json` path may be useful for clients sending in JSON formatted update commands from applications where setting the Content-Type proves difficult, while the `/update/json/docs` path can be particularly convenient for clients that always want to send in documents – either individually or as a list – without needing to worry about the full JSON command syntax.
 
-[[UploadingDatawithIndexHandlers-CustomJSONDocuments]]
 === Custom JSON Documents
 
 Solr can support custom JSON. This is covered in the section <<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>.
 
 
-[[UploadingDatawithIndexHandlers-CSVFormattedIndexUpdates]]
 == CSV Formatted Index Updates
 
 CSV formatted update requests may be sent to Solr's `/update` handler using `Content-Type: application/csv` or `Content-Type: text/csv`.
@@ -413,7 +396,6 @@ A sample CSV file is provided at `example/exampledocs/books.csv` that you can us
 curl 'http://localhost:8983/solr/my_collection/update?commit=true' --data-binary @example/exampledocs/books.csv -H 'Content-type:application/csv'
 ----
 
-[[UploadingDatawithIndexHandlers-CSVUpdateParameters]]
 === CSV Update Parameters
 
 The CSV handler allows the specification of many parameters in the URL in the form: `f._parameter_._optional_fieldname_=_value_` .
@@ -498,7 +480,6 @@ Add the given offset (as an integer) to the `rowid` before adding it to the docu
 +
 Example: `rowidOffset=10`
 
-[[UploadingDatawithIndexHandlers-IndexingTab-Delimitedfiles]]
 === Indexing Tab-Delimited files
 
 The same feature used to index CSV documents can also be easily used to index tab-delimited files (TSV files) and even handle backslash escaping rather than CSV encapsulation.
@@ -517,7 +498,6 @@ This file could then be imported into Solr by setting the `separator` to tab (%0
 curl 'http://localhost:8983/solr/my_collection/update/csv?commit=true&separator=%09&escape=%5c' --data-binary @/tmp/result.txt
 ----
 
-[[UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths]]
 === CSV Update Convenience Paths
 
 In addition to the `/update` handler, there is an additional CSV specific request handler path available by default in Solr, that implicitly override the behavior of some request parameters:
@@ -530,16 +510,14 @@ In addition to the `/update` handler, there is an additional CSV specific reques
 
 The `/update/csv` path may be useful for clients sending in CSV formatted update commands from applications where setting the Content-Type proves difficult.
 
-[[UploadingDatawithIndexHandlers-NestedChildDocuments]]
 == Nested Child Documents
 
-Solr indexes nested documents in blocks as a way to model documents containing other documents, such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents. At query time, the <<other-parsers.adoc#OtherParsers-BlockJoinQueryParsers,Block Join Query Parsers>> can search these relationships. In terms of performance, indexing the relationships between documents may be more efficient than attempting to do joins only at query time, since the relationships are already stored in the index and do not need to be computed.
+Solr indexes nested documents in blocks as a way to model documents containing other documents, such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents. At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships. In terms of performance, indexing the relationships between documents may be more efficient than attempting to do joins only at query time, since the relationships are already stored in the index and do not need to be computed.
 
-Nested documents may be indexed via either the XML or JSON data syntax (or using <<using-solrj.adoc#using-solrj,SolrJ)>> - but regardless of syntax, you must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#OtherParsers-BlockJoinQueryParsers,block join query parsers>>.
+Nested documents may be indexed via either the XML or JSON data syntax (or using <<using-solrj.adoc#using-solrj,SolrJ)>> - but regardless of syntax, you must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
 
 To support nested documents, the schema must include an indexed/non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
 
-[[UploadingDatawithIndexHandlers-XMLExamples]]
 === XML Examples
 
 For example, here are two documents and their child documents:
@@ -570,7 +548,6 @@ For example, here are two documents and their child documents:
 
 In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument". We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
 
-[[UploadingDatawithIndexHandlers-JSONExamples]]
 === JSON Examples
 
 This example is equivalent to the XML example above, note the special `\_childDocuments_` key need to indicate the nested documents in JSON.

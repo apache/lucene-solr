@@ -49,7 +49,6 @@ The following sections describe the tokenizer factory classes included in this r
 
 For user tips about Solr's tokenizers, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
 
-[[Tokenizers-StandardTokenizer]]
 == Standard Tokenizer
 
 This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
@@ -80,7 +79,6 @@ The Standard Tokenizer supports http://unicode.org/reports/tr29/#Word_Boundaries
 
 *Out:* "Please", "email", "john.doe", "foo.com", "by", "03", "09", "re", "m37", "xq"
 
-[[Tokenizers-ClassicTokenizer]]
 == Classic Tokenizer
 
 The Classic Tokenizer preserves the same behavior as the Standard Tokenizer of Solr versions 3.1 and previous. It does not use the http://unicode.org/reports/tr29/#Word_Boundaries[Unicode standard annex UAX#29] word boundary rules that the Standard Tokenizer uses. This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
@@ -110,7 +108,6 @@ The Classic Tokenizer preserves the same behavior as the Standard Tokenizer of S
 
 *Out:* "Please", "email", "john.doe@foo.com", "by", "03-09", "re", "m37-xq"
 
-[[Tokenizers-KeywordTokenizer]]
 == Keyword Tokenizer
 
 This tokenizer treats the entire text field as a single token.
@@ -132,7 +129,6 @@ This tokenizer treats the entire text field as a single token.
 
 *Out:* "Please, email john.doe@foo.com by 03-09, re: m37-xq."
 
-[[Tokenizers-LetterTokenizer]]
 == Letter Tokenizer
 
 This tokenizer creates tokens from strings of contiguous letters, discarding all non-letter characters.
@@ -154,7 +150,6 @@ This tokenizer creates tokens from strings of contiguous letters, discarding all
 
 *Out:* "I", "can", "t"
 
-[[Tokenizers-LowerCaseTokenizer]]
 == Lower Case Tokenizer
 
 Tokenizes the input stream by delimiting at non-letters and then converting all letters to lowercase. Whitespace and non-letters are discarded.
@@ -176,7 +171,6 @@ Tokenizes the input stream by delimiting at non-letters and then converting all 
 
 *Out:* "i", "just", "love", "my", "iphone"
 
-[[Tokenizers-N-GramTokenizer]]
 == N-Gram Tokenizer
 
 Reads the field text and generates n-gram tokens of sizes in the given range.
@@ -219,7 +213,6 @@ With an n-gram size range of 4 to 5:
 
 *Out:* "bicy", "bicyc", "icyc", "icycl", "cycl", "cycle", "ycle"
 
-[[Tokenizers-EdgeN-GramTokenizer]]
 == Edge N-Gram Tokenizer
 
 Reads the field text and generates edge n-gram tokens of sizes in the given range.
@@ -279,7 +272,6 @@ Edge n-gram range of 2 to 5, from the back side:
 
 *Out:* "oo", "loo", "aloo", "baloo"
 
-[[Tokenizers-ICUTokenizer]]
 == ICU Tokenizer
 
 This tokenizer processes multilingual text and tokenizes it appropriately based on its script attribute.
@@ -319,7 +311,6 @@ To use this tokenizer, you must add additional .jars to Solr's classpath (as des
 
 ====
 
-[[Tokenizers-PathHierarchyTokenizer]]
 == Path Hierarchy Tokenizer
 
 This tokenizer creates synonyms from file path hierarchies.
@@ -347,7 +338,6 @@ This tokenizer creates synonyms from file path hierarchies.
 
 *Out:* "c:", "c:/usr", "c:/usr/local", "c:/usr/local/apache"
 
-[[Tokenizers-RegularExpressionPatternTokenizer]]
 == Regular Expression Pattern Tokenizer
 
 This tokenizer uses a Java regular expression to break the input text stream into tokens. The expression provided by the pattern argument can be interpreted either as a delimiter that separates tokens, or to match patterns that should be extracted from the text as tokens.
@@ -407,7 +397,6 @@ Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case 
 
 *Out:* "1234", "5678", "126-987"
 
-[[Tokenizers-SimplifiedRegularExpressionPatternTokenizer]]
 == Simplified Regular Expression Pattern Tokenizer
 
 This tokenizer is similar to the `PatternTokenizerFactory` described above, but uses Lucene {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] pattern matching to construct distinct tokens for the input stream. The syntax is more limited than `PatternTokenizerFactory`, but the tokenization is quite a bit faster.
@@ -431,7 +420,6 @@ To match tokens delimited by simple whitespace characters:
 </analyzer>
 ----
 
-[[Tokenizers-SimplifiedRegularExpressionPatternSplittingTokenizer]]
 == Simplified Regular Expression Pattern Splitting Tokenizer
 
 This tokenizer is similar to the `SimplePatternTokenizerFactory` described above, but uses Lucene {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] pattern matching to identify sequences of characters that should be used to split tokens. The syntax is more limited than `PatternTokenizerFactory`, but the tokenization is quite a bit faster.
@@ -455,7 +443,6 @@ To match tokens delimited by simple whitespace characters:
 </analyzer>
 ----
 
-[[Tokenizers-UAX29URLEmailTokenizer]]
 == UAX29 URL Email Tokenizer
 
 This tokenizer splits the text field into tokens, treating whitespace and punctuation as delimiters. Delimiter characters are discarded, with the following exceptions:
@@ -491,7 +478,6 @@ The UAX29 URL Email Tokenizer supports http://unicode.org/reports/tr29/#Word_Bou
 
 *Out:* "Visit", "http://accarol.com/contact.htm?from=external&a=10", "or", "e", "mail", "bob.cratchet@accarol.com"
 
-[[Tokenizers-WhiteSpaceTokenizer]]
 == White Space Tokenizer
 
 Simple tokenizer that splits the text stream on whitespace and returns sequences of non-whitespace characters as tokens. Note that any punctuation _will_ be included in the tokens.

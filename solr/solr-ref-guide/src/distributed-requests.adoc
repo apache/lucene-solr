@@ -25,7 +25,7 @@ The chosen replica acts as an aggregator: it creates internal requests to random
 [[DistributedRequests-LimitingWhichShardsareQueried]]
 == Limiting Which Shards are Queried
 
-While one of the advantages of using SolrCloud is the ability to query very large collections distributed among various shards, in some cases <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,you may know that you are only interested in results from a subset of your shards>>. You have the option of searching over all of your data or just parts of it.
+While one of the advantages of using SolrCloud is the ability to query very large collections distributed among various shards, in some cases <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,you may know that you are only interested in results from a subset of your shards>>. You have the option of searching over all of your data or just parts of it.
 
 Querying all shards for a collection should look familiar; it's as though SolrCloud didn't even come into play:
 
