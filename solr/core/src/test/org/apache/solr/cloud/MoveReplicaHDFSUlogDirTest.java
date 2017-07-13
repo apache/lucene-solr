@@ -21,10 +21,13 @@ import java.io.IOException;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -65,7 +68,7 @@ public class MoveReplicaHDFSUlogDirTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDataDirAndUlogAreMaintained() throws IOException, SolrServerException {
+  public void testDataDirAndUlogAreMaintained() throws Exception {
     String coll = "movereplicatest_coll2";
     CollectionAdminRequest.createCollection(coll, "conf1", 1, 1)
         .setCreateNodeSet("")
@@ -82,7 +85,8 @@ public class MoveReplicaHDFSUlogDirTest extends SolrCloudTestCase {
 
     ulogDir += "/tlog";
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000);
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
+
     DocCollection docCollection = zkStateReader.getClusterState().getCollection(coll);
     Replica replica = docCollection.getReplicas().iterator().next();
     assertTrue(replica.getStr("ulogDir"), replica.getStr("ulogDir").equals(ulogDir) || replica.getStr("ulogDir").equals(ulogDir+'/'));
@@ -90,14 +94,49 @@ public class MoveReplicaHDFSUlogDirTest extends SolrCloudTestCase {
 
     new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000);
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
     docCollection = zkStateReader.getClusterState().getCollection(coll);
     assertEquals(1, docCollection.getSlice("shard1").getReplicas().size());
-    replica = docCollection.getReplicas().iterator().next();
-    assertEquals(replica.getNodeName(), cluster.getJettySolrRunner(1).getNodeName());
-    assertTrue(replica.getStr("ulogDir"), replica.getStr("ulogDir").equals(ulogDir) || replica.getStr("ulogDir").equals(ulogDir+'/'));
-    assertTrue(replica.getStr("dataDir"),replica.getStr("dataDir").equals(dataDir) || replica.getStr("dataDir").equals(dataDir+'/'));
+    Replica newReplica = docCollection.getReplicas().iterator().next();
+    assertEquals(newReplica.getNodeName(), cluster.getJettySolrRunner(1).getNodeName());
+    assertTrue(newReplica.getStr("ulogDir"), newReplica.getStr("ulogDir").equals(ulogDir) || newReplica.getStr("ulogDir").equals(ulogDir+'/'));
+    assertTrue(newReplica.getStr("dataDir"),newReplica.getStr("dataDir").equals(dataDir) || newReplica.getStr("dataDir").equals(dataDir+'/'));
 
+    assertEquals(replica.getName(), newReplica.getName());
+    assertEquals(replica.getCoreName(), newReplica.getCoreName());
+    assertFalse(replica.getNodeName().equals(newReplica.getNodeName()));
+    final int numDocs = 100;
+    addDocs(coll, numDocs);  // indexed but not committed
+
+    cluster.getJettySolrRunner(1).stop();
+    Thread.sleep(5000);
+    new CollectionAdminRequest.MoveReplica(coll, newReplica.getName(), cluster.getJettySolrRunner(0).getNodeName())
+        .process(cluster.getSolrClient());
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
+
+    // assert that the old core will be removed on startup
+    cluster.getJettySolrRunner(1).start();
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
+    docCollection = zkStateReader.getClusterState().getCollection(coll);
+    assertEquals(1, docCollection.getReplicas().size());
+    newReplica = docCollection.getReplicas().iterator().next();
+    assertEquals(newReplica.getNodeName(), cluster.getJettySolrRunner(0).getNodeName());
+    assertTrue(newReplica.getStr("ulogDir"), newReplica.getStr("ulogDir").equals(ulogDir) || newReplica.getStr("ulogDir").equals(ulogDir+'/'));
+    assertTrue(newReplica.getStr("dataDir"),newReplica.getStr("dataDir").equals(dataDir) || newReplica.getStr("dataDir").equals(dataDir+'/'));
+
+    assertEquals(0, cluster.getJettySolrRunner(1).getCoreContainer().getCores().size());
+
+    cluster.getSolrClient().commit(coll);
+    assertEquals(numDocs, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+  }
+
+  private void addDocs(String collection, int numDocs) throws SolrServerException, IOException {
+    SolrClient solrClient = cluster.getSolrClient();
+    for (int docId = 1; docId <= numDocs; docId++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", docId);
+      solrClient.add(collection, doc);
+    }
   }
 
 }
