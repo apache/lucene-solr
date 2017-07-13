@@ -351,7 +351,7 @@ The `facet.mincount` parameter, the same one as used in field faceting is also a
 [NOTE]
 ====
 
-Range faceting on date fields is a common situation where the <<working-with-dates.adoc#WorkingwithDates-TZ,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
+Range faceting on date fields is a common situation where the <<working-with-dates.adoc#tz,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
 
 For more information, see the examples in the <<working-with-dates.adoc#working-with-dates,Working with Dates>> section.
 

@@ -18,7 +18,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes an output format specifically for <<response-writers.adoc#ResponseWriters-PythonResponseWriter,Python>>, but <<response-writers.adoc#ResponseWriters-JSONResponseWriter,JSON output>> is a little more robust.
+Solr includes an output format specifically for <<response-writers.adoc#python-response-writer,Python>>, but <<response-writers.adoc#json-response-writer,JSON output>> is a little more robust.
 
 == Simple Python
 

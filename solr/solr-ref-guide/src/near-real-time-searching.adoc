@@ -127,14 +127,9 @@ curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
   -H "Content-Type: text/xml" --data-binary '<add><doc><field name="id">testdoc</field></doc></add>'
 ----
 
-<<<<<<< HEAD
-[[NearRealTimeSearching-ChangingdefaultcommitWithinBehavior]]
-=== Changing default commitWithin Behavior
-=======
-WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#RequestDispatcherinSolrConfig-requestParsersElement,RequestDispatcher in SolrConfig>> for details.
+WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> for details.
 
 === Changing Default commitWithin Behavior
->>>>>>> 74ab16168c... SOLR-11050: remove unneeded anchors for pages that have no incoming links from other pages
 
 The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 

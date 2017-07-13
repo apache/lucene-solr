@@ -33,14 +33,13 @@ All of the examples in this section assume you are running the "techproducts" So
 bin/solr -e techproducts
 ----
 
-[[ManagedResources-Overview]]
-== Overview
+== Managed Resources Overview
 
 Let's begin learning about managed resources by looking at a couple of examples provided by Solr for managing stop words and synonyms using a REST API. After reading this section, you'll be ready to dig into the details of how managed resources are implemented in Solr so you can start building your own implementation.
 
 === Managing Stop Words
 
-To begin, you need to define a field type that uses the <<filter-descriptions.adoc#FilterDescriptions-ManagedStopFilter,ManagedStopFilterFactory>>, such as:
+To begin, you need to define a field type that uses the <<filter-descriptions.adoc#managed-stop-filter,ManagedStopFilterFactory>>, such as:
 
 [source,xml,subs="verbatim,callouts"]
 ----
@@ -55,7 +54,7 @@ To begin, you need to define a field type that uses the <<filter-descriptions.ad
 
 There are two important things to notice about this field type definition:
 
-<1> The filter implementation class is `solr.ManagedStopFilterFactory`. This is a special implementation of the <<filter-descriptions.adoc#FilterDescriptions-StopFilter,StopFilterFactory>> that uses a set of stop words that are managed from a REST API.
+<1> The filter implementation class is `solr.ManagedStopFilterFactory`. This is a special implementation of the <<filter-descriptions.adoc#stop-filter,StopFilterFactory>> that uses a set of stop words that are managed from a REST API.
 
 <2> The `managed=”english”` attribute gives a name to the set of managed stop words, in this case indicating the stop words are for English text.
 

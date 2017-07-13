@@ -54,7 +54,7 @@ Faceting makes use of fields defined when the search applications were indexed. 
 
 Solr also supports a feature called <<morelikethis.adoc#morelikethis,MoreLikeThis>>, which enables users to submit new queries that focus on particular terms returned in an earlier query. MoreLikeThis queries can make use of faceting or clustering to provide additional aid to users.
 
-A Solr component called a <<response-writers.adoc#response-writers,*response writer*>> manages the final presentation of the query response. Solr includes a variety of response writers, including an <<response-writers.adoc#ResponseWriters-TheStandardXMLResponseWriter,XML Response Writer>> and a <<response-writers.adoc#ResponseWriters-JSONResponseWriter,JSON Response Writer>>.
+A Solr component called a <<response-writers.adoc#response-writers,*response writer*>> manages the final presentation of the query response. Solr includes a variety of response writers, including an <<response-writers.adoc#standard-xml-response-writer,XML Response Writer>> and a <<response-writers.adoc#json-response-writer,JSON Response Writer>>.
 
 The diagram below summarizes some key elements of the search process.
 

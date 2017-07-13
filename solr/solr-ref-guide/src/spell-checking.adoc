@@ -212,7 +212,7 @@ This parameter turns on SpellCheck suggestions for the request. If *true*, then 
 [[SpellChecking-Thespellcheck.qorqParameter]]
 === The spellcheck.q or q Parameter
 
-This parameter specifies the query to spellcheck. If `spellcheck.q` is defined, then it is used; otherwise the original input query is used. The `spellcheck.q` parameter is intended to be the original query, minus any extra markup like field names, boosts, and so on. If the `q` parameter is specified, then the `SpellingQueryConverter` class is used to parse it into tokens; otherwise the <<tokenizers.adoc#Tokenizers-WhiteSpaceTokenizer,`WhitespaceTokenizer`>> is used. The choice of which one to use is up to the application. Essentially, if you have a spelling "ready" version in your application, then it is probably better to use `spellcheck.q`. Otherwise, if you just want Solr to do the job, use the `q` parameter.
+This parameter specifies the query to spellcheck. If `spellcheck.q` is defined, then it is used; otherwise the original input query is used. The `spellcheck.q` parameter is intended to be the original query, minus any extra markup like field names, boosts, and so on. If the `q` parameter is specified, then the `SpellingQueryConverter` class is used to parse it into tokens; otherwise the <<tokenizers.adoc#white-space-tokenizer,`WhitespaceTokenizer`>> is used. The choice of which one to use is up to the application. Essentially, if you have a spelling "ready" version in your application, then it is probably better to use `spellcheck.q`. Otherwise, if you just want Solr to do the job, use the `q` parameter.
 
 [NOTE]
 ====
