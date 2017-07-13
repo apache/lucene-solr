@@ -561,6 +561,10 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 
 * SOLR-10914: RecoveryStrategy's sendPrepRecoveryCmd can get stuck for 5 minutes if leader is unloaded. (shalin)
 
+* SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
+
+* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
