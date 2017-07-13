@@ -673,10 +673,10 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatFields() {
-    doTestFloat("test_f_dv");
+    doTestFloat("test_f_dv", false);
   }
 
-  private void doTestFloat(String field) {
+  private void doTestFloat(String field, boolean testDouble) {
     assertU(adoc("id", "1", field, "0"));
     assertU(adoc("id", "2", field, "1"));
     assertU(adoc("id", "3", field, "2"));
@@ -705,11 +705,68 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQuery(field, "(1,1)", "0");
     assertIntervalQuery(field, "(4,7)", "4");
     assertIntervalQuery(field, "(123,*)", "1");
+
+    clearIndex();
+    assertU(adoc("id", "16", field, "-1.3"));
+    assertU(adoc("id", "17", field, "0.0"));
+    assertU(adoc("id", "18", field, "-0.0"));
+    assertU(adoc("id", "19", field, String.valueOf(Float.MIN_VALUE)));
+    assertU(adoc("id", "20", field, String.valueOf(Float.MAX_VALUE)));
+    assertU(adoc("id", "21", field, String.valueOf(Float.NEGATIVE_INFINITY)));
+    assertU(adoc("id", "22", field, String.valueOf(Float.POSITIVE_INFINITY)));
+    assertU(commit());
+
+    assertIntervalQuery(field, "[*,*]", "7");
+    assertIntervalQuery(field, "(*,*)", "7");
+    assertIntervalQuery(field, "(-1,1)", "3");
+    assertIntervalQuery(field, "(-2,1)", "4");
+    assertIntervalQuery(field, "(-1.3,0)", "1");
+    assertIntervalQuery(field, "[-1.3,0)", "2");
+    assertIntervalQuery(field, "[-1.3,0]", "3");
+    assertIntervalQuery(field, "(" + Float.NEGATIVE_INFINITY + ",0)", "2");
+    assertIntervalQuery(field, "(* ,0)", "3");
+    assertIntervalQuery(field, "[" + Float.NEGATIVE_INFINITY + ",0)", "3");
+    assertIntervalQuery(field, "(0, " + Float.MIN_VALUE + ")", "0");
+    assertIntervalQuery(field, "(0, " + Float.MIN_VALUE + "]", "1");
+    assertIntervalQuery(field, "(0, " + Float.MAX_VALUE + ")", "1");
+    assertIntervalQuery(field, "(0, " + Float.MAX_VALUE + "]", "2");
+    assertIntervalQuery(field, "(0, " + Float.POSITIVE_INFINITY + ")", "2");
+    assertIntervalQuery(field, "(0, " + Float.POSITIVE_INFINITY + "]", "3");
+
+    if (testDouble) {
+      clearIndex();
+      assertU(adoc("id", "16", field, "-1.3"));
+      assertU(adoc("id", "17", field, "0.0"));
+      assertU(adoc("id", "18", field, "-0.0"));
+      assertU(adoc("id", "19", field, String.valueOf(Double.MIN_VALUE)));
+      assertU(adoc("id", "20", field, String.valueOf(Double.MAX_VALUE)));
+      assertU(adoc("id", "21", field, String.valueOf(Double.NEGATIVE_INFINITY)));
+      assertU(adoc("id", "22", field, String.valueOf(Double.POSITIVE_INFINITY)));
+      assertU(commit());
+
+      assertIntervalQuery(field, "[*,*]", "7");
+      assertIntervalQuery(field, "(*,*)", "7");
+      assertIntervalQuery(field, "(-1,1)", "3");
+      assertIntervalQuery(field, "(-2,1)", "4");
+      assertIntervalQuery(field, "(-1.3,0)", "1");
+      assertIntervalQuery(field, "[-1.3,0)", "2");
+      assertIntervalQuery(field, "[-1.3,0]", "3");
+      assertIntervalQuery(field, "(" + Double.NEGATIVE_INFINITY + ",0)", "2");
+      assertIntervalQuery(field, "(* ,0)", "3");
+      assertIntervalQuery(field, "[" + Double.NEGATIVE_INFINITY + ",0)", "3");
+      assertIntervalQuery(field, "(0, " + Double.MIN_VALUE + ")", "0");
+      assertIntervalQuery(field, "(0, " + Double.MIN_VALUE + "]", "1");
+      assertIntervalQuery(field, "(0, " + Double.MAX_VALUE + ")", "1");
+      assertIntervalQuery(field, "(0, " + Double.MAX_VALUE + "]", "2");
+      assertIntervalQuery(field, "(0, " + Double.POSITIVE_INFINITY + ")", "2");
+      assertIntervalQuery(field, "(0, " + Double.POSITIVE_INFINITY + "]", "3");
+    }
+
   }
 
   @Test
   public void testDoubleFields() {
-    doTestFloat("test_d_dv");
+    doTestFloat("test_d_dv", true);
   }
 
   @Test
