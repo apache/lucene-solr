@@ -155,21 +155,31 @@ public class PlotStream extends TupleStream implements Expressible {
       finished = true;
       Map<String, Object> values = new HashMap<>();
 
-      String plot= stringParams.get("type");
-      StreamEvaluator xvalues = evaluatorParams.get("x");
-      StreamEvaluator yvalues = evaluatorParams.get("y");
+      // add all string based params
+      // these could come from the context, or they will just be treated as straight strings
+      for(Entry<String,String> param : stringParams.entrySet()){
+        if(streamContext.getLets().containsKey(param.getValue())){
+          values.put(param.getKey(), streamContext.getLets().get(param.getValue()));
+        }
+        else{
+          values.put(param.getKey(), param.getValue());
+        }
+      }
 
-      List<Number> y = (List<Number>)yvalues.evaluateOverContext();
-      List<Number> x = null;
+      // add all evaluators
+      for(Entry<String,StreamEvaluator> param : evaluatorParams.entrySet()){
+        values.put(param.getKey(), param.getValue().evaluateOverContext());
+      }
 
-      if(xvalues == null) {
+      List<Number> y = (List<Number>)values.get("y");
+      List<Number> x = (List<Number>)values.get("x");
+
+      if(x == null) {
         //x is null so add a sequence
         x = new ArrayList();
         for(int i=0; i<y.size(); i++) {
           x.add(i+1);
         }
-      } else {
-        x = (List<Number>) xvalues.evaluateOverContext();
       }
 
       List<List<Number>> xy = new ArrayList();
@@ -180,7 +190,7 @@ public class PlotStream extends TupleStream implements Expressible {
         xy.add(pair);
       }
 
-      values.put("plot", plot);
+      values.put("plot", values.get("type"));
       values.put("data", xy);
 
       Tuple tup = new Tuple(values);

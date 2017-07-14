@@ -6065,7 +6065,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testPlot() throws Exception {
-    String cexpr = "plot(type=scatter, x=array(1,2,3), y=array(5,6,3))";
+    String cexpr = "let(a=array(3,2,3), plot(type=scatter, x=a, y=array(5,6,3)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6080,7 +6080,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<List<Number>> data = (List<List<Number>>)tuples.get(0).get("data");
     assertTrue(data.size() == 3);
     List<Number> pair1 = data.get(0);
-    assertTrue(pair1.get(0).intValue() == 1);
+    assertTrue(pair1.get(0).intValue() == 3);
     assertTrue(pair1.get(1).intValue() == 5);
     List<Number> pair2 = data.get(1);
     assertTrue(pair2.get(0).intValue() == 2);
