@@ -38,7 +38,6 @@ public class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
   public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
-  List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
   boolean isLive = true;
 
@@ -58,7 +57,7 @@ public class Row implements MapWriter {
   }
 
   public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
-      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, List<Clause> violations, boolean isLive) {
+      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive) {
     this.node = node;
     this.isLive = isLive;
     this.cells = new Cell[cells.length];
@@ -68,7 +67,6 @@ public class Row implements MapWriter {
     }
     this.anyValueMissing = anyValueMissing;
     this.collectionVsShardVsReplicas = collectionVsShardVsReplicas;
-    this.violations = violations;
   }
 
   @Override
@@ -80,7 +78,7 @@ public class Row implements MapWriter {
   }
 
   Row copy() {
-    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), new ArrayList<>(violations), isLive);
+    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), isLive);
   }
 
   Object getVal(String name) {

@@ -49,7 +49,6 @@ class AddReplicaSuggester extends Suggester {
         if (!row.isLive) continue;
         if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
         Row tmpRow = row.addReplica(coll, shard, type);
-        tmpRow.violations.clear();
 
         List<Clause.Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
         if (!containsNewErrors(errs)) {

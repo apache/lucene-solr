@@ -51,7 +51,6 @@ public class MoveReplicaSuggester extends Suggester {
         //no such replica available
         continue;
       }
-      tmpRow.violations.clear();
 
       final int i = getMatrix().indexOf(fromRow);
       for (int j = getMatrix().size() - 1; j > i; j--) {
@@ -59,7 +58,6 @@ public class MoveReplicaSuggester extends Suggester {
         if(!targetRow.isLive) continue;
         if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
         targetRow = targetRow.addReplica(coll, shard, replicaInfo.type);
-        targetRow.violations.clear();
         List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
           leastSeriousViolation = errs;

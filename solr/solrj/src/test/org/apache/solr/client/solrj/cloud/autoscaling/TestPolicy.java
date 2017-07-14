@@ -588,7 +588,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   public void testRow() {
-    Row row = new Row("nodex", new Cell[]{new Cell(0, "node", "nodex")}, false, new HashMap<>(), new ArrayList<>(), true);
+    Row row = new Row("nodex", new Cell[]{new Cell(0, "node", "nodex")}, false, new HashMap<>(), true);
     Row r1 = row.addReplica("c1", "s1", null);
     Row r2 = r1.addReplica("c1", "s1",null);
     assertEquals(1, r1.collectionVsShardVsReplicas.get("c1").get("s1").size());
