@@ -90,7 +90,7 @@ public class SolrNode {
 
 		this.baseDirectory = Util.SOLR_DIR + UUID.randomUUID().toString() + File.separator;
 
-		this.nodeDirectory = this.baseDirectory + "solr-7.0.0-SNAPSHOT/bin/";
+		this.nodeDirectory = this.baseDirectory + "solr-8.0.0-SNAPSHOT/bin/";
 
 		try {
 
@@ -137,8 +137,8 @@ public class SolrNode {
 			repository.checkout().setName(commitId).call();
 			BenchmarkAppConnector.deleteFolder(FileType.IS_CLONING_FILE);
 		}
-
-		String packageFilename = gitDirectoryPath + "/solr/package/solr-7.0.0-SNAPSHOT.zip";
+		
+		String packageFilename = gitDirectoryPath + "/solr/package/solr-8.0.0-SNAPSHOT.zip";
 		String tarballLocation = Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip";
 
 		if (new File(tarballLocation).exists() == false) {
