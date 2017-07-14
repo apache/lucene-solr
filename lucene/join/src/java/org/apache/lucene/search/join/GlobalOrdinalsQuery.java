@@ -21,7 +21,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -41,7 +41,7 @@ final class GlobalOrdinalsQuery extends Query {
   // All the ords of matching docs found with OrdinalsCollector.
   private final LongBitSet foundOrds;
   private final String joinField;
-  private final MultiDocValues.OrdinalMap globalOrds;
+  private final OrdinalMap globalOrds;
   // Is also an approximation of the docs that will match. Can be all docs that have toField or something more specific.
   private final Query toQuery;
 
@@ -50,7 +50,7 @@ final class GlobalOrdinalsQuery extends Query {
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
 
-  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery,
+  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, OrdinalMap globalOrds, Query toQuery,
                       Query fromQuery, Object indexReaderContextId) {
     this.foundOrds = foundOrds;
     this.joinField = joinField;

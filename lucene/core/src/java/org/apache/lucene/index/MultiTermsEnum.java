@@ -302,6 +302,8 @@ public final class MultiTermsEnum extends TermsEnum {
 
     // gather equal top fields
     if (queue.size() > 0) {
+      // TODO: we could maybe defer this somewhat costly operation until one of the APIs that
+      // needs to see the top is invoked (docFreq, postings, etc.)
       pullTop();
     } else {
       current = null;

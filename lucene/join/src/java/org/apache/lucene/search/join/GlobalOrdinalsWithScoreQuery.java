@@ -21,7 +21,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -39,7 +39,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
 
   private final GlobalOrdinalsWithScoreCollector collector;
   private final String joinField;
-  private final MultiDocValues.OrdinalMap globalOrds;
+  private final OrdinalMap globalOrds;
   // Is also an approximation of the docs that will match. Can be all docs that have toField or something more specific.
   private final Query toQuery;
 
@@ -52,7 +52,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
   private final Object indexReaderContextId;
 
   GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, ScoreMode scoreMode, String joinField,
-                               MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max,
+                               OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max,
                                Object indexReaderContextId) {
     this.collector = collector;
     this.joinField = joinField;
