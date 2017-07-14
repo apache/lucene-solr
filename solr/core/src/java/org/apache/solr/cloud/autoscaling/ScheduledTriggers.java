@@ -354,7 +354,7 @@ public class ScheduledTriggers implements Closeable {
         } catch (Exception e) {
           // log but do not propagate exception because an exception thrown from a scheduled operation
           // will suppress future executions
-          log.error("Unexpected execution from trigger: " + trigger.getName(), e);
+          log.error("Unexpected exception from trigger: " + trigger.getName(), e);
         } finally {
           // checkpoint after each run
           trigger.saveState();
