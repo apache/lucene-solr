@@ -152,9 +152,9 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testBogusEnumIndexing() throws Exception {
 
-    ignoreException("Unknown value for enum field: blabla");
-    ignoreException("Unknown value for enum field: 10");
-    ignoreException("Unknown value for enum field: -4");
+    ignoreException("Unknown value for enum field: " + FIELD_NAME + ", value: blabla");
+    ignoreException("Unknown value for enum field: " + FIELD_NAME + ", value: 10");
+    ignoreException("Unknown value for enum field: " + FIELD_NAME + ", value: -4");
 
     clearIndex();
 
