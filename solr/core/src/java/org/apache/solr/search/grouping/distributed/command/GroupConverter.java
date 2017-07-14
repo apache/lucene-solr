@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.grouping.distributed.command;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -54,7 +55,7 @@ class GroupConverter {
       converted.sortValues = original.sortValues;
       if (original.groupValue.exists) {
         BytesRefBuilder binary = new BytesRefBuilder();
-        fieldType.readableToIndexed(original.groupValue.toString(), binary);
+        mutableValueToBinary(fieldType, original.groupValue, binary);
         converted.groupValue = binary.get();
       } else {
         converted.groupValue = null;
@@ -147,7 +148,7 @@ class GroupConverter {
       final BytesRef groupValue;
       if (original.groupValue.exists) {
         BytesRefBuilder binary = new BytesRefBuilder();
-        fieldType.readableToIndexed(original.groupValue.toString(), binary);
+        mutableValueToBinary(fieldType, original.groupValue, binary);
         groupValue = binary.get();
       } else {
         groupValue = null;
@@ -156,5 +157,14 @@ class GroupConverter {
     }
     
     return new TopGroups<BytesRef>(values.groupSort, values.withinGroupSort, values.totalHitCount, values.totalGroupedHitCount, groupDocs, values.maxScore);
+  }
+
+  private static void mutableValueToBinary(FieldType fieldType, MutableValue val, BytesRefBuilder binary) {
+    if (MutableValueDate.class.isInstance(val)) {
+      String readableDate = Instant.ofEpochMilli(((MutableValueDate) val).value).toString();
+      fieldType.readableToIndexed(readableDate, binary);
+    }
+    else
+      fieldType.readableToIndexed(val.toString(), binary);
   }
 }
