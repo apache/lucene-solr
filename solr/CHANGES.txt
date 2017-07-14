@@ -49,6 +49,9 @@ Bug Fixes
 
 * SOLR-10668: fix NPE at sort=childfield(..) .. on absent values (Mikhail Khludnev)
 
+* SOLR-8984: EnumField's error reporting to now indicate the field name in failure log (Lanny Ripple,
+  Ann Addicks via Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 
