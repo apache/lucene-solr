@@ -44,7 +44,7 @@ At most only one of the `min`, `max`, or `sort` (see below) parameters may be sp
 If none are specified, the group head document of each group will be selected based on the highest scoring document in that group. The default is none.
 
 sort::
-Selects the group head document for each group based on which document comes first according to the specified <<common-query-parameters.adoc#CommonQueryParameters-ThesortParameter,sort string>>.
+Selects the group head document for each group based on which document comes first according to the specified <<common-query-parameters.adoc#sort-parameter,sort string>>.
 +
 At most only one of the `min`, `max`, (see above) or `sort` parameters may be specified.
 +
