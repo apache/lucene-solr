@@ -22,7 +22,7 @@ Solr logs are a key way to know what's happening in the system. There are severa
 
 [IMPORTANT]
 ====
-In addition to the logging options described below, there is a way to configure which request parameters (such as parameters sent as part of queries) are logged with an additional request parameter called `logParamsList`. See the section on <<common-query-parameters.adoc#CommonQueryParameters-ThelogParamsListParameter,Common Query Parameters>> for more information.
+In addition to the logging options described below, there is a way to configure which request parameters (such as parameters sent as part of queries) are logged with an additional request parameter called `logParamsList`. See the section on <<common-query-parameters.adoc#logparamslist-parameter,Common Query Parameters>> for more information.
 ====
 
 == Temporary Logging Settings

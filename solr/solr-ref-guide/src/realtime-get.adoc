@@ -94,7 +94,7 @@ http://localhost:8983/solr/techproducts/get?id=mydoc&id=IW-02
 }
 ----
 
-Real Time Get requests can also be combined with filter queries, specified with an <<common-query-parameters.adoc#CommonQueryParameters-Thefq_FilterQuery_Parameter,`fq` parameter>>, just like search requests:
+Real Time Get requests can also be combined with filter queries, specified with an <<common-query-parameters.adoc#fq-filter-query-parameter,`fq` parameter>>, just like search requests:
 
 [source,text]
 ----
