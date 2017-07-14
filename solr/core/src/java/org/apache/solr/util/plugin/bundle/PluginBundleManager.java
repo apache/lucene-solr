@@ -45,7 +45,7 @@ public class PluginBundleManager {
 
   private final SolrPf4jPluginManager pluginManager;
   private final UpdateManager updateManager;
-  private final Version systemVersion;
+  public static final Version solrVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());;
   private final Path pluginsRoot;
   private ClassLoader uberLoader;
 
@@ -53,7 +53,6 @@ public class PluginBundleManager {
     try {
       this.pluginsRoot = pluginsRoot;
       pluginManager = new SolrPf4jPluginManager(pluginsRoot);
-      systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
 //      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
       //repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
@@ -61,7 +60,7 @@ public class PluginBundleManager {
       repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);
-      pluginManager.setSystemVersion(systemVersion);
+      pluginManager.setSystemVersion(solrVersion);
       setUberClassLoader(new PluginBundleClassLoader(getClass().getClassLoader(), pluginManager, null));
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -85,13 +84,13 @@ public class PluginBundleManager {
       return Collections.emptyList();
     } else {
       List<PluginInfo> plugins = updateManager.getAvailablePlugins().stream()
-          .filter(p -> p.getLastRelease(systemVersion) != null).collect(Collectors.toList());
+          .filter(p -> p.getLastRelease(solrVersion) != null).collect(Collectors.toList());
       if (plugins.size() > 0 && q != null && q.length() > 0 && !q.equals("*")) {
         plugins = plugins.stream().filter(filterPredicate(q)).collect(Collectors.toList());
       }
       if (plugins.size() > 0) {
         log.debug("Found plugins for " + q + ": " + plugins.stream().map(p -> p.id +
-            "(" + p.getLastRelease(systemVersion) + ")").collect(Collectors.toList()));
+            "(" + p.getLastRelease(solrVersion) + ")").collect(Collectors.toList()));
         return plugins;
       }
       return Collections.emptyList();
@@ -102,7 +101,8 @@ public class PluginBundleManager {
     return pluginManager.getPlugins().stream().collect(Collectors.toList());
   }
 
-  public void updateAll() {
+  public boolean updateAll() {
+    boolean successful = true;
     if (updateManager.hasUpdates()) {
       List<PluginInfo> updates = updateManager.getUpdates();
       for (PluginInfo plugin : updates) {
@@ -111,9 +111,11 @@ public class PluginBundleManager {
           log.info("Updatied plugin with id " + plugin.id);
         } catch (PluginException e) {
           log.warn("Failed to update plugin {}", plugin.id, e);
+          successful = false;
         }
       }
     }
+    return successful;
   }
 
   public boolean install(String id) {

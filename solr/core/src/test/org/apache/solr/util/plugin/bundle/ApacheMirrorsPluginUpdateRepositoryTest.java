@@ -34,19 +34,19 @@ public class ApacheMirrorsPluginUpdateRepositoryTest {
 
   @Before
   public void setUp() throws Exception {
-    mirrorExist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/6.5.0");
-    repoRedir = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/5.5.0");
+    mirrorExist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/6.6.0");
+    repoRedir = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/5.5.4");
     nonexist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/nonExist");
   }
 
   @Test
   public void mirrorExist() throws Exception {
-    assertEquals("http://apache.uib.no/lucene/solr/6.5.0/", mirrorExist.getUrl().toString());
+    assertEquals("http://apache.uib.no/lucene/solr/6.6.0/", mirrorExist.getUrl().toString());
   }
 
   @Test
   public void successfulRedirect() throws Exception {
-    assertEquals("https://archive.apache.org/dist/lucene/solr/5.5.0/", repoRedir.getUrl().toString());
+    assertEquals("https://archive.apache.org/dist/lucene/solr/5.5.4/", repoRedir.getUrl().toString());
   }
 
   @Test

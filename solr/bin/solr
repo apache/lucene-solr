@@ -295,7 +295,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, plugin"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -583,6 +583,26 @@ function print_usage() {
     echo "  -s <dir>                               Specify the Solr home directory. This is where any credentials or authentication"
     echo "                                         configuration files (e.g. basicAuth.conf) would be placed."
     echo ""
+  elif [ "$CMD" == "plugin" ]; then
+    echo ""
+    echo "Usage: solr plugin [options] install|uninstall|upgrade <pluginId>"
+    echo "       solr plugin [options] search <keyword>"
+    echo "       solr plugin [options] update"
+    echo "       solr plugin [options] upgrade <pluginId|all>"
+    echo "       solr plugin [options] repo list"
+    echo "       solr plugin [options] repo add <id> <url>"
+    echo "       solr plugin [options] repo delete <id>"
+    echo ""
+    echo "  The update command checks repositories for new plugins, while an upgrade reinstalls the newest"
+    echo "  version of the plugin supported for your current Solr version. Valid options are:"
+    echo ""
+    echo "  -p <port>                              Specify the port number of a running Solr instance to talk to."
+    echo "                                         If not specified, will operate offline in \$SOLR_HOME/plugins/"
+    echo ""
+    echo "  -d <dir>                               Specify the plugins directory"
+    echo ""
+    echo "  -l                                     Specify long output format (table view) for list and search commands"
+    echo ""
   fi
 } # end print_usage
 
@@ -821,7 +841,83 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
       SOLR_HOME="$(pwd)/$SOLR_HOME"
     fi
   fi
-  run_tool plugin -s "$SOLR_HOME" $*
+  PLUGIN_DIR="$SOLR_HOME/plugins"
+  unset SOLR_PORT
+  unset PLUGIN_CMD
+  declare -a PLUGIN_OPTS
+  if [ $# -gt 0 ]; then
+    while true; do  
+      case "$1" in
+          update|list|outdated)
+              if [[ -z "$2" ]]; then
+                PLUGIN_CMD="$1"
+                shift
+                break  # Finished parsing, send rest of args to SolrCLI
+              else
+                print_usage "$SCRIPT_CMD" "Sub command $1 does not take an argument"          
+                exit 1              
+              fi
+          ;;          
+          install|uninstall|search|upgrade|repo)
+              if [[ -z "$2" && "$1" != "search" ]]; then
+                print_usage "$SCRIPT_CMD" "Sub command $1 expects an argument"           
+                exit 1                            
+              else
+                PLUGIN_CMD="$1"
+                shift
+                break  # Finished parsing, send rest of args to SolrCLI
+              fi
+          ;;
+          -d|-pluginDir)
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Plugin dir required when using the $1 option!"
+                exit 1
+              fi
+              PLUGIN_DIR="$2"
+              shift 2
+          ;;
+          -p|-port)          
+              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+                print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
+                exit 1
+              fi
+              PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-p" "$2")
+              shift 2
+          ;;
+          -l|-long)          
+              PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-l")
+              shift
+          ;;
+          -help|-usage)
+              print_usage "$SCRIPT_CMD"           
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              if [ "$1" != "" ]; then            
+                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
+                exit 1
+              else
+                break # out-of-args, stop looping
+              fi 
+          ;;
+      esac
+    done
+  fi
+
+  if [ -z "$PLUGIN_CMD" ]; then
+    echo "Please specify a plugin sub command"
+    print_usage "plugin"
+    exit 1  
+  fi
+
+  PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-d" "$PLUGIN_DIR")
+
+  #echo "DOING: run_tool plugin $SOLR_PORT $PLUGIN_DIR $PLUGIN_CMD $*"
+  run_tool plugin ${PLUGIN_OPTS[@]} $PLUGIN_CMD $*
   exit $?
 fi
 

@@ -127,6 +127,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.update.PluginInfo;
+import ro.fortsoft.pf4j.update.UpdateManager;
 
 /**
  * Command-line utility for working with Solr.
@@ -4237,19 +4238,23 @@ public class SolrCLI {
   private static class PluginBundleTool implements Tool {
     public static Option[] pluginOptions =  new Option[] {
       OptionBuilder
-          .withArgName("solrHome")
+          .withArgName("pluginDir")
           .hasArg(true)
-          .isRequired(true)
-          .withDescription("Set SOLR_HOME")
-          .create("s"),
+          .isRequired(false)
+          .withDescription("Set location of plugin directory")
+          .create("d"),
+      OptionBuilder
+          .withArgName("port")
+          .hasArg(true)
+          .isRequired(false)
+          .withDescription("Set Solr port to connect to")
+          .create("p"),
       OptionBuilder
           .withArgName("long")
           .withDescription("With details")
           .hasArg(false)
           .create("l")
     };
-    private static final com.github.zafarkhaja.semver.Version SOLR_VERSION =
-        com.github.zafarkhaja.semver.Version.valueOf(Version.LATEST.toString());
     private PluginBundleManager pluginBundleManager;
 
     @Override
@@ -4269,13 +4274,15 @@ public class SolrCLI {
         return 1;
       }
       boolean longFormat = cli.hasOption("l");
-      String solrHome = cli.getOptionValue("s");
-      if (!Files.exists(Paths.get(solrHome))) {
-        System.out.println("Solr Home " + solrHome + " does not exist");
+      String pluginDir = cli.getOptionValue("d");
+      // TODO: Implement port parsing
+      if (!Files.exists(Paths.get(pluginDir))) {
+        System.out.println("Plugin directory " + pluginDir + " does not exist");
         return 1;
       }
-      pluginBundleManager = new PluginBundleManager(Paths.get(solrHome).toAbsolutePath().resolve("plugins"));
+      pluginBundleManager = new PluginBundleManager(Paths.get(pluginDir).toAbsolutePath());
       pluginBundleManager.getPluginManager().loadPlugins();
+      UpdateManager updateManager = pluginBundleManager.getUpdateManager();
       List<String> args = cli.getArgList();
       String command = args.get(0);
       switch (command) {
@@ -4290,6 +4297,28 @@ public class SolrCLI {
             }
           } else {
             System.out.println("Neeeds name of plugin to install");
+            printHelp();
+            return 1;
+          }
+          break;
+
+        case "upgrade":
+          if (args.size() > 1) {
+            if (!updateManager.hasUpdates()) {
+              System.out.println("Already up-to-date");
+              return 0;
+            }
+            String pluginId = args.get(1);
+            boolean success = false;
+            success = pluginId.equalsIgnoreCase("all") ? pluginBundleManager.updateAll() : pluginBundleManager.update(pluginId);
+            if (success) {
+              System.out.println("Upgraded " + pluginId);
+            } else {
+              System.out.println("Failed to upgrade plugin with id " + pluginId);
+              return 1;
+            }
+          } else {
+            System.out.println("Neeeds name of plugin to upgrade, or 'all'");
             printHelp();
             return 1;
           }
@@ -4312,7 +4341,16 @@ public class SolrCLI {
 
         case "update":
           if (args.size() == 1) {
-            pluginBundleManager.updateAll();
+            List<PluginInfo> updates = updateManager.getUpdates();
+            if (updates.size() > 0) {
+              if (longFormat) {
+                updates.forEach(p -> System.out.println(p.getLastRelease(PluginBundleManager.solrVersion)));
+              } else {
+                updates.forEach(p -> System.out.println(p.id));
+              }
+            } else {
+              System.out.println("Already up-to-date");
+            }
           } else {
             System.out.println("Update does not take any arguments");
             printHelp();
@@ -4330,8 +4368,28 @@ public class SolrCLI {
           }
           break;
 
-        case "query":
-          query(args.size() >1 ? args.get(1) : null);
+        case "outdated":
+          List<PluginInfo> outdated = updateManager.getUpdates();
+          if (outdated.size() == 0) {
+            System.out.println("Already up-to-date");
+            break;
+          }
+          for (PluginInfo plugin : outdated) {
+            if (longFormat) {
+              // TODO: Table view
+              // https://github.com/JakeWharton/flip-tables
+              System.out.println(plugin.id + ":\t" 
+                  + pluginBundleManager.getPluginManager().getPlugin(plugin.id).getDescriptor().getVersion() 
+                  + "==>" 
+                  + plugin.getLastRelease(PluginBundleManager.solrVersion).version);
+            } else {
+              System.out.println(plugin.id);
+            }
+          }
+        break;
+          
+        case "search":
+          search(args.size() >1 ? args.get(1) : null);
           // https://github.com/JakeWharton/flip-tables
           break;
 
@@ -4343,13 +4401,13 @@ public class SolrCLI {
     }
 
     private void printHelp() {
-      new HelpFormatter().printHelp("bin/solr plugin <install|uninstall|list|update|query> [pluginId]", getToolOptions(this));
+      new HelpFormatter().printHelp("bin/solr plugin [options] install|uninstall|list|update|search|upgrade|outdated|repo", getToolOptions(this));
     }
 
-    private void query(String q) {
+    private void search(String q) {
       List<PluginInfo> plugins = pluginBundleManager.query(q);
       System.out.println(plugins.stream().map(p -> p.id +
-                "@" + p.getLastRelease(SOLR_VERSION).version).collect(Collectors.toList()));
+                "@" + p.getLastRelease(PluginBundleManager.solrVersion).version).collect(Collectors.toList()));
     }
   }
 }
