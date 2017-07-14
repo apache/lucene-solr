@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
-import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
