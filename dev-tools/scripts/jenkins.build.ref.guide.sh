@@ -9,6 +9,14 @@
 #
 # The script expects to be run in the top-level project directory.
 #
+# RVM will attempt to verify the signature on downloaded RVM software if
+# you have gpg or gpg2 installed.  If you do, as a one-time operation you
+# must import two keys (substitute gpg2 below if you have it installed):
+#
+#    gpg --keyserver hkp://keys.gnupg.net --recv-keys \
+#        409B6B1796C275462A1703113804BB82D39DC0E3     \
+#        7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
