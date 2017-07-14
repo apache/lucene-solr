@@ -108,7 +108,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.plugin.bundle.PluginBundleClassLoader;
 import org.apache.solr.util.plugin.bundle.PluginBundleManager;
-import org.apache.solr.util.plugin.bundle.SolrPluginManager;
+import org.apache.solr.util.plugin.bundle.SolrPf4jPluginManager;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -514,7 +514,7 @@ public class CoreContainer {
           .resolve(System.getProperty("solr.plugins.dir", "plugins")));
       ClassLoader oldLoader = loader.getClassLoader();
       URLClassLoader newLoader = new PluginBundleClassLoader(oldLoader, 
-          (SolrPluginManager)pluginBundleManager.getPluginManager(), 
+          (SolrPf4jPluginManager)pluginBundleManager.getPluginManager(), 
           null);
       pluginBundleManager.setUberClassLoader(newLoader);
       loader.setClassLoader(newLoader);

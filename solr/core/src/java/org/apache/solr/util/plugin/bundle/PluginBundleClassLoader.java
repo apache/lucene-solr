@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PluginBundleClassLoader extends URLClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final SolrPluginManager manager;
+  private final SolrPf4jPluginManager manager;
   private final ClassLoader myParent;
 
   /**
@@ -46,7 +46,7 @@ public class PluginBundleClassLoader extends URLClassLoader {
    * @param manager the plugin manager that knows about each plugin
    * @param urls an optional list of URLs to look up
    */
-  public PluginBundleClassLoader(ClassLoader parent, SolrPluginManager manager, URL[] urls) {
+  public PluginBundleClassLoader(ClassLoader parent, SolrPf4jPluginManager manager, URL[] urls) {
     super(urls == null ? new URL[] {} : urls, parent);
     this.manager = manager;
     this.myParent = parent;

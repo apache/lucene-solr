@@ -809,7 +809,19 @@ fi
 
 # plugin tool
 if [ "$SCRIPT_CMD" == "plugin" ]; then
-  run_tool plugin $*
+  # TODO: Proper parsing
+  SOLR_SERVER_DIR="$DEFAULT_SERVER_DIR"
+  if [ -z "$SOLR_HOME" ]; then
+    SOLR_HOME="$SOLR_SERVER_DIR/solr"
+  else
+    if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+      SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
+      SOLR_PID_DIR="$SOLR_HOME"
+    elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd)/$SOLR_HOME"
+    fi
+  fi
+  run_tool plugin -s "$SOLR_HOME" $*
   exit $?
 fi
 

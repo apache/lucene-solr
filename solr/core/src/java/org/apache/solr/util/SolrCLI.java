@@ -4243,10 +4243,10 @@ public class SolrCLI {
           .withDescription("Set SOLR_HOME")
           .create("s"),
       OptionBuilder
-          .withArgName("ids")
-          .withDescription("Output IDs only")
+          .withArgName("long")
+          .withDescription("With details")
           .hasArg(false)
-          .create("i")
+          .create("l")
     };
     private static final com.github.zafarkhaja.semver.Version SOLR_VERSION =
         com.github.zafarkhaja.semver.Version.valueOf(Version.LATEST.toString());
@@ -4268,7 +4268,7 @@ public class SolrCLI {
         printHelp();
         return 1;
       }
-      boolean idsOnly = cli.hasOption("i");
+      boolean longFormat = cli.hasOption("l");
       String solrHome = cli.getOptionValue("s");
       if (!Files.exists(Paths.get(solrHome))) {
         System.out.println("Solr Home " + solrHome + " does not exist");
@@ -4321,12 +4321,12 @@ public class SolrCLI {
           break;
 
         case "list":
-          if (idsOnly) {
-            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
+          if (longFormat) {
+            // TODO: Table view
+            // https://github.com/JakeWharton/flip-tables
+            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion() + "\t" + d.getDescriptor().getPluginDescription()));
           } else {
-            System.out.println("Listing plugins from " + pluginBundleManager.getPluginsRoot());
-            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion()));
-            System.out.println("Done");
+            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
           }
           break;
 
@@ -4349,7 +4349,7 @@ public class SolrCLI {
     private void query(String q) {
       List<PluginInfo> plugins = pluginBundleManager.query(q);
       System.out.println(plugins.stream().map(p -> p.id +
-                "(" + p.getLastRelease(SOLR_VERSION).version + ")").collect(Collectors.toList()));
+                "@" + p.getLastRelease(SOLR_VERSION).version).collect(Collectors.toList()));
     }
   }
 }

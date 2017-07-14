@@ -52,12 +52,12 @@ import ro.fortsoft.pf4j.util.OrFileFilter;
 import ro.fortsoft.pf4j.util.StringUtils;
 
 /**
- * Plugin manager for Solr that changes how to read manifest mm
+ * PF4J Plugin manager for Solr that changes how to read manifest mm
  */
-public class SolrPluginManager extends DefaultPluginManager {
-  private static final Logger log = LoggerFactory.getLogger(SolrPluginManager.class);
+public class SolrPf4jPluginManager extends DefaultPluginManager {
+  private static final Logger log = LoggerFactory.getLogger(SolrPf4jPluginManager.class);
 
-  public SolrPluginManager(Path pluginsRoot) {
+  public SolrPf4jPluginManager(Path pluginsRoot) {
     super(pluginsRoot);
   }
 
@@ -79,6 +79,7 @@ public class SolrPluginManager extends DefaultPluginManager {
     if (descriptor.getVersion() == null) {
       throw new PluginException("version cannot be empty");
     }
+    // TODO: Require a license string? Validate that it meets SPDX format
   }
 
   @Override
@@ -173,16 +174,16 @@ public class SolrPluginManager extends DefaultPluginManager {
    * Plugin loader that can load both jar and zip plugins
    */
   private class AutoPluginLoader implements PluginLoader {
-    private final SolrPluginManager solrPluginManager;
+    private final SolrPf4jPluginManager solrPf4jPluginManager;
     private final PluginClasspath pluginClasspath;
     private final JarPluginLoader jarLoader;
     private final DefaultPluginLoader defaultLoader;
 
-    public AutoPluginLoader(SolrPluginManager solrPluginManager, PluginClasspath pluginClasspath) {
-      this.solrPluginManager = solrPluginManager;
+    public AutoPluginLoader(SolrPf4jPluginManager solrPf4jPluginManager, PluginClasspath pluginClasspath) {
+      this.solrPf4jPluginManager = solrPf4jPluginManager;
       this.pluginClasspath = pluginClasspath;
-      jarLoader = new JarPluginLoader(solrPluginManager, pluginClasspath);
-      defaultLoader = new DefaultPluginLoader(solrPluginManager, pluginClasspath);
+      jarLoader = new JarPluginLoader(solrPf4jPluginManager, pluginClasspath);
+      defaultLoader = new DefaultPluginLoader(solrPf4jPluginManager, pluginClasspath);
     }
 
     @Override

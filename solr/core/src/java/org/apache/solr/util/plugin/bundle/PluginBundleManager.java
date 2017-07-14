@@ -43,7 +43,7 @@ import ro.fortsoft.pf4j.update.UpdateRepository;
 public class PluginBundleManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final SolrPluginManager pluginManager;
+  private final SolrPf4jPluginManager pluginManager;
   private final UpdateManager updateManager;
   private final Version systemVersion;
   private final Path pluginsRoot;
@@ -52,7 +52,7 @@ public class PluginBundleManager {
   public PluginBundleManager(Path pluginsRoot) {
     try {
       this.pluginsRoot = pluginsRoot;
-      pluginManager = new SolrPluginManager(pluginsRoot);
+      pluginManager = new SolrPf4jPluginManager(pluginsRoot);
       systemVersion = Version.valueOf(org.apache.lucene.util.Version.LATEST.toString());
 //      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
@@ -118,6 +118,10 @@ public class PluginBundleManager {
 
   public boolean install(String id) {
     try {
+      if (pluginManager.getPlugin(id) != null) {
+        log.info("Plugin {} is already installed, doing nothing", id);
+        return false;
+      }
       boolean wasInstalled = updateManager.installPlugin(id, null);
       if (wasInstalled) {
         log.info("Installed plugin {}", id);
@@ -136,8 +140,8 @@ public class PluginBundleManager {
     return uberLoader;
   }
   
-  public void setUberClassLoader(ClassLoader parent) {
-    uberLoader = parent;
+  public void setUberClassLoader(ClassLoader loader) {
+    uberLoader = loader;
   }
   
   public void addUpdateRepository(String id, URL url) {
