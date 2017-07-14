@@ -2427,16 +2427,16 @@ public class TestPointFields extends SolrTestCaseJ4 {
     idAscXpathChecks[0] = assertNumFound;
     idAscNegXpathChecks[0] = assertNumFound;
     for (int i = 0 ; i < values.size() ; ++i) {
-      assertU(adoc("id", String.valueOf(i), field, String.valueOf(values.get(i))));
+      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, String.valueOf(values.get(i))));
       // reminder: xpath array indexes start at 1
       idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/int[@name='field(" + field + ")'][.='" + values.get(i) + "']";
       idAscNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='product(-1," + field + ")'][.='" 
           + (-1.0f * (float)values.get(i)) + "']"; 
     }
     assertU(commit());
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscXpathChecks);
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscNegXpathChecks);
 
     List<PosVal<Integer>> ascNegPosVals
@@ -2448,8 +2448,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       ascNegXpathChecks[i + 1]
           = "//result/doc[" + (1 + i) + "]/int[@name='" + field + "'][.='" + values.get(posVal.pos) + "']";
     }
-    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1," + field + ") asc"), 
+    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1," + field + ") asc"), 
         ascNegXpathChecks);
+
+    clearIndex();
+    assertU(commit());
   }
 
   private void doTestLongPointFunctionQuery(String field) throws Exception {
@@ -2462,16 +2465,16 @@ public class TestPointFields extends SolrTestCaseJ4 {
     idAscXpathChecks[0] = assertNumFound;
     idAscNegXpathChecks[0] = assertNumFound;
     for (int i = 0 ; i < values.size() ; ++i) {
-      assertU(adoc("id", String.valueOf(i), field, String.valueOf(values.get(i))));
+      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, String.valueOf(values.get(i))));
       // reminder: xpath array indexes start at 1
       idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/long[@name='field(" + field + ")'][.='" + values.get(i) + "']";
       idAscNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='product(-1," + field + ")'][.='"
           + (-1.0f * (float)values.get(i)) + "']";
     }
     assertU(commit());
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscXpathChecks);
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscNegXpathChecks);
 
     List<PosVal<Long>> ascNegPosVals
@@ -2483,8 +2486,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       ascNegXpathChecks[i + 1]
           = "//result/doc[" + (1 + i) + "]/long[@name='" + field + "'][.='" + values.get(posVal.pos) + "']";
     }
-    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1," + field + ") asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1," + field + ") asc"),
         ascNegXpathChecks);
+
+    clearIndex();
+    assertU(commit());
   }
 
   /** 
@@ -3187,16 +3193,16 @@ public class TestPointFields extends SolrTestCaseJ4 {
     idAscXpathChecks[0] = assertNumFound;
     idAscNegXpathChecks[0] = assertNumFound;
     for (int i = 0 ; i < values.size() ; ++i) {
-      assertU(adoc("id", String.valueOf(i), field, String.valueOf(values.get(i))));
+      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, String.valueOf(values.get(i))));
       // reminder: xpath array indexes start at 1
       idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='field(" + field + ")'][.='" + values.get(i) + "']";
       idAscNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='product(-1," + field + ")'][.='"
           + (-1.0f * values.get(i)) + "']";
     }
     assertU(commit());
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscXpathChecks);
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscNegXpathChecks);
 
     List<PosVal<Float>> ascNegPosVals
@@ -3208,8 +3214,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       ascNegXpathChecks[i + 1]
           = "//result/doc[" + (1 + i) + "]/float[@name='" + field + "'][.='" + values.get(posVal.pos) + "']";
     }
-    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1," + field + ") asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1," + field + ") asc"),
         ascNegXpathChecks);
+
+    clearIndex();
+    assertU(commit());
   }
 
   private void doTestDoublePointFunctionQuery(String field) throws Exception {
@@ -3222,16 +3231,16 @@ public class TestPointFields extends SolrTestCaseJ4 {
     idAscXpathChecks[0] = assertNumFound;
     idAscNegXpathChecks[0] = assertNumFound;
     for (int i = 0 ; i < values.size() ; ++i) {
-      assertU(adoc("id", String.valueOf(i), field, String.valueOf(values.get(i))));
+      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, String.valueOf(values.get(i))));
       // reminder: xpath array indexes start at 1
       idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/double[@name='field(" + field + ")'][.='" + values.get(i) + "']";
       idAscNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/float[@name='product(-1," + field + ")'][.='"
           + (-1.0f * values.get(i).floatValue()) + "']";
     }
     assertU(commit());
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscXpathChecks);
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1," + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscNegXpathChecks);
 
     // Intentionally use floats here to mimic server-side function sorting
@@ -3244,8 +3253,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       ascNegXpathChecks[i + 1]
           = "//result/doc[" + (1 + i) + "]/double[@name='" + field + "'][.='" + values.get(posVal.pos) + "']";
     }
-    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1," + field + ") asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1," + field + ") asc"),
         ascNegXpathChecks);
+
+    clearIndex();
+    assertU(commit());
   }
 
   private void doTestSetQueries(String fieldName, String[] values, boolean multiValued) {
@@ -3449,7 +3461,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     idAscXpathChecks[0] = assertNumFound;
     idAscNegXpathChecks[0] = assertNumFound;
     for (int i = 0 ; i < values.size() ; ++i) {
-      assertU(adoc("id", String.valueOf(i), field, Instant.ofEpochMilli(values.get(i)).toString()));
+      assertU(adoc("id", Character.valueOf((char)('A' + i)).toString(), field, Instant.ofEpochMilli(values.get(i)).toString()));
       // reminder: xpath array indexes start at 1
       idAscXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/date[@name='field(" + field 
           + ")'][.='" + Instant.ofEpochMilli(values.get(i)) + "']";
@@ -3457,9 +3469,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
           + (-1.0f * (float)values.get(i)) + "']";
     }
     assertU(commit());
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", field(" + field + ")", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscXpathChecks);
-    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1,ms(" + field + "))", "sort", "id asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field + ", product(-1,ms(" + field + "))", "rows", String.valueOf(numVals), "sort", "id asc"),
         idAscNegXpathChecks);
 
     List<PosVal<Long>> ascNegPosVals
@@ -3471,8 +3483,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       ascNegXpathChecks[i + 1] = "//result/doc[" + (1 + i) + "]/date[@name='" + field
           + "'][.='" + Instant.ofEpochMilli(values.get(posVal.pos)) + "']";
     }
-    assertQ(req("q", "*:*", "fl", "id, " + field, "sort", "product(-1,ms(" + field + ")) asc"),
+    assertQ(req("q", "*:*", "fl", "id, " + field, "rows", String.valueOf(numVals), "sort", "product(-1,ms(" + field + ")) asc"),
         ascNegXpathChecks);
+
+    clearIndex();
+    assertU(commit());
   }
 
   private void doTestDatePointStats(String field, String dvField, String[] dates) {
