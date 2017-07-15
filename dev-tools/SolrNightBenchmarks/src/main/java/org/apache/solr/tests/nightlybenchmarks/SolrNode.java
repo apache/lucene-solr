@@ -105,7 +105,7 @@ public class SolrNode {
 				node.mkdir();
 				Util.postMessage("Directory Created: " + nodeDirectory, MessageType.GREEN_TEXT, true);
 
-			}
+			} 
 
 		} catch (Exception e) {
 
@@ -114,7 +114,9 @@ public class SolrNode {
 		}
 
 		this.checkoutCommitAndBuild();
-		Util.extract(Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip", baseDirectory);
+		Util.extract(Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip", nodeDirectory);
+		
+		this.nodeDirectory = new File(this.nodeDirectory).listFiles()[0] + File.separator + "bin" + File.separator;
 	}
 
 	/**
@@ -165,9 +167,6 @@ public class SolrNode {
 					}
 				}
 				this.solrDirName = fileName;
-				this.nodeDirectory = this.baseDirectory + this.solrDirName.substring(0, this.solrDirName.length() - 4) + File.separator + "bin" + File.separator;
-				Util.postMessage(this.nodeDirectory, MessageType.PURPLE_TEXT, false);
-				
 				packageFilename += fileName;
 				
 				System.out.println("Trying to copy: " + packageFilename + " to " + tarballLocation);
@@ -177,7 +176,7 @@ public class SolrNode {
 			} else {
 				throw new IOException("Couldn't build the package"); 
 			}
-		}
+		} 
 
 		Util.postMessage(
 				"** Do we have packageFilename? " + (new File(tarballLocation).exists() ? "yes" : "no") + " ...",
