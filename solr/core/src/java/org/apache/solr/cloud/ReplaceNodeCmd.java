@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
@@ -59,9 +60,11 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    ocmh.checkRequired(message, "source", "target");
-    String source = message.getStr("source");
-    String target = message.getStr("target");
+    String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
+    String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
+    if (source == null || target == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "sourceNode and targetNode are required params" );
+    }
     String async = message.getStr("async");
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
