@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.eclipse.jgit.api.Git;
@@ -54,6 +55,7 @@ public class SolrNode {
 	public String collectionName;
 	public String baseDirectory;
 	public boolean isRunningInCloudMode;
+	public String solrDirName;
 
 	private String gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-";
 
@@ -82,6 +84,7 @@ public class SolrNode {
 	 * A method used for initializing the solr node.
 	 * @throws IOException
 	 * @throws GitAPIException
+	 * @throws InterruptedException 
 	 */
 	private void install() throws IOException, GitAPIException {
 
@@ -89,8 +92,7 @@ public class SolrNode {
 		this.port = String.valueOf(Util.getFreePort());
 
 		this.baseDirectory = Util.SOLR_DIR + UUID.randomUUID().toString() + File.separator;
-
-		this.nodeDirectory = this.baseDirectory + "solr-8.0.0-SNAPSHOT/bin/";
+		this.nodeDirectory = this.baseDirectory;
 
 		try {
 
@@ -138,7 +140,7 @@ public class SolrNode {
 			BenchmarkAppConnector.deleteFolder(FileType.IS_CLONING_FILE);
 		}
 		
-		String packageFilename = gitDirectoryPath + "/solr/package/solr-8.0.0-SNAPSHOT.zip";
+		String packageFilename = gitDirectoryPath + "/solr/package/";
 		String tarballLocation = Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip";
 
 		if (new File(tarballLocation).exists() == false) {
@@ -148,16 +150,32 @@ public class SolrNode {
 				// Util.execute("ant compile", gitDirectoryPath);
 				Util.execute("ant package", gitDirectoryPath + File.separator + "solr");
 			}
-
+			
 			if (new File(packageFilename).exists()) {
+				
+				File subDirPath = new File(gitDirectoryPath + "/solr/package/");
+				String fileName = "";
+				if (subDirPath.exists()) {
+					File[] files = subDirPath.listFiles();
+					for (int i = 0; i < files.length; i++) {
+							if (FilenameUtils.isExtension(files[i].getName(), "zip")) {
+								fileName = files[i].getName();
+								break;
+							}
+					}
+				}
+				this.solrDirName = fileName;
+				this.nodeDirectory = this.baseDirectory + this.solrDirName.substring(0, this.solrDirName.length() - 4) + File.separator + "bin" + File.separator;
+				Util.postMessage(this.nodeDirectory, MessageType.PURPLE_TEXT, false);
+				
+				packageFilename += fileName;
+				
 				System.out.println("Trying to copy: " + packageFilename + " to " + tarballLocation);
 				Files.copy(Paths.get(packageFilename), Paths.get(tarballLocation));
 				System.out.println("File copied!");
+
 			} else {
-				throw new IOException("Couldn't build the package"); // nocommit
-																		// fix,
-																		// better
-																		// exception
+				throw new IOException("Couldn't build the package"); 
 			}
 		}
 

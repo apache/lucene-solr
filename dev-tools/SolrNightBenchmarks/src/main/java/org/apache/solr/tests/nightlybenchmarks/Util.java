@@ -403,6 +403,8 @@ public class Util {
 	public static void extract(String filename, String filePath) throws IOException {
 		Util.postMessage("** Attempting to unzip the downloaded release ...", MessageType.WHITE_TEXT, true);
 		try {
+			Util.postMessage(filename, MessageType.RED_TEXT, false);
+			Util.postMessage(filePath, MessageType.RED_TEXT, false);
 			ZipFile zip = new ZipFile(filename);
 			zip.extractAll(filePath);
 		} catch (ZipException ex) {
