@@ -439,12 +439,12 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     INCLUDED,
     GREATER_THAN_END,
   }
-
+  
   /**
    * Helper class to match and count of documents in specified intervals
    */
   public static class FacetInterval {
-
+    
     /**
      * Key to represent this interval
      */
@@ -504,6 +504,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      * The current count of documents in that match this interval
      */
     private int count;
+    
+    /**
+     * If this field is set to true, this interval {@code #getCount()} will always return 0.
+     */
+    private boolean includeNoDocs = false;
 
     /**
      * 
@@ -646,7 +651,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             throw new AssertionError();
         }
         if (startOpen) {
-          startLimit++;
+          if (startLimit == Long.MAX_VALUE) {
+            /*
+             * This interval can match no docs
+             */
+            includeNoDocs = true;
+          } else {
+            startLimit++;
+          }
         }
       }
 
@@ -674,7 +686,14 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             throw new AssertionError();
         }
         if (endOpen) {
-          endLimit--;
+          if (endLimit == Long.MIN_VALUE) {
+            /*
+             * This interval can match no docs
+             */
+            includeNoDocs = true;
+          } else {
+            endLimit--;
+          }
         }
       }
     }
@@ -882,6 +901,9 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      * @return The count of document that matched this interval
      */
     public int getCount() {
+      if (includeNoDocs) {
+        return 0;
+      }
       return this.count;
     }
 
@@ -906,7 +928,6 @@ public class IntervalFacets implements Iterable<FacetInterval> {
    */
   @Override
   public Iterator<FacetInterval> iterator() {
-
     return new ArrayList<FacetInterval>(Arrays.asList(intervals)).iterator();
   }
 

@@ -337,6 +337,9 @@ Bug Fixes
 * SOLR-11043: Fix facet.range.method=dv and interval facets on single-valued float fields with negative values.
   (Tomás Fernández Löbbe, Steve Rowe)
 
+* SOLR-11073: Fix overflow in interval faceting when querying Long limits (e.g. (Long.MAX_VALUE TO Long.MAX_VALUE])
+  (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 

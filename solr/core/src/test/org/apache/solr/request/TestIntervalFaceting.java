@@ -664,11 +664,19 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(adoc("id", "12", "test_l_dv", String.valueOf(Long.MAX_VALUE - 3)));
     assertU(adoc("id", "13", "test_l_dv", String.valueOf(Long.MAX_VALUE - 2)));
     assertU(adoc("id", "14", "test_l_dv", String.valueOf(Long.MAX_VALUE - 1)));
+    assertU(adoc("id", "15", "test_l_dv", String.valueOf(Long.MAX_VALUE)));
+    assertU(adoc("id", "16", "test_l_dv", String.valueOf(Long.MIN_VALUE)));
     assertU(commit());
 
     assertIntervalQuery("test_l_dv", "[0," + Integer.MAX_VALUE + "]", "10");
-    assertIntervalQuery("test_l_dv", "[" + Integer.MAX_VALUE + "," + Long.MAX_VALUE + "]", "3");
-    assertIntervalQuery("test_l_dv", "[" + Integer.MAX_VALUE + ",*]", "3");
+    assertIntervalQuery("test_l_dv", "(10," + Long.MAX_VALUE + "]", "4");
+    assertIntervalQuery("test_l_dv", "[" + Long.MAX_VALUE + "," + Long.MAX_VALUE + "]", "1");
+    assertIntervalQuery("test_l_dv", "[" + Long.MAX_VALUE + ",*]", "1");
+    assertIntervalQuery("test_l_dv", "(" + Long.MAX_VALUE + ",*]", "0");
+    assertIntervalQuery("test_l_dv", "(*, " + Long.MIN_VALUE + "]", "1");
+    assertIntervalQuery("test_l_dv", "(*, " + Long.MIN_VALUE + ")", "0");
+    assertIntervalQuery("test_l_dv", "(" + (Long.MAX_VALUE - 1) + ",*]", "1");
+    assertIntervalQuery("test_l_dv", "[" + (Long.MAX_VALUE - 1) + ",*]", "2");
   }
 
   @Test
@@ -732,6 +740,9 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQuery(field, "(0, " + Float.MAX_VALUE + "]", "2");
     assertIntervalQuery(field, "(0, " + Float.POSITIVE_INFINITY + ")", "2");
     assertIntervalQuery(field, "(0, " + Float.POSITIVE_INFINITY + "]", "3");
+    assertIntervalQuery(field, "[-0.0, 0.0]", "2");
+    assertIntervalQuery(field, "[-0.0, 0.0)", "1");
+    assertIntervalQuery(field, "(-0.0, 0.0]", "1");
 
     if (testDouble) {
       clearIndex();
