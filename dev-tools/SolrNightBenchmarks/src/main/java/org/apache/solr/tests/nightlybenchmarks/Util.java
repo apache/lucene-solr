@@ -657,6 +657,62 @@ public class Util {
 		}
 
 	}
+	
+	public static boolean checkDataFiles() {
+		
+		Util.postMessage("** Checking if data files are present ...", MessageType.CYAN_TEXT, false);
+
+		File file = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+		
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			return false;
+		}
+	
+		Util.postMessage("** All Required Data Files are present ...", MessageType.GREEN_TEXT, false);
+		return true;
+	}
 
 	/**
 	 * A method used for sending requests to web resources.
@@ -923,6 +979,10 @@ public class Util {
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
 
 		Util.getPropertyValues();
+		
+		if(!Util.checkDataFiles()) {
+			System.exit(0);
+		}
 
 		try {
 			argsList = Util.getArgs(args);
