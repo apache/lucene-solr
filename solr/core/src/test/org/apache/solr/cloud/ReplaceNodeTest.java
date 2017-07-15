@@ -33,6 +33,9 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,7 +83,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
     cloudClient.request(create);
     log.info("excluded_node : {}  ", emptyNode);
-    new CollectionAdminRequest.ReplaceNode(node2bdecommissioned, emptyNode).processAsync("000", cloudClient);
+    createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
     boolean success = false;
     for (int i = 0; i < 300; i++) {
@@ -99,7 +102,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
 
     //let's do it back
-    new CollectionAdminRequest.ReplaceNode(emptyNode, node2bdecommissioned).setParallel(Boolean.TRUE).processAsync("001", cloudClient);
+    createReplaceNodeRequest(emptyNode, node2bdecommissioned, Boolean.TRUE).processAsync("001", cloudClient);
     requestStatus = CollectionAdminRequest.requestStatus("001");
 
     for (int i = 0; i < 200; i++) {
@@ -123,6 +126,25 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       assertEquals(create.getNumNrtReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
       assertEquals(create.getNumTlogReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
       assertEquals(create.getNumPullReplicas().intValue(), s.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    }
+  }
+
+  private CollectionAdminRequest.AsyncCollectionAdminRequest createReplaceNodeRequest(String sourceNode, String targetNode, Boolean parallel) {
+    if (random().nextBoolean()) {
+      return new CollectionAdminRequest.ReplaceNode(sourceNode, targetNode).setParallel(parallel);
+    } else  {
+      // test back compat with old param names
+      // todo remove in solr 8.0
+      return new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.REPLACENODE)  {
+        @Override
+        public SolrParams getParams() {
+          ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+          params.set("source", sourceNode);
+          params.set("target", targetNode);
+          if (parallel != null) params.set("parallel", parallel.toString());
+          return params;
+        }
+      };
     }
   }
 }

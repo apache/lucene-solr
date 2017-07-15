@@ -1832,14 +1832,14 @@ This command recreates replicas in one node (the source) to another node (the ta
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader (either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
-`/admin/collections?action=REPLACENODE&source=_source-node_&target=_target-node_`
+`/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
 
 === REPLACENODE Parameters
 
-`source`::
+`sourceNode`::
 The source node from which the replicas need to be copied from. This parameter is required.
 
-`target`::
+`targetNode`::
 The target node where replicas will be copied. This parameter is required.
 
 `parallel`::
@@ -1860,7 +1860,7 @@ This operation does not hold necessary locks on the replicas that belong to on t
 
 This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` will be reused.
 
-`/admin/collections?action=MOVEREPLICA&collection=collection&shard=shard&replica=replica&node=nodeName&toNode=nodeName`
+`/admin/collections?action=MOVEREPLICA&collection=collection&shard=shard&replica=replica&sourceNode=nodeName&targetNode=nodeName`
 
 === MOVEREPLICA Parameters
 
@@ -1873,10 +1873,10 @@ The name of the shard that the replica belongs to. This parameter is required.
 `replica`::
 The name of the replica. This parameter is required.
 
-`node`::
+`sourceNode`::
 The name of the node that contains the replica. This parameter is required.
 
-`toNode`::
+`targetNode`::
 The name of the destination node. This parameter is required.
 
 `async`::
