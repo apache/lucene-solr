@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -81,20 +82,22 @@ public class MoveReplicaCmd implements Cmd{
             "Collection: " + collection + " replica: " + replicaName + " does not exist");
       }
     } else {
-      ocmh.checkRequired(message, SHARD_ID_PROP, "fromNode");
-      String fromNode = message.getStr("fromNode");
+      String sourceNode = message.getStr(CollectionParams.SOURCE_NODE, message.getStr(CollectionParams.FROM_NODE));
+      if (sourceNode == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "sourceNode is a required param" );
+      }
       String shardId = message.getStr(SHARD_ID_PROP);
       Slice slice = clusterState.getCollection(collection).getSlice(shardId);
       List<Replica> sliceReplicas = new ArrayList<>(slice.getReplicas());
       Collections.shuffle(sliceReplicas, RANDOM);
       for (Replica r : slice.getReplicas()) {
-        if (r.getNodeName().equals(fromNode)) {
+        if (r.getNodeName().equals(sourceNode)) {
           replica = r;
         }
       }
       if (replica == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Collection: " + collection + " node: " + fromNode + " do not have any replica belong to shard: " + shardId);
+            "Collection: " + collection + " node: " + sourceNode + " do not have any replica belong to shard: " + shardId);
       }
     }
 

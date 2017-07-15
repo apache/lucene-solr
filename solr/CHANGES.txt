@@ -140,6 +140,10 @@ Upgrading from Solr 6.x
 
 * StandardRequestHandler is deprecated. Simply use SearchHandler instead.
 
+* The parameter names 'fromNode' for MOVEREPLICA and 'source', 'target' for REPLACENODE have been deprecated and
+  replaced with 'sourceNode' and 'targetNode' instead. The old names will continue to work for back-compatibility
+  but they will be removed in 8.0. See SOLR-11068 for more details.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -431,6 +435,9 @@ Other Changes
 * SOLR-10898: Fix SOLR-10898 to not deterministicly fail 1/512 runs (hossman)
 
 * SOLR-10796: TestPointFields: increase randomized testing of non-trivial values.  (Steve Rowe)
+
+* SOLR-11068: MOVEREPLICA and REPLACENODE API parameter names are now 'sourceNode' and 'targetNode'. The old names
+  viz. 'fromNode' for MOVEREPLICA and 'source', 'target' for REPLACENODE have been deprecated. (shalin)
 
 ==================  6.7.0 ==================
 
