@@ -343,7 +343,7 @@ Bug Fixes
 * SOLR-11073: Fix overflow in interval faceting when querying Long limits (e.g. (Long.MAX_VALUE TO Long.MAX_VALUE])
   (Tomás Fernández Löbbe)
 
-* SOLR-11057: Fix overflow in point range queries when querying the type limits 
+* SOLR-11057: Fix overflow in point range queries when querying the type limits
   (e.g. q=field_i:{Integer.MAX_VALUE TO Integer.MAX_VALUE]) (Tomás Fernández Löbbe)
 
 Optimizations
@@ -473,7 +473,7 @@ Other Changes
 
 * SOLR-10807: Randomize Points based numeric field types in all existing tests & test schemas
   where Trie numerics were previously hardcoded. (hossman, Steve Rowe, Anshum Gupta)
-  
+
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
   (added leading '/' in request handlers). Switch all tests referring to "standard" request handler to
@@ -502,6 +502,8 @@ Other Changes
 * SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
 
 * SOLR-11119: Switch from Trie to Points field types in the .system collection schema. (Steve Rowe)
+
+* SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
 
 ==================  6.7.0 ==================
 
