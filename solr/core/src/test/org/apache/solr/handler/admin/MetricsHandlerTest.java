@@ -189,6 +189,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPropertyFilter() throws Exception {
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
