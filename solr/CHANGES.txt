@@ -70,6 +70,7 @@ Other Changes
 
 * SOLR-10964: Reduce SolrIndexSearcher casting in LTRRescorer. (Christine Poerschke)
 
+* SOLR-11075: Refactor handling of params in CloudSolrStream and FacetStream (Erick Erickson)
 ==================  7.0.0 ==================
 
 Versions of Major Components
