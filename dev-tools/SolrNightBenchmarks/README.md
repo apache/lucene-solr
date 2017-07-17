@@ -27,13 +27,6 @@ A comprehensive Solr performance benchmark framework.
      
 [Download Data Files From This Link](http://212.47.227.9/data/) 
 
-## Data structure and data file details
-
-     The data currently being used has the following data structure.     
-               * { Int(id), String(Text), Int(Numeric), Long(Numeric), Alphanumeric(Catgory), String(Text) }
-     The record size averages around ~3.8KB
-     The data file name is "test-data-file-1M.csv" and the file is around 3.8GB in size.
-
 ## Possible parameters
 
      * --silent                                Use this parameter if you do not want any output on console.
@@ -44,20 +37,6 @@ A comprehensive Solr performance benchmark framework.
      * --generate-data-file                    Generates a fresh test data file with 1 million records ~3.7GB size, in the webapp/data directory.     
      * --clean-up                              Use this parameter to instruct the system to clean up at the end of the work cycle.
      * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents to test with. Valid value lies in (with test-data-file-1M.csv data file) between 1 and 1000000.
-     
-## Running benchmarks in queue mode
-
-     There is an option to run this framework in queue mode where it tries to capture almost all commits and runs on each. 
-     
-     The steps to run in this mode is mentioned below.
-     
-     Configure jenkins to run the following in specified time periods (example every 15 minutes) 
-     * java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -RegisterLatestCommit
-     
-     USE this with the following to run the benchmark in queue mode. 
-     
-     Configure jenkins to run the benchmark utility by running the following (say every midnight)
-     * java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessCommitsFromQueue -Housekeeping  
      
 ## Where and how to access the output.
 
@@ -74,15 +53,11 @@ A comprehensive Solr performance benchmark framework.
 
      * The framework has the ability to recover from a failed attempt.
          - Example if during execution the benchmark process is killed, the next time when executed the framework will clean up the corrupt files/zombie processes from the last failed run to free the machine from resource wastages.
-     * The framework has the ability to notify the end user that a benchmark cycle is running. (A green indicator on top right hand will light up telling the user that currently a fresh benchmark cycle is running.) Once the cycle is complete a refresh button will appear on top righ hand corner. 
+     * The framework has the ability to notify the end user that a benchmark cycle is running. (An indicator on top right hand will light up telling the user that currently a fresh benchmark cycle is running.) Once the cycle is complete a refresh button will appear on top righ hand corner. 
      * The webapp is deployed automatically when not present.  
      
 ## Known Limitations
      * The current design of this framework does not allow two or more instances of this system running on a single machine TOGETHER. For now, please do not run two instances of this system running on the same machine at the same time (one might kill the other). 
-     
-## Important Note
-     * In the event of a insufficient resources (CPU and RAM), due to hosting this system on a weak machine, the metrics reported will fluctuate and will NOT be reliable. Please consider hosting this system on a strong machine (free from noise by other processes running on it). 
-    
     
    
      
