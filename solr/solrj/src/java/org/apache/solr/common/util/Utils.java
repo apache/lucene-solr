@@ -106,9 +106,11 @@ public class Utils {
   }
 
   public static InputStream toJavabin(Object o) throws IOException {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-    new JavaBinCodec().marshal(o,baos);
-    return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(),0,baos.size()));
+    try (final JavaBinCodec jbc = new JavaBinCodec()) {
+      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      jbc.marshal(o,baos);
+      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(),0,baos.size()));
+    }
   }
 
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {

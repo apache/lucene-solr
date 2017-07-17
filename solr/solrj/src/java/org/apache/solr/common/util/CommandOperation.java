@@ -245,14 +245,16 @@ public class CommandOperation {
       }
     };
 
-    new JavaBinCodec() {
+    try (final JavaBinCodec jbc = new JavaBinCodec() {
       int level = 0;
       @Override
       protected Map<Object, Object> newMap(int size) {
         level++;
         return level == 1 ? map : super.newMap(size);
       }
-    }.unmarshal(in);
+    }) {
+      jbc.unmarshal(in);
+    }
     return operations;
   }
 
