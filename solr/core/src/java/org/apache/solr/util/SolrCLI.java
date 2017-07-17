@@ -120,6 +120,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.apache.solr.util.plugin.bundle.PluginBundleManager;
+import org.apache.solr.util.plugin.bundle.UpdateRepositoryFactory;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -128,6 +129,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.update.PluginInfo;
 import ro.fortsoft.pf4j.update.UpdateManager;
+import ro.fortsoft.pf4j.update.UpdateRepository;
 
 /**
  * Command-line utility for working with Solr.
@@ -4288,12 +4290,13 @@ public class SolrCLI {
       switch (command) {
         case "install":
           if (args.size() > 1) {
-            String pluginId = args.get(1);
-            if (pluginBundleManager.install(pluginId)) {
-              System.out.println("Installed " + pluginId);
-            } else {
-              System.out.println("Plugin with id " + pluginId + " not found in any repository. Please attempt query");
-              return 1;
+            for (String pluginId : args.subList(1, args.size())) {
+              if (pluginBundleManager.install(pluginId)) {
+                System.out.println("Installed " + pluginId);
+              } else {
+                System.out.println("Plugin with id " + pluginId + " not found in any repository. Please attempt query");
+                return 1;
+              }
             }
           } else {
             System.out.println("Neeeds name of plugin to install");
@@ -4305,7 +4308,7 @@ public class SolrCLI {
         case "upgrade":
           if (args.size() > 1) {
             if (!updateManager.hasUpdates()) {
-              System.out.println("Already up-to-date");
+              System.err.println("Already up-to-date");
               return 0;
             }
             String pluginId = args.get(1);
@@ -4349,7 +4352,7 @@ public class SolrCLI {
                 updates.forEach(p -> System.out.println(p.id));
               }
             } else {
-              System.out.println("Already up-to-date");
+              System.err.println("Already up-to-date");
             }
           } else {
             System.out.println("Update does not take any arguments");
@@ -4371,7 +4374,7 @@ public class SolrCLI {
         case "outdated":
           List<PluginInfo> outdated = updateManager.getUpdates();
           if (outdated.size() == 0) {
-            System.out.println("Already up-to-date");
+            System.err.println("Already up-to-date");
             break;
           }
           for (PluginInfo plugin : outdated) {
@@ -4389,8 +4392,68 @@ public class SolrCLI {
         break;
           
         case "search":
-          search(args.size() >1 ? args.get(1) : null);
-          // https://github.com/JakeWharton/flip-tables
+          String q = args.size() > 1 ? args.get(1) : null;
+          List<PluginInfo> plugins = pluginBundleManager.query(q);
+          if (longFormat) {
+            // https://github.com/JakeWharton/flip-tables
+            plugins.forEach(p -> System.out.println(p.id + "\t" + p.getRepositoryId() + "\t" +
+                p.getLastRelease(PluginBundleManager.solrVersion).version + "\t" +
+                p.description));
+          } else {
+            plugins.forEach(p -> System.out.println(p.id));
+          }
+          break;
+
+        case "repo":
+          if (args.size() > 1) {
+            String subcmd = args.get(1);
+            switch(subcmd) {
+              case "list":
+                for (UpdateRepository r : updateManager.getRepositories()) {
+                  if (longFormat) {
+                    System.out.println(r.getId() + "\t" + r.getUrl() + "\t" +r.getPlugins().size()+" plugins" + "\t(" + r.getClass().getName() + ")");
+                  } else {
+                    System.out.println(r.getId());
+                  }
+                }
+                break;
+                
+              case "add":
+                // TODO: How to persist new repos?
+                if (args.size() == 4) {
+                  String id = args.get(2);
+                  String urlStr = args.get(3);
+                  UpdateRepository ur = UpdateRepositoryFactory.create(id, urlStr);
+                  updateManager.addRepository(ur);
+                } else {
+                  printHelp();
+                  return 1;
+                }
+                break;
+                
+              case "delete":
+                if (args.size() > 2) {
+                  String id = args.get(2);
+                  if (updateManager.getRepositories().stream().anyMatch(r -> r.getId().equals(id))) {
+                    updateManager.removeRepository(id);
+                  } else {
+                    System.out.println("Repo with id " + id + " does not exist");
+                  }
+                } else {
+                  printHelp();
+                  return 1;
+                }
+                break;
+                
+              default:
+                System.out.println("Unknown repo sub command " + subcmd);
+                printHelp();
+                return 1;
+            }
+          } else {
+            printHelp();
+            return 1;
+          }
           break;
 
         default:
@@ -4402,12 +4465,6 @@ public class SolrCLI {
 
     private void printHelp() {
       new HelpFormatter().printHelp("bin/solr plugin [options] install|uninstall|list|update|search|upgrade|outdated|repo", getToolOptions(this));
-    }
-
-    private void search(String q) {
-      List<PluginInfo> plugins = pluginBundleManager.query(q);
-      System.out.println(plugins.stream().map(p -> p.id +
-                "@" + p.getLastRelease(PluginBundleManager.solrVersion).version).collect(Collectors.toList()));
     }
   }
 }

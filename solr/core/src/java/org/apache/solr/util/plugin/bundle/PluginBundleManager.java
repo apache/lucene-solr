@@ -66,12 +66,13 @@ public class PluginBundleManager {
         FileUtils.createDirectories(pluginsRoot);
       }
       pluginManager = new SolrPf4jPluginManager(pluginsRoot);
+      // NOCOMMIT: Persist plugin repo somewhere
 //      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + solrVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
       //repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
       //repos.add(new PluginUpdateRepository("local", new URL("file:///Users/janhoy/Cominvent/Code/plugins/")));
       repos.add(new PluginUpdateRepository("contribs", Paths.get(SOLR_INSTALL_DIR).resolve("contrib").toAbsolutePath().toUri().toURL()));
-      repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
+      //repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(solrVersion);
@@ -94,10 +95,10 @@ public class PluginBundleManager {
 
   public List<PluginInfo> query(String q) {
     // TODO: Allow install from any GitHub repo
-    if (!updateManager.hasAvailablePlugins()) {
+    if (updateManager.getPlugins().size() == 0) {
       return Collections.emptyList();
     } else {
-      List<PluginInfo> plugins = updateManager.getAvailablePlugins().stream()
+      List<PluginInfo> plugins = updateManager.getPlugins().stream()
           .filter(p -> p.getLastRelease(solrVersion) != null).collect(Collectors.toList());
       if (plugins.size() > 0 && q != null && q.length() > 0 && !q.equals("*")) {
         plugins = plugins.stream().filter(filterPredicate(q)).collect(Collectors.toList());
