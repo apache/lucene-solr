@@ -52,6 +52,8 @@ Bug Fixes
 * SOLR-8984: EnumField's error reporting to now indicate the field name in failure log (Lanny Ripple,
   Ann Addicks via Ishan Chattopadhyaya)
 
+* SOLR-11012: Fix three (JavaBinCodec not being closed) Resource Leak warnings. (Christine Poerschke)
+
 Optimizations
 ----------------------
 
