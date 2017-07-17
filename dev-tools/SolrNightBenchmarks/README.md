@@ -23,7 +23,7 @@ A comprehensive Solr performance benchmark framework.
      6. VERY IMPORTANT: Modify config.properties - point to data files correctly on your server, point your webapp directory to your apache HTTP server home
      7. pwd to check that you are in SolrNightlyBenchmarks folder
      8. mvn clean compile assembly:single
-     9. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar -ProcessLatestCommit -Housekeeping 
+     9. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar --latest-commit --clean-up 
      
 [Download Data Files From This Link](http://212.47.227.9/data/) 
 
