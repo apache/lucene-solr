@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -163,7 +164,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
   }//PredicateValueSourceQuery
 
   /**
-   * Implements a ValueSource by deserializing a Shape in from BinaryDocValues using BinaryCodec.
+   * Implements a ShapeValueSource by deserializing a Shape from BinaryDocValues using BinaryCodec.
    * @see #makeShapeValueSource()
    */
   static class ShapeDocValueSource extends ShapeValuesSource {
@@ -178,7 +179,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
     @Override
     public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
-      final BinaryDocValues docValues = readerContext.reader().getBinaryDocValues(fieldName);
+      final BinaryDocValues docValues = DocValues.getBinary(readerContext.reader(), fieldName);
 
       return new ShapeValues() {
         @Override
