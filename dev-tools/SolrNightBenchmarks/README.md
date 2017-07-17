@@ -19,7 +19,7 @@ A comprehensive Solr performance benchmark framework.
      2. git checkout 'SolrNightlyBenchmarks'
      3. cd /dev-tools/
      4. cp -r SolrNightlyBenchmarks to target location on your server
-     5. Copy data files (test-data-file-1M.csv, Numeric-Term-Query.txt, Numeric-Pair-Query-Data.txt & Sorted-Numeric-Pair-Query-Data.txt) from the link provided below
+     5. Copy all data files from the link provided below in a folder on your server.
      6. VERY IMPORTANT: Modify config.properties - point to data files correctly on your server, point your webapp directory to your apache HTTP server home
      7. pwd to check that you are in SolrNightlyBenchmarks folder
      8. mvn clean compile assembly:single
