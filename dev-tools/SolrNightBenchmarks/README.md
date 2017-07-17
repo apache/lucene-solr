@@ -68,7 +68,7 @@ A comprehensive Solr performance benchmark framework.
 ## Sample output page
      * The page that you will access will look like the following. 
 
-![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot.PNG)
+![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot2.PNG)
 
 ## Notable Additional features
 
