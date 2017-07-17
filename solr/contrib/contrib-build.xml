@@ -23,11 +23,14 @@
 
   <property name="test.lib.dir" location="test-lib"/>
 
+  <property name="apache.license.spdx" value="Apache-2.0" />
+  
   <import file="../common-build.xml"/>
 
   <target name="compile-core" depends="compile-solr-core,compile-solrj,common-solr.compile-core"/>
 
   <dirname file="${ant.file}" property="antfile.dir"/>
+  <basename file="${antfile.dir}" property="contrib.dir" />
 
   <available property="contrib.has.webapp" type="dir" file="${antfile.dir}/src/webapp" />
   <target name="add-to-webapp" if="contrib.has.webapp">
@@ -54,4 +57,63 @@
                     pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
     </sequential>
   </target>
+  
+  <!-- Create the plugin zip with dependencies, place it in contrib/ -->
+  <target name="dist" depends="jar-core">
+    <property name="pluginfilename" value="${name}-plugin-${version}.zip"/>
+    <manifest file="${build.dir}/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Specification-Title" value="Apache Solr plugin ${name}"/>
+      <!-- spec version must match "digit+{.digit+}*" -->
+      <attribute name="Specification-Version" value="${spec.version}"/>
+      <attribute name="Specification-Vendor"
+                 value="The Apache Software Foundation"/>
+      <attribute name="Implementation-Title" value="Apache Solr plugin ${name}"/>
+      <!-- impl version can be any string -->
+      <attribute name="Implementation-Version"
+                 value="${version} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+      <attribute name="Implementation-Vendor"
+                 value="The Apache Software Foundation"/>
+      <attribute name="X-Compile-Source-JDK" value="${javac.release}"/>
+      <attribute name="X-Compile-Target-JDK" value="${javac.release}"/>
+      <attribute name="Plugin-Id" value="${name}"/>
+      <attribute name="Plugin-Version" value="${spec.version}"/>
+      <attribute name="Plugin-License" value="${apache.license.spdx}"/>
+      <attribute name="Plugin-Requires" value=">=${spec.version}"/>
+      <attribute name="Plugin-Date" value="${DSTAMP}"/>
+      <attribute name="Plugin-Provider" value="The Apache Software Foundation"/>
+      <attribute name="Plugin-Description" value="${description}"/>
+    </manifest>
+    <copy file="${solr-contrib.dir}/plugins-template.json" tofile="${build.dir}/plugins.json"/>
+    <!--
+          {
+            "id": "@name@",
+            "name": "@name@",
+            "provider": "Apache Solr™",
+            "projectUrl": "http://lucene.apache.org/solr/",
+            "description": "@description@",
+            "releases": [
+              {
+                "version": "@version@",
+                "date": "@date@",
+                "url": "@url@",
+                "requires": "@requires@"
+              }
+            ]
+          }
+    -->
+    <replace file="${build.dir}/plugins.json">
+      <replacefilter token="@name@" value="${name}"/>
+      <replacefilter token="@description@" value="${description}"/>
+      <replacefilter token="@version@" value="${version}"/>
+      <replacefilter token="@date@" value="${DSTAMP}"/>
+      <replacefilter token="@url@" value="${contrib.dir}/${pluginfilename}"/>
+      <replacefilter token="@requires@" value=">=${spec.version}"/>
+    </replace>
+    <zip destfile="${antfile.dir}/${pluginfilename}" update="false" excludes="**">
+      <zipfileset dir="${build.dir}/classes/java" prefix="classes" />
+      <zipfileset dir="lib" prefix="lib" erroronmissingdir="false" />
+      <zipfileset dir="${build.dir}" includes="MANIFEST.MF" prefix="classes/META-INF/" />
+    </zip>
+  </target>  
 </project>

@@ -19,9 +19,8 @@
 
 <project name="solr-clustering" default="default">
 
-  <description>
-    Clustering Integraton
-  </description>
+  <property name="description" value="Integration with carrot clustering"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
 

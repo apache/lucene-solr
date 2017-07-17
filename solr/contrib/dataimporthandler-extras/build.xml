@@ -19,9 +19,8 @@
 
 <project name="solr-dataimporthandler-extras" default="default">
 
-  <description>
-    Data Import Handler Extras
-  </description>
+  <property name="description" value="Data Import Handler Extras - support for indexing email and rich text via Tika"/>
+  <description description="${description}"/>
   
   <import file="../contrib-build.xml"/>
 

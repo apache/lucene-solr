@@ -28,3 +28,4 @@
 
 *.out
 *.err
+/contrib/plugins.json

@@ -19,9 +19,8 @@
 
 <project name="solr-velocity" default="default">
 
-  <description>
-    Solr Velocity Response Writer
-  </description>
+  <property name="description" value="Solr Velocity Response Writer - allows returning search result as HTML based on templates"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
 

@@ -19,9 +19,8 @@
 
 <project name="solr-analytics" default="default">
 
-  <description>
-    Analytics Package
-  </description>
+  <property name="description" value="Analytics Package"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
 

@@ -19,7 +19,9 @@ package org.apache.solr.util.plugin.bundle;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +30,8 @@ import java.util.stream.Collectors;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.pf4j.PluginException;
@@ -42,6 +46,7 @@ import ro.fortsoft.pf4j.update.UpdateRepository;
  */
 public class PluginBundleManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final String SOLR_INSTALL_DIR = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
 
   private final SolrPf4jPluginManager pluginManager;
   private final UpdateManager updateManager;
@@ -52,11 +57,20 @@ public class PluginBundleManager {
   public PluginBundleManager(Path pluginsRoot) {
     try {
       this.pluginsRoot = pluginsRoot;
+      if (Files.exists(pluginsRoot)) {
+        if (!Files.isDirectory(pluginsRoot)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Existing plugins-root " + pluginsRoot + " is not a directory");
+        }
+      } else {
+        log.info("Creating plugins root directory {}", pluginsRoot);
+        FileUtils.createDirectories(pluginsRoot);
+      }
       pluginManager = new SolrPf4jPluginManager(pluginsRoot);
-//      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + systemVersion.toString() + "/");
+//      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + solrVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
       //repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
-      repos.add(new PluginUpdateRepository("local", new URL("file:///Users/janhoy/Cominvent/Code/plugins/")));
+      //repos.add(new PluginUpdateRepository("local", new URL("file:///Users/janhoy/Cominvent/Code/plugins/")));
+      repos.add(new PluginUpdateRepository("contribs", Paths.get(SOLR_INSTALL_DIR).resolve("contrib").toAbsolutePath().toUri().toURL()));
       repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);

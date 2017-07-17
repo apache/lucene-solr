@@ -19,9 +19,8 @@
 
 <project name="solr-analysis-extras" default="default" xmlns:ivy="antlib:org.apache.ivy.ant">
 
-  <description>
-    Additional analysis components
-  </description>
+  <property name="description" value="Additional analysis components for Solr including icu, smartcn, stempel, morfologic"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
   
@@ -86,5 +85,5 @@
   </target>
 
   <target name="compile-core" depends="jar-analyzers-icu, solr-contrib-build.compile-core"/>
-  <target name="dist" depends="module-jars-to-solr, common-solr.dist"/>
+  <target name="dist" depends="module-jars-to-solr, solr-contrib-build.dist"/>
 </project>

@@ -18,10 +18,8 @@
  -->
 
 <project name="solr-ltr" default="default">
-
-  <description>
-    Learning to Rank Package
-  </description>
+  <property name="description" value="Learning to Rank - train a machine learning model to re-rank top-N results"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
 

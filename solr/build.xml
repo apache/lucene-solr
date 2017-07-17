@@ -426,7 +426,11 @@
         <include name="webapps" />
         <include name="solr-webapp/**/*" />
         <exclude name="**/.gitignore" />
-      </fileset>      
+      </fileset>
+      <fileset dir="contrib">
+        <include name="*/solr-*.zip" />
+        <include name="plugins.json" />
+      </fileset>
     </delete>
   </target>
   
@@ -461,6 +465,15 @@
   <target name="dist-contrib" depends="init-dist"
           description="Make the contribs ready for distribution">
     <contrib-crawl target="dist"/>
+    <concat destfile="${common-solr.dir}/contrib/plugins.json">
+      <header>[</header>
+      <fileset dir="." includes="build/contrib/*/plugins.json" />
+      <footer>]</footer>
+    </concat>
+    <replace file="${common-solr.dir}/contrib/plugins.json">
+      <replacefilter token="}{" value="},
+{" />
+    </replace>
   </target>
   
   <target name="prepare-release-no-sign" depends="clean, package, generate-maven-artifacts"/>
@@ -578,15 +591,12 @@
       <tarfileset dir="."
                   prefix="${fullnamever}"
                   includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
-                            bin/** server/** example/** contrib/**/lib/** contrib/**/README.txt 
+                            bin/** server/** example/** contrib/plugins.json contrib/**/*.zip contrib/**/README.txt 
                             licenses/**"
                   excludes="licenses/README.committers.txt **/data/ **/logs/* 
                             **/classes/ **/*.sh **/ivy.xml **/build.xml
                             **/bin/ **/*.iml **/*.ipr **/*.iws **/pom.xml 
                             **/*pom.xml.template server/etc/test/" />
-      <tarfileset dir="${dest}/contrib-lucene-libs-to-package"
-                  prefix="${fullnamever}"
-                  includes="**" />
       <tarfileset dir="."
                   filemode="755"
                   prefix="${fullnamever}"

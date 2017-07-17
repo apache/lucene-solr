@@ -19,9 +19,8 @@
 
 <project name="solr-langid" default="default">
 
-  <description>
-    Language Identifier contrib for extracting language from a document being indexed
-  </description>
+  <property name="description" value="Language Identifier contrib for extracting language from a document being indexed"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
 

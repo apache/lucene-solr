@@ -1,0 +1,15 @@
+{
+  "id": "@name@",
+  "name": "@name@",
+  "provider": "Apache Solr™",
+  "projectUrl": "http://lucene.apache.org/solr/",
+  "description": "@description@",
+  "releases": [
+    {
+      "version": "@version@",
+      "date": "@date@",
+      "url": "@url@",
+      "requires": "@requires@"
+    }
+  ]
+}

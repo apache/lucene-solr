@@ -19,9 +19,8 @@
 
 <project name="solr-dataimporthandler" default="default">
   
-  <description>
-    Data Import Handler
-  </description>
+  <property name="description" value="Data Import Handler, allows import from DB (JDBC), file, HTTP, RSS etc"/>
+  <description description="${description}"/>
 
   <import file="../contrib-build.xml"/>
 
