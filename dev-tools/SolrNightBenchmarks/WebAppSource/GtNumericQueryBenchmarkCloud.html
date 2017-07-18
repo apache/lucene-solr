@@ -21,7 +21,6 @@
 	
 	 -->
 
-
 	<head>
 		<title>Solr Nightly Benchmarks</title>
         <link rel="shortcut icon" type="image/png" href="images/solr_logo_rgb.png" />
@@ -153,9 +152,11 @@
                             <div class="modal-body">
 
                                 <ul class="nav nav-tabs">
-                                    <li id="HeapMemoryUsageTab" role="presentation" class="active"><a href="#">Heap Space Usage</a></li>
-                                    <li id="ProcessCPULoadTab" role="presentation"><a href="#">Process CPU Load</a></li>
-                                    <li id="TestEnvTab" role="presentation"><a href="#">Test Environment Details</a></li>
+                                    <li id="HeapMemoryUsageTab" role="presentation" class="active"><a href="#">Heap Space</a></li>
+                                    <li id="ProcessCPULoadTab" role="presentation"><a href="#">CPU Load</a></li>
+                                    <li id="TestEnvTab" role="presentation"><a href="#">Environment Details</a></li>
+                                    <li id="LatencyTab" role="presentation"><a href="#">Latency</a></li>
+                                    
                                 </ul>
                                 <br/>
                                 <div id="memTabBody">
@@ -168,6 +169,38 @@
                                 </div>
                                 <div id="testEnvTabBody" class="hidden">
                                 </div>
+                                <div id="LatencyTabBody" class="hidden">
+                                
+	                                  <table class="table table-striped">
+									    <thead>
+									      <tr>
+									        <th>Query Time</th>
+									        <th>Metric</th>
+									      </tr>
+									    </thead>
+									    <tbody>
+									      <tr>
+									        <td>75th Percentile</td>
+									        <td id="75thQTime">XX.XX</td>
+									      </tr>
+									      <tr>
+									        <td>95th Percentile</td>
+									        <td id="95thQTime">XX.XX</td>
+									      </tr>
+									      <tr>
+									        <td>99th Percentile</td>
+									        <td id="99thQTime">XX.XX</td>
+									      </tr>
+									      <tr>
+									        <td>99.9th Percentile</td>
+									        <td id="99.9thQTime">XX.XX</td>
+									      </tr>
+									    </tbody>
+									  </table>
+                                
+                                </div>
+                                
+                                
                             </div>
                             <div class="modal-footer">
                                 <span class="pull-left">For more information (file changes etc.) please: <a id="memProfileFileChangeListLink" href="#" target="_blank">click here</a></span>
@@ -185,7 +218,7 @@
                             <div class="col-xs-9 cols-md-9 col-lg-9">
 
                                 <div class="panel panel-info" style="height:87%">
-                                    <div class="panel-heading">Create Collection Performance</div>
+                                    <div class="panel-heading">Numeric [Greater Than] Query - QPS</div>
                                     <div class="panel-body" id="graphdiv2" style="width:95%; height:85%;">                                                              
                                     </div>
                                 </div>
@@ -205,7 +238,7 @@
                                 <div class="panel panel-danger" style="height:34%">
                                     <div class="panel-heading">Graph Information</div>
                                     <div class="panel-body">
-                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Seconds</span><br/><br/>
+                                        <span class="text-muted">X-Axis: Date/Time | Y-Axis: Queries Per Second</span><br/><br/>
                                         <div id="pointData"></div>
                                         <div id="welcomeMessage">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
                                     </div>
@@ -224,6 +257,8 @@
 	    var fileData;
 	    var commitID;
 	    var testID;
+	    var point;
+	    var row_;
 
 	    $(document).ready(function () {
 
@@ -232,7 +267,7 @@
                             $.ajax({
 
                                     type: "GET",
-                                    url: "data/create_collection_data_standalone_regular.csv",
+                                    url: "data/gt_numeric_query_benchmark_cloud.csv",
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
@@ -253,11 +288,13 @@
                             });
 
 
-                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/create_collection_data_standalone_regular.csv", {
-                                 labelsDiv: document.getElementById('pointData'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],
+                            g2 = new Dygraph(document.getElementById("graphdiv2"), "data/gt_numeric_query_benchmark_cloud.csv", {
+                                labelsDiv: document.getElementById('pointData'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
 
                                  highlightCallback: function (e, x, pts, row) {
-                                     commitID = fileData[(row + 1)].split(",")[3].trim();
+                                	 
+                                	 row_ = row;
+                                     commitID = fileData[(row + 1)].split(",")[2].trim();
                                      testID = fileData[(row + 1)].split(",")[1].trim();
 				                      				
 				                                     $.ajax({
@@ -272,17 +309,58 @@
 					                                 });
 				                                     
 				                     				 document.getElementById("welcomeMessage").innerHTML = "";
-				                     
+                     
                                                 },
-                                                
-                                    pointClickCallback: function(e, p) {
-
+                                  
+                                  pointClickCallback: function(e, p) {
+                                	  				 point = p.name;
                                                      $('#memProfile').modal();
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                         g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_STANDALONE_CREATE_COLLECTION_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
-                                                         g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_STANDALONE_CREATE_COLLECTION_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                                                    	 
+                                                    	 if (p.name.includes("QPS(2 Threads)")) {
+
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData[(row_ + 1)].split(",")[6].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData[(row_ + 1)].split(",")[7].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData[(row_ + 1)].split(",")[8].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData[(row_ + 1)].split(",")[9].trim();
+
+                                                    	 } else if (p.name.includes("QPS(4 Threads)")) {
+
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData[(row_ + 1)].split(",")[13].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData[(row_ + 1)].split(",")[14].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData[(row_ + 1)].split(",")[15].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData[(row_ + 1)].split(",")[16].trim();
+
+                                                    	 } else if (p.name.includes("QPS(6 Threads)")) {
+
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData[(row_ + 1)].split(",")[20].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData[(row_ + 1)].split(",")[21].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData[(row_ + 1)].split(",")[22].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData[(row_ + 1)].split(",")[23].trim();
+
+                                                    	 } else if (p.name.includes("QPS(8 Threads)")) {
+
+                                                             g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData[(row_ + 1)].split(",")[27].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData[(row_ + 1)].split(",")[28].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData[(row_ + 1)].split(",")[29].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData[(row_ + 1)].split(",")[30].trim();
+
+                                                    	 }
+                                                    	 
                                                      }, 250);
 
                                                 }
@@ -296,14 +374,24 @@
                                 } else {
                                     $("#ProcessCPULoadTab").removeClass("active");
                                     $("#TestEnvTab").removeClass("active");
+                                    $("#LatencyTab").removeClass("active");
 
                                     $("#cpuTabBody").hide();
                                     $("#testEnvTabBody").hide();
-                                    $("#memTabBody").show("slow");
+                                    $("#LatencyTabBody").hide();
 
+                                    $("#memTabBody").show("slow");
                                     $("#HeapMemoryUsageTab").addClass("active");
 
-                                    g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_STANDALONE_CREATE_COLLECTION_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                               	 if (point.includes("QPS(2 Threads)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(4 Threads)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(6 Threads)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 } else if (point.includes("QPS(8 Threads)")) {
+                                     g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                            	 }
 
                                 }
 
@@ -321,14 +409,24 @@
 
                                     $("#HeapMemoryUsageTab").removeClass("active");
                                     $("#TestEnvTab").removeClass("active");
+                                    $("#LatencyTab").removeClass("active");
 
                                     $("#memTabBody").hide();
                                     $("#testEnvTabBody").hide();
-                                    $("#cpuTabBody").show("slow");
+                                    $("#LatencyTabBody").hide();
 
+                                    $("#cpuTabBody").show("slow");
                                     $("#ProcessCPULoadTab").addClass("active");
 
-                                    g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_STANDALONE_CREATE_COLLECTION_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                               	 if (point.includes("QPS(2 Threads)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(4 Threads)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(6 Threads)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 } else if (point.includes("QPS(8 Threads)")) {
+                                     g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_GT_NUMERIC_QUERY_CLOUD_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+                            	 }
 
                                 }
 
@@ -346,11 +444,13 @@
 
                                     $("#HeapMemoryUsageTab").removeClass("active");
                                     $("#ProcessCPULoadTab").removeClass("active");
+                                    $("#LatencyTab").removeClass("active");
 
                                     $("#memTabBody").hide();
                                     $("#cpuTabBody").hide();
-                                    $("#testEnvTabBody").show("slow");
+                                    $("#LatencyTabBody").hide();
 
+                                    $("#testEnvTabBody").show("slow");
                                     $("#TestEnvTab").addClass("active");
 
                                     $.ajax({
@@ -368,41 +468,68 @@
 
                             });
 
+                            $("#LatencyTab").click(function () {
+
+                                if ($("#LatencyTab").hasClass("active")) {
+                                    //Do Nothing
+                                } else {
+
+                                    if ($("#LatencyTabBody").hasClass("hidden")) {
+                                        $("#LatencyTabBody").removeClass("hidden");
+                                    }
+
+                                    $("#HeapMemoryUsageTab").removeClass("active");
+                                    $("#ProcessCPULoadTab").removeClass("active");
+                                    $("#TestEnvTab").removeClass("active");                                    
+
+                                    $("#memTabBody").hide();
+                                    $("#cpuTabBody").hide();
+                                    $("#testEnvTabBody").hide();
+                                    
+                                    $("#LatencyTabBody").show("slow");
+                                    $("#LatencyTab").addClass("active");
+
+                                    //
+                                    
+                                }
+
+                            });
+
                             var wasRunning = false;
 
                             setInterval(function () {
 
-                                $.ajax({
+                                                    $.ajax({
 
-                                    type: "GET",
-                                    url: "iamalive.txt",
-                                    dataType: "text",
-                                    success: function (data) {
+                                                        type: "GET",
+                                                        url: "iamalive.txt",
+                                                        dataType: "text",
+                                                        success: function (data) {
 
-                                    	if(!$("#ReloadButton").hasClass("hidden")) {
-                                        			$("#ReloadButton").addClass("hidden");
-                                    	}
-                                    	
-                                        $("#ReloadButton").hide();
-                                        $("#green").show();
-                                        wasRunning = true;
+                                                        	if(!$("#ReloadButton").hasClass("hidden")) {
+                                                            			$("#ReloadButton").addClass("hidden");
+                                                        	}
+                                                        	
+                                                            $("#ReloadButton").hide();
+                                                            $("#green").show();
+                                                            wasRunning = true;
 
-                                    },
+                                                        },
 
-                                    error: function (data) {
-                                        $("#green").hide();
+                                                        error: function (data) {
+                                                            $("#green").hide();
 
-                                        if (wasRunning) {
-                                            wasRunning = false;
-                                            setTimeout(function () {}, 1000);
-                                            $("#ReloadButton").removeClass("hidden");
-                                            $("#ReloadButton").fadeIn("slow");
-                                        }
-                                    }
+                                                            if (wasRunning) {
+                                                                wasRunning = false;
+                                                                setTimeout(function () {}, 1000);
+                                                                $("#ReloadButton").removeClass("hidden");
+                                                                $("#ReloadButton").fadeIn("slow");
+                                                            }
+                                                        }
 
-                                });
+                                                    });
 
-					        }, 3000);
+                            }, 3000);
 
 
         });

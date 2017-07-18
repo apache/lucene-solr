@@ -58,17 +58,60 @@ public class BenchmarkReportData {
 	public static Map<String, String> metricMapStandalonePartialUpdateConcurrent2;
 	public static Map<String, String> metricMapStandalonePartialUpdateConcurrent3;
 
-	public static Map<String, String> queryTNQMetricC;
-	public static Map<String, String> queryRNQMetricC;
-	public static Map<String, String> queryLNQMetricC;
-	public static Map<String, String> queryGNQMetricC;
-	public static Map<String, String> queryANQMetricC;
-	public static Map<String, String> queryONQMetricC;
-	public static Map<String, String> querySNQMetricC;
-	public static Map<String, String> queryTTQMetricC;
-	public static Map<String, String> queryPTQMetricC;
-	public static Map<String, String> querySTQMetricC;
-	public static Map<String, String> queryHTQMetricC;
+	public static Map<String, String> queryTNQMetricC_T1;
+	public static Map<String, String> queryTNQMetricC_T2;
+	public static Map<String, String> queryTNQMetricC_T3;
+	public static Map<String, String> queryTNQMetricC_T4;
+	
+	public static Map<String, String> queryRNQMetricC_T1;
+	public static Map<String, String> queryRNQMetricC_T2;
+	public static Map<String, String> queryRNQMetricC_T3;
+	public static Map<String, String> queryRNQMetricC_T4;
+
+	public static Map<String, String> queryLNQMetricC_T1;
+	public static Map<String, String> queryLNQMetricC_T2;
+	public static Map<String, String> queryLNQMetricC_T3;
+	public static Map<String, String> queryLNQMetricC_T4;
+
+	public static Map<String, String> queryGNQMetricC_T1;
+	public static Map<String, String> queryGNQMetricC_T2;
+	public static Map<String, String> queryGNQMetricC_T3;
+	public static Map<String, String> queryGNQMetricC_T4;
+
+	public static Map<String, String> queryANQMetricC_T1;
+	public static Map<String, String> queryANQMetricC_T2;
+	public static Map<String, String> queryANQMetricC_T3;
+	public static Map<String, String> queryANQMetricC_T4;
+
+	public static Map<String, String> queryONQMetricC_T1;
+	public static Map<String, String> queryONQMetricC_T2;
+	public static Map<String, String> queryONQMetricC_T3;
+	public static Map<String, String> queryONQMetricC_T4;
+
+	public static Map<String, String> querySNQMetricC_T1;
+	public static Map<String, String> querySNQMetricC_T2;
+	public static Map<String, String> querySNQMetricC_T3;
+	public static Map<String, String> querySNQMetricC_T4;
+
+	public static Map<String, String> queryTTQMetricC_T1;
+	public static Map<String, String> queryTTQMetricC_T2;
+	public static Map<String, String> queryTTQMetricC_T3;
+	public static Map<String, String> queryTTQMetricC_T4;
+
+	public static Map<String, String> queryPTQMetricC_T1;
+	public static Map<String, String> queryPTQMetricC_T2;
+	public static Map<String, String> queryPTQMetricC_T3;
+	public static Map<String, String> queryPTQMetricC_T4;
+
+	public static Map<String, String> querySTQMetricC_T1;
+	public static Map<String, String> querySTQMetricC_T2;
+	public static Map<String, String> querySTQMetricC_T3;
+	public static Map<String, String> querySTQMetricC_T4;
+
+	public static Map<String, String> queryHTQMetricC_T1;
+	public static Map<String, String> queryHTQMetricC_T2;
+	public static Map<String, String> queryHTQMetricC_T3;
+	public static Map<String, String> queryHTQMetricC_T4;
 
 	public static Map<String, String> queryTNQMetricS_T1;
 	public static Map<String, String> queryTNQMetricS_T2;
@@ -162,18 +205,61 @@ public class BenchmarkReportData {
 		returnCloudCreateCollectionMap = null;
 
 		metricMapIndexingStandalone = null;
+		
+		queryTNQMetricC_T1 = null;
+		queryTNQMetricC_T2 = null;
+		queryTNQMetricC_T3 = null;
+		queryTNQMetricC_T4 = null;
+		
+		queryRNQMetricC_T1 = null;
+		queryRNQMetricC_T2 = null;
+		queryRNQMetricC_T3 = null;
+		queryRNQMetricC_T4 = null;
 
-		queryTNQMetricC = null;
-		queryRNQMetricC = null;
-		queryLNQMetricC = null;
-		queryGNQMetricC = null;
-		queryANQMetricC = null;
-		queryONQMetricC = null;
-		querySNQMetricC = null;
-		queryTTQMetricC = null;
-		queryPTQMetricC = null;
-		querySTQMetricC = null;
-		queryHTQMetricC = null;
+		queryLNQMetricC_T1 = null;
+		queryLNQMetricC_T2 = null;
+		queryLNQMetricC_T3 = null;
+		queryLNQMetricC_T4 = null;
+
+		queryGNQMetricC_T1 = null;
+		queryGNQMetricC_T2 = null;
+		queryGNQMetricC_T3 = null;
+		queryGNQMetricC_T4 = null;
+
+		queryANQMetricC_T1 = null;
+		queryANQMetricC_T2 = null;
+		queryANQMetricC_T3 = null;
+		queryANQMetricC_T4 = null;
+
+		queryONQMetricC_T1 = null;
+		queryONQMetricC_T2 = null;
+		queryONQMetricC_T3 = null;
+		queryONQMetricC_T4 = null;
+
+		querySNQMetricC_T1 = null;
+		querySNQMetricC_T2 = null;
+		querySNQMetricC_T3 = null;
+		querySNQMetricC_T4 = null;
+
+		queryTTQMetricC_T1 = null;
+		queryTTQMetricC_T2 = null;
+		queryTTQMetricC_T3 = null;
+		queryTTQMetricC_T4 = null;
+
+		queryPTQMetricC_T1 = null;
+		queryPTQMetricC_T2 = null;
+		queryPTQMetricC_T3 = null;
+		queryPTQMetricC_T4 = null;
+
+		querySTQMetricC_T1 = null;
+		querySTQMetricC_T2 = null;
+		querySTQMetricC_T3 = null;
+		querySTQMetricC_T4 = null;
+
+		queryHTQMetricC_T1 = null;
+		queryHTQMetricC_T2 = null;
+		queryHTQMetricC_T3 = null;
+		queryHTQMetricC_T4 = null;
 		
 		queryTNQMetricS_T1 = null;
 		queryTNQMetricS_T2 = null;
@@ -231,5 +317,4 @@ public class BenchmarkReportData {
 		queryHTQMetricS_T4 = null;
 
 	}
-
 }
