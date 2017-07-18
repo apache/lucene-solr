@@ -216,12 +216,12 @@
   </fieldType>
 
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-  <fieldType name="date" class="solr.TrieDateField" precisionStep="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0"/>
 
   <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="int_f" type="int"/>
