@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -123,6 +124,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
     } else {
       actualMin = DateMathParser.parseMath(null, min).getTime();
       if (!minInclusive) {
+        if (actualMin == Long.MAX_VALUE) return new MatchNoDocsQuery();
         actualMin++;
       }
     }
@@ -131,6 +133,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
     } else {
       actualMax = DateMathParser.parseMath(null, max).getTime();
       if (!maxInclusive) {
+        if (actualMax == Long.MIN_VALUE) return new MatchNoDocsQuery();
         actualMax--;
       }
     }

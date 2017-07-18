@@ -2381,6 +2381,17 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertQ(req("q", fieldName + ":[" + arr[0] + " TO " + arr[i] + "] AND " + fieldName + ":" + arr[0].replace("-", "\\-"), "fl", "id, " + fieldName), 
           "//*[@numFound='1']");
     }
+    if (testLong) {
+      assertQ(req("q", fieldName + ":[" + Long.MIN_VALUE + " TO " + Long.MIN_VALUE + "}", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":{" + Long.MAX_VALUE + " TO " + Long.MAX_VALUE + "]", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+    } else {
+      assertQ(req("q", fieldName + ":[" + Integer.MIN_VALUE + " TO " + Integer.MIN_VALUE + "}", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":{" + Integer.MAX_VALUE + " TO " + Integer.MAX_VALUE + "]", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+    }
   }
   
   private void doTestPointFieldFacetField(String nonDocValuesField, String docValuesField, String[] numbers) throws Exception {
@@ -3181,6 +3192,43 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertQ(req("q", fieldName + ":{" + arr[0] + " TO " + arr[i] + "}", "fl", "id, " + fieldName), 
           "//*[@numFound='" + (Math.max(0,  i-1)) + "']");
     }
+    
+    clearIndex();
+    assertU(adoc("id", "1", fieldName, String.valueOf(Float.MAX_VALUE)));
+    assertU(adoc("id", "2", fieldName, String.valueOf(Float.MIN_VALUE)));
+    assertU(adoc("id", "3", fieldName, String.valueOf(Float.NEGATIVE_INFINITY)));
+    assertU(adoc("id", "4", fieldName, String.valueOf(Float.POSITIVE_INFINITY)));
+    assertU(commit());
+    assertQ(req("q", fieldName + ":[* TO *]", "fl", "id, " + fieldName), 
+        "//*[@numFound='4']");
+//    TODO: Awaits fix: SOLR-11070
+//    assertQ(req("q", fieldName + ":{* TO *}", "fl", "id, " + fieldName), 
+//        "//*[@numFound='4']");
+    assertQ(req("q", fieldName + ":[" + Float.MIN_VALUE + " TO " + Float.MAX_VALUE + "]", "fl", "id, " + fieldName), 
+        "//*[@numFound='2']");
+    assertQ(req("q", fieldName + ":{" + Float.MIN_VALUE + " TO " + Float.MAX_VALUE + "]", "fl", "id, " + fieldName), 
+        "//*[@numFound='1']");
+    assertQ(req("q", fieldName + ":[" + Float.MIN_VALUE + " TO " + Float.MAX_VALUE + "}", "fl", "id, " + fieldName), 
+        "//*[@numFound='1']");
+    if (testDouble) {
+      assertQ(req("q", fieldName + ":[" + Double.MIN_VALUE + " TO " + Double.MIN_VALUE + "}", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":{" + Double.MAX_VALUE + " TO " + Double.MAX_VALUE + "]", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":{" + Double.NEGATIVE_INFINITY + " TO " + Double.NEGATIVE_INFINITY + "]", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":[" + Double.POSITIVE_INFINITY + " TO " + Double.POSITIVE_INFINITY + "}", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+    } else {
+      assertQ(req("q", fieldName + ":[" + Float.MIN_VALUE + " TO " + Float.MIN_VALUE + "}", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":{" + Float.MAX_VALUE + " TO " + Float.MAX_VALUE + "]", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":{" + Float.NEGATIVE_INFINITY + " TO " + Float.NEGATIVE_INFINITY + "]", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+      assertQ(req("q", fieldName + ":[" + Float.POSITIVE_INFINITY + " TO " + Float.POSITIVE_INFINITY + "}", "fl", "id, " + fieldName), 
+          "//*[@numFound='0']");
+    }
   }
   
   private void doTestFloatPointFunctionQuery(String field) throws Exception {
@@ -3487,7 +3535,13 @@ public class TestPointFields extends SolrTestCaseJ4 {
         ascNegXpathChecks);
 
     clearIndex();
+    assertU(adoc("id", "1", field, "1995-12-31T10:59:59Z"));
+    assertU(adoc("id", "2", field, "1996-12-31T10:59:59Z"));
     assertU(commit());
+    assertQ(req("q", field + ":[* TO *]", "fl", "id, " + field), 
+        "//*[@numFound='2']");
+    assertQ(req("q", field + ":{* TO *}", "fl", "id, " + field), 
+        "//*[@numFound='2']");
   }
 
   private void doTestDatePointStats(String field, String dvField, String[] dates) {
