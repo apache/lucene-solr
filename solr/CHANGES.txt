@@ -420,6 +420,7 @@ Other Changes
   - SOLR-11097: Randomize PointFields in schema-id-and-version-fields-only.xml and all affected tests (hossman)
   - SOLR-11098: Randomize PointFields in cloud-managed-preanalyzed & schema-preanalyzed.xml and all affected tests (hossman)
   - SOLR-11101: Randomize PointFields in "cloud-minimal" test configset and all affected tests (Steve Rowe)
+  - SOLR-11103: Randomize PointFields in "cloud-hdfs" test configset and all affected tests (Steve Rowe)
 
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
