@@ -28,37 +28,37 @@
 <schema name="test" version="1.0">
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
-  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" sortMissingLast="false" omitNorms="true"
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="false" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" sortMissingLast="false" omitNorms="true"
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="false" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" sortMissingLast="false" omitNorms="true"
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="false" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="date" class="solr.TrieDateField" precisionStep="0" sortMissingLast="false" omitNorms="true"
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="false" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" sortMissingLast="false" omitNorms="true"
-             positionIncrementGap="0"/>
-
-  <fieldType name="int_last" class="solr.TrieIntField" precisionStep="0" sortMissingLast="true" omitNorms="true"
-             positionIncrementGap="0"/>
-  <fieldType name="float_last" class="solr.TrieFloatField" precisionStep="0" sortMissingLast="true" omitNorms="true"
-             positionIncrementGap="0"/>
-  <fieldType name="long_last" class="solr.TrieLongField" precisionStep="0" sortMissingLast="true" omitNorms="true"
-             positionIncrementGap="0"/>
-  <fieldType name="date_last" class="solr.TrieDateField" precisionStep="0" sortMissingLast="true" omitNorms="true"
-             positionIncrementGap="0"/>
-  <fieldType name="double_last" class="solr.TrieDoubleField" precisionStep="0" sortMissingLast="true" omitNorms="true"
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="false" omitNorms="true"
              positionIncrementGap="0"/>
 
-  <fieldType name="int_first" class="solr.TrieIntField" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+  <fieldType name="int_last" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="true" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="float_first" class="solr.TrieFloatField" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+  <fieldType name="float_last" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="true" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="long_first" class="solr.TrieLongField" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+  <fieldType name="long_last" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="true" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="date_first" class="solr.TrieDateField" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+  <fieldType name="date_last" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="true" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="double_first" class="solr.TrieDoubleField" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+  <fieldType name="double_last" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="true" omitNorms="true"
+             positionIncrementGap="0"/>
+
+  <fieldType name="int_first" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+             positionIncrementGap="0"/>
+  <fieldType name="float_first" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+             positionIncrementGap="0"/>
+  <fieldType name="long_first" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+             positionIncrementGap="0"/>
+  <fieldType name="date_first" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingFirst="true" omitNorms="true"
+             positionIncrementGap="0"/>
+  <fieldType name="double_first" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingFirst="true" omitNorms="true"
              positionIncrementGap="0"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
