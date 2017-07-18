@@ -30,7 +30,7 @@
   <target name="compile-core" depends="compile-solr-core,compile-solrj,common-solr.compile-core"/>
 
   <dirname file="${ant.file}" property="antfile.dir"/>
-  <basename file="${antfile.dir}" property="contrib.dir" />
+  <basename file="${antfile.dir}" property="contrib.name" />
 
   <available property="contrib.has.webapp" type="dir" file="${antfile.dir}/src/webapp" />
   <target name="add-to-webapp" if="contrib.has.webapp">
@@ -45,7 +45,7 @@
       <path path="${antfile.dir}"/>
       <flattenmapper/>
     </pathconvert>
-    <copy todir="${dest}/contrib-lucene-libs-to-package/contrib/${contrib.dir}">
+    <copy todir="${dest}/contrib-lucene-libs-to-package/contrib/${contrib.name}">
       <fileset dir="${build.dir}" includes="lucene-libs/**"/>
     </copy>
   </target>
@@ -76,8 +76,8 @@
                  value="The Apache Software Foundation"/>
       <attribute name="X-Compile-Source-JDK" value="${javac.release}"/>
       <attribute name="X-Compile-Target-JDK" value="${javac.release}"/>
-      <attribute name="Plugin-Id" value="${name}"/>
-      <attribute name="Plugin-Version" value="${spec.version}"/>
+      <attribute name="Plugin-Id" value="${contrib.name}"/>
+      <attribute name="Plugin-Version" value="${version}"/>
       <attribute name="Plugin-License" value="${apache.license.spdx}"/>
       <attribute name="Plugin-Requires" value=">=${spec.version}"/>
       <attribute name="Plugin-Date" value="${DSTAMP}"/>
@@ -103,11 +103,11 @@
           }
     -->
     <replace file="${build.dir}/plugins.json">
-      <replacefilter token="@name@" value="${name}"/>
+      <replacefilter token="@name@" value="${contrib.name}"/>
       <replacefilter token="@description@" value="${description}"/>
       <replacefilter token="@version@" value="${version}"/>
       <replacefilter token="@date@" value="${DSTAMP}"/>
-      <replacefilter token="@url@" value="${contrib.dir}/${pluginfilename}"/>
+      <replacefilter token="@url@" value="${contrib.name}/${pluginfilename}"/>
       <replacefilter token="@requires@" value=">=${spec.version}"/>
     </replace>
     <zip destfile="${antfile.dir}/${pluginfilename}" update="false" excludes="**">

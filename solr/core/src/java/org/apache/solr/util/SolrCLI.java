@@ -68,6 +68,7 @@ import java.util.zip.ZipInputStream;
 import javax.net.ssl.SSLPeerUnverifiedException;
 
 import de.vandermeer.asciitable.AsciiTable;
+import de.vandermeer.skb.interfaces.transformers.textformat.TextAlignment;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -4373,9 +4374,10 @@ public class SolrCLI {
           break;
 
         case "list":
-          List<DisplayPlugin> installed = pluginBundleManager.listInstalled().stream().map(DisplayPlugin::create).collect(Collectors.toList());
+          List<DisplayPlugin> installed = pluginBundleManager.listInstalled().stream().map(DisplayPlugin::create)
+              .collect(Collectors.toList());
           if (longFormat) {
-            System.out.println(DP_CLASSIFIER.toAsciiTable(installed));
+            System.out.println(PLUGIN_TABLE.render(installed));
           } else {
             installed.forEach(p -> System.out.println(p.id));
           }
@@ -4384,12 +4386,13 @@ public class SolrCLI {
         case "outdated":
           List<DisplayPlugin> outdated = updateManager.getUpdates().stream().map(p -> 
               DisplayPlugin.create(p, PluginBundleManager.solrVersion.toString())).collect(Collectors.toList());
+          
           if (outdated.size() == 0) {
             System.err.println("Already up-to-date");
             break;
           }
           if (longFormat) {
-            System.out.println(DP_CLASSIFIER.toAsciiTable(outdated));
+            System.out.println(PLUGIN_TABLE.render(outdated));
           } else {
             outdated.forEach(p -> System.out.println(p.id));
           }
@@ -4400,7 +4403,7 @@ public class SolrCLI {
           List<DisplayPlugin> plugins = pluginBundleManager.query(q).stream().map(p -> 
               DisplayPlugin.create(p, PluginBundleManager.solrVersion.toString())).collect(Collectors.toList());
           if (longFormat) {
-            System.out.println(DP_CLASSIFIER.toAsciiTable(plugins));
+            System.out.println(PLUGIN_TABLE.render(plugins));
           } else {
             plugins.forEach(p -> System.out.println(p.id));
           }
@@ -4413,7 +4416,7 @@ public class SolrCLI {
               case "list":
                 List<UpdateRepository> repos = updateManager.getRepositories(); 
                 if (longFormat) {
-                  System.out.println(REPO_ASCIIFIER.toAsciiTable(repos));
+                  System.out.println(REPO_TABLE.render(repos));
                 } else {
                   repos.forEach(r -> System.out.println(r.getId()));
                 }
@@ -4539,58 +4542,66 @@ public class SolrCLI {
         return repo;
       }
 
-      public void setId(String id) {
+      public DisplayPlugin setId(String id) {
         this.id = id;
+        return this;
       }
 
-      public void setDescription(String description) {
+      public DisplayPlugin setDescription(String description) {
         this.description = description;
+        return this;
       }
 
-      public void setVersion(String version) {
+      public DisplayPlugin setVersion(String version) {
         this.version = version;
+        return this;
       }
 
-      public void setProvider(String provider) {
+      public DisplayPlugin setProvider(String provider) {
         this.provider = provider;
+        return this;
       }
 
-      public void setLicense(String license) {
+      public DisplayPlugin setLicense(String license) {
         this.license = license;
+        return this;
       }
 
-      public void setDate(String date) {
+      public DisplayPlugin setDate(String date) {
         this.date = date;
+        return this;
       }
 
-      public void setUrl(String url) {
+      public DisplayPlugin setUrl(String url) {
         this.url = url;
+        return this;
       }
 
-      public void setRepo(String repo) {
+      public DisplayPlugin setRepo(String repo) {
         this.repo = repo;
+        return this;
       }
     }
 
-    public final Asciifier DP_CLASSIFIER = new Asciifier() {
+    public final TableGenerator PLUGIN_TABLE = new TableGenerator() {
       @Override
       List<String> toList(Object o) {
         DisplayPlugin dp = (DisplayPlugin)o;
-        return Arrays.asList(dp.id, dp.version, dp.description, dp.provider, dp.date, dp.repo);
+        return Arrays.asList(dp.id, dp.version, dp.description, dp.provider, dp.repo);
       }
 
       @Override
       List<String> getHeader() {
-        return Arrays.asList("Id", "Version", "Description", "Provider", "Date", "Repo");
+        return Arrays.asList("Id", "Version", "Description", "Provider", "Repo");
       }
 
       @Override
       int[] getColWidths() {
-        return new int[] {29, 15, 30, 25, 11, 15};
+        return new int[] {20, 9, 40, 25, 15};
       }
     };
 
-    public final Asciifier REPO_ASCIIFIER = new Asciifier() {
+    public final TableGenerator REPO_TABLE = new TableGenerator() {
       @Override
       List<String> toList(Object o) {
         UpdateRepository ur = (UpdateRepository)o;
@@ -4608,9 +4619,7 @@ public class SolrCLI {
       }
     };
     
-    private abstract class Asciifier {
-      AsciiTable at;
-      
+    private abstract class TableGenerator {
       abstract List<String> toList(Object o);
       abstract List<String> getHeader();
       abstract int[] getColWidths();
@@ -4619,8 +4628,11 @@ public class SolrCLI {
         return 100;
       }
       
-      public String toAsciiTable(List<?> rows) {
-        at = new AsciiTable();
+      public String render(List<?> rows) {
+        if (rows.size() == 0)
+          return "";
+        
+        AsciiTable at = new AsciiTable();
         
         // TODO: Hardcoded column width...
         at.getRenderer().setCWC((linkedList, i, i1) -> getColWidths());
@@ -4631,6 +4643,7 @@ public class SolrCLI {
           at.addRow(row.stream().map(v -> v == null ? "" : v).collect(Collectors.toList()));
           at.addRule();
         }
+        at.setTextAlignment(TextAlignment.LEFT);
         return at.render(getColWidth());
       }
     }
