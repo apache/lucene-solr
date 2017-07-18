@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 package org.apache.lucene.search.highlight;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -26,38 +28,42 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Class used to markup highlighted terms found in the best sections of a
+ * Marks up highlighted terms found in the best sections of
  * text, using configurable {@link Fragmenter}, {@link Scorer}, {@link Formatter},
  * {@link Encoder} and tokenizers.
+ *
+ * This is Lucene's original Highlighter; there are others.
  */
 public class Highlighter
 {
   public static final int DEFAULT_MAX_CHARS_TO_ANALYZE = 50*1024;
 
-  private int maxDocCharsToAnalyze = DEFAULT_MAX_CHARS_TO_ANALYZE;
   private Formatter formatter;
   private Encoder encoder;
-  private Fragmenter textFragmenter=new SimpleFragmenter();
-  private Scorer fragmentScorer=null;
+  private Scorer fragmentScorer;
+  private int maxDocCharsToAnalyze = DEFAULT_MAX_CHARS_TO_ANALYZE;
+  private Fragmenter textFragmenter = new SimpleFragmenter();
 
   public Highlighter(Scorer fragmentScorer)
   {
     this(new SimpleHTMLFormatter(),fragmentScorer);
   }
 
-
-   public Highlighter(Formatter formatter, Scorer fragmentScorer)
-   {
+  public Highlighter(Formatter formatter, Scorer fragmentScorer)
+  {
     this(formatter,new DefaultEncoder(),fragmentScorer);
   }
 
-
   public Highlighter(Formatter formatter, Encoder encoder, Scorer fragmentScorer)
   {
-     this.formatter = formatter;
+    ensureArgumentNotNull(formatter, "'formatter' must not be null");
+    ensureArgumentNotNull(encoder, "'encoder' must not be null");
+    ensureArgumentNotNull(fragmentScorer, "'fragmentScorer' must not be null");
+
+    this.formatter = formatter;
     this.encoder = encoder;
-     this.fragmentScorer = fragmentScorer;
-   }
+    this.fragmentScorer = fragmentScorer;
+  }
 
   /**
    * Highlights chosen terms in a text, extracting the most relevant section.
@@ -191,7 +197,7 @@ public class Highlighter
     if (fragmentScorer instanceof QueryScorer) {
       ((QueryScorer) fragmentScorer).setMaxDocCharsToAnalyze(maxDocCharsToAnalyze);
     }
-    
+
     TokenStream newStream = fragmentScorer.init(tokenStream);
     if(newStream != null) {
       tokenStream = newStream;
@@ -477,7 +483,6 @@ public class Highlighter
     this.maxDocCharsToAnalyze = maxDocCharsToAnalyze;
   }
 
-  
   public Fragmenter getTextFragmenter()
   {
     return textFragmenter;
@@ -485,7 +490,7 @@ public class Highlighter
 
   public void setTextFragmenter(Fragmenter fragmenter)
   {
-    textFragmenter = fragmenter;
+    textFragmenter = Objects.requireNonNull(fragmenter);
   }
 
   /**
@@ -496,34 +501,45 @@ public class Highlighter
     return fragmentScorer;
   }
 
-
   public void setFragmentScorer(Scorer scorer)
   {
-    fragmentScorer = scorer;
+    fragmentScorer = Objects.requireNonNull(scorer);
   }
 
-    public Encoder getEncoder()
-    {
-        return encoder;
-    }
-    public void setEncoder(Encoder encoder)
-    {
-        this.encoder = encoder;
-    }
-}
-class FragmentQueue extends PriorityQueue<TextFragment>
-{
-  public FragmentQueue(int size)
-  {
-    super(size);
+  public Encoder getEncoder() {
+    return encoder;
   }
 
-  @Override
-  public final boolean lessThan(TextFragment fragA, TextFragment fragB)
+  public void setEncoder(Encoder encoder) {
+    this.encoder = Objects.requireNonNull(encoder);
+  }
+
+  /**
+   * Throws an IllegalArgumentException with the provided message if 'argument' is null.
+   *
+   * @param argument the argument to be null-checked
+   * @param message  the message of the exception thrown if argument == null
+   */
+  private static void ensureArgumentNotNull(Object argument, String message) {
+    if (argument == null) {
+      throw new IllegalArgumentException(message);
+    }
+  }
+
+  static class FragmentQueue extends PriorityQueue<TextFragment>
   {
-    if (fragA.getScore() == fragB.getScore())
-      return fragA.fragNum > fragB.fragNum;
-    else
-      return fragA.getScore() < fragB.getScore();
+    FragmentQueue(int size)
+    {
+      super(size);
+    }
+
+    @Override
+    public final boolean lessThan(TextFragment fragA, TextFragment fragB)
+    {
+      if (fragA.getScore() == fragB.getScore())
+        return fragA.fragNum > fragB.fragNum;
+      else
+        return fragA.getScore() < fragB.getScore();
+    }
   }
 }
