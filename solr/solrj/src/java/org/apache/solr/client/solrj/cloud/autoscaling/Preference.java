@@ -30,10 +30,15 @@ public class Preference implements MapWriter {
   Integer precision;
   final Policy.Sort sort;
   Preference next;
-  private int idx;
+  final int idx;
   private final Map original;
 
   public Preference(Map<String, Object> m) {
+    this(m, 0);
+  }
+
+  public Preference(Map<String, Object> m, int idx) {
+    this.idx = idx;
     this.original = Utils.getDeepCopy(m,3);
     sort = Policy.Sort.get(m);
     name = Policy.SortParam.get(m.get(sort.name()).toString());
@@ -43,7 +48,7 @@ public class Preference implements MapWriter {
       throw new RuntimeException("precision must be a positive value ");
     }
     if(precision< name.min || precision> name.max){
-      throw new RuntimeException(StrUtils.formatString("invalid precision value {0} must lie between {1} and {1}",
+      throw new RuntimeException(StrUtils.formatString("invalid precision value {0} , must lie between {1} and {2}",
           precision, name.min, name.max ) );
     }
 
@@ -103,5 +108,10 @@ public class Preference implements MapWriter {
 
   public Policy.SortParam getName() {
     return name;
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 }

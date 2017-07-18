@@ -31,6 +31,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
@@ -666,8 +667,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     List<Row> l = session.getSorted();
     assertEquals("node1", l.get(0).node);
-    assertEquals("node4", l.get(1).node);
-    assertEquals("node3", l.get(2).node);
+    assertEquals("node3", l.get(1).node);
+    assertEquals("node4", l.get(2).node);
     assertEquals("node2", l.get(3).node);
 
 
@@ -850,13 +851,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
     });
 
-    Policy.Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
+    Policy.Suggester suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
-    SolrParams op = suggester.getOperation().getParams();
-    assertNotNull(op);
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
-    op = suggester.getOperation().getParams();
+    SolrRequest op = suggester.getOperation();
     assertNotNull(op);
   }
 
@@ -1043,6 +1040,40 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "newColl", new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson)),
         dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3,0,0, null);
     assertTrue(locations.stream().allMatch(it -> ImmutableList.of("node2", "node1", "node3").contains(it.node)) );
+  }
+  
+  public void testMoveReplicaSuggester(){
+    String dataproviderdata = "{" +
+        "  'liveNodes':[" +
+        "    '10.0.0.6:7574_solr'," +
+        "    '10.0.0.6:8983_solr']," +
+        "  'replicaInfo':{" +
+        "    '10.0.0.6:7574_solr':{}," +
+        "    '10.0.0.6:8983_solr':{'mycoll1':{" +
+        "        'shard2':[{'core_node2':{'type':'NRT'}}]," +
+        "        'shard1':[{'core_node1':{'type':'NRT'}}]}}}," +
+        "  'nodeValues':{" +
+        "    '10.0.0.6:7574_solr':{" +
+        "      'node':'10.0.0.6:7574_solr'," +
+        "      'cores':0}," +
+        "    '10.0.0.6:8983_solr':{" +
+        "      'node':'10.0.0.6:8983_solr'," +
+        "      'cores':2}}}";
+    String autoScalingjson = "  '{cluster-policy':[" +
+        "    {      'cores':'<10',      'node':'#ANY'}," +
+        "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
+        "    {      'nodeRole':'overseer','replica':0}]," +
+        "  'cluster-preferences':[{'minimize':'cores'}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    Policy.Session session = policy.createSession(dataProviderWithData(dataproviderdata));
+    Policy.Suggester suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    SolrRequest op = suggester.getOperation();
+    assertNotNull(op);
+    suggester = suggester.getSession().getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    op = suggester.getOperation();
+    assertNull(op);
+
+
   }
 
 

@@ -46,8 +46,8 @@ public class MoveReplicaSuggester extends Suggester {
       String coll = replicaInfo.collection;
       String shard = replicaInfo.shard;
       Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard, replicaInfo.type);
-      Row tmpRow = pair.first();
-      if (tmpRow == null) {
+      Row srcTmpRow = pair.first();
+      if (srcTmpRow == null) {
         //no such replica available
         continue;
       }
@@ -58,8 +58,9 @@ public class MoveReplicaSuggester extends Suggester {
         if(!targetRow.isLive) continue;
         if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
         targetRow = targetRow.addReplica(coll, shard, replicaInfo.type);
-        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
-        if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
+        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), srcTmpRow, i), targetRow, j));
+        if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation) &&
+            Policy.compareRows(srcTmpRow, targetRow, session.getPolicy()) < 1) {
           leastSeriousViolation = errs;
           targetNodeIndex = j;
           sourceNodeIndex = i;

@@ -77,9 +77,9 @@ public class Policy implements MapWriter {
   }
 
   public Policy(Map<String, Object> jsonMap) {
-
+    int[] idx = new int[1];
     List<Preference> initialClusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCES, emptyList())).stream()
-        .map(Preference::new)
+        .map(m -> new Preference(m, idx[0]++))
         .collect(toList());
     for (int i = 0; i < initialClusterPreferences.size() - 1; i++) {
       Preference preference = initialClusterPreferences.get(i);
@@ -561,5 +561,18 @@ public class Policy implements MapWriter {
 
   public List<String> getParams() {
     return params;
+  }
+
+  /**
+   * Compares two {@link Row} loads according to a policy.
+   *
+   * @param r1 the first {@link Row} to compare
+   * @param r2 the second {@link Row} to compare
+   * @return the value {@code 0} if r1 and r2 are equally loaded
+   * a value {@code -1} if r1 is more loaded than r2
+   * a value {@code 1} if  r1 is less loaded than r2
+   */
+  static int compareRows(Row r1, Row r2, Policy policy) {
+    return policy.clusterPreferences.get(0).compare(r1, r2, false);
   }
 }

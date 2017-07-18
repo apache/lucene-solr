@@ -73,6 +73,9 @@ Bug Fixes
 
 * SOLR-11012: Fix three (JavaBinCodec not being closed) Resource Leak warnings. (Christine Poerschke)
 
+* SOLR-11026: MoveReplicaSuggester must check if the target becomes more 'loaded' than the source
+  if an operation is performed (noble)
+
 Optimizations
 ----------------------
 
