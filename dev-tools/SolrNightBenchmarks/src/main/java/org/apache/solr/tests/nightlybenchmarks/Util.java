@@ -95,7 +95,10 @@ public class Util {
 	public static String TEST_ID = UUID.randomUUID().toString();
 	public static String TEST_TIME = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
 	public static String METRIC_ESTIMATION_PERIOD = "1000";
-	public static String QUERY_THREAD_COUNT = "1";
+	public static String QUERY_THREAD_COUNT_FIRST = "";
+	public static String QUERY_THREAD_COUNT_SECOND = "";
+	public static String QUERY_THREAD_COUNT_THIRD = "";
+	public static String QUERY_THREAD_COUNT_FOURTH = "";	
 	public static String TEST_DATA_DIRECTORY = "";
 	public static String ONEM_TEST_DATA = "";
 	public static String NUMERIC_QUERY_TERM_DATA = "";
@@ -592,9 +595,18 @@ public class Util {
 			Util.METRIC_ESTIMATION_PERIOD = prop.getProperty("SolrNightlyBenchmarks.metricEstimationPeriod");
 			Util.postMessage("Getting Property Value for metricEstimationPeriod: " + Util.METRIC_ESTIMATION_PERIOD,
 					MessageType.YELLOW_TEXT, false);
-			Util.QUERY_THREAD_COUNT = prop.getProperty("SolrNightlyBenchmarks.queryThreadCount");
-			Util.postMessage("Getting Property Value for queryThreadCount: " + Util.QUERY_THREAD_COUNT,
+			Util.QUERY_THREAD_COUNT_FIRST = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountFirst");
+			Util.postMessage("Getting Property Value for queryThreadCountFirst: " + Util.QUERY_THREAD_COUNT_FIRST,
 					MessageType.YELLOW_TEXT, false);
+			Util.QUERY_THREAD_COUNT_SECOND = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountSecond");
+			Util.postMessage("Getting Property Value for queryThreadCountSecond: " + Util.QUERY_THREAD_COUNT_SECOND,
+					MessageType.YELLOW_TEXT, false);
+			Util.QUERY_THREAD_COUNT_THIRD = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountThird");
+			Util.postMessage("Getting Property Value for queryThreadCountThird: " + Util.QUERY_THREAD_COUNT_THIRD,
+					MessageType.YELLOW_TEXT, false);
+			Util.QUERY_THREAD_COUNT_FOURTH = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountFourth");
+			Util.postMessage("Getting Property Value for queryThreadCountFourth: " + Util.QUERY_THREAD_COUNT_FOURTH,
+					MessageType.YELLOW_TEXT, false);		
 			Util.TEST_DATA_DIRECTORY = prop.getProperty("SolrNightlyBenchmarks.testDataDirectory");
 			Util.postMessage("Getting Property Value for testDataDirectory: " + Util.TEST_DATA_DIRECTORY,
 					MessageType.YELLOW_TEXT, false);

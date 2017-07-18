@@ -70,12 +70,36 @@ public class BenchmarkReportData {
 	public static Map<String, String> querySTQMetricC;
 	public static Map<String, String> queryHTQMetricC;
 
-	public static Map<String, String> queryTNQMetricS;
-	public static Map<String, String> queryRNQMetricS;
-	public static Map<String, String> queryLNQMetricS;
-	public static Map<String, String> queryGNQMetricS;
-	public static Map<String, String> queryANQMetricS;
-	public static Map<String, String> queryONQMetricS;
+	public static Map<String, String> queryTNQMetricS_T1;
+	public static Map<String, String> queryTNQMetricS_T2;
+	public static Map<String, String> queryTNQMetricS_T3;
+	public static Map<String, String> queryTNQMetricS_T4;
+	
+	public static Map<String, String> queryRNQMetricS_T1;
+	public static Map<String, String> queryRNQMetricS_T2;
+	public static Map<String, String> queryRNQMetricS_T3;
+	public static Map<String, String> queryRNQMetricS_T4;
+	
+	public static Map<String, String> queryLNQMetricS_T1;
+	public static Map<String, String> queryLNQMetricS_T2;
+	public static Map<String, String> queryLNQMetricS_T3;
+	public static Map<String, String> queryLNQMetricS_T4;
+	
+	public static Map<String, String> queryGNQMetricS_T1;
+	public static Map<String, String> queryGNQMetricS_T2;
+	public static Map<String, String> queryGNQMetricS_T3;
+	public static Map<String, String> queryGNQMetricS_T4;
+	
+	public static Map<String, String> queryANQMetricS_T1;
+	public static Map<String, String> queryANQMetricS_T2;
+	public static Map<String, String> queryANQMetricS_T3;
+	public static Map<String, String> queryANQMetricS_T4;
+	
+	public static Map<String, String> queryONQMetricS_T1;
+	public static Map<String, String> queryONQMetricS_T2;
+	public static Map<String, String> queryONQMetricS_T3;
+	public static Map<String, String> queryONQMetricS_T4;
+	
 	public static Map<String, String> querySNQMetricS;
 	public static Map<String, String> queryTTQMetricS;
 	public static Map<String, String> queryPTQMetricS;
@@ -132,12 +156,36 @@ public class BenchmarkReportData {
 		querySTQMetricC = null;
 		queryHTQMetricC = null;
 		
-		queryTNQMetricS = null;
-		queryRNQMetricS = null;
-		queryLNQMetricS = null;
-		queryGNQMetricS = null;
-		queryANQMetricS = null;
-		queryONQMetricS = null;
+		queryTNQMetricS_T1 = null;
+		queryTNQMetricS_T2 = null;
+		queryTNQMetricS_T3 = null;
+		queryTNQMetricS_T4 = null;
+		
+		queryRNQMetricS_T1 = null;
+		queryRNQMetricS_T2 = null;
+		queryRNQMetricS_T3 = null;
+		queryRNQMetricS_T4 = null;
+		
+		queryLNQMetricS_T1 = null;
+		queryLNQMetricS_T2 = null;
+		queryLNQMetricS_T3 = null;
+		queryLNQMetricS_T4 = null;
+		
+		queryGNQMetricS_T1 = null;
+		queryGNQMetricS_T2 = null;
+		queryGNQMetricS_T3 = null;
+		queryGNQMetricS_T4 = null;
+		
+		queryANQMetricS_T1 = null;
+		queryANQMetricS_T2 = null;
+		queryANQMetricS_T3 = null;
+		queryANQMetricS_T4 = null;
+		
+		queryONQMetricS_T1 = null;
+		queryONQMetricS_T2 = null;
+		queryONQMetricS_T3 = null;
+		queryONQMetricS_T4 = null;
+		
 		querySNQMetricS = null;
 		queryTTQMetricS = null;
 		queryPTQMetricS = null;

@@ -61,7 +61,6 @@ public class QueryClient implements Runnable {
 	String collectionName;
 	SolrParams params;
 	HttpSolrClient solrClient;
-	QueryType queryType;
 	int threadID;
 	boolean setThreadReadyFlag = false;
 	long numberOfThreads = 0;
@@ -79,6 +78,7 @@ public class QueryClient implements Runnable {
 	public static boolean percentilesObjectCreated = false;
 	public static long[] qTimePercentileList = new long[10000000];
 	public static int qTimePercentileListPointer = 0;
+	public static QueryType queryType;
 
 	public static ConcurrentLinkedQueue<String> termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
@@ -102,12 +102,11 @@ public class QueryClient implements Runnable {
 	 * @param numberOfThreads
 	 * @param delayEstimationBySeconds
 	 */
-	public QueryClient(String urlString, String collectionName, QueryType queryType, long numberOfThreads,
+	public QueryClient(String urlString, String collectionName, long numberOfThreads,
 			long delayEstimationBySeconds) {
 		super();
 		this.urlString = urlString;
 		this.collectionName = collectionName;
-		this.queryType = queryType;
 		this.numberOfThreads = numberOfThreads;
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
 
@@ -117,7 +116,7 @@ public class QueryClient implements Runnable {
 	}
 
 	/**
-	 * A method invoked to inject the query terms in the data varibles for the
+	 * A method invoked to inject the query terms in the data variables for the
 	 * threads to use.
 	 */
 	public static void prepare() {
@@ -135,98 +134,113 @@ public class QueryClient implements Runnable {
 		highlightTerms = new ConcurrentLinkedQueue<String>();
 
 		String line = "";
-		try (BufferedReader br = new BufferedReader(
-				new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				termNumericQueryParameterList.add(line.trim());
-				greaterNumericQueryParameterList.add(line.trim());
-				lesserNumericQueryParameterList.add(line.trim());
+		if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY || QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY 
+				|| QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
+			try (BufferedReader br = new BufferedReader(
+					new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY) {
+						termNumericQueryParameterList.add(line.trim());
+					} else if (QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
+						greaterNumericQueryParameterList.add(line.trim());
+					} else if (QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
+						lesserNumericQueryParameterList.add(line.trim());
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
-		Util.postMessage("** Preparing query pair data queue ...", MessageType.CYAN_TEXT, false);
-
-		line = "";
-		try (BufferedReader br = new BufferedReader(
-				new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				rangeNumericQueryParameterList.add(line.trim());
+			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
+			Util.postMessage("** Preparing query pair data queue ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(
+					new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					rangeNumericQueryParameterList.add(line.trim());
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
-		Util.postMessage("** Preparing text terms query data ...", MessageType.CYAN_TEXT, false);
-
-		line = "";
-		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				textTerms.add(line.trim());
+			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
+			Util.postMessage("** Preparing text terms query data ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					textTerms.add(line.trim());
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
-		Util.postMessage("** Preparing text phrase query data ...", MessageType.CYAN_TEXT, false);
-
-		line = "";
-		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				textPhrases.add(line.trim());
+			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
+			Util.postMessage("** Preparing text phrase query data ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					textPhrases.add(line.trim());
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
-		Util.postMessage("** Preparing query pair data for AND/OR queue ...", MessageType.CYAN_TEXT, false);
-
-		line = "";
-		try (BufferedReader br = new BufferedReader(
-				new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				andNumericQueryParameterList.add(line.trim());
-				orNumericQueryParameterList.add(line.trim());
+			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY || QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
+			Util.postMessage("** Preparing query pair data for AND/OR queue ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(
+					new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY) {
+						andNumericQueryParameterList.add(line.trim());
+					} else if (QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
+						orNumericQueryParameterList.add(line.trim());
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
-		Util.postMessage("** Preparing sorted query pair data queue ...", MessageType.CYAN_TEXT, false);
-
-		line = "";
-		try (BufferedReader br = new BufferedReader(
-				new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				sortedNumericQueryParameterList.add(line.trim());
+			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY) {
+			Util.postMessage("** Preparing sorted query pair data queue ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(
+					new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					sortedNumericQueryParameterList.add(line.trim());
+				}
+	
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		Util.postMessage("** Preparing sorted query pair data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
-		Util.postMessage("** Preparing highlight terms data queue ...", MessageType.CYAN_TEXT, false);
-
-		line = "";
-		try (BufferedReader br = new BufferedReader(
-				new FileReader(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA))) {
-
-			while ((line = br.readLine()) != null) {
-				highlightTerms.add(line.trim());
+			Util.postMessage("** Preparing sorted query pair data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
+			Util.postMessage("** Preparing highlight terms data queue ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(
+					new FileReader(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					highlightTerms.add(line.trim());
+				}
+	
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
+			Util.postMessage("** Preparing highlight terms data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
 		}
-		Util.postMessage("** Preparing highlight terms data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
-
 		Util.postMessage(
 				"Starting State:| " + termNumericQueryParameterList.size() + "| "
 						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
@@ -241,7 +255,7 @@ public class QueryClient implements Runnable {
 	 * A method used by various query threads.
 	 */
 	public void run() {
-
+ 
 		long elapsedTime;
 
 		NamedList<String> requestParams = new NamedList<>();
@@ -266,9 +280,9 @@ public class QueryClient implements Runnable {
 					requestParams.remove("hl.fl");
 
 
-					if (this.queryType == QueryType.TERM_NUMERIC_QUERY) {
+					if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY) {
 						requestParams.add("q", "Int1_pi:" + termNumericQueryParameterList.poll());
-					} else if (this.queryType == QueryType.RANGE_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
 						String pairData[] = rangeNumericQueryParameterList.poll().trim().split(",");
 
@@ -281,7 +295,7 @@ public class QueryClient implements Runnable {
 							requestParams.add("q", "Int1_pi:[" + ft_2 + " TO " + ft_1 + "]");
 						}
 
-					} else if (this.queryType == QueryType.SORTED_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY) {
 
 						String pairData[] = sortedNumericQueryParameterList.poll().trim().split(",");
 
@@ -296,7 +310,7 @@ public class QueryClient implements Runnable {
 
 						requestParams.add("sort", "Int1_pi asc");
 
-					} else if (this.queryType == QueryType.SORTED_TEXT_QUERY) {
+					} else if (QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
 
 						String pairData[] = sortedNumericQueryParameterList.poll().trim().split(",");
 
@@ -311,11 +325,11 @@ public class QueryClient implements Runnable {
 
 						requestParams.add("sort", "Text_s asc");
 
-					} else if (this.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
 						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
-					} else if (this.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
 						requestParams.add("q", "Int1_pi:[* TO " + lesserNumericQueryParameterList.poll() + "]");
-					} else if (this.queryType == QueryType.AND_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY) {
 
 						String pairData[] = andNumericQueryParameterList.poll().trim().split(",");
 
@@ -324,7 +338,7 @@ public class QueryClient implements Runnable {
 
 						requestParams.add("q", "Int1_pi:" + ft_1 + " AND Int2_pi:" + ft_2);
 
-					} else if (this.queryType == QueryType.OR_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
 
 						String pairData[] = orNumericQueryParameterList.poll().trim().split(",");
 
@@ -333,11 +347,11 @@ public class QueryClient implements Runnable {
 
 						requestParams.add("q", "Int1_pi:" + ft_1 + " OR Int2_pi:" + ft_2);
 
-					} else if (this.queryType == QueryType.TEXT_TERM_QUERY) {
+					} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
 						requestParams.add("q", "Text:" + textTerms.poll().trim());
-					} else if (this.queryType == QueryType.TEXT_PHRASE_QUERY) {
+					} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
 						requestParams.add("q", "Title_t:" + textPhrases.poll().trim());
-					} else if (this.queryType == QueryType.HIGHLIGHT_QUERY) {
+					} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
 						requestParams.add("hl", "on");
 						requestParams.add("hl.fl", "Article_t");
 						requestParams.add("q", "Article_t:"+highlightTerms.poll());
