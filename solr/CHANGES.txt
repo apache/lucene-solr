@@ -152,6 +152,8 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 
 * SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
 
+* SOLR-11104: LbHttpSolrClient ignores given HttpClient in constructor on 6.x (shalin)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)

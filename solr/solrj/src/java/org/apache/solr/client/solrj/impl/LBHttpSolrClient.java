@@ -258,8 +258,7 @@ public class LBHttpSolrClient extends SolrClient {
                           HttpClient httpClient, String... solrServerUrl) {
     clientIsInternal = httpClient == null;
     this.httpSolrClientBuilder = httpSolrClientBuilder;
-    httpClient = constructClient(null);
-    this.httpClient = httpClient;
+    this.httpClient = clientIsInternal ? constructClient(solrServerUrl) : httpClient;
     if (solrServerUrl != null) {
       for (String s : solrServerUrl) {
         ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
