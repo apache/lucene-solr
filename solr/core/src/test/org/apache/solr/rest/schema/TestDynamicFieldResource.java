@@ -21,13 +21,14 @@ import org.junit.Test;
 public class TestDynamicFieldResource extends SolrRestletTestBase {
   @Test
   public void testGetDynamicField() throws Exception {
+    final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertQ("/schema/dynamicfields/*_i?indent=on&wt=xml&showDefaults=on",
             "count(/response/lst[@name='dynamicField']) = 1",
             "/response/lst[@name='dynamicField']/str[@name='name'] = '*_i'",
             "/response/lst[@name='dynamicField']/str[@name='type'] = 'int'",
             "/response/lst[@name='dynamicField']/bool[@name='indexed'] = 'true'",
             "/response/lst[@name='dynamicField']/bool[@name='stored'] = 'true'",
-            "/response/lst[@name='dynamicField']/bool[@name='docValues'] = 'false'",
+            "/response/lst[@name='dynamicField']/bool[@name='docValues'] = '"+expectedDocValues+"'",
             "/response/lst[@name='dynamicField']/bool[@name='termVectors'] = 'false'",
             "/response/lst[@name='dynamicField']/bool[@name='termPositions'] = 'false'",
             "/response/lst[@name='dynamicField']/bool[@name='termOffsets'] = 'false'",
@@ -50,12 +51,13 @@ public class TestDynamicFieldResource extends SolrRestletTestBase {
   
   @Test
   public void testJsonGetDynamicField() throws Exception {
+    final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertJQ("/schema/dynamicfields/*_i?indent=on&showDefaults=on",
              "/dynamicField/name=='*_i'",
              "/dynamicField/type=='int'",
              "/dynamicField/indexed==true",
              "/dynamicField/stored==true",
-             "/dynamicField/docValues==false",
+             "/dynamicField/docValues=="+expectedDocValues,
              "/dynamicField/termVectors==false",
              "/dynamicField/termPositions==false",
              "/dynamicField/termOffsets==false",
