@@ -76,6 +76,8 @@ Bug Fixes
 * SOLR-11026: MoveReplicaSuggester must check if the target becomes more 'loaded' than the source
   if an operation is performed (noble)
 
+* SOLR-10994: CREATE, CREATESHARD & ADDREPLICA to use policy framework & support replica types (noble)
+
 Optimizations
 ----------------------
 
