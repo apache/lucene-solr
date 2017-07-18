@@ -77,6 +77,9 @@ Other Changes
 * SOLR-11052: Remove unnecessary Long-to-Integer and back casts in ReplicationHandler.
   (Ramsey Haddad via Christine Poerschke)
 
+* SOLR-11106: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong server name
+  (Kensho Hirasawa via Erick Erickson)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
