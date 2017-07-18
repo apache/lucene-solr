@@ -360,6 +360,9 @@ Bug Fixes
 * SOLR-11073: Fix overflow in interval faceting when querying Long limits (e.g. (Long.MAX_VALUE TO Long.MAX_VALUE])
   (Tomás Fernández Löbbe)
 
+* SOLR-11057: Fix overflow in point range queries when querying the type limits 
+  (e.g. q=field_i:{Integer.MAX_VALUE TO Integer.MAX_VALUE]) (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
