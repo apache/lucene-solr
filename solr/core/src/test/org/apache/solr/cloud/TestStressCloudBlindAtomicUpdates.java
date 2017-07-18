@@ -137,9 +137,11 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
+    final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
+
     // sanity check no one broke the assumptions we make about our schema
     checkExpectedSchemaType( map("name","long",
-                                 "class","solr.TrieLongField",
+                                 "class", usingPoints ? "solr.LongPointField" : "solr.TrieLongField",
                                  "multiValued",Boolean.FALSE,
                                  "indexed",Boolean.FALSE,
                                  "stored",Boolean.FALSE,
