@@ -127,6 +127,9 @@ Improvements
 * LUCENE-7730: More accurate encoding of the length normalization factor
   thanks to the removal of index-time boosts. (Adrien Grand)
 
+* LUCENE-7901: Original Highlighter now eagerly throws an exception if you
+  provide components that are null. (Jason Gerlowski, David Smiley)
+
 Optimizations
 
 * LUCENE-7416: BooleanQuery optimizes queries that have queries that occur both
