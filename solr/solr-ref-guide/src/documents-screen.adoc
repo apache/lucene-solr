@@ -42,28 +42,24 @@ The first step is to define the RequestHandler to use (aka, 'qt'). By default `/
 
 Then choose the Document Type to define the type of document to load. The remaining parameters will change depending on the document type selected.
 
-[[DocumentsScreen-JSON]]
-== JSON
+== JSON Documents
 
 When using the JSON document type, the functionality is similar to using a requestHandler on the command line. Instead of putting the documents in a curl command, they can instead be input into the Document entry box. The document structure should still be in proper JSON format.
 
 Then you can choose when documents should be added to the index (Commit Within), & whether existing documents should be overwritten with incoming documents with the same id (if this is not *true*, then the incoming documents will be dropped).
 
-This option will only add or overwrite documents to the index; for other update tasks, see the <<DocumentsScreen-SolrCommand,Solr Command>> option.
+This option will only add or overwrite documents to the index; for other update tasks, see the <<Solr Command>> option.
 
-[[DocumentsScreen-CSV]]
-== CSV
+== CSV Documents
 
 When using the CSV document type, the functionality is similar to using a requestHandler on the command line. Instead of putting the documents in a curl command, they can instead be input into the Document entry box. The document structure should still be in proper CSV format, with columns delimited and one row per document.
 
 Then you can choose when documents should be added to the index (Commit Within), and whether existing documents should be overwritten with incoming documents with the same id (if this is not *true*, then the incoming documents will be dropped).
 
-[[DocumentsScreen-DocumentBuilder]]
 == Document Builder
 
 The Document Builder provides a wizard-like interface to enter fields of a document
 
-[[DocumentsScreen-FileUpload]]
 == File Upload
 
 The File Upload option allows choosing a prepared file and uploading it. If using only `/update` for the Request-Handler option, you will be limited to XML, CSV, and JSON.
@@ -72,18 +68,16 @@ However, to use the ExtractingRequestHandler (aka Solr Cell), you can modify the
 
 Then you can choose when documents should be added to the index (Commit Within), and whether existing documents should be overwritten with incoming documents with the same id (if this is not *true*, then the incoming documents will be dropped).
 
-[[DocumentsScreen-SolrCommand]]
 == Solr Command
 
 The Solr Command option allows you use XML or JSON to perform specific actions on documents, such as defining documents to be added or deleted, updating only certain fields of documents, or commit and optimize commands on the index.
 
 The documents should be structured as they would be if using `/update` on the command line.
 
-[[DocumentsScreen-XML]]
-== XML
+== XML Documents
 
 When using the XML document type, the functionality is similar to using a requestHandler on the command line. Instead of putting the documents in a curl command, they can instead be input into the Document entry box. The document structure should still be in proper Solr XML format, with each document separated by `<doc>` tags and each field defined.
 
 Then you can choose when documents should be added to the index (Commit Within), and whether existing documents should be overwritten with incoming documents with the same id (if this is not **true**, then the incoming documents will be dropped).
 
-This option will only add or overwrite documents to the index; for other update tasks, see the <<DocumentsScreen-SolrCommand,Solr Command>> option.
+This option will only add or overwrite documents to the index; for other update tasks, see the <<Solr Command>> option.

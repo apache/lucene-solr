@@ -35,6 +35,7 @@ import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
@@ -181,6 +182,29 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "2002", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "10");
     add_doc("id", "2003", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
     add_doc("id", "2004", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
+  }
+
+  public void testDvMethodNegativeFloatRangeFacet() throws Exception {
+    String field = "negative_num_f1_dv";
+    assertTrue("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).hasDocValues());
+    assertEquals("Unexpected schema configuration", NumberType.FLOAT, h.getCore().getLatestSchema().getField(field).getType().getNumberType());
+    assertFalse("Unexpected schema configuration", h.getCore().getLatestSchema().getField(field).multiValued());
+
+    final String[] commonParams = { 
+        "q", "*:*", "facet", "true", "facet.range.start", "-2", "facet.range.end", "0", "facet.range.gap", "2"
+    };
+    final String countAssertion
+    = "//lst[@name='facet_counts']/lst[@name='facet_ranges']/lst[@name='%s']/lst[@name='counts']/int[@name='-2.0'][.='1']";
+
+    assertU(adoc("id", "10001", field, "-1.0"));
+    assertU(commit());
+
+    assertQ(req(commonParams, "facet.range", field, "facet.range.method", "filter"),
+        String.format(Locale.ROOT, countAssertion, field)
+        );
+    assertQ(req(commonParams, "facet.range", field, "facet.range.method", "dv"),
+        String.format(Locale.ROOT, countAssertion, field)
+        );
   }
 
 
@@ -3385,8 +3409,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     Integer[] values = new Integer[2];
     do {
-      values[0] = random().nextInt(3000);
-      values[1] = random().nextInt(3000);
+      values[0] = random().nextInt(3000) * (random().nextBoolean()?-1:1);
+      values[1] = random().nextInt(3000) * (random().nextBoolean()?-1:1);
     } while (values[0].equals(values[1]));
     Arrays.sort(values);
     long gapNum = Math.max(1, random().nextInt(3000));
@@ -3404,8 +3428,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     Float[] values = new Float[2];
     do {
-      values[0] = random().nextFloat() * 3000;
-      values[1] = random().nextFloat() * 3000;
+      values[0] = random().nextFloat() * 3000 * (random().nextBoolean()?-1:1);
+      values[1] = random().nextFloat() * 3000 * (random().nextBoolean()?-1:1);
     } while (values[0].equals(values[1]));
     Arrays.sort(values);
     float gapNum = Math.max(1, random().nextFloat() * 3000);
@@ -3425,8 +3449,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     Date[] dates = new Date[2];
     do {
-      dates[0] = new Date((long)(random().nextDouble()*(new Date().getTime())));
-      dates[1] = new Date((long)(random().nextDouble()*(new Date().getTime())));
+      dates[0] = new Date((long)(random().nextDouble()*(new Date().getTime()) * (random().nextBoolean()?-1:1)));
+      dates[1] = new Date((long)(random().nextDouble()*(new Date().getTime()) * (random().nextBoolean()?-1:1)));
     } while (dates[0].equals(dates[1]));
     Arrays.sort(dates);
     long dateDiff = (dates[1].getTime() - dates[0].getTime())/1000;

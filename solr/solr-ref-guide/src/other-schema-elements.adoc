@@ -20,7 +20,6 @@
 
 This section describes several other important elements of `schema.xml` not covered in earlier sections.
 
-[[OtherSchemaElements-UniqueKey]]
 == Unique Key
 
 The `uniqueKey` element specifies which field is a unique identifier for documents. Although `uniqueKey` is not required, it is nearly always warranted by your application design. For example, `uniqueKey` should be used if you will ever update a document in the index.
@@ -37,7 +36,6 @@ Schema defaults and `copyFields` cannot be used to populate the `uniqueKey` fiel
 Further, the operation will fail if the `uniqueKey` field is used, but is multivalued (or inherits the multivalue-ness from the `fieldtype`). However, `uniqueKey` will continue to work, as long as the field is properly used.
 
 
-[[OtherSchemaElements-Similarity]]
 == Similarity
 
 Similarity is a Lucene class used to score a document in searching.

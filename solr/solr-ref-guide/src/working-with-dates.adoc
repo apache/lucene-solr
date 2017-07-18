@@ -18,7 +18,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-[[WorkingwithDates-DateFormatting]]
 == Date Formatting
 
 Solr's date fields (`TrieDateField`, `DatePointField` and `DateRangeField`) represent "dates" as a point in time with millisecond precision. The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601]. For those familiar with Java 8, Solr uses https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
@@ -48,7 +47,6 @@ There must be a leading `'-'` for dates prior to year 0000, and Solr will format
 .Query escaping may be required
 [WARNING]
 ====
-
 As you can see, the date format includes colon characters separating the hours, minutes, and seconds. Because the colon is a special character to Solr's most common query parsers, escaping is sometimes required, depending on exactly what you are trying to do.
 
 This is normally an invalid query: `datefield:1972-05-20T17:33:18.772Z`
@@ -57,10 +55,8 @@ These are valid queries: +
 `datefield:1972-05-20T17\:33\:18.772Z` +
 `datefield:"1972-05-20T17:33:18.772Z"` +
 `datefield:[1972-05-20T17:33:18.772Z TO *]`
-
 ====
 
-[[WorkingwithDates-DateRangeFormatting]]
 === Date Range Formatting
 
 Solr's `DateRangeField` supports the same point in time date syntax described above (with _date math_ described below) and more to express date ranges. One class of examples is truncated dates, which represent the entire date span to the precision indicated. The other class uses the range syntax (`[ TO ]`). Here are some examples:
@@ -74,12 +70,10 @@ Solr's `DateRangeField` supports the same point in time date syntax described ab
 
 Limitations: The range syntax doesn't support embedded date math. If you specify a date instance supported by TrieDateField with date math truncating it, like `NOW/DAY`, you still get the first millisecond of that day, not the entire day's range. Exclusive ranges (using `{` & `}`) work in _queries_ but not for _indexing_ ranges.
 
-[[WorkingwithDates-DateMath]]
 == Date Math
 
 Solr's date field types also supports _date math_ expressions, which makes it easy to create times relative to fixed moments in time, include the current time which can be represented using the special value of "```NOW```".
 
-[[WorkingwithDates-DateMathSyntax]]
 === Date Math Syntax
 
 Date math expressions consist either adding some quantity of time in a specified unit, or rounding the current time by a specified unit. expressions can be chained and are evaluated left to right.
@@ -104,10 +98,8 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 
 `1972-05-20T17:33:18.772Z+6MONTHS+3DAYS/DAY`
 
-[[WorkingwithDates-RequestParametersThatAffectDateMath]]
 === Request Parameters That Affect Date Math
 
-[[WorkingwithDates-NOW]]
 ==== NOW
 
 The `NOW` parameter is used internally by Solr to ensure consistent date math expression parsing across multiple nodes in a distributed request. But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the the special value of "```NOW```" would impact date math expressions.
@@ -118,7 +110,6 @@ Example:
 
 `q=solr&fq=start_date:[* TO NOW]&NOW=1384387200000`
 
-[[WorkingwithDates-TZ]]
 ==== TZ
 
 By default, all date math expressions are evaluated relative to the UTC TimeZone, but the `TZ` parameter can be specified to override this behaviour, by forcing all date based addition and rounding to be relative to the specified http://docs.oracle.com/javase/8/docs/api/java/util/TimeZone.html[time zone].
@@ -161,7 +152,6 @@ http://localhost:8983/solr/my_collection/select?q=*:*&facet.range=my_date_field&
 ...
 ----
 
-[[WorkingwithDates-MoreDateRangeFieldDetails]]
 == More DateRangeField Details
 
 `DateRangeField` is almost a drop-in replacement for places where `TrieDateField` is used. The only difference is that Solr's XML or SolrJ response formats will expose the stored data as a String instead of a Date. The underlying index data for this field will be a bit larger. Queries that align to units of time a second on up should be faster than TrieDateField, especially if it's in UTC. But the main point of DateRangeField as its name suggests is to allow indexing date ranges. To do that, simply supply strings in the format shown above. It also supports specifying 3 different relational predicates between the indexed data, and the query range: `Intersects` (default), `Contains`, `Within`. You can specify the predicate by querying using the `op` local-params parameter like so:

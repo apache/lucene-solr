@@ -31,12 +31,10 @@ For specific information on each of these language identification implementation
 
 For more information about language analysis in Solr, see <<language-analysis.adoc#language-analysis,Language Analysis>>.
 
-[[DetectingLanguagesDuringIndexing-ConfiguringLanguageDetection]]
 == Configuring Language Detection
 
 You can configure the `langid` UpdateRequestProcessor in `solrconfig.xml`. Both implementations take the same parameters, which are described in the following section. At a minimum, you must specify the fields for language identification and a field for the resulting language code.
 
-[[DetectingLanguagesDuringIndexing-ConfiguringTikaLanguageDetection]]
 === Configuring Tika Language Detection
 
 Here is an example of a minimal Tika `langid` configuration in `solrconfig.xml`:
@@ -51,7 +49,6 @@ Here is an example of a minimal Tika `langid` configuration in `solrconfig.xml`:
 </processor>
 ----
 
-[[DetectingLanguagesDuringIndexing-ConfiguringLangDetectLanguageDetection]]
 === Configuring LangDetect Language Detection
 
 Here is an example of a minimal LangDetect `langid` configuration in `solrconfig.xml`:
@@ -66,7 +63,6 @@ Here is an example of a minimal LangDetect `langid` configuration in `solrconfig
 </processor>
 ----
 
-[[DetectingLanguagesDuringIndexing-langidParameters]]
 == langid Parameters
 
 As previously mentioned, both implementations of the `langid` UpdateRequestProcessor take the same parameters.

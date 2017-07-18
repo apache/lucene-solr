@@ -166,7 +166,7 @@ final class MultiSorter {
           final SortedDocValues sorted = Sorter.getOrWrapSorted(readers.get(i), sortField);
           values[i] = sorted;
         }
-        MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(null, values, PackedInts.DEFAULT);
+        OrdinalMap ordinalMap = OrdinalMap.build(null, values, PackedInts.DEFAULT);
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
           missingOrd = sortField.getReverse() ? Integer.MIN_VALUE : Integer.MAX_VALUE;

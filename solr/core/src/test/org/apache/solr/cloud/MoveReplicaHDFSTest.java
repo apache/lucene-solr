@@ -54,7 +54,6 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
     dfsCluster = null;
   }
 
-
   public static class ForkJoinThreadsFilter implements ThreadFilter {
 
     @Override

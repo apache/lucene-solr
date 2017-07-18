@@ -33,15 +33,13 @@ All of the examples in this section assume you are running the "techproducts" So
 bin/solr -e techproducts
 ----
 
-[[ManagedResources-Overview]]
-== Overview
+== Managed Resources Overview
 
 Let's begin learning about managed resources by looking at a couple of examples provided by Solr for managing stop words and synonyms using a REST API. After reading this section, you'll be ready to dig into the details of how managed resources are implemented in Solr so you can start building your own implementation.
 
-[[ManagedResources-Stopwords]]
-=== Stop Words
+=== Managing Stop Words
 
-To begin, you need to define a field type that uses the <<filter-descriptions.adoc#FilterDescriptions-ManagedStopFilter,ManagedStopFilterFactory>>, such as:
+To begin, you need to define a field type that uses the <<filter-descriptions.adoc#managed-stop-filter,ManagedStopFilterFactory>>, such as:
 
 [source,xml,subs="verbatim,callouts"]
 ----
@@ -56,7 +54,7 @@ To begin, you need to define a field type that uses the <<filter-descriptions.ad
 
 There are two important things to notice about this field type definition:
 
-<1> The filter implementation class is `solr.ManagedStopFilterFactory`. This is a special implementation of the <<filter-descriptions.adoc#FilterDescriptions-StopFilter,StopFilterFactory>> that uses a set of stop words that are managed from a REST API.
+<1> The filter implementation class is `solr.ManagedStopFilterFactory`. This is a special implementation of the <<filter-descriptions.adoc#stop-filter,StopFilterFactory>> that uses a set of stop words that are managed from a REST API.
 
 <2> The `managed=”english”` attribute gives a name to the set of managed stop words, in this case indicating the stop words are for English text.
 
@@ -134,8 +132,7 @@ curl -X DELETE "http://localhost:8983/solr/techproducts/schema/analysis/stopword
 
 NOTE: PUT/POST is used to add terms to an existing list instead of replacing the list entirely. This is because it is more common to add a term to an existing list than it is to replace a list altogether, so the API favors the more common approach of incrementally adding terms especially since deleting individual terms is also supported.
 
-[[ManagedResources-Synonyms]]
-=== Synonyms
+=== Managing Synonyms
 
 For the most part, the API for managing synonyms behaves similar to the API for stop words, except instead of working with a list of words, it uses a map, where the value for each entry in the map is a set of synonyms for a term. As with stop words, the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> includes a pre-built set of synonym mappings suitable for the sample data that is activated by the following field type definition in schema.xml:
 
@@ -209,8 +206,7 @@ Note that the expansion is performed when processing the PUT request so the unde
 
 Lastly, you can delete a mapping by sending a DELETE request to the managed endpoint.
 
-[[ManagedResources-ApplyingChanges]]
-== Applying Changes
+== Applying Managed Resource Changes
 
 Changes made to managed resources via this REST API are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
@@ -227,7 +223,6 @@ However, the intent of this API implementation is that changes will be applied u
 Changing things like stop words and synonym mappings typically require re-indexing existing documents if being used by index-time analyzers. The RestManager framework does not guard you from this, it simply makes it possible to programmatically build up a set of stop words, synonyms etc.
 ====
 
-[[ManagedResources-RestManagerEndpoint]]
 == RestManager Endpoint
 
 Metadata about registered ManagedResources is available using the `/schema/managed` endpoint for each collection.

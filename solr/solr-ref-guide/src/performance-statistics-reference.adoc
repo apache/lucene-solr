@@ -24,7 +24,7 @@ The same statistics are also exposed via the <<mbean-request-handler.adoc#mbean-
 
 These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to each performance of an individual replica.
 
-== Request Handlers
+== Request Handler Statistics
 
 === Update Request Handler
 
@@ -93,7 +93,7 @@ Both Update Request Handler and Search Request Handler along with handlers like 
 |transaction_logs_total_size |Total size of all the TLogs created so far from the beginning of the Solr instance.
 |===
 
-== Caches
+== Cache Statistics
 
 === Document Cache
 

@@ -37,7 +37,6 @@ A `TypeTokenFilterFactory` is available that creates a `TypeTokenFilter` that fi
 
 For a complete list of the available TokenFilters, see the section <<tokenizers.adoc#tokenizers,Tokenizers>>.
 
-[[AboutTokenizers-WhenTouseaCharFiltervs.aTokenFilter]]
 == When To use a CharFilter vs. a TokenFilter
 
 There are several pairs of CharFilters and TokenFilters that have related (ie: `MappingCharFilter` and `ASCIIFoldingFilter`) or nearly identical (ie: `PatternReplaceCharFilterFactory` and `PatternReplaceFilterFactory`) functionality and it may not always be obvious which is the best choice.

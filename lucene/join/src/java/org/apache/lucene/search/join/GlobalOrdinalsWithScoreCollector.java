@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
@@ -35,13 +35,13 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   final boolean doMinMax;
   final int min;
   final int max;
-  final MultiDocValues.OrdinalMap ordinalMap;
+  final OrdinalMap ordinalMap;
   final LongBitSet collectedOrds;
 
   protected final Scores scores;
   protected final Occurrences occurrences;
 
-  GlobalOrdinalsWithScoreCollector(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, ScoreMode scoreMode, int min, int max) {
+  GlobalOrdinalsWithScoreCollector(String field, OrdinalMap ordinalMap, long valueCount, ScoreMode scoreMode, int min, int max) {
     if (valueCount > Integer.MAX_VALUE) {
       // We simply don't support more than
       throw new IllegalStateException("Can't collect more than [" + Integer.MAX_VALUE + "] ids");
@@ -168,7 +168,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Min extends GlobalOrdinalsWithScoreCollector {
 
-    public Min(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+    public Min(String field, OrdinalMap ordinalMap, long valueCount, int min, int max) {
       super(field, ordinalMap, valueCount, ScoreMode.Min, min, max);
     }
 
@@ -185,7 +185,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Max extends GlobalOrdinalsWithScoreCollector {
 
-    public Max(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+    public Max(String field, OrdinalMap ordinalMap, long valueCount, int min, int max) {
       super(field, ordinalMap, valueCount, ScoreMode.Max, min, max);
     }
 
@@ -202,7 +202,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Sum extends GlobalOrdinalsWithScoreCollector {
 
-    public Sum(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+    public Sum(String field, OrdinalMap ordinalMap, long valueCount, int min, int max) {
       super(field, ordinalMap, valueCount, ScoreMode.Total, min, max);
     }
 
@@ -219,7 +219,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class Avg extends GlobalOrdinalsWithScoreCollector {
 
-    public Avg(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+    public Avg(String field, OrdinalMap ordinalMap, long valueCount, int min, int max) {
       super(field, ordinalMap, valueCount, ScoreMode.Avg, min, max);
     }
 
@@ -241,7 +241,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
   static final class NoScore extends GlobalOrdinalsWithScoreCollector {
 
-    public NoScore(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount, int min, int max) {
+    public NoScore(String field, OrdinalMap ordinalMap, long valueCount, int min, int max) {
       super(field, ordinalMap, valueCount, ScoreMode.None, min, max);
     }
 

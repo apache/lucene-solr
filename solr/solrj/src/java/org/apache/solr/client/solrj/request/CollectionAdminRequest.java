@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -547,7 +548,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   public static class ReplaceNode extends AsyncCollectionAdminRequest {
-    String source, target;
+    String sourceNode, targetNode;
     Boolean parallel;
 
     /**
@@ -556,8 +557,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      */
     public ReplaceNode(String source, String target) {
       super(CollectionAction.REPLACENODE);
-      this.source = checkNotNull("source",source);
-      this.target = checkNotNull("target",target);
+      this.sourceNode = checkNotNull(CollectionParams.SOURCE_NODE, source);
+      this.targetNode = checkNotNull(CollectionParams.TARGET_NODE, target);
     }
 
     public ReplaceNode setParallel(Boolean flag) {
@@ -568,8 +569,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set("source", source);
-      params.set("target", target);
+      params.set(CollectionParams.SOURCE_NODE, sourceNode);
+      params.set(CollectionParams.TARGET_NODE, targetNode);
       if (parallel != null) params.set("parallel", parallel.toString());
       return params;
     }
@@ -577,9 +578,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   public static class MoveReplica extends AsyncCollectionAdminRequest {
-    String collection, replica, targetNode;
-    String shard, fromNode;
-    boolean randomlyMoveReplica;
+    protected String collection, replica, targetNode;
+    protected String shard, sourceNode;
+    protected boolean randomlyMoveReplica;
 
     public MoveReplica(String collection, String replica, String targetNode) {
       super(CollectionAction.MOVEREPLICA);
@@ -589,12 +590,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.randomlyMoveReplica = false;
     }
 
-    public MoveReplica(String collection, String shard, String fromNode, String targetNode) {
+    public MoveReplica(String collection, String shard, String sourceNode, String targetNode) {
       super(CollectionAction.MOVEREPLICA);
       this.collection = checkNotNull("collection",collection);
       this.shard = checkNotNull("shard",shard);
-      this.fromNode = checkNotNull("fromNode",fromNode);
-      this.targetNode = checkNotNull("targetNode",targetNode);
+      this.sourceNode = checkNotNull(CollectionParams.SOURCE_NODE, sourceNode);
+      this.targetNode = checkNotNull(CollectionParams.TARGET_NODE, targetNode);
       this.randomlyMoveReplica = true;
     }
 
@@ -602,10 +603,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set("collection", collection);
-      params.set("targetNode", targetNode);
+      params.set(CollectionParams.TARGET_NODE, targetNode);
       if (randomlyMoveReplica) {
         params.set("shard", shard);
-        params.set("fromNode", fromNode);
+        params.set(CollectionParams.SOURCE_NODE, sourceNode);
       } else {
         params.set("replica", replica);
       }
@@ -1364,6 +1365,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String routeKey;
     protected String instanceDir;
     protected String dataDir;
+    protected String ulogDir;
     protected Properties properties;
     protected Replica.Type type;
 
@@ -1408,6 +1410,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return instanceDir;
     }
 
+    public String getUlogDir() {
+      return ulogDir;
+    }
+
     public AddReplica setInstanceDir(String instanceDir) {
       this.instanceDir = instanceDir;
       return this;
@@ -1432,6 +1438,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public AddReplica setUlogDir(String ulogDir) {
+      this.ulogDir = ulogDir;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
@@ -1451,6 +1462,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (dataDir != null)  {
         params.add("dataDir", dataDir);
+      }
+      if (ulogDir != null) {
+        params.add("ulogDir", ulogDir);
       }
       if (coreName != null) {
         params.add("name", coreName);

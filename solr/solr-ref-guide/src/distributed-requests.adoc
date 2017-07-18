@@ -22,10 +22,9 @@ When a Solr node receives a search request, the request is routed behind the sce
 
 The chosen replica acts as an aggregator: it creates internal requests to randomly chosen replicas of every shard in the collection, coordinates the responses, issues any subsequent internal requests as needed (for example, to refine facets values, or request additional stored fields), and constructs the final response for the client.
 
-[[DistributedRequests-LimitingWhichShardsareQueried]]
 == Limiting Which Shards are Queried
 
-While one of the advantages of using SolrCloud is the ability to query very large collections distributed among various shards, in some cases <<shards-and-indexing-data-in-solrcloud.adoc#ShardsandIndexingDatainSolrCloud-DocumentRouting,you may know that you are only interested in results from a subset of your shards>>. You have the option of searching over all of your data or just parts of it.
+While one of the advantages of using SolrCloud is the ability to query very large collections distributed among various shards, in some cases <<shards-and-indexing-data-in-solrcloud.adoc#document-routing,you may know that you are only interested in results from a subset of your shards>>. You have the option of searching over all of your data or just parts of it.
 
 Querying all shards for a collection should look familiar; it's as though SolrCloud didn't even come into play:
 
@@ -71,7 +70,6 @@ And of course, you can specify a list of shards (seperated by commas) each defin
 http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,localhost:7574/solr/gettingstarted|localhost:7500/solr/gettingstarted
 ----
 
-[[DistributedRequests-ConfiguringtheShardHandlerFactory]]
 == Configuring the ShardHandlerFactory
 
 You can directly configure aspects of the concurrency and thread-pooling used within distributed search in Solr. This allows for finer grained control and you can tune it to target your own specific requirements. The default configuration favors throughput over latency.
@@ -118,7 +116,6 @@ If specified, the thread pool will use a backing queue instead of a direct hando
 `fairnessPolicy`::
 Chooses the JVM specifics dealing with fair policy queuing, if enabled distributed searches will be handled in a First in First out fashion at a cost to throughput. If disabled throughput will be favored over latency. The default is `false`.
 
-[[DistributedRequests-ConfiguringstatsCache_DistributedIDF_]]
 == Configuring statsCache (Distributed IDF)
 
 Document and term statistics are needed in order to calculate relevancy. Solr provides four implementations out of the box when it comes to document stats calculation:
@@ -135,15 +132,13 @@ The implementation can be selected by setting `<statsCache>` in `solrconfig.xml`
 <statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
 ----
 
-[[DistributedRequests-AvoidingDistributedDeadlock]]
 == Avoiding Distributed Deadlock
 
 Each shard serves top-level query requests and then makes sub-requests to all of the other shards. Care should be taken to ensure that the max number of threads serving HTTP requests is greater than the possible number of requests from both top-level clients and other shards. If this is not the case, the configuration may result in a distributed deadlock.
 
 For example, a deadlock might occur in the case of two shards, each with just a single thread to service HTTP requests. Both threads could receive a top-level request concurrently, and make sub-requests to each other. Because there are no more remaining threads to service requests, the incoming requests will be blocked until the other pending requests are finished, but they will not finish since they are waiting for the sub-requests. By ensuring that Solr is configured to handle a sufficient number of threads, you can avoid deadlock situations like this.
 
-[[DistributedRequests-PreferLocalShards]]
-== Prefer Local Shards
+== preferLocalShards Parameter
 
 Solr allows you to pass an optional boolean parameter named `preferLocalShards` to indicate that a distributed query should prefer local replicas of a shard when available. In other words, if a query includes `preferLocalShards=true`, then the query controller will look for local replicas to service the query instead of selecting replicas at random from across the cluster. This is useful when a query requests many fields or large fields to be returned per document because it avoids moving large amounts of data over the network when it is available locally. In addition, this feature can be useful for minimizing the impact of a problematic replica with degraded performance, as it reduces the likelihood that the degraded replica will be hit by other healthy replicas.
 

@@ -6021,6 +6021,30 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(8).intValue() == 9);
   }
 
+
+  @Test
+  public void testResiduals() throws Exception {
+    String cexpr = "let(a=array(1,2,3,4,5,6), b=array(2,4,6,8,10,12), c=regress(a,b), tuple(res=residuals(c,a,a)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("res");
+    assertTrue(out.size() == 6);
+    assertTrue(out.get(0).intValue() == -1);
+    assertTrue(out.get(1).intValue() == -2);
+    assertTrue(out.get(2).intValue() == -3);
+    assertTrue(out.get(3).intValue() == -4);
+    assertTrue(out.get(4).intValue() == -5);
+    assertTrue(out.get(5).intValue() == -6);
+  }
+
+
   @Test
   public void testAnova() throws Exception {
     String cexpr = "anova(array(1,2,3,5,4,6), array(5,2,3,5,4,6), array(1,2,7,5,4,6))";
@@ -6034,9 +6058,39 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Map out = (Map)tuples.get(0).get("return-value");
-    assertEquals((double)out.get("p-value"), 0.788298D, .0001);
-    assertEquals((double)out.get("f-ratio"), 0.24169D, .0001);
+    assertEquals((double) out.get("p-value"), 0.788298D, .0001);
+    assertEquals((double) out.get("f-ratio"), 0.24169D, .0001);
   }
+
+
+  @Test
+  public void testPlot() throws Exception {
+    String cexpr = "let(a=array(3,2,3), plot(type=scatter, x=a, y=array(5,6,3)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    String plot = tuples.get(0).getString("plot");
+    assertTrue(plot.equals("scatter"));
+    List<List<Number>> data = (List<List<Number>>)tuples.get(0).get("data");
+    assertTrue(data.size() == 3);
+    List<Number> pair1 = data.get(0);
+    assertTrue(pair1.get(0).intValue() == 3);
+    assertTrue(pair1.get(1).intValue() == 5);
+    List<Number> pair2 = data.get(1);
+    assertTrue(pair2.get(0).intValue() == 2);
+    assertTrue(pair2.get(1).intValue() == 6);
+    List<Number> pair3 = data.get(2);
+    assertTrue(pair3.get(0).intValue() == 3);
+    assertTrue(pair3.get(1).intValue() == 3);
+  }
+
+
 
   @Test
   public void testMovingAverage() throws Exception {

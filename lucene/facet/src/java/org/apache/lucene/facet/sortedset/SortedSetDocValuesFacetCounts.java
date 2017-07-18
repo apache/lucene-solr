@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.ConjunctionDISI;
@@ -155,7 +156,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     return new FacetResult(dim, new String[0], dimCount, labelValues, childCount);
   }
 
-  private void countOneSegment(MultiDocValues.OrdinalMap ordinalMap, LeafReader reader, int segOrd, MatchingDocs hits) throws IOException {
+  private void countOneSegment(OrdinalMap ordinalMap, LeafReader reader, int segOrd, MatchingDocs hits) throws IOException {
     SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
     if (segValues == null) {
       // nothing to count
@@ -236,7 +237,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
     //System.out.println("ssdv count");
 
-    MultiDocValues.OrdinalMap ordinalMap;
+    OrdinalMap ordinalMap;
 
     // TODO: is this right?  really, we need a way to
     // verify that this ordinalMap "matches" the leaves in
@@ -267,7 +268,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
   private final void countAll() throws IOException {
     //System.out.println("ssdv count");
 
-    MultiDocValues.OrdinalMap ordinalMap;
+    OrdinalMap ordinalMap;
 
     // TODO: is this right?  really, we need a way to
     // verify that this ordinalMap "matches" the leaves in

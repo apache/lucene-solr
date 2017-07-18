@@ -22,7 +22,6 @@ CharFilter is a component that pre-processes input characters.
 
 CharFilters can be chained like Token Filters and placed in front of a Tokenizer. CharFilters can add, change, or remove characters while preserving the original character offsets to support features like highlighting.
 
-[[CharFilterFactories-solr.MappingCharFilterFactory]]
 == solr.MappingCharFilterFactory
 
 This filter creates `org.apache.lucene.analysis.MappingCharFilter`, which can be used for changing one string to another (for example, for normalizing `é` to `e`.).
@@ -65,7 +64,6 @@ Mapping file syntax:
 |===
 ** A backslash followed by any other character is interpreted as if the character were present without the backslash.
 
-[[CharFilterFactories-solr.HTMLStripCharFilterFactory]]
 == solr.HTMLStripCharFilterFactory
 
 This filter creates `org.apache.solr.analysis.HTMLStripCharFilter`. This CharFilter strips HTML from the input stream and passes the result to another CharFilter or a Tokenizer.
@@ -114,7 +112,6 @@ Example:
 </analyzer>
 ----
 
-[[CharFilterFactories-solr.ICUNormalizer2CharFilterFactory]]
 == solr.ICUNormalizer2CharFilterFactory
 
 This filter performs pre-tokenization Unicode normalization using http://site.icu-project.org[ICU4J].
@@ -138,7 +135,6 @@ Example:
 </analyzer>
 ----
 
-[[CharFilterFactories-solr.PatternReplaceCharFilterFactory]]
 == solr.PatternReplaceCharFilterFactory
 
 This filter uses http://www.regular-expressions.info/reference.html[regular expressions] to replace or change character patterns.

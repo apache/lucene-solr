@@ -36,7 +36,6 @@ The `solrconfig.xml` found in Solr's "```techproducts```" example has a Suggeste
 
 The "```techproducts```" example `solrconfig.xml` has a `suggest` search component and a `/suggest` request handler already configured. You can use that as the basis for your configuration, or create it from scratch, as detailed below.
 
-[[Suggester-AddingtheSuggestSearchComponent]]
 == Adding the Suggest Search Component
 
 The first step is to add a search component to `solrconfig.xml` and tell it to use the SuggestComponent. Here is some sample code that could be used.
@@ -56,7 +55,6 @@ The first step is to add a search component to `solrconfig.xml` and tell it to u
 </searchComponent>
 ----
 
-[[Suggester-SuggesterSearchComponentParameters]]
 === Suggester Search Component Parameters
 
 The Suggester search component takes several configuration parameters.
@@ -72,10 +70,10 @@ Arbitrary name for the search component.
 A symbolic name for this suggester. You can refer to this name in the URL parameters and in the SearchHandler configuration. It is possible to have multiples of these in one `solrconfig.xml` file.
 
 `lookupImpl`::
-Lookup implementation. There are several possible implementations, described below in the section <<Suggester-LookupImplementations,Lookup Implementations>>. If not set, the default lookup is `JaspellLookupFactory`.
+Lookup implementation. There are several possible implementations, described below in the section <<Lookup Implementations>>. If not set, the default lookup is `JaspellLookupFactory`.
 
 `dictionaryImpl`::
-The dictionary implementation to use. There are several possible implementations, described below in the section <<Suggester-DictionaryImplementations,Dictionary Implementations>>.
+The dictionary implementation to use. There are several possible implementations, described below in the section <<Dictionary Implementations>>.
 +
 If not set, the default dictionary implementation is `HighFrequencyDictionaryFactory`. However, if a `sourceLocation` is used, the dictionary implementation will be `FileDictionaryFactory`.
 
@@ -113,12 +111,10 @@ If `true,` then the lookup data structure will be built when Solr starts or when
 +
 Enabling this to `true` could lead to the core talking longer to load (or reload) as the suggester data structure needs to be built, which can sometimes take a long time. It’s usually preferred to have this setting set to `false`, the default, and build suggesters manually issuing requests with `suggest.build=true`.
 
-[[Suggester-LookupImplementations]]
 === Lookup Implementations
 
 The `lookupImpl` parameter defines the algorithms used to look up terms in the suggest index. There are several possible implementations to choose from, and some require additional parameters to be configured.
 
-[[Suggester-AnalyzingLookupFactory]]
 ==== AnalyzingLookupFactory
 
 A lookup that first analyzes the incoming text and adds the analyzed form to a weighted FST, and then does the same thing at lookup time.
@@ -137,7 +133,6 @@ If `true`, the default, then a separator between tokens is preserved. This means
 `preservePositionIncrements`::
 If `true`, the suggester will preserve position increments. This means that token filters which leave gaps (for example, when StopFilter matches a stopword) the position would be respected when building the suggester. The default is `false`.
 
-[[Suggester-FuzzyLookupFactory]]
 ==== FuzzyLookupFactory
 
 This is a suggester which is an extension of the AnalyzingSuggester but is fuzzy in nature. The similarity is measured by the Levenshtein algorithm.
@@ -174,7 +169,6 @@ The minimum length of query before which any string edits will be allowed. The d
 `unicodeAware`::
 If `true`, the `maxEdits`, `minFuzzyLength`, `transpositions` and `nonFuzzyPrefix` parameters will be measured in unicode code points (actual letters) instead of bytes. The default is `false`.
 
-[[Suggester-AnalyzingInfixLookupFactory]]
 ==== AnalyzingInfixLookupFactory
 
 Analyzes the input text and then suggests matches based on prefix matches to any tokens in the indexed text. This uses a Lucene index for its dictionary.
@@ -193,9 +187,8 @@ Boolean option for multiple terms. The default is `true`, all terms will be requ
 `highlight`::
 Highlight suggest terms. Default is `true`.
 
-This implementation supports <<Suggester-ContextFiltering,Context Filtering>>.
+This implementation supports <<Context Filtering>>.
 
-[[Suggester-BlendedInfixLookupFactory]]
 ==== BlendedInfixLookupFactory
 
 An extension of the `AnalyzingInfixSuggester` which provides additional functionality to weight prefix matches across the matched documents. You can tell it to score higher if a hit is closer to the start of the suggestion or vice versa.
@@ -220,9 +213,8 @@ When using `BlendedInfixSuggester` you can provide your own path where the index
 `minPrefixChars`::
 Minimum number of leading characters before PrefixQuery is used (the default is `4`). Prefixes shorter than this are indexed as character ngrams (increasing index size but making lookups faster).
 
-This implementation supports <<Suggester-ContextFiltering,Context Filtering>> .
+This implementation supports <<Context Filtering>> .
 
-[[Suggester-FreeTextLookupFactory]]
 ==== FreeTextLookupFactory
 
 It looks at the last tokens plus the prefix of whatever final token the user is typing, if present, to predict the most likely next token. The number of previous tokens that need to be considered can also be specified. This suggester would only be used as a fallback, when the primary suggester fails to find any suggestions.
@@ -235,7 +227,6 @@ The analyzer used at "query-time" and "build-time" to analyze suggestions. This 
 `ngrams`::
 The max number of tokens out of which singles will be made the dictionary. The default value is `2`. Increasing this would mean you want more than the previous 2 tokens to be taken into consideration when making the suggestions.
 
-[[Suggester-FSTLookupFactory]]
 ==== FSTLookupFactory
 
 An automaton-based lookup. This implementation is slower to build, but provides the lowest memory cost. We recommend using this implementation unless you need more sophisticated matching results, in which case you should use the Jaspell implementation.
@@ -248,29 +239,24 @@ If `true`, the default, exact suggestions are returned first, even if they are p
 `weightBuckets`::
 The number of separate buckets for weights which the suggester will use while building its dictionary.
 
-[[Suggester-TSTLookupFactory]]
 ==== TSTLookupFactory
 
 A simple compact ternary trie based lookup.
 
-[[Suggester-WFSTLookupFactory]]
 ==== WFSTLookupFactory
 
 A weighted automaton representation which is an alternative to `FSTLookup` for more fine-grained ranking. `WFSTLookup` does not use buckets, but instead a shortest path algorithm.
 
 Note that it expects weights to be whole numbers. If weight is missing it's assumed to be `1.0`. Weights affect the sorting of matching suggestions when `spellcheck.onlyMorePopular=true` is selected: weights are treated as "popularity" score, with higher weights preferred over suggestions with lower weights.
 
-[[Suggester-JaspellLookupFactory]]
 ==== JaspellLookupFactory
 
 A more complex lookup based on a ternary trie from the http://jaspell.sourceforge.net/[JaSpell] project. Use this implementation if you need more sophisticated matching results.
 
-[[Suggester-DictionaryImplementations]]
 === Dictionary Implementations
 
 The dictionary implementations define how terms are stored. There are several options, and multiple dictionaries can be used in a single request if necessary.
 
-[[Suggester-DocumentDictionaryFactory]]
 ==== DocumentDictionaryFactory
 
 A dictionary with terms, weights, and an optional payload taken from the index.
@@ -286,7 +272,6 @@ The `payloadField` should be a field that is stored. This parameter is optional.
 `contextField`::
 Field to be used for context filtering. Note that only some lookup implementations support filtering.
 
-[[Suggester-DocumentExpressionDictionaryFactory]]
 ==== DocumentExpressionDictionaryFactory
 
 This dictionary implementation is the same as the `DocumentDictionaryFactory` but allows users to specify an arbitrary expression into the `weightExpression` tag.
@@ -302,7 +287,6 @@ An arbitrary expression used for scoring the suggestions. The fields used must b
 `contextField`::
 Field to be used for context filtering. Note that only some lookup implementations support filtering.
 
-[[Suggester-HighFrequencyDictionaryFactory]]
 ==== HighFrequencyDictionaryFactory
 
 This dictionary implementation allows adding a threshold to prune out less frequent terms in cases where very common terms may overwhelm other terms.
@@ -312,7 +296,6 @@ This dictionary implementation takes one parameter in addition to parameters des
 `threshold`::
 A value between zero and one representing the minimum fraction of the total documents where a term should appear in order to be added to the lookup dictionary.
 
-[[Suggester-FileDictionaryFactory]]
 ==== FileDictionaryFactory
 
 This dictionary implementation allows using an external file that contains suggest entries. Weights and payloads can also be used.
@@ -332,7 +315,6 @@ accidentally    2.0
 accommodate 3.0
 ----
 
-[[Suggester-MultipleDictionaries]]
 === Multiple Dictionaries
 
 It is possible to include multiple `dictionaryImpl` definitions in a single SuggestComponent definition.
@@ -364,9 +346,8 @@ To do this, simply define separate suggesters, as in this example:
 </searchComponent>
 ----
 
-When using these Suggesters in a query, you would define multiple `suggest.dictionary` parameters in the request, referring to the names given for each Suggester in the search component definition. The response will include the terms in sections for each Suggester. See the <<Suggester-ExampleUsages,Examples>> section below for an example request and response.
+When using these Suggesters in a query, you would define multiple `suggest.dictionary` parameters in the request, referring to the names given for each Suggester in the search component definition. The response will include the terms in sections for each Suggester. See the <<Example Usages>> section below for an example request and response.
 
-[[Suggester-AddingtheSuggestRequestHandler]]
 == Adding the Suggest Request Handler
 
 After adding the search component, a request handler must be added to `solrconfig.xml`. This request handler works the <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,same as any other request handler>>, and allows you to configure default parameters for serving suggestion requests. The request handler definition must incorporate the "suggest" search component defined previously.
@@ -384,7 +365,6 @@ After adding the search component, a request handler must be added to `solrconfi
 </requestHandler>
 ----
 
-[[Suggester-SuggestRequestHandlerParameters]]
 === Suggest Request Handler Parameters
 
 The following parameters allow you to set defaults for the Suggest request handler:
@@ -424,10 +404,8 @@ These properties can also be overridden at query time, or not set in the request
 Context filtering (`suggest.cfq`) is currently only supported by `AnalyzingInfixLookupFactory` and `BlendedInfixLookupFactory`, and only when backed by a `Document*Dictionary`. All other implementations will return unfiltered matches as if filtering was not requested.
 ====
 
-[[Suggester-ExampleUsages]]
 == Example Usages
 
-[[Suggester-GetSuggestionswithWeights]]
 === Get Suggestions with Weights
 
 This is a basic suggestion using a single dictionary and a single Solr core.
@@ -478,8 +456,7 @@ Example response:
 }
 ----
 
-[[Suggester-MultipleDictionaries.1]]
-=== Multiple Dictionaries
+=== Using Multiple Dictionaries
 
 If you have defined multiple dictionaries, you can use them in queries.
 
@@ -531,7 +508,6 @@ Example response:
 }
 ----
 
-[[Suggester-ContextFiltering]]
 === Context Filtering
 
 Context filtering lets you filter suggestions by a separate context field, such as category, department or any other token. The `AnalyzingInfixLookupFactory` and `BlendedInfixLookupFactory` currently support this feature, when backed by `DocumentDictionaryFactory`.

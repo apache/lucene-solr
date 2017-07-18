@@ -31,7 +31,6 @@ All of the sample configuration and queries used in this section assume you are 
 bin/solr -e techproducts
 ----
 
-[[TheQueryElevationComponent-ConfiguringtheQueryElevationComponent]]
 == Configuring the Query Elevation Component
 
 You can configure the Query Elevation Component in the `solrconfig.xml` file. Search components like `QueryElevationComponent` may be added to any request handler; a dedicated request handler is used here for brevity.
@@ -72,7 +71,6 @@ Path to the file that defines query elevation. This file must exist in `<instanc
 `forceElevation`::
 By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true` (the default), results will first return the boosted docs, then order by date.
 
-[[TheQueryElevationComponent-elevate.xml]]
 === elevate.xml
 
 Elevated query results are configured in an external XML file specified in the `config-file` argument. An `elevate.xml` file might look like this:
@@ -95,10 +93,8 @@ Elevated query results are configured in an external XML file specified in the `
 
 In this example, the query "foo bar" would first return documents 1, 2 and 3, then whatever normally appears for the same query. For the query "ipod", it would first return "MA147LL/A", and would make sure that "IW-02" is not in the result set.
 
-[[TheQueryElevationComponent-UsingtheQueryElevationComponent]]
 == Using the Query Elevation Component
 
-[[TheQueryElevationComponent-TheenableElevationParameter]]
 === The enableElevation Parameter
 
 For debugging it may be useful to see results with and without the elevated docs. To hide results, use `enableElevation=false`:
@@ -107,21 +103,18 @@ For debugging it may be useful to see results with and without the elevated docs
 
 `\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=false`
 
-[[TheQueryElevationComponent-TheforceElevationParameter]]
 === The forceElevation Parameter
 
 You can force elevation during runtime by adding `forceElevation=true` to the query URL:
 
 `\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true&forceElevation=true`
 
-[[TheQueryElevationComponent-TheexclusiveParameter]]
 === The exclusive Parameter
 
 You can force Solr to return only the results specified in the elevation file by adding `exclusive=true` to the URL:
 
 `\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&exclusive=true`
 
-[[TheQueryElevationComponent-DocumentTransformersandthemarkExcludesParameter]]
 === Document Transformers and the markExcludes Parameter
 
 The `[elevated]` <<transforming-result-documents.adoc#transforming-result-documents,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
@@ -132,7 +125,6 @@ Likewise, it can be helpful when troubleshooting to see all matching documents â
 
 `\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&markExcludes=true&fl=id,[elevated],[excluded]`
 
-[[TheQueryElevationComponent-TheelevateIdsandexcludeIdsParameters]]
 === The elevateIds and excludeIds Parameters
 
 When the elevation component is in use, the pre-configured list of elevations for a query can be overridden at request time to use the unique keys specified in these request parameters.
@@ -147,7 +139,6 @@ For example, in the request below documents IW-02 and F8V7067-APL-KIT will be el
 
 `\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&elevateIds=IW-02,F8V7067-APL-KIT`
 
-[[TheQueryElevationComponent-ThefqParameter]]
-=== The fq Parameter
+=== The fq Parameter with Elevation
 
 Query elevation respects the standard filter query (`fq`) parameter. That is, if the query contains the `fq` parameter, all results will be within that filter even if `elevate.xml` adds other documents to the result set.

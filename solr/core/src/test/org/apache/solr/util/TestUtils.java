@@ -183,12 +183,14 @@ public class TestUtils extends SolrTestCaseJ4 {
 
   public void testBinaryCommands() throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    new JavaBinCodec().marshal((MapWriter) ew -> {
-      ew.put("set-user", fromJSONString("{x:y}"));
-      ew.put("set-user", fromJSONString("{x:y,x1:y1}"));
-      ew.put("single", Arrays.asList(fromJSONString("[{x:y,x1:y1},{x2:y2}]"), fromJSONString( "{x2:y2}")));
-      ew.put("multi", Arrays.asList(fromJSONString("{x:y,x1:y1}"), fromJSONString( "{x2:y2}")));
-    }, baos);
+    try (final JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal((MapWriter) ew -> {
+        ew.put("set-user", fromJSONString("{x:y}"));
+        ew.put("set-user", fromJSONString("{x:y,x1:y1}"));
+        ew.put("single", Arrays.asList(fromJSONString("[{x:y,x1:y1},{x2:y2}]"), fromJSONString( "{x2:y2}")));
+        ew.put("multi", Arrays.asList(fromJSONString("{x:y,x1:y1}"), fromJSONString( "{x2:y2}")));
+      }, baos);
+    }
 
     ContentStream stream = new ContentStreamBase.ByteArrayStream(baos.toByteArray(),null, "application/javabin");
     List<CommandOperation> commands = CommandOperation.readCommands(Collections.singletonList(stream), new NamedList(), Collections.singleton("single"));

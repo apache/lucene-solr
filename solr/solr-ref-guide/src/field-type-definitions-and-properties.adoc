@@ -27,7 +27,6 @@ A field type definition can include four types of information:
 * If the field type is `TextField`, a description of the field analysis for the field type.
 * Field type properties - depending on the implementation class, some properties may be mandatory.
 
-[[FieldTypeDefinitionsandProperties-FieldTypeDefinitionsinschema.xml]]
 == Field Type Definitions in schema.xml
 
 Field types are defined in `schema.xml`. Each field type is defined between `fieldType` elements. They can optionally be grouped within a `types` element. Here is an example of a field type definition for a type called `text_general`:
@@ -91,11 +90,11 @@ For multivalued fields, specifies a distance between multiple values, which prev
 `autoGeneratePhraseQueries`:: For text fields. If `true`, Solr automatically generates phrase queries for adjacent terms. If `false`, terms must be enclosed in double-quotes to be treated as phrases.
 
 `enableGraphQueries`::
-For text fields, applicable when querying with <<the-standard-query-parser.adoc#TheStandardQueryParser-StandardQueryParserParameters,`sow=false`>>. Use `true` (the default) for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#FilterDescriptions-SynonymGraphFilter,Synonym Graph Filter>> and <<filter-descriptions.adoc#FilterDescriptions-WordDelimiterGraphFilter,Word Delimiter Graph Filter>>.
+For text fields, applicable when querying with <<the-standard-query-parser.adoc#standard-query-parser-parameters,`sow=false`>>. Use `true` (the default) for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filter-descriptions.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
 +
-Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filter-descriptions.adoc#FilterDescriptions-ShingleFilter,Shingle Filter>>.
+Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filter-descriptions.adoc#shingle-filter,Shingle Filter>>.
 
-[[FieldTypeDefinitionsandProperties-docValuesFormat]]
+[[docvaluesformat]]
 `docValuesFormat`::
 Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in solrconfig.xml.
 
@@ -131,15 +130,14 @@ The default values for each property depend on the underlying `FieldType` class,
 |omitPositions |Similar to `omitTermFreqAndPositions` but preserves term frequency information. |true or false |*
 |termVectors termPositions termOffsets termPayloads |These options instruct Solr to maintain full term vectors for each document, optionally including position, offset and payload information for each term occurrence in those vectors. These can be used to accelerate highlighting and other ancillary functionality, but impose a substantial cost in terms of index size. They are not necessary for typical uses of Solr. |true or false |false
 |required |Instructs Solr to reject any attempts to add a document which does not have a value for this field. This property defaults to false. |true or false |false
-|useDocValuesAsStored |If the field has <<docvalues.adoc#docvalues,docValues>> enabled, setting this to true would allow the field to be returned as if it were a stored field (even if it has `stored=false`) when matching "`*`" in an <<common-query-parameters.adoc#CommonQueryParameters-Thefl_FieldList_Parameter,fl parameter>>. |true or false |true
+|useDocValuesAsStored |If the field has <<docvalues.adoc#docvalues,docValues>> enabled, setting this to true would allow the field to be returned as if it were a stored field (even if it has `stored=false`) when matching "`*`" in an <<common-query-parameters.adoc#fl-field-list-parameter,fl parameter>>. |true or false |true
 |large |Large fields are always lazy loaded and will only take up space in the document cache if the actual value is < 512KB. This option requires `stored="true"` and `multiValued="false"`. It's intended for fields that might have very large values so that they don't get cached in memory. |true or false |false
 |===
 
 // TODO: SOLR-10655 END
 
-[[FieldTypeDefinitionsandProperties-FieldTypeSimilarity]]
 == Field Type Similarity
 
 A field type may optionally specify a `<similarity/>` that will be used when scoring documents that refer to fields with this type, as long as the "global" similarity for the collection allows it.
 
-By default, any field type which does not define a similarity, uses `BM25Similarity`. For more details, and examples of configuring both global & per-type Similarities, please see <<other-schema-elements.adoc#OtherSchemaElements-Similarity,Other Schema Elements>>.
+By default, any field type which does not define a similarity, uses `BM25Similarity`. For more details, and examples of configuring both global & per-type Similarities, please see <<other-schema-elements.adoc#similarity,Other Schema Elements>>.
