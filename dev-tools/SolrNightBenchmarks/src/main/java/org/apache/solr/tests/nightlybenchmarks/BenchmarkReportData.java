@@ -100,11 +100,30 @@ public class BenchmarkReportData {
 	public static Map<String, String> queryONQMetricS_T3;
 	public static Map<String, String> queryONQMetricS_T4;
 	
-	public static Map<String, String> querySNQMetricS;
-	public static Map<String, String> queryTTQMetricS;
-	public static Map<String, String> queryPTQMetricS;
-	public static Map<String, String> querySTQMetricS;
-	public static Map<String, String> queryHTQMetricS;
+	public static Map<String, String> querySNQMetricS_T1;
+	public static Map<String, String> querySNQMetricS_T2;
+	public static Map<String, String> querySNQMetricS_T3;
+	public static Map<String, String> querySNQMetricS_T4;
+	
+	public static Map<String, String> queryTTQMetricS_T1;
+	public static Map<String, String> queryTTQMetricS_T2;
+	public static Map<String, String> queryTTQMetricS_T3;
+	public static Map<String, String> queryTTQMetricS_T4;
+	
+	public static Map<String, String> queryPTQMetricS_T1;
+	public static Map<String, String> queryPTQMetricS_T2;
+	public static Map<String, String> queryPTQMetricS_T3;
+	public static Map<String, String> queryPTQMetricS_T4;
+	
+	public static Map<String, String> querySTQMetricS_T1;
+	public static Map<String, String> querySTQMetricS_T2;
+	public static Map<String, String> querySTQMetricS_T3;
+	public static Map<String, String> querySTQMetricS_T4;
+	
+	public static Map<String, String> queryHTQMetricS_T1;
+	public static Map<String, String> queryHTQMetricS_T2;
+	public static Map<String, String> queryHTQMetricS_T3;
+	public static Map<String, String> queryHTQMetricS_T4;
 
 	/**
 	 * A method used to refresh the data structures when a cycle completes.
@@ -186,11 +205,30 @@ public class BenchmarkReportData {
 		queryONQMetricS_T3 = null;
 		queryONQMetricS_T4 = null;
 		
-		querySNQMetricS = null;
-		queryTTQMetricS = null;
-		queryPTQMetricS = null;
-		querySTQMetricS = null;
-		queryHTQMetricS = null;
+		querySNQMetricS_T1 = null;
+		querySNQMetricS_T2 = null;
+		querySNQMetricS_T3 = null;
+		querySNQMetricS_T4 = null;
+		
+		queryTTQMetricS_T1 = null;
+		queryTTQMetricS_T2 = null;
+		queryTTQMetricS_T3 = null;
+		queryTTQMetricS_T4 = null;
+		
+		queryPTQMetricS_T1 = null;
+		queryPTQMetricS_T2 = null;
+		queryPTQMetricS_T3 = null;
+		queryPTQMetricS_T4 = null;
+		
+		querySTQMetricS_T1 = null;
+		querySTQMetricS_T2 = null;
+		querySTQMetricS_T3 = null;
+		querySTQMetricS_T4 = null;
+		
+		queryHTQMetricS_T1 = null;
+		queryHTQMetricS_T2 = null;
+		queryHTQMetricS_T3 = null;
+		queryHTQMetricS_T4 = null;
 
 	}
 

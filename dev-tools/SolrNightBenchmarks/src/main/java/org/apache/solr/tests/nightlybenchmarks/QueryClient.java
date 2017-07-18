@@ -210,7 +210,7 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 			}
 			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
-		} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY) {
+		} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY || QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
 			Util.postMessage("** Preparing sorted query pair data queue ...", MessageType.CYAN_TEXT, false);
 	
 			line = "";
@@ -354,7 +354,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
 						requestParams.add("hl", "on");
 						requestParams.add("hl.fl", "Article_t");
-						requestParams.add("q", "Article_t:"+highlightTerms.poll());
+						requestParams.add("q", "Article_t:" + highlightTerms.poll());
 					}
 
 					params = SolrParams.toSolrParams(requestParams);
