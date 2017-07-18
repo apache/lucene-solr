@@ -39,6 +39,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileOwnerAttributeView;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.Period;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -64,6 +67,7 @@ import java.util.zip.ZipInputStream;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 
+import de.vandermeer.asciitable.AsciiTable;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -127,6 +131,7 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.pf4j.PluginWrapper;
 import ro.fortsoft.pf4j.update.PluginInfo;
 import ro.fortsoft.pf4j.update.UpdateManager;
 import ro.fortsoft.pf4j.update.UpdateRepository;
@@ -4237,7 +4242,11 @@ public class SolrCLI {
     }
   } // end UtilsTool class  
 
-  private static class PluginBundleTool implements Tool {
+
+  /**
+   * Tool to interface with Plugin bundles
+   */
+  public static class PluginBundleTool implements Tool {
     public static Option[] pluginOptions =  new Option[] {
       OptionBuilder
           .withArgName("pluginDir")
@@ -4252,10 +4261,10 @@ public class SolrCLI {
           .withDescription("Set Solr port to connect to")
           .create("p"),
       OptionBuilder
-          .withArgName("long")
-          .withDescription("With details")
+          .withArgName("ids")
+          .withDescription("Return ids only instead of table format")
           .hasArg(false)
-          .create("l")
+          .create("i")
     };
     private PluginBundleManager pluginBundleManager;
 
@@ -4275,13 +4284,15 @@ public class SolrCLI {
         printHelp();
         return 1;
       }
-      boolean longFormat = cli.hasOption("l");
+      boolean longFormat = !cli.hasOption("i");
       String pluginDir = cli.getOptionValue("d");
+      String port = cli.getOptionValue("p", "8983");
       // TODO: Implement port parsing
       if (!Files.exists(Paths.get(pluginDir))) {
         System.out.println("Plugin directory " + pluginDir + " does not exist");
         return 1;
       }
+      
       pluginBundleManager = new PluginBundleManager(Paths.get(pluginDir).toAbsolutePath());
       pluginBundleManager.getPluginManager().loadPlugins();
       UpdateManager updateManager = pluginBundleManager.getUpdateManager();
@@ -4362,43 +4373,34 @@ public class SolrCLI {
           break;
 
         case "list":
+          List<DisplayPlugin> installed = pluginBundleManager.listInstalled().stream().map(DisplayPlugin::create).collect(Collectors.toList());
           if (longFormat) {
-            // TODO: Table view
-            // https://github.com/JakeWharton/flip-tables
-            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId() + "@" + d.getDescriptor().getVersion() + "\t" + d.getDescriptor().getPluginDescription()));
+            System.out.println(DP_CLASSIFIER.toAsciiTable(installed));
           } else {
-            pluginBundleManager.listInstalled().forEach(d -> System.out.println(d.getPluginId()));
+            installed.forEach(p -> System.out.println(p.id));
           }
           break;
 
         case "outdated":
-          List<PluginInfo> outdated = updateManager.getUpdates();
+          List<DisplayPlugin> outdated = updateManager.getUpdates().stream().map(p -> 
+              DisplayPlugin.create(p, PluginBundleManager.solrVersion.toString())).collect(Collectors.toList());
           if (outdated.size() == 0) {
             System.err.println("Already up-to-date");
             break;
           }
-          for (PluginInfo plugin : outdated) {
-            if (longFormat) {
-              // TODO: Table view
-              // https://github.com/JakeWharton/flip-tables
-              System.out.println(plugin.id + ":\t" 
-                  + pluginBundleManager.getPluginManager().getPlugin(plugin.id).getDescriptor().getVersion() 
-                  + "==>" 
-                  + plugin.getLastRelease(PluginBundleManager.solrVersion).version);
-            } else {
-              System.out.println(plugin.id);
-            }
+          if (longFormat) {
+            System.out.println(DP_CLASSIFIER.toAsciiTable(outdated));
+          } else {
+            outdated.forEach(p -> System.out.println(p.id));
           }
         break;
           
         case "search":
           String q = args.size() > 1 ? args.get(1) : null;
-          List<PluginInfo> plugins = pluginBundleManager.query(q);
+          List<DisplayPlugin> plugins = pluginBundleManager.query(q).stream().map(p -> 
+              DisplayPlugin.create(p, PluginBundleManager.solrVersion.toString())).collect(Collectors.toList());
           if (longFormat) {
-            // https://github.com/JakeWharton/flip-tables
-            plugins.forEach(p -> System.out.println(p.id + "\t" + p.getRepositoryId() + "\t" +
-                p.getLastRelease(PluginBundleManager.solrVersion).version + "\t" +
-                p.description));
+            System.out.println(DP_CLASSIFIER.toAsciiTable(plugins));
           } else {
             plugins.forEach(p -> System.out.println(p.id));
           }
@@ -4409,12 +4411,11 @@ public class SolrCLI {
             String subcmd = args.get(1);
             switch(subcmd) {
               case "list":
-                for (UpdateRepository r : updateManager.getRepositories()) {
-                  if (longFormat) {
-                    System.out.println(r.getId() + "\t" + r.getUrl() + "\t" +r.getPlugins().size()+" plugins" + "\t(" + r.getClass().getName() + ")");
-                  } else {
-                    System.out.println(r.getId());
-                  }
+                List<UpdateRepository> repos = updateManager.getRepositories(); 
+                if (longFormat) {
+                  System.out.println(REPO_ASCIIFIER.toAsciiTable(repos));
+                } else {
+                  repos.forEach(r -> System.out.println(r.getId()));
                 }
                 break;
                 
@@ -4465,6 +4466,173 @@ public class SolrCLI {
 
     private void printHelp() {
       new HelpFormatter().printHelp("bin/solr plugin [options] install|uninstall|list|update|search|upgrade|outdated|repo", getToolOptions(this));
+    }
+
+    /**
+     * Display bean class which is more suitable for passing around and printing tables
+     */
+    public static class DisplayPlugin {
+      private String id;
+      private String description;
+      private String version;
+      private String provider;
+      private String license;
+      private String date;
+      private String url;
+      private String repo;
+
+      public static DisplayPlugin create(PluginWrapper wrapper) {
+        DisplayPlugin p = new DisplayPlugin();
+        p.id = wrapper.getPluginId();
+        p.description = wrapper.getDescriptor().getPluginDescription();
+        p.version = wrapper.getDescriptor().getVersion().toString();
+        p.provider = wrapper.getDescriptor().getProvider();
+        p.license = wrapper.getDescriptor().getLicense();
+        return p;    
+      }
+      
+      public static DisplayPlugin create (PluginInfo info, String solrVersion) {
+        DisplayPlugin p = new DisplayPlugin();
+        p.id = info.id;
+        p.description = info.description;
+        PluginInfo.PluginRelease latest = info.getLastRelease(com.github.zafarkhaja.semver.Version.valueOf(solrVersion));
+        p.version = latest.version;
+        p.provider = info.provider;
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        df.setTimeZone(tz);
+        p.date = df.format(latest.date);
+        p.url = latest.url;
+        p.repo = info.getRepositoryId();
+        return p;
+      }
+
+      public String getId() {
+        return id;
+      }
+
+      public String getDescription() {
+        return description;
+      }
+
+      public String getVersion() {
+        return version;
+      }
+
+      public String getProvider() {
+        return provider;
+      }
+
+      public String getLicense() {
+        return license;
+      }
+
+      public String getDate() {
+        return date;
+      }
+
+      public String getUrl() {
+        return url;
+      }
+
+      public String getRepo() {
+        return repo;
+      }
+
+      public void setId(String id) {
+        this.id = id;
+      }
+
+      public void setDescription(String description) {
+        this.description = description;
+      }
+
+      public void setVersion(String version) {
+        this.version = version;
+      }
+
+      public void setProvider(String provider) {
+        this.provider = provider;
+      }
+
+      public void setLicense(String license) {
+        this.license = license;
+      }
+
+      public void setDate(String date) {
+        this.date = date;
+      }
+
+      public void setUrl(String url) {
+        this.url = url;
+      }
+
+      public void setRepo(String repo) {
+        this.repo = repo;
+      }
+    }
+
+    public final Asciifier DP_CLASSIFIER = new Asciifier() {
+      @Override
+      List<String> toList(Object o) {
+        DisplayPlugin dp = (DisplayPlugin)o;
+        return Arrays.asList(dp.id, dp.version, dp.description, dp.provider, dp.date, dp.repo);
+      }
+
+      @Override
+      List<String> getHeader() {
+        return Arrays.asList("Id", "Version", "Description", "Provider", "Date", "Repo");
+      }
+
+      @Override
+      int[] getColWidths() {
+        return new int[] {29, 15, 30, 25, 11, 15};
+      }
+    };
+
+    public final Asciifier REPO_ASCIIFIER = new Asciifier() {
+      @Override
+      List<String> toList(Object o) {
+        UpdateRepository ur = (UpdateRepository)o;
+        return Arrays.asList(ur.getId(), ur.getUrl().toString(), Integer.toString(ur.getPlugins().size()));
+      }
+
+      @Override
+      List<String> getHeader() {
+        return Arrays.asList("Id", "Url", "# plugins");
+      }
+
+      @Override
+      int[] getColWidths() {
+        return new int[] {25, 65, 10};
+      }
+    };
+    
+    private abstract class Asciifier {
+      AsciiTable at;
+      
+      abstract List<String> toList(Object o);
+      abstract List<String> getHeader();
+      abstract int[] getColWidths();
+      
+      int getColWidth() {
+        return 100;
+      }
+      
+      public String toAsciiTable(List<?> rows) {
+        at = new AsciiTable();
+        
+        // TODO: Hardcoded column width...
+        at.getRenderer().setCWC((linkedList, i, i1) -> getColWidths());
+        at.addRule();
+        at.addRow(getHeader());
+        at.addRule();
+        for (List<String> row : rows.stream().map(this::toList).collect(Collectors.toList())) {
+          at.addRow(row.stream().map(v -> v == null ? "" : v).collect(Collectors.toList()));
+          at.addRule();
+        }
+        return at.render(getColWidth());
+      }
     }
   }
 }

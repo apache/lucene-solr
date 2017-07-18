@@ -600,7 +600,7 @@ function print_usage() {
     echo ""
     echo "  -d <dir>              Specify the plugins directory for offline operation"
     echo ""
-    echo "  -l                    Specify long output format (detailed list view)"
+    echo "  -i                    Return ids only instead of table format"
     echo ""
   fi
 } # end print_usage
@@ -883,8 +883,8 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
               PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-p" "$2")
               shift 2
           ;;
-          -l|-long)          
-              PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-l")
+          -i|-ids)          
+              PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-i")
               shift
           ;;
           -help|-usage)

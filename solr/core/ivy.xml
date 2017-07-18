@@ -148,12 +148,19 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
 
+    <!-- Plugin framework support (PF4j) -->
     <dependency org="ro.fortsoft.pf4j" name="pf4j" rev="${/ro.fortsoft.pf4j/pf4j}" conf="compile"/>
     <dependency org="ro.fortsoft.pf4j" name="pf4j-update" rev="${/ro.fortsoft.pf4j/pf4j-update}" conf="compile" />
     <dependency org="com.github.zafarkhaja" name="java-semver" rev="${/com.github.zafarkhaja/java-semver}" conf="compile"/>
     <dependency org="com.google.code.gson" name="gson" rev="${/com.google.code.gson/gson}" conf="compile"/>
 
-
+    <dependency org="de.vandermeer" name="asciitable" rev="${/de.vandermeer/asciitable}" conf="compile"/>
+    <dependency org="de.vandermeer" name="ascii-utf-themes" rev="${/de.vandermeer/ascii-utf-themes}" conf="compile"/>
+    <dependency org="de.vandermeer" name="char-translation" rev="${/de.vandermeer/char-translation}" conf="compile"/>
+    <dependency org="de.vandermeer" name="skb-interfaces" rev="${/de.vandermeer/skb-interfaces}" conf="compile"/>
+    <dependency org="org.apache.commons" name="commons-lang3" rev="${/org.apache.commons/commons-lang3}" conf="compile"/>
+    <dependency org="org.antlr" name="ST4" rev="${/org.antlr/ST4}" conf="compile"/>
+    
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
 </ivy-module>
