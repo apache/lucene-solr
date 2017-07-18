@@ -511,6 +511,8 @@ Other Changes
   - SOLR-11115: Randomize PointFields in schema-psuedo-fields.xml, schema-multiword-synonyms.xml, and all affected tests (Steve Rowe)
   - SOLR-11116: Randomize PointFields in schema-numeric.xml and all related tests (Steve Rowe)
   - SOLR-11117: Randomize PointFields in schema-behavior.xml, schema-enums.xml, and all affected tests (Steve Rowe)
+  - SOLR-11118: Randomize PointFields in schema-HighlighterMaxOffsetTest.xml, schema-luceneMatchVersion.xml, 
+    schema-minimal-atomic-stress.xml, and all affected tests (Steve Rowe)
 
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
