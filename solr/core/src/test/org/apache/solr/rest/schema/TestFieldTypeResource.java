@@ -22,15 +22,17 @@ import org.junit.Test;
 public class TestFieldTypeResource extends SolrRestletTestBase {
   @Test
   public void testGetFieldType() throws Exception {
+    final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
+    final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertQ("/schema/fieldtypes/float?indent=on&wt=xml&showDefaults=true",
             "count(/response/lst[@name='fieldType']) = 1",
             "count(/response/lst[@name='fieldType']/*) = 17",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
-            "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TrieFloatField'",
+            "/response/lst[@name='fieldType']/str[@name='class'] = '"+expectedFloatClass+"'",
             "/response/lst[@name='fieldType']/str[@name='precisionStep'] ='0'",
             "/response/lst[@name='fieldType']/bool[@name='indexed'] = 'true'",
             "/response/lst[@name='fieldType']/bool[@name='stored'] = 'true'",
-            "/response/lst[@name='fieldType']/bool[@name='docValues'] = 'false'",
+            "/response/lst[@name='fieldType']/bool[@name='docValues'] = '"+expectedDocValues+"'",
             "/response/lst[@name='fieldType']/bool[@name='termVectors'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='termPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='termOffsets'] = 'false'",
@@ -53,13 +55,15 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
 
   @Test
   public void testJsonGetFieldType() throws Exception {
+    final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
+    final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
     assertJQ("/schema/fieldtypes/float?indent=on&showDefaults=on",  // assertJQ will add "&wt=json"
              "/fieldType/name=='float'",
-             "/fieldType/class=='solr.TrieFloatField'",
+             "/fieldType/class=='"+expectedFloatClass+"'",
              "/fieldType/precisionStep=='0'",
              "/fieldType/indexed==true",
              "/fieldType/stored==true",
-             "/fieldType/docValues==false",
+             "/fieldType/docValues=="+expectedDocValues,
              "/fieldType/termVectors==false",
              "/fieldType/termPositions==false",
              "/fieldType/termOffsets==false",
