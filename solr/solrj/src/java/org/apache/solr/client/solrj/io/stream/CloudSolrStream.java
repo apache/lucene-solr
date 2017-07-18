@@ -73,7 +73,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   protected String zkHost;
   protected String collection;
-  protected SolrParams params;
+  protected ModifiableSolrParams params;
   protected Map<String, String> fieldMappings;
   protected StreamComparator comp;
   private boolean trace;
@@ -172,18 +172,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     // collection
     expression.addParameter(collection);
     
-    // parameters
-
-    ModifiableSolrParams mParams = new ModifiableSolrParams(SolrParams.toMultiMap(params.toNamedList()));
-    for (Entry<String, String[]> param : mParams.getMap().entrySet()) {
-      String value = String.join(",", param.getValue());
-      
-      // SOLR-8409: This is a special case where the params contain a " character
-      // Do note that in any other BASE streams with parameters where a " might come into play
-      // that this same replacement needs to take place.
-      value = value.replace("\"", "\\\"");
-
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
+    for (Entry<String, String[]> param : params.getMap().entrySet()) {
+      for (String val : param.getValue()) {
+        // SOLR-8409: Escaping the " is a special case.
+        // Do note that in any other BASE streams with parameters where a " might come into play
+        // that this same replacement needs to take place.
+        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(),
+            val.replace("\"", "\\\"")));
+      }
     }
     
     // zkHost

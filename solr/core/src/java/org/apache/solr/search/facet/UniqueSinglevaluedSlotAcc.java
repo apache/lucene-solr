@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -31,7 +32,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   SortedDocValues topLevel;
   SortedDocValues[] subDvs;
-  MultiDocValues.OrdinalMap ordMap;
+  OrdinalMap ordMap;
   LongValues toGlobal;
   SortedDocValues subDv;
 

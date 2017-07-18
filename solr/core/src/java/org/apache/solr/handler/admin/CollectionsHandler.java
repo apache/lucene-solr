@@ -882,14 +882,26 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
       return null;
     }),
-    REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> req.getParams().required().getAll(req.getParams().getAll(null, "parallel"), "source", "target")),
+    REPLACENODE_OP(REPLACENODE, (req, rsp, h) -> {
+      SolrParams params = req.getParams();
+      String sourceNode = params.get(CollectionParams.SOURCE_NODE, params.get("source"));
+      if (sourceNode == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, CollectionParams.SOURCE_NODE + " is a require parameter");
+      }
+      String targetNode = params.get(CollectionParams.TARGET_NODE, params.get("target"));
+      if (targetNode == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, CollectionParams.TARGET_NODE + " is a require parameter");
+      }
+      return params.getAll(null, "source", "target", CollectionParams.SOURCE_NODE, CollectionParams.TARGET_NODE);
+    }),
     MOVEREPLICA_OP(MOVEREPLICA, (req, rsp, h) -> {
       Map<String, Object> map = req.getParams().required().getAll(null,
           COLLECTION_PROP);
 
       return req.getParams().getAll(map,
-          "fromNode",
-          "targetNode",
+          CollectionParams.FROM_NODE,
+          CollectionParams.SOURCE_NODE,
+          CollectionParams.TARGET_NODE,
           "replica",
           "shard");
     }),

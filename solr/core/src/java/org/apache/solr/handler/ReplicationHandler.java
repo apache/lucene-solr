@@ -205,7 +205,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
 
-  private Integer reserveCommitDuration = readIntervalMs("00:00:10");
+  private Long reserveCommitDuration = readIntervalMs("00:00:10");
 
   volatile IndexCommit indexCommitPoint;
 
@@ -1695,8 +1695,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   }
 
-  private static Integer readIntervalMs(String interval) {
-    return (int) TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
+  private static Long readIntervalMs(String interval) {
+    return TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
   }
 
   private static Long readIntervalNs(String interval) {

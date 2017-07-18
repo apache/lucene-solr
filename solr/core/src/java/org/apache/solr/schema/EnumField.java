@@ -386,8 +386,11 @@ public class EnumField extends PrimitiveFieldType {
       return null;
     }
     final Integer intValue = stringValueToIntValue(value.toString());
-    if (intValue == null || intValue.equals(DEFAULT_VALUE))
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown value for enum field: " + value.toString());
+    if (intValue == null || intValue.equals(DEFAULT_VALUE)) {
+      String exceptionMessage = String.format(Locale.ENGLISH, "Unknown value for enum field: %s, value: %s",
+          field.getName(), value.toString());
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  exceptionMessage);
+    }
 
     final LegacyFieldType newType = new LegacyFieldType();
 

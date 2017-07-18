@@ -35,6 +35,9 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -86,7 +89,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
 
-    CollectionAdminRequest.MoveReplica moveReplica = new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
+    CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
     moveReplica.processAsync("000", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
     // wait for async request success
@@ -141,7 +144,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertTrue("replica never fully recovered", recovered);
 
-    moveReplica = new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
+    moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.process(cloudClient);
     checkNumOfCores(cloudClient, replica.getNodeName(), 1);
     // wait for recovery
@@ -179,6 +182,49 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
     assertTrue("replica never fully recovered", recovered);
+  }
+
+  private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode, String shardId) {
+    if (random().nextBoolean()) {
+      return new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
+    } else  {
+      // for backcompat testing of SOLR-11068
+      // todo remove in solr 8.0
+      return new BackCompatMoveReplicaRequest(coll, shardId, targetNode, replica.getNodeName());
+    }
+  }
+
+  private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode) {
+    if (random().nextBoolean()) {
+      return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
+    } else  {
+      // for backcompat testing of SOLR-11068
+      // todo remove in solr 8.0
+      return new BackCompatMoveReplicaRequest(coll, replica.getName(), targetNode);
+    }
+  }
+
+  /**
+   * Added for backcompat testing
+   * todo remove in solr 8.0
+   */
+  static class BackCompatMoveReplicaRequest extends CollectionAdminRequest.MoveReplica {
+    public BackCompatMoveReplicaRequest(String collection, String replica, String targetNode) {
+      super(collection, replica, targetNode);
+    }
+
+    public BackCompatMoveReplicaRequest(String collection, String shard, String sourceNode, String targetNode) {
+      super(collection, shard, sourceNode, targetNode);
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      if (randomlyMoveReplica) {
+        params.set(CollectionParams.FROM_NODE, sourceNode);
+      }
+      return params;
+    }
   }
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) {

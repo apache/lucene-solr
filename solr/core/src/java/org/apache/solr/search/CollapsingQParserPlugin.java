@@ -25,12 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntHashMap;
-import com.carrotsearch.hppc.IntLongHashMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
-import com.carrotsearch.hppc.cursors.IntLongCursor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
@@ -43,6 +37,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -69,9 +64,16 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.uninverting.UninvertingReader;
+
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntLongHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
+import com.carrotsearch.hppc.cursors.IntLongCursor;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -474,7 +476,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final DocValuesProducer collapseValuesProducer;
     private FixedBitSet collapsedSet;
     private SortedDocValues collapseValues;
-    private MultiDocValues.OrdinalMap ordinalMap;
+    private OrdinalMap ordinalMap;
     private SortedDocValues segmentValues;
     private LongValues segmentOrdinalMap;
     private MultiDocValues.MultiSortedDocValues multiSortedDocValues;
@@ -920,7 +922,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private LeafReaderContext[] contexts;
     private DocValuesProducer collapseValuesProducer;
     private SortedDocValues collapseValues;
-    protected MultiDocValues.OrdinalMap ordinalMap;
+    protected OrdinalMap ordinalMap;
     protected SortedDocValues segmentValues;
     protected LongValues segmentOrdinalMap;
     protected MultiDocValues.MultiSortedDocValues multiSortedDocValues;

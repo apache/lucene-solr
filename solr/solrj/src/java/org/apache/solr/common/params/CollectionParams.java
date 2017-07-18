@@ -31,6 +31,15 @@ public interface CollectionParams {
   String ACTION = "action";
   String NAME = "name";
 
+  /**
+   * @deprecated use {@link #SOURCE_NODE} instead
+   */
+  @Deprecated
+  String FROM_NODE = "fromNode";
+
+  String SOURCE_NODE = "sourceNode";
+  String TARGET_NODE = "targetNode";
+
 
   enum LockLevel {
     CLUSTER(0),

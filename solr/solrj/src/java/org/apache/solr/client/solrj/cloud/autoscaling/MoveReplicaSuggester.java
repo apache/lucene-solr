@@ -38,8 +38,8 @@ public class MoveReplicaSuggester extends Suggester {
     //iterate through elements and identify the least loaded
     List<Clause.Violation> leastSeriousViolation = null;
     Integer targetNodeIndex = null;
-    Integer fromNodeIndex = null;
-    ReplicaInfo fromReplicaInfo = null;
+    Integer sourceNodeIndex = null;
+    ReplicaInfo sourceReplicaInfo = null;
     for (Pair<ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
       Row fromRow = fromReplica.second();
       ReplicaInfo replicaInfo = fromReplica.first();
@@ -62,17 +62,17 @@ public class MoveReplicaSuggester extends Suggester {
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
           leastSeriousViolation = errs;
           targetNodeIndex = j;
-          fromNodeIndex = i;
-          fromReplicaInfo = replicaInfo;
+          sourceNodeIndex = i;
+          sourceReplicaInfo = replicaInfo;
         }
       }
     }
-    if (targetNodeIndex != null && fromNodeIndex != null) {
-      getMatrix().set(fromNodeIndex, getMatrix().get(fromNodeIndex).removeReplica(fromReplicaInfo.collection, fromReplicaInfo.shard, fromReplicaInfo.type).first());
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(fromReplicaInfo.collection, fromReplicaInfo.shard, fromReplicaInfo.type));
+    if (targetNodeIndex != null && sourceNodeIndex != null) {
+      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.type).first());
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.type));
       return new CollectionAdminRequest.MoveReplica(
-          fromReplicaInfo.collection,
-          fromReplicaInfo.name,
+          sourceReplicaInfo.collection,
+          sourceReplicaInfo.name,
           getMatrix().get(targetNodeIndex).node);
     }
     return null;

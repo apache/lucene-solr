@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
@@ -37,9 +37,9 @@ final class GlobalOrdinalsCollector implements Collector {
 
   final String field;
   final LongBitSet collectedOrds;
-  final MultiDocValues.OrdinalMap ordinalMap;
+  final OrdinalMap ordinalMap;
 
-  GlobalOrdinalsCollector(String field, MultiDocValues.OrdinalMap ordinalMap, long valueCount) {
+  GlobalOrdinalsCollector(String field, OrdinalMap ordinalMap, long valueCount) {
     this.field = field;
     this.ordinalMap = ordinalMap;
     this.collectedOrds = new LongBitSet(valueCount);

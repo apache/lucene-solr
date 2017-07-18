@@ -24,15 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -42,6 +33,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -87,6 +79,16 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -274,7 +276,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     IntObjectHashMap<BytesRef> ordBytes = null;
     if(values != null) {
       groupBits = new FixedBitSet(values.getValueCount());
-      MultiDocValues.OrdinalMap ordinalMap = null;
+      OrdinalMap ordinalMap = null;
       SortedDocValues[] sortedDocValues = null;
       LongValues segmentOrdinalMap = null;
       SortedDocValues currentValues = null;
@@ -520,7 +522,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private static class GroupExpandCollector implements Collector, GroupCollector {
     private SortedDocValues docValues;
-    private MultiDocValues.OrdinalMap ordinalMap;
+    private OrdinalMap ordinalMap;
     private SortedDocValues segmentValues;
     private LongValues segmentOrdinalMap;
     private MultiDocValues.MultiSortedDocValues multiSortedDocValues;

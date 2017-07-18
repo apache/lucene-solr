@@ -22,31 +22,28 @@ Solr's default Query Parser is also known as the "```lucene```" parser.
 
 The key advantage of the standard query parser is that it supports a robust and fairly intuitive syntax allowing you to create a variety of structured queries. The largest disadvantage is that it's very intolerant of syntax errors, as compared with something like the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> query parser which is designed to throw as few errors as possible.
 
-[[TheStandardQueryParser-StandardQueryParserParameters]]
 == Standard Query Parser Parameters
 
 In addition to the <<common-query-parameters.adoc#common-query-parameters,Common Query Parameters>>, <<faceting.adoc#faceting,Faceting Parameters>>, <<highlighting.adoc#highlighting,Highlighting Parameters>>, and <<morelikethis.adoc#morelikethis,MoreLikeThis Parameters>>, the standard query parser supports the parameters described in the table below.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`q`::
+Defines a query using standard query syntax. This parameter is mandatory.
 
-[cols="30,70",options="header"]
-|===
-|Parameter |Description
-|q |Defines a query using standard query syntax. This parameter is mandatory.
-|q.op |Specifies the default operator for query expressions, overriding the default operator specified in the Schema. Possible values are "AND" or "OR".
-|df |Specifies a default field, overriding the definition of a default field in the Schema.
-|sow |Split on whitespace: if set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g. multi-word synonyms and shingles. Defaults to `true`: text analysis is invoked separately for each individual whitespace-separated term.
-|===
+`q.op`::
+Specifies the default operator for query expressions, overriding the default operator specified in the Schema. Possible values are "AND" or "OR".
+
+`df`::
+Specifies a default field, overriding the definition of a default field in the Schema.
+
+`sow`::
+Split on whitespace: if set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g. multi-word synonyms and shingles. Defaults to `true`: text analysis is invoked separately for each individual whitespace-separated term.
 
 Default parameter values are specified in `solrconfig.xml`, or overridden by query-time values in the request.
 
+== Standard Query Parser Response
 
-[[TheStandardQueryParser-TheStandardQueryParser_sResponse]]
-== The Standard Query Parser's Response
+By default, the response from the standard query parser contains one `<result>` block, which is unnamed. If the <<common-query-parameters.adoc#debug-parameter,`debug` parameter>> is used, then an additional `<lst>` block will be returned, using the name "debug". This will contain useful debugging info, including the original query string, the parsed query string, and explain info for each document in the <result> block. If the <<common-query-parameters.adoc#explainother-parameter,`explainOther` parameter>> is also used, then additional explain info will be provided for all the documents matching that query.
 
-By default, the response from the standard query parser contains one `<result>` block, which is unnamed. If the <<common-query-parameters.adoc#CommonQueryParameters-ThedebugParameter,`debug` parameter>> is used, then an additional `<lst>` block will be returned, using the name "debug". This will contain useful debugging info, including the original query string, the parsed query string, and explain info for each document in the <result> block. If the <<common-query-parameters.adoc#CommonQueryParameters-TheexplainOtherParameter,`explainOther` parameter>> is also used, then additional explain info will be provided for all the documents matching that query.
-
-[[TheStandardQueryParser-SampleResponses]]
 === Sample Responses
 
 This section presents examples of responses from the standard query parser.
@@ -97,7 +94,6 @@ Results:
 </response>
 ----
 
-[[TheStandardQueryParser-SpecifyingTermsfortheStandardQueryParser]]
 == Specifying Terms for the Standard Query Parser
 
 A query to the standard query parser is broken up into terms and operators. There are two types of terms: single terms and phrases.
@@ -107,19 +103,12 @@ A query to the standard query parser is broken up into terms and operators. Ther
 
 Multiple terms can be combined together with Boolean operators to form more complex queries (as described below).
 
-[IMPORTANT]
-====
+IMPORTANT: It is important that the analyzer used for queries parses terms and phrases in a way that is consistent with the way the analyzer used for indexing parses terms and phrases; otherwise, searches may produce unexpected results.
 
-It is important that the analyzer used for queries parses terms and phrases in a way that is consistent with the way the analyzer used for indexing parses terms and phrases; otherwise, searches may produce unexpected results.
-
-====
-
-[[TheStandardQueryParser-TermModifiers]]
 === Term Modifiers
 
 Solr supports a variety of term modifiers that add flexibility or precision, as needed, to searches. These modifiers include wildcard characters, characters for making a search "fuzzy" or more general, and so on. The sections below describe these modifiers in detail.
 
-[[TheStandardQueryParser-WildcardSearches]]
 === Wildcard Searches
 
 Solr's standard query parser supports single and multiple character wildcard searches within single terms. Wildcard characters can be applied to single terms, but not to search phrases.
@@ -133,7 +122,6 @@ Solr's standard query parser supports single and multiple character wildcard sea
 |Multiple characters (matches zero or more sequential characters) |* |The wildcard search: `tes*` would match test, testing, and tester. You can also use wildcard characters in the middle of a term. For example: `te*t` would match test and text. `*est` would match pest and test.
 |===
 
-[[TheStandardQueryParser-FuzzySearches]]
 === Fuzzy Searches
 
 Solr's standard query parser supports fuzzy searches based on the Damerau-Levenshtein Distance or Edit Distance algorithm. Fuzzy searches discover terms that are similar to a specified term without necessarily being an exact match. To perform a fuzzy search, use the tilde ~ symbol at the end of a single-word term. For example, to search for a term similar in spelling to "roam," use the fuzzy search:
@@ -148,14 +136,8 @@ An optional distance parameter specifies the maximum number of edits allowed, be
 
 This will match terms like roams & foam - but not foams since it has an edit distance of "2".
 
-[IMPORTANT]
-====
+IMPORTANT: In many cases, stemming (reducing terms to a common stem) can produce similar effects to fuzzy searches and wildcard searches.
 
-In many cases, stemming (reducing terms to a common stem) can produce similar effects to fuzzy searches and wildcard searches.
-
-====
-
-[[TheStandardQueryParser-ProximitySearches]]
 === Proximity Searches
 
 A proximity search looks for terms that are within a specific distance from one another.
@@ -166,7 +148,6 @@ To perform a proximity search, add the tilde character ~ and a numeric value to 
 
 The distance referred to here is the number of term movements needed to match the specified phrase. In the example above, if "apache" and "jakarta" were 10 spaces apart in a field, but "apache" appeared before "jakarta", more than 10 term movements would be required to move the terms together and position "apache" to the right of "jakarta" with a space in between.
 
-[[TheStandardQueryParser-RangeSearches]]
 === Range Searches
 
 A range search specifies a range of values for a field (a range with an upper bound and a lower bound). The query matches documents whose values for the specified field or fields fall within the range. Range queries can be inclusive or exclusive of the upper and lower bounds. Sorting is done lexicographically, except on numeric fields. For example, the range query below matches all documents whose `popularity` field has a value between 52 and 10,000, inclusive.
@@ -185,8 +166,6 @@ The brackets around a query determine its inclusiveness.
 * Curly brackets `{` & `}` denote an exclusive range query that matches values between the upper and lower bounds, but excluding the upper and lower bounds themselves.
 * You can mix these types so one end of the range is inclusive and the other is exclusive. Here's an example: `count:{1 TO 10]`
 
-
-[[TheStandardQueryParser-BoostingaTermwith_]]
 === Boosting a Term with "^"
 
 Lucene/Solr provides the relevance level of matching documents based on the terms found. To boost a term use the caret symbol `^` with a boost factor (a number) at the end of the term you are searching. The higher the boost factor, the more relevant the term will be.
@@ -204,7 +183,6 @@ This will make documents with the term jakarta appear more relevant. You can als
 By default, the boost factor is 1. Although the boost factor must be positive, it can be less than 1 (for example, it could be 0.2).
 
 
-[[TheStandardQueryParser-ConstantScorewith_]]
 === Constant Score with "^="
 
 Constant score queries are created with `<query_clause>^=<score>`, which sets the entire clause to the specified score for any documents matching that clause. This is desirable when you only care about matches for a particular clause and don't want other relevancy factors such as term frequency (the number of times the term appears in the field) or inverse document frequency (a measure across the whole index for how rare a term is in a field).
@@ -214,9 +192,7 @@ Example:
 [source,text]
 (description:blue OR color:blue)^=1.0 text:shoes
 
-
-[[TheStandardQueryParser-SpecifyingFieldsinaQuerytotheStandardQueryParser]]
-== Specifying Fields in a Query to the Standard Query Parser
+== Querying Specific Fields
 
 Data indexed in Solr is organized in fields, which are <<defining-fields.adoc#defining-fields,defined in the Solr Schema>>. Searches can take advantage of fields to add precision to queries. For example, you can search for a term only in a specific field, such as a title field.
 
@@ -234,7 +210,6 @@ Since text is the default field, the field indicator is not required; hence the 
 
 The field is only valid for the term that it directly precedes, so the query `title:Do it right` will find only "Do" in the title field. It will find "it" and "right" in the default field (in this case the text field).
 
-[[TheStandardQueryParser-BooleanOperatorsSupportedbytheStandardQueryParser]]
 == Boolean Operators Supported by the Standard Query Parser
 
 Boolean operators allow you to apply Boolean logic to queries, requiring the presence or absence of specific terms or conditions in fields in order to match documents. The table below summarizes the Boolean operators supported by the standard query parser.
@@ -253,19 +228,9 @@ Boolean operators allow you to apply Boolean logic to queries, requiring the pre
 
 Boolean operators allow terms to be combined through logic operators. Lucene supports AND, "`+`", OR, NOT and "`-`" as Boolean operators.
 
-[IMPORTANT]
-====
+IMPORTANT: When specifying Boolean operators with keywords such as AND or NOT, the keywords must appear in all uppercase.
 
-When specifying Boolean operators with keywords such as AND or NOT, the keywords must appear in all uppercase.
-
-====
-
-[NOTE]
-====
-
-The standard query parser supports all the Boolean operators listed in the table above. The DisMax query parser supports only `+` and `-`.
-
-====
+NOTE: The standard query parser supports all the Boolean operators listed in the table above. The DisMax query parser supports only `+` and `-`.
 
 The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used. The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets. The symbol || can be used in place of the word OR.
 
@@ -277,8 +242,6 @@ or
 
 `"jakarta apache" OR jakarta`
 
-
-[[TheStandardQueryParser-TheBooleanOperator_]]
 === The Boolean Operator "+"
 
 The `+` symbol (also known as the "required" operator) requires that the term after the `+` symbol exist somewhere in a field in at least one document in order for the query to return a match.
@@ -287,15 +250,8 @@ For example, to search for documents that must contain "jakarta" and that may or
 
 `+jakarta lucene`
 
-[NOTE]
-====
+NOTE: This operator is supported by both the standard query parser and the DisMax query parser.
 
-This operator is supported by both the standard query parser and the DisMax query parser.
-
-====
-
-
-[[TheStandardQueryParser-TheBooleanOperatorAND_]]
 === The Boolean Operator AND ("&&")
 
 The AND operator matches documents where both terms exist anywhere in the text of a single document. This is equivalent to an intersection using sets. The symbol `&&` can be used in place of the word AND.
@@ -307,7 +263,6 @@ To search for documents that contain "jakarta apache" and "Apache Lucene," use e
 `"jakarta apache" && "Apache Lucene"`
 
 
-[[TheStandardQueryParser-TheBooleanOperatorNOT_]]
 === The Boolean Operator NOT ("!")
 
 The NOT operator excludes documents that contain the term after NOT. This is equivalent to a difference using sets. The symbol `!` can be used in place of the word NOT.
@@ -318,7 +273,6 @@ The following queries search for documents that contain the phrase "jakarta apac
 
 `"jakarta apache" ! "Apache Lucene"`
 
-[[TheStandardQueryParser-TheBooleanOperator-]]
 === The Boolean Operator "-"
 
 The `-` symbol or "prohibit" operator excludes documents that contain the term after the `-` symbol.
@@ -327,7 +281,6 @@ For example, to search for documents that contain "jakarta apache" but not "Apac
 
 `"jakarta apache" -"Apache Lucene"`
 
-[[TheStandardQueryParser-EscapingSpecialCharacters]]
 === Escaping Special Characters
 
 Solr gives the following characters special meaning when they appear in a query:
@@ -341,7 +294,6 @@ To make Solr interpret any of these characters literally, rather as a special ch
 \(1\+1\)\:2
 ----
 
-[[TheStandardQueryParser-GroupingTermstoFormSub-Queries]]
 == Grouping Terms to Form Sub-Queries
 
 Lucene/Solr supports using parentheses to group clauses to form sub-queries. This can be very useful if you want to control the Boolean logic for a query.
@@ -352,15 +304,13 @@ The query below searches for either "jakarta" or "apache" and "website":
 
 This adds precision to the query, requiring that the term "website" exist, along with either term "jakarta" and "apache."
 
-[[TheStandardQueryParser-GroupingClauseswithinaField]]
 === Grouping Clauses within a Field
 
 To apply two or more Boolean operators to a single field in a search, group the Boolean clauses within parentheses. For example, the query below searches for a title field that contains both the word "return" and the phrase "pink panther":
 
 `title:(+return +"pink panther")`
 
-[[TheStandardQueryParser-Comments]]
-== Comments
+== Comments in Queries
 
 C-Style comments are supported in query strings.
 
@@ -370,7 +320,6 @@ Example:
 
 Comments may be nested.
 
-[[TheStandardQueryParser-DifferencesbetweenLuceneQueryParserandtheSolrStandardQueryParser]]
 == Differences between Lucene Query Parser and the Solr Standard Query Parser
 
 Solr's standard query parser differs from the Lucene Query Parser in the following ways:
@@ -399,7 +348,6 @@ This can even be used to cache individual clauses of complex filter queries. In 
 * Constant score queries are created with `<query_clause>^=<score>`, which sets the entire clause to the specified score for any documents matching that clause:
 ** `q=(description:blue color:blue)^=1.0 title:blue^=5.0`
 
-[[TheStandardQueryParser-SpecifyingDatesandTimes]]
 === Specifying Dates and Times
 
 Queries against fields using the `TrieDateField` type (typically range queries) should use the <<working-with-dates.adoc#working-with-dates,appropriate date syntax>>:
@@ -410,9 +358,3 @@ Queries against fields using the `TrieDateField` type (typically range queries) 
 * `pubdate:[NOW-1YEAR/DAY TO NOW/DAY+1DAY]`
 * `createdate:[1976-03-06T23:59:59.999Z TO 1976-03-06T23:59:59.999Z+1YEAR]`
 * `createdate:[1976-03-06T23:59:59.999Z/YEAR TO 1976-03-06T23:59:59.999Z]`
-
-[[TheStandardQueryParser-RelatedTopics]]
-== Related Topics
-
-* <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters in Queries>>
-* <<other-parsers.adoc#other-parsers,Other Parsers>>

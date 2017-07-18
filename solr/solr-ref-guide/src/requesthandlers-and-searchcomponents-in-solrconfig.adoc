@@ -65,7 +65,7 @@ All of the parameters described in the section  <<searching.adoc#searching,Searc
 
 Besides `defaults`, there are other options for the SearchHandler, which are:
 
-* `appends`: This allows definition of parameters that are added to the user query. These might be <<common-query-parameters.adoc#CommonQueryParameters-Thefq_FilterQuery_Parameter,filter queries>>, or other query rules that should be added to each query. There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
+* `appends`: This allows definition of parameters that are added to the user query. These might be <<common-query-parameters.adoc#fq-filter-query-parameter,filter queries>>, or other query rules that should be added to each query. There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
 +
 [source,xml]
 ----
@@ -125,7 +125,7 @@ There are several default search components that work with all SearchHandlers wi
 |mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
 |highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
 |stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
-|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#CommonQueryParameters-ThedebugParameter,Common Query Parameters>>.
+|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
 |===
 

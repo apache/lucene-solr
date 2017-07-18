@@ -16,6 +16,12 @@ Changes in Runtime Behavior
 ======================= Lucene 7.1.0 =======================
 (No Changes)
 
+Optimizations
+
+* LUCENE-7905: Optimize how OrdinalMap (used by
+  SortedSetDocValuesFacetCounts and others) builds its map (Robert
+  Muir, Adrien Grand, Mike McCandless)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
