@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -65,6 +66,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     } else {
       actualMin = parseLongFromUser(field.getName(), min);
       if (!minInclusive) {
+        if (actualMin == Long.MAX_VALUE) return new MatchNoDocsQuery();
         actualMin++;
       }
     }
@@ -73,6 +75,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     } else {
       actualMax = parseLongFromUser(field.getName(), max);
       if (!maxInclusive) {
+        if (actualMax == Long.MIN_VALUE) return new MatchNoDocsQuery();
         actualMax--;
       }
     }
