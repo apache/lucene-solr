@@ -204,9 +204,18 @@ The output will include the status of the request. If the status is anything oth
 [[ConfigSetsAPI-Examples.3]]
 === Examples
 
-Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet, overriding the immutable property to false.
+Create a config set named 'myConfigSet' from the zipped file myconfigset.zip. The zip file must be created from within the conf directory (i.e. the solrconfig.xml must be the top level entry in the zip file). Here is an example on how to create the zip file and upload it.
 
 [source,text]
 ----
-curl -X POST -d @myconfigset.zip http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet --header "Content-Type:text/xml"
+$ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
+
+$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+----
+
+The same can be achieved using a unix pipe, without creating an intermediate zip file, as follows:
+
+[source,text]
+----
+$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl -X POST --header "Content-Type:application/octet-stream" --data-binary @- "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
 ----
