@@ -27,26 +27,16 @@
     <fieldType name="pfloat" class="solr.FloatPointField" useDocValuesAsStored="false"/>
     <fieldType name="pdate" class="solr.DatePointField" useDocValuesAsStored="false"/>
     
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="date" class="solr.TrieDateField" sortMissingLast="true" omitNorms="true"/>
  </types>
 
  <fields>
    <field name="id" type="string"/>
    <field name="text" type="string"/>
-   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
    <field name="signatureField" type="string" indexed="true" stored="false"/>
 
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
-   <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
-   <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
-   <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
-   <dynamicField name="*_dt"  type="date" indexed="true"  stored="true"/>
    
    <dynamicField name="*_p_i"  type="pint"    indexed="true"  stored="true"/>
    <dynamicField name="*_p_i_dv"  type="pint"    indexed="true"  stored="true" docValues="true"/>
