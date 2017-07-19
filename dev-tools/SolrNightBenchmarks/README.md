@@ -7,6 +7,7 @@ A comprehensive Solr performance benchmark framework.
       * Java Version: 1.8.0_131 and above
       * Linux OS
       * Install Apache Ivy
+      * Install lsof utility
       * Ant Version 1.9.2 or above
       * Apache Maven 3.0.5 and above
       * git version 2.11.1 and above
