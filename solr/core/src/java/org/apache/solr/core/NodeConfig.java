@@ -265,7 +265,10 @@ public class NodeConfig {
     }
 
     public NodeConfigBuilder setSolrDataHome(String solrDataHomeString) {
-      this.solrDataHome = loader.getInstancePath().resolve(solrDataHomeString);
+      // keep it null unless explicitly set to non-empty value
+      if (solrDataHomeString != null && !solrDataHomeString.isEmpty()) {
+        this.solrDataHome = loader.getInstancePath().resolve(solrDataHomeString);
+      }
       return this;
     }
 
