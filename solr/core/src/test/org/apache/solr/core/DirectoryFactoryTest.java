@@ -65,6 +65,9 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
+    cc = new MockCoreContainer("/solr/home");
+    rdf = new RAMDirectoryFactory();
+    rdf.initCoreContainer(cc);
     rdf.init(new NamedList());
     assertDataHome("/solr/home/solrdata/inst_dir/data", "inst_dir", rdf, cc);
     // Test parsing last component of instanceDir, and using custom dataDir
@@ -80,9 +83,11 @@ public class DirectoryFactoryTest extends LuceneTestCase {
   private static class MockCoreContainer extends CoreContainer {
 
     private final String mockSolrHome;
+    private final NodeConfig mockConfig;
 
     public MockCoreContainer(String solrHome) throws IOException {
       super(new Object());
+      mockConfig = new NodeConfig.NodeConfigBuilder("test", new SolrResourceLoader(Paths.get(solrHome))).build();
       mockSolrHome = solrHome;
       this.shardHandlerFactory = new HttpShardHandlerFactory();
       this.coreAdminHandler = new CoreAdminHandler();
@@ -91,6 +96,11 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     @Override
     public String getSolrHome() {
       return mockSolrHome;
+    }
+
+    @Override
+    public NodeConfig getConfig() {
+      return mockConfig;
     }
   }
 

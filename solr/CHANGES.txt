@@ -549,6 +549,8 @@ Other Changes
 
 * SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
 
+* SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

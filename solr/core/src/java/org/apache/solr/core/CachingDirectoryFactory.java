@@ -397,13 +397,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
     maxWriteMBPerSecDefault = (Double) args.get("maxWriteMBPerSecDefault");
 
-    dataHomePath = args.get(DATA_HOME) == null ? null : Paths.get((String) args.get(DATA_HOME));
-    if (dataHomePath == null && System.getProperty(DATA_HOME) != null && System.getProperty(DATA_HOME).length() > 0) {
-      // If solr.data.home is not specified explicitly in solrconfig.xml, fall back to global System Property with same name
-      dataHomePath = Paths.get(System.getProperty(DATA_HOME));
+    // override global config
+    if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
+      dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME));
     }
     if (dataHomePath != null) {
-      log.info(DATA_HOME + "=" + dataHomePath);
+      log.info(SolrXmlConfig.SOLR_DATA_HOME + "=" + dataHomePath);
     }
   }
   
