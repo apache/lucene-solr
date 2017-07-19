@@ -335,10 +335,6 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     map.put("name", "execute_plan");
     map.put("class", "solr.ExecutePlanAction");
     actions.add(map);
-    map = new HashMap<>(2);
-    map.put("name", "log_plan");
-    map.put("class", "solr.LogPlanAction");
-    actions.add(map);
     props.put("actions", actions);
     return props;
   }

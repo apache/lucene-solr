@@ -63,6 +63,8 @@ New Features
 
 * SOLR-11046: Add residuals Stream Evaluator (Joel Bernstein)
 
+* SOLR-11031: Implement SystemLogListener for autoscaling (ab)
+
 Bug Fixes
 ----------------------
 

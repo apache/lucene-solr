@@ -233,6 +233,9 @@ public interface CommonParams {
   String TRUE = Boolean.TRUE.toString();
   String FALSE = Boolean.FALSE.toString();
 
+  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. **/
+  String TYPE = "type";
+
   /** Used as a local parameter on queries.  cache=false means don't check any query or filter caches.
    * cache=true is the default.
    */

@@ -112,6 +112,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -1512,7 +1513,7 @@ public class SolrCLI {
       boolean configExistsInZk = confname != null && !"".equals(confname.trim()) &&
           cloudSolrClient.getZkStateReader().getZkClient().exists("/configs/" + confname, true);
 
-      if (".system".equals(collectionName)) {
+      if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         //do nothing
       } else if (configExistsInZk) {
         echo("Re-using existing configuration directory "+confname);

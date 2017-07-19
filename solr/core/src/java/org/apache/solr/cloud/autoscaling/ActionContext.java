@@ -17,8 +17,10 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.util.Map;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.CoreContainer;
 
 /**
@@ -26,7 +28,7 @@ import org.apache.solr.core.CoreContainer;
  * which the action is being executed as well as helper methods to pass computed information along
  * to the next action
  */
-public class ActionContext {
+public class ActionContext implements MapWriter {
 
   private final CoreContainer coreContainer;
   private final AutoScaling.Trigger source;
@@ -52,5 +54,15 @@ public class ActionContext {
 
   public Object getProperty(String name)  {
     return properties != null ? properties.get(name) : null;
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("source", source.getName());
+    if (properties != null) {
+      for (Map.Entry<String, Object> entry : properties.entrySet()) {
+        ew.put("properties." + entry.getKey(), entry.getValue());
+      }
+    }
   }
 }

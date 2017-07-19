@@ -75,7 +75,8 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     // we remove the implicit created trigger, so the replicas won't be moved
     String removeTriggerCommand = "{" +
         "'remove-trigger' : {" +
-        "'name' : '.auto_add_replicas'" +
+        "'name' : '.auto_add_replicas'," +
+        "'removeListeners': true" +
         "}" +
         "}";
     SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);

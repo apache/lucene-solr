@@ -184,6 +184,8 @@ public class ScheduledTriggers implements Closeable {
               actionThrottle.markAttemptingAction();
               ActionContext actionContext = new ActionContext(coreContainer, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
+                List<String> beforeActions = (List<String>)actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
+                beforeActions.add(action.getName());
                 listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.BEFORE_ACTION, action.getName(), actionContext);
                 try {
                   action.process(event, actionContext);
@@ -192,6 +194,8 @@ public class ScheduledTriggers implements Closeable {
                   log.error("Error executing action: " + action.getName() + " for trigger event: " + event, e);
                   throw e;
                 }
+                List<String> afterActions = (List<String>)actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.AFTER_ACTION.toString(), k -> new ArrayList<String>());
+                afterActions.add(action.getName());
                 listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.AFTER_ACTION, action.getName(), actionContext);
               }
               if (enqueued) {

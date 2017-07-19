@@ -82,6 +82,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -3035,7 +3036,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * processing. The Decoder will only run on the first invocations, subsequent invocations will return the 
    * cached object. 
    * 
-   * @param key A key in the format of name/version for a blob stored in the .system blob store via the Blob Store API
+   * @param key A key in the format of name/version for a blob stored in the
+   *            {@link CollectionAdminParams#SYSTEM_COLL} blob store via the Blob Store API
    * @param decoder a decoder with which to convert the blob into a Java Object representation (first time only)
    * @return a reference to the blob that has already cached the decoded version.
    */

@@ -158,10 +158,6 @@ public class AutoScaling {
       "            {" +
       "                'name':'execute_plan'," +
       "                'class':'solr.ExecutePlanAction'" +
-      "            }," +
-      "            {" +
-      "                'name':'log_plan'," +
-      "                'class':'solr.LogPlanAction'" +
       "            }" +
       "        ]" +
       "    }" +

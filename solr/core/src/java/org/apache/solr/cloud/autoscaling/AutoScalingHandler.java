@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +49,8 @@ import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -92,10 +95,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     map = new HashMap<>(2);
     map.put(NAME, "execute_plan");
     map.put(CLASS, "solr.ExecutePlanAction");
-    DEFAULT_ACTIONS.add(map);
-    map = new HashMap<>(2);
-    map.put(NAME, "log_plan");
-    map.put(CLASS, "solr.LogPlanAction");
     DEFAULT_ACTIONS.add(map);
   }
 
@@ -508,7 +507,30 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     AutoScalingConfig.TriggerConfig trigger = new AutoScalingConfig.TriggerConfig(triggerName, op.getValuesExcluding("name"));
     currentConfig = currentConfig.withTriggerConfig(trigger);
-    return currentConfig;
+    // check that there's a default SystemLogListener, unless user specified another one
+    return withSystemLogListener(currentConfig, triggerName);
+  }
+
+  private static String fullName = SystemLogListener.class.getName();
+  private static String solrName = "solr." + SystemLogListener.class.getSimpleName();
+
+  private static AutoScalingConfig withSystemLogListener(AutoScalingConfig autoScalingConfig, String triggerName) {
+    Map<String, AutoScalingConfig.TriggerListenerConfig> configs = autoScalingConfig.getTriggerListenerConfigs();
+    for (AutoScalingConfig.TriggerListenerConfig cfg : configs.values()) {
+      if (triggerName.equals(cfg.trigger)) {
+        // already has some listener config
+        return autoScalingConfig;
+      }
+    }
+    // need to add
+    Map<String, Object> properties = new HashMap<>();
+    properties.put(AutoScalingParams.CLASS, SystemLogListener.class.getName());
+    properties.put(AutoScalingParams.TRIGGER, triggerName);
+    properties.put(AutoScalingParams.STAGE, EnumSet.allOf(TriggerEventProcessorStage.class));
+    AutoScalingConfig.TriggerListenerConfig listener =
+        new AutoScalingConfig.TriggerListenerConfig(CollectionAdminParams.SYSTEM_COLL, properties);
+    autoScalingConfig = autoScalingConfig.withTriggerListenerConfig(listener);
+    return autoScalingConfig;
   }
 
   private int parseHumanTime(String timeStr) {

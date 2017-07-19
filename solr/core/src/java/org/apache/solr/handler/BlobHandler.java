@@ -137,6 +137,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         String id = blobName + "/" + version;
         Map<String, Object> doc = makeMap(
             ID, id,
+            CommonParams.TYPE, "blob",
             "md5", md5,
             "blobName", blobName,
             VERSION, version,

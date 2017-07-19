@@ -348,20 +348,18 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return Category.ADMIN;
   }
 
-  public static final String SYSTEM_COLL = ".system";
-
   private static void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {
     SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zk.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
-    cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL, zk);
+    cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL, zk);
 
     try {
-      String path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml";
+      String path = ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/schema.xml";
       byte[] data = IOUtils.toByteArray(CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml"));
       assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
-      path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
+      path = ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL + "/solrconfig.xml";
       data = IOUtils.toByteArray(CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml"));
       assert data != null && data.length > 0;
       cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
@@ -418,7 +416,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (StringUtils.isNotEmpty(shardsParam)) {
         verifyShardsParam(shardsParam);
       }
-      if (SYSTEM_COLL.equals(collectionName)) {
+      if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         //We must always create a .system collection with only a single shard
         props.put(NUM_SLICES, 1);
         props.remove(SHARDS_PROP);

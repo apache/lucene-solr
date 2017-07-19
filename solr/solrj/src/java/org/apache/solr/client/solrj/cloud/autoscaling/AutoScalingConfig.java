@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -72,18 +74,22 @@ public class AutoScalingConfig implements MapWriter {
         this.properties = Collections.unmodifiableMap(new HashMap<>(properties));
       }
       trigger = (String)this.properties.get(AutoScalingParams.TRIGGER);
-      List<String> stageNames = getList(AutoScalingParams.STAGE, this.properties);
-      for (String stageName : stageNames) {
+      List<Object> stageNames = getList(AutoScalingParams.STAGE, this.properties);
+      for (Object stageName : stageNames) {
         try {
-          TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(stageName.toUpperCase(Locale.ROOT));
+          TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
           LOG.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
         }
       }
       listenerClass = (String)this.properties.get(AutoScalingParams.CLASS);
-      beforeActions = Collections.unmodifiableSet(new HashSet<>(getList(AutoScalingParams.BEFORE_ACTION, this.properties)));
-      afterActions = Collections.unmodifiableSet(new HashSet<>(getList(AutoScalingParams.AFTER_ACTION, this.properties)));
+      Set<String> bActions = new HashSet<>();
+      getList(AutoScalingParams.BEFORE_ACTION, this.properties).forEach(o -> bActions.add(String.valueOf(o)));
+      beforeActions = Collections.unmodifiableSet(bActions);
+      Set<String> aActions = new HashSet<>();
+      getList(AutoScalingParams.AFTER_ACTION, this.properties).forEach(o -> aActions.add(String.valueOf(o)));
+      afterActions = Collections.unmodifiableSet(aActions);
     }
 
     @Override
@@ -501,11 +507,11 @@ public class AutoScalingConfig implements MapWriter {
     return listeners.equals(that.listeners);
   }
 
-  private static List<String> getList(String key, Map<String, Object> properties) {
+  private static List<Object> getList(String key, Map<String, Object> properties) {
     return getList(key, properties, null);
   }
 
-  private static List<String> getList(String key, Map<String, Object> properties, List<String> defaultList) {
+  private static List<Object> getList(String key, Map<String, Object> properties, List<Object> defaultList) {
     if (defaultList == null) {
       defaultList = Collections.emptyList();
     }
@@ -515,6 +521,8 @@ public class AutoScalingConfig implements MapWriter {
     }
     if (o instanceof List) {
       return (List)o;
+    } else if (o instanceof Collection) {
+      return new ArrayList<>((Collection) o);
     } else {
       return Collections.singletonList(String.valueOf(o));
     }
