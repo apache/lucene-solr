@@ -1,4 +1,4 @@
-= Asciidoc syntax
+= AsciiDoc Syntax Cheatsheet
 :toc:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -17,14 +17,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The definitive manual on Asciidoc syntax is in the http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]. To help people get started, however, here is a simpler cheat sheet.
+The definitive manual on AsciiDoc syntax is in the http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]. To help people get started, however, here is a simpler cheat sheet.
 
 == AsciiDoc vs Asciidoctor Syntax
 We use tools from the Asciidoctor project to build the HTML and PDF versions of the Ref Guide. Asciidoctor is a Ruby port of the original AsciiDoc project, which was mostly abandoned several years ago.
 
 While much of the syntax between the two is the same, there are many conventions supported by Asciidoctor that did not exist in AsciiDoc. While the Asciidoctor project has tried to provide back-compatibility with the older project, that may not be true forever. For this reason, it's strongly recommended to only use the Asciidoctor User Manual as a reference for any syntax that's not described here.
 
-== Basic syntax
+== Basic AsciiDoc Syntax
 
 === Bold
 
@@ -200,7 +200,7 @@ More info: http://asciidoctor.org/docs/user-manual/#inter-document-cross-referen
 
 == Lists
 
-Asciidoc supports three types of lists:
+AsciiDoc supports three types of lists:
 
 * Unordered lists
 * Ordered lists
@@ -319,7 +319,7 @@ More info: http://asciidoctor.org/docs/user-manual/#tables
 
 == Admonitions (Notes, Warnings)
 
-Asciidoc supports several types of callout boxes, called "admonitions":
+AsciiDoc supports several types of callout boxes, called "admonitions":
 
 * NOTE
 * TIP
