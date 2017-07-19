@@ -1571,7 +1571,6 @@ public class Tests {
 		
 		
 		
-		
 		Thread numericQueryTTQMetricS1 = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TEXT_TERM_QUERY_STANDALONE_2T, port));
 		numericQueryTTQMetricS1.start();

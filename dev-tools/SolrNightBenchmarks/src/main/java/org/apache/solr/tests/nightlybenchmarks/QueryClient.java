@@ -348,7 +348,7 @@ public class QueryClient implements Runnable {
 						requestParams.add("q", "Int1_pi:" + ft_1 + " OR Int2_pi:" + ft_2);
 
 					} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
-						requestParams.add("q", "Text:" + textTerms.poll().trim());
+						requestParams.add("q", "Article_t:" + textTerms.poll().trim());
 					} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
 						requestParams.add("q", "Title_t:" + textPhrases.poll().trim());
 					} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
