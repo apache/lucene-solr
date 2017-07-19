@@ -211,6 +211,11 @@ public class TestTrie extends SolrTestCaseJ4 {
 
   @Test
   public void testTrieFacet_PrecisionStep() throws Exception {
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+      assumeTrue("Skipping test: Points+facets require docValues, but randomizer: points=true && DV=false",
+                 Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
+    }
+    
     // Future protect - assert 0<precisionStep<64
     checkPrecisionSteps("tint");
     checkPrecisionSteps("tfloat");
