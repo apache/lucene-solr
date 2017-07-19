@@ -4597,7 +4597,7 @@ public class SolrCLI {
 
       @Override
       int[] getColWidths() {
-        return new int[] {20, 9, 40, 25, 15};
+        return new int[] {20, 9, 45, 20, 15};
       }
     };
 
@@ -4615,7 +4615,7 @@ public class SolrCLI {
 
       @Override
       int[] getColWidths() {
-        return new int[] {25, 65, 10};
+        return new int[] {20, 80, 10};
       }
     };
     

@@ -114,6 +114,10 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
       return url;
   }
 
+  public URL getMirrorUrl() {
+    return mirrorUrl;
+  }
+  
   /**
    * FileDownloader that fails if the MD5 sum of the downloaded file does not match the one downloaded
    * from Apache archives

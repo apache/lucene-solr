@@ -67,12 +67,10 @@ public class PluginBundleManager {
       }
       pluginManager = new SolrPf4jPluginManager(pluginsRoot);
       // NOCOMMIT: Persist plugin repo somewhere
-//      ApacheMirrorsUpdateRepository apacheRepo = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/" + solrVersion.toString() + "/");
       List<UpdateRepository> repos = new ArrayList<>();
-      //repos.add(new PluginUpdateRepository("apache", new URL("http://people.apache.org/~janhoy/dist/plugins/")));
-      //repos.add(new PluginUpdateRepository("local", new URL("file:///Users/janhoy/Cominvent/Code/plugins/")));
-      repos.add(new PluginUpdateRepository("contribs", Paths.get(SOLR_INSTALL_DIR).resolve("contrib").toAbsolutePath().toUri().toURL()));
-      //repos.add(new GitHubUpdateRepository("community","cominvent", "solr-plugins"));
+      repos.add(UpdateRepositoryFactory.create("contribs", Paths.get(SOLR_INSTALL_DIR).resolve("contrib").toAbsolutePath().toUri().toURL().toString()));
+      repos.add(UpdateRepositoryFactory.create("community", "https://github.com/cominvent/solr-plugins"));
+      //repos.add(UpdateRepositoryFactory.create("apache", "https://www.apache.org/dist/lucene/solr/" + solrVersion.toString() + "/"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
       updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(solrVersion);

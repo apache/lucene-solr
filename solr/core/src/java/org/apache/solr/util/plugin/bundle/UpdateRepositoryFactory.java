@@ -29,18 +29,18 @@ public class UpdateRepositoryFactory {
     try {
       URL url = new URL(urlAsString);
       if (url.getHost().endsWith("github.com")) {
-        if (url.getPath().split("/").length < 2) {
+        if (url.getPath().split("/").length < 3) {
           throw new PluginException("Invalid URL for github repo: " + url);
         }
         return new GitHubUpdateRepository(id,
-            url.getPath().split("/")[0], 
-            url.getPath().split("/")[1]);
-      } else if (url.getHost().endsWith("apache.org") && url.getPath().startsWith("dist")) {
-        if (url.getPath().split("/").length < 2) {
+            url.getPath().split("/")[1], 
+            url.getPath().split("/")[2]);
+      } else if (url.getHost().endsWith("apache.org") && url.getPath().startsWith("/dist/")) {
+        if (url.getPath().split("/").length < 3) {
           throw new PluginException("Invalid URL for Apache mirror repo: " + url);
         }
         return new ApacheMirrorsUpdateRepository(id,
-            url.getPath().split("/")[1]);
+            url.getPath().substring(6));
       } else {
         return new PluginUpdateRepository(id, url);
       }
