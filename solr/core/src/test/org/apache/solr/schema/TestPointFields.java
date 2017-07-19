@@ -505,7 +505,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDoublePointFieldExactQuery() throws Exception {
-    doTestFloatPointFieldExactQuery("number_d", true);
     doTestFloatPointFieldExactQuery("number_p_d", true);
     doTestFloatPointFieldExactQuery("number_p_d_mv", true);
     doTestFloatPointFieldExactQuery("number_p_d_dv", true);
