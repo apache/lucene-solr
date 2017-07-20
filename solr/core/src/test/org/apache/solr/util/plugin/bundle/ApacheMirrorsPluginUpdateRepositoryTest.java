@@ -17,6 +17,9 @@
 
 package org.apache.solr.util.plugin.bundle;
 
+import java.io.IOException;
+import java.net.URL;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,17 +29,15 @@ import static org.junit.Assert.assertEquals;
  * Test apache mirror download
  */
 public class ApacheMirrorsPluginUpdateRepositoryTest {
-  private ApacheMirrorsUpdateRepository mirrorExist;
-  private ApacheMirrorsUpdateRepository repoRedir;
-  private ApacheMirrorsUpdateRepository nonexist;
-
-  // TODO: Mock
+  private MockApacheMirrorsUpdateRepository mirrorExist;
+  private MockApacheMirrorsUpdateRepository repoRedir;
+  private MockApacheMirrorsUpdateRepository nonexist;
 
   @Before
   public void setUp() throws Exception {
-    mirrorExist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/6.6.0");
-    repoRedir = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/5.5.4");
-    nonexist = new ApacheMirrorsUpdateRepository("apache", "lucene/solr/nonExist");
+    mirrorExist = new MockApacheMirrorsUpdateRepository("apache", "lucene/solr/6.6.0");
+    repoRedir = new MockApacheMirrorsUpdateRepository("apache", "lucene/solr/5.5.4");
+    nonexist = new MockApacheMirrorsUpdateRepository("apache", "lucene/solr/nonExist");
   }
 
   @Test
@@ -54,15 +55,40 @@ public class ApacheMirrorsPluginUpdateRepositoryTest {
     assertEquals(null, nonexist.getUrl());
   }
 
-  @Test
-  public void getPlugins() throws Exception {
-    assertEquals(0, mirrorExist.getPlugins().size());
-  }
+//  @Test
+//  public void testMd5() throws Exception {
+//    // TODO: Mock
+////    Path file = mirrorExist.getFileDownloader().downloadFile(new URL(mirrorExist.getUrl() + "file"));
+////    assertTrue(Files.exists(file));
+//  }
+  
+  private class MockApacheMirrorsUpdateRepository extends ApacheMirrorsUpdateRepository {
 
-  @Test
-  public void testMd5() throws Exception {
-    // TODO: Mock
-//    Path file = mirrorExist.getFileDownloader().downloadFile(new URL(mirrorExist.getUrl() + "file"));
-//    assertTrue(Files.exists(file));
+    public MockApacheMirrorsUpdateRepository(String id, String path) {
+      super(id, path);
+    }
+
+    /**
+     * Mock method to simulate redirects and responses
+     */
+    @Override
+    protected URL getFinalURL(URL url) throws IOException {
+      switch (url.toString()) {
+        case "https://www.apache.org/dyn/closer.lua?action=download&filename=lucene/solr/6.6.0": // Exists in a mirror
+          return new URL("http://apache.uib.no/lucene/solr/6.6.0/");
+
+        case "https://www.apache.org/dist/lucene/solr/5.5.4": 
+          throw new IOException("Not here");
+
+        case "https://www.apache.org/dyn/closer.lua?action=download&filename=lucene/solr/5.5.4": // Not in a mirror but in the archive
+          throw new IOException("Not here");
+
+        case "https://archive.apache.org/dist/lucene/solr/5.5.4": // Not in a mirror but in the archive
+          return new URL("https://archive.apache.org/dist/lucene/solr/5.5.4/");
+          
+        default: // Non existing
+          return null;
+      }
+    }
   }
 }

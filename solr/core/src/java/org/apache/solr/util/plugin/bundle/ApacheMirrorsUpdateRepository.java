@@ -95,12 +95,12 @@ public class ApacheMirrorsUpdateRepository extends PluginUpdateRepository {
   }
 
   /**
-   * Static method that resolves final Apache mirrors URL, resolving redirects
+   * Method that resolves final Apache mirrors URL, resolving redirects
    * @param url original URL
    * @return new URL which could be the same as the original or a new after redirects
    * @throws IOException if problems opening URL
    */
-  public static URL getFinalURL(URL url) throws IOException {
+  protected URL getFinalURL(URL url) throws IOException {
       HttpURLConnection con = (HttpURLConnection) url.openConnection();
       con.setInstanceFollowRedirects(false);
       con.setRequestMethod("GET");
