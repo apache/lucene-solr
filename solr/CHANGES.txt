@@ -532,6 +532,8 @@ Other Changes
 
 * SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
 
+* SOLR-11119: Switch from Trie to Points field types in the .system collection schema. (Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
