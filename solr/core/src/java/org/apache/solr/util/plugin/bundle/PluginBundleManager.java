@@ -17,6 +17,7 @@
 
 package org.apache.solr.util.plugin.bundle;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
@@ -72,6 +73,14 @@ public class PluginBundleManager {
       repos.add(UpdateRepositoryFactory.create("community", "https://github.com/cominvent/solr-plugins"));
       //repos.add(UpdateRepositoryFactory.create("apache", "https://www.apache.org/dist/lucene/solr/" + solrVersion.toString() + "/"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
+      for (UpdateRepository ur : repos) {
+        try {
+          new URL(ur.getUrl(), "plugins.json").openConnection();
+        } catch (IOException e) {
+          repos.remove(ur);
+          log.warn("Not adding Update Repository {} at {} because it could not be accessed.", ur.getId(), ur.getUrl());
+        }
+      }
       updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(solrVersion);
       setUberClassLoader(new PluginBundleClassLoader(getClass().getClassLoader(), pluginManager, null));
