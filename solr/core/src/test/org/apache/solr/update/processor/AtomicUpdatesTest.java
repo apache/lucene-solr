@@ -24,7 +24,6 @@ import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.DateMathParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -615,7 +614,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    TrieDateField trieDF = new TrieDateField();
     Date tempDate = DateMathParser.parseMath(null, "2014-02-01T12:00:00Z");
     doc.setField("dateRemove", new Date[]{DateMathParser.parseMath(null, "2014-02-01T12:00:00Z"),
         DateMathParser.parseMath(null, "2014-07-02T12:00:00Z"),
