@@ -561,7 +561,7 @@ public class CoreContainer {
                 zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
               }
 
-              core = create(cd, false, false);
+              core = createFromDescriptor(cd, false, false);
             } finally {
               if (asyncSolrCoreLoad) {
                 solrCores.markCoreAsNotLoading(cd);
@@ -852,14 +852,17 @@ public class CoreContainer {
         preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
       }
 
-      SolrCore core = create(cd, true, newCollection);
-
-      // only write out the descriptor if the core is successfully created
+      // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
+      // first and clean it up if there's an error.
       coresLocator.create(this, cd);
 
+      SolrCore core = createFromDescriptor(cd, true, newCollection);
+
       return core;
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
+      // First clean up any core descriptor, there should never be an existing core.properties file for any core that 
+      // failed to be created on-the-fly. 
+      coresLocator.delete(this, cd);
       if (isZooKeeperAware() && !preExisitingZkEntry) {
         try {
           getZkController().unregister(coreName, cd);
@@ -899,7 +902,7 @@ public class CoreContainer {
    *
    * @return the newly created core
    */
-  private SolrCore create(CoreDescriptor dcore, boolean publishState, boolean newCollection) {
+  private SolrCore createFromDescriptor(CoreDescriptor dcore, boolean publishState, boolean newCollection) {
 
     if (isShutDown) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Solr has been shutdown.");
@@ -1164,7 +1167,7 @@ public class CoreContainer {
     } else {
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
-        create(clf.cd, true, false);
+        createFromDescriptor(clf.cd, true, false);
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
       }
@@ -1342,7 +1345,7 @@ public class CoreContainer {
         if (zkSys.getZkController() != null) {
           zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
         }
-        core = create(desc, true, false); // This should throw an error if it fails.
+        core = createFromDescriptor(desc, true, false); // This should throw an error if it fails.
       }
       core.open();
     }
@@ -1490,7 +1493,12 @@ public class CoreContainer {
   public long getStatus() {
     return status;
   }
-
+  
+  // Occasaionally we need to access the transient cache handler in places other than coreContainer.
+  public TransientSolrCoreCache getTransientCache() {
+    return solrCores.getTransientCacheHandler();
+  }
+  
 }
 
 class CloserThread extends Thread {
