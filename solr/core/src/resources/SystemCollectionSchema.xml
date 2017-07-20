@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <schema name="_system collection or core" version="1.1">
   <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="solr.LongPointField" docValues="true" positionIncrementGap="0"/>
   <fieldType name="bytes" class="solr.BinaryField"/>
-  <fieldType name="date" class="solr.TrieDateField"/>
+  <fieldType name="date" class="solr.DatePointField" docValues="true"/>
   <field name="id"   type="string"   indexed="true"  stored="true"  multiValued="false" required="true"/>
   <field name="md5"   type="string"   indexed="true"  stored="true"  multiValued="false" required="true"/>
   <field name="blob"      type="bytes"   indexed="false" stored="true"  multiValued="false" />
