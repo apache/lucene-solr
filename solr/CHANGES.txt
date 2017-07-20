@@ -62,6 +62,8 @@ Optimizations
 * SOLR-10985: Remove unnecessary toString() calls in solr-core's search package's debug logging.
   (Michael Braun via Christine Poerschke)
 
+* SOLR-11124: MoveReplicaCmd should skip deleting old replica in case of its node is not live (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
