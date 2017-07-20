@@ -28,8 +28,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
@@ -46,12 +44,16 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.NumberUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
@@ -60,31 +62,58 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 
 public class Assign {
-  private static Pattern COUNT = Pattern.compile("core_node(\\d+)");
 
-  public static String assignNode(DocCollection collection) {
-    Map<String, Slice> sliceMap = collection != null ? collection.getSlicesMap() : null;
-    if (sliceMap == null) {
-      return "core_node1";
-    }
-
-    int max = 0;
-    for (Slice slice : sliceMap.values()) {
-      for (Replica replica : slice.getReplicas()) {
-        Matcher m = COUNT.matcher(replica.getName());
-        if (m.matches()) {
-          max = Math.max(max, Integer.parseInt(m.group(1)));
+  public static int incAndGetId(SolrZkClient zkClient, String collection) {
+    String path = "/collections/"+collection;
+    try {
+      if (!zkClient.exists(path, true)) {
+        try {
+          zkClient.makePath(path, true);
+        } catch (KeeperException.NodeExistsException e) {
+          // it's okay if another beats us creating the node
         }
       }
+      path += "/counter";
+      if (!zkClient.exists(path, true)) {
+        try {
+          zkClient.create(path, NumberUtils.intToBytes(0), CreateMode.PERSISTENT, true);
+        } catch (KeeperException.NodeExistsException e) {
+          // it's okay if another beats us creating the node
+        }
+      }
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating counter node in Zookeeper for collection:" + collection, e);
+    } catch (KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating counter node in Zookeeper for collection:" + collection, e);
     }
 
-    return "core_node" + (max + 1);
+    while (true) {
+      Stat stat = new Stat();
+      try {
+        byte[] data = zkClient.getData(path, null, stat, true);
+        int currentId = NumberUtils.bytesToInt(data);
+        data = NumberUtils.intToBytes(++currentId);
+        zkClient.setData(path, data, stat.getVersion(), true);
+        return currentId;
+      } catch (KeeperException e) {
+        if (e.code() != KeeperException.Code.BADVERSION) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:"+collection, e);
+        }
+      } catch (InterruptedException e) {
+        Thread.interrupted();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:" + collection, e);
+      }
+    }
+  }
+
+  public static String assignNode(SolrZkClient client, String collection) {
+    return "core_node" + incAndGetId(client, collection);
   }
 
   /**
@@ -136,21 +165,9 @@ public class Assign {
     return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
-  public static String buildCoreName(DocCollection collection, String shard, Replica.Type type) {
-    Slice slice = collection.getSlice(shard);
-    int replicaNum = slice.getReplicas().size();
-    for (; ; ) {
-      String replicaName = buildCoreName(collection.getName(), shard, type, replicaNum);
-      boolean exists = false;
-      for (Replica replica : slice.getReplicas()) {
-        if (replicaName.equals(replica.getStr(CORE_NAME_PROP))) {
-          exists = true;
-          break;
-        }
-      }
-      if (exists) replicaNum++;
-      else return replicaName;
-    }
+  public static String buildCoreName(SolrZkClient zkClient, String collection, String shard, Replica.Type type) {
+    int replicaNum = incAndGetId(zkClient, collection);
+    return buildCoreName(collection, shard, type, replicaNum);
   }
   public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
     // TODO: add smarter options that look at the current number of cores per

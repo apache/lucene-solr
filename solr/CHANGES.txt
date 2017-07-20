@@ -71,6 +71,8 @@ Bug Fixes
 
 * SOLR-11012: Fix three (JavaBinCodec not being closed) Resource Leak warnings. (Christine Poerschke)
 
+* SOLR-11011: Assign.buildCoreName can lead to error in creating a new core when legacyCloud=false (Cao Manh Dat)
+
 Optimizations
 ----------------------
 

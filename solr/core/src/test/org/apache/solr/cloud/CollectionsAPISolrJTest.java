@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -267,7 +268,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
 
-    String newReplicaName = Assign.assignNode(getCollectionState(collectionName));
     ArrayList<String> nodeList
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
@@ -276,23 +276,30 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(node)
         .process(cluster.getSolrClient());
-
+    Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-
-    waitForState("Expected to see replica " + newReplicaName + " on node " + node, collectionName, (n, c) -> {
-      Replica r = c.getSlice("shard1").getReplica(newReplicaName);
-      return r != null && r.getNodeName().equals(node);
-    });
+    assertTrue(newReplica.getNodeName().equals(node));
 
     // Test DELETEREPLICA
-    response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplicaName)
+    response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplica.getName())
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
-    waitForState("Expected replica " + newReplicaName + " to vanish from cluster state", collectionName,
-        (n, c) -> c.getSlice("shard1").getReplica(newReplicaName) == null);
+    waitForState("Expected replica " + newReplica.getName() + " to vanish from cluster state", collectionName,
+        (n, c) -> c.getSlice("shard1").getReplica(newReplica.getName()) == null);
 
+  }
+
+  private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
+    String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
+    Optional<Replica> optional = docCollection.getReplicas().stream()
+        .filter(replica -> replicaName.equals(replica.getCoreName()))
+        .findAny();
+    if (optional.isPresent()) {
+      return optional.get();
+    }
+    throw new AssertionError("Can not find " + replicaName + " from " + docCollection);
   }
 
   @Test
