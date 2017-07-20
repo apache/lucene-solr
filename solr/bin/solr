@@ -853,14 +853,14 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
                 shift
                 break  # Finished parsing, send rest of args to SolrCLI
               else
-                print_usage "$SCRIPT_CMD" "Sub command $1 does not take an argument"          
-                exit 1              
+                print_usage "$SCRIPT_CMD" "Sub command $1 does not take an argument"
+                exit 1
               fi
-          ;;          
+          ;;
           install|uninstall|search|upgrade|repo)
               if [[ -z "$2" && "$1" != "search" ]]; then
-                print_usage "$SCRIPT_CMD" "Sub command $1 expects an argument"           
-                exit 1                            
+                print_usage "$SCRIPT_CMD" "Sub command $1 expects an argument"
+                exit 1
               else
                 PLUGIN_CMD="$1"
                 shift
@@ -875,7 +875,7 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
               PLUGIN_DIR="$2"
               shift 2
           ;;
-          -p|-port)          
+          -p|-port)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
                 exit 1
@@ -888,7 +888,7 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
               shift
           ;;
           -help|-usage)
-              print_usage "$SCRIPT_CMD"           
+              print_usage "$SCRIPT_CMD"
               exit 0
           ;;
           --)
@@ -896,12 +896,12 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
               break
           ;;
           *)
-              if [ "$1" != "" ]; then            
+              if [ "$1" != "" ]; then
                 print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
                 exit 1
               else
                 break # out-of-args, stop looping
-              fi 
+              fi
           ;;
       esac
     done
@@ -910,7 +910,7 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
   if [ -z "$PLUGIN_CMD" ]; then
     echo "Please specify a plugin sub command"
     print_usage "plugin"
-    exit 1  
+    exit 1
   fi
 
   PLUGIN_OPTS=("${PLUGIN_OPTS[@]}" "-d" "$PLUGIN_DIR")
@@ -1488,7 +1488,7 @@ SOLR_OPTS=($SOLR_OPTS)
 PASS_TO_RUN_EXAMPLE=
 
 if [ $# -gt 0 ]; then
-  while true; do  
+  while true; do
     case "$1" in
         -c|-cloud)
             SOLR_MODE="solrcloud"
