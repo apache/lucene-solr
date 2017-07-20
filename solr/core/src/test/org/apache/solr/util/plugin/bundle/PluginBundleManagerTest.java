@@ -17,12 +17,13 @@
 
 package org.apache.solr.util.plugin.bundle;
 
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,18 +37,20 @@ import ro.fortsoft.pf4j.update.PluginInfo;
 public class PluginBundleManagerTest extends SolrTestCaseJ4 {
 
   private PluginBundleManager pluginBundleManager;
-
+  private static final URL TEST_REPO = Thread.currentThread().getContextClassLoader().getResource("plugins-repository/");
+  
   @Rule
   public TemporaryFolder testFolder = new TemporaryFolder();
 
   @Before
   public void before() throws Exception {
-    System.clearProperty("solr.plugins.dir");
+    System.setProperty("solr.plugins.active", "true");
+    System.setProperty("solr.plugins.dir", testFolder.getRoot().getAbsolutePath());
+    // Initialize plugin folder with one small plugin jar
+    // Start with our controlled update repo
     pluginBundleManager = new PluginBundleManager(testFolder.getRoot().toPath());
-//    pluginBundleManager.setUberClassLoader(
-//        new PluginBundleManager.PluginBundleClassLoader(getClass().getClassLoader(), 
-//              (SolrPluginManager)pluginBundleManager.getPluginManager(), 
-//              null));
+    pluginBundleManager.getUpdateManager().setRepositories(new ArrayList<>());     
+    pluginBundleManager.addUpdateRepository("testrepo", TEST_REPO);
   }
 
   @Test
@@ -55,16 +58,7 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
     // NOCOMMIT: Get rid of GSON dependency?
     List<PluginInfo> res = pluginBundleManager.query("*");
     assertTrue(res.size()>0);
-    assertNotNull(res.get(0).getRepositoryId());
-//    assertEquals(4, res.size());
-//    assertTrue(res.stream().map(p -> p.id).collect(Collectors.toList()).contains("extraction"));
-//
-//    assertEquals(1, modules.query("extract").size());
-//
-//    assertEquals(0, modules.query("fooxyz").size());
-//
-//    assertEquals(4, modules.query("").size());
-//    assertEquals(4, modules.query(null).size());
+    assertEquals("testrepo", res.get(0).getRepositoryId());
   }
 
   @Test
@@ -75,26 +69,27 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
   @Test
   public void install() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    pluginBundleManager.install("dataimport");
+    pluginBundleManager.install("request-sanitizer");
     assertEquals(1, pluginBundleManager.listInstalled().size());
   }
 
   @Test
   public void uninstall() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    assertTrue(pluginBundleManager.install("dataimport"));
+    assertTrue(pluginBundleManager.install("request-sanitizer"));
     assertEquals(1, pluginBundleManager.listInstalled().size());
     assertFalse(pluginBundleManager.uninstall("nonexistent"));
-    assertTrue(pluginBundleManager.uninstall("dataimport"));
+    assertTrue(pluginBundleManager.uninstall("request-sanitizer"));
     assertEquals(0, pluginBundleManager.listInstalled().size());
   }
 
-  @Test(expected = SolrException.class)
+  @Test
   public void installTwice() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    assertTrue(pluginBundleManager.install("dataimport"));
+    assertTrue(pluginBundleManager.install("request-sanitizer"));
     assertEquals(1, pluginBundleManager.listInstalled().size());
-    pluginBundleManager.install("dataimport");
+    assertFalse(pluginBundleManager.install("request-sanitizer"));
+    assertEquals(1, pluginBundleManager.listInstalled().size());
   }
 
   @Test(expected = SolrException.class)
@@ -106,15 +101,15 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
   @Test
   public void update() throws Exception {
     // TODO: Update plugins
-    assertTrue(pluginBundleManager.install("dataimport"));
-    assertFalse(pluginBundleManager.update("dataimport"));
+    assertTrue(pluginBundleManager.install("request-sanitizer"));
+    assertFalse(pluginBundleManager.update("request-sanitizer"));
     pluginBundleManager.updateAll();
   }
 
   @Test(expected = SolrException.class)
   public void updateNonInstalled() throws Exception {
     assertEquals(0, pluginBundleManager.listInstalled().size());
-    assertTrue(pluginBundleManager.update("dataimport"));
+    assertTrue(pluginBundleManager.update("request-sanitizer"));
   }
 
   @Test
@@ -125,41 +120,39 @@ public class PluginBundleManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void installAndCheckClassloading() throws Exception {
-    assertTrue(pluginBundleManager.install("dataimport"));
+    assertTrue(pluginBundleManager.install("request-sanitizer"));
     assertEquals(1, pluginBundleManager.listInstalled().size());
     try {
-      this.getClass().getClassLoader().loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
+      this.getClass().getClassLoader().loadClass("com.cominvent.solr.RequestSanitizerComponent");
       fail();
     } catch (Exception ignored) {}
 
     // PluginLoader
-    ClassLoader pluginClassLoader = pluginBundleManager.getPluginManager().getPluginClassLoader("dataimport");
-    assertEquals("DataImportHandler", pluginClassLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler").getSimpleName());
+    ClassLoader pluginClassLoader = pluginBundleManager.getPluginManager().getPluginClassLoader("request-sanitizer");
+    assertEquals("RequestSanitizerComponent", pluginClassLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent").getSimpleName());
 
     // Load another class through uber loader
-    pluginBundleManager.install("request-sanitizer");
     ClassLoader uberClassLoader = pluginBundleManager.getUberClassLoader();
     uberClassLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent");
-    uberClassLoader.loadClass("org.apache.solr.handler.dataimport.DataImportHandler");
+    uberClassLoader.loadClass("com.cominvent.solr.RequestSanitizerComponent$DefaultSolrParams");
   }
 
   @Test
   public void testResourceLoading() throws Exception {
-    // Spin up a Solr core with custom solr.plugins.dir (so it can be writeable)
     // Test that classes and resources are loaded through SolrResourceLoader
-    System.setProperty("solr.plugins.dir", testFolder.getRoot().getAbsolutePath());
     initCore("solrconfig.xml","schema.xml");
     // Use coreContainer's instance of pluginBunldeManager, not the one created in init
     PluginBundleManager pluginBundleManagerFromSolr = h.getCoreContainer().getPluginBundleManager();
+    pluginBundleManagerFromSolr.getUpdateManager().setRepositories(new ArrayList<>());
+    pluginBundleManagerFromSolr.addUpdateRepository("testrepo", TEST_REPO);
     
-    assertTrue(pluginBundleManagerFromSolr.install("extraction"));
+    assertTrue(pluginBundleManagerFromSolr.install("plugin-with-resources"));
     assertTrue(pluginBundleManagerFromSolr.install("request-sanitizer"));
     assertEquals(2, pluginBundleManagerFromSolr.listInstalled().size());
     SolrResourceLoader l = h.getCoreContainer().getResourceLoader();
-    assertNotNull(l.findClass("org.apache.solr.handler.extraction.ExtractingRequestHandler", RequestHandlerBase.class));
     assertNotNull(l.findClass("com.cominvent.solr.RequestSanitizerComponent", SearchComponent.class));
 
-    // Now get a resource from extraction dependency jar tika-core-1.13.jar 
-    assertNotNull(l.openResource("org/apache/tika/mime/tika-mimetypes.xml"));
+    // Now get a resource from the test plugin 
+    assertNotNull(l.openResource("file.txt"));
   }
 }

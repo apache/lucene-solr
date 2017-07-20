@@ -270,6 +270,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+    System.setProperty("solr.plugins.active", "false"); // NOCOMIMIT - Disable plugins system by default for now
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -313,6 +314,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("urlScheme");
       System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
+      System.clearProperty("solr.plugins.active");
       HttpClientUtil.resetHttpClientBuilder();
 
       clearNumericTypesProperties();

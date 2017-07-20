@@ -69,23 +69,30 @@ public class PluginBundleManager {
       pluginManager = new SolrPf4jPluginManager(pluginsRoot);
       // NOCOMMIT: Persist plugin repo somewhere
       List<UpdateRepository> repos = new ArrayList<>();
-      repos.add(UpdateRepositoryFactory.create("contribs", Paths.get(SOLR_INSTALL_DIR).resolve("contrib").toAbsolutePath().toUri().toURL().toString()));
-      repos.add(UpdateRepositoryFactory.create("community", "https://github.com/cominvent/solr-plugins"));
+      if (SOLR_INSTALL_DIR != null) {
+        addIfAccessible(repos, UpdateRepositoryFactory.create(
+            "contribs",
+            Paths.get(SOLR_INSTALL_DIR).resolve("contrib").toAbsolutePath().toUri().toURL().toString()));
+      }
+      addIfAccessible(repos, UpdateRepositoryFactory.create(
+          "community", "https://github.com/cominvent/solr-plugins"));
       //repos.add(UpdateRepositoryFactory.create("apache", "https://www.apache.org/dist/lucene/solr/" + solrVersion.toString() + "/"));
       updateManager = new UpdateManager(pluginManager, (Path) null);
-      for (UpdateRepository ur : repos) {
-        try {
-          new URL(ur.getUrl(), "plugins.json").openConnection();
-        } catch (IOException e) {
-          repos.remove(ur);
-          log.warn("Not adding Update Repository {} at {} because it could not be accessed.", ur.getId(), ur.getUrl());
-        }
-      }
       updateManager.setRepositories(repos);
       pluginManager.setSystemVersion(solrVersion);
       setUberClassLoader(new PluginBundleClassLoader(getClass().getClassLoader(), pluginManager, null));
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  private void addIfAccessible(List<UpdateRepository> repos, UpdateRepository updateRepository) {
+    try {
+      new URL(updateRepository.getUrl(), "plugins.json").openConnection();
+      repos.add(updateRepository);
+    } catch (IOException e) {
+      log.warn("Not adding Update Repository {} at {} because it could not be accessed.", 
+          updateRepository.getId(), updateRepository.getUrl());
     }
   }
 
@@ -168,8 +175,8 @@ public class PluginBundleManager {
     uberLoader = loader;
   }
   
-  public void addUpdateRepository(String id, URL url) {
-    updateManager.addRepository(id, url);
+  public void addUpdateRepository(String id, URL url) throws PluginException {
+    updateManager.addRepository(UpdateRepositoryFactory.create(id, url.toString()));
   }
 
   public void removeUpdateRepository(String id) {
