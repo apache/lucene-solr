@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2592,6 +2593,47 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   protected void waitForWarming() throws InterruptedException {
     waitForWarming(h.getCore());
+  }
+
+  @BeforeClass
+  public static void assertNonBlockingRandomGeneratorAvailable() throws InterruptedException {
+    final String EGD = "java.security.egd";
+    final String URANDOM = "file:/dev/./urandom";
+    final String ALLOWED = "test.solr.allowed.securerandom";
+    final String allowedAlg = System.getProperty(ALLOWED);
+    final String actualEGD = System.getProperty(EGD);
+    
+    log.info("SecureRandom sanity checks: {}={} & {}={}", ALLOWED, allowedAlg, EGD, actualEGD);
+
+    if (null != allowedAlg) {
+      // the user has explicitly requested to bypass our assertions and allow a particular alg
+      // the only thing we should do is assert that the algorithm they have whitelisted is actaully used
+      
+      
+      final String actualAlg = (new SecureRandom()).getAlgorithm();
+      assertEquals("Algorithm specified using "+ALLOWED+" system property " +
+                   "does not match actual algorithm", allowedAlg, actualAlg);
+      return;
+    }
+    // else: no user override, do the checks we want including 
+    
+    if (null == actualEGD) {
+      System.setProperty(EGD, URANDOM);
+      log.warn("System property {} was not set by test runner, forcibly set to expected: {}", EGD, URANDOM);
+    } else if (! URANDOM.equals(actualEGD) ) {
+      log.warn("System property {}={} .. test runner should use expected: {}", EGD, actualEGD, URANDOM);
+    }
+    
+    final String algorithm = (new SecureRandom()).getAlgorithm();
+    
+    assertFalse("SecureRandom algorithm '" + algorithm + "' is in use by your JVM, " +
+                "which is a potentially blocking algorithm on some environments. " +
+                "Please report the details of this failure (and your JVM vendor/version) to solr-user@lucene.apache.org. " +
+                "You can try to run your tests with -D"+EGD+"="+URANDOM+" or bypass this check using " +
+                "-Dtest.solr.allowed.securerandom="+ algorithm +" as a JVM option when running tests.",
+                // be permissive in our checks and blacklist only algorithms 
+                // that are known to be blocking under some circumstances
+                algorithm.equals("NativePRNG") || algorithm.equals("NativePRNGBlocking"));
   }
 
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
