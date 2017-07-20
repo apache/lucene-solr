@@ -104,6 +104,8 @@ Other Changes
 * SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
   (Erick Erickson)
 
+* SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
@@ -1057,8 +1059,6 @@ Bug Fixes
 
 * SOLR-10527: edismax with sow=false fails to create dismax-per-term queries when any field is boosted.
   (Steve Rowe)
-
-* SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
 ==================  6.5.0 ==================
 
