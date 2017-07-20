@@ -29,7 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests for TrieField functionality
+ * Tests for numeric field functionality.  The name originated from {@link TrieField}, but all tests 
+ * done in this class are also valid for any numeric field types.
  *
  *
  * @since solr 1.4

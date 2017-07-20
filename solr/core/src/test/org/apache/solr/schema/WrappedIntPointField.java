@@ -24,22 +24,23 @@ import org.apache.lucene.search.SortField;
 /**
  * Custom field wrapping an int, to test sorting via a custom comparator.
  */
-public class WrappedIntField extends TrieIntField {
-  Expression expr;
-
-  public WrappedIntField() {
+public class WrappedIntPointField extends IntPointField {
+  /** static helper for re-use in sibling trie class */
+  public static SortField getSortField(final SortField superSort, final SchemaField field) {
+    field.checkSortability();
+    Expression expr = null;
     try {
-      expr = JavascriptCompiler.compile("payload % 3");
+      expr = JavascriptCompiler.compile(field.getName() + " % 3");
     } catch (Exception e) {
       throw new RuntimeException("impossible?", e);
     }
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add(superSort);
+    return expr.getSortField(bindings, superSort.getReverse());
   }
 
   @Override
   public SortField getSortField(final SchemaField field, final boolean reverse) {
-    field.checkSortability();
-    SimpleBindings bindings = new SimpleBindings();
-    bindings.add(super.getSortField(field, reverse));
-    return expr.getSortField(bindings, reverse);
+    return getSortField(super.getSortField(field, reverse), field);
   }
 }
