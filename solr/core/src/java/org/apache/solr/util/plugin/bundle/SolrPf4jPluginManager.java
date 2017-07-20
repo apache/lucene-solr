@@ -18,6 +18,7 @@
 package org.apache.solr.util.plugin.bundle;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -55,7 +56,7 @@ import ro.fortsoft.pf4j.util.StringUtils;
  * PF4J Plugin manager for Solr that changes how to read manifest mm
  */
 public class SolrPf4jPluginManager extends DefaultPluginManager {
-  private static final Logger log = LoggerFactory.getLogger(SolrPf4jPluginManager.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public SolrPf4jPluginManager(Path pluginsRoot) {
     super(pluginsRoot);
