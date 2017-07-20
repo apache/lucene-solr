@@ -79,7 +79,7 @@ public class SortedDocValuesField extends Field {
    * alongside a range query that executes on points, such as
    * {@link BinaryPoint#newRangeQuery}.
    */
-  public static Query newRangeQuery(String field,
+  public static Query newSlowRangeQuery(String field,
       BytesRef lowerValue, BytesRef upperValue,
       boolean lowerInclusive, boolean upperInclusive) {
     return new SortedSetDocValuesRangeQuery(field, lowerValue, upperValue, lowerInclusive, upperInclusive) {
@@ -98,7 +98,7 @@ public class SortedDocValuesField extends Field {
    * alongside a range query that executes on points, such as
    * {@link BinaryPoint#newExactQuery}.
    */
-  public static Query newExactQuery(String field, BytesRef value) {
-    return newRangeQuery(field, value, value, true, true);
+  public static Query newSlowExactQuery(String field, BytesRef value) {
+    return newSlowRangeQuery(field, value, value, true, true);
   }
 }
