@@ -271,7 +271,7 @@ public class ICUCollationField extends FieldType {
     BytesRef low = part1 == null ? null : getCollationKey(f, part1);
     BytesRef high = part2 == null ? null : getCollationKey(f, part2);
     if (!field.indexed() && field.hasDocValues()) {
-      return SortedSetDocValuesField.newRangeQuery(
+      return SortedSetDocValuesField.newSlowRangeQuery(
           field.getName(), low, high, minInclusive, maxInclusive);
     } else {
       return new TermRangeQuery(field.getName(), low, high, minInclusive, maxInclusive);
