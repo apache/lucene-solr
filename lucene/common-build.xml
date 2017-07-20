@@ -1062,6 +1062,9 @@
 
             <sysproperty key="tests.src.home" value="${user.dir}" />
 
+            <!-- replaces default random source to the nonblocking variant -->
+            <sysproperty key="java.security.egd" value="file:/dev/./urandom"/>
+
             <!-- Only pass these to the test JVMs if defined in ANT. -->
             <syspropertyset>
                 <propertyref prefix="tests.maxfailures" />

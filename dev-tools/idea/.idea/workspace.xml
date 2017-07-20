@@ -2,7 +2,7 @@
 <project version="4">
   <component name="RunManager" selected="JUnit.Lucene core">
     <configuration default="true" type="JUnit" factoryName="JUnit">
-      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="VM_PARAMETERS" value="-ea -Djava.security.egd=file:/dev/./urandom" />
     </configuration>
     <configuration default="false" name="Lucene core" type="JUnit" factoryName="JUnit">
       <module name="lucene-core-tests" />

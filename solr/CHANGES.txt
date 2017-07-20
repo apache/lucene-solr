@@ -1058,6 +1058,8 @@ Bug Fixes
 * SOLR-10527: edismax with sow=false fails to create dismax-per-term queries when any field is boosted.
   (Steve Rowe)
 
+* SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
+
 ==================  6.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
