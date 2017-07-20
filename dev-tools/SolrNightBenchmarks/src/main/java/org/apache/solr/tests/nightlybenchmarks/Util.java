@@ -1191,7 +1191,7 @@ public class Util {
 					Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
 				}
 			} else if (argsList.contains("--latest-commit")) {
-
+				Util.createIsRunningFile();
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
 
@@ -1199,7 +1199,7 @@ public class Util {
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
 			} else if (argsList.contains("--commit-id")) {
-
+				Util.createIsRunningFile();
 				Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
 				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT,
 						false);
