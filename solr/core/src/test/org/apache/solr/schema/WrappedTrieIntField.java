@@ -16,19 +16,14 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.search.Query;
-import org.apache.solr.search.QParser;
+import org.apache.lucene.search.SortField;
 
 /**
- * Custom field type that overrides the prefix query behavior to map "X*" to [X TO Integer.MAX_VALUE].
- * * This is used for testing overridden prefix query for custom fields in TestOverriddenPrefixQueryForCustomFieldType
- *
- * @see IntPointPrefixActsAsRangeQueryFieldType 
+ * Custom field wrapping an int, to test sorting via a custom comparator.
  */
-public class TrieIntPrefixActsAsRangeQueryFieldType extends TrieIntField {
-
-  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    return getRangeQuery(parser, sf, termStr, Integer.MAX_VALUE + "", true, false);
+public class WrappedTrieIntField extends TrieIntField {
+  @Override
+  public SortField getSortField(final SchemaField field, final boolean reverse) {
+    return WrappedIntPointField.getSortField(super.getSortField(field, reverse), field);
   }
-
 }

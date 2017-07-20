@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -603,24 +604,20 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
-    String newReplicaName = Assign.assignNode(getCollectionState(collectionName));
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(nodeList.get(0))
         .process(cluster.getSolrClient());
-
-    Replica newReplica = getCollectionState(collectionName).getReplica(newReplicaName);
+    Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
 
     assertEquals("Replica should be created on the right node",
         cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)),
         newReplica.getStr(ZkStateReader.BASE_URL_PROP));
 
-    newReplicaName = Assign.assignNode(getCollectionState(collectionName));
     Path instancePath = createTempDir();
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .withProperty(CoreAdminParams.INSTANCE_DIR, instancePath.toString())
         .process(cluster.getSolrClient());
-
-    newReplica = getCollectionState(collectionName).getReplica(newReplicaName);
+    newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
 
     try (HttpSolrClient coreclient = getHttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP))) {
@@ -647,14 +644,24 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
     // Check that specifying property.name works. DO NOT remove this when the "name" property is deprecated
     // for ADDREPLICA, this is "property.name". See SOLR-7132
-    newReplicaName = Assign.assignNode(getCollectionState(collectionName));
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .withProperty(CoreAdminParams.NAME, "propertyDotName")
         .process(cluster.getSolrClient());
 
-    newReplica = getCollectionState(collectionName).getReplica(newReplicaName);
+    newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals("'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
 
+  }
+
+  private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
+    String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
+    Optional<Replica> optional = docCollection.getReplicas().stream()
+        .filter(replica -> replicaName.equals(replica.getCoreName()))
+        .findAny();
+    if (optional.isPresent()) {
+      return optional.get();
+    }
+    throw new AssertionError("Can not find " + replicaName + " from " + docCollection);
   }
 
 }

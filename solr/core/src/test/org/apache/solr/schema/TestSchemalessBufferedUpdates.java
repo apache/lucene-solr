@@ -102,7 +102,6 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       // WARN [...] o.a.s.u.UpdateLog REYPLAY_ERR: IOException reading log
       //            org.apache.solr.common.SolrException: Invalid Date String:'2017-01-05'
       //              at org.apache.solr.util.DateMathParser.parseMath(DateMathParser.java:234)
-      //              at org.apache.solr.schema.TrieField.createField(TrieField.java:725) [...]
       updateJ(jsonAdd(processAdd(sdoc("id","2", "f_dt","2017-01-05"))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();

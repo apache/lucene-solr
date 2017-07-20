@@ -1,5 +1,4 @@
 = Publication Process
-:toc:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -30,6 +29,12 @@ It's strongly preferred that both PDF and HTML versions are available during the
 == Publishing PDF Version
 The PDF version of the Solr Reference Guide is the *official* version. As such, it is voted on by the community before release, and is treated as an official artifact of the Lucene/Solr project.
 
+=== Prerequisites
+
+* You have checked out the Lucene/Solr source code on the machine you will be doing the release from. You will need scripts in the `dev-tools` directory.
+* You have generated a GPG key. See the Apache documentation on https://www.apache.org/dev/release-signing.html#generate[generating a code signing key].
+* You have Python 3 installed. This is needed to poll the mirrors after release to be sure it's propagated enough to make the announcement.
+
 === Generate the PDF
 
 No local dependencies are required to build the PDF. The Ant target will download the jars and other items it requires.
@@ -41,16 +46,7 @@ To build the PDF:
 . Run `ant build-pdf -Dsolr-guide-version=X.Y`
 . The resulting PDF will be in `solr/build/solr-ref-guide`.
 
-Important::
-+
-The `-Dsolr-guide-version` system property is optional.  By default the build system uses the `version.properties` of the current branch and assumes this is a `DRAFT` build.
-+
-
-=== Prerequisites
-
-* You have checked out the Lucene/Solr source code on the machine you will be doing the release from. You will need scripts in the `dev-tools` directory.
-* You have generated a GPG key. See the Apache documentation on https://www.apache.org/dev/release-signing.html#generate[generating a code signing key].
-* You have Python 3 installed. This is needed to poll the mirrors after release to be sure it's propagated enough to make the announcement.
+IMPORTANT: The `-Dsolr-guide-version` system property is optional.  By default the build system uses the `version.properties` of the current branch and assumes this is a `DRAFT` build.
 
 === Prepare and Upload Release Candidate
 

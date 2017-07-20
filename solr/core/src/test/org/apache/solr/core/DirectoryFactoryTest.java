@@ -17,19 +17,47 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class DirectoryFactoryTest extends LuceneTestCase {
 
+  private static Path solrHome = null;
+  private static SolrResourceLoader loader = null;
+
+  @BeforeClass
+  public static void setupLoader() throws Exception {
+    solrHome = Paths.get(createTempDir().toAbsolutePath().toString());
+    loader = new SolrResourceLoader(solrHome);
+  }
+
+  @AfterClass
+  public static void cleanupLoader() throws Exception {
+    if (loader != null) {
+      loader.close();
+    }
+    loader = null;
+  }
+
+  @After
+  @Before
+  public void clean() {
+    System.clearProperty("solr.data.home");
+    System.clearProperty("solr.solr.home");
+    System.clearProperty("test.solr.data.home");
+  }
+
+  @Test
   public void testLockTypesUnchanged() throws Exception {
     assertEquals("simple", DirectoryFactory.LOCK_TYPE_SIMPLE);
     assertEquals("native", DirectoryFactory.LOCK_TYPE_NATIVE);
@@ -38,18 +66,11 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     assertEquals("hdfs", DirectoryFactory.LOCK_TYPE_HDFS);
   }
 
-  @After
-  @Before
-  public void clean() {
-    System.clearProperty("solr.data.home");
-    System.clearProperty("solr.solr.home");
-  }
-
   @Test
   public void testGetDataHome() throws Exception {
-    MockCoreContainer cc = new MockCoreContainer("/solr/home");
+    NodeConfig config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    CoreContainer cc = new CoreContainer(config);
     Properties cp = cc.getContainerProperties();
-    boolean zkAware = cc.isZooKeeperAware();
     RAMDirectoryFactory rdf = new RAMDirectoryFactory();
     rdf.initCoreContainer(cc);
     rdf.init(new NamedList());
@@ -65,33 +86,32 @@ public class DirectoryFactoryTest extends LuceneTestCase {
     
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
+    config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc = new CoreContainer(config);
+    rdf = new RAMDirectoryFactory();
+    rdf.initCoreContainer(cc);
     rdf.init(new NamedList());
-    assertDataHome("/solr/home/solrdata/inst_dir/data", "inst_dir", rdf, cc);
+    assertDataHome(solrHome.resolve("solrdata/inst_dir/data").toAbsolutePath().toString(), "inst_dir", rdf, cc);
     // Test parsing last component of instanceDir, and using custom dataDir
-    assertDataHome("/solr/home/solrdata/myinst/mydata", "/path/to/myinst", rdf, cc, "dataDir", "mydata");
+    assertDataHome(solrHome.resolve("solrdata/myinst/mydata").toAbsolutePath().toString(), "/path/to/myinst", rdf, cc, "dataDir", "mydata");
+    // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
+    System.setProperty("test.solr.data.home", "/foo");
+    config = loadNodeConfig("/solr/solr-solrDataHome.xml");
+    cc = new CoreContainer(config);
+    rdf = new RAMDirectoryFactory();
+    rdf.initCoreContainer(cc);
+    rdf.init(new NamedList());
+    assertDataHome("/foo/inst_dir/data", "inst_dir", rdf, cc);
   }
 
-  private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, MockCoreContainer cc, String... properties) throws IOException {
+  private void assertDataHome(String expected, String instanceDir, RAMDirectoryFactory rdf, CoreContainer cc, String... properties) throws IOException {
     String dataHome = rdf.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
 
-  private static class MockCoreContainer extends CoreContainer {
-
-    private final String mockSolrHome;
-
-    public MockCoreContainer(String solrHome) throws IOException {
-      super(new Object());
-      mockSolrHome = solrHome;
-      this.shardHandlerFactory = new HttpShardHandlerFactory();
-      this.coreAdminHandler = new CoreAdminHandler();
-    }
-
-    @Override
-    public String getSolrHome() {
-      return mockSolrHome;
-    }
+  private NodeConfig loadNodeConfig(String config) throws Exception {
+    InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
+    return SolrXmlConfig.fromInputStream(loader, is);
   }
-
 }

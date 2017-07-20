@@ -29,7 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests for TrieField functionality
+ * Tests for numeric field functionality.  The name originated from {@link TrieField}, but all tests 
+ * done in this class are also valid for any numeric field types.
  *
  *
  * @since solr 1.4
@@ -211,6 +212,11 @@ public class TestTrie extends SolrTestCaseJ4 {
 
   @Test
   public void testTrieFacet_PrecisionStep() throws Exception {
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+      assumeTrue("Skipping test: Points+facets require docValues, but randomizer: points=true && DV=false",
+                 Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
+    }
+    
     // Future protect - assert 0<precisionStep<64
     checkPrecisionSteps("tint");
     checkPrecisionSteps("tfloat");

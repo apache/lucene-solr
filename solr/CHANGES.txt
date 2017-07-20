@@ -71,11 +71,15 @@ Bug Fixes
 
 * SOLR-11012: Fix three (JavaBinCodec not being closed) Resource Leak warnings. (Christine Poerschke)
 
+* SOLR-11011: Assign.buildCoreName can lead to error in creating a new core when legacyCloud=false (Cao Manh Dat)
+
 Optimizations
 ----------------------
 
 * SOLR-10985: Remove unnecessary toString() calls in solr-core's search package's debug logging.
   (Michael Braun via Christine Poerschke)
+
+* SOLR-11124: MoveReplicaCmd should skip deleting old replica in case of its node is not live (Cao Manh Dat)
 
 Other Changes
 ----------------------
@@ -93,6 +97,12 @@ Other Changes
 
 * SOLR-11052: Remove unnecessary Long-to-Integer and back casts in ReplicationHandler.
   (Ramsey Haddad via Christine Poerschke)
+
+* SOLR-11106: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong server name
+  (Kensho Hirasawa via Erick Erickson)
+  
+* SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
+  (Erick Erickson)
 
 ==================  7.0.0 ==================
 
@@ -357,6 +367,9 @@ Bug Fixes
 * SOLR-11073: Fix overflow in interval faceting when querying Long limits (e.g. (Long.MAX_VALUE TO Long.MAX_VALUE])
   (Tomás Fernández Löbbe)
 
+* SOLR-11057: Fix overflow in point range queries when querying the type limits 
+  (e.g. q=field_i:{Integer.MAX_VALUE TO Integer.MAX_VALUE]) (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 
@@ -482,25 +495,9 @@ Other Changes
 
 * SOLR-10823: Add reporting period to SolrMetricReporter base class. (Christine Poerschke)
 
-* SOLR-10807: Randomize Points based numeric field types in (more) test schemas
-  - SOLR-10946: Randomize the usage of Points based numerics in solrj test schemas (hossman)
-  - SOLR-10947: Randomize the usage of Points based numerics in contrib test schemas (hossman)
-  - SOLR-10970: Randomize PointFields in all tests using schema-*sort* files (hossman)
-  - SOLR-10971: Randomize PointFields in CdcrBootstrapTest (hossman)
-  - SOLR-10977: Randomize the usage of Points based numerics in schema15.xml and all impacted tests (hossman)
-  - SOLR-10979: Randomize PointFields in schema-docValues*.xml and all affected tests (hossman)
-  - SOLR-10989: Randomize PointFields and general cleanup in schema files where some Trie fields were unused (hossman)
-  - SOLR-11048: Randomize PointsFields in schema-add-schema-fields-update-processor.xml in solr-core collection1 and
-    all affected tests (Anshum Gupta)
-  - SOLR-11059: Randomize PointFields in schema-blockjoinfacetcomponent.xml and all related tests (Anshum Gupta)
-  - SOLR-11060: Randomize PointFields in schema-custom-field.xml and all related tests (Anshum Gupta)
-  - SOLR-11095: Randomize PointFields in doc-expiry & exitabe-directory test configsets (hossman)
-  - SOLR-11097: Randomize PointFields in schema-id-and-version-fields-only.xml and all affected tests (hossman)
-  - SOLR-11098: Randomize PointFields in cloud-managed-preanalyzed & schema-preanalyzed.xml and all affected tests (hossman)
-  - SOLR-11101: Randomize PointFields in "cloud-minimal" test configset and all affected tests (Steve Rowe)
-  - SOLR-11103: Randomize PointFields in "cloud-hdfs" test configset and all affected tests (Steve Rowe)
-  - SOLR-11105: Randomize PointFields in "cloud-minimal-jmx" and "cloud-minimal-inplace-updates" test configsets (Steve Rowe)
-
+* SOLR-10807: Randomize Points based numeric field types in all existing tests & test schemas
+  where Trie numerics were previously hardcoded. (hossman, Steve Rowe, Anshum Gupta)
+  
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
   (added leading '/' in request handlers). Switch all tests referring to "standard" request handler to
@@ -527,6 +524,10 @@ Other Changes
   viz. 'fromNode' for MOVEREPLICA and 'source', 'target' for REPLACENODE have been deprecated. (shalin)
 
 * SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
+
+* SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
+
+* SOLR-11119: Switch from Trie to Points field types in the .system collection schema. (Steve Rowe)
 
 ==================  6.7.0 ==================
 

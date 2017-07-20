@@ -26,7 +26,7 @@
   <fieldType name="text" class="solr.TextField"/>
   <fieldType name="bool" class="solr.BoolField"/>
   <fieldType name="str" class="solr.StrField"/>
-  <fieldType name="int" class="solr.TrieIntField"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}"/>
 
   <!-- explicit props on type -->
   <fieldType name="multi_f" class="solr.StrField" multiValued="false"/>
@@ -47,8 +47,8 @@
   <fieldType name="txt_phrase_t" class="solr.TextField"
              autoGeneratePhraseQueries="true"/>
 
-  <fieldType name="int_dvas_t" class="solr.TrieIntField" useDocValuesAsStored="true"/>
-  <fieldType name="int_dvas_f" class="solr.TrieIntField" useDocValuesAsStored="false"/>
+  <fieldType name="int_dvas_t" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="true"/>
+  <fieldType name="int_dvas_f" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" useDocValuesAsStored="false"/>
 
   <!-- all behavior is default -->
 
