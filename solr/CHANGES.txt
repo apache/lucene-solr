@@ -440,6 +440,7 @@ Other Changes
   - SOLR-11074: Randomize PointFields in cloud-dynamic configset and all related tests (Anshum Gupta)
   - SOLR-11121: Randomize PointFields in schema-trie.xml and TestTrie (hossman)
   - SOLR-11120: Remove trie fieldTypes from schema-points.xml (hossman)
+  - SOLR-11123: Randomize PointFields in test classes that had usage of Trie field classes/names hardcoded (hossman)
 
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
