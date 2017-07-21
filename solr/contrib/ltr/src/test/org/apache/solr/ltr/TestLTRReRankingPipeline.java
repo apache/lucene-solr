@@ -48,7 +48,6 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,7 +162,7 @@ public class TestLTRReRankingPipeline extends LuceneTestCase {
 
   }
 
-  @Ignore
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
     final Directory dir = newDirectory();
