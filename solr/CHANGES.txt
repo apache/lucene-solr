@@ -106,6 +106,9 @@ Other Changes
 
 * SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
+* SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster 
+  to instead extend SolrCloudTestCase. (Steve Rowe)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components

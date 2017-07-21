@@ -2685,16 +2685,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /**
    * Sets various sys props related to user specified or randomized choices regarding the types 
    * of numerics that should be used in tests.
-   * <p>
-   * TODO: This method can be private once SOLR-10916 is resolved
-   * </p>
+   *
    * @see #NUMERIC_DOCVALUES_SYSPROP
    * @see #NUMERIC_POINTS_SYSPROP
    * @see #clearNumericTypesProperties
    * @lucene.experimental
    * @lucene.internal
    */
-  public static void randomizeNumericTypesProperties() {
+  private static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, ""+useDV);
@@ -2738,14 +2736,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   
   /**
    * Cleans up the randomized sysproperties and variables set by {@link #randomizeNumericTypesProperties}
-   * <p>
-   * TODO: This method can be private once SOLR-10916 is resolved
-   * </p>
+   *
    * @see #randomizeNumericTypesProperties
    * @lucene.experimental
    * @lucene.internal
    */
-  public static void clearNumericTypesProperties() {
+  private static void clearNumericTypesProperties() {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
     System.clearProperty("solr.tests.numeric.points");
     System.clearProperty("solr.tests.numeric.points.dv");
