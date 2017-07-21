@@ -1,5 +1,5 @@
 {
-  "documentation" : "https://cwiki.apache.org/confluence/display/solr/Schema+API#SchemaAPI-AddaNewCopyFieldRule",
+  "documentation" : "https://lucene.apache.org/solr/guide/schema-api.html#add-a-new-copy-field-rule",
   "description": "Adds a new copy field rule, to allow one field to be populated with the contents of one or more other fields.",
   "type": "object",
   "properties": {

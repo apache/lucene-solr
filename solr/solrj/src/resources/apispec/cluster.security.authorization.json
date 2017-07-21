@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Authentication+and+Authorization+Plugins",
+  "documentation": "https://lucene.apache.org/solr/guide/authentication-and-authorization-plugins.html",
   "description":"Shows the configuration for authorization, including the classes (type of authorization), permissions, user-roles, and other parameters.",
   "methods": [
     "GET"

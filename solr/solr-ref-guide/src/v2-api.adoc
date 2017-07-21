@@ -78,7 +78,7 @@ Example : `\http://localhost:8983/v2/c/gettingstarted/get/_introspect`
 ----
 {
   "spec":[{
-      "documentation":"https://cwiki.apache.org/confluence/display/solr/RealTime+Get",
+      "documentation":"https://lucene.apache.org/solr/guide/real-time-get.html",
       "description":"RealTime Get allows retrieving documents by ID before the documents have been committed to the index. It is useful when you need access to documents as soon as they are indexed but your commit times are high for other reasons.",
       "methods":["GET"],
       "url":{
@@ -94,7 +94,8 @@ Example : `\http://localhost:8983/v2/c/gettingstarted/get/_introspect`
             "type":"string",
             "description":"An optional filter query to add to the query. One use case for this is security filtering, in case users or groups should not be able to retrieve the document ID requested."}}}}],
   "WARNING":"This response format is experimental.  It is likely to change in the future.",
-  "availableSubPaths":{}}
+  "availableSubPaths":{}
+}
 ----
 
 Description of some of the keys in the above example:
@@ -112,29 +113,29 @@ Example of introspect for a POST API: `\http://localhost:8983/v2/c/gettingstarte
 ----
 {
   "spec":[{
-      "documentation":"https://cwiki.apache.org/confluence/display/solr/Collections+API",
+      "documentation":"https://lucene.apache.org/solr/guide/collections-api.html",
       "description":"Several collection-level operations are supported with this endpoint: modify collection attributes; reload a collection; migrate documents to a different collection; rebalance collection leaders; balance properties across shards; and add or delete a replica property.",
       "methods":["POST"],
       "url":{"paths":["/collections/{collection}",
           "/c/{collection}"]},
       "commands":{"modify":{
-          "documentation":"https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-modifycoll",
+          "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#modifycollection",
           "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
           "type":"object",
           "properties":{
             "rule":{
               "type":"array",
-              "documentation":"https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+              "documentation":"https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
               "description":"Modifies the rules for where replicas should be located in a cluster.",
               "items":{"type":"string"}},
             "snitch":{
               "type":"array",
-              "documentation":"https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+              "documentation":"https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
               "description":"Details of the snitch provider",
               "items":{"type":"string"}},
             "autoAddReplicas":{
               "type":"boolean",
-              "description":"When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://cwiki.apache.org/confluence/display/solr/Running+Solr+on+HDFS for more details on settings and overrides."},
+              "description":"When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://lucene.apache.org/solr/guide/running-solr-on-hdfs.html for more details on settings and overrides."},
             "replicationFactor":{
               "type":"string",
               "description":"The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."},
@@ -148,9 +149,7 @@ Example of introspect for a POST API: `\http://localhost:8983/v2/c/gettingstarte
     "/c/gettingstarted/schema":["POST", "GET"],
     "/c/gettingstarted/export":["POST", "GET"],
     "/c/gettingstarted/admin/ping":["POST", "GET"],
-    "/c/gettingstarted/update":["POST"]},
-
-[... more sub-paths ...]
+    "/c/gettingstarted/update":["POST"]}
 }
 ----
 

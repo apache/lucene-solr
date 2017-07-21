@@ -1,5 +1,5 @@
 {
-  "documentation":"https://cwiki.apache.org/confluence/display/solr/Schema+API#SchemaAPI-DeleteaFieldType",
+  "documentation":"https://lucene.apache.org/solr/guide/schema-api.html#delete-a-field-type",
   "description": "Deletes a field type from the schema.",
   "type":"object",
   "properties": {
