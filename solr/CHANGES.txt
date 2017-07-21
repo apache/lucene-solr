@@ -92,6 +92,9 @@ Other Changes
 * SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster 
   to instead extend SolrCloudTestCase. (Steve Rowe)
 
+* SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
+  (Jason Gerlowski via Anshum Gupta)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
