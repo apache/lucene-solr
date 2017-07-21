@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/ConfigSets+API#ConfigSetsAPI-list",
+  "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-list",
   "description": "List all ConfigSets in the cluster.",
   "methods": [
     "GET"
