@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -257,6 +256,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   @Test
   @SuppressForbidden(reason="using new Date(time) to create random dates")
   public void testRandomNumerics() throws Exception {
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     assertU(delQ("*:*"));
     assertU(commit());
     List<String> trieFields = new ArrayList<String>();
@@ -297,20 +297,20 @@ public class TestExportWriter extends SolrTestCaseJ4 {
       addLong(doc, random().nextLong(), false);
       addFloat(doc, random().nextFloat() * 3000 * (random().nextBoolean()?1:-1), false);
       addDouble(doc, random().nextDouble() * 3000 * (random().nextBoolean()?1:-1), false);
-      addDate(doc, new Date(), false);
+      addDate(doc, dateFormat.format(new Date()), false);
 
       // MV need to be unique in order to be the same in Trie vs Points
       Set<Integer> ints = new HashSet<>();
       Set<Long> longs = new HashSet<>();
       Set<Float> floats = new HashSet<>();
       Set<Double> doubles = new HashSet<>();
-      Set<Date> dates = new HashSet<>();
+      Set<String> dates = new HashSet<>();
       for (int j=0; j < random().nextInt(20); j++) {
         ints.add(random().nextInt());
         longs.add(random().nextLong());
         floats.add(random().nextFloat() * 3000 * (random().nextBoolean()?1:-1));
         doubles.add(random().nextDouble() * 3000 * (random().nextBoolean()?1:-1));
-        dates.add(new Date(System.currentTimeMillis() + random().nextInt()));
+        dates.add(dateFormat.format(new Date(System.currentTimeMillis() + random().nextInt())));
       }
       ints.stream().forEach((val)->addInt(doc, val, true));
       longs.stream().forEach((val)->addLong(doc, val, true));
@@ -356,8 +356,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     addField(doc, "i", String.valueOf(value), mv);
   }
   
-  private void addDate(SolrInputDocument doc, Date value, boolean mv) {
-    addField(doc, "dt", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT).format(value), mv);
+  private void addDate(SolrInputDocument doc, String value, boolean mv) {
+    addField(doc, "dt", value, mv);
   }
   
   private void addField(SolrInputDocument doc, String type, String value, boolean mv) {
