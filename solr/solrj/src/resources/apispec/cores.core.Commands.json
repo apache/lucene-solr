@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API",
+  "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html",
   "description": "Actions that are peformed on individual cores, such as reloading, swapping cores, renaming, and others.",
   "methods": [
     "POST"
@@ -12,12 +12,12 @@
   "commands": {
     "reload": {
       "type":"object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-RELOAD",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-reload",
       "description": "Reloads a core. This is useful when you have made changes on disk such as editing the schema or solrconfig.xml files. Most APIs reload cores automatically, so this should not be necessary if changes were made with those APIs."
     },
     "swap": {
       "type":"object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-SWAP",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-swap",
       "description": "Swaps the names of two existing Solr cores. This can be used to swap new content into production. The former core can be swapped back if necessary. Using this API is not supported in SolrCloud mode.",
       "properties": {
         "with": {
@@ -35,7 +35,7 @@
     },
     "rename": {
       "type": "object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-RENAME",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-rename",
       "description": "Change the name of a core.",
       "properties": {
         "to": {
@@ -53,7 +53,7 @@
     },
     "unload": {
       "type": "object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-UNLOAD",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-unload",
       "description": "Removes a core. Active requests would continue to be processed, but new requests will not be sent to the new core. If a core is registered under more than one name, only the name given in the request is removed.",
       "properties": {
         "deleteIndex": {
@@ -79,7 +79,7 @@
     },
     "merge-indexes": {
       "type":"object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-MERGEINDEXES",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-mergeindexes",
       "description":"Merges one or more indexes to another index. The indexes must have completed commits, and should be locked against writes until the merge is complete to avoid index corruption. The target core (which is the core that should be used as the endpoint for this command) must exist before using this command. A commit should also be performed on this core after the merge is complete.",
       "properties": {
         "indexDir": {
@@ -105,7 +105,7 @@
     "split":  { "#include": "cores.core.Commands.split"},
     "request-recovery": {
       "type":"object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-REQUESTRECOVERY",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-requestrecovery",
       "description": "Manually asks a core to recover by synching with a leader. It may help SolrCloud clusters where a node refuses to come back up. However, it is considered an expert-level command, and should be used very carefully."
     },
     "force-prepare-for-leadership": {

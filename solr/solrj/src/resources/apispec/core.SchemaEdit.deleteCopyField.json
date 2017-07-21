@@ -1,6 +1,6 @@
 {
   "type":"object",
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Schema+API#SchemaAPI-DeleteaCopyFieldRule",
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#delete-a-copy-field-rule",
   "description": "Deletes a copy field rule. Both sides of the copy rule (source and destination) are required in order to delete the rule.",
   "properties":{
     "source": {

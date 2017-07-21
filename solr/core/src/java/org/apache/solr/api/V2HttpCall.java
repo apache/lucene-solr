@@ -82,7 +82,7 @@ public class V2HttpCall extends HttpSolrCall {
         api = new Api(null) {
           @Override
           public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-            rsp.add("documentation", "https://cwiki.apache.org/confluence/display/solr/v2+API");
+            rsp.add("documentation", "https://lucene.apache.org/solr/guide/v2-api.html");
             rsp.add("description", "V2 API root path");
           }
         };

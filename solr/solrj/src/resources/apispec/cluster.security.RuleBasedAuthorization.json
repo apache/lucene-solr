@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Rule-Based+Authorization+Plugin",
+  "documentation": "https://lucene.apache.org/solr/guide/rule-based-authorization-plugin.html",
   "description": "Defines roles for accessing Solr, and assigns users to those roles. Use this API to change user authorizations to each of Solr's components.",
   "methods": [
     "POST"

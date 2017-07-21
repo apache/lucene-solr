@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/ConfigSets+API",
+  "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html",
   "description": "Create ConfigSets.",
   "methods": [
     "POST"
@@ -12,7 +12,7 @@
     "create": {
       "type" :"object",
       "description": "Create a ConfigSet, based on another ConfigSet already in ZooKeeper.",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/ConfigSets+API#ConfigSetsAPI-create",
+      "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-create",
       "properties": {
         "name" :{
           "type" :"string",
