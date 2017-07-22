@@ -98,7 +98,7 @@ public class Util {
 	public static String QUERY_THREAD_COUNT_FIRST = "";
 	public static String QUERY_THREAD_COUNT_SECOND = "";
 	public static String QUERY_THREAD_COUNT_THIRD = "";
-	public static String QUERY_THREAD_COUNT_FOURTH = "";	
+	public static String QUERY_THREAD_COUNT_FOURTH = "";
 	public static String TEST_DATA_DIRECTORY = "";
 	public static String ONEM_TEST_DATA = "";
 	public static String NUMERIC_QUERY_TERM_DATA = "";
@@ -606,7 +606,7 @@ public class Util {
 					MessageType.YELLOW_TEXT, false);
 			Util.QUERY_THREAD_COUNT_FOURTH = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountFourth");
 			Util.postMessage("Getting Property Value for queryThreadCountFourth: " + Util.QUERY_THREAD_COUNT_FOURTH,
-					MessageType.YELLOW_TEXT, false);		
+					MessageType.YELLOW_TEXT, false);
 			Util.TEST_DATA_DIRECTORY = prop.getProperty("SolrNightlyBenchmarks.testDataDirectory");
 			Util.postMessage("Getting Property Value for testDataDirectory: " + Util.TEST_DATA_DIRECTORY,
 					MessageType.YELLOW_TEXT, false);
@@ -669,59 +669,67 @@ public class Util {
 		}
 
 	}
-	
+
 	public static boolean checkDataFiles() {
-		
+
 		Util.postMessage("** Checking if data files are present ...", MessageType.CYAN_TEXT, false);
 
 		File file = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-		
+
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...", MessageType.RED_TEXT, false);
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+					MessageType.RED_TEXT, false);
 			return false;
 		}
-	
+
 		Util.postMessage("** All Required Data Files are present ...", MessageType.GREEN_TEXT, false);
 		return true;
 	}
@@ -991,8 +999,8 @@ public class Util {
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
 
 		Util.getPropertyValues();
-		
-		if(!Util.checkDataFiles()) {
+
+		if (!Util.checkDataFiles()) {
 			System.exit(0);
 		}
 
@@ -1006,6 +1014,22 @@ public class Util {
 						MessageType.CYAN_TEXT, false);
 				System.exit(0);
 			} else {
+
+				for (int i = 0; i < argsList.size(); i++) {
+					if (argsList.get(i).equals("--generate-data-file") || argsList.get(i).equals("--register-commit")
+							|| argsList.get(i).equals("--clean-up") || argsList.get(i).equals("--from-queue")
+							|| argsList.get(i).equals("--silent") || argsList.get(i).equals("--commit-id")
+							|| argsList.get(i).equals("--test-with-number-of-documents")
+							|| argsList.get(i).equals("--latest-commit")) {
+					} else {
+						if (argsList.get(i).startsWith("--")) {
+							Util.postMessage("", MessageType.RED_TEXT, false);
+							Util.postMessage(argsList.get(i) + " seems like an unrecognized argument...",
+									MessageType.RED_TEXT, false);
+						}
+					}
+				}
+				Util.postMessage("", MessageType.RED_TEXT, false);
 
 				int atleastOne = 0;
 
@@ -1364,12 +1388,12 @@ public class Util {
 		}
 
 	}
-	
+
 	public static void createHighlightKeywordsDataFile() {
-		
+
 		String line = "";
 		String cvsSplitBy = ",";
-		
+
 		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
 			while ((line = br.readLine()) != null) {
@@ -1377,19 +1401,19 @@ public class Util {
 				Random r = new Random();
 				int number = r.nextInt(data[2].split(" ").length);
 				String s = data[2].split(" ")[number].trim();
-				
+
 				while (s.length() < 10) {
 					s = data[2].split(" ")[r.nextInt(data[2].split(" ").length)].trim();
 				}
 
 				Util.postMessage(data[2].split(" ")[number], MessageType.RED_TEXT, false);
-				BenchmarkAppConnector.writeToWebAppDataFile("Highlight-Terms.csv",s, false, FileType.TEST_ENV_FILE);
+				BenchmarkAppConnector.writeToWebAppDataFile("Highlight-Terms.csv", s, false, FileType.TEST_ENV_FILE);
 			}
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	/**
