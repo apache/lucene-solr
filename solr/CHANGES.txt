@@ -361,6 +361,8 @@ Bug Fixes
 * SOLR-11057: Fix overflow in point range queries when querying the type limits
   (e.g. q=field_i:{Integer.MAX_VALUE TO Integer.MAX_VALUE]) (Tomás Fernández Löbbe)
 
+* SOLR-11136: Fix solrj XMLResponseParser when nested docs transformer is used with indented XML (hossman)
+
 Optimizations
 ----------------------
 
