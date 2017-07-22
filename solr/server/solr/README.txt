@@ -17,7 +17,7 @@
 Default Solr Home Directory
 =============================
 
-This directory is the default Solr home directory which holds 
+This directory is the default Solr home directory which holds
 configuration files and Solr indexes (called cores).
 
 
@@ -38,17 +38,17 @@ it is recommended to just use automatic core discovery instead of
 listing cores in solr.xml.
 
 If no solr.xml file is found, then Solr assumes that there should be
-a single SolrCore named "collection1" and that the "Instance Directory" 
+a single SolrCore named "collection1" and that the "Instance Directory"
 for collection1 should be the same as the Solr Home Directory.
 
 For more information about solr.xml, please see:
-https://cwiki.apache.org/confluence/display/solr/Solr+Cores+and+solr.xml
+https://lucene.apache.org/solr/guide/solr-cores-and-solr-xml.html
 
 * Individual SolrCore Instance Directories *
 
-Although solr.xml can be configured to look for SolrCore Instance Directories 
-in any path, simple sub-directories of the Solr Home Dir using relative paths 
-are common for many installations.  
+Although solr.xml can be configured to look for SolrCore Instance Directories
+in any path, simple sub-directories of the Solr Home Dir using relative paths
+are common for many installations.
 
 * Core Discovery *
 
@@ -60,18 +60,18 @@ defined in core.properties. For an example of core.properties, please see:
 example/solr/collection1/core.properties
 
 For more information about core discovery, please see:
-https://cwiki.apache.org/confluence/display/solr/Moving+to+the+New+solr.xml+Format 
+https://lucene.apache.org/solr/guide/defining-core-properties.html 
 
 * A Shared 'lib' Directory *
 
-Although solr.xml can be configured with an optional "sharedLib" attribute 
-that can point to any path, it is common to use a "./lib" sub-directory of the 
+Although solr.xml can be configured with an optional "sharedLib" attribute
+that can point to any path, it is common to use a "./lib" sub-directory of the
 Solr Home Directory.
 
 * ZooKeeper Files *
 
-When using SolrCloud using the embedded ZooKeeper option for Solr, it is 
-common to have a "zoo.cfg" file and "zoo_data" directories in the Solr Home 
+When using SolrCloud using the embedded ZooKeeper option for Solr, it is
+common to have a "zoo.cfg" file and "zoo_data" directories in the Solr Home
 Directory.  Please see the SolrCloud wiki page for more details...
 
 https://wiki.apache.org/solr/SolrCloud
