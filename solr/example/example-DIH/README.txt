@@ -46,4 +46,4 @@ When Solr is started connect to:
   http://localhost:8983/solr/tika/dataimport?command=full-import
 
 Check also the Solr Reference Guide for detailed usage guide:
-https://cwiki.apache.org/confluence/display/solr/Uploading+Structured+Data+Store+Data+with+the+Data+Import+Handler
+https://lucene.apache.org/solr/guide/uploading-structured-data-store-data-with-the-data-import-handler.html
