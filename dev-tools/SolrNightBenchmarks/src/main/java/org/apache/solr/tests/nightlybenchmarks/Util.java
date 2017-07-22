@@ -108,6 +108,7 @@ public class Util {
 	public static String TEXT_TERM_DATA = "";
 	public static String TEXT_PHRASE_DATA = "";
 	public static String HIGHLIGHT_TERM_DATA = "";
+	public static String TEST_DATA_STORE_LOCATION = "";
 
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
@@ -645,6 +646,9 @@ public class Util {
 			Util.HIGHLIGHT_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.highlightTermsData");
 			Util.postMessage("Getting Property Value for highlightTermsData: " + Util.HIGHLIGHT_TERM_DATA,
 					MessageType.YELLOW_TEXT, false);
+			Util.TEST_DATA_STORE_LOCATION = prop.getProperty("SolrNightlyBenchmarks.testDataStoreURL");
+			Util.postMessage("Getting Property Value for testDataStoreURL: " + Util.TEST_DATA_STORE_LOCATION,
+					MessageType.YELLOW_TEXT, false);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
@@ -676,58 +680,130 @@ public class Util {
 
 		File file = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+			
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.ONEM_TEST_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.ONEM_TEST_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.ONEM_TEST_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_QUERY_TERM_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.NUMERIC_QUERY_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.NUMERIC_QUERY_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_QUERY_PAIR_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.NUMERIC_QUERY_PAIR_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.NUMERIC_QUERY_PAIR_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_SORTED_QUERY_PAIR_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_QUERY_AND_OR_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.NUMERIC_QUERY_AND_OR_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.NUMERIC_QUERY_AND_OR_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.TEXT_TERM_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.TEXT_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.TEXT_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.TEXT_PHRASE_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.TEXT_PHRASE_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.TEXT_PHRASE_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Please check and try again...",
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
-			return false;
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.HIGHLIGHT_TERM_DATA, Util.TEST_DATA_DIRECTORY);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.HIGHLIGHT_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.HIGHLIGHT_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
 		}
 
 		Util.postMessage("** All Required Data Files are present ...", MessageType.GREEN_TEXT, false);
