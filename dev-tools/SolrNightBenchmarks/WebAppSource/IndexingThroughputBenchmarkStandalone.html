@@ -280,8 +280,6 @@
                                                      document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
 
                                                      setTimeout(function () {
-                                                    	 
-                                                    	 document.getElementById("memProfileGraph").innerHTML ="<img src='images/fluid-loader.gif'/>";
                                                          g3 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_STANDALONE_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
                                                          g4 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_STANDALONE_INDEXING_THROUGHPUT_SERIAL_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
                                                      }, 250);
