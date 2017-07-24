@@ -222,7 +222,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   public static boolean fetchRestoreStatus (String baseUrl, String coreName) throws IOException {
     String masterUrl = baseUrl + "/" + coreName +
-        ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_RESTORE_STATUS;
+        ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
     InputStream stream = null;

@@ -265,7 +265,7 @@ To get the resulting cluster status (again, if you have not enabled client authe
 
 [source,bash]
 ----
-curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&wt=json&indent=on"
+curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/admin/collections?action=CLUSTERSTATUS&indent=on"
 ----
 
 You should get a response that looks like this:
@@ -321,7 +321,7 @@ Use cURL to query the SolrCloud collection created above, from a directory conta
 
 [source,bash]
 ----
-curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*&wt=json&indent=on"
+curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
 ----
 
 === Index a Document using CloudSolrClient

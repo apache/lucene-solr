@@ -390,8 +390,8 @@ Like other request handlers, the Metrics API can also take the `wt` parameter to
 
 Request only "counter" type metrics in the "core" group, returned in JSON:
 
-`\http://localhost:8983/solr/admin/metrics?wt=json&type=counter&group=core`
+`\http://localhost:8983/solr/admin/metrics?type=counter&group=core`
 
-Request only "core" group metrics that start with "INDEX", returned in JSON:
+Request only "core" group metrics that start with "INDEX", returned in XML:
 
-`\http://localhost:8983/solr/admin/metrics?wt=json&prefix=INDEX&group=core`
+`\http://localhost:8983/solr/admin/metrics?wt=xml&prefix=INDEX&group=core`

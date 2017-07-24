@@ -231,6 +231,8 @@ If set to `true`, this parameter excludes the header from the returned results. 
 
 The `wt` parameter selects the Response Writer that Solr should use to format the query's response. For detailed descriptions of Response Writers, see <<response-writers.adoc#response-writers,Response Writers>>.
 
+If you do not define the `wt` parameter in your queries, JSON will be returned as the format of the response.
+
 == cache Parameter
 
 Solr caches the results of all queries and filter queries by default. To disable result caching, set the `cache=false` parameter.

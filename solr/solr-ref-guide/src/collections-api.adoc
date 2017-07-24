@@ -1082,7 +1082,7 @@ Returns the current status of the overseer, performance statistics of various ov
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS&wt=json
+http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
 ----
 
 [source,json]
@@ -1171,7 +1171,7 @@ The response will include the status of the request and the status of the cluste
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=clusterstatus&wt=json
+http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ----
 
 *Output*
@@ -1393,7 +1393,7 @@ Fetch the names of the collections in the cluster.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=LIST&wt=json
+http://localhost:8983/solr/admin/collections?action=LIST
 ----
 
 *Output*

@@ -58,7 +58,7 @@ JSON is a more robust response format, but you will need to add a Python package
 sudo easy_install simplejson
 ----
 
-Once that is done, making a query is nearly the same as before. However, notice that the wt query parameter is now json, and the response is now digested by `simplejson.load()`.
+Once that is done, making a query is nearly the same as before. However, notice that the wt query parameter is now json (which is also the default if not wt parameter is specified), and the response is now digested by `simplejson.load()`.
 
 [source,python]
 ----

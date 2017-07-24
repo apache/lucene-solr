@@ -39,73 +39,11 @@ The `wt` parameter selects the Response Writer to be used. The list below descri
 * <<Standard XML Response Writer,xml>>
 * <<XSLT Response Writer,xslt>>
 
-
-== Standard XML Response Writer
-
-The XML Response Writer is the most general purpose and reusable Response Writer currently included with Solr. It is the format used in most discussions and documentation about the response of Solr queries.
-
-Note that the XSLT Response Writer can be used to convert the XML produced by this writer to other vocabularies or text-based formats.
-
-The behavior of the XML Response Writer can be driven by the following query parameters.
-
-=== The version Parameter
-
-The `version` parameter determines the XML protocol used in the response. Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
-
-The only currently supported version value is `2.2`. The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
-
-The default value is the latest supported.
-
-=== stylesheet Parameter
-
-The `stylesheet` parameter can be used to direct Solr to include a `<?xml-stylesheet type="text/xsl" href="..."?>` declaration in the XML response it returns.
-
-The default behavior is not to return any stylesheet declaration at all.
-
-[IMPORTANT]
-====
-Use of the `stylesheet` parameter is discouraged, as there is currently no way to specify external stylesheets, and no stylesheets are provided in the Solr distributions. This is a legacy parameter, which may be developed further in a future release.
-====
-
-=== indent Parameter
-
-If the `indent` parameter is used, and has a non-blank value, then Solr will make some attempts at indenting its XML response to make it more readable by humans.
-
-The default behavior is not to indent.
-
-== XSLT Response Writer
-
-The XSLT Response Writer applies an XML stylesheet to output. It can be used for tasks such as formatting results for an RSS feed.
-
-=== tr Parameter
-
-The XSLT Response Writer accepts one parameter: the `tr` parameter, which identifies the XML transformation to use. The transformation must be found in the Solr `conf/xslt` directory.
-
-The Content-Type of the response is set according to the `<xsl:output>` statement in the XSLT transform, for example: `<xsl:output media-type="text/html"/>`
-
-=== XSLT Configuration
-
-The example below, from the `sample_techproducts_configs` <<response-writers.adoc#response-writers,config set>> in the Solr distribution, shows how the XSLT Response Writer is configured.
-
-[source,xml]
-----
-<!--
-  Changes to XSLT transforms are taken into account
-  every xsltCacheLifetimeSeconds at most.
--->
-<queryResponseWriter name="xslt"
-                     class="org.apache.solr.request.XSLTResponseWriter">
-  <int name="xsltCacheLifetimeSeconds">5</int>
-</queryResponseWriter>
-----
-
-A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT changes quickly. For production you probably want a much higher value.
-
 == JSON Response Writer
 
-A very commonly used Response Writer is the `JsonResponseWriter`, which formats output in JavaScript Object Notation (JSON), a lightweight data interchange format specified in specified in RFC 4627. Setting the `wt` parameter to `json` invokes this Response Writer.
+The default Solr Response Writer is the `JsonResponseWriter`, which formats output in JavaScript Object Notation (JSON), a lightweight data interchange format specified in specified in RFC 4627. If you do not set the `wt` parameter in your request, you will get JSON by default.
 
-Here is a sample response for a simple query like `q=id:VS1GB400C3&wt=json`:
+Here is a sample response for a simple query like `q=id:VS1GB400C3`:
 
 [source,json]
 ----
@@ -115,9 +53,7 @@ Here is a sample response for a simple query like `q=id:VS1GB400C3&wt=json`:
     "status":0,
     "QTime":7,
     "params":{
-      "q":"id:VS1GB400C3",
-      "indent":"on",
-      "wt":"json"}},
+      "q":"id:VS1GB400C3"}},
   "response":{"numFound":1,"start":0,"maxScore":2.3025851,"docs":[
       {
         "id":"VS1GB400C3",
@@ -192,6 +128,68 @@ With input of `NamedList("a"=1, "bar"="foo", null=3, null=null)`, the output wou
 
 * http://www.xml.com/pub/a/2005/12/21/json-dynamic-script-tag.html
 * http://www.theurer.cc/blog/2005/12/15/web-services-json-dump-your-proxy/
+
+
+== Standard XML Response Writer
+
+The XML Response Writer is the most general purpose and reusable Response Writer currently included with Solr. It is the format used in most discussions and documentation about the response of Solr queries.
+
+Note that the XSLT Response Writer can be used to convert the XML produced by this writer to other vocabularies or text-based formats.
+
+The behavior of the XML Response Writer can be driven by the following query parameters.
+
+=== The version Parameter
+
+The `version` parameter determines the XML protocol used in the response. Clients are strongly encouraged to _always_ specify the protocol version, so as to ensure that the format of the response they receive does not change unexpectedly if the Solr server is upgraded and a new default format is introduced.
+
+The only currently supported version value is `2.2`. The format of the `responseHeader` changed to use the same `<lst>` structure as the rest of the response.
+
+The default value is the latest supported.
+
+=== stylesheet Parameter
+
+The `stylesheet` parameter can be used to direct Solr to include a `<?xml-stylesheet type="text/xsl" href="..."?>` declaration in the XML response it returns.
+
+The default behavior is not to return any stylesheet declaration at all.
+
+[IMPORTANT]
+====
+Use of the `stylesheet` parameter is discouraged, as there is currently no way to specify external stylesheets, and no stylesheets are provided in the Solr distributions. This is a legacy parameter, which may be developed further in a future release.
+====
+
+=== indent Parameter
+
+If the `indent` parameter is used, and has a non-blank value, then Solr will make some attempts at indenting its XML response to make it more readable by humans.
+
+The default behavior is not to indent.
+
+== XSLT Response Writer
+
+The XSLT Response Writer applies an XML stylesheet to output. It can be used for tasks such as formatting results for an RSS feed.
+
+=== tr Parameter
+
+The XSLT Response Writer accepts one parameter: the `tr` parameter, which identifies the XML transformation to use. The transformation must be found in the Solr `conf/xslt` directory.
+
+The Content-Type of the response is set according to the `<xsl:output>` statement in the XSLT transform, for example: `<xsl:output media-type="text/html"/>`
+
+=== XSLT Configuration
+
+The example below, from the `sample_techproducts_configs` <<response-writers.adoc#response-writers,config set>> in the Solr distribution, shows how the XSLT Response Writer is configured.
+
+[source,xml]
+----
+<!--
+  Changes to XSLT transforms are taken into account
+  every xsltCacheLifetimeSeconds at most.
+-->
+<queryResponseWriter name="xslt"
+                     class="org.apache.solr.request.XSLTResponseWriter">
+  <int name="xsltCacheLifetimeSeconds">5</int>
+</queryResponseWriter>
+----
+
+A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT changes quickly. For production you probably want a much higher value.
 
 == Binary Response Writer
 

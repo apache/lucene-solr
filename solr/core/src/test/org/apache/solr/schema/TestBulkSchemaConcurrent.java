@@ -149,7 +149,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
     RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-    String response = publisher.post("/schema?wt=json", SolrTestCaseJ4.json(payload));
+    String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     if (errors != null) {
@@ -219,7 +219,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
     RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-    String response = publisher.post("/schema?wt=json", SolrTestCaseJ4.json(payload));
+    String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     if (errors != null) {
@@ -281,7 +281,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     payload = payload.replace("myNewFieldTypeName", newFieldTypeName);
 
     RestTestHarness publisher = restTestHarnesses.get(r.nextInt(restTestHarnesses.size()));
-    String response = publisher.post("/schema?wt=json", SolrTestCaseJ4.json(payload));
+    String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     if (errors != null) {

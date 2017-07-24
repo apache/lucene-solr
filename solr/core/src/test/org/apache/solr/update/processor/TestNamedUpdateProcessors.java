@@ -82,10 +82,10 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
         "'add-runtimelib' : { 'name' : 'colltest' ,'version':1}\n" +
         "}";
     RestTestHarness client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "runtimeLib", blobName, "version"),
         1l, 10);
@@ -97,11 +97,11 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
         "}";
 
     client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client, "/config?wt=json", payload);
+    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
     for (RestTestHarness restTestHarness : restTestHarnesses) {
       TestSolrConfigHandler.testForResponseElement(restTestHarness,
           null,
-          "/config/overlay?wt=json",
+          "/config/overlay",
           null,
           Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
           "test_s", 10);

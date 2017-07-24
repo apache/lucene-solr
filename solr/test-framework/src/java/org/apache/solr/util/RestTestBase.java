@@ -498,7 +498,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    *
    * The passed-in valueToSet should NOT be URL encoded, as it will be URL encoded by this method.
    *
-   * @param query The query portion of a request URL, e.g. "wt=json&indent=on&fl=id,_version_"
+   * @param query The query portion of a request URL, e.g. "wt=xml&indent=off&fl=id,_version_"
    * @param paramToSet The parameter name to insure the presence of in the returned request 
    * @param valueToSet The parameter value to insure in the returned request
    * @return The query with the given param set to the given value 

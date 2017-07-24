@@ -749,6 +749,12 @@
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
+       <!-- Default search field
+          <str name="df">text</str> 
+         -->
+       <!-- Change from JSON to XML format (the default prior to Solr 7.0)
+          <str name="wt">xml</str> 
+         -->
        <!-- Controls the distribution of a query to shards other than itself.
             Consider making 'preferLocalShards' true when:
               1) maxShardsPerNode > 1
