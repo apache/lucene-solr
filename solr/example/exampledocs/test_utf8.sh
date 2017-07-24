@@ -82,8 +82,8 @@ else
   echo "ERROR: HTTP POST + URL params is not accepting UTF-8 beyond the basic multilingual plane"
 fi
 
-#curl "$SOLR_URL/select?q=$UTF8_Q&echoParams=explicit&wt=json" 2> /dev/null | od -tx1 -w1000 | sed 's/ //g' | grep 'f4808198' > /dev/null 2>&1
-curl "$SOLR_URL/select?q=$UTF8_Q&echoParams=explicit&wt=json" 2> /dev/null | grep "$CHAR" > /dev/null 2>&1
+#curl "$SOLR_URL/select?q=$UTF8_Q&echoParams=explicit" 2> /dev/null | od -tx1 -w1000 | sed 's/ //g' | grep 'f4808198' > /dev/null 2>&1
+curl "$SOLR_URL/select?q=$UTF8_Q&echoParams=explicit" 2> /dev/null | grep "$CHAR" > /dev/null 2>&1
 if [ $? = 0 ]; then
   echo "Response correctly returns UTF-8 beyond the basic multilingual plane"
 else

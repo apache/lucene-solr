@@ -265,7 +265,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(collection);
     for (Slice slice : coll.getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config?wt=json";
+        String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config";
         Map respMap = getAsMap(cloudClient, uri);
         Long maxTime = (Long) (getObjectByPath(respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
         ret.put(replica.getCoreName(), maxTime);

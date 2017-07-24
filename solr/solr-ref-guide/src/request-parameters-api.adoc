@@ -78,7 +78,6 @@ curl http://localhost:8983/solr/techproducts/config/params -H 'Content-type:appl
       "facet.limit":5,
       "_invariants_": {
         "facet":true,
-        "wt":"json"
        },
       "_appends_":{"facet.field":["field1","field2"]
      }
@@ -104,7 +103,6 @@ It will be equivalent to a standard request handler definition such as this one:
     <int name="facet.limit">5</int>
   </lst>
   <lst name="invariants">
-    <str name="wt">json</str>
     <bool name="facet">true</bool>
   </lst>
   <lst name="appends">

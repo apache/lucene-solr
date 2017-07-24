@@ -22,13 +22,15 @@ Note that the base directory name may vary with the version of Solr downloaded. 
 Cygwin, or MacOS:
 
     /:$ ls solr*
-    solr-6.2.0.zip
-    /:$ unzip -q solr-6.2.0.zip
-    /:$ cd solr-6.2.0/
+    solr-X.Y.Z.zip
+    /:$ unzip -q solr-X.Y.Z.zip
+    /:$ cd solr-X.Y.Z/
+
+Note that "X.Y.Z" will be replaced by an official Solr version (i.e. 6.4.3, 7.0.0, etc.)
 
 To launch Solr, run: `bin/solr start -e cloud -noprompt`
 
-    /solr-6.2.0:$ bin/solr start -e cloud -noprompt
+    /solr-X.Y.Z:$ bin/solr start -e cloud -noprompt
 
     Welcome to the SolrCloud example!
 
@@ -43,7 +45,7 @@ To launch Solr, run: `bin/solr start -e cloud -noprompt`
 
     SolrCloud example running, please visit http://localhost:8983/solr
 
-    /solr-6.2.0:$ _
+    /solr-X.Y.Z:$ _
 
 You can see that the Solr is running by loading the Solr Admin UI in your web browser: <http://localhost:8983/solr/>.
 This is the main starting point for administering Solr.
@@ -79,8 +81,8 @@ subdirectory, so that makes a convenient set of (mostly) HTML files built-in to 
 
 Here's what it'll look like:
 
-    /solr-6.2.0:$ bin/post -c gettingstarted docs/
-    java -classpath /solr-6.2.0/dist/solr-core-6.2.0.jar -Dauto=yes -Dc=gettingstarted -Ddata=files -Drecursive=yes org.apache.solr.util.SimplePostTool docs/
+    /solr-X.Y.Z:$ bin/post -c gettingstarted docs/
+    java -classpath /solr-X.Y.Z/dist/solr-core-X.Y.Z.jar -Dauto=yes -Dc=gettingstarted -Ddata=files -Drecursive=yes org.apache.solr.util.SimplePostTool docs/
     SimplePostTool version 5.0.0
     Posting files to [base] url http://localhost:8983/solr/gettingstarted/update...
     Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -133,8 +135,8 @@ Using `bin/post`, index the example Solr XML files in `example/exampledocs/`:
 
 Here's what you'll see:
 
-    /solr-6.2.0:$ bin/post -c gettingstarted example/exampledocs/*.xml
-    java -classpath /solr-6.2.0/dist/solr-core-6.2.0.jar -Dauto=yes -Dc=gettingstarted -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/gb18030-example.xml ...
+    /solr-X.Y.Z:$ bin/post -c gettingstarted example/exampledocs/*.xml
+    java -classpath /solr-X.Y.Z/dist/solr-core-X.Y.Z.jar -Dauto=yes -Dc=gettingstarted -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/gb18030-example.xml ...
     SimplePostTool version 5.0.0
     Posting files to [base] url http://localhost:8983/solr/gettingstarted/update...
     Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -178,8 +180,8 @@ sample JSON file:
 
 You'll see:
 
-    /solr-6.2.0:$ bin/post -c gettingstarted example/exampledocs/books.json
-    java -classpath /solr-6.2.0/dist/solr-core-6.2.0.jar -Dauto=yes -Dc=gettingstarted -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/books.json
+    /solr-X.Y.Z:$ bin/post -c gettingstarted example/exampledocs/books.json
+    java -classpath /solr-X.Y.Z/dist/solr-core-X.Y.Z.jar -Dauto=yes -Dc=gettingstarted -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/books.json
     SimplePostTool version 5.0.0
     Posting files to [base] url http://localhost:8983/solr/gettingstarted/update...
     Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -207,8 +209,8 @@ Using `bin/post` index the included example CSV file:
 
 In your terminal you'll see:
 
-    /solr-6.2.0:$ bin/post -c gettingstarted example/exampledocs/books.csv
-    java -classpath /solr-6.2.0/dist/solr-core-6.2.0.jar -Dauto=yes -Dc=gettingstarted -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/books.csv
+    /solr-X.Y.Z:$ bin/post -c gettingstarted example/exampledocs/books.csv
+    java -classpath /solr-X.Y.Z/dist/solr-core-X.Y.Z.jar -Dauto=yes -Dc=gettingstarted -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/books.csv
     SimplePostTool version 5.0.0
     Posting files to [base] url http://localhost:8983/solr/gettingstarted/update...
     Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -277,7 +279,7 @@ in the form, you'll get 10 documents in JSON format (`*:*` in the `q` param matc
 The URL sent by the Admin UI to Solr is shown in light grey near the top right of the above screenshot - if you click on
 it, your browser will show you the raw response.  To use cURL, give the same URL in quotes on the `curl` command line:
 
-    curl "http://localhost:8983/solr/gettingstarted/select?indent=on&q=*:*&wt=json"
+    curl "http://localhost:8983/solr/gettingstarted/select?q=*:*"
 
 
 ### Basics
@@ -287,11 +289,11 @@ it, your browser will show you the raw response.  To use cURL, give the same URL
 To search for a term, give it as the `q` param value in the core-specific Solr Admin UI Query section, replace `*:*`
 with the term you want to find.  To search for "foundation":
 
-    curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=foundation"
+    curl "http://localhost:8983/solr/gettingstarted/select?q=foundation"
 
 You'll see:
 
-    /solr-6.2.0$ curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=foundation"
+    $ curl "http://localhost:8983/solr/gettingstarted/select?q=foundation"
     {
       "responseHeader":{
         "zkConnected":true,
@@ -315,13 +317,13 @@ default `start=0` and `rows=10`.  You can specify these params to page through r
 To restrict fields returned in the response, use the `fl` param, which takes a comma-separated list of field names.
 E.g. to only return the `id` field:
 
-    curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=foundation&fl=id"
+    curl "http://localhost:8983/solr/gettingstarted/select?q=foundation&fl=id"
 
 `q=foundation` matches nearly all of the docs we've indexed, since most of the files under `docs/` contain
 "The Apache Software Foundation".  To restrict search to a particular field, use the syntax "`q=field:value`",
 e.g. to search for `Foundation` only in the `name` field:
 
-    curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=name:Foundation"
+    curl "http://localhost:8983/solr/gettingstarted/select?q=name:Foundation"
 
 The above request returns only one document (`"numFound":1`) - from the response:
 
@@ -339,7 +341,7 @@ To search for a multi-term phrase, enclose it in double quotes: `q="multiple ter
 "CAS latency" - note that the space between terms must be converted to "`+`" in a URL (the Admin UI will handle URL
 encoding for you automatically):
 
-    curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=\"CAS+latency\""
+    curl "http://localhost:8983/solr/gettingstarted/select?indent=true&q=\"CAS+latency\""
 
 You'll get back:
 
@@ -374,12 +376,12 @@ To find documents that contain both terms "`one`" and "`three`", enter `+one +th
 Admin UI Query tab.  Because the "`+`" character has a reserved purpose in URLs (encoding the space character),
 you must URL encode it for `curl` as "`%2B`":
 
-    curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=%2Bone+%2Bthree"
+    curl "http://localhost:8983/solr/gettingstarted/select?q=%2Bone+%2Bthree"
 
 To search for documents that contain the term "`two`" but **don't** contain the term "`one`", enter `+two -one` in the
 `q` param in the Admin UI.  Again, URL encode "`+`" as "`%2B`":
 
-    curl "http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=%2Btwo+-one"
+    curl "http://localhost:8983/solr/gettingstarted/select?q=%2Btwo+-one"
 
 #### In depth
 
@@ -407,7 +409,7 @@ To see facet counts from all documents (`q=*:*`): turn on faceting (`facet=true`
 the `facet.field` param.  If you only want facets, and no document contents, specify `rows=0`.  The `curl` command below
 will return facet counts for the `manu_id_s` field:
 
-    curl 'http://localhost:8983/solr/gettingstarted/select?wt=json&indent=true&q=*:*&rows=0'\
+    curl 'http://localhost:8983/solr/gettingstarted/select?q=*:*&rows=0'\
     '&facet=true&facet.field=manu_id_s'
 
 In your terminal, you'll see:
@@ -458,7 +460,7 @@ like this:
 
 The data for these price range facets can be seen in JSON format with this command:
 
-    curl 'http://localhost:8983/solr/gettingstarted/select?q=*:*&wt=json&indent=on&rows=0'\
+    curl 'http://localhost:8983/solr/gettingstarted/select?q=*:*&rows=0'\
     '&facet=true'\
     '&facet.range=price'\
     '&f.price.facet.range.start=0'\
@@ -518,8 +520,7 @@ the various possible combinations.  Using the example technical product data, pi
 of the products in the "book" category (the `cat` field) are in stock or not in stock.  Here's how to get at the raw
 data for this scenario:
 
-    curl 'http://localhost:8983/solr/gettingstarted/select?q=*:*&rows=0&wt=json&indent=on'\
-    '&facet=on&facet.pivot=cat,inStock'
+    curl 'http://localhost:8983/solr/gettingstarted/select?q=*:*&rows=0&facet=on&facet.pivot=cat,inStock'
 
 This results in the following response (trimmed to just the book category output), which says out of 14 items in the
 "book" category, 12 are in stock and 2 are not in stock:

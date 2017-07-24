@@ -253,12 +253,11 @@ The `facet.pivot` parameter defines the fields to use for the pivot. Multiple `f
 The `facet.pivot.mincount` parameter defines the minimum number of documents that need to match in order for the facet to be included in results. The default is 1.
 +
 Using the "`bin/solr -e techproducts`" example, A query URL like this one will return the data below, with the pivot faceting results found in the section "facet_pivot":
-+
+
 [source,text]
 ----
 http://localhost:8983/solr/techproducts/select?q=*:*&facet.pivot=cat,popularity,inStock
-   &facet.pivot=popularity,cat&facet=true&facet.field=cat&facet.limit=5
-   &rows=0&wt=json&indent=true&facet.pivot.mincount=2
+   &facet.pivot=popularity,cat&facet=true&facet.field=cat&facet.limit=5&rows=0&facet.pivot.mincount=2
 ----
 +
 [source,json]

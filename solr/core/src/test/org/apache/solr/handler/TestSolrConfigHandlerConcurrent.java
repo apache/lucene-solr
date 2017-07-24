@@ -143,7 +143,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         val3 = String.valueOf(10 * i + 3);
         payload = payload.replace("CACHEVAL3", val3);
   
-        response = publisher.post("/config?wt=json", SolrTestCaseJ4.json(payload));
+        response = publisher.post("/config", SolrTestCaseJ4.json(payload));
       } finally {
         publisher.close();
       }
@@ -171,7 +171,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
-        Map respMap = getAsMap(url+"/config/overlay?wt=json", cloudClient);
+        Map respMap = getAsMap(url+"/config/overlay", cloudClient);
         Map m = (Map) respMap.get("overlay");
         if(m!= null) m = (Map) m.get("props");
         if(m == null) {

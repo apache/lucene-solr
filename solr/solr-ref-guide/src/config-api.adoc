@@ -214,8 +214,7 @@ Here is what a request handler looks like in `solrconfig.xml`:
 <requestHandler name="/query" class="solr.SearchHandler">
   <lst name="defaults">
     <str name="echoParams">explicit</str>
-    <str name="wt">json</str>
-    <str name="indent">true</str>
+    <int name="rows">10</str>
   </lst>
 </requestHandler>
 ----
@@ -230,8 +229,7 @@ The same request handler defined with the Config API would look like this:
     "class":"solr.SearchHandler",
     "defaults":{
       "echoParams":"explicit",
-      "wt":"json",
-      "indent":true
+      "rows": 10
     }
   }
 }
@@ -400,7 +398,7 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
   "add-requesthandler" : {
     "name": "/mypath",
     "class":"solr.DumpRequestHandler",
-    "defaults":{ "x":"y" ,"a":"b", "wt":"json", "indent":true },
+    "defaults":{ "x":"y" ,"a":"b", "rows":10 },
     "useParams":"x"
   }
 }'
@@ -422,7 +420,7 @@ And you should see the following as output:
     "indent":"true",
     "a":"b",
     "x":"y",
-    "wt":"json"},
+    "rows":"10"},
   "context":{
     "webapp":"/solr",
     "path":"/mypath",
@@ -437,7 +435,7 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
   "update-requesthandler": {
     "name": "/mypath",
     "class":"solr.DumpRequestHandler",
-    "defaults": {"x":"new value for X", "wt":"json", "indent":true},
+    "defaults": {"x":"new value for X", "rows":"20"},
     "useParams":"x"
   }
 }'
