@@ -107,7 +107,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                 }\n" +
         "    }";
 
-    String response = restTestHarness.post("/schema?wt=json", json(payload));
+    String response = restTestHarness.post("/schema", json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     List l = (List) map.get("errors");
     assertNotNull("No errors", l);
@@ -142,7 +142,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "    }\n"+
         "}}";
 
-    String response = restTestHarness.post("/schema?wt=json",
+    String response = restTestHarness.post("/schema",
         json(addFieldTypeAnalyzerWithClass + ',' + charFilters + tokenizer + filters + suffix));
     Map map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     List list = (List)map.get("errors");
@@ -151,7 +151,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue (((String)errorList.get(0)).contains
         ("An analyzer with a class property may not define any char filters!"));
 
-    response = restTestHarness.post("/schema?wt=json",
+    response = restTestHarness.post("/schema",
         json(addFieldTypeAnalyzerWithClass + ',' + tokenizer + filters + suffix));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     list = (List)map.get("errors");
@@ -160,7 +160,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue (((String)errorList.get(0)).contains
         ("An analyzer with a class property may not define a tokenizer!"));
 
-    response = restTestHarness.post("/schema?wt=json",
+    response = restTestHarness.post("/schema",
         json(addFieldTypeAnalyzerWithClass + ',' + filters + suffix));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     list = (List)map.get("errors");
@@ -169,7 +169,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue (((String)errorList.get(0)).contains
         ("An analyzer with a class property may not define any filters!"));
 
-    response = restTestHarness.post("/schema?wt=json", json(addFieldTypeAnalyzerWithClass + suffix));
+    response = restTestHarness.post("/schema", json(addFieldTypeAnalyzerWithClass + suffix));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
 
@@ -203,7 +203,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                 }\n" +
         "    }";
 
-    String response = harness.post("/schema?wt=json", json(payload));
+    String response = harness.post("/schema", json(payload));
 
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -226,7 +226,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                 }\n" +
         "    }";
 
-    String response = harness.post("/schema?wt=json", json(payload));
+    String response = harness.post("/schema", json(payload));
     Map map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNotNull(response, map.get("errors"));
 
@@ -249,7 +249,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "     }\n" +
         "}";
 
-    String response = harness.post("/schema?wt=json", json(payload));
+    String response = harness.post("/schema", json(payload));
     Map map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNotNull(response, map.get("errors"));
 
@@ -271,7 +271,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "     }\n" +
         "}";
 
-    response = harness.post("/schema?wt=json", json(payload));
+    response = harness.post("/schema", json(payload));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNotNull(response, map.get("errors"));
   }
@@ -302,7 +302,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "    }\n" +
         "}";
 
-    String response = harness.post("/schema?wt=json", json(payload));
+    String response = harness.post("/schema", json(payload));
 
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -319,7 +319,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                 }\n" +
         "    }";
 
-    response = harness.post("/schema?wt=json", json(payload));
+    response = harness.post("/schema", json(payload));
 
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -499,7 +499,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                       }\n" +
         "          }\n";
     
-    String response = harness.post("/schema?wt=json", json(payload));
+    String response = harness.post("/schema", json(payload));
 
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -636,7 +636,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                        {'source':'NewField4',         'dest':['NewField1'], maxChars: 3333     }]\n" +
         "}\n";
 
-    String response = harness.post("/schema?wt=json", json(cmds));
+    String response = harness.post("/schema", json(cmds));
 
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -691,14 +691,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNull(map.get("NewField3"));
 
     cmds = "{'delete-field-type' : {'name':'NewFieldType'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     Object errors = map.get("errors");
     assertNotNull(errors);
     assertTrue(errors.toString().contains("Can't delete 'NewFieldType' because it's the field type of "));
 
     cmds = "{'delete-field' : {'name':'NewField1'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     errors = map.get("errors");
     assertNotNull(errors);
@@ -706,7 +706,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         ("Can't delete field 'NewField1' because it's referred to by at least one copy field directive"));
 
     cmds = "{'delete-field' : {'name':'NewField2'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     errors = map.get("errors");
     assertNotNull(errors);
@@ -714,7 +714,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         ("Can't delete field 'NewField2' because it's referred to by at least one copy field directive"));
 
     cmds = "{'replace-field' : {'name':'NewField1', 'type':'string'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("errors"));
     // Make sure the copy field directives with source NewField1 are preserved
@@ -728,7 +728,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue(set.contains("NewDynamicField1A"));
 
     cmds = "{'delete-dynamic-field' : {'name':'NewDynamicField1*'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     errors = map.get("errors");
     assertNotNull(errors);
@@ -736,7 +736,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         ("copyField dest :'NewDynamicField1A' is not an explicit field and doesn't match a dynamicField."));
 
     cmds = "{'replace-field' : {'name':'NewField2', 'type':'string'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     errors = map.get("errors");
     assertNull(errors);
@@ -753,7 +753,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue(set.contains("NewDynamicField2*"));
 
     cmds = "{'replace-dynamic-field' : {'name':'NewDynamicField2*', 'type':'string'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     errors = map.get("errors");
     assertNull(errors);
@@ -763,7 +763,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("NewField2", ((Map) list.get(0)).get("dest"));
 
     cmds = "{'replace-dynamic-field' : {'name':'NewDynamicField1*', 'type':'string'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     errors = map.get("errors");
     assertNull(errors);
@@ -773,7 +773,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("NewField1", ((Map) list.get(0)).get("source"));
 
     cmds = "{'replace-field-type': {'name':'NewFieldType', 'class':'solr.BinaryField'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("errors"));
     // Make sure the copy field directives with sources and destinations of type NewFieldType are preserved
@@ -793,7 +793,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                        {'source':'NewDynamicField3*', 'dest':'NewField3'                            },\n" +
         "                        {'source':'NewField4',         'dest':['NewField1', 'NewField2', 'NewField3']}]\n" +
         "}\n";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("errors"));
     list = getSourceCopyFields(harness, "NewField1");
@@ -808,7 +808,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals(0, list.size());
     
     cmds = "{'delete-field': [{'name':'NewField1'},{'name':'NewField2'},{'name':'NewField3'},{'name':'NewField4'}]}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("errors"));
 
@@ -816,12 +816,12 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "                             {'name':'NewDynamicField2*'},\n" +
         "                             {'name':'NewDynamicField3*'}]\n" +
         "}\n";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("errors"));
     
     cmds = "{'delete-field-type':{'name':'NewFieldType'}}";
-    response = harness.post("/schema?wt=json", json(cmds));
+    response = harness.post("/schema", json(cmds));
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(map.get("errors"));
   }
@@ -849,7 +849,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "  }\n" +
         "}\n";
 
-    String response = harness.post("/schema?wt=json&indent=on", json(payload));
+    String response = harness.post("/schema", json(payload));
 
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -876,7 +876,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "  }\n"+
         "}\n";
 
-    response = harness.post("/schema?wt=json&indent=on", json(payload));
+    response = harness.post("/schema", json(payload));
 
     map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNull(response, map.get("errors"));
@@ -900,7 +900,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
   }
 
   public static Map getRespMap(RestTestHarness restHarness) throws Exception {
-    return getAsMap("/schema?wt=json", restHarness);
+    return getAsMap("/schema", restHarness);
   }
 
   public static Map getAsMap(String uri, RestTestHarness restHarness) throws Exception {

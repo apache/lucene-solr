@@ -103,7 +103,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
 
   @Test
   public void testJSONResponse() throws Exception {
-    assertJQ("/schema?wt=json", // Should work with or without a trailing slash
+    assertJQ("/schema", // Should work with or without a trailing slash
 
              "/schema/name=='test-rest'",
              "/schema/version==1.6",

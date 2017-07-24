@@ -2565,8 +2565,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   static{
     HashMap<String, QueryResponseWriter> m= new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
-    m.put("standard", m.get("xml"));
     m.put(CommonParams.JSON, new JSONResponseWriter());
+    m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
     m.put("python", new PythonResponseWriter());

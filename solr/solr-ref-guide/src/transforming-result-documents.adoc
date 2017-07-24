@@ -97,10 +97,10 @@ Augments each document with an inline explanation of its score exactly like the 
 
 [source,plain]
 ----
-q=features:cache&wt=json&fl=id,[explain style=nl]
+q=features:cache&fl=id,[explain style=nl]
 ----
 
-Supported values for "```style```" are "```text```", and "```html```", and "nl" which returns the information as structured data:
+Supported values for `style` are `text`, and `html`, and `nl` which returns the information as structured data:
 
 [source,json]
 ----

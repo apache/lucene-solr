@@ -2554,12 +2554,13 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
   public void assertResponseContains(SolrClient server, SolrParams requestParams, String json) throws IOException, SolrServerException {
     String p = requestParams.get("qt");
+    ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
+    modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
     if(p != null) {
-      ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
       modifiableSolrParams.remove("qt");
     }
 
-    QueryRequest query = new QueryRequest( requestParams );
+    QueryRequest query = new QueryRequest( modifiableSolrParams );
     query.setPath(p);
     query.setResponseParser(new InputStreamResponseParser("json"));
     query.setMethod(SolrRequest.METHOD.POST);

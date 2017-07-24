@@ -160,9 +160,9 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     int totalDocsNum = parentsNum + childrenNum + grandChildrenNum;
     
     String resp = runFullImport(THREE_LEVEL_HIERARCHY_CONFIG);
-    String xpath = "//arr[@name='documents']/lst/arr[@name='id' and .='"+parentId1+"']/../"+
-      "arr[@name='_childDocuments_']/lst/arr[@name='id' and .='"+childId+"']/../"+
-      "arr[@name='_childDocuments_']/lst/arr[@name='id' and .='"+grandChildrenIds.get(0)+"']";
+    String xpath = "//arr[@name='documents']/lst[arr[@name='id']/str='"+parentId1+"']/"+
+      "arr[@name='_childDocuments_']/lst[arr[@name='id']/str='"+childId+"']/"+
+      "arr[@name='_childDocuments_']/lst[arr[@name='id']/str='"+grandChildrenIds.get(0)+"']";
     String results = TestHarness.validateXPath(resp, 
            xpath);
     assertTrue("Debug documents does not contain child documents\n"+resp+"\n"+ xpath+

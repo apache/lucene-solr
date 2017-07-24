@@ -850,6 +850,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void assertQ(String message, SolrQueryRequest req, String... tests) {
     try {
       String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
+      //since the default (standard) response format is now JSON
+      //need to explicitly request XML since this class uses XPath
+      ModifiableSolrParams xmlWriterTypeParams = new ModifiableSolrParams(req.getParams());
+      xmlWriterTypeParams.set(CommonParams.WT,"xml");
+      //for tests, let's turn indention off so we don't have to handle extraneous spaces
+      xmlWriterTypeParams.set("indent", xmlWriterTypeParams.get("indent", "off"));
+      req.setParams(xmlWriterTypeParams);
       String response = h.query(req);
 
       if (req.getParams().getBool("facet", false)) {

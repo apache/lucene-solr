@@ -420,7 +420,7 @@ Get the entire schema in JSON.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema
 ----
 
 [source,json]
@@ -609,7 +609,7 @@ Get a list of all fields.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/fields
 ----
 
 The sample output below has been truncated to only show a few fields.
@@ -682,7 +682,7 @@ Get a list of all dynamic field declarations:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields
 ----
 
 The sample output below has been truncated.
@@ -765,7 +765,7 @@ Get a list of all field types.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes
 ----
 
 The sample output below has been truncated to show a few different field types from different parts of the list.
@@ -853,7 +853,7 @@ Get a list of all copyFields.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/copyfields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/copyfields
 ----
 
 The sample output below has been truncated to the first few copy definitions.
@@ -914,7 +914,7 @@ Get the schema name.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/name?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/name
 ----
 
 [source,json]
@@ -954,7 +954,7 @@ Get the schema version
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/version?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/version
 ----
 
 [source,json]
@@ -995,7 +995,7 @@ List the uniqueKey.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/uniquekey?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/uniquekey
 ----
 
 [source,json]
@@ -1035,7 +1035,7 @@ Get the similarity implementation.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/similarity?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/similarity
 ----
 
 [source,json]

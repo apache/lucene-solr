@@ -73,7 +73,7 @@ public class TestConfigSetImmutable extends RestTestBase {
     String payload = "{\n" +
         "'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}\n" +
         "}";
-    String uri = "/config?wt=json";
+    String uri = "/config";
     String response = restTestHarness.post(uri, SolrTestCaseJ4.json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNotNull(map.get("error"));
@@ -91,7 +91,7 @@ public class TestConfigSetImmutable extends RestTestBase {
         "                 },\n" +
         "    }";
 
-    String response = restTestHarness.post("/schema?wt=json", json(payload));
+    String response = restTestHarness.post("/schema", json(payload));
     Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
     assertNotNull(map.get("errors"));
     assertTrue(map.get("errors").toString().contains("immutable"));

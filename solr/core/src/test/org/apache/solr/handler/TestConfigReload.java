@@ -121,7 +121,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds){
       Thread.sleep(50);
       for (String url : urls) {
-        Map respMap = getAsMap(url+uri+"?wt=json");
+        Map respMap = getAsMap(url+uri);
         if(String.valueOf(newVersion).equals(String.valueOf( getObjectByPath(respMap, true, asList(name, "znodeVersion"))))){
           succeeded.add(url);
         }
