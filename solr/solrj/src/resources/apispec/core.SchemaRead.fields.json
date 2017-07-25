@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Schema+API#SchemaAPI-ListFields",
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#list-fields",
   "description": "Get only the fields defined in the schema.",
   "methods": [
     "GET"

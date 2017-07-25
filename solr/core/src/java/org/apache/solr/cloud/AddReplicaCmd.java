@@ -75,6 +75,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String node = message.getStr(CoreAdminParams.NODE);
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
+    String coreNodeName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
     boolean parallel = message.getBool("parallel", false);
     if (StringUtils.isBlank(coreName)) {
@@ -122,7 +123,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");
     }
     if (coreName == null) {
-      coreName = Assign.buildCoreName(coll, shard, replicaType);
+      coreName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), coll, shard, replicaType);
     } else if (!skipCreateReplicaInClusterState) {
       //Validate that the core name is unique in that collection
       for (Slice slice : coll.getSlices()) {
@@ -149,6 +150,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(node),
             ZkStateReader.NODE_NAME_PROP, node,
             ZkStateReader.REPLICA_TYPE, replicaType.name());
+        if (coreNodeName != null) {
+          props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+        }
         Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
       }
       params.set(CoreAdminParams.CORE_NODE_NAME,

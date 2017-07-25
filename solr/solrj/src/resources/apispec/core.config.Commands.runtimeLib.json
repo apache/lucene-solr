@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Adding+Custom+Plugins+in+SolrCloud+Mode",
+  "documentation": "https://lucene.apache.org/solr/guide/adding-custom-plugins-in-solrcloud-mode.html",
   "description": "Allows you to register .jars that have been uploaded to the .system collection in Solr. Note that uploading the .jar must occur before using this API.",
   "type": "object",
   "properties": {

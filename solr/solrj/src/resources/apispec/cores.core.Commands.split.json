@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-SPLIT",
+  "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-split",
   "description": "Allows splitting an index into two or more new indexes.",
   "type": "object",
   "properties": {

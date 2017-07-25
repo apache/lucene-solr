@@ -286,7 +286,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // Checking error when no configuration name is specified in request
     Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
         solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-        + "/admin/configs?action=UPLOAD&wt=json", emptyData, null, null);
+        + "/admin/configs?action=UPLOAD", emptyData, null, null);
     assertNotNull(map);
     long statusCode = (long) getObjectByPath(map, false,
         Arrays.asList("responseHeader", "status"));
@@ -305,7 +305,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // Checking error when configuration name specified already exists
     map = postDataAndGetResponse(solrCluster.getSolrClient(),
         solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString()
-        + "/admin/configs?action=UPLOAD&wt=json&name=myconf", emptyData, null, null);
+        + "/admin/configs?action=UPLOAD&name=myconf", emptyData, null, null);
     assertNotNull(map);
     statusCode = (long) getObjectByPath(map, false,
         Arrays.asList("responseHeader", "status"));
@@ -416,7 +416,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       assertFalse(configManager.configExists(configSetName+suffix));
 
       Map map = postDataAndGetResponse(solrCluster.getSolrClient(),
-          solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&wt=json&name="+configSetName+suffix,
+          solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/admin/configs?action=UPLOAD&name="+configSetName+suffix,
           sampleZippedConfig, username, password);
       assertNotNull(map);
       long statusCode = (long) getObjectByPath(map, false, Arrays.asList("responseHeader", "status"));

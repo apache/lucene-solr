@@ -198,4 +198,24 @@ public class NumberUtils {
     // TODO: operate directly on BytesRef
     return SortableStr2long(sval.utf8ToString(), offset, len);
   }
+
+  public static byte[] intToBytes(int val) {
+    byte[] result = new byte[4];
+
+    result[0] = (byte) (val >> 24);
+    result[1] = (byte) (val >> 16);
+    result[2] = (byte) (val >> 8);
+    result[3] = (byte) val;
+    return result;
+  }
+
+  public static int bytesToInt(byte[] bytes) {
+    if (bytes == null) return 0;
+    int val = 0;
+    for (int i = 0; i < bytes.length; i++) {
+      val = val << 8;
+      val += bytes[i];
+    }
+    return val;
+  }
 }

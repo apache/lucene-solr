@@ -84,7 +84,7 @@ public abstract class TextResponseWriter implements PushWriter {
     this.req = req;
     this.rsp = rsp;
     String indent = req.getParams().get("indent");
-    if (indent != null && !"".equals(indent) && !"off".equals(indent)) {
+    if (null == indent || !("off".equals(indent) || "false".equals(indent))){
       doIndent=true;
     }
     returnFields = rsp.getReturnFields();

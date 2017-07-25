@@ -720,7 +720,7 @@ public abstract class FieldType extends FieldProperties {
     final BytesRef miValue = part1 == null ? null : new BytesRef(toInternal(part1));
     final BytesRef maxValue = part2 == null ? null : new BytesRef(toInternal(part2));
     if (field.hasDocValues() && !field.indexed()) {
-      return SortedSetDocValuesField.newRangeQuery(
+      return SortedSetDocValuesField.newSlowRangeQuery(
             field.getName(),
             miValue, maxValue,
             minInclusive, maxInclusive);

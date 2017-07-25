@@ -267,7 +267,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
     String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
-        + ReplicationHandler.PATH+"?command=" + cmd + params;
+        + ReplicationHandler.PATH+"?wt=xml&command=" + cmd + params;
     InputStream stream = null;
     try {
       URL url = new URL(masterUrl);
@@ -290,7 +290,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
 
     public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_DETAILS;
+      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
       try {

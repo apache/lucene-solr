@@ -260,7 +260,7 @@ Result:
 </response>
 ----
 
-You can use the parameter `omitHeader=true` to omit the response header from the query response, like in this example, which also returns the response in JSON format: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&indent=true&wt=json&omitHeader=true`
+You can use the parameter `omitHeader=true` to omit the response header from the query response, like in this example, which also returns the response in JSON format: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&omitHeader=true`
 
 Result:
 

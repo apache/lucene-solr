@@ -18,11 +18,14 @@
 
 <schema name="test" version="1.4">
 
-  <fieldType name="tint" class="solr.TrieIntField" precisionStep="8"/>
-  <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8"/>
-  <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8"/>
-  <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8"/>
-  <fieldType name="tdoubleDV" class="solr.TrieDoubleField" precisionStep="8" docValues="true"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
+  
+  <!-- tdouble class can't be randomized, because SpatialPointVectorFieldType requires TrieDoubleField.  See SOLR-11111. -->
+  <fieldType name="tdouble" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
+  
+  <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}" precisionStep="8" docValues="true"/>
 
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   

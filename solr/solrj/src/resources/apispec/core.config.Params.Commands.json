@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Request+Parameters+API",
+  "documentation": "https://lucene.apache.org/solr/guide/request-parameters-api.html",
   "description": "Create, update and delete request parameter sets (paramsets) to override or replace parameters defined in solrconfig.xml. Parameter sets are used with request handlers by setting the useParams attribute to the paramset name in the definition of the request handler or with individual requests to Solr. Parameter sets defined with this API are stored in a file params.json in ZooKeeper or on the filesystem when not using SolrCloud. Note this API does not directly update solrconfig.xml. ",
   "methods": [
     "POST"

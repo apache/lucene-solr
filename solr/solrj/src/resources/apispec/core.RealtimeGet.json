@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/RealTime+Get",
+  "documentation": "https://lucene.apache.org/solr/guide/realtime-get.html",
   "description": "RealTime Get allows retrieving documents by ID before the documents have been committed to the index. It is useful when you need access to documents as soon as they are indexed but your commit times are high for other reasons.",
   "methods": [
     "GET"

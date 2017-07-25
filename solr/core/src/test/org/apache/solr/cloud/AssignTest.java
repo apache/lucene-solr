@@ -16,23 +16,33 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AssignTest extends SolrTestCaseJ4 {
   
@@ -51,46 +61,86 @@ public class AssignTest extends SolrTestCaseJ4 {
   
   @Test
   public void testAssignNode() throws Exception {
-    String cname = "collection1";
-    
-    Map<String,DocCollection> collectionStates = new HashMap<>();
-    
-    Map<String,Slice> slices = new HashMap<>();
-    
-    Map<String,Replica> replicas = new HashMap<>();
-    
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state", 
-        ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString(), 
-        ZkStateReader.BASE_URL_PROP, "0.0.0.0", 
-        ZkStateReader.CORE_NAME_PROP, "core1",
-        ZkStateReader.ROLES_PROP, null,
-        ZkStateReader.NODE_NAME_PROP, "0_0_0_0",
-        ZkStateReader.SHARD_ID_PROP, "shard1",
-        ZkStateReader.COLLECTION_PROP, cname,
-        ZkStateReader.NUM_SHARDS_PROP, "1",
-        ZkStateReader.CORE_NODE_NAME_PROP, "core_node1");
-    Replica replica = new Replica("core_node1" , m.getProperties());
-    replicas.put("core_node1", replica);
-    
-    Slice slice = new Slice("slice1", replicas , new HashMap<String,Object>(0));
-    slices.put("slice1", slice);
-    
-    DocRouter router = new ImplicitDocRouter();
-    DocCollection docCollection = new DocCollection(cname, slices, new HashMap<String,Object>(0), router);
-
-    collectionStates.put(cname, docCollection);
-    
-    Set<String> liveNodes = new HashSet<>();
-    ClusterState state = new ClusterState(-1,liveNodes, collectionStates);
-    String nodeName = Assign.assignNode(state.getCollection("collection1"));
-    
+    SolrZkClient zkClient = mock(SolrZkClient.class);
+    Map<String, byte[]> zkClientData = new HashMap<>();
+    when(zkClient.setData(anyString(), any(), anyInt(), anyBoolean())).then(invocation -> {
+        zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+        return null;
+      }
+    );
+    when(zkClient.getData(anyString(), any(), any(), anyBoolean())).then(invocation ->
+        zkClientData.get(invocation.getArgument(0)));
+    String nodeName = Assign.assignNode(zkClient, new DocCollection("collection1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT));
+    assertEquals("core_node1", nodeName);
+    nodeName = Assign.assignNode(zkClient, new DocCollection("collection2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT));
+    assertEquals("core_node1", nodeName);
+    nodeName = Assign.assignNode(zkClient, new DocCollection("collection1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT));
     assertEquals("core_node2", nodeName);
   }
-  
+
   @Test
-  public void testBuildCoreName() {
-    assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildCoreName("collection1", "shard1", Replica.Type.NRT, 1));
-    assertEquals("Core name pattern changed", "collection1_shard2_replica_p2", Assign.buildCoreName("collection1", "shard2", Replica.Type.PULL,2));
+  public void testIdIsUnique() throws Exception {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    ZkTestServer server = new ZkTestServer(zkDir);
+    Object fixedValue = new Object();
+    String[] collections = new String[]{"c1","c2","c3","c4","c5","c6","c7","c8","c9"};
+    Map<String, ConcurrentHashMap<Integer, Object>> collectionUniqueIds = new HashMap<>();
+    for (String c : collections) {
+      collectionUniqueIds.put(c, new ConcurrentHashMap<>());
+    }
+
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
+    try {
+      server.run();
+
+      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
+        assertTrue(zkClient.isConnected());
+        zkClient.makePath("/", true);
+        for (String c : collections) {
+          zkClient.makePath("/collections/"+c, true);
+        }
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+          futures.add(executor.submit(() -> {
+            String collection = collections[random().nextInt(collections.length)];
+            int id = Assign.incAndGetId(zkClient, collection, 0);
+            Object val = collectionUniqueIds.get(collection).put(id, fixedValue);
+            if (val != null) {
+              fail("ZkController do not generate unique id for " + collection);
+            }
+          }));
+        }
+        for (Future<?> future : futures) {
+          future.get();
+        }
+      }
+      assertEquals(1000, (long) collectionUniqueIds.values().stream()
+          .map(ConcurrentHashMap::size)
+          .reduce((m1, m2) -> m1 + m2).get());
+    } finally {
+      server.shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+  }
+
+
+  @Test
+  public void testBuildCoreName() throws IOException, InterruptedException, KeeperException {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    ZkTestServer server = new ZkTestServer(zkDir);
+    server.run();
+    try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
+      zkClient.makePath("/", true);
+      Map<String, Slice> slices = new HashMap<>();
+      slices.put("shard1", new Slice("shard1", new HashMap<>(), null));
+      slices.put("shard2", new Slice("shard2", new HashMap<>(), null));
+
+      DocCollection docCollection = new DocCollection("collection1", slices, null, DocRouter.DEFAULT);
+      assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildCoreName(zkClient, docCollection, "shard1", Replica.Type.NRT));
+      assertEquals("Core name pattern changed", "collection1_shard2_replica_p2", Assign.buildCoreName(zkClient, docCollection, "shard2", Replica.Type.PULL));
+    } finally {
+      server.shutdown();
+    }
   }
   
 }

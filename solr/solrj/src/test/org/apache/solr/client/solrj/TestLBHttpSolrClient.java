@@ -220,7 +220,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       // Start the killed server once again
       solr[1].startJetty();
       // Wait for the alive check to complete
-      waitForServer(30, client, 3, "solr1");
+      waitForServer(30, client, 3, solr[1].name);
     } finally {
       HttpClientUtil.close(myHttpClient);
     }

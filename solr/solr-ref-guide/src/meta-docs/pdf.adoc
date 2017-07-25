@@ -1,4 +1,4 @@
-= Generating PDF
+= Making Changes to the PDF Version
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -111,7 +111,7 @@ There are a lot of options here. Note that some include the `<attribute>` tag an
 === Asciidoctor Ant Attributes
 
 `sourceDirectory="${build.content.dir}/pdf"`:: Defines where to find the source file to build the PDF. The variable is declared earlier in `build.xml`.
-`sourceDocumentName="SolrRefGuide-all.adoc"`:: The source file name, which in our case will be built as described in the section <<Creating the Uber-Document>>.
+`sourceDocumentName="SolrRefGuide-all.adoc"`:: The source file name, which in our case will be built as described in the section <<About the Uber-Document>>.
 `baseDir="${build.content.dir}"`:: The root path for any included files.
 `outputDirectory="${build.dir}"`:: Defines where the resulting PDF file should go. In this case, the
 `backend="pdf"`:: The output format. The `asciidoctor-ant` jar is also capable of outputting DocBook format, so we must declare we want a PDF.

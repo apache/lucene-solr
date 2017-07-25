@@ -120,7 +120,7 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
 
     @Override
     public String getQueryString() {
-      return "wt=json&version=2";
+      return "version=2";
     }
 
     @Override

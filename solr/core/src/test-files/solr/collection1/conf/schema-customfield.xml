@@ -39,12 +39,12 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="customtrieintfield" class="org.apache.solr.schema.TrieIntPrefixActsAsRangeQueryFieldType"/>
+  <fieldType name="customintfield" class="${solr.tests.CustomIntFieldType}" docValues="${solr.tests.numeric.dv}" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="intfield" type="int" indexed="true" stored="true"/>
   <field name="swap_foo_bar_in_prefix_query" type="customfield" indexed="true" stored="true" multiValued="true"/>
-  <field name="int_prefix_as_range" type="customtrieintfield" indexed="true" stored="true"/>
+  <field name="int_prefix_as_range" type="customintfield" indexed="true" stored="true"/>
 
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
 

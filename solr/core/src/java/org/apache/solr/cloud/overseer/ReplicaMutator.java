@@ -240,7 +240,7 @@ public class ReplicaMutator {
         log.debug("node=" + coreNodeName + " is already registered");
       } else {
         // if coreNodeName is null, auto assign one
-        coreNodeName = Assign.assignNode(collection);
+        coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection);
       }
       message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
           coreNodeName);

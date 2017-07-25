@@ -37,7 +37,7 @@
     },
     "multiTermAnalyzer": {
       "description": "A multiterm analyzer section defines how incoming queries that results in Multi-Term expansion will be analyzed for a field of this type.",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Analyzers#Analyzers-AnalysisforMulti-TermExpansion",
+      "documentation": "https://lucene.apache.org/solr/guide/analyzers.html#analysis-for-multi-term-expansion",
       "#include": "core.SchemaEdit.addFieldType.analyzers"
     },
     "analyzer": {

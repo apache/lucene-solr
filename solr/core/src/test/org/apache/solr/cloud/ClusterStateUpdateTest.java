@@ -95,7 +95,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
     assertEquals(1, shards.size());
 
     // assert this is core of container1
-    Replica zkProps = shards.get("core_node1");
+    Replica zkProps = shards.values().iterator().next();
 
     assertNotNull(zkProps);
 
