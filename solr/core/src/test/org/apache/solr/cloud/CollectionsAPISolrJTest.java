@@ -70,8 +70,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
-    for (int i=0; i<4; i++) {
-      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
+    for (String coreName : coresStatus.keySet()) {
+      NamedList<Integer> status = coresStatus.get(coreName);
       assertEquals(0, (int)status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
@@ -98,8 +98,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
-    for (int i=0; i<4; i++) {
-      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
+    for (String coreName : coresStatus.keySet()) {
+      NamedList<Integer> status = coresStatus.get(coreName);
       assertEquals(0, (int)status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
@@ -168,9 +168,18 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.NRT, 1)).get("status"));
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.TLOG, 1)).get("status"));
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.PULL, 1)).get("status"));
+    int replicaTlog = 0;
+    int replicaNrt = 0;
+    int replicaPull = 0;
+    for (String coreName : coresStatus.keySet()) {
+      assertEquals(0, (int) coresStatus.get(coreName).get("status"));
+      if (coreName.contains("shardC_replica_t")) replicaTlog++;
+      else if (coreName.contains("shardC_replica_n")) replicaNrt++;
+      else replicaPull++;
+    }
+    assertEquals(1, replicaNrt);
+    assertEquals(1, replicaTlog);
+    assertEquals(1, replicaPull);
 
     response = CollectionAdminRequest.deleteShard(collectionName, "shardC").process(cluster.getSolrClient());
 
@@ -208,8 +217,15 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName, "shard1_0" , Replica.Type.NRT, 1)).get("status"));
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName, "shard1_1" , Replica.Type.NRT, 1)).get("status"));
+    int shard10 = 0;
+    int shard11 = 0;
+    for (String coreName : coresStatus.keySet()) {
+      assertEquals(0, (int) coresStatus.get(coreName).get("status"));
+      if (coreName.contains("_shard1_0")) shard10++;
+      else shard11++;
+    }
+    assertEquals(1, shard10);
+    assertEquals(1, shard11);
 
     waitForState("Expected all shards to be active and parent shard to be removed", collectionName, (n, c) -> {
       if (c.getSlice("shard1").getState() == Slice.State.ACTIVE)
@@ -254,7 +270,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 = testCollection.getReplica("core_node1");
+    Replica replica1 = testCollection.getReplicas().iterator().next();
     CoreStatus coreStatus = getCoreStatus(replica1);
 
     assertEquals(Paths.get(coreStatus.getDataDirectory()).toString(), dataDir.toString());
