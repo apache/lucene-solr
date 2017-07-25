@@ -404,7 +404,9 @@ public class BenchmarkAppConnector {
 						|| type == FileType.TEXT_PHRASE_QUERY_STANDALONE || type == FileType.TEXT_TERM_QUERY_CLOUD
 						|| type == FileType.TEXT_TERM_QUERY_STANDALONE || type == FileType.HIGHLIGHTING_QUERY_CLOUD
 						|| type == FileType.HIGHLIGHTING_QUERY_STANDALONE || type == FileType.SORTING_TEXT_QUERY_CLOUD
-						|| type == FileType.SORTING_TEXT_QUERY_STANDALONE || type == FileType.CLASSIC_TERM_FACETING_STANDALONE) {
+						|| type == FileType.SORTING_TEXT_QUERY_STANDALONE || type == FileType.CLASSIC_TERM_FACETING_STANDALONE
+						|| type == FileType.CLASSIC_RANGE_FACETING_STANDALONE || type == FileType.CLASSIC_TERM_FACETING_CLOUD
+						|| type == FileType.CLASSIC_RANGE_FACETING_CLOUD) {
 					fw.write(
 							"Date, Test_ID, CommitID, QPS(2 Threads), QTime-Min(2 Threads), QTime-Max(2 Threads), QTime-75th-Percentile(2 Threads), QTime-95th-Percentile(2 Threads), QTime-99th-Percentile(2 Threads), QTime-99.9th-Percentile(2 Threads), QPS(4 Threads), QTime-Min(4 Threads), QTime-Max(4 Threads), QTime-75th-Percentile(4 Threads), QTime-95th-Percentile(4 Threads), QTime-99th-Percentile(4 Threads), QTime-99.9th-Percentile(4 Threads), QPS(6 Threads), QTime-Min(6 Threads), QTime-Max(6 Threads), QTime-75th-Percentile(6 Threads), QTime-95th-Percentile(6 Threads), QTime-99th-Percentile(6 Threads), QTime-99.9th-Percentile(6 Threads), QPS(8 Threads), QTime-Min(8 Threads), QTime-Max(8 Threads), QTime-75th-Percentile(8 Threads), QTime-95th-Percentile(8 Threads), QTime-99th-Percentile(8 Threads), QTime-99.9th-Percentile(8 Threads)\n");
 				}
