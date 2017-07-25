@@ -77,7 +77,6 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
           String leaderRegistryName = core.getCoreMetricManager().getLeaderRegistryName();
           String coreName = core.getName();
           String collectionName = core.getCoreDescriptor().getCollectionName();
-          String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
           String replicaName = coreName.substring(coreName.indexOf("_replica_") + 1);
           String shardId = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 

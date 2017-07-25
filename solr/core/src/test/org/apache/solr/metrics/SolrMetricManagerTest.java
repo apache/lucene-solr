@@ -192,7 +192,6 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReporters() throws Exception {
-    Random r = random();
 
     SolrResourceLoader loader = new SolrResourceLoader();
     SolrMetricManager metricManager = new SolrMetricManager();
