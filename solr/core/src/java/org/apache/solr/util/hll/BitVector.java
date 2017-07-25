@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util.hll;
 
+import org.apache.solr.util.LongIterator;
+
 /**
  * A vector (array) of bits that is accessed in units ("registers") of <code>width</code>
  * bits which are stored as 64bit "words" (<code>long</code>s).  In this context
