@@ -167,6 +167,47 @@ public class BenchmarkReportData {
 	public static Map<String, String> queryHTQMetricS_T2;
 	public static Map<String, String> queryHTQMetricS_T3;
 	public static Map<String, String> queryHTQMetricS_T4;
+	
+	public static Map<String, String> queryCTFQMetricS_T1;
+	public static Map<String, String> queryCTFQMetricS_T2;
+	public static Map<String, String> queryCTFQMetricS_T3;
+	public static Map<String, String> queryCTFQMetricS_T4;
+	
+	public static Map<String, String> queryCRFQMetricS_T1;
+	public static Map<String, String> queryCRFQMetricS_T2;
+	public static Map<String, String> queryCRFQMetricS_T3;
+	public static Map<String, String> queryCRFQMetricS_T4;
+
+	public static Map<String, String> queryJTFQMetricS_T1;
+	public static Map<String, String> queryJTFQMetricS_T2;
+	public static Map<String, String> queryJTFQMetricS_T3;
+	public static Map<String, String> queryJTFQMetricS_T4;
+	
+	public static Map<String, String> queryJRFQMetricS_T1;
+	public static Map<String, String> queryJRFQMetricS_T2;
+	public static Map<String, String> queryJRFQMetricS_T3;
+	public static Map<String, String> queryJRFQMetricS_T4;
+	
+	public static Map<String, String> queryCTFQMetricC_T1;
+	public static Map<String, String> queryCTFQMetricC_T2;
+	public static Map<String, String> queryCTFQMetricC_T3;
+	public static Map<String, String> queryCTFQMetricC_T4;
+	
+	public static Map<String, String> queryCRFQMetricC_T1;
+	public static Map<String, String> queryCRFQMetricC_T2;
+	public static Map<String, String> queryCRFQMetricC_T3;
+	public static Map<String, String> queryCRFQMetricC_T4;
+
+	public static Map<String, String> queryJTFQMetricC_T1;
+	public static Map<String, String> queryJTFQMetricC_T2;
+	public static Map<String, String> queryJTFQMetricC_T3;
+	public static Map<String, String> queryJTFQMetricC_T4;
+	
+	public static Map<String, String> queryJRFQMetricC_T1;
+	public static Map<String, String> queryJRFQMetricC_T2;
+	public static Map<String, String> queryJRFQMetricC_T3;
+	public static Map<String, String> queryJRFQMetricC_T4;
+	
 
 	/**
 	 * A method used to refresh the data structures when a cycle completes.
@@ -315,6 +356,46 @@ public class BenchmarkReportData {
 		queryHTQMetricS_T2 = null;
 		queryHTQMetricS_T3 = null;
 		queryHTQMetricS_T4 = null;
-
+		
+		queryCTFQMetricS_T1 = null;
+		queryCTFQMetricS_T2 = null;
+		queryCTFQMetricS_T3 = null;
+		queryCTFQMetricS_T4 = null;
+		
+		queryCRFQMetricS_T1 = null;
+		queryCRFQMetricS_T2 = null;
+		queryCRFQMetricS_T3 = null;
+		queryCRFQMetricS_T4 = null;
+		
+		queryJTFQMetricS_T1 = null;
+		queryJTFQMetricS_T2 = null;
+		queryJTFQMetricS_T3 = null;
+		queryJTFQMetricS_T4 = null;
+		
+		queryJRFQMetricS_T1 = null;
+		queryJRFQMetricS_T2 = null;
+		queryJRFQMetricS_T3 = null;
+		queryJRFQMetricS_T4 = null;
+		
+		queryCTFQMetricC_T1 = null;
+		queryCTFQMetricC_T2 = null;
+		queryCTFQMetricC_T3 = null;
+		queryCTFQMetricC_T4 = null;
+		
+		queryCRFQMetricC_T1 = null;
+		queryCRFQMetricC_T2 = null;
+		queryCRFQMetricC_T3 = null;
+		queryCRFQMetricC_T4 = null;
+	
+		queryJTFQMetricC_T1 = null;
+		queryJTFQMetricC_T2 = null;
+		queryJTFQMetricC_T3 = null;
+		queryJTFQMetricC_T4 = null;
+		
+		queryJRFQMetricC_T1 = null;
+		queryJRFQMetricC_T2 = null;
+		queryJRFQMetricC_T3 = null;
+		queryJRFQMetricC_T4 = null;
+		
 	}
 }

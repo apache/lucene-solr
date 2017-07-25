@@ -665,7 +665,7 @@ public class Tests {
 			returnMap.put("CommitID", commitID);
 			returnMap.put("TotalQueriesExecuted", "" + QueryClient.queryCount);
 			returnMap.put("QueriesPerSecond",
-					"" + (double) (QueryClient.queryCount / (estimationDuration)));
+					"" + ((float)QueryClient.queryCount / (float)(estimationDuration)));
 			returnMap.put("MinQTime", "" + QueryClient.minQtime);
 			returnMap.put("MaxQTime", "" + QueryClient.maxQtime);
 			returnMap.put("QueryFailureCount", "" + QueryClient.queryFailureCount);
@@ -1740,6 +1740,190 @@ public class Tests {
 		
 		numericQueryHTQMetricS4.stop();
 
+		
+		Thread numericQueryCTFQMetricS1 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T, port));
+		numericQueryCTFQMetricS1.start();		
+		
+		BenchmarkReportData.queryCTFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FIRST, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCTFQMetricS1.stop();
+		
+
+		Thread numericQueryCTFQMetricS2 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_TERM_FACETING_QUERY_STANDALONE_4T, port));
+		numericQueryCTFQMetricS2.start();		
+		
+		BenchmarkReportData.queryCTFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_SECOND, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCTFQMetricS2.stop();
+
+		
+		Thread numericQueryCTFQMetricS3 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_TERM_FACETING_QUERY_STANDALONE_6T, port));
+		numericQueryCTFQMetricS3.start();		
+		
+		BenchmarkReportData.queryCTFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_THIRD, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCTFQMetricS3.stop();
+		
+		
+		Thread numericQueryCTFQMetricS4 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_TERM_FACETING_QUERY_STANDALONE_8T, port));
+		numericQueryCTFQMetricS4.start();		
+		
+		BenchmarkReportData.queryCTFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCTFQMetricS4.stop();		
+
+		
+		
+		Thread numericQueryCRFQMetricS1 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_RANGE_FACETING_QUERY_STANDALONE_2T, port));
+		numericQueryCRFQMetricS1.start();		
+		
+		BenchmarkReportData.queryCRFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FIRST, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCRFQMetricS1.stop();
+		
+
+		Thread numericQueryCRFQMetricS2 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_RANGE_FACETING_QUERY_STANDALONE_4T, port));
+		numericQueryCRFQMetricS2.start();		
+		
+		BenchmarkReportData.queryCRFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_SECOND, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCRFQMetricS2.stop();
+
+		
+		Thread numericQueryCRFQMetricS3 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_RANGE_FACETING_QUERY_STANDALONE_6T, port));
+		numericQueryCRFQMetricS3.start();		
+		
+		BenchmarkReportData.queryCRFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_THIRD, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCRFQMetricS3.stop();
+		
+		
+		Thread numericQueryCRFQMetricS4 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_RANGE_FACETING_QUERY_STANDALONE_8T, port));
+		numericQueryCRFQMetricS4.start();		
+		
+		BenchmarkReportData.queryCRFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryCRFQMetricS4.stop();		
+
+		
+		
+		
+		
+		
+		Thread numericQueryJTFQMetricS1 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_TERM_FACETING_QUERY_STANDALONE_2T, port));
+		numericQueryJTFQMetricS1.start();		
+		
+		BenchmarkReportData.queryJTFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_TERM_FACETING, Util.QUERY_THREAD_COUNT_FIRST, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJTFQMetricS1.stop();
+		
+
+		Thread numericQueryJTFQMetricS2 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_TERM_FACETING_QUERY_STANDALONE_4T, port));
+		numericQueryJTFQMetricS2.start();		
+		
+		BenchmarkReportData.queryJTFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_TERM_FACETING, Util.QUERY_THREAD_COUNT_SECOND, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJTFQMetricS2.stop();
+
+		
+		Thread numericQueryJTFQMetricS3 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_TERM_FACETING_QUERY_STANDALONE_6T, port));
+		numericQueryJTFQMetricS3.start();		
+		
+		BenchmarkReportData.queryJTFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_TERM_FACETING, Util.QUERY_THREAD_COUNT_THIRD, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJTFQMetricS3.stop();
+		
+		
+		Thread numericQueryJTFQMetricS4 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_TERM_FACETING_QUERY_STANDALONE_8T, port));
+		numericQueryJTFQMetricS4.start();		
+		
+		BenchmarkReportData.queryJTFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_TERM_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJTFQMetricS4.stop();		
+		
+		
+		
+		
+		
+		Thread numericQueryJRFQMetricS1 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_RANGE_FACETING_QUERY_STANDALONE_2T, port));
+		numericQueryJRFQMetricS1.start();		
+		
+		BenchmarkReportData.queryJRFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FIRST, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJRFQMetricS1.stop();
+		
+
+		Thread numericQueryJRFQMetricS2 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_RANGE_FACETING_QUERY_STANDALONE_4T, port));
+		numericQueryJRFQMetricS2.start();		
+		
+		BenchmarkReportData.queryJRFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_RANGE_FACETING, Util.QUERY_THREAD_COUNT_SECOND, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJRFQMetricS2.stop();
+
+		
+		Thread numericQueryJRFQMetricS3 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_RANGE_FACETING_QUERY_STANDALONE_6T, port));
+		numericQueryJRFQMetricS3.start();		
+		
+		BenchmarkReportData.queryJRFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_RANGE_FACETING, Util.QUERY_THREAD_COUNT_THIRD, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJRFQMetricS3.stop();
+		
+		
+		Thread numericQueryJRFQMetricS4 = new Thread(
+				new MetricCollector(Util.COMMIT_ID, TestType.JSON_RANGE_FACETING_QUERY_STANDALONE_8T, port));
+		numericQueryJRFQMetricS4.start();		
+		
+		BenchmarkReportData.queryJRFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
+				QueryType.JSON_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, 120, 30, Tests.node.getBaseUrl(),
+				Tests.node.collectionName);		
+		
+		numericQueryJRFQMetricS4.stop();		
+		
 		Tests.shutDownStandalone();
 	}
 }

@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -53,7 +54,11 @@ public class QueryClient implements Runnable {
 		SORTED_TEXT_QUERY, 
 		TEXT_TERM_QUERY, 
 		TEXT_PHRASE_QUERY,
-		HIGHLIGHT_QUERY
+		HIGHLIGHT_QUERY,
+		CLASSIC_TERM_FACETING,
+		CLASSIC_RANGE_FACETING,
+		JSON_TERM_FACETING,
+		JSON_RANGE_FACETING
 
 	}
 
@@ -90,6 +95,7 @@ public class QueryClient implements Runnable {
 	public static ConcurrentLinkedQueue<String> textTerms = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> textPhrases = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> highlightTerms = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> rangeFacetRanges = new ConcurrentLinkedQueue<String>();
 
 	Random random = new Random();
 
@@ -132,17 +138,20 @@ public class QueryClient implements Runnable {
 		textTerms = new ConcurrentLinkedQueue<String>();
 		textPhrases = new ConcurrentLinkedQueue<String>();
 		highlightTerms = new ConcurrentLinkedQueue<String>();
+		rangeFacetRanges = new ConcurrentLinkedQueue<String>();
 
 		String line = "";
 		if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY || QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY 
-				|| QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
+				|| QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY || QueryClient.queryType == QueryType.CLASSIC_TERM_FACETING
+				|| QueryClient.queryType == QueryType.JSON_TERM_FACETING) {
 			try (BufferedReader br = new BufferedReader(
 					new FileReader(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA))) {
 	
 				while ((line = br.readLine()) != null) {
 					if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY) {
 						termNumericQueryParameterList.add(line.trim());
-					} else if (QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
+					} else if (QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY 
+							|| QueryClient.queryType == QueryType.CLASSIC_TERM_FACETING || QueryClient.queryType == QueryType.JSON_TERM_FACETING) {
 						greaterNumericQueryParameterList.add(line.trim());
 					} else if (QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
 						lesserNumericQueryParameterList.add(line.trim());
@@ -240,13 +249,31 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 			}
 			Util.postMessage("** Preparing highlight terms data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
+		} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING 
+				|| QueryClient.queryType == QueryType.JSON_RANGE_FACETING) {
+			Util.postMessage("** Preparing range facet data queue ...", MessageType.CYAN_TEXT, false);
+	
+			line = "";
+			try (BufferedReader br = new BufferedReader(
+					new FileReader(Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA))) {
+	
+				while ((line = br.readLine()) != null) {
+					rangeFacetRanges.add(line.trim());
+				}
+	
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			Util.postMessage("** Preparing range facet data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
 		}
+		
 		Util.postMessage(
 				"Starting State:| " + termNumericQueryParameterList.size() + "| "
 						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
 						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
 						+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
-						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size(),
+						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size()
+						+ "| " + rangeFacetRanges.size(),
 				MessageType.YELLOW_TEXT, false);
 		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 	}
@@ -278,7 +305,13 @@ public class QueryClient implements Runnable {
 					requestParams.remove("sort");
 					requestParams.remove("hl");
 					requestParams.remove("hl.fl");
-
+					requestParams.remove("facet");
+					requestParams.remove("facet.field");
+					requestParams.remove("facet.range");
+					requestParams.remove("f.Int2_pi.facet.range.start");
+					requestParams.remove("f.Int2_pi.facet.range.end");
+					requestParams.remove("f.Int2_pi.facet.range.gap");
+					requestParams.remove("json.facet");
 
 					if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY) {
 						requestParams.add("q", "Int1_pi:" + termNumericQueryParameterList.poll());
@@ -355,7 +388,54 @@ public class QueryClient implements Runnable {
 						requestParams.add("hl", "on");
 						requestParams.add("hl.fl", "Article_t");
 						requestParams.add("q", "Article_t:" + highlightTerms.poll());
+					} else if (QueryClient.queryType == QueryType.CLASSIC_TERM_FACETING) {
+						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
+						requestParams.add("facet", "true");
+						requestParams.add("facet.field", "Category_t");
+					} else if (QueryClient.queryType == QueryType.JSON_TERM_FACETING) {
+						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
+						requestParams.add("facet", "true");
+						requestParams.add("json.facet", "{categories:{ terms: { field : Category_t }}}");
+					} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING) {
+
+						String pairData[] = rangeFacetRanges.poll().trim().split(",");
+
+						requestParams.add("q", "*:*");
+						requestParams.add("facet", "true");
+						requestParams.add("facet.range", "Int2_pi");
+						
+						long ft_1 = Long.parseLong(pairData[0]) - 1;
+						long ft_2 = Long.parseLong(pairData[1]) - 1;
+
+						if (ft_2 > ft_1) {
+							requestParams.add("f.Int2_pi.facet.range.start", "" + ft_1);
+							requestParams.add("f.Int2_pi.facet.range.end", "" + ft_2);
+							requestParams.add("f.Int2_pi.facet.range.gap", pairData[2].trim());
+
+						} else {
+							requestParams.add("f.Int2_pi.facet.range.start", "" + ft_2);
+							requestParams.add("f.Int2_pi.facet.range.end", "" + ft_1);
+							requestParams.add("f.Int2_pi.facet.range.gap", pairData[2].trim());
+						}
+						
+					} else if (QueryClient.queryType == QueryType.JSON_RANGE_FACETING) {
+
+						String pairData[] = rangeFacetRanges.poll().trim().split(",");
+
+						requestParams.add("q", "*:*");
+						requestParams.add("facet", "true");
+						
+						long ft_1 = Long.parseLong(pairData[0]) - 1;
+						long ft_2 = Long.parseLong(pairData[1]) - 1;
+
+						if (ft_2 > ft_1) {
+							requestParams.add("json.facet", "{ prices : { range : {field : Int2_pi ,start : "+ ft_1 +", end : "+ ft_2 +", gap : "+ pairData[2].trim() +"}}}");
+						} else {
+							requestParams.add("json.facet", "{ prices : { range : {field : Int2_pi ,start : "+ ft_2 +", end : "+ ft_1 +", gap : "+ pairData[2].trim() +"}}}");
+						}
+
 					}
+
 
 					params = SolrParams.toSolrParams(requestParams);
 					response = this.fireQuery(collectionName, params);
@@ -383,7 +463,8 @@ public class QueryClient implements Runnable {
 						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
 						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
 						+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
-						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size(),
+						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size()
+						+ "| " + rangeFacetRanges.size(),
 						MessageType.YELLOW_TEXT, false);
 
 				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",
@@ -406,8 +487,8 @@ public class QueryClient implements Runnable {
 	 */
 	private synchronized SolrResponse fireQuery(String collectionName, SolrParams params)
 			throws SolrServerException, IOException {
-
-		return solrClient.query(collectionName, params);
+		
+		return solrClient.query(collectionName, params, METHOD.POST);
 
 	}
 
@@ -532,5 +613,6 @@ public class QueryClient implements Runnable {
 		textTerms = new ConcurrentLinkedQueue<String>();
 		textPhrases = new ConcurrentLinkedQueue<String>();
 		highlightTerms = new ConcurrentLinkedQueue<String>();
+		rangeFacetRanges = new ConcurrentLinkedQueue<String>();
 	}
 }

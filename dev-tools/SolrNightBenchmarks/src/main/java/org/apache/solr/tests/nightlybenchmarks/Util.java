@@ -40,6 +40,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipInputStream;
@@ -109,6 +111,7 @@ public class Util {
 	public static String TEXT_PHRASE_DATA = "";
 	public static String HIGHLIGHT_TERM_DATA = "";
 	public static String TEST_DATA_STORE_LOCATION = "";
+	public static String RANGE_FACET_DATA = "";
 
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
@@ -649,6 +652,9 @@ public class Util {
 			Util.TEST_DATA_STORE_LOCATION = prop.getProperty("SolrNightlyBenchmarks.testDataStoreURL");
 			Util.postMessage("Getting Property Value for testDataStoreURL: " + Util.TEST_DATA_STORE_LOCATION,
 					MessageType.YELLOW_TEXT, false);
+			Util.RANGE_FACET_DATA = prop.getProperty("SolrNightlyBenchmarks.rangeFacetTestData");
+			Util.postMessage("Getting Property Value for rangeFacetTestData: " + Util.RANGE_FACET_DATA,
+					MessageType.YELLOW_TEXT, false);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
@@ -802,6 +808,22 @@ public class Util {
 				Util.postMessage("File " + Util.HIGHLIGHT_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
 			} else {
 				Util.postMessage("Error Downloading File " + Util.HIGHLIGHT_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				return false;
+			}
+		}
+
+		file = new File(Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA);
+		if (!file.exists()) {
+			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
+					MessageType.RED_TEXT, false);
+
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.HIGHLIGHT_TERM_DATA, Util.RANGE_FACET_DATA);
+
+			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA);
+			if (downloadedfile.exists()) {
+				Util.postMessage("File " + Util.RANGE_FACET_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+			} else {
+				Util.postMessage("Error Downloading File " + Util.RANGE_FACET_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
 				return false;
 			}
 		}
@@ -1075,7 +1097,7 @@ public class Util {
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
 
 		Util.getPropertyValues();
-
+		
 		if (!Util.checkDataFiles()) {
 			System.exit(0);
 		}
@@ -1486,6 +1508,59 @@ public class Util {
 				BenchmarkAppConnector.writeToWebAppDataFile("Highlight-Terms.csv", s, false, FileType.TEST_ENV_FILE);
 			}
 
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * A Method used for creating ranges for facet tests.
+	 */
+	public static void createRangeFacetDataFile() {
+
+		String line = "";
+		String cvsSplitBy = ",";
+		long number = 0;
+		
+		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
+
+			Set<Long> set = new TreeSet<Long>();
+			
+			while ((line = br.readLine()) != null) {
+				String[] data = line.split(cvsSplitBy);
+
+				String s = data[5].trim();
+				set.add(Long.parseLong(data[5].trim()));
+
+				Util.postMessage("Adding to Set: " + s, MessageType.RED_TEXT, false);
+				number++;
+			}
+
+			List<Long> list = new LinkedList<Long>();
+
+			for (Long l: set) {
+				Util.postMessage("" + l, MessageType.PURPLE_TEXT, false);
+				list.add(l);
+			}
+			
+			for (int i = 0; i < (number/2); i++) {
+				
+				int l = new Random().nextInt(list.size());
+				int m = 150000 + new Random().nextInt(list.size()/2);
+				
+				String s = "";
+				
+				if (list.get(l) < list.get(m)) {
+					s = list.get(l) + "," + list.get(m) + ",1000000";
+				} else {
+					s = list.get(m) + "," + list.get(l) + ",1000000";
+				}
+					
+				Util.postMessage(s, MessageType.PURPLE_TEXT, false);
+				BenchmarkAppConnector.writeToWebAppDataFile("Range-Facet-Test-Ranges.csv", s, false, FileType.TEST_ENV_FILE);
+			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
