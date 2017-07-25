@@ -240,6 +240,16 @@
   <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
 
+  <!-- explicit points with docValues (since they can't be uninverted with FieldCache -->
+  <dynamicField name="*_ip"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_ips"     type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_lp"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_lps"     type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_fp"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_fps"     type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_dp"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_dps"     type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+
 
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_bs" type="boolean" indexed="true" stored="true" multiValued="true"/>
@@ -353,6 +363,13 @@
        then default lucene sorting will be used which places docs without the
        field first in an ascending sort and last in a descending sort.
   -->
+
+  <!-- Point Fields -->
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
   <!--
     Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.

@@ -299,6 +299,8 @@ New Features
 
 * SOLR-10282: bin/solr support for enabling Kerberos authentication (Ishan Chattopadhyaya, Jason Gerlowski)
 
+* SOLR-11093: Add support for PointFields for {!graph} query. (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
