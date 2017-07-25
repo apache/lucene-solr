@@ -817,7 +817,7 @@ public class Util {
 			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
 					MessageType.RED_TEXT, false);
 
-			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.HIGHLIGHT_TERM_DATA, Util.RANGE_FACET_DATA);
+			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.RANGE_FACET_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA);
 			if (downloadedfile.exists()) {
