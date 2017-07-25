@@ -73,6 +73,8 @@ Bug Fixes
 
 * SOLR-11011: Assign.buildCoreName can lead to error in creating a new core when legacyCloud=false (Cao Manh Dat)
 
+* SOLR-10944: Get expression fails to return EOF tuple (Susheel Kumar, Joel Bernstein)
+
 Optimizations
 ----------------------
 
