@@ -1271,7 +1271,7 @@ public class Tests {
 
 		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, numDocuments);
 
-		Thread numericQueryTNQMetricS1 = new Thread(
+/*		Thread numericQueryTNQMetricS1 = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.TERM_NUMERIC_QUERY_STANDALONE_2T, port));
 		numericQueryTNQMetricS1.start();
 
@@ -1739,7 +1739,7 @@ public class Tests {
 				Tests.node.collectionName);
 		
 		numericQueryHTQMetricS4.stop();
-
+*/
 		
 		Thread numericQueryCTFQMetricS1 = new Thread(
 				new MetricCollector(Util.COMMIT_ID, TestType.CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T, port));
