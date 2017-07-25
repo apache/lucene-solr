@@ -36,16 +36,16 @@ public class TestPlans {
 
 		Util.postMessage("** Executing the benchmark test plan ...", MessageType.BLUE_TEXT, false);
 
-/*		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.INDEX);
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.INDEX);
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.INDEX);
 
 		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.PARTIAL_UPDATE);
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.PARTIAL_UPDATE);
 		
-*/		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
+		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 
-/*		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 3, "1", "3");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
@@ -56,7 +56,7 @@ public class TestPlans {
 		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
 
 		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
-*/
+
 		Util.postMessage("** Executing the benchmark test plan [COMPLETE]...", MessageType.BLUE_TEXT, false);
 
 	}
