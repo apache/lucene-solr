@@ -6656,6 +6656,31 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   }
+  
+  @Test
+  public void testGetStreamForEOFTuple() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e", "test_i", "5");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c", "test_i", "4");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"id:hello2\", fl=\"id,test_t, test_i\", sort=\"id desc\")";
+    String cat = "let(a ="+expr+",get(a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 0);
+
+
+  }
 
   @Test
   public void testConvertEvaluator() throws Exception {
