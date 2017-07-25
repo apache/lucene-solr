@@ -551,6 +551,86 @@
                             </div>
                         </div>
 
+                        <div class="panel panel-info" style="width:100%">
+                            <div class="panel-heading">Classic Term Faceting Query - QPS</div>
+                            <div class="panel-body">   
+                            
+				                   <div class="row">
+				
+				                           <div class="col-xs-9 cols-md-9 col-lg-9">
+				                                   <div class="panel-body" id="graphdiv18" style="width:100%; height:300px;"></div> 
+				                           </div>
+				                           <div class="col-xs-3 cols-md-3 col-lg-3">
+                                                   <span class="text-muted">X-Axis: Date/Time | Y-Axis: Queries Per Second</span><br/><br/>
+				                                   <div id="pointData18"></div>                                                        
+			                                       <div id="welcomeMessage18">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
+   										   </div>                            
+				                   
+				                   </div>        
+                                                                                       
+                            </div>
+                        </div>
+
+                        <div class="panel panel-info" style="width:100%">
+                            <div class="panel-heading">Classic Range Faceting Query - QPS</div>
+                            <div class="panel-body">   
+                            
+				                   <div class="row">
+				
+				                           <div class="col-xs-9 cols-md-9 col-lg-9">
+				                                   <div class="panel-body" id="graphdiv19" style="width:100%; height:300px;"></div> 
+				                           </div>
+				                           <div class="col-xs-3 cols-md-3 col-lg-3">
+                                                   <span class="text-muted">X-Axis: Date/Time | Y-Axis: Queries Per Second</span><br/><br/>
+				                                   <div id="pointData19"></div>                                                        
+			                                       <div id="welcomeMessage19">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
+   										   </div>                            
+				                   
+				                   </div>        
+                                                                                       
+                            </div>
+                        </div>
+
+                        <div class="panel panel-info" style="width:100%">
+                            <div class="panel-heading">JSON Term Faceting Query - QPS</div>
+                            <div class="panel-body">   
+                            
+				                   <div class="row">
+				
+				                           <div class="col-xs-9 cols-md-9 col-lg-9">
+				                                   <div class="panel-body" id="graphdiv20" style="width:100%; height:300px;"></div> 
+				                           </div>
+				                           <div class="col-xs-3 cols-md-3 col-lg-3">
+                                                   <span class="text-muted">X-Axis: Date/Time | Y-Axis: Queries Per Second</span><br/><br/>
+				                                   <div id="pointData20"></div>                                                        
+			                                       <div id="welcomeMessage20">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
+   										   </div>                            
+				                   
+				                   </div>        
+                                                                                       
+                            </div>
+                        </div>
+
+                        <div class="panel panel-info" style="width:100%">
+                            <div class="panel-heading">JSON Range Faceting Query - QPS</div>
+                            <div class="panel-body">   
+                            
+				                   <div class="row">
+				
+				                           <div class="col-xs-9 cols-md-9 col-lg-9">
+				                                   <div class="panel-body" id="graphdiv21" style="width:100%; height:300px;"></div> 
+				                           </div>
+				                           <div class="col-xs-3 cols-md-3 col-lg-3">
+                                                   <span class="text-muted">X-Axis: Date/Time | Y-Axis: Queries Per Second</span><br/><br/>
+				                                   <div id="pointData21"></div>                                                        
+			                                       <div id="welcomeMessage21">Please hover on the graph and click on a specific point on the graph to get more details ...</div>                                       
+   										   </div>                            
+				                   
+				                   </div>        
+                                                                                       
+                            </div>
+                        </div>
+
 
 
                 </div>
@@ -575,6 +655,10 @@
 		var fileData_phrase_text_query_benchmark_standalone;
 		var fileData_sorting_text_query_benchmark_standalone;
 		var fileData_highlighting_text_query_benchmark_standalone;
+		var fileData_classic_term_faceting_query_benchmark_standalone;
+		var fileData_classic_range_faceting_query_benchmark_standalone;
+		var fileData_json_term_faceting_query_benchmark_standalone;
+		var fileData_json_range_faceting_query_benchmark_standalone;
 		
 	    var commitID;
 	    var testID;
@@ -771,6 +855,53 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_highlighting_text_query_benchmark_standalone = data.split("\n");
+                                }
+
+	                        });
+
+                            
+                            $.ajax({
+
+                                type: "GET",
+                                url: "data/classic_term_faceting_query_benchmark_standalone.csv",
+                                dataType: "text",
+                                success: function(data) {
+                                    fileData_classic_term_faceting_query_benchmark_standalone = data.split("\n");
+                                }
+
+	                        });
+
+                            $.ajax({
+
+                                type: "GET",
+                                url: "data/classic_range_faceting_query_benchmark_standalone.csv",
+                                dataType: "text",
+                                success: function(data) {
+                                    fileData_classic_range_faceting_query_benchmark_standalone = data.split("\n");
+                                }
+
+	                        });
+                        
+
+                            $.ajax({
+
+                                type: "GET",
+                                url: "data/json_term_faceting_query_benchmark_standalone.csv",
+                                dataType: "text",
+                                success: function(data) {
+                                    fileData_json_term_faceting_query_benchmark_standalone = data.split("\n");
+                                }
+
+                        	});
+
+                            
+                            $.ajax({
+
+                                type: "GET",
+                                url: "data/json_range_faceting_query_benchmark_standalone.csv",
+                                dataType: "text",
+                                success: function(data) {
+                                    fileData_json_range_faceting_query_benchmark_standalone = data.split("\n");
                                 }
 
 	                        });
@@ -2012,6 +2143,374 @@
                                                 }
 
  	                           });
+
+
+                            g36 = new Dygraph(document.getElementById("graphdiv18"), "data/classic_term_faceting_query_benchmark_standalone.csv", {
+                                labelsDiv: document.getElementById('pointData18'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
+
+                                 highlightCallback: function (e, x, pts, row) {
+                                	 
+                                	 row_ = row;
+                                     commitID = fileData_classic_term_faceting_query_benchmark_standalone[(row + 1)].split(",")[2].trim();
+                                     testID = fileData_classic_term_faceting_query_benchmark_standalone[(row + 1)].split(",")[1].trim();
+				                      				
+				                                     $.ajax({
+				
+				                                         type: "GET",
+				                                         url: "data/" + testID + "_" + commitID + "_COMMIT_INFORMATION_dump.csv",
+				                                         dataType: "text",
+				                                         success: function(data) {
+				                                        	 document.getElementById("testCommitInformation").innerHTML = data;
+				                                         }
+				
+					                                 });
+				                                     
+				                     				 document.getElementById("welcomeMessage18").innerHTML = "";
+                     
+                                                },
+                                  
+                                  pointClickCallback: function(e, p) {
+                                	  				 point = p.name;
+                                                     $('#memProfile').modal();
+                                                     document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
+
+                                                     setTimeout(function () {
+                                                    	 
+                                                    	 if (p.name.includes("QPS(2 Threads)")) {
+
+                                                             g363 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g364 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv"; 
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv";
+                                                             
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[6].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[7].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[8].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[9].trim();
+
+                                                    	 } else if (p.name.includes("QPS(4 Threads)")) {
+
+                                                             g363 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g364 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv"; 
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[13].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[14].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[15].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[16].trim();
+
+                                                    	 } else if (p.name.includes("QPS(6 Threads)")) {
+
+                                                             g363 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g364 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv"; 
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[20].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[21].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[22].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[23].trim();
+
+                                                    	 } else if (p.name.includes("QPS(8 Threads)")) {
+
+                                                             g363 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g364 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv"; 
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[27].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[28].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[29].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[30].trim();
+
+                                                    	 }
+                                                    	 
+                                                     }, 250);
+
+                                                }
+
+                            });
+
+
+                            g37 = new Dygraph(document.getElementById("graphdiv19"), "data/classic_range_faceting_query_benchmark_standalone.csv", {
+                                labelsDiv: document.getElementById('pointData19'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
+
+                                 highlightCallback: function (e, x, pts, row) {
+                                	 
+                                	 row_ = row;
+                                     commitID = fileData_classic_range_faceting_query_benchmark_standalone[(row + 1)].split(",")[2].trim();
+                                     testID = fileData_classic_range_faceting_query_benchmark_standalone[(row + 1)].split(",")[1].trim();
+				                      				
+				                                     $.ajax({
+				
+				                                         type: "GET",
+				                                         url: "data/" + testID + "_" + commitID + "_COMMIT_INFORMATION_dump.csv",
+				                                         dataType: "text",
+				                                         success: function(data) {
+				                                        	 document.getElementById("testCommitInformation").innerHTML = data;
+				                                         }
+				
+					                                 });
+				                                     
+				                     				 document.getElementById("welcomeMessage19").innerHTML = "";
+                     
+                                                },
+                                  
+                                  pointClickCallback: function(e, p) {
+                                	  				 point = p.name;
+                                                     $('#memProfile').modal();
+                                                     document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
+
+                                                     setTimeout(function () {
+                                                    	 
+                                                    	 if (p.name.includes("QPS(2 Threads)")) {
+
+                                                             g373 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g374 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+																
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv";
+                                                             
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[6].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[7].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[8].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[9].trim();
+
+                                                    	 } else if (p.name.includes("QPS(4 Threads)")) {
+
+                                                             g373 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g374 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+																
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[13].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[14].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[15].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[16].trim();
+
+                                                    	 } else if (p.name.includes("QPS(6 Threads)")) {
+
+                                                             g373 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g374 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+																
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[20].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[21].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[22].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[23].trim();
+
+                                                    	 } else if (p.name.includes("QPS(8 Threads)")) {
+
+                                                             g373 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g374 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+																
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_CLASSIC_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[27].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[28].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[29].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_classic_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[30].trim();
+
+                                                    	 }
+                                                    	 
+                                                     }, 250);
+
+                                                }
+
+                            });
+
+
+                            g38 = new Dygraph(document.getElementById("graphdiv20"), "data/json_term_faceting_query_benchmark_standalone.csv", {
+                                labelsDiv: document.getElementById('pointData20'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
+
+                                 highlightCallback: function (e, x, pts, row) {
+                                	 
+                                	 row_ = row;
+                                     commitID = fileData_json_term_faceting_query_benchmark_standalone[(row + 1)].split(",")[2].trim();
+                                     testID = fileData_json_term_faceting_query_benchmark_standalone[(row + 1)].split(",")[1].trim();
+				                      				
+				                                     $.ajax({
+				
+				                                         type: "GET",
+				                                         url: "data/" + testID + "_" + commitID + "_COMMIT_INFORMATION_dump.csv",
+				                                         dataType: "text",
+				                                         success: function(data) {
+				                                        	 document.getElementById("testCommitInformation").innerHTML = data;
+				                                         }
+				
+					                                 });
+				                                     
+				                     				 document.getElementById("welcomeMessage20").innerHTML = "";
+                     
+                                                },
+                                  
+                                  pointClickCallback: function(e, p) {
+                                	  				 point = p.name;
+                                                     $('#memProfile').modal();
+                                                     document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
+
+                                                     setTimeout(function () {
+                                                    	 
+                                                    	 if (p.name.includes("QPS(2 Threads)")) {
+
+                                                             g383 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g384 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_2T_dump.csv";
+                                                             
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[6].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[7].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[8].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[9].trim();
+
+                                                    	 } else if (p.name.includes("QPS(4 Threads)")) {
+
+                                                             g383 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g384 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_4T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[13].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[14].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[15].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[16].trim();
+
+                                                    	 } else if (p.name.includes("QPS(6 Threads)")) {
+
+                                                             g383 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g384 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_6T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[20].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[21].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[22].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[23].trim();
+
+                                                    	 } else if (p.name.includes("QPS(8 Threads)")) {
+
+                                                             g383 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g384 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_TERM_FACETING_QUERY_STANDALONE_8T_dump.csv";
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[27].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[28].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[29].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_term_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[30].trim();
+
+                                                    	 }
+                                                    	 
+                                                     }, 250);
+
+                                                }
+
+                            });
+                            
+
+                            g39 = new Dygraph(document.getElementById("graphdiv21"), "data/json_range_faceting_query_benchmark_standalone.csv", {
+                                labelsDiv: document.getElementById('pointData21'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
+
+                                 highlightCallback: function (e, x, pts, row) {
+                                	 
+                                	 row_ = row;
+                                     commitID = fileData_json_range_faceting_query_benchmark_standalone[(row + 1)].split(",")[2].trim();
+                                     testID = fileData_json_range_faceting_query_benchmark_standalone[(row + 1)].split(",")[1].trim();
+				                      				
+				                                     $.ajax({
+				
+				                                         type: "GET",
+				                                         url: "data/" + testID + "_" + commitID + "_COMMIT_INFORMATION_dump.csv",
+				                                         dataType: "text",
+				                                         success: function(data) {
+				                                        	 document.getElementById("testCommitInformation").innerHTML = data;
+				                                         }
+				
+					                                 });
+				                                     
+				                     				 document.getElementById("welcomeMessage21").innerHTML = "";
+                     
+                                                },
+                                  
+                                  pointClickCallback: function(e, p) {
+                                	  				 point = p.name;
+                                                     $('#memProfile').modal();
+                                                     document.getElementById('memProfileFileChangeListLink').setAttribute('href', "https://git-wip-us.apache.org/repos/asf?p=lucene-solr.git;h=" + commitID);
+
+                                                     setTimeout(function () {
+                                                    	 
+                                                    	 if (p.name.includes("QPS(2 Threads)")) {
+
+                                                             g393 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g394 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_2T_dump.csv"; 
+                                                             
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[6].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[7].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[8].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[9].trim();
+
+                                                    	 } else if (p.name.includes("QPS(4 Threads)")) {
+
+                                                             g393 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g394 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_4T_dump.csv"; 
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[13].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[14].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[15].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[16].trim();
+
+                                                    	 } else if (p.name.includes("QPS(6 Threads)")) {
+
+                                                             g393 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g394 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_6T_dump.csv"; 
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[20].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[21].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[22].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[23].trim();
+
+                                                    	 } else if (p.name.includes("QPS(8 Threads)")) {
+
+                                                             g393 = new Dygraph(document.getElementById("memProfileGraph"), "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('memProfileStats') });
+                                                             g394 = new Dygraph(document.getElementById("cpuProfileGraph"), "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv", { visibility: [false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'], labelsDiv: document.getElementById('cpuProfileStats') });
+
+                                                             memFile = "data/" + testID + "_" + commitID + "_MEM_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv";
+                                                             cpuFile = "data/" + testID + "_" + commitID + "_CPU_ESTIMATION_JSON_RANGE_FACETING_QUERY_STANDALONE_8T_dump.csv"; 
+
+                                                             document.getElementById("75thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[27].trim();
+                                                             document.getElementById("95thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[28].trim();
+                                                             document.getElementById("99thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[29].trim();
+                                                             document.getElementById("99.9thQTime").innerHTML = fileData_json_range_faceting_query_benchmark_standalone[(row_ + 1)].split(",")[30].trim();
+
+                                                    	 }
+                                                    	 
+                                                     }, 250);
+
+                                                }
+
+                            });
                             
                             
                             $("#HeapMemoryUsageTab").click(function () {
