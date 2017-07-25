@@ -70,7 +70,7 @@ public class SliceMutator {
     if (message.getStr(ZkStateReader.CORE_NODE_NAME_PROP) != null) {
       coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     } else {
-      coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection.getName());
+      coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection);
     }
     Replica replica = new Replica(coreNodeName,
         makeMap(

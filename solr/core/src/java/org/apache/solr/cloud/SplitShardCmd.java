@@ -205,7 +205,7 @@ public class SplitShardCmd implements Cmd {
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = slice + "_" + i;
         subSlices.add(subSlice);
-        String subShardName = Assign.buildCoreName(collectionName, subSlice, Replica.Type.NRT, 1);
+        String subShardName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), collection, subSlice, Replica.Type.NRT);
         subShardNames.add(subShardName);
       }
 

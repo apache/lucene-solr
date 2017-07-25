@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,9 +26,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,11 +70,11 @@ public class AssignTest extends SolrTestCaseJ4 {
     );
     when(zkClient.getData(anyString(), any(), any(), anyBoolean())).then(invocation ->
         zkClientData.get(invocation.getArgument(0)));
-    String nodeName = Assign.assignNode(zkClient, "collection1");
+    String nodeName = Assign.assignNode(zkClient, new DocCollection("collection1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT));
     assertEquals("core_node1", nodeName);
-    nodeName = Assign.assignNode(zkClient, "collection2");
+    nodeName = Assign.assignNode(zkClient, new DocCollection("collection2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT));
     assertEquals("core_node1", nodeName);
-    nodeName = Assign.assignNode(zkClient, "collection1");
+    nodeName = Assign.assignNode(zkClient, new DocCollection("collection1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT));
     assertEquals("core_node2", nodeName);
   }
 
@@ -98,7 +103,7 @@ public class AssignTest extends SolrTestCaseJ4 {
         for (int i = 0; i < 1000; i++) {
           futures.add(executor.submit(() -> {
             String collection = collections[random().nextInt(collections.length)];
-            int id = Assign.incAndGetId(zkClient, collection);
+            int id = Assign.incAndGetId(zkClient, collection, 0);
             Object val = collectionUniqueIds.get(collection).put(id, fixedValue);
             if (val != null) {
               fail("ZkController do not generate unique id for " + collection);
@@ -120,9 +125,22 @@ public class AssignTest extends SolrTestCaseJ4 {
 
 
   @Test
-  public void testBuildCoreName() {
-    assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildCoreName("collection1", "shard1", Replica.Type.NRT, 1));
-    assertEquals("Core name pattern changed", "collection1_shard2_replica_p2", Assign.buildCoreName("collection1", "shard2", Replica.Type.PULL,2));
+  public void testBuildCoreName() throws IOException, InterruptedException, KeeperException {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    ZkTestServer server = new ZkTestServer(zkDir);
+    server.run();
+    try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
+      zkClient.makePath("/", true);
+      Map<String, Slice> slices = new HashMap<>();
+      slices.put("shard1", new Slice("shard1", new HashMap<>(), null));
+      slices.put("shard2", new Slice("shard2", new HashMap<>(), null));
+
+      DocCollection docCollection = new DocCollection("collection1", slices, null, DocRouter.DEFAULT);
+      assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildCoreName(zkClient, docCollection, "shard1", Replica.Type.NRT));
+      assertEquals("Core name pattern changed", "collection1_shard2_replica_p2", Assign.buildCoreName(zkClient, docCollection, "shard2", Replica.Type.PULL));
+    } finally {
+      server.shutdown();
+    }
   }
   
 }
