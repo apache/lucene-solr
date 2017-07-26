@@ -55,6 +55,10 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.Repository;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.w3c.dom.Document;
@@ -439,7 +443,7 @@ public class Util {
 	 * @return
 	 */
 	public static String getLocalRepoPath() {
-		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository-" + Util.COMMIT_ID;
+		Util.GIT_REPOSITORY_PATH = Util.DOWNLOAD_DIR + "git-repository";
 		return Util.GIT_REPOSITORY_PATH;
 	}
 
@@ -1620,5 +1624,16 @@ public class Util {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static String getHeadName(Repository repo) {
+		  String result = null;
+		  try {
+		    ObjectId id = repo.resolve(Constants.HEAD);
+		    result = id.getName();
+		  } catch (IOException e) {
+		    e.printStackTrace();
+		  }
+		  return result;
 	}
 }

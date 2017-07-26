@@ -31,7 +31,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Repository;
 
 enum SolrNodeAction {
 	NODE_START, NODE_STOP
@@ -75,7 +78,8 @@ public class SolrNode {
 		this.zooKeeperIp = zooKeeperIp;
 		this.zooKeeperPort = zooKeeperPort;
 		this.isRunningInCloudMode = isRunningInCloudMode;
-		this.gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-" + commitId;
+		//this.gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-" + commitId;
+		this.gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository";
 		Util.GIT_REPOSITORY_PATH = this.gitDirectoryPath;
 		this.install();
 	}
@@ -128,12 +132,27 @@ public class SolrNode {
 		Util.postMessage("** Checking out Solr: " + commitId + " ...", MessageType.CYAN_TEXT, true);
 
 		File gitDirectory = new File(gitDirectoryPath);
-
 		Git repository;
 
 		if (gitDirectory.exists()) {
 			repository = Git.open(gitDirectory);
-			repository.checkout().setName(commitId).call();
+
+			Util.postMessage("" + repository.getRepository(), MessageType.RED_TEXT, false);
+			Util.postMessage("" + Util.getHeadName(repository.getRepository()), MessageType.RED_TEXT, false);
+			
+			if (!Util.getHeadName(repository.getRepository()).equals(commitId)) {
+
+				repository.checkout().setName("master").call();
+				
+				PullCommand pullCmd = repository.pull();
+				try {
+				    pullCmd.call();
+				} catch (GitAPIException e) {
+				    e.printStackTrace();  
+				}
+				
+				repository.checkout().setName(commitId).call();
+			}
 		} else {
 			BenchmarkAppConnector.writeToWebAppDataFile("iamcloning.txt", "", true, FileType.IS_CLONING_FILE);
 			repository = Git.cloneRepository().setURI(Util.LUCENE_SOLR_REPOSITORY_URL).setDirectory(gitDirectory)
