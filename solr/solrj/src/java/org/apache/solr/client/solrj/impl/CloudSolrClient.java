@@ -786,10 +786,10 @@ public class CloudSolrClient extends SolrClient {
 
   @Override
   public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
-    SolrParams reqParams = request.getParams();
-
-    if (collection == null)
-      collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
+    if (collection == null) {
+      collection = request.getCollection();
+      if (collection == null) collection = defaultCollection;
+    }
     return requestWithRetryOnStaleState(request, 0, collection);
   }
 
