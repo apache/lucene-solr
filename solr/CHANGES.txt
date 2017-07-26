@@ -540,6 +540,7 @@ Other Changes
 * SOLR-10494: Make default response format JSON (wt=json), and also indent text responses formats
   (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)
 
+* SOLR-10760: Remove trie field types and fields from example schemas. (Steve Rowe)
 
 ==================  6.7.0 ==================
 
