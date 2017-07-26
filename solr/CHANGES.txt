@@ -317,6 +317,9 @@ Optimizations
 * SOLR-10727: Avoid polluting the filter cache for certain types of faceting (typically ranges) when
   the base docset is empty. (David Smiley)
 
+* SOLR-11070: Make docValues range queries behave the same as Trie/Point fields for Double/Float Infinity cases
+  (Tomás Fernández Löbbe, Andrey Kudryavtsev)
+
 Other Changes
 ----------------------
 * SOLR-10236: Removed FieldType.getNumericType(). Use getNumberType() instead. (Tomás Fernández Löbbe)
@@ -460,6 +463,9 @@ Other Changes
   (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)
 
 * SOLR-10760: Remove trie field types and fields from example schemas. (Steve Rowe)
+
+* SOLR-11056: Add random range query test that compares results across Trie*, *Point and DocValue-only fields
+  (Tomás Fernández Löbbe)
 
 ==================  6.7.0 ==================
 
