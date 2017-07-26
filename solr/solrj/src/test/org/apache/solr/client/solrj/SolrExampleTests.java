@@ -421,6 +421,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     catch(SolrException ex) {
       assertEquals(500, ex.code());
       assertThat(ex.getMessage(), containsString(" Can't generate internal string in PointField. use PointField.toInternalByteRef"));
+    } 
+    catch (SolrServerException ex) {
+      assertThat(ex.getMessage(), containsString(" Can't generate internal string in PointField. use PointField.toInternalByteRef"));
     }
     catch(Throwable t) {
       t.printStackTrace();
