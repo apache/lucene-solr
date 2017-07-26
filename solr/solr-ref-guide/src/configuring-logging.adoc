@@ -65,7 +65,7 @@ There is also a way of sending REST commands to the logging endpoint to do the s
 [source,bash]
 ----
 # Set the root logger to level WARN
-curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=root:WARN&wt=json"
+curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=root:WARN"
 ----
 
 == Choosing Log Level at Startup

@@ -414,7 +414,7 @@ Example query:
 
 [source,text]
 ----
-http://localhost:8983/solr/techproducts/suggest?suggest=true&suggest.build=true&suggest.dictionary=mySuggester&wt=json&suggest.q=elec
+http://localhost:8983/solr/techproducts/suggest?suggest=true&suggest.build=true&suggest.dictionary=mySuggester&suggest.q=elec
 ----
 
 In this example, we've simply requested the string 'elec' with the `suggest.q` parameter and requested that the suggestion dictionary be built with `suggest.build` (note, however, that you would likely not want to build the index on every query - instead you should use `buildOnCommit` or `buildOnOptimize` if you have regularly changing documents).
@@ -464,8 +464,7 @@ Example query:
 
 [source,text]
 ----
-http://localhost:8983/solr/techproducts/suggest?suggest=true& \
-    suggest.dictionary=mySuggester&suggest.dictionary=altSuggester&wt=json&suggest.q=elec
+http://localhost:8983/solr/techproducts/suggest?suggest=true&suggest.dictionary=mySuggester&suggest.dictionary=altSuggester&suggest.q=elec
 ----
 
 In this example we have sent the string 'elec' as the `suggest.q` parameter and named two `suggest.dictionary` definitions to be used.
@@ -535,7 +534,7 @@ Example context filtering suggest query:
 
 [source,text]
 ----
-http://localhost:8983/solr/techproducts/suggest?suggest=true&suggest.build=true&suggest.dictionary=mySuggester&wt=json&suggest.q=c&suggest.cfq=memory
+http://localhost:8983/solr/techproducts/suggest?suggest=true&suggest.build=true&suggest.dictionary=mySuggester&suggest.q=c&suggest.cfq=memory
 ----
 
 The suggester will only bring back suggestions for products tagged with 'cat=memory'.

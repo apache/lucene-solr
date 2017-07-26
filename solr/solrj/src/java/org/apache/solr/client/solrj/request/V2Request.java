@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -38,14 +39,22 @@ import org.apache.solr.common.util.Utils;
 public class V2Request extends SolrRequest<V2Response> {
   //only for debugging purposes
   public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
-  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/[^/]+/(?!shards)");
+  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/])+/(?!shards)");
   private InputStream payload;
   private SolrParams solrParams;
   public final boolean useBinary;
+  private String collection;
+  private boolean isPerCollectionRequest = false;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
     super(m, resource);
+    Matcher matcher = COLL_REQ_PATTERN.matcher(getPath());
+    if (matcher.find()) {
+      this.collection = matcher.group(2);
+      isPerCollectionRequest = true;
+    }
     this.useBinary = useBinary;
+
   }
 
   @Override
@@ -73,7 +82,12 @@ public class V2Request extends SolrRequest<V2Response> {
   }
 
   public boolean isPerCollectionRequest() {
-    return COLL_REQ_PATTERN.matcher(getPath()).find();
+    return isPerCollectionRequest;
+  }
+
+  @Override
+  public String getCollection() {
+    return collection;
   }
 
   @Override

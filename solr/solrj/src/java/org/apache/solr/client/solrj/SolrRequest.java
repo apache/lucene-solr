@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
@@ -193,6 +194,10 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    */
   public final T process(SolrClient client) throws SolrServerException, IOException {
     return process(client, null);
+  }
+
+  public String getCollection() {
+    return getParams() == null ? null : getParams().get("collection");
   }
 
 }

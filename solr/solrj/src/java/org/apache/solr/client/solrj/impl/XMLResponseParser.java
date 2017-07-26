@@ -404,21 +404,20 @@ public class XMLResponseParser extends ResponseParser
           throw new RuntimeException( "this must be known type! not: "+parser.getLocalName() );
         }
         
+        if ( type == KnownType.DOC) {
+          doc.addChildDocument(readDocument(parser));
+          depth--; // (nested) readDocument clears out the (nested) 'endElement'
+          continue; // may be more child docs, or other fields
+        }
+
+        // other then nested documents, all other possible nested elements require a name...
+        
         name = null;
         int cnt = parser.getAttributeCount();
         for( int i=0; i<cnt; i++ ) {
           if( "name".equals( parser.getAttributeLocalName( i ) ) ) {
             name = parser.getAttributeValue( i );
             break;
-          }
-        }
-
-        //Nested documents
-        while( type == KnownType.DOC) {
-          doc.addChildDocument(readDocument(parser));
-          int event = parser.next();
-          if (event == XMLStreamConstants.END_ELEMENT) { //Doc ends
-            return doc;
           }
         }
         

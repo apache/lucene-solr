@@ -698,5 +698,5 @@ When rolling in upgrades to your indexer or application, you should shutdown the
 curl http://<Source>/solr/cloud1/update -H 'Content-type:application/json' -d '[{"SKU":"ABC"}]'
 
 #check the Target
-curl "http://<Target>:8983/solr/<collection_name>/select?q=SKU:ABC&wt=json&indent=true"
+curl "http://<Target>:8983/solr/<collection_name>/select?q=SKU:ABC&indent=true"
 ----

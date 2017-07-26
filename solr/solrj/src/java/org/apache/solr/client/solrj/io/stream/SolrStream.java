@@ -255,6 +255,8 @@ public class SolrStream extends TupleStream {
     if (p != null) {
       ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
       modifiableSolrParams.remove("qt");
+      //performance optimization - remove extra whitespace by default when streaming
+      modifiableSolrParams.set("indent", modifiableSolrParams.get("indent", "off"));
     }
 
     String wt = requestParams.get(CommonParams.WT, "json");

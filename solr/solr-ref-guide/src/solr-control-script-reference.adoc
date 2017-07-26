@@ -296,6 +296,23 @@ Solr process 39827 running on port 8865
     "collections":"2"}}
 ----
 
+=== Assert
+
+The `assert` command sanity-checks common issues with Solr installations.  These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL.  The command can either output a specified error message, or change its exit code to indicate errors.
+
+As an example:
+
+`bin/solr assert --exists /opt/bin/solr`
+
+Results in the output below:
+
+[source,plain]
+----
+
+ERROR: Directory /opt/bin/solr does not exist.
+
+----
+
 === Healthcheck
 
 The `healthcheck` command generates a JSON-formatted health report for a collection when running in SolrCloud mode. The health report provides information about the state of every replica for all shards in a collection, including the number of committed documents and its current state.

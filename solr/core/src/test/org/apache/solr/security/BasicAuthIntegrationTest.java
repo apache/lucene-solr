@@ -203,7 +203,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, "harry", "HarryIsUberCool");
-      verifySecurityStatus(cl, baseUrl + "/admin/info/key?wt=json", "key", NOT_NULL_PREDICATE, 20);
+      verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
 
       String[] toolArgs = new String[]{
           "status", "-solr", baseUrl};

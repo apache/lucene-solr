@@ -73,6 +73,8 @@ Bug Fixes
 
 * SOLR-11011: Assign.buildCoreName can lead to error in creating a new core when legacyCloud=false (Cao Manh Dat)
 
+* SOLR-10944: Get expression fails to return EOF tuple (Susheel Kumar, Joel Bernstein)
+
 Optimizations
 ----------------------
 
@@ -106,6 +108,12 @@ Other Changes
 
 * SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
+* SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster 
+  to instead extend SolrCloudTestCase. (Steve Rowe)
+
+* SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
+  (Jason Gerlowski via Anshum Gupta)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
@@ -119,6 +127,11 @@ Jetty 9.3.14.v20161028
 
 Upgrading from Solr 6.x
 ----------------------
+
+* The default response type is now JSON ("wt=json") instead of XML, and line indentation is now on by default
+  ("indent=on"). If you expect the responses to your queries to be returned in the previous format (XML
+  format, no indentation), you must now you must now explicitly pass in "wt=xml" and "indent=off" as query
+  parameters, or configure them as defaults on your request handlers.  See SOLR-10494 for more details.
 
 * the cluster property 'legacyCloud' is set to false from 7.0. This means 'zookeeper is the truth' by
   default. If an entry for a replica does not exist in the state.json, that replica cannot get
@@ -305,6 +318,8 @@ New Features
 
 * SOLR-10282: bin/solr support for enabling Kerberos authentication (Ishan Chattopadhyaya, Jason Gerlowski)
 
+* SOLR-11093: Add support for PointFields for {!graph} query. (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -371,6 +386,11 @@ Bug Fixes
 
 * SOLR-11057: Fix overflow in point range queries when querying the type limits 
   (e.g. q=field_i:{Integer.MAX_VALUE TO Integer.MAX_VALUE]) (Tomás Fernández Löbbe)
+
+* SOLR-11136: Fix solrj XMLResponseParser when nested docs transformer is used with indented XML (hossman)
+
+* SOLR-11130: V2Request in SolrJ should return the correct collection name so that the request is forwarded to the
+  correct node (noble)
 
 Optimizations
 ----------------------
@@ -530,6 +550,9 @@ Other Changes
 * SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
 
 * SOLR-11119: Switch from Trie to Points field types in the .system collection schema. (Steve Rowe)
+
+* SOLR-10494: Make default response format JSON (wt=json), and also indent text responses formats
+  (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)
 
 ==================  6.7.0 ==================
 
@@ -2310,6 +2333,7 @@ Bug Fixes
 
 * SOLR-9391: LBHttpSolrClient.request now correctly returns Rsp.server when
   previously skipped servers were successfully tried. (Christine Poerschke)
+
 
 Optimizations
 ----------------------

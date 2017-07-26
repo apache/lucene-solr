@@ -224,7 +224,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     Slice tempSourceSlice = clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
     Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
 
-    String tempCollectionReplica1 = Assign.buildCoreName(tempSourceCollectionName, tempSourceSlice.getName(), Replica.Type.NRT, 1);
+    String tempCollectionReplica1 = tempSourceLeader.getCoreName();
     String coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
         sourceLeader.getNodeName(), tempCollectionReplica1);
     // wait for the replicas to be seen as active on temp source leader
@@ -257,7 +257,8 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
     log.info("Creating a replica of temporary collection: {} on the target leader node: {}",
         tempSourceCollectionName, targetLeader.getNodeName());
-    String tempCollectionReplica2 = Assign.buildCoreName(tempSourceCollectionName, tempSourceSlice.getName(), Replica.Type.NRT, 2); 
+    String tempCollectionReplica2 = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(),
+        zkStateReader.getClusterState().getCollection(tempSourceCollectionName), tempSourceSlice.getName(), Replica.Type.NRT);
     props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
     props.put(COLLECTION_PROP, tempSourceCollectionName);

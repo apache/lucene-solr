@@ -19,6 +19,7 @@ package org.apache.solr.util.hll;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.util.LongIterator;
 import org.junit.Test;
 
 /**

@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api6",
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#delete",
   "description": "Deletes a collection.",
   "methods": [
     "DELETE"

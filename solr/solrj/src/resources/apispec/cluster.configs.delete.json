@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/ConfigSets+API#ConfigSetsAPI-delete",
+  "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-delete",
   "description": "Delete ConfigSets. The name of the ConfigSet to delete must be provided as a path parameter.",
   "methods": [
     "DELETE"

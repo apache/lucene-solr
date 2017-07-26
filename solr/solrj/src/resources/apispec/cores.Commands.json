@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API",
+  "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html",
   "description": "Actions on non-specific cores. See the /cores/{core} endpoint for actions on specific, named, cores.",
   "methods": [
     "POST"
@@ -12,7 +12,7 @@
   "commands": {
     "create": {
       "type" : "object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-CREATE",
+      "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-create",
       "description": "Creates a new core. If you are using SolrCloud, you should use the Collections API instead. While a core for a SolrCloud cluster can be created with this API, it is considered an expert-level action. The Collections API has commands for creating new shards and replicas that ensure the safety of those actions within your cluster.",
       "properties": {
         "name": {
@@ -37,7 +37,7 @@
         },
         "configSet": {
           "type": "string",
-          "documentation": "https://cwiki.apache.org/confluence/display/solr/Config+Sets",
+          "documentation": "https://lucene.apache.org/solr/guide/config-sets.html",
           "description": "The name of a config set to use. The config set must already exist. The solr.xml file defines the location of the configset base directory, and configuration files can be shared between cores by defining sub-directories. The files in the named configSet will be used for the schema and config properties instead of defining them explicitly."
         },
         "loadOnStartup": {
@@ -60,7 +60,7 @@
         },
         "props": {
           "type": "object",
-          "documentation": "https://cwiki.apache.org/confluence/display/solr/Defining+core.properties",
+          "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",
           "description": "Allows adding core.properties for the collection.",
           "additionalProperties": true
         },

@@ -1,6 +1,6 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API",
-  "description": "Provides list of collection alises.",
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "description": "Provides list of collection aliases.",
   "methods": [
     "GET"
   ],

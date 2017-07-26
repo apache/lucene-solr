@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Basic+Authentication+Plugin",
+  "documentation": "https://lucene.apache.org/solr/guide/basic-authentication-plugin.html",
   "description": "Modifies the configuration of Basic authentication, allowing you to add or remove users and their passwords.",
   "methods": [
     "POST"

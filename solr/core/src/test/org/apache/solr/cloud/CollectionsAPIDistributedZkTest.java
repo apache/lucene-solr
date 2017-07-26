@@ -284,7 +284,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient()).getStatus());
     assertTrue(CollectionAdminRequest.addReplicaToShard("halfcollectionblocker", "shard1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
-        .setCoreName(Assign.buildCoreName("halfcollection", "shard1", Replica.Type.NRT, 1))
+        .setCoreName("halfcollection_shard1_replica_n1")
         .process(cluster.getSolrClient()).isSuccess());
 
     assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker2", "conf",1, 1)
@@ -292,7 +292,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient()).getStatus());
     assertTrue(CollectionAdminRequest.addReplicaToShard("halfcollectionblocker2", "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
-        .setCoreName(Assign.buildCoreName("halfcollection", "shard1", Replica.Type.NRT, 1))
+        .setCoreName("halfcollection_shard1_replica_n1")
         .process(cluster.getSolrClient()).isSuccess());
 
     String nn1 = cluster.getJettySolrRunner(0).getNodeName();

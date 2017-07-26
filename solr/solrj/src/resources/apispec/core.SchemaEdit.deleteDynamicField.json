@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Schema+API#SchemaAPI-DeleteaDynamicFieldRule",
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#delete-a-dynamic-field-rule",
   "description": "Deletes a dynamic field.",
   "type":"object",
   "properties": {

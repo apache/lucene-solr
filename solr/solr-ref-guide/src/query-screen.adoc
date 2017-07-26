@@ -27,7 +27,7 @@ image::images/query-screen/query-top.png[image,height=400]
 
 In this example, a query for `genre:Fantasy` was sent to a "films" collection. Defaults were used for all other options in the form, which are explained briefly in the table below, and covered in detail in later parts of this Guide.
 
-The response is shown to the right of the form. Requests to Solr are simply HTTP requests, and the query submitted is shown in light type above the results; if you click on this it will open a new browser window with just this request and response (without the rest of the Solr Admin UI). The rest of the response is shown in JSON, which is part of the request (see the `wt=json` part at the end).
+The response is shown to the right of the form. Requests to Solr are simply HTTP requests, and the query submitted is shown in light type above the results; if you click on this it will open a new browser window with just this request and response (without the rest of the Solr Admin UI). The rest of the response is shown in JSON, which is the default output format.
 
 The response has at least two sections, but may have several more depending on the options chosen. The two sections it always has are the `responseHeader` and the `response`. The `responseHeader` includes the status of the search (`status`), the processing time (`QTime`), and the parameters (`params`) that were used to process the query.
 
@@ -54,7 +54,7 @@ fl::
 Defines the fields to return for each document. You can explicitly list the stored fields, <<function-queries.adoc#function-queries,functions>>, and <<transforming-result-documents.adoc#transforming-result-documents,doc transformers>> you want to have returned by separating them with either a comma or a space.
 
 wt::
-Specifies the Response Writer to be used to format the query response. Defaults to XML if not specified.
+Specifies the Response Writer to be used to format the query response. Defaults to JSON if not specified.
 
 indent::
 Click this button to request that the Response Writer use indentation to make the responses more readable.

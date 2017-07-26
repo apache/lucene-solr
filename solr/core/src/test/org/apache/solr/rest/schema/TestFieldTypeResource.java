@@ -21,10 +21,10 @@ import org.junit.Test;
 
 public class TestFieldTypeResource extends SolrRestletTestBase {
   @Test
-  public void testGetFieldType() throws Exception {
+  public void testXMLGetFieldType() throws Exception {
     final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
-    assertQ("/schema/fieldtypes/float?indent=on&wt=xml&showDefaults=true",
+    assertQ("/schema/fieldtypes/float?wt=xml&showDefaults=true",
             "count(/response/lst[@name='fieldType']) = 1",
             "count(/response/lst[@name='fieldType']/*) = 17",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
@@ -46,8 +46,8 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetNotFoundFieldType() throws Exception {
-    assertQ("/schema/fieldtypes/not_in_there?indent=on&wt=xml",
+  public void testXMLGetNotFoundFieldType() throws Exception {
+    assertQ("/schema/fieldtypes/not_in_there?wt=xml",
             "count(/response/lst[@name='fieldtypes']) = 0",
             "/response/lst[@name='responseHeader']/int[@name='status'] = '404'",
             "/response/lst[@name='error']/int[@name='code'] = '404'");
@@ -57,7 +57,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   public void testJsonGetFieldType() throws Exception {
     final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
-    assertJQ("/schema/fieldtypes/float?indent=on&showDefaults=on",  // assertJQ will add "&wt=json"
+    assertJQ("/schema/fieldtypes/float?showDefaults=on",
              "/fieldType/name=='float'",
              "/fieldType/class=='"+expectedFloatClass+"'",
              "/fieldType/precisionStep=='0'",
@@ -76,8 +76,8 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   }
   
   @Test
-  public void testGetFieldTypeDontShowDefaults() throws Exception {
-    assertQ("/schema/fieldtypes/teststop?wt=xml&indent=on",
+  public void testXMLGetFieldTypeDontShowDefaults() throws Exception {
+    assertQ("/schema/fieldtypes/teststop?wt=xml",
             "count(/response/lst[@name='fieldType']/*) = 3",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'teststop'",
             "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TextField'",

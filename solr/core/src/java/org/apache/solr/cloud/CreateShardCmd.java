@@ -88,23 +88,19 @@ public class CreateShardCmd implements Cmd {
     int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
     CountDownLatch countDownLatch = new CountDownLatch(totalReplicas);
     for (int j = 1; j <= totalReplicas; j++) {
-      int coreNameNumber;
       Replica.Type typeToCreate;
       if (createdNrtReplicas < numNrtReplicas) {
         createdNrtReplicas++;
-        coreNameNumber = createdNrtReplicas;
         typeToCreate = Replica.Type.NRT;
       } else if (createdTlogReplicas < numTlogReplicas) {
         createdTlogReplicas++;
-        coreNameNumber = createdTlogReplicas;
         typeToCreate = Replica.Type.TLOG;
       } else {
         createdPullReplicas++;
-        coreNameNumber = createdPullReplicas;
         typeToCreate = Replica.Type.PULL;
       }
       String nodeName = sortedNodeList.get(((j - 1)) % sortedNodeList.size()).nodeName;
-      String coreName = Assign.buildCoreName(collectionName, sliceName, typeToCreate, coreNameNumber);
+      String coreName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), collection, sliceName, typeToCreate);
 //      String coreName = collectionName + "_" + sliceName + "_replica" + j;
       log.info("Creating replica " + coreName + " as part of slice " + sliceName + " of collection " + collectionName
           + " on " + nodeName);

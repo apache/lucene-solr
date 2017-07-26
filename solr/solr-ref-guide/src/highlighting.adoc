@@ -100,7 +100,7 @@ Using the example documents included with Solr, we can see how this might work:
 In response to a query such as:
 
 [source,text]
-http://localhost:8983/solr/gettingstarted/select?hl=on&q=apple&wt=json&hl.fl=manu&fl=id,name,manu,cat
+http://localhost:8983/solr/gettingstarted/select?hl=on&q=apple&hl.fl=manu&fl=id,name,manu,cat
 
 we get a response such as this (truncated slightly for space):
 

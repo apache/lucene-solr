@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api1",
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#create",
   "description": "Create collections and collection aliases, backup or restore collections, and delete collections and aliases.",
   "methods": [
     "POST"
@@ -13,7 +13,7 @@
   "commands": {
     "create": {
       "type": "object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api1",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#create",
       "description": "Create a collection.",
       "properties": {
         "name": {
@@ -26,7 +26,7 @@
         },
         "router": {
           "type": "object",
-          "documentation": "https://cwiki.apache.org/confluence/display/solr/Shards+and+Indexing+Data+in+SolrCloud",
+          "documentation": "https://lucene.apache.org/solr/guide/shards-and-indexing-data-in-solrcloud.html",
           "description": "These properties define how to distribute documents across a collection's shards.",
           "properties": {
             "name": {
@@ -82,12 +82,12 @@
         },
         "autoAddReplicas": {
           "type": "boolean",
-          "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://cwiki.apache.org/confluence/display/solr/Running+Solr+on+HDFS for more details on settings and overrides.",
+          "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://lucene.apache.org/solr/guide/running-solr-on-hdfs.html for more details on settings and overrides.",
           "default": "false"
         },
         "rule": {
           "type": "array",
-          "documentation": "https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+          "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
           "description": "Defines rules for where replicas should be located in a cluster.",
           "items": {
             "type": "string"
@@ -95,7 +95,7 @@
         },
         "snitch": {
           "type": "array",
-          "documentation": "https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+          "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
           "description": "",
           "items": {
             "type": "string"
@@ -103,7 +103,7 @@
         },
         "properties": {
           "type": "object",
-          "documentation": "https://cwiki.apache.org/confluence/display/solr/Defining+core.properties",
+          "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",
           "description": "Allows adding core.properties for the collection. Some examples of core properties you may want to modify include the config set, the node name, the data directory, among others.",
           "additionalProperties": true
         },
@@ -117,7 +117,7 @@
       ]
     },
     "create-alias": {
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api4",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
       "description": "Allows one or more collections to be known by another name. If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
       "type": "object",
       "properties": {
@@ -143,7 +143,7 @@
       ]
     },
     "delete-alias": {
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api5",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#deletealias",
       "description": "Deletes a collection alias",
       "type": "object",
       "properties": {
@@ -159,7 +159,7 @@
       "required":["name"]
     },
     "backup-collection": {
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-Backup",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#backup",
       "description": "Backup Solr indexes and configurations for a specific collection. One copy of the indexes will be taken from each shard, and the config set for the collection will also be copied.",
       "type": "object",
       "properties": {
@@ -187,7 +187,7 @@
       ]
     },
     "restore-collection": {
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-Restore",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#restore",
       "description": "Restore Solr indexes and configurations from a backup. You cannot restore into the same collection you took the backup from. The target collection must not exist before calling this command, as it will be created by the restore action. The new collection will have the same number of shards and replicas as the original collection, and all routing strategies will be retained.",
       "type": "object",
       "properties": {
