@@ -16,8 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +31,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,6 +91,29 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     ));
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
     assertNotNull( nl.get("ADMIN").get("org.apache.solr.handler.admin.CollectionsHandler"));
+  }
+
+  @Test
+  public void testAddedMBeanDiff() throws Exception {
+    String xml = h.query(req(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        CommonParams.WT,"xml"
+    ));
+
+    // Artificially convert a long value to a null, to trigger the ADD case in SolrInfoMBeanHandler.diffObject()
+    xml = xml.replaceFirst("<long\\s+(name\\s*=\\s*\"ADMIN./admin/mbeans.totalTime\"\\s*)>[^<]*</long>", "<null $1/>");
+
+    LocalSolrQueryRequest req = lrf.makeRequest(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        CommonParams.WT,"xml",
+        "diff","true");
+    req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(xml)));
+    xml = h.query(req);
+
+    NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
+    assertNotNull(((NamedList)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADD ADMIN./admin/mbeans.totalTime"));
   }
 
   @Test

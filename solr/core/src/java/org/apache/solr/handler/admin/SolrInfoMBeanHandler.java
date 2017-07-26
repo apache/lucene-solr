@@ -209,14 +209,16 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     for(int i=0; i<ref.size(); i++) {
       String name = ref.getName(i);
       Object r = ref.getVal(i);
-      Object n = now.remove(name);
-      if(n == null) {
-        if(r!=null) {
-          out.add("REMOVE "+name, r);
+      Object n = now.get(name);
+      if (n == null) {
+        if (r != null) {
+          out.add("REMOVE " + name, r);
+          now.remove(name);
         }
       }
-      else {
-        out.add(name, diffObject(r,n));
+      else if (r != null) {
+        out.add(name, diffObject(r, n));
+        now.remove(name);
       }
     }
     

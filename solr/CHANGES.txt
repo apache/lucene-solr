@@ -374,6 +374,9 @@ Bug Fixes
 
 * SOLR-11130: V2Request in SolrJ should return the correct collection name so that the request is forwarded to the
   correct node (noble)
+  
+* SOLR-11151: SolrInfoMBeanHandler.getDiff() ADD case non-functional: NPE when a bean value goes from null -> non-null.
+  (Steve Rowe)
 
 Optimizations
 ----------------------
