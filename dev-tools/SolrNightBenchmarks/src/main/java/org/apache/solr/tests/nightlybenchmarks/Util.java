@@ -97,6 +97,8 @@ public class Util {
 	public static String ZOOKEEPER_PORT = "2181";
 	public static String LUCENE_SOLR_REPOSITORY_URL = "https://github.com/apache/lucene-solr";
 	public static String GIT_REPOSITORY_PATH;
+	public static String SOLR_PACKAGE_DIR;
+	public static String SOLR_PACKAGE_DIR_LOCATION;
 	public static String COMMIT_ID;
 	public static String TEST_ID = UUID.randomUUID().toString();
 	public static String TEST_TIME = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
@@ -1309,6 +1311,7 @@ public class Util {
 							TestPlans.execute();
 							BenchmarkAppConnector.publishDataForWebApp();
 							BenchmarkReportData.reset();
+							Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
 							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
 							System.gc();
 						}
@@ -1324,6 +1327,7 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
+				Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
 			} else if (argsList.contains("--commit-id")) {
 				Util.createIsRunningFile();
 				Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
@@ -1332,6 +1336,7 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
+				Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
 			}
 
 		} catch (Exception e) {

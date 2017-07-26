@@ -33,8 +33,6 @@ import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Repository;
 
 enum SolrNodeAction {
 	NODE_START, NODE_STOP
@@ -162,6 +160,8 @@ public class SolrNode {
 		}
 		
 		String packageFilename = gitDirectoryPath + "/solr/package/";
+		Util.SOLR_PACKAGE_DIR = packageFilename;
+		Util.SOLR_PACKAGE_DIR_LOCATION = gitDirectoryPath;
 		String tarballLocation = Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip";
 
 		if (new File(tarballLocation).exists() == false) {
