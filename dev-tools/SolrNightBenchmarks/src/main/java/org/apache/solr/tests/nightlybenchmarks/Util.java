@@ -1311,7 +1311,9 @@ public class Util {
 							TestPlans.execute();
 							BenchmarkAppConnector.publishDataForWebApp();
 							BenchmarkReportData.reset();
-							Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+							if (new File(Util.SOLR_PACKAGE_DIR).exists()) {
+								Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+							}
 							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
 							System.gc();
 						}
@@ -1327,7 +1329,9 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-				Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+				if (new File(Util.SOLR_PACKAGE_DIR).exists()) {
+					Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+				}
 			} else if (argsList.contains("--commit-id")) {
 				Util.createIsRunningFile();
 				Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
@@ -1336,7 +1340,9 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-				Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+				if (new File(Util.SOLR_PACKAGE_DIR).exists()) {
+					Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+				}
 			}
 
 		} catch (Exception e) {
