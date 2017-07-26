@@ -2331,6 +2331,9 @@ Bug Fixes
 * SOLR-9391: LBHttpSolrClient.request now correctly returns Rsp.server when
   previously skipped servers were successfully tried. (Christine Poerschke)
 
+* SOLR-11130: V2Request in SolrJ should return the correct collection name so that the request is forwarded to the
+  correct node (noble)
+
 Optimizations
 ----------------------
 
