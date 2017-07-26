@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
