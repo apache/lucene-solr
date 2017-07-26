@@ -492,7 +492,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         if (left != null && left.traverse(edgeIterator, minValue, maxValue) == false) {
           return false;
         }
-        if (right != null && minValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
+        if (right != null && maxValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
           return false;
         }
       }
