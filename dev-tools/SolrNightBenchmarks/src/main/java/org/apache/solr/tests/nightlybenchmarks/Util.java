@@ -1360,7 +1360,20 @@ public class Util {
 
 			if (argsList.contains("--clean-up")) {
 				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
-				Util.execute("rm -r -f " + Util.DOWNLOAD_DIR, Util.DOWNLOAD_DIR);
+				
+				File dir = new File(Util.DOWNLOAD_DIR);
+				if (dir != null && dir.isDirectory()) {
+					File[] files = dir.listFiles();
+					for (File f : files) {
+							if (f.getName().contains("git-repository")) {
+								continue;		
+							} else if (f.getName().contains("zookeeper")) {
+								continue;
+							} else {
+								f.delete();
+							}
+					}
+ 				}
 			}
 
 			Util.setDeadFlag();
