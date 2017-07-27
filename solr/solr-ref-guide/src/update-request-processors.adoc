@@ -398,3 +398,13 @@ The above parameters convert a normal `update` operation on
 * `field2` to an atomic `set` operation
 * `field3` to an atomic `inc` operation
 * `field4` to an atomic `remove` operation
+
+==== UUIDUpdateProcessorFactory
+
+Name of the processor is `uuid` . Use it to add a UUID to a field
+example:
+
+[source,bash]
+----
+processor=uuid&uuid.fieldName=somefield_name
+----
