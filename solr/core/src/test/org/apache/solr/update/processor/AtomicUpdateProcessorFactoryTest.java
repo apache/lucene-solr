@@ -209,7 +209,10 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     List<Thread> threads = new ArrayList<>(100);
     int finalCount = 0; //int_i
 
-    for (int i = 0; i < 100; i++) {
+    AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
+    factory.inform(h.getCore());
+
+    for (int i = 0; i < 10; i++) {
       int index = random().nextInt(5);
       Thread t = new Thread() {
         @Override
@@ -229,8 +232,6 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           cmd.solrDoc.addField("int_i", index);
 
           try {
-            AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
-            factory.inform(h.getCore());
             factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
                 new DistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
                     new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
@@ -238,14 +239,12 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           }
         }
       };
-      t.run();
       threads.add(t);
+      t.start();
       finalCount += index; //int_i
     }
 
-    for (Thread thread: threads) {
-      thread.join();
-    }
+    for (Thread thread: threads) thread.join();
 
     assertU(commit());
 
