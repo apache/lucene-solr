@@ -16,6 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -28,14 +33,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
 
 public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
