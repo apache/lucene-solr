@@ -321,6 +321,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static final Map<String, Class> implicits = new ImmutableMap.Builder()
       .put(TemplateUpdateProcessorFactory.NAME, TemplateUpdateProcessorFactory.class)
       .put(AtomicUpdateProcessorFactory.NAME, AtomicUpdateProcessorFactory.class)
+      .put(UUIDUpdateProcessorFactory.NAME, UUIDUpdateProcessorFactory.class)
       .build();
 
 }

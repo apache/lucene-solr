@@ -44,6 +44,8 @@ New Features
 
 * SOLR-11046: Add residuals Stream Evaluator (Joel Bernstein)
 
+* SOLR-10858: Make UUIDUpdateProcessorFactory as Runtime URP (Amit Sarkar, noble)
+
 Bug Fixes
 ----------------------
 
