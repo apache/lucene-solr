@@ -2665,7 +2665,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, ""+useDV);
     
     // consume a consistent amount of random data even if sysprop/annotation is set
-    final boolean randUsePoints = random().nextBoolean();
+    final boolean randUsePoints = 0 != random().nextInt(5);  // 80% likelihood
 
     final String usePointsStr = System.getProperty(USE_NUMERIC_POINTS_SYSPROP);
     final boolean usePoints = (null == usePointsStr) ? randUsePoints : Boolean.parseBoolean(usePointsStr);
