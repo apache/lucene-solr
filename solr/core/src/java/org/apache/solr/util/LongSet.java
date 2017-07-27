@@ -18,6 +18,8 @@
 package org.apache.solr.util;
 
 
+import java.util.NoSuchElementException;
+
 /** Collects long values in a hash set (closed hashing on power-of-two sized long[])
  * @lucene.internal
  */
@@ -100,34 +102,34 @@ public class LongSet {
   }
 
 
-  /** Returns an iterator over the values in the set.
-   * hasNext() must return true for next() to return a valid value.
-   */
+  /** Returns an iterator over the values in the set. */
   public LongIterator iterator() {
     return new LongIterator() {
-      private boolean hasNext = zeroCount > 0;
-      private int i = -1;
-      private long value = 0;
+      private int remainingValues = cardinality();
+      private int valsIdx = 0;
 
       @Override
       public boolean hasNext() {
-        if (hasNext) {
-          // this is only executed the first time for the special case 0 value
-          return true;
-        }
-        while (++i < vals.length) {
-          value = vals[i];
-          if (value != 0) {
-            return hasNext = true;
-          }
-        }
-        return false;
+        return remainingValues > 0;
       }
 
       @Override
       public long next() {
-        hasNext = false;
-        return value;
+        if (!hasNext()) {
+          throw new NoSuchElementException();
+        }
+        remainingValues--;
+
+        if (remainingValues == 0 && zeroCount > 0) {
+          return 0;
+        }
+
+        while (true) { // guaranteed to find another value if we get here
+          long value = vals[valsIdx++];
+          if (value != 0) {
+            return value;
+          }
+        }
       }
 
     };
