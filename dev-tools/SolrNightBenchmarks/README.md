@@ -63,6 +63,13 @@ A comprehensive Solr performance benchmark framework.
      * The framework has the ability to notify the end user that a benchmark cycle is running. (An indicator on top right hand will light up telling the user that currently a fresh benchmark cycle is running.) Once the cycle is complete a refresh button will appear on top righ hand corner. 
      * The webapp is deployed automatically when not present.  
      
+## Steps to run for last (n) days
+     
+     * While there is no feature implemented (yet), that supports automatic crunching of performance data for commits for last (n) days, there is still a way to do this.
+     * Prepare and arrange (in order) a list of commit hashes for the (n) days, either one for each day or all of the commits for (n) days.
+     * Now create empty files with name (no extension) EXACTLY equal to commit hashes in the sub-folder /data/commit_queue/ found in the directory as configured in the properties file for benchmarkAppDirectory parameter. The hashes will be picked in the order of their creation (FIFO).
+     * Finally, in the section "Steps to run" follow all the steps but for step 8 above, use parameter --from-queue instead of --latest-commit
+
 ## Known Limitations
      * The current design of this framework does not allow two or more instances of this system running on a single machine TOGETHER. For now, please do not run two instances of this system running on the same machine at the same time (one might kill the other). 
     
