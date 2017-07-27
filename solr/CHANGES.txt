@@ -567,6 +567,9 @@ Other Changes
 * SOLR-11056: Add random range query test that compares results across Trie*, *Point and DocValue-only fields
   (Tomás Fernández Löbbe)
 
+* SOLR-10926: Increase the odds of randomly choosing point fields in our SolrTestCaseJ4 numeric type randomization.
+  (hossman, Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
