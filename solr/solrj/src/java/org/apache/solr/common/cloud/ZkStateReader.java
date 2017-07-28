@@ -261,10 +261,11 @@ public class ZkStateReader implements Closeable {
   /**
    * Forcibly refresh cluster state from ZK. Do this only to avoid race conditions because it's expensive.
    *
-   * @deprecated Don't call this, call {@link #forceUpdateCollection(String)} on a single collection if you must.
+   * It is cheaper to call {@link #forceUpdateCollection(String)} on a single collection if you must.
+   * 
+   * @lucene.internal
    */
-  @Deprecated
-  public void updateClusterState() throws KeeperException, InterruptedException {
+  public void forciblyRefreshAllClusterStateSlow() throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
       if (clusterState == null) {
         // Never initialized, just run normal initialization.
