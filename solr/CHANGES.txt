@@ -475,6 +475,9 @@ Other Changes
   
 * SOLR-11155: /analysis/field and /analysis/document requests should support points fields.
   (Jason Gerlowski, Steve Rowe)
+  
+* SOLR-10756: Undeprecate ZkStateReader.updateClusterState(), mark as @lucene.internal, and rename to
+  forciblyRefreshAllClusterStateSlow().
 
 ==================  6.7.0 ==================
 
