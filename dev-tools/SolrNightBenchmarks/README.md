@@ -37,6 +37,8 @@ A comprehensive Solr performance benchmark framework.
 ## Possible parameters
 
      * --silent                                Use this parameter if you do not want any output on console.
+     * --archive                               Use this parameter to archive the data in the location as defined in properties file.
+     * --clear-data                            Use this parameter to clear the data folder in the webapp directory.
      * --latest-commit                         Use this parameter if you want the system to look for the latest commit to work on.
      * --commit-id XXXXXXXXXXXX                Use this parameter if you want the system to use the commit hash to work on.
      * --from-queue                            Use this parameter if you want the system to work on the commit hash present in the queue.
