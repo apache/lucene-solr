@@ -148,7 +148,7 @@ public class AutoScaling {
       "    'set-trigger' : {" +
       "        'name' : '.auto_add_replicas'," +
       "        'event' : 'nodeLost'," +
-      "        'waitFor' : '5s'," +
+      "        'waitFor' : '{{waitFor}}s'," +
       "        'enabled' : true," +
       "        'actions' : [" +
       "            {" +

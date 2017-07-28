@@ -1482,6 +1482,7 @@ public class ZkController {
             if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
+              getCoreContainer().getCoresLocator().persist(getCoreContainer(), descriptor);
               return;
             }
           }

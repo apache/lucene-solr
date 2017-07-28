@@ -41,9 +41,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.autoscaling.AutoScaling;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -62,8 +59,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -74,10 +69,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
@@ -678,10 +669,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       Thread.sleep(100);
     }
 
-    if (message.getBool(ZkStateReader.AUTO_ADD_REPLICAS, false)) {
-      forwardToAutoScaling(AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_DSL);
-    }
-
     if (!areChangesVisible)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
   }
@@ -878,17 +865,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
       results.add(requestMap.get(k), waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k)));
-    }
-  }
-
-  void forwardToAutoScaling(String command) {
-    LocalSolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
-    request.getContext().put("httpMethod", "POST");
-    request.setContentStreams(Collections.singleton(new ContentStreamBase.StringStream(command)));
-    SolrQueryResponse response = new SolrQueryResponse();
-    overseer.getZkController().getCoreContainer().getRequestHandler(AutoScalingHandler.HANDLER_PATH).handleRequest(request, response);
-    if (!"success".equals(response.getValues().get("result"))) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed when execute command on autoScalingHandler, return " + response);
     }
   }
 

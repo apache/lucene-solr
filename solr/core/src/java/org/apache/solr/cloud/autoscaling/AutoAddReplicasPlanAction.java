@@ -17,35 +17,35 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.util.HashSet;
-import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 
 public class AutoAddReplicasPlanAction extends ComputePlanAction {
-  Set<String> autoAddReplicasCollections;
 
   @Override
   protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, ZkStateReader zkStateReader) {
-    Policy.Suggester suggester = super.getSuggester(session, event, zkStateReader);
-    if (autoAddReplicasCollections == null) {
-      autoAddReplicasCollections = new HashSet<>();
+    // for backward compatibility
+    String autoAddReplicas = zkStateReader.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
+    if (autoAddReplicas != null && autoAddReplicas.equals("false")) {
+      return new NoneSuggester();
+    }
 
-      ClusterState clusterState = zkStateReader.getClusterState();
-      for (DocCollection collection: clusterState.getCollectionsMap().values()) {
-        if (collection.getAutoAddReplicas()) {
-          autoAddReplicasCollections.add(collection.getName());
-        }
+    Policy.Suggester suggester = super.getSuggester(session, event, zkStateReader);
+    ClusterState clusterState = zkStateReader.getClusterState();
+
+    boolean anyCollections = false;
+    for (DocCollection collection: clusterState.getCollectionsMap().values()) {
+      if (collection.getAutoAddReplicas()) {
+        anyCollections = true;
+        suggester.hint(Policy.Suggester.Hint.COLL, collection.getName());
       }
     }
 
-    for (String collection : autoAddReplicasCollections) {
-      suggester.hint(Policy.Suggester.Hint.COLL, collection);
-    }
-
+    if (!anyCollections) return new NoneSuggester();
     return suggester;
   }
 }

@@ -31,7 +31,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -49,7 +48,8 @@ public class CloudUtil {
    * + throw exception if it has been.
    */
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
-    
+    if (!cc.isSharedFs(desc)) return;
+
     ZkController zkController = cc.getZkController();
     String thisCnn = zkController.getCoreNodeName(desc);
     String thisBaseUrl = zkController.getBaseUrl();
@@ -65,11 +65,10 @@ public class CloudUtil {
           
           String cnn = replica.getName();
           String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-          boolean isSharedFs = replica.getStr(CoreAdminParams.DATA_DIR) != null;
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
           
           if (thisCnn != null && thisCnn.equals(cnn)
-              && !thisBaseUrl.equals(baseUrl) && isSharedFs) {
+              && !thisBaseUrl.equals(baseUrl)) {
             if (cc.getLoadedCoreNames().contains(desc.getName())) {
               cc.unload(desc.getName());
             }

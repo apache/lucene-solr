@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
-import org.apache.solr.cloud.autoscaling.AutoScaling;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.common.cloud.ReplicaPosition;
@@ -110,7 +109,6 @@ public class CreateCollectionCmd implements Cmd {
       int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
       int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
       int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
-      boolean autoAddReplicas = message.getBool(AUTO_ADD_REPLICAS, false);
       Map autoScalingJson = Utils.getJson(ocmh.zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
       String policy = message.getStr(Policy.POLICY);
       boolean usePolicyFramework = autoScalingJson.get(Policy.CLUSTER_POLICY) != null || policy != null;
@@ -318,9 +316,6 @@ public class CreateCollectionCmd implements Cmd {
         ocmh.cleanupCollection(collectionName, new NamedList());
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
       } else {
-        if (autoAddReplicas) {
-          ocmh.forwardToAutoScaling(AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_DSL);
-        }
         log.debug("Finished create command on all shards for collection: {}", collectionName);
 
         // Emit a warning about production use of data driven functionality

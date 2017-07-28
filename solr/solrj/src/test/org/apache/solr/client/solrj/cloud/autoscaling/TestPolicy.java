@@ -509,6 +509,135 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   }
 
+
+  public void testMoveReplicasInMultipleCollections() {
+    Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
+        "node1:{cores:2}," +
+        "node3:{cores:4}" +
+        "}");
+    String clusterState = "{\n" +
+        "'collection1' : {\n" +
+        "  'pullReplicas':'0',\n" +
+        "  'replicationFactor':'2',\n" +
+        "  'shards':{\n" +
+        "    'shard1':{\n" +
+        "      'range':'80000000-ffffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node1':{\n" +
+        "          'core':'collection1_shard1_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51650/solr',\n" +
+        "          'node_name':'node1',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'},\n" +
+        "        'core_node6':{\n" +
+        "          'core':'collection1_shard1_replica_n3',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'}}},\n" +
+        "    'shard2':{\n" +
+        "      'range':'0-7fffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node3':{\n" +
+        "          'core':'collection1_shard2_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51650/solr',\n" +
+        "          'node_name':'node1',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'},\n" +
+        "        'core_node5':{\n" +
+        "          'core':'collection1_shard2_replica_n3',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'}}}},\n" +
+        "  'router':{'name':'compositeId'},\n" +
+        "  'maxShardsPerNode':'2',\n" +
+        "  'autoAddReplicas':'true',\n" +
+        "  'nrtReplicas':'2',\n" +
+        "  'tlogReplicas':'0'},\n" +
+        "'collection2' : {\n" +
+        "  'pullReplicas':'0',\n" +
+        "  'replicationFactor':'2',\n" +
+        "  'shards':{\n" +
+        "    'shard1':{\n" +
+        "      'range':'80000000-ffffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node1':{\n" +
+        "          'core':'collection2_shard1_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51649/solr',\n" +
+        "          'node_name':'node2',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'},\n" +
+        "        'core_node2':{\n" +
+        "          'core':'collection2_shard1_replica_n2',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'}}},\n" +
+        "    'shard2':{\n" +
+        "      'range':'0-7fffffff',\n" +
+        "      'state':'active',\n" +
+        "      'replicas':{\n" +
+        "        'core_node3':{\n" +
+        "          'core':'collection2_shard2_replica_n1',\n" +
+        "          'base_url':'http://127.0.0.1:51649/solr',\n" +
+        "          'node_name':'node2',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT'},\n" +
+        "        'core_node4':{\n" +
+        "          'core':'collection2_shard2_replica_n2',\n" +
+        "          'base_url':'http://127.0.0.1:51651/solr',\n" +
+        "          'node_name':'node3',\n" +
+        "          'state':'active',\n" +
+        "          'type':'NRT',\n" +
+        "          'leader':'true'}}}},\n" +
+        "  'router':{'name':'compositeId'},\n" +
+        "  'maxShardsPerNode':'2',\n" +
+        "  'autoAddReplicas':'true',\n" +
+        "  'nrtReplicas':'2',\n" +
+        "  'tlogReplicas':'0'}\n" +
+        "}";
+    Policy policy = new Policy(new HashMap<>());
+    Policy.Suggester suggester = policy.createSession(getClusterDataProvider(nodeValues, clusterState))
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.COLL, "collection1")
+        .hint(Hint.COLL, "collection2")
+        .hint(Policy.Suggester.Hint.SRC_NODE, "node2");
+    SolrRequest op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals("collection2", op.getParams().get("collection"));
+    assertEquals("node1", op.getParams().get("targetNode"));
+    String coreNodeName = op.getParams().get("replica");
+    assertTrue(coreNodeName.equals("core_node3") || coreNodeName.equals("core_node1"));
+
+    suggester = suggester.getSession()
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.COLL, "collection1")
+        .hint(Hint.COLL, "collection2")
+        .hint(Policy.Suggester.Hint.SRC_NODE, "node2");
+    op = suggester.getOperation();
+    assertNotNull(op);
+    assertEquals("collection2", op.getParams().get("collection"));
+    assertEquals("node1", op.getParams().get("targetNode"));
+    coreNodeName = op.getParams().get("replica");
+    assertTrue(coreNodeName.equals("core_node3") || coreNodeName.equals("core_node1"));
+
+    suggester = suggester.getSession()
+        .getSuggester(MOVEREPLICA)
+        .hint(Hint.COLL, "collection1")
+        .hint(Hint.COLL, "collection2")
+        .hint(Policy.Suggester.Hint.SRC_NODE, "node2");
+    op = suggester.getOperation();
+    assertNull(op);
+  }
+
+
   public void testMultipleCollections() {
     Map policies = (Map) Utils.fromJSONString("{" +
         "  'cluster-preferences': [" +

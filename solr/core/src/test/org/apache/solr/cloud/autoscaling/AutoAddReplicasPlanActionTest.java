@@ -31,6 +31,8 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TimeOut;
@@ -114,6 +116,25 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
     operations = getOperations(jetty3, lostNodeName);
     assertOperations(collection1, operations, lostNodeName, cloudDescriptors, jetty3);
+
+    lostJetty.start();
+    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000));
+
+    new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
+      @Override
+      public SolrParams getParams() {
+        ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+        params.set("collection", collection1);
+        params.set("autoAddReplicas", false);
+        return params;
+      }
+    }.process(cluster.getSolrClient());
+    lostJetty = jetty1;
+    lostNodeName = lostJetty.getNodeName();
+    lostJetty.stop();
+    waitForNodeLeave(lostNodeName);
+    operations = getOperations(jetty3, lostNodeName);
+    assertNull(operations);
   }
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {

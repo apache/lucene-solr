@@ -376,14 +376,12 @@ public class SolrXmlConfig {
         case "zkClientTimeout":
           builder.setZkClientTimeout(parseInt(name, value));
           break;
-        case "autoReplicaFailoverBadNodeExpiration":
-          builder.setAutoReplicaFailoverBadNodeExpiration(parseInt(name, value));
+        case "autoReplicaFailoverBadNodeExpiration": case "autoReplicaFailoverWorkLoopDelay":
+          //TODO remove this in Solr 8.0
+          log.info("Configuration parameter " + name + " is ignored");
           break;
         case "autoReplicaFailoverWaitAfterExpiration":
           builder.setAutoReplicaFailoverWaitAfterExpiration(parseInt(name, value));
-          break;
-        case "autoReplicaFailoverWorkLoopDelay":
-          builder.setAutoReplicaFailoverWorkLoopDelay(parseInt(name, value));
           break;
         case "zkHost":
           builder.setZkHost(value);

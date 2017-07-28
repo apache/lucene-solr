@@ -191,6 +191,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (instanceDir != null) {
       params.set(CoreAdminParams.INSTANCE_DIR, instanceDir);
     }
+    if (coreNodeName != null) {
+      params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
+    }
     ocmh.addPropertyParams(message, params);
 
     // For tracking async calls.

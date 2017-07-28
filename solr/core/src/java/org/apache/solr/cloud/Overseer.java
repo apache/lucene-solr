@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.autoscaling.AutoScaling;
+import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
@@ -39,17 +41,22 @@ import org.apache.solr.cloud.overseer.ReplicaMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -470,8 +477,6 @@ public class Overseer implements Closeable {
   private OverseerThread ccThread;
 
   private OverseerThread updaterThread;
-  
-  private OverseerThread arfoThread;
 
   private OverseerThread triggerThread;
 
@@ -524,12 +529,11 @@ public class Overseer implements Closeable {
     overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
-    
-    ThreadGroup ohcfTg = new ThreadGroup("Overseer Hdfs SolrCore Failover Thread.");
 
-    OverseerAutoReplicaFailoverThread autoReplicaFailoverThread = new OverseerAutoReplicaFailoverThread(config, reader, updateShardHandler);
-    arfoThread = new OverseerThread(ohcfTg, autoReplicaFailoverThread, "OverseerHdfsCoreFailoverThread-" + id);
-    arfoThread.setDaemon(true);
+    //TODO nocommit, autoscaling framework should start autoAddReplicas trigger automatically (implicitly)
+    Thread autoscalingTriggerCreator = new Thread(createAutoscalingTriggerIfNotExist(), "AutoscalingTriggerCreator");
+    autoscalingTriggerCreator.setDaemon(true);
+    autoscalingTriggerCreator.start();
 
     ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
     OverseerTriggerThread trigger = new OverseerTriggerThread(zkController);
@@ -537,7 +541,6 @@ public class Overseer implements Closeable {
 
     updaterThread.start();
     ccThread.start();
-    arfoThread.start();
     triggerThread.start();
     assert ObjectReleaseTracker.track(this);
   }
@@ -569,6 +572,43 @@ public class Overseer implements Closeable {
     assert ObjectReleaseTracker.release(this);
   }
 
+  private Runnable createAutoscalingTriggerIfNotExist() {
+    return new Runnable() {
+      @Override
+      public void run() {
+        try {
+          boolean triggerExist = getZkStateReader().getAutoScalingConfig()
+              .getTriggerConfigs().get(".auto_add_replicas") != null;
+          if (triggerExist) return;
+        } catch (InterruptedException | KeeperException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Failed when creating .auto_add_replicas trigger");
+        }
+        while (getZkController().getCoreContainer()
+            .getRequestHandler(AutoScalingHandler.HANDLER_PATH) == null) {
+          try {
+            Thread.sleep(500);
+          } catch (InterruptedException e) {
+            // expected
+          }
+        }
+
+        String dsl = AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_DSL.replace("{{waitFor}}",
+            String.valueOf(config.getAutoReplicaFailoverWaitAfterExpiration()/1000));
+        LocalSolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
+        request.getContext().put("httpMethod", "POST");
+        request.setContentStreams(Collections.singleton(new ContentStreamBase.StringStream(dsl)));
+        SolrQueryResponse response = new SolrQueryResponse();
+        getZkController().getCoreContainer()
+            .getRequestHandler(AutoScalingHandler.HANDLER_PATH).handleRequest(request, response);
+        if (!"success".equals(response.getValues().get("result"))) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Failed when creating .auto_add_replicas trigger, return " + response);
+        }
+      }
+    };
+  }
+
   private void doClose() {
     
     if (updaterThread != null) {
@@ -578,10 +618,6 @@ public class Overseer implements Closeable {
     if (ccThread != null) {
       IOUtils.closeQuietly(ccThread);
       ccThread.interrupt();
-    }
-    if (arfoThread != null) {
-      IOUtils.closeQuietly(arfoThread);
-      arfoThread.interrupt();
     }
     if (triggerThread != null)  {
       IOUtils.closeQuietly(triggerThread);
@@ -598,11 +634,6 @@ public class Overseer implements Closeable {
         ccThread.join();
       } catch (InterruptedException e) {}
     }
-    if (arfoThread != null) {
-      try {
-        arfoThread.join();
-      } catch (InterruptedException e) {}
-    }
     if (triggerThread != null)  {
       try {
         triggerThread.join();
@@ -611,7 +642,6 @@ public class Overseer implements Closeable {
     
     updaterThread = null;
     ccThread = null;
-    arfoThread = null;
     triggerThread = null;
   }
 
