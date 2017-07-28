@@ -18,19 +18,13 @@ package org.apache.solr.schema;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.BeforeClass;
+import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
 public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
-
-  @BeforeClass
-  public static void beforeTests() throws Exception {
-    initCore("solrconfig-basic.xml", "schema-eff.xml");
-    updateExternalFile();
-  }
 
   static void updateExternalFile() throws IOException {
     final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
@@ -48,12 +42,23 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSort() {
+  public void testSort() throws Exception {
+    initCore("solrconfig-basic.xml", "schema-eff.xml");
+    updateExternalFile();
+
     addDocuments();
     assertQ("query",
         req("q", "*:*", "sort", "eff asc"),
         "//result/doc[position()=1]/str[.='3']",
         "//result/doc[position()=2]/str[.='1']",
         "//result/doc[position()=10]/str[.='8']");
+  }
+  
+  @Test
+  public void testPointKeyFieldType() throws Exception {
+    // This one should fail though, no "node" parameter specified
+    SolrException e = expectThrows(SolrException.class, 
+        () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
+    assertTrue(e.getMessage().contains("has a Point field type, which is not supported."));
   }
 }
