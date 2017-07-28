@@ -599,11 +599,14 @@ public class Overseer implements Closeable {
         request.getContext().put("httpMethod", "POST");
         request.setContentStreams(Collections.singleton(new ContentStreamBase.StringStream(dsl)));
         SolrQueryResponse response = new SolrQueryResponse();
-        getZkController().getCoreContainer()
-            .getRequestHandler(AutoScalingHandler.HANDLER_PATH).handleRequest(request, response);
-        if (!"success".equals(response.getValues().get("result"))) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Failed when creating .auto_add_replicas trigger, return " + response);
+        try {
+          getZkController().getCoreContainer()
+              .getRequestHandler(AutoScalingHandler.HANDLER_PATH).handleRequest(request, response);
+          if (!"success".equals(response.getValues().get("result"))) {
+            log.error("Failed when creating .auto_add_replicas trigger, return {}",response);
+          }
+        } catch (Exception e) {
+          log.error("Failed when creating .auto_add_replicas trigger ", e);
         }
       }
     };
