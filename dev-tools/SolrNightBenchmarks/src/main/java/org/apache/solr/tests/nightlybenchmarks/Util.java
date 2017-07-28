@@ -1179,7 +1179,7 @@ public class Util {
 
 				int atleastOne = 0;
 				
-				if (argsList.equals("--clear-data")) {
+				if (argsList.contains("--clear-data")) {
 					atleastOne++;
 				}
 				if (argsList.contains("--archive")) {
