@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -29,12 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -43,11 +48,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * A test for {@link FieldAnalysisRequestHandler}.
  *
@@ -55,7 +55,7 @@ import java.util.List;
  * @since solr 1.4
  */
 public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestBase {
-
+  
   private FieldAnalysisRequestHandler handler;
 
   @Override
@@ -68,6 +68,20 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+  
+  @Test
+  public void testPointField() throws Exception {
+    FieldAnalysisRequest request = new FieldAnalysisRequest();
+    request.addFieldType("pint");
+    request.setFieldValue("5");
+    
+    NamedList<NamedList> nl = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    NamedList pintNL = (NamedList)nl.get("field_types").get("pint");
+    NamedList indexNL = (NamedList)pintNL.get("index");
+    ArrayList analyzerNL = (ArrayList)indexNL.get("org.apache.solr.schema.FieldType$DefaultAnalyzer$1");
+    String text = (String)((NamedList)analyzerNL.get(0)).get("text"); 
+    assertEquals("5", text);
   }
 
   /**
