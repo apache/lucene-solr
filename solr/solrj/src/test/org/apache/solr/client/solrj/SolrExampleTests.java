@@ -416,14 +416,11 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     try {
       client.query( query );
-      Assert.fail("should have a server exception");
+      Assert.fail("should have a number format exception");
     }
     catch(SolrException ex) {
-      assertEquals(500, ex.code());
-      assertThat(ex.getMessage(), containsString(" Can't generate internal string in PointField. use PointField.toInternalByteRef"));
-    } 
-    catch (SolrServerException ex) {
-      assertThat(ex.getMessage(), containsString(" Can't generate internal string in PointField. use PointField.toInternalByteRef"));
+      assertEquals(400, ex.code());
+      assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
     }
     catch(Throwable t) {
       t.printStackTrace();

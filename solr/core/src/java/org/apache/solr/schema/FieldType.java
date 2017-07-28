@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -479,14 +480,20 @@ public abstract class FieldType extends FieldProperties {
       Tokenizer ts = new Tokenizer() {
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+        final BytesTermAttribute bytesAtt = isPointField() ? addAttribute(BytesTermAttribute.class) : null;
         final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
         @Override
         public boolean incrementToken() throws IOException {
           clearAttributes();
           int n = input.read(cbuf,0,maxChars);
           if (n<=0) return false;
-          String s = toInternal(new String(cbuf,0,n));
-          termAtt.setEmpty().append(s);
+          if (isPointField()) {
+            BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
+            bytesAtt.setBytesRef(b);
+          } else {
+            String s = toInternal(new String(cbuf, 0, n));
+            termAtt.setEmpty().append(s);
+          }
           offsetAtt.setOffset(correctOffset(0),correctOffset(n));
           return true;
         }

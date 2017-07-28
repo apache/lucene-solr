@@ -472,6 +472,9 @@ Other Changes
   
 * SOLR-10846: ExternalFileField/FloatFieldSource should throw a clear exception on initialization with
   a Points-based keyField, which is not supported. (hossman, Steve Rowe)
+  
+* SOLR-11155: /analysis/field and /analysis/document requests should support points fields.
+  (Jason Gerlowski, Steve Rowe)
 
 ==================  6.7.0 ==================
 
