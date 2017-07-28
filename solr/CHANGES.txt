@@ -469,6 +469,9 @@ Other Changes
 
 * SOLR-10926: Increase the odds of randomly choosing point fields in our SolrTestCaseJ4 numeric type randomization.
   (hossman, Steve Rowe)
+  
+* SOLR-10846: ExternalFileField/FloatFieldSource should throw a clear exception on initialization with
+  a Points-based keyField, which is not supported. (hossman, Steve Rowe)
 
 ==================  6.7.0 ==================
 
