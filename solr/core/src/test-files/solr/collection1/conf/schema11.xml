@@ -276,7 +276,10 @@
 valued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
-    <fieldType name="eff_tfloat" keyField="eff_ti" defVal="0"
+  <!-- eff_tint class can't be randomized, because ExternalFileField disallows point-based keyField.  See SOLR-10846. -->
+  <fieldType name="eff_tint" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
+  <field name="eff_tint" type="eff_tint" indexed="true" stored="true"/>
+  <fieldType name="eff_tfloat" keyField="eff_tint" defVal="0"
                stored="false" indexed="true"
                class="solr.ExternalFileField" />
 
