@@ -692,21 +692,26 @@ public class Util {
 	public static void archive() {
 		
 		Util.postMessage("** Archiving data ...", MessageType.CYAN_TEXT, false);
-		
-		Date dNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss");		
-		
-		File archDirectory = new File(Util.TEST_DATA_ARCHIVE_LOCATION + "archive-" + ft.format(dNow));
-		if (!archDirectory.exists()) {
-			archDirectory.mkdirs();
+		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
+
+		if (sourceDataFolder.exists() && sourceDataFolder.listFiles().length != 0) {
+
+			Date dNow = new Date();
+			SimpleDateFormat ft = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss");		
+			
+			File archDirectory = new File(Util.TEST_DATA_ARCHIVE_LOCATION + "archive-" + ft.format(dNow));
+			if (!archDirectory.exists()) {
+				archDirectory.mkdirs();
+			}
+
+			Util.copyFolder(sourceDataFolder, archDirectory);
+			Util.execute("rm -r -f " + sourceDataFolder.getAbsolutePath(), sourceDataFolder.getAbsolutePath());
+
+		} else {
+			Util.postMessage("** No files to archive ...", MessageType.RED_TEXT, false);
 		}
 		
-		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
-		Util.copyFolder(sourceDataFolder, archDirectory);
-
-		Util.execute("rm -r -f " + sourceDataFolder.getAbsolutePath(), sourceDataFolder.getAbsolutePath());
-
-		Util.postMessage("** Archiving data [COMPLETE] ...", MessageType.GREEN_TEXT, false);
+		Util.postMessage("** Archiving data process [COMPLETE] ...", MessageType.GREEN_TEXT, false);
 	}
 	
 	public static void clearData() {
