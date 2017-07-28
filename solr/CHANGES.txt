@@ -52,7 +52,14 @@ Detailed Change List
 Upgrade Notes
 ----------------------
 
-(No Notes)
+* 'autoAddReplicas' feature is ported to autoscaling framework. Existing users of this feature should not have
+  to change anything. Note these changes:
+  1. Behaviour: Changing the autoAddReplicas property from disabled to enabled using MODIFYCOLLECTION API
+  no longer replaces down replicas for the collection immediately. Instead, replicas are only added
+  if a node containing them went down while autoAddReplicas was enabled. The params
+  autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay are no longer used.
+  2. Deprecations: Enabling/disabling autoAddReplicas cluster wide with the API will be deprecated; use 
+  suspend/resume trigger APIs with name='.auto_add_replicas' instead.
 
 New Features
 ----------------------
@@ -122,6 +129,9 @@ Other Changes
 
 * SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
   (Jason Gerlowski via Anshum Gupta)
+
+* SOLR-10397: Port 'autoAddReplicas' feature to the autoscaling framework and make it work with non-shared filesystems
+  (Cao Manh Dat, shalin)
 
 ==================  7.0.0 ==================
 
