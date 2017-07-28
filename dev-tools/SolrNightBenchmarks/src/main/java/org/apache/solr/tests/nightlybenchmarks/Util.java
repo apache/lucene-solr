@@ -35,6 +35,7 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,7 +58,6 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -118,6 +118,7 @@ public class Util {
 	public static String HIGHLIGHT_TERM_DATA = "";
 	public static String TEST_DATA_STORE_LOCATION = "";
 	public static String RANGE_FACET_DATA = "";
+	public static String TEST_DATA_ARCHIVE_LOCATION = "";
 
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
@@ -661,6 +662,9 @@ public class Util {
 			Util.RANGE_FACET_DATA = prop.getProperty("SolrNightlyBenchmarks.rangeFacetTestData");
 			Util.postMessage("Getting Property Value for rangeFacetTestData: " + Util.RANGE_FACET_DATA,
 					MessageType.YELLOW_TEXT, false);
+			Util.TEST_DATA_ARCHIVE_LOCATION = prop.getProperty("SolrNightlyBenchmarks.testDataArchiveLocation");
+			Util.postMessage("Getting Property Value for testDataArchiveLocation: " + Util.TEST_DATA_ARCHIVE_LOCATION,
+					MessageType.YELLOW_TEXT, false);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
@@ -668,7 +672,6 @@ public class Util {
 						MessageType.RED_TEXT, false);
 				BenchmarkAppConnector.benchmarkAppDirectory += File.separator;
 			}
-
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		} finally {
@@ -684,6 +687,36 @@ public class Util {
 			prop = null;
 		}
 
+	}
+	
+	public static void archive() {
+		
+		Util.postMessage("** Archiving data ...", MessageType.CYAN_TEXT, false);
+		
+		Date dNow = new Date();
+		SimpleDateFormat ft = new SimpleDateFormat("MM-dd-yyyy-HH-mm-ss");		
+		
+		File archDirectory = new File(Util.TEST_DATA_ARCHIVE_LOCATION + "archive-" + ft.format(dNow));
+		if (!archDirectory.exists()) {
+			archDirectory.mkdirs();
+		}
+		
+		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
+		Util.copyFolder(sourceDataFolder, archDirectory);
+
+		Util.execute("rm -r -f " + sourceDataFolder.getAbsolutePath(), sourceDataFolder.getAbsolutePath());
+
+		Util.postMessage("** Archiving data [COMPLETE] ...", MessageType.GREEN_TEXT, false);
+	}
+	
+	public static void clearData() {
+		
+		Util.postMessage("** Clearing data ...", MessageType.CYAN_TEXT, false);
+		
+		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
+		Util.execute("rm -r -f " + sourceDataFolder.getAbsolutePath(), sourceDataFolder.getAbsolutePath());
+
+		Util.postMessage("** Clearing data [COMPLETE] ...", MessageType.GREEN_TEXT, false);
 	}
 
 	public static boolean checkDataFiles() {
@@ -999,6 +1032,9 @@ public class Util {
 	 * @param destination
 	 */
 	public static void copyFolder(File source, File destination) {
+		
+		Util.postMessage("Copying: " + source, MessageType.YELLOW_TEXT, false);
+		
 		if (source.isDirectory()) {
 			if (!destination.exists()) {
 				destination.mkdirs();
@@ -1124,7 +1160,8 @@ public class Util {
 							|| argsList.get(i).equals("--clean-up") || argsList.get(i).equals("--from-queue")
 							|| argsList.get(i).equals("--silent") || argsList.get(i).equals("--commit-id")
 							|| argsList.get(i).equals("--test-with-number-of-documents")
-							|| argsList.get(i).equals("--latest-commit")) {
+							|| argsList.get(i).equals("--latest-commit") || argsList.get(i).equals("--archive")
+							|| argsList.get(i).equals("--clear-data")) {
 					} else {
 						if (argsList.get(i).startsWith("--")) {
 							Util.postMessage("", MessageType.RED_TEXT, false);
@@ -1136,7 +1173,13 @@ public class Util {
 				Util.postMessage("", MessageType.RED_TEXT, false);
 
 				int atleastOne = 0;
-
+				
+				if (argsList.equals("--clear-data")) {
+					atleastOne++;
+				}
+				if (argsList.contains("--archive")) {
+					atleastOne++;
+				}
 				if (argsList.contains("--generate-data-file")) {
 					atleastOne++;
 				}
@@ -1213,6 +1256,16 @@ public class Util {
 			if (!datafile.exists()) {
 				Util.postMessage("** Data File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n",
 						MessageType.RED_TEXT, false);
+				System.exit(0);
+			}
+			
+			if (argsList.contains("--archive")) {
+				Util.archive();
+				System.exit(0);
+			}
+
+			if (argsList.contains("--clear-data")) {
+				Util.clearData();
 				System.exit(0);
 			}
 
