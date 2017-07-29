@@ -480,6 +480,8 @@ public class Overseer implements Closeable {
 
   private OverseerThread triggerThread;
 
+  private Thread autoscalingTriggerCreator;
+
   private final ZkStateReader reader;
 
   private final ShardHandler shardHandler;
@@ -531,7 +533,7 @@ public class Overseer implements Closeable {
     ccThread.setDaemon(true);
 
     //TODO nocommit, autoscaling framework should start autoAddReplicas trigger automatically (implicitly)
-    Thread autoscalingTriggerCreator = new Thread(createAutoscalingTriggerIfNotExist(), "AutoscalingTriggerCreator");
+    autoscalingTriggerCreator = new Thread(createAutoscalingTriggerIfNotExist(), "AutoscalingTriggerCreator");
     autoscalingTriggerCreator.setDaemon(true);
     autoscalingTriggerCreator.start();
 
@@ -584,14 +586,18 @@ public class Overseer implements Closeable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Failed when creating .auto_add_replicas trigger");
         }
-        while (getZkController().getCoreContainer()
-            .getRequestHandler(AutoScalingHandler.HANDLER_PATH) == null) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e) {
-            // expected
+        try {
+          while (getZkController().getCoreContainer().getRequestHandler(AutoScalingHandler.HANDLER_PATH) == null) {
+            try {
+              Thread.sleep(500);
+            } catch (InterruptedException e) {
+              break;
+            }
           }
-        }
+          if (getZkController().getCoreContainer().isShutDown()) {
+            return;
+          }
+        } catch (Exception e) {}
 
         String dsl = AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_DSL.replace("{{waitFor}}",
             String.valueOf(config.getAutoReplicaFailoverWaitAfterExpiration()/1000));
@@ -626,6 +632,9 @@ public class Overseer implements Closeable {
       IOUtils.closeQuietly(triggerThread);
       triggerThread.interrupt();
     }
+    if (autoscalingTriggerCreator != null) {
+      autoscalingTriggerCreator.interrupt();
+    }
     
     if (updaterThread != null) {
       try {
@@ -642,10 +651,17 @@ public class Overseer implements Closeable {
         triggerThread.join();
       } catch (InterruptedException e)  {}
     }
+    if (autoscalingTriggerCreator != null) {
+      try {
+        log.info("Waiting for autoscaling trigger creator join");
+        autoscalingTriggerCreator.join();
+      } catch (InterruptedException e) {}
+    }
     
     updaterThread = null;
     ccThread = null;
     triggerThread = null;
+    autoscalingTriggerCreator = null;
   }
 
   /**
