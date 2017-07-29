@@ -978,7 +978,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     exit 1
   fi
 
-  if [ "$CREATE_CONFDIR" == "_default" ]; then
+  if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
     echo "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is"
     echo "         NOT RECOMMENDED for production use."
     echo
