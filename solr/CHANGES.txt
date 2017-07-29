@@ -297,6 +297,9 @@ Bug Fixes
 * SOLR-11151: SolrInfoMBeanHandler.getDiff() ADD case non-functional: NPE when a bean value goes from null -> non-null.
   (Steve Rowe)
 
+* SOLR-11154: Child documents' return fields now include useDocValuesAsStored fields (Mohammed Sheeri Shaketi Nauage via
+  Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 
