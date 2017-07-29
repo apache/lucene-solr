@@ -25,9 +25,11 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -38,6 +40,14 @@ import org.apache.solr.common.util.NamedList;
  *
  */
 public class QueryClient implements Runnable {
+	
+	/**
+	 * A enum defining the type of client to use for querying.
+	 */
+	public enum QueryClientType {
+		HTTP_SOLR_CLIENT,
+		CLOUD_SOLR_CLIENT
+	}
 
 	/**
 	 * An enum defining various types of queries.
@@ -65,7 +75,7 @@ public class QueryClient implements Runnable {
 	String urlString;
 	String collectionName;
 	SolrParams params;
-	HttpSolrClient solrClient;
+	SolrClient solrClient;
 	int threadID;
 	boolean setThreadReadyFlag = false;
 	long numberOfThreads = 0;
@@ -109,14 +119,19 @@ public class QueryClient implements Runnable {
 	 * @param delayEstimationBySeconds
 	 */
 	public QueryClient(String urlString, String collectionName, long numberOfThreads,
-			long delayEstimationBySeconds) {
+			long delayEstimationBySeconds, QueryClientType queryClientType, String zookeeperURL) {
+		
 		super();
 		this.urlString = urlString;
 		this.collectionName = collectionName;
 		this.numberOfThreads = numberOfThreads;
 		this.delayEstimationBySeconds = delayEstimationBySeconds;
-
-		solrClient = new HttpSolrClient.Builder(urlString).build();
+		
+		if (queryClientType == QueryClientType.HTTP_SOLR_CLIENT) {
+			solrClient = new HttpSolrClient.Builder(urlString).build();
+		} else if (queryClientType == QueryClientType.CLOUD_SOLR_CLIENT) {
+			solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperURL).build();
+		}
 		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ... Testing Type: " + queryType,
 				MessageType.GREEN_TEXT, false);
 	}
@@ -466,7 +481,13 @@ public class QueryClient implements Runnable {
 						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size()
 						+ "| " + rangeFacetRanges.size(),
 						MessageType.YELLOW_TEXT, false);
-
+				
+				try {
+					solrClient.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
 				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",
 						MessageType.RED_TEXT, false);
 				break;
