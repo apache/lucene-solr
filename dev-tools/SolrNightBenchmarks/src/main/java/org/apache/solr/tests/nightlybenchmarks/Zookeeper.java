@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +15,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * limitations under the License.
  */
 
+package org.apache.solr.tests.nightlybenchmarks;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -25,6 +25,7 @@ enum ZookeeperAction {
 }
 
 /**
+ * This class provides blueprint for Zookeeper Node.
  * 
  * @author Vivek Narang
  *
@@ -35,10 +36,8 @@ public class Zookeeper {
 	public static String zooCleanCommand;
 
 	static {
-
 		zooCommand = System.getProperty("os.name") != null && System.getProperty("os.name").startsWith("Windows")
 				? "bin" + File.separator + "zkServer.cmd " : "bin" + File.separator + "zkServer.sh ";
-
 	}
 
 	/**

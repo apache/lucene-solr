@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +14,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -41,22 +41,21 @@ enum ActionType {
 }
 
 /**
- * 
+ * This class provides the implementation for indexing client.
  * @author Vivek Narang
  *
  */
 public class SolrIndexingClient {
 
-	@SuppressWarnings("unused")
-	private String host;
-	private String port;
+	public static long documentCount;
 	public static String solrCommitHistoryData;
 	public static String amazonFoodData;
 	public static String textDocumentLocation;
+	@SuppressWarnings("unused")
+	private String host;
+	private String port;
 	private String commitId;
 	Random r = new Random();
-
-	public static long documentCount;
 
 	/**
 	 * Constructor.
@@ -88,7 +87,6 @@ public class SolrIndexingClient {
 	 * @param zookeeperPort
 	 * @return Map
 	 */
-	@SuppressWarnings("deprecation")
 	public Map<String, String> indexData(long numDocuments, String urlString, String collectionName, int queueSize,
 			int threadCount, TestType type, boolean captureMetrics, boolean deleteData, SolrClientType clientType,
 			String zookeeperIp, String zookeeperPort, ActionType action) {

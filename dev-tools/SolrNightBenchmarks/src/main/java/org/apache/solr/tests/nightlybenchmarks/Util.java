@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +14,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -45,11 +45,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.ZipInputStream;
-
 import javax.ws.rs.core.MediaType;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -64,11 +62,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 
@@ -77,7 +73,7 @@ enum MessageType {
 };
 
 /**
- * 
+ * This class provides utility methods for the package.
  * @author Vivek Narang
  *
  */
@@ -118,15 +114,11 @@ public class Util {
 	public static String TEST_DATA_STORE_LOCATION = "";
 	public static String RANGE_FACET_DATA = "";
 	public static String TEST_DATA_ARCHIVE_LOCATION = "";
-
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
-
 	public static boolean SILENT = false;
-
-	final static Logger logger = Logger.getLogger(Util.class);
-
-	static List<String> argsList;
+	public final static Logger logger = Logger.getLogger(Util.class);
+	public static List<String> argsList;
 
 	/**
 	 * A method used for wrapping up the output from the system (on console or
@@ -688,6 +680,9 @@ public class Util {
 
 	}
 	
+	/**
+	 * A method to archive the data files.
+	 */
 	public static void archive() {
 		
 		Util.postMessage("** Archiving data ...", MessageType.CYAN_TEXT, false);
@@ -713,6 +708,9 @@ public class Util {
 		Util.postMessage("** Archiving data process [COMPLETE] ...", MessageType.GREEN_TEXT, false);
 	}
 	
+	/**
+	 * A method to clean the data director in the webapp.
+	 */
 	public static void clearData() {
 		
 		Util.postMessage("** Clearing data ...", MessageType.CYAN_TEXT, false);
@@ -723,6 +721,10 @@ public class Util {
 		Util.postMessage("** Clearing data [COMPLETE] ...", MessageType.GREEN_TEXT, false);
 	}
 
+	/**
+	 * A method to check if all the data files are present.
+	 * @return boolean
+	 */
 	public static boolean checkDataFiles() {
 
 		Util.postMessage("** Checking if data files are present ...", MessageType.CYAN_TEXT, false);
@@ -1572,6 +1574,9 @@ public class Util {
 
 	}
 
+	/**
+	 * A utility method used for creating the Highlight keywords.
+	 */
 	public static void createHighlightKeywordsDataFile() {
 
 		String line = "";
@@ -1707,6 +1712,11 @@ public class Util {
 		}
 	}
 	
+	/**
+	 * A utility method used for getting the head name.
+	 * @param repo
+	 * @return string
+	 */
 	public static String getHeadName(Repository repo) {
 		  String result = null;
 		  try {

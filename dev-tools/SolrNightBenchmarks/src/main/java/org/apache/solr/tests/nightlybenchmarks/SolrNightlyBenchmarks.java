@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +15,12 @@ package org.apache.solr.tests.nightlybenchmarks;
  * limitations under the License.
  */
 
+package org.apache.solr.tests.nightlybenchmarks;
+
 import java.io.IOException;
 
 /**
- * 
+ * The point-of-entry class providing the main method.
  * @author Vivek Narang
  *
  */
@@ -36,9 +36,6 @@ public class SolrNightlyBenchmarks {
 	public static void main(String[] args) throws IOException, InterruptedException {
 
 		Util.init(args);
-
 		Util.destroy();
-
 	}
-
 }

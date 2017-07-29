@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,13 +15,15 @@ package org.apache.solr.tests.nightlybenchmarks;
  * limitations under the License.
  */
 
+package org.apache.solr.tests.nightlybenchmarks;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * 
+ * This class provides implementation for stream reader for Util.execute method.
  * @author Vivek Narang
  *
  */

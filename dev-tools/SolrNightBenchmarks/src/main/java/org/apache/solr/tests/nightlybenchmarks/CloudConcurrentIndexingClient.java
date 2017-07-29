@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +15,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * limitations under the License.
  */
 
+package org.apache.solr.tests.nightlybenchmarks;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -30,11 +30,17 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * 
+ * This class provides implementation for indexing client for Solr Cloud
  * @author Vivek Narang
  *
  */
 public class CloudConcurrentIndexingClient implements Runnable {
+
+	public static boolean running;
+	public static boolean endLock = false;
+	public static long documentCount = 0;
+	public static ConcurrentLinkedQueue<SolrInputDocument> documents = new ConcurrentLinkedQueue<SolrInputDocument>();
+	public static long totalTime = 0;
 
 	String urlString;
 	String collectionName;
@@ -47,12 +53,6 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	long delayEstimationBySeconds = 0;
 	Random random = new Random();
 
-	public static boolean running;
-	public static boolean endLock = false;
-	public static long documentCount = 0;
-	public static ConcurrentLinkedQueue<SolrInputDocument> documents = new ConcurrentLinkedQueue<SolrInputDocument>();
-	public static long totalTime = 0;
-
 	/**
 	 * Constructor.
 	 * 
@@ -62,11 +62,9 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	public CloudConcurrentIndexingClient(String zookeeperURL, String collectionName) {
 		super();
 		this.collectionName = collectionName;
-
 		solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperURL).build();
 		solrClient.setDefaultCollection(collectionName);
 		solrClient.connect();
-
 		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ... Testing Type: ", MessageType.GREEN_TEXT,
 				false);
 	}
@@ -91,7 +89,6 @@ public class CloudConcurrentIndexingClient implements Runnable {
 
 				SolrInputDocument document = new SolrInputDocument();
 				line.trim();
-
 				String[] data = line.split(cvsSplitBy);
 
 				document.addField("id", data[0].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
@@ -111,7 +108,6 @@ public class CloudConcurrentIndexingClient implements Runnable {
 					break;
 				}
 			}
-
 			br.close();
 
 		} catch (IOException e) {
@@ -131,16 +127,13 @@ public class CloudConcurrentIndexingClient implements Runnable {
 
 		startTime = System.currentTimeMillis();
 		while (true) {
-
 			if (running == true) {
 				// Critical Section ....
-
 				try {
 					addDocument(collectionName, documents.poll());
 				} catch (SolrServerException | IOException e) {
 					e.printStackTrace();
 				}
-
 			} else if (running == false) {
 				// Break out from loop ...
 				synchronized (this) {
@@ -168,10 +161,8 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	 */
 	private synchronized SolrResponse addDocument(String collectionName, SolrInputDocument document)
 			throws SolrServerException, IOException {
-
 		documentCount++;
 		return solrClient.add(collectionName, document, 5000);
-
 	}
 
 	/**

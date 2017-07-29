@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +15,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * limitations under the License.
  */
 
+package org.apache.solr.tests.nightlybenchmarks;
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,7 +26,7 @@ import java.util.UUID;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 /**
- * 
+ * This class provides a blueprint for SolrCloud
  * @author Vivek Narang
  *
  */
@@ -104,7 +104,6 @@ public class SolrCloud {
 			}
 
 			this.port = nodes.get(0).port;
-
 			this.url = "http://" + this.host + ":" + this.port + "/solr/" + this.collectionName;
 
 		} catch (IOException e) {
@@ -114,7 +113,6 @@ public class SolrCloud {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	/**
@@ -180,5 +178,4 @@ public class SolrCloud {
 		zookeeperNode.doAction(ZookeeperAction.ZOOKEEPER_STOP);
 		zookeeperNode.doAction(ZookeeperAction.ZOOKEEPER_CLEAN);
 	}
-
 }

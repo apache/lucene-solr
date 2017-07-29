@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +15,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * limitations under the License.
  */
 
+package org.apache.solr.tests.nightlybenchmarks;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -26,9 +26,6 @@ import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-/**
- * An enum defining the test types.
- */
 enum TestType {
 
 	STANDALONE_CREATE_COLLECTION, 
@@ -220,7 +217,7 @@ enum TestType {
 }
 
 /**
- * 
+ * This class provides the implementation for metric collector.
  * @author Vivek Narang
  *
  */
@@ -228,18 +225,9 @@ public class MetricCollector extends Thread {
 
 	public static String metricsURL;
 
-	/**
-	 * Constructor.
-	 * 
-	 * @param commitID
-	 * @param testType
-	 * @param port
-	 */
-	public MetricCollector(String commitID, TestType testType, String port) {
-		this.testType = testType;
-		this.commitID = commitID;
-		this.port = port;
-	}
+	public TestType testType;
+	public String commitID;
+	public String port;
 
 	/**
 	 * An enum defining metric types.
@@ -255,9 +243,18 @@ public class MetricCollector extends Thread {
 		MEMORY_HEAP_USED, PROCESS_CPU_LOAD
 	}
 
-	public TestType testType;
-	public String commitID;
-	public String port;
+	/**
+	 * Constructor.
+	 * 
+	 * @param commitID
+	 * @param testType
+	 * @param port
+	 */
+	public MetricCollector(String commitID, TestType testType, String port) {
+		this.testType = testType;
+		this.commitID = commitID;
+		this.port = port;
+	}
 
 	/**
 	 * A method invoked by the running metric estimation thread.

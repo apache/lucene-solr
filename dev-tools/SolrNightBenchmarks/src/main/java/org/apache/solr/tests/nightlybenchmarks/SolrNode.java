@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +14,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +39,7 @@ enum SolrNodeAction {
 }
 
 /**
- * 
+ * This class provides a blueprint for Solr Node.
  * @author Vivek Narang
  *
  */
@@ -48,16 +48,15 @@ public class SolrNode {
 	final static Logger logger = Logger.getLogger(SolrNode.class);
 	public static final String URL_BASE = "http://archive.apache.org/dist/lucene/solr/";
 
-	private String nodeDirectory;
+	public boolean isRunningInCloudMode;
+	public String solrDirName;
+	public String collectionName;
+	public String baseDirectory;
 	public String port;
+	private String nodeDirectory;
 	private String commitId;
 	private String zooKeeperIp;
 	private String zooKeeperPort;
-	public String collectionName;
-	public String baseDirectory;
-	public boolean isRunningInCloudMode;
-	public String solrDirName;
-
 	private String gitDirectoryPath = Util.DOWNLOAD_DIR + "git-repository-";
 
 	/**
@@ -164,8 +163,8 @@ public class SolrNode {
 		Util.SOLR_PACKAGE_DIR_LOCATION = gitDirectoryPath;
 		String tarballLocation = Util.DOWNLOAD_DIR + "solr-" + commitId + ".zip";
 
-		if (new File(tarballLocation).exists() == false) {
-			if (new File(packageFilename).exists() == false) {
+		if (!new File(tarballLocation).exists()) {
+			if (!new File(packageFilename).exists()) {
 				Util.postMessage("** There were new changes, need to rebuild ...", MessageType.RED_TEXT, true);
 				Util.execute("ant ivy-bootstrap", gitDirectoryPath);
 				// Util.execute("ant compile", gitDirectoryPath);

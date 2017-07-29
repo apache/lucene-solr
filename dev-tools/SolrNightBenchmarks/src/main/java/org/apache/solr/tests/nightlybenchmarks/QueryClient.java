@@ -1,6 +1,4 @@
-package org.apache.solr.tests.nightlybenchmarks;
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -16,6 +14,8 @@ package org.apache.solr.tests.nightlybenchmarks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -35,7 +35,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * 
+ * This class provides implementation for Query Client for Solr Standalone and Solr Cloud.
  * @author Vivek Narang
  *
  */
@@ -72,16 +72,17 @@ public class QueryClient implements Runnable {
 
 	}
 
-	String urlString;
-	String collectionName;
-	SolrParams params;
-	SolrClient solrClient;
-	int threadID;
-	boolean setThreadReadyFlag = false;
-	long numberOfThreads = 0;
-	long startTime = 0;
-	long delayEstimationBySeconds = 0;
-
+	public static ConcurrentLinkedQueue<String> termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> lesserNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> textTerms = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> textPhrases = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> highlightTerms = new ConcurrentLinkedQueue<String>();
+	public static ConcurrentLinkedQueue<String> rangeFacetRanges = new ConcurrentLinkedQueue<String>();
 	public static boolean running;
 	public static long queryCount = 0;
 	public static long totalQTime = 0;
@@ -95,18 +96,15 @@ public class QueryClient implements Runnable {
 	public static int qTimePercentileListPointer = 0;
 	public static QueryType queryType;
 
-	public static ConcurrentLinkedQueue<String> termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> lesserNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> rangeNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> andNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> orNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> sortedNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> textTerms = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> textPhrases = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> highlightTerms = new ConcurrentLinkedQueue<String>();
-	public static ConcurrentLinkedQueue<String> rangeFacetRanges = new ConcurrentLinkedQueue<String>();
-
+	String urlString;
+	String collectionName;
+	SolrParams params;
+	SolrClient solrClient;
+	int threadID;
+	boolean setThreadReadyFlag = false;
+	long numberOfThreads = 0;
+	long startTime = 0;
+	long delayEstimationBySeconds = 0;
 	Random random = new Random();
 
 	/**
@@ -451,7 +449,6 @@ public class QueryClient implements Runnable {
 
 					}
 
-
 					params = SolrParams.toSolrParams(requestParams);
 					response = this.fireQuery(collectionName, params);
 
@@ -510,7 +507,6 @@ public class QueryClient implements Runnable {
 			throws SolrServerException, IOException {
 		
 		return solrClient.query(collectionName, params, METHOD.POST);
-
 	}
 
 	/**
@@ -521,7 +517,6 @@ public class QueryClient implements Runnable {
 		if (running == false) {
 			return;
 		}
-
 		queryCount++;
 	}
 
@@ -535,7 +530,6 @@ public class QueryClient implements Runnable {
 		if (running == false) {
 			return;
 		}
-
 		totalQTime += qTime;
 	}
 
@@ -546,7 +540,6 @@ public class QueryClient implements Runnable {
 	private synchronized void setQueryFailureCount() {
 
 		queryFailureCount++;
-
 	}
 
 	/**
@@ -556,7 +549,6 @@ public class QueryClient implements Runnable {
 	private synchronized void setThreadReadyCount() {
 
 		threadReadyCount++;
-
 	}
 
 	/**
@@ -576,11 +568,9 @@ public class QueryClient implements Runnable {
 		if (QTime < minQtime) {
 			minQtime = QTime;
 		}
-
 		if (QTime > maxQtime) {
 			maxQtime = QTime;
 		}
-
 	}
 
 	/**
@@ -604,7 +594,6 @@ public class QueryClient implements Runnable {
 		}
 
 		return percentiles.getPercentile(percentile);
-
 	}
 
 	/**
@@ -612,17 +601,6 @@ public class QueryClient implements Runnable {
 	 * the next cycle.
 	 */
 	public static void reset() {
-		running = false;
-		queryCount = 0;
-		minQtime = Long.MAX_VALUE;
-		maxQtime = Long.MIN_VALUE;
-		queryFailureCount = 0;
-		threadReadyCount = 0;
-		percentiles = null;
-		percentilesObjectCreated = false;
-		qTimePercentileList = new long[10000000];
-		qTimePercentileListPointer = 0;
-		totalQTime = 0;
 
 		termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
@@ -635,5 +613,16 @@ public class QueryClient implements Runnable {
 		textPhrases = new ConcurrentLinkedQueue<String>();
 		highlightTerms = new ConcurrentLinkedQueue<String>();
 		rangeFacetRanges = new ConcurrentLinkedQueue<String>();
+		running = false;
+		queryCount = 0;
+		minQtime = Long.MAX_VALUE;
+		maxQtime = Long.MIN_VALUE;
+		queryFailureCount = 0;
+		threadReadyCount = 0;
+		percentiles = null;
+		percentilesObjectCreated = false;
+		qTimePercentileList = new long[10000000];
+		qTimePercentileListPointer = 0;
+		totalQTime = 0;
 	}
 }
