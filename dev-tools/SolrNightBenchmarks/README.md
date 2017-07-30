@@ -34,7 +34,7 @@ A comprehensive Solr performance benchmark framework.
 
      * The system has the ability to check and download required data files from the source, 
        as specified in the properties file.
-     * If you want to manually download files please use the link provided below. 
+     * Otherwise, If you want to manually download files please use the link provided below. 
      
 [Download Data Files From This Link](http://212.47.227.9/data/) 
 
