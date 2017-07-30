@@ -135,6 +135,10 @@ public class TestInjection {
   public static String splitFailureBeforeReplicaCreation = null;
 
   public static String waitForReplicasInSync = "true:60";
+
+  public static String failIndexFingerprintRequests = null;
+
+  public static String wrongIndexFingerprint = null;
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
@@ -152,10 +156,42 @@ public class TestInjection {
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     waitForReplicasInSync = "true:60";
+    failIndexFingerprintRequests = null;
+    wrongIndexFingerprint = null;
 
     for (Timer timer : timers) {
       timer.cancel();
     }
+  }
+
+  public static boolean injectWrongIndexFingerprint() {
+    if (wrongIndexFingerprint != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(wrongIndexFingerprint);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static boolean injectFailIndexFingerprintRequests()  {
+    if (failIndexFingerprintRequests != null) {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(failIndexFingerprintRequests);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Random test index fingerprint fail");
+      }
+    }
+    return true;
   }
   
   public static boolean injectRandomDelayInCoreCreation() {

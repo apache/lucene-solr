@@ -77,6 +77,10 @@ Bug Fixes
 
 * SOLR-10944: Get expression fails to return EOF tuple (Susheel Kumar, Joel Bernstein)
 
+* SOLR-6086: Replica is active during autowarming resulting in queries being sent to a replica that
+  may not have a registered searcher. This causes spikes in response times when adding a replica
+  in busy clusters. (Ludovic Boutros, Timothy Potter, shalin)
+
 Optimizations
 ----------------------
 

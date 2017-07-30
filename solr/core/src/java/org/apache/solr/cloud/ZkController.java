@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -93,8 +94,11 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -1299,8 +1303,11 @@ public class ZkController {
         props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       }
       try (SolrCore core = cc.getCore(cd.getName())) {
+        if (core != null && state == Replica.State.ACTIVE) {
+          ensureRegisteredSearcher(core);
+        }
         if (core != null && core.getDirectoryFactory().isSharedStorage()) {
-          if (core != null && core.getDirectoryFactory().isSharedStorage()) {
+          if (core.getDirectoryFactory().isSharedStorage()) {
             props.put("dataDir", core.getDataDir());
             UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
             if (ulog != null) {
@@ -1312,7 +1319,7 @@ public class ZkController {
         // The core had failed to initialize (in a previous request, not this one), hence nothing to do here.
         log.info("The core '{}' had failed to initialize before.", cd.getName());
       }
-      
+
       ZkNodeProps m = new ZkNodeProps(props);
       
       if (updateLastState) {
@@ -2510,5 +2517,53 @@ public class ZkController {
     } catch (Exception e) {
       log.warn("Could not publish node as down: " + e.getMessage());
     } 
+  }
+
+  /**
+   * Ensures that a searcher is registered for the given core and if not, waits until one is registered
+   */
+  private static void ensureRegisteredSearcher(SolrCore core) throws InterruptedException {
+    if (!core.getSolrConfig().useColdSearcher) {
+      RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
+      if (registeredSearcher != null) {
+        log.debug("Found a registered searcher: {} for core: {}", registeredSearcher.get(), core);
+        registeredSearcher.decref();
+      } else  {
+        Future[] waitSearcher = new Future[1];
+        log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
+        final RTimer timer = new RTimer();
+        RefCounted<SolrIndexSearcher> searcher = null;
+        try {
+          searcher = core.getSearcher(false, true, waitSearcher, true);
+          boolean success = true;
+          if (waitSearcher[0] != null)  {
+            log.debug("Waiting for first searcher of core {}, id: {} to be registered", core.getName(), core);
+            try {
+              waitSearcher[0].get();
+            } catch (ExecutionException e) {
+              log.warn("Wait for a searcher to be registered for core " + core.getName() + ",id: " + core + " failed due to: " + e, e);
+              success = false;
+            }
+          }
+          if (success)  {
+            if (searcher == null) {
+              // should never happen
+              log.debug("Did not find a searcher even after the future callback for core: {}, id: {}!!!", core.getName(), core);
+            } else  {
+              log.info("Found a registered searcher: {}, took: {} ms for core: {}, id: {}", searcher.get(), timer.getTime(), core.getName(), core);
+            }
+          }
+        } finally {
+          if (searcher != null) {
+            searcher.decref();
+          }
+        }
+      }
+      RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
+      if (newestSearcher != null) {
+        log.debug("Found newest searcher: {} for core: {}, id: {}", newestSearcher.get(), core.getName(), core);
+        newestSearcher.decref();
+      }
+    }
   }
 }
