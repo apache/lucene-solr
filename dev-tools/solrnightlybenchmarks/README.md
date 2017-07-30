@@ -2,6 +2,8 @@
 
 A comprehensive Solr performance benchmark framework.
 
+Please read the following sections in order and follow instructions. 
+
 ## [A] Server/OS Requirements
 
       * Java Version: 1.8.0_131 or above
