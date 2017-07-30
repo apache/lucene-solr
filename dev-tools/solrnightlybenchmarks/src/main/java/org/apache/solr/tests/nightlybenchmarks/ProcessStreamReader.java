@@ -22,12 +22,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import org.apache.log4j.Logger;
+
 /**
  * This class provides implementation for stream reader for Util.execute method.
  * @author Vivek Narang
  *
  */
 public class ProcessStreamReader extends Thread {
+	
+	public final static Logger logger = Logger.getLogger(ProcessStreamReader.class);
 
 	InputStream is;
 	String type;
@@ -52,7 +56,7 @@ public class ProcessStreamReader extends Thread {
 			BufferedReader br = new BufferedReader(isr);
 			String line = null;
 			while ((line = br.readLine()) != null) {
-				Util.postMessage(" >> " + line, MessageType.YELLOW_TEXT, false);
+				logger.debug(">> " + line);
 			}
 
 		} catch (IOException ioe) {

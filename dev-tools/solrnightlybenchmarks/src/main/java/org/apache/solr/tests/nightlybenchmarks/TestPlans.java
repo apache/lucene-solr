@@ -17,12 +17,16 @@
 
 package org.apache.solr.tests.nightlybenchmarks;
 
+import org.apache.log4j.Logger;
+
 /**
  * This class provides the Test Plan for Solr Standalone and Solr Cloud.
  * @author Vivek Narang
  *
  */
 public class TestPlans {
+	
+	public final static Logger logger = Logger.getLogger(TestPlans.class);
 
 	/**
 	 * A method describing a test plan for benchmarking.
@@ -30,7 +34,7 @@ public class TestPlans {
 	 */
 	public static void execute() throws Exception {
 
-		Util.postMessage("** Executing the benchmark test plan ...", MessageType.BLUE_TEXT, false);
+		logger.info("Executing the benchmark test plan ...");
 
 		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.INDEX);
 		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
@@ -53,7 +57,7 @@ public class TestPlans {
 
 		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 
-		Util.postMessage("** Executing the benchmark test plan [COMPLETE]...", MessageType.BLUE_TEXT, false);
+		logger.info("Executing the benchmark test plan [COMPLETE] ...");
 
 	}
 

@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -71,7 +72,8 @@ public class QueryClient implements Runnable {
 		JSON_RANGE_FACETING
 
 	}
-
+	
+	public final static Logger logger = Logger.getLogger(QueryClient.class);
 	public static ConcurrentLinkedQueue<String> termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 	public static ConcurrentLinkedQueue<String> lesserNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
@@ -130,8 +132,8 @@ public class QueryClient implements Runnable {
 		} else if (queryClientType == QueryClientType.CLOUD_SOLR_CLIENT) {
 			solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperURL).build();
 		}
-		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ... Testing Type: " + queryType,
-				MessageType.GREEN_TEXT, false);
+
+		logger.debug(this.toString() + " QUERY CLIENT CREATED ... Testing Type: " + queryType);
 	}
 
 	/**
@@ -140,7 +142,8 @@ public class QueryClient implements Runnable {
 	 * @throws Exception 
 	 */
 	public static void prepare() throws Exception {
-		Util.postMessage("** Preparing Term Query queue ...", MessageType.CYAN_TEXT, false);
+
+		logger.debug("Preparing Term Query queue ...");
 
 		termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
 		greaterNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
@@ -175,9 +178,9 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing Term Query queue [COMPLETE] ...");
 		} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
-			Util.postMessage("** Preparing query pair data queue ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing query pair data queue ...");
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(
@@ -190,9 +193,10 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+			
+			logger.debug("Preparing query pair data queue [COMPLETE] ...");			
 		} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
-			Util.postMessage("** Preparing text terms query data ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing text terms query data ...");			
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA))) {
@@ -204,9 +208,9 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing text terms query data [COMPLETE]...");			
 		} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
-			Util.postMessage("** Preparing text phrase query data ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing text phrase query data ...");			
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA))) {
@@ -218,9 +222,9 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing text phrase query data [COMPLETE] ...");			
 		} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY || QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
-			Util.postMessage("** Preparing query pair data for AND/OR queue ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing query pair data for AND/OR queue ...");			
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(
@@ -237,9 +241,9 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing query pair data for AND/OR queue [COMPLETE] ...");			
 		} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY || QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
-			Util.postMessage("** Preparing sorted query pair data queue ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing sorted query pair data queue ...");			
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(
@@ -253,9 +257,9 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Preparing sorted query pair data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing sorted query pair data queue [COMPLETE] ...");			
 		} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
-			Util.postMessage("** Preparing highlight terms data queue ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing highlight terms data queue ...");			
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(
@@ -269,10 +273,10 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Preparing highlight terms data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing highlight terms data queue [COMPLETE] ...");			
 		} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING 
 				|| QueryClient.queryType == QueryType.JSON_RANGE_FACETING) {
-			Util.postMessage("** Preparing range facet data queue ...", MessageType.CYAN_TEXT, false);
+			logger.debug("Preparing range facet data queue ...");			
 	
 			line = "";
 			try (BufferedReader br = new BufferedReader(
@@ -286,18 +290,15 @@ public class QueryClient implements Runnable {
 				e.printStackTrace();
 				throw new Exception(e.getMessage());
 			}
-			Util.postMessage("** Preparing range facet data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
+			logger.debug("Preparing range facet data queue [COMPLETE]...");			
 		}
 		
-		Util.postMessage(
-				"Starting State:| " + termNumericQueryParameterList.size() + "| "
-						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
-						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
-						+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
-						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size()
-						+ "| " + rangeFacetRanges.size(),
-				MessageType.YELLOW_TEXT, false);
-		Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
+		logger.debug("Starting State:| " + termNumericQueryParameterList.size() + "| "
+				+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
+				+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
+				+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
+				+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size()
+				+ "| " + rangeFacetRanges.size());			
 	}
 
 	/**
@@ -481,22 +482,20 @@ public class QueryClient implements Runnable {
 
 			} else if (running == false) {
 				// Break out from loop ...
-				Util.postMessage("Ending State: | " + termNumericQueryParameterList.size() + "| "
+				
+				logger.debug("Ending State: | " + termNumericQueryParameterList.size() + "| "
 						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
 						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
 						+ sortedNumericQueryParameterList.size() + "| " + rangeNumericQueryParameterList.size() + "| "
 						+ textTerms.size() + "| " + textPhrases.size() + "| " + highlightTerms.size()
-						+ "| " + rangeFacetRanges.size(),
-						MessageType.YELLOW_TEXT, false);
-				
+						+ "| " + rangeFacetRanges.size());
 				try {
 					solrClient.close();
 				} catch (IOException e) {
 					throw new RuntimeException(e.getMessage());
 				}
 				
-				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",
-						MessageType.RED_TEXT, false);
+				logger.debug(this.toString() + " Getting out of critical section ...");
 				break;
 			}
 		}

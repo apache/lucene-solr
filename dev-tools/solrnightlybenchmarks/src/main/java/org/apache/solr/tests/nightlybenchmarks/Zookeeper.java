@@ -19,6 +19,8 @@ package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.File;
 
+import org.apache.log4j.Logger;
+
 enum ZookeeperAction {
 	ZOOKEEPER_START, ZOOKEEPER_STOP, ZOOKEEPER_CLEAN
 }
@@ -31,6 +33,8 @@ enum ZookeeperAction {
  */
 public class Zookeeper {
 
+	public final static Logger logger = Logger.getLogger(Zookeeper.class);
+
 	public static String zooCommand;
 	public static String zooCleanCommand;
 
@@ -41,7 +45,8 @@ public class Zookeeper {
 
 	/**
 	 * Constructor.
-	 * @throws Exception 
+	 * 
+	 * @throws Exception
 	 */
 	Zookeeper() throws Exception {
 		super();
@@ -50,11 +55,12 @@ public class Zookeeper {
 
 	/**
 	 * A method for setting up zookeeper node.
-	 * @throws Exception 
+	 * 
+	 * @throws Exception
 	 */
 	private void install() throws Exception {
 
-		Util.postMessage("** Installing Zookeeper Node ...", MessageType.CYAN_TEXT, false);
+		logger.info("Installing Zookeeper Node ...");
 
 		File base = new File(Util.ZOOKEEPER_DIR);
 		if (!base.exists()) {
@@ -64,17 +70,15 @@ public class Zookeeper {
 
 		File release = new File(Util.DOWNLOAD_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz");
 		if (!release.exists()) {
+			logger.info("Attempting to download zookeeper release ..." + " : " + Util.ZOOKEEPER_RELEASE);
 
-			Util.postMessage("** Attempting to download zookeeper release ..." + " : " + Util.ZOOKEEPER_RELEASE,
-					MessageType.CYAN_TEXT, true);
 			String fileName = "zookeeper-" + Util.ZOOKEEPER_RELEASE + ".tar.gz";
 
 			Util.download(
 					Util.ZOOKEEPER_DOWNLOAD_URL + "zookeeper-" + Util.ZOOKEEPER_RELEASE + File.separator + fileName,
 					Util.DOWNLOAD_DIR + fileName);
-
 		} else {
-			Util.postMessage("** Release present nothing to download ...", MessageType.GREEN_TEXT, false);
+			logger.info("Release present nothing to download ...");
 		}
 
 		File urelease = new File(Util.DOWNLOAD_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE);
@@ -90,8 +94,7 @@ public class Zookeeper {
 					Util.ZOOKEEPER_DIR);
 
 		} else {
-			Util.postMessage("** Release extracted already nothing to do ..." + " : " + Util.ZOOKEEPER_RELEASE,
-					MessageType.GREEN_TEXT, false);
+			logger.info("Release extracted already nothing to do ..." + " : " + Util.ZOOKEEPER_RELEASE);
 		}
 	}
 
@@ -100,7 +103,7 @@ public class Zookeeper {
 	 * 
 	 * @param action
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public int doAction(ZookeeperAction action) throws Exception {
 

@@ -78,6 +78,8 @@ enum MessageType {
  *
  */
 public class Util {
+	
+	public final static Logger logger = Logger.getLogger(Util.class);
 
 	public static String WORK_DIRECTORY = System.getProperty("user.dir");
 	public static String DNAME = "SolrNightlyBenchmarksWorkDirectory";
@@ -117,56 +119,8 @@ public class Util {
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
 	public static boolean SILENT = false;
-	public final static Logger logger = Logger.getLogger(Util.class);
 	public static List<String> argsList;
 
-	/**
-	 * A method used for wrapping up the output from the system (on console or
-	 * log).
-	 * 
-	 * @param message
-	 * @param type
-	 * @param printInLog
-	 */
-	public static void postMessage(String message, MessageType type, boolean printInLog) {
-
-		String ANSI_RESET = "\u001B[0m";
-		String ANSI_BLACK = "\u001B[30m";
-		String ANSI_RED = "\u001B[31m";
-		String ANSI_GREEN = "\u001B[32m";
-		String ANSI_YELLOW = "\u001B[33m";
-		String ANSI_BLUE = "\u001B[34m";
-		String ANSI_PURPLE = "\u001B[35m";
-		String ANSI_CYAN = "\u001B[36m";
-		String ANSI_WHITE = "\u001B[37m";
-
-		if (!SILENT && USE_COLORED_TEXT_ON_CONSOLE) {
-			if (type.equals(MessageType.WHITE_TEXT)) {
-				System.out.println(ANSI_WHITE + message + ANSI_RESET);
-			} else if (type.equals(MessageType.BLUE_TEXT)) {
-				System.out.println(ANSI_BLUE + message + ANSI_RESET);
-			} else if (type.equals(MessageType.YELLOW_TEXT)) {
-				System.out.println(ANSI_YELLOW + message + ANSI_RESET);
-			} else if (type.equals(MessageType.RED_TEXT)) {
-				System.out.println(ANSI_RED + message + ANSI_RESET);
-			} else if (type.equals(MessageType.GREEN_TEXT)) {
-				System.out.println(ANSI_GREEN + message + ANSI_RESET);
-			} else if (type.equals(MessageType.BLACK_TEXT)) {
-				System.out.println(ANSI_BLACK + message + ANSI_RESET);
-			} else if (type.equals(MessageType.PURPLE_TEXT)) {
-				System.out.println(ANSI_PURPLE + message + ANSI_RESET);
-			} else if (type.equals(MessageType.CYAN_TEXT)) {
-				System.out.println(ANSI_CYAN + message + ANSI_RESET);
-			}
-		} else {
-			System.out.println(message);
-		}
-
-		if (printInLog) {
-			logger.info(message);
-		}
-
-	}
 
 	/**
 	 * A method used for invoking a process with specific parameters.
@@ -177,8 +131,8 @@ public class Util {
 	 * @throws Exception 
 	 */
 	public static int execute(String command, String workingDirectoryPath) throws Exception {
-		Util.postMessage("Executing: " + command, MessageType.WHITE_TEXT, true);
-		Util.postMessage("Working dir: " + workingDirectoryPath, MessageType.WHITE_TEXT, true);
+		logger.debug("Executing: " + command);
+		logger.debug("Working dir: " + workingDirectoryPath);
 		File workingDirectory = new File(workingDirectoryPath);
 
 		workingDirectory.setExecutable(true);
@@ -199,7 +153,7 @@ public class Util {
 			proc.waitFor();
 			return proc.exitValue();
 		} catch (Exception e) {
-			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, true);
+			logger.debug(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -255,13 +209,22 @@ public class Util {
 
 		BasicConfigurator.configure();
 		File baseDirectory = new File(BASE_DIR);
-		baseDirectory.mkdir();
+		if (!baseDirectory.exists()) {
+			baseDirectory.mkdirs();
+		}
 		File tempDirectory = new File(DOWNLOAD_DIR);
-		tempDirectory.mkdir();
-
+		if (!tempDirectory.exists()) {
+			tempDirectory.mkdir();
+		}
+		File runDirectory = new File(RUN_DIR);
+		if (!runDirectory.exists()) {
+			runDirectory.mkdir();
+		}
+		
 		// Marking for GC
 		baseDirectory = null;
 		tempDirectory = null;
+		runDirectory = null;
 	}
 
 	/**
@@ -274,8 +237,7 @@ public class Util {
 	public static int getFreePort() throws Exception {
 
 		int port = ThreadLocalRandom.current().nextInt(10000, 60000);
-		Util.postMessage("Looking for a free port ... Checking availability of port number: " + port,
-				MessageType.WHITE_TEXT, true);
+		logger.debug("Looking for a free port ... Checking availability of port number: " + port);
 		ServerSocket serverSocket = null;
 		DatagramSocket datagramSocket = null;
 		try {
@@ -283,7 +245,7 @@ public class Util {
 			serverSocket.setReuseAddress(true);
 			datagramSocket = new DatagramSocket(port);
 			datagramSocket.setReuseAddress(true);
-			Util.postMessage("Port " + port + " is free to use. Using this port !!", MessageType.GREEN_TEXT, true);
+			logger.debug("Port " + port + " is free to use. Using this port !!");
 			return port;
 		} catch (IOException e) {
 		} finally {
@@ -302,8 +264,7 @@ public class Util {
 			datagramSocket = null;
 		}
 
-		Util.postMessage("Port " + port + " looks occupied trying another port number ... ", MessageType.RED_TEXT,
-				true);
+		logger.debug("Port " + port + " looks occupied trying another port number ... ");
 		return getFreePort();
 	}
 
@@ -355,7 +316,7 @@ public class Util {
 			}
 			bos.close();
 		} catch (Exception e) {
-			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, true);
+			logger.debug(e.getMessage());
 			throw new Exception(e.getMessage());
 		} finally {
 			bos.close();
@@ -387,14 +348,14 @@ public class Util {
 			long size = 0;
 			while (-1 != (n = in.read(buf))) {
 				size += n;
-				Util.postMessageOnLine("\r" + size + " ");
+				logger.debug("\r" + size + " ");
 				fos.write(buf, 0, n);
 			}
 			fos.close();
 			in.close();
 		} catch (Exception e) {
 
-			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, false);
+			logger.debug(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -407,10 +368,10 @@ public class Util {
 	 * @throws IOException
 	 */
 	public static void extract(String filename, String filePath) throws IOException {
-		Util.postMessage("** Attempting to unzip the downloaded release ...", MessageType.WHITE_TEXT, true);
+		logger.debug(" Attempting to unzip the downloaded release ...");
 		try {
-			Util.postMessage("File to be copied: " + filename, MessageType.RED_TEXT, false);
-			Util.postMessage("Location: " + filePath, MessageType.RED_TEXT, false);
+			logger.debug("File to be copied: " + filename);
+			logger.debug("Location: " + filePath);
 			ZipFile zip = new ZipFile(filename);
 			zip.extractAll(filePath);
 		} catch (ZipException ex) {
@@ -426,7 +387,7 @@ public class Util {
 	 * @throws IOException
 	 */
 	public static String getLatestCommitID(String repositoryURL) throws IOException {
-		Util.postMessage("** Getting the latest commit ID from: " + repositoryURL, MessageType.BLUE_TEXT, false);
+		logger.debug(" Getting the latest commit ID from: " + repositoryURL);
 		return new BufferedReader(new InputStreamReader(
 				Runtime.getRuntime().exec("git ls-remote " + repositoryURL + " HEAD").getInputStream())).readLine()
 						.split("HEAD")[0].trim();
@@ -469,8 +430,7 @@ public class Util {
 	 * @throws Exception 
 	 */
 	public static String getCommitInformation() throws Exception {
-		Util.postMessage("** Getting the latest commit Information from local repository", MessageType.BLUE_TEXT,
-				false);
+		logger.debug(" Getting the latest commit Information from local repository");
 		File directory = new File(Util.getLocalRepoPath());
 		directory.setExecutable(true);
 		BufferedReader reader;
@@ -505,7 +465,7 @@ public class Util {
 	 */
 	public static void getSystemEnvironmentInformation() throws Exception {
 
-		Util.postMessage("** Getting the test environment information", MessageType.BLUE_TEXT, false);
+		logger.debug(" Getting the test environment information");
 
 		BufferedReader reader;
 		String returnString = "";
@@ -571,101 +531,73 @@ public class Util {
 			// get the property value and print it out
 			BenchmarkAppConnector.benchmarkAppDirectory = prop
 					.getProperty("SolrNightlyBenchmarks.benchmarkAppDirectory");
-			Util.postMessage(
-					"Getting Property Value for benchmarkAppDirectory: " + BenchmarkAppConnector.benchmarkAppDirectory,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug(
+					"Getting Property Value for benchmarkAppDirectory: " + BenchmarkAppConnector.benchmarkAppDirectory);
 			SolrIndexingClient.solrCommitHistoryData = prop.getProperty("SolrNightlyBenchmarks.solrCommitHistoryData");
-			Util.postMessage(
-					"Getting Property Value for solrCommitHistoryData: " + SolrIndexingClient.solrCommitHistoryData,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug(
+					"Getting Property Value for solrCommitHistoryData: " + SolrIndexingClient.solrCommitHistoryData);
 			SolrIndexingClient.amazonFoodData = prop.getProperty("SolrNightlyBenchmarks.amazonFoodData");
-			Util.postMessage("Getting Property Value for amazonFoodData: " + SolrIndexingClient.amazonFoodData,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for amazonFoodData: " + SolrIndexingClient.amazonFoodData);
 			MetricCollector.metricsURL = prop.getProperty("SolrNightlyBenchmarks.metricsURL");
-			Util.postMessage("Getting Property Value for metricsURL: " + MetricCollector.metricsURL,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for metricsURL: " + MetricCollector.metricsURL);
 			Util.ZOOKEEPER_DOWNLOAD_URL = prop.getProperty("SolrNightlyBenchmarks.zookeeperDownloadURL");
-			Util.postMessage("Getting Property Value for zookeeperDownloadURL: " + Util.ZOOKEEPER_DOWNLOAD_URL,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for zookeeperDownloadURL: " + Util.ZOOKEEPER_DOWNLOAD_URL);
 			Util.ZOOKEEPER_RELEASE = prop.getProperty("SolrNightlyBenchmarks.zookeeperDownloadVersion");
-			Util.postMessage("Getting Property Value for zookeeperDownloadVersion: " + Util.ZOOKEEPER_RELEASE,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for zookeeperDownloadVersion: " + Util.ZOOKEEPER_RELEASE);
 			Util.ZOOKEEPER_IP = prop.getProperty("SolrNightlyBenchmarks.zookeeperHostIp");
-			Util.postMessage("Getting Property Value for zookeeperHostIp: " + Util.ZOOKEEPER_IP,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for zookeeperHostIp: " + Util.ZOOKEEPER_IP);
 			Util.ZOOKEEPER_PORT = prop.getProperty("SolrNightlyBenchmarks.zookeeperHostPort");
-			Util.postMessage("Getting Property Value for zookeeperHostPort: " + Util.ZOOKEEPER_PORT,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for zookeeperHostPort: " + Util.ZOOKEEPER_PORT);
 			Util.LUCENE_SOLR_REPOSITORY_URL = prop.getProperty("SolrNightlyBenchmarks.luceneSolrRepositoryURL");
-			Util.postMessage("Getting Property Value for luceneSolrRepositoryURL: " + Util.LUCENE_SOLR_REPOSITORY_URL,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for luceneSolrRepositoryURL: " + Util.LUCENE_SOLR_REPOSITORY_URL);
 			Util.METRIC_ESTIMATION_PERIOD = prop.getProperty("SolrNightlyBenchmarks.metricEstimationPeriod");
-			Util.postMessage("Getting Property Value for metricEstimationPeriod: " + Util.METRIC_ESTIMATION_PERIOD,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for metricEstimationPeriod: " + Util.METRIC_ESTIMATION_PERIOD);
 			Util.QUERY_THREAD_COUNT_FIRST = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountFirst");
-			Util.postMessage("Getting Property Value for queryThreadCountFirst: " + Util.QUERY_THREAD_COUNT_FIRST,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for queryThreadCountFirst: " + Util.QUERY_THREAD_COUNT_FIRST);
 			Util.QUERY_THREAD_COUNT_SECOND = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountSecond");
-			Util.postMessage("Getting Property Value for queryThreadCountSecond: " + Util.QUERY_THREAD_COUNT_SECOND,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for queryThreadCountSecond: " + Util.QUERY_THREAD_COUNT_SECOND);
 			Util.QUERY_THREAD_COUNT_THIRD = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountThird");
-			Util.postMessage("Getting Property Value for queryThreadCountThird: " + Util.QUERY_THREAD_COUNT_THIRD,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for queryThreadCountThird: " + Util.QUERY_THREAD_COUNT_THIRD);
 			Util.QUERY_THREAD_COUNT_FOURTH = prop.getProperty("SolrNightlyBenchmarks.queryThreadCountFourth");
-			Util.postMessage("Getting Property Value for queryThreadCountFourth: " + Util.QUERY_THREAD_COUNT_FOURTH,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for queryThreadCountFourth: " + Util.QUERY_THREAD_COUNT_FOURTH);
 			Util.TEST_DATA_DIRECTORY = prop.getProperty("SolrNightlyBenchmarks.testDataDirectory");
-			Util.postMessage("Getting Property Value for testDataDirectory: " + Util.TEST_DATA_DIRECTORY,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for testDataDirectory: " + Util.TEST_DATA_DIRECTORY);
 			Util.ONEM_TEST_DATA = prop.getProperty("SolrNightlyBenchmarks.1MTestData");
-			Util.postMessage("Getting Property Value for 1MTestData: " + Util.ONEM_TEST_DATA, MessageType.YELLOW_TEXT,
-					false);
+			logger.debug("Getting Property Value for 1MTestData: " + Util.ONEM_TEST_DATA);
 			Util.NUMERIC_QUERY_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryTermsData");
-			Util.postMessage("Getting Property Value for staticNumericQueryTermsData: " + Util.NUMERIC_QUERY_TERM_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for staticNumericQueryTermsData: " + Util.NUMERIC_QUERY_TERM_DATA);
 			Util.NUMERIC_QUERY_PAIR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryPairsData");
-			Util.postMessage("Getting Property Value for staticNumericQueryPairsData: " + Util.NUMERIC_QUERY_PAIR_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for staticNumericQueryPairsData: " + Util.NUMERIC_QUERY_PAIR_DATA);
 			Util.TEST_WITH_NUMBER_OF_DOCUMENTS = Long
 					.parseLong(prop.getProperty("SolrNightlyBenchmarks.testWithNumberOfDocuments"));
-			Util.postMessage(
-					"Getting Property Value for testWithNumberOfDocuments: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug(
+					"Getting Property Value for testWithNumberOfDocuments: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 			Util.NUMERIC_SORTED_QUERY_PAIR_DATA = prop
 					.getProperty("SolrNightlyBenchmarks.staticNumericSortedQueryPairsData");
-			Util.postMessage("Getting Property Value for staticNumericSortedQueryPairsData: "
-					+ Util.NUMERIC_SORTED_QUERY_PAIR_DATA, MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for staticNumericSortedQueryPairsData: "
+					+ Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 			Util.USE_COLORED_TEXT_ON_CONSOLE = new Boolean(
 					prop.getProperty("SolrNightlyBenchmarks.useColoredTextOnConsole"));
-			Util.postMessage("Getting Property Value for useColoredTextOnConsole: " + Util.USE_COLORED_TEXT_ON_CONSOLE,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for useColoredTextOnConsole: " + Util.USE_COLORED_TEXT_ON_CONSOLE);
 			Util.NUMERIC_QUERY_AND_OR_DATA = prop.getProperty("SolrNightlyBenchmarks.staticNumericQueryAndOrTermsData");
-			Util.postMessage(
-					"Getting Property Value for staticNumericQueryAndOrTermsData: " + Util.NUMERIC_QUERY_AND_OR_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug(
+					"Getting Property Value for staticNumericQueryAndOrTermsData: " + Util.NUMERIC_QUERY_AND_OR_DATA);
 			Util.TEXT_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.staticTextTermQueryData");
-			Util.postMessage("Getting Property Value for staticTextTermQueryData: " + Util.TEXT_TERM_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for staticTextTermQueryData: " + Util.TEXT_TERM_DATA);
 			Util.TEXT_PHRASE_DATA = prop.getProperty("SolrNightlyBenchmarks.staticTextPhraseQueryData");
-			Util.postMessage("Getting Property Value for staticTextPhraseQueryData: " + Util.TEXT_PHRASE_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for staticTextPhraseQueryData: " + Util.TEXT_PHRASE_DATA);
 			Util.HIGHLIGHT_TERM_DATA = prop.getProperty("SolrNightlyBenchmarks.highlightTermsData");
-			Util.postMessage("Getting Property Value for highlightTermsData: " + Util.HIGHLIGHT_TERM_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for highlightTermsData: " + Util.HIGHLIGHT_TERM_DATA);
 			Util.TEST_DATA_STORE_LOCATION = prop.getProperty("SolrNightlyBenchmarks.testDataStoreURL");
-			Util.postMessage("Getting Property Value for testDataStoreURL: " + Util.TEST_DATA_STORE_LOCATION,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for testDataStoreURL: " + Util.TEST_DATA_STORE_LOCATION);
 			Util.RANGE_FACET_DATA = prop.getProperty("SolrNightlyBenchmarks.rangeFacetTestData");
-			Util.postMessage("Getting Property Value for rangeFacetTestData: " + Util.RANGE_FACET_DATA,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for rangeFacetTestData: " + Util.RANGE_FACET_DATA);
 			Util.TEST_DATA_ARCHIVE_LOCATION = prop.getProperty("SolrNightlyBenchmarks.testDataArchiveLocation");
-			Util.postMessage("Getting Property Value for testDataArchiveLocation: " + Util.TEST_DATA_ARCHIVE_LOCATION,
-					MessageType.YELLOW_TEXT, false);
+			logger.debug("Getting Property Value for testDataArchiveLocation: " + Util.TEST_DATA_ARCHIVE_LOCATION);
 
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
-				Util.postMessage("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...",
-						MessageType.RED_TEXT, false);
+				logger.debug("Corrupt URL for BenchmarkAppConnector.benchmarkAppDirectory Property, correcting ...");
 				BenchmarkAppConnector.benchmarkAppDirectory += File.separator;
 			}
 		} catch (IOException ex) {
@@ -693,7 +625,7 @@ public class Util {
 	 */
 	public static void archive() throws Exception {
 		
-		Util.postMessage("** Archiving data ...", MessageType.CYAN_TEXT, false);
+		logger.debug(" Archiving data ...");
 		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
 
 		if (sourceDataFolder.exists() && sourceDataFolder.listFiles().length != 0) {
@@ -710,10 +642,10 @@ public class Util {
 			Util.execute("rm -r -f " + sourceDataFolder.getAbsolutePath(), sourceDataFolder.getAbsolutePath());
 
 		} else {
-			Util.postMessage("** No files to archive ...", MessageType.RED_TEXT, false);
+			logger.debug(" No files to archive ...");
 		}
 		
-		Util.postMessage("** Archiving data process [COMPLETE] ...", MessageType.GREEN_TEXT, false);
+		logger.debug(" Archiving data process [COMPLETE] ...");
 	}
 	
 	/**
@@ -722,12 +654,12 @@ public class Util {
 	 */
 	public static void clearData() throws Exception {
 		
-		Util.postMessage("** Clearing data ...", MessageType.CYAN_TEXT, false);
+		logger.debug(" Clearing data ...");
 		
 		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
 		Util.execute("rm -r -f " + sourceDataFolder.getAbsolutePath(), sourceDataFolder.getAbsolutePath());
 
-		Util.postMessage("** Clearing data [COMPLETE] ...", MessageType.GREEN_TEXT, false);
+		logger.debug(" Clearing data [COMPLETE] ...");
 	}
 
 	/**
@@ -737,153 +669,144 @@ public class Util {
 	 */
 	public static boolean checkDataFiles() throws Exception {
 
-		Util.postMessage("** Checking if data files are present ...", MessageType.CYAN_TEXT, false);
+		logger.debug(" Checking if data files are present ...");
 
 		File file = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 			
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.ONEM_TEST_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.ONEM_TEST_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.ONEM_TEST_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.ONEM_TEST_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.ONEM_TEST_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_QUERY_TERM_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.NUMERIC_QUERY_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.NUMERIC_QUERY_TERM_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.NUMERIC_QUERY_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.NUMERIC_QUERY_TERM_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_QUERY_PAIR_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.NUMERIC_QUERY_PAIR_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.NUMERIC_QUERY_PAIR_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.NUMERIC_QUERY_PAIR_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.NUMERIC_QUERY_PAIR_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_SORTED_QUERY_PAIR_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.NUMERIC_QUERY_AND_OR_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_AND_OR_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.NUMERIC_QUERY_AND_OR_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.NUMERIC_QUERY_AND_OR_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.NUMERIC_QUERY_AND_OR_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.NUMERIC_QUERY_AND_OR_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.TEXT_TERM_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_TERM_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.TEXT_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.TEXT_TERM_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.TEXT_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.TEXT_TERM_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.TEXT_PHRASE_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.TEXT_PHRASE_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.TEXT_PHRASE_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.TEXT_PHRASE_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.TEXT_PHRASE_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.TEXT_PHRASE_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.HIGHLIGHT_TERM_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.HIGHLIGHT_TERM_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.HIGHLIGHT_TERM_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.HIGHLIGHT_TERM_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.HIGHLIGHT_TERM_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.HIGHLIGHT_TERM_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
 		file = new File(Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA);
 		if (!file.exists()) {
-			Util.postMessage("** Data File: " + file.getName() + " is not present. Trying to download ...",
-					MessageType.RED_TEXT, false);
+			logger.debug(" Data File: " + file.getName() + " is not present. Trying to download ...");
 
 			Util.execute("wget -O " + Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA + " " + Util.TEST_DATA_STORE_LOCATION + Util.RANGE_FACET_DATA, Util.TEST_DATA_DIRECTORY);
 
 			File downloadedfile = new File(Util.TEST_DATA_DIRECTORY + Util.RANGE_FACET_DATA);
 			if (downloadedfile.exists()) {
-				Util.postMessage("File " + Util.RANGE_FACET_DATA + " is now downloaded ...", MessageType.GREEN_TEXT, false);
+				logger.debug("File " + Util.RANGE_FACET_DATA + " is now downloaded ...");
 			} else {
-				Util.postMessage("Error Downloading File " + Util.RANGE_FACET_DATA + " Please try manually or check if location has changed ...", MessageType.RED_TEXT, false);
+				logger.debug("Error Downloading File " + Util.RANGE_FACET_DATA + " Please try manually or check if location has changed ...");
 				return false;
 			}
 		}
 
-		Util.postMessage("** All Required Data Files are present ...", MessageType.GREEN_TEXT, false);
+		logger.debug(" All Required Data Files are present ...");
 		return true;
 	}
 
@@ -991,7 +914,7 @@ public class Util {
 	 */
 	public static void checkWebAppFiles() throws Exception {
 
-		Util.postMessage("** Verifying that the Webapp files are present ... ", MessageType.BLUE_TEXT, false);
+		logger.debug(" Verifying that the Webapp files are present ... ");
 
 		File webAppSourceDir = new File("webapp");
 		File webAppTargetDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
@@ -1003,14 +926,13 @@ public class Util {
 		try {
 
 			if (!webAppTargetDir.exists()) {
-				Util.postMessage("** Webapp target directory not present creating now! ... ", MessageType.RED_TEXT,
-						false);
+				logger.debug(" Webapp target directory not present creating now! ... ");
 				webAppTargetDir.mkdir();
 
 				if (!new File(
 						BenchmarkAppConnector.benchmarkAppDirectory + File.separator + "UPDATED_WEB_APP_FILES_EXIST")
 								.exists()) {
-					Util.postMessage("** Copying updated/new webapp files ...", MessageType.BLUE_TEXT, false);
+					logger.debug(" Copying updated/new webapp files ...");
 					Util.copyFolder(webAppSourceDir, webAppTargetDir);
 				}
 
@@ -1021,7 +943,7 @@ public class Util {
 			} else if (!new File(
 					BenchmarkAppConnector.benchmarkAppDirectory + File.separator + "UPDATED_WEB_APP_FILES_EXIST")
 							.exists()) {
-				Util.postMessage("** Copying updated/new webapp files ...", MessageType.BLUE_TEXT, false);
+				logger.debug(" Copying updated/new webapp files ...");
 				Util.copyFolder(webAppSourceDir, webAppTargetDir);
 
 				File flagFile = new File(
@@ -1029,8 +951,7 @@ public class Util {
 				flagFile.createNewFile();
 
 			} else {
-				Util.postMessage("** Webapp files seems present, skipping copying webapp files ...",
-						MessageType.GREEN_TEXT, false);
+				logger.debug(" Webapp files seems present, skipping copying webapp files ...");
 			}
 
 		} catch (IOException e) {
@@ -1052,7 +973,7 @@ public class Util {
 	 */
 	public static void copyFolder(File source, File destination) throws Exception {
 		
-		Util.postMessage("Copying: " + source, MessageType.YELLOW_TEXT, false);
+		logger.debug("Copying: " + source);
 		
 		if (source.isDirectory()) {
 			if (!destination.exists()) {
@@ -1147,15 +1068,9 @@ public class Util {
 	 */
 	public static void init(String[] args) {
 
-		Util.postMessage("", MessageType.WHITE_TEXT, false);
-		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT,
-				false);
-		Util.postMessage("          	*** Solr Nightly Benchmarks ***  HOLA !!!             ", MessageType.RED_TEXT,
-				false);
-		Util.postMessage("--------------------------------------------------------------------", MessageType.WHITE_TEXT,
-				false);
-		Util.postMessage("", MessageType.WHITE_TEXT, false);
-
+		logger.info("--------------------------------------------------------------------");
+		logger.info("          	*** Solr Nightly Benchmarks ***  HOLA !!!                ");
+		logger.info("--------------------------------------------------------------------");
 		
 		try {
 			Util.getPropertyValues();
@@ -1167,10 +1082,9 @@ public class Util {
 			argsList = Util.getArgs(args);
 
 			if (argsList.size() == 0) {
-				Util.postMessage("** No Parameters defined! [EXITING] ...", MessageType.RED_TEXT, false);
-				Util.postMessage(
-						"** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n",
-						MessageType.CYAN_TEXT, false);
+				logger.debug(" No Parameters defined! [EXITING] ...");
+				logger.debug(
+						" Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n");
 				System.exit(0);
 			} else {
 
@@ -1183,13 +1097,12 @@ public class Util {
 							|| argsList.get(i).equals("--clear-data")) {
 					} else {
 						if (argsList.get(i).startsWith("--")) {
-							Util.postMessage("", MessageType.RED_TEXT, false);
-							Util.postMessage(argsList.get(i) + " seems like an unrecognized argument...",
-									MessageType.RED_TEXT, false);
+							logger.debug("");
+							logger.debug(argsList.get(i) + " seems like an unrecognized argument...");
 						}
 					}
 				}
-				Util.postMessage("", MessageType.RED_TEXT, false);
+				logger.debug("");
 
 				int atleastOne = 0;
 				
@@ -1211,9 +1124,8 @@ public class Util {
 						Long.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
 						atleastOne++;
 					} catch (Exception e) {
-						Util.postMessage(
-								"** Parameter value for --test-with-number-of-documents should be a number! [EXITING] ...\n\n",
-								MessageType.RED_TEXT, false);
+						logger.debug(
+								" Parameter value for --test-with-number-of-documents should be a number! [EXITING] ...\n\n");
 						System.exit(0);
 					}
 
@@ -1233,21 +1145,18 @@ public class Util {
 						argsList.get(argsList.indexOf("--commit-id") + 1);
 						atleastOne++;
 					} catch (Exception e) {
-						Util.postMessage("** Parameter value for --commit-id not defined! [EXITING] ...",
-								MessageType.RED_TEXT, false);
-						Util.postMessage(
-								"** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n",
-								MessageType.CYAN_TEXT, false);
+						logger.debug(" Parameter value for --commit-id not defined! [EXITING] ...");
+						logger.debug(
+								" Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n");
 						System.exit(0);
 					}
 
 				}
 
 				if (atleastOne == 0) {
-					Util.postMessage("** No Valid Parameters defined! [EXITING] ...", MessageType.RED_TEXT, false);
-					Util.postMessage(
-							"** Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n",
-							MessageType.CYAN_TEXT, false);
+					logger.debug(" No Valid Parameters defined! [EXITING] ...");
+					logger.debug(
+							" Please access: https://github.com/viveknarang/lucene-solr/tree/SolrNightlyBenchmarks/dev-tools/SolrNightBenchmarks#possible-parameters ...\n\n");
 					System.exit(0);
 				}
 
@@ -1255,26 +1164,22 @@ public class Util {
 
 			File datafile = new File(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File " + Util.ONEM_TEST_DATA + " Missing! [EXITING] ...\n\n",
-						MessageType.RED_TEXT, false);
+				logger.debug(" Data File " + Util.ONEM_TEST_DATA + " Missing! [EXITING] ...\n\n");
 				System.exit(0);
 			}
 			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_TERM_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File " + Util.NUMERIC_QUERY_TERM_DATA + " Missing! [EXITING] ...\n\n",
-						MessageType.RED_TEXT, false);
+				logger.debug(" Data File " + Util.NUMERIC_QUERY_TERM_DATA + " Missing! [EXITING] ...\n\n");
 				System.exit(0);
 			}
 			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_QUERY_PAIR_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File " + Util.NUMERIC_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n",
-						MessageType.RED_TEXT, false);
+				logger.debug(" Data File " + Util.NUMERIC_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n");
 				System.exit(0);
 			}
 			datafile = new File(Util.TEST_DATA_DIRECTORY + Util.NUMERIC_SORTED_QUERY_PAIR_DATA);
 			if (!datafile.exists()) {
-				Util.postMessage("** Data File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n",
-						MessageType.RED_TEXT, false);
+				logger.debug(" Data File " + Util.NUMERIC_SORTED_QUERY_PAIR_DATA + " Missing! [EXITING] ...\n\n");
 				System.exit(0);
 			}
 			
@@ -1294,20 +1199,18 @@ public class Util {
 			}
 
 			if (argsList.contains("--register-commit")) {
-				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater ...", MessageType.WHITE_TEXT, false);
+				logger.debug(" SolrNightlyBenchmarks Commit Registry Updater ...");
 				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 
 				if (!BenchmarkAppConnector.isCommitInQueue(commit)) {
-					Util.postMessage("** Registering the latest commit in the queue ...", MessageType.RED_TEXT, false);
+					logger.debug(" Registering the latest commit in the queue ...");
 					BenchmarkAppConnector.writeToWebAppDataFile(commit, "", true, FileType.COMMIT_QUEUE);
 				} else {
-					Util.postMessage(
-							"** Skipping Registering the latest commit in the queue since it already exists ...",
-							MessageType.GREEN_TEXT, false);
+					logger.debug(
+							" Skipping Registering the latest commit in the queue since it already exists ...");
 				}
 
-				Util.postMessage("** SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...",
-						MessageType.WHITE_TEXT, false);
+				logger.debug(" SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...");
 				System.exit(0);
 
 			}
@@ -1318,14 +1221,12 @@ public class Util {
 
 				if (numDocuments > 0 && numDocuments <= 1000000) {
 					Util.TEST_WITH_NUMBER_OF_DOCUMENTS = numDocuments;
-					Util.postMessage("** Number of Documents to test with: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
-							MessageType.CYAN_TEXT, false);
+					logger.debug(" Number of Documents to test with: " + Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
 				}
 			}
 
 			if (argsList.contains("--silent")) {
-				Util.postMessage("** Running silently since --silent parameter is set ...", MessageType.BLUE_TEXT,
-						false);
+				logger.debug(" Running silently since --silent parameter is set ...");
 				Util.SILENT = true;
 			}
 
@@ -1338,15 +1239,13 @@ public class Util {
 			Util.getSystemEnvironmentInformation();
 
 			if (!BenchmarkAppConnector.isRunningFolderEmpty()) {
-				Util.postMessage("** It looks like the last test session failed or was aborted ...",
-						MessageType.RED_TEXT, false);
+				logger.debug(" It looks like the last test session failed or was aborted ...");
 
 				Util.killProcesses("zookeeper");
 				Util.killProcesses("Dsolr.jetty.https.port");
 
 				if (!BenchmarkAppConnector.isCloningFolderEmpty()) {
-					Util.postMessage("** Looks like a broken clone exists removing it ...", MessageType.RED_TEXT,
-							false);
+					logger.debug(" Looks like a broken clone exists removing it ...");
 					Util.execute("rm -r -f " + Util.getLocalRepoPath(), Util.getLocalRepoPath());
 				}
 
@@ -1357,13 +1256,13 @@ public class Util {
 			}
 
 			if (argsList.contains("--from-queue")) {
-				Util.postMessage("** Initiating processing from commit queue ...", MessageType.BLUE_TEXT, false);
+				logger.debug(" Initiating processing from commit queue ...");
 
 				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
 				int length = currentCommits.length;
 
 				if (length == 0) {
-					Util.postMessage("** Commit queue empty! [EXIT] ...", MessageType.BLUE_TEXT, false);
+					logger.debug(" Commit queue empty! [EXIT] ...");
 				} else {
 					for (int i = 0; i < length; i++) {
 
@@ -1372,14 +1271,12 @@ public class Util {
 						String lastRun = BenchmarkAppConnector.getLastRunCommitID();
 
 						if (commitIDFromQueue.equals(lastRun)) {
-							Util.postMessage(
-									"** The commit: " + commitIDFromQueue + " has already been processed skipping ...",
-									MessageType.RED_TEXT, false);
+							logger.debug(
+									" The commit: " + commitIDFromQueue + " has already been processed skipping ...");
 							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
 						} else {
 							Util.createIsRunningFile();
-							Util.postMessage("** Processing benchmarks for commit: " + commitIDFromQueue,
-									MessageType.GREEN_TEXT, false);
+							logger.debug(" Processing benchmarks for commit: " + commitIDFromQueue);
 							TestPlans.execute();
 							BenchmarkAppConnector.publishDataForWebApp();
 							BenchmarkReportData.reset();
@@ -1391,12 +1288,12 @@ public class Util {
 						}
 
 					}
-					Util.postMessage("** Processing from commit queue [COMPLETE] ...", MessageType.BLUE_TEXT, false);
+					logger.debug(" Processing from commit queue [COMPLETE] ...");
 				}
 			} else if (argsList.contains("--latest-commit")) {
 				Util.createIsRunningFile();
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
-				Util.postMessage("The latest commit ID is: " + Util.COMMIT_ID, MessageType.YELLOW_TEXT, false);
+				logger.debug("The latest commit ID is: " + Util.COMMIT_ID);
 
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
@@ -1407,8 +1304,7 @@ public class Util {
 			} else if (argsList.contains("--commit-id")) {
 				Util.createIsRunningFile();
 				Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
-				Util.postMessage("** Executing benchmarks with commit: " + Util.COMMIT_ID, MessageType.BLUE_TEXT,
-						false);
+				logger.debug(" Executing benchmarks with commit: " + Util.COMMIT_ID);
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
@@ -1431,7 +1327,7 @@ public class Util {
 		try {
 
 			if (argsList.contains("--clean-up")) {
-				Util.postMessage("** Initiating Housekeeping activities! ... ", MessageType.RED_TEXT, false);
+				logger.debug(" Initiating Housekeeping activities! ... ");
 				
 				File dir = new File(Util.DOWNLOAD_DIR);
 				if (dir != null && dir.isDirectory()) {
@@ -1517,10 +1413,10 @@ public class Util {
 	 * @throws IOException 
 	 */
 	public static void createTestDataFile(String fileName, int numberOfDocuments) throws IOException {
-		Util.postMessage("** Preparing 4k text documents", MessageType.WHITE_TEXT, false);
+		logger.debug(" Preparing 4k text documents");
 		for (int i = 0; i < numberOfDocuments; i++) {
 			if (i % 100 == 0) {
-				Util.postMessageOnLine("|");
+				logger.debug("|");
 			}
 
 			Random r = new Random();
@@ -1540,10 +1436,10 @@ public class Util {
 	 * @throws IOException 
 	 */
 	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) throws IOException {
-		Util.postMessage("** Preparing sorted numeric query data ...", MessageType.WHITE_TEXT, false);
+		logger.debug(" Preparing sorted numeric query data ...");
 		for (int i = 0; i < numberOfDocuments; i++) {
 			if (i % 100 == 0) {
-				Util.postMessageOnLine("|");
+				logger.debug("|");
 			}
 
 			Random r = new Random();
@@ -1553,7 +1449,7 @@ public class Util {
 
 			BenchmarkAppConnector.writeToWebAppDataFile(fileName, line, false, FileType.TEST_ENV_FILE);
 		}
-		Util.postMessage("** Preparation [COMPLETE] ...", MessageType.WHITE_TEXT, false);
+		logger.debug(" Preparation [COMPLETE] ...");
 	}
 
 	/**
@@ -1564,7 +1460,7 @@ public class Util {
 	 */
 	public static void killProcesses(String lookFor) throws IOException {
 
-		Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
+		logger.debug(" Searching and killing " + lookFor + " process(es) ...");
 
 		BufferedReader reader;
 		String line = "";
@@ -1576,8 +1472,7 @@ public class Util {
 			while ((line = reader.readLine()) != null) {
 
 				line = line.trim();
-				Util.postMessage("** Found " + lookFor + " Running with PID " + line + " Killing now ..",
-						MessageType.RED_TEXT, false);
+				logger.debug(" Found " + lookFor + " Running with PID " + line + " Killing now ..");
 				Runtime.getRuntime().exec("kill -9 " + line);
 			}
 
@@ -1615,7 +1510,7 @@ public class Util {
 					s = data[2].split(" ")[r.nextInt(data[2].split(" ").length)].trim();
 				}
 
-				Util.postMessage(data[2].split(" ")[number], MessageType.RED_TEXT, false);
+				logger.debug(data[2].split(" ")[number]);
 				BenchmarkAppConnector.writeToWebAppDataFile("Highlight-Terms.csv", s, false, FileType.TEST_ENV_FILE);
 			}
 
@@ -1646,14 +1541,14 @@ public class Util {
 				String s = data[5].trim();
 				set.add(Long.parseLong(data[5].trim()));
 
-				Util.postMessage("Adding to Set: " + s, MessageType.RED_TEXT, false);
+				logger.debug("Adding to Set: " + s);
 				number++;
 			}
 
 			List<Long> list = new LinkedList<Long>();
 
 			for (Long l: set) {
-				Util.postMessage("" + l, MessageType.PURPLE_TEXT, false);
+				logger.debug("" + l);
 				list.add(l);
 			}
 			
@@ -1670,12 +1565,11 @@ public class Util {
 					s = list.get(m) + "," + list.get(l) + ",1000000";
 				}
 					
-				Util.postMessage(s, MessageType.PURPLE_TEXT, false);
+				logger.debug(s);
 				BenchmarkAppConnector.writeToWebAppDataFile("Range-Facet-Test-Ranges.csv", s, false, FileType.TEST_ENV_FILE);
 			}
 			
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new Exception(e.getMessage());
 		}
 
@@ -1726,14 +1620,13 @@ public class Util {
 						BenchmarkAppConnector.writeToWebAppDataFile("en-wiki-data-2G-modified.csv", data, false,
 								FileType.TEST_ENV_FILE);
 
-						Util.postMessageOnLine("\r" + id);
+						logger.debug("\r" + id);
 					}
 				}
 
 			}
 
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -1750,7 +1643,6 @@ public class Util {
 		    ObjectId id = repo.resolve(Constants.HEAD);
 		    result = id.getName();
 		  } catch (IOException e) {
-		    e.printStackTrace();
 			throw new Exception(e.getMessage());
 		  }
 		  return result;

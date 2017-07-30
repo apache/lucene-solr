@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -35,6 +36,8 @@ import org.apache.solr.common.params.SolrParams;
  *
  */
 public class CloudConcurrentIndexingClient implements Runnable {
+
+	public final static Logger logger = Logger.getLogger(CloudConcurrentIndexingClient.class);
 
 	public static boolean running;
 	public static boolean endLock = false;
@@ -65,8 +68,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 		solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperURL).build();
 		solrClient.setDefaultCollection(collectionName);
 		solrClient.connect();
-		Util.postMessage("\r" + this.toString() + "** QUERY CLIENT CREATED ... Testing Type: ", MessageType.GREEN_TEXT,
-				false);
+		logger.debug(this.toString() + " QUERY CLIENT CREATED ... Testing Type: ");
 	}
 
 	/**
@@ -76,7 +78,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	 */
 	public static void prepare() throws Exception {
 
-		Util.postMessage("** Preparing document queue ...", MessageType.CYAN_TEXT, false);
+		logger.info("Preparing document queue ...");
 
 		documents = new ConcurrentLinkedQueue<SolrInputDocument>();
 
@@ -112,15 +114,14 @@ public class CloudConcurrentIndexingClient implements Runnable {
 			br.close();
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("CloudConcurrentIndexingClient: " + e.getMessage());
 			throw new IOException(e.getMessage());
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("CloudConcurrentIndexingClient: " + e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
-		Util.postMessage("** Preparing document queue [COMPLETE] ..." + documents.size(), MessageType.GREEN_TEXT,
-				false);
+		logger.info("Preparing document queue ...");
 	}
 
 	/**
@@ -146,8 +147,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 						totalTime = endTime - startTime;
 					}
 				}
-				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",
-						MessageType.RED_TEXT, false);
+				logger.debug("Getting out of critical section ...");
 				break;
 			}
 		}

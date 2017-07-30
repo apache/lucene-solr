@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.commons.io.comparator.LastModifiedFileComparator;
+import org.apache.log4j.Logger;
 
 /**
  * This class provides implementation for connecting class for webapp.
@@ -31,6 +32,7 @@ import org.apache.commons.io.comparator.LastModifiedFileComparator;
  */
 public class BenchmarkAppConnector {
 
+	public final static Logger logger = Logger.getLogger(BenchmarkAppConnector.class);
 	public static String benchmarkAppDirectory;
 
 	/**
@@ -179,8 +181,7 @@ public class BenchmarkAppConnector {
 			dir.mkdirs();
 		}
 
-		Util.postMessage("** Deleting registered commit " + commit + " from the queue ...", MessageType.RED_TEXT,
-				false);
+		logger.info("Deleting registered commit " + commit + " from the queue ...");
 		File file = new File(
 				benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
 		return file.delete();
@@ -226,8 +227,7 @@ public class BenchmarkAppConnector {
 		File[] files = directory.listFiles();
 
 		Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-		Util.postMessage("** Number of registered commits in the queue: " + files.length, MessageType.RED_TEXT, false);
-
+		logger.info("Number of registered commits in the queue: " + files.length);
 		return files;
 	}
 
@@ -421,14 +421,14 @@ public class BenchmarkAppConnector {
 			fw.write(data + "\n");
 
 		} catch (IOException ioe) {
-			Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
+			logger.error("BenchmarkAppConnector: " + ioe.getMessage());
 			throw new IOException(ioe.getMessage());
 		} finally {
 			if (fw != null) {
 				try {
 					fw.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("BenchmarkAppConnector: " + e.getMessage());
 					throw new IOException(e.getMessage());
 				}
 			}
@@ -442,7 +442,7 @@ public class BenchmarkAppConnector {
 	 */
 	public static void publishDataForWebApp() throws Exception {
 
-		Util.postMessage("** Publishing data for webapp ..", MessageType.CYAN_TEXT, false);
+		logger.info("Publishing data for webapp ..");
 
 		if (BenchmarkReportData.metricMapIndexingStandalone != null) {
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_regular.csv",
@@ -1652,6 +1652,6 @@ public class BenchmarkAppConnector {
 
 		Util.getAndPublishCommitInformation();
 
-		Util.postMessage("** Publishing data for webapp [COMPLETE] ..", MessageType.GREEN_TEXT, false);
+		logger.info("Publishing data for webapp [COMPLETE] ..");
 	}
 }

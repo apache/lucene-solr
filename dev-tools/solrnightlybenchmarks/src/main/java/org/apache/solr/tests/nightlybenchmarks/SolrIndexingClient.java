@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -46,6 +47,8 @@ enum ActionType {
  *
  */
 public class SolrIndexingClient {
+	
+	public final static Logger logger = Logger.getLogger(SolrIndexingClient.class);
 
 	public static long documentCount;
 	public static String solrCommitHistoryData;
@@ -95,12 +98,12 @@ public class SolrIndexingClient {
 			String zookeeperIp, String zookeeperPort, ActionType action) throws Exception {
 
 		documentCount = numDocuments;
-
-		Util.postMessage("** Indexing documents through " + clientType + " with following parameters: Document Count:"
+		
+		logger.info("Indexing documents through " + clientType + " with following parameters: Document Count:"
 				+ numDocuments + ", Url:" + urlString + ", collectionName:" + collectionName + ", QueueSize:"
 				+ queueSize + ", Threadcount:" + threadCount + ", TestType:" + type + ", Capture Metrics: "
 				+ captureMetrics + ", Delete Data:" + deleteData + ", Zookeeper IP:" + zookeeperIp + ", Zookeeper Port:"
-				+ zookeeperPort + ", Action Type:" + action, MessageType.CYAN_TEXT, false);
+				+ zookeeperPort + ", Action Type:" + action);
 
 		HttpSolrClient httpSolrClient = null;
 		CloudSolrClient cloudSolrClient = null;
@@ -176,7 +179,7 @@ public class SolrIndexingClient {
 			}
 			end = System.currentTimeMillis();
 
-			Util.postMessage("** Committing the documents ...", MessageType.WHITE_TEXT, false);
+			logger.info("Committing the documents ...");
 
 			if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 				httpSolrClient.commit(collectionName);
@@ -187,7 +190,7 @@ public class SolrIndexingClient {
 			}
 
 			if (deleteData) {
-				Util.postMessage("** DELETE ...", MessageType.WHITE_TEXT, false);
+				logger.info("Deleting documents from index ...");
 
 				if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 					httpSolrClient.deleteByQuery("*:*");
@@ -200,10 +203,10 @@ public class SolrIndexingClient {
 					concurrentUpdateSolrClient.commit(collectionName);
 				}
 
-				Util.postMessage("** DELETE COMPLETE ...", MessageType.WHITE_TEXT, false);
+				logger.info("Deleting documents from index [COMPLETE] ...");
 			}
 
-			Util.postMessage("** Closing the Solr connection ...", MessageType.GREEN_TEXT, false);
+			logger.info("Closing the Solr connection ...");
 
 			if (clientType == SolrClientType.HTTP_SOLR_CLIENT) {
 				httpSolrClient.close();
@@ -214,11 +217,10 @@ public class SolrIndexingClient {
 				concurrentUpdateSolrClient.close();
 			}
 
-			Util.postMessage("** Time taken to index " + numberOfDocuments + " documents is: " + (double) (end - start)
-					+ " millisecond(s)", MessageType.RED_TEXT, false);
+			logger.info("Time taken to index " + numberOfDocuments + " documents is: " + (double) (end - start)
+					+ " millisecond(s)");
 
 			br.close();
-
 			returnMetricMap = new HashMap<String, String>();
 
 			Date dNow = new Date();
@@ -243,8 +245,8 @@ public class SolrIndexingClient {
 			e.printStackTrace();
 			throw new Exception(e.getMessage());
 		}
-
-		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT, false);
+		
+		logger.info("Indexing documents COMPLETE ...");
 		return returnMetricMap;
 	}
 }

@@ -23,6 +23,7 @@ import java.util.Date;
 
 import javax.ws.rs.core.MediaType;
 
+import org.apache.log4j.Logger;
 import org.apache.solr.tests.nightlybenchmarks.BenchmarkAppConnector.FileType;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -223,7 +224,8 @@ enum TestType {
  *
  */
 public class MetricCollector extends Thread {
-
+	
+	public final static Logger logger = Logger.getLogger(BenchmarkAppConnector.class);
 	public static String metricsURL;
 
 	public TestType testType;

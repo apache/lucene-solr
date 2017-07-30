@@ -87,7 +87,8 @@ public class SolrNode {
 	 */
 	private void install() throws Exception {
 
-		Util.postMessage("** Installing Solr Node ...", MessageType.CYAN_TEXT, true);
+		logger.debug("Installing Solr Node ...");
+		
 		this.port = String.valueOf(Util.getFreePort());
 
 		this.baseDirectory = Util.SOLR_DIR + UUID.randomUUID().toString() + File.separator;
@@ -95,20 +96,17 @@ public class SolrNode {
 
 		try {
 
-			Util.postMessage("** Checking if SOLR node directory exists ...", MessageType.CYAN_TEXT, true);
+			logger.debug("Checking if SOLR node directory exists ...");
+
 			File node = new File(nodeDirectory);
 
 			if (!node.exists()) {
 
-				Util.postMessage("Node directory does not exist, creating it ...", MessageType.RED_TEXT, true);
+				logger.debug("Node directory does not exist, creating it ...");
 				node.mkdir();
-				Util.postMessage("Directory Created: " + nodeDirectory, MessageType.GREEN_TEXT, true);
-
 			} 
 
 		} catch (Exception e) {
-
-			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, true);
 			throw new Exception(e.getMessage());
 		}
 
@@ -123,7 +121,8 @@ public class SolrNode {
 	 * @throws Exception 
 	 */
 	void checkoutCommitAndBuild() throws Exception {
-		Util.postMessage("** Checking out Solr: " + commitId + " ...", MessageType.CYAN_TEXT, true);
+	
+		logger.info("Checking out Solr: " + commitId + " ...");
 
 		File gitDirectory = new File(gitDirectoryPath);
 		Git repository;
@@ -131,9 +130,6 @@ public class SolrNode {
 		if (gitDirectory.exists()) {
 			repository = Git.open(gitDirectory);
 
-			Util.postMessage("" + repository.getRepository(), MessageType.RED_TEXT, false);
-			Util.postMessage("" + Util.getHeadName(repository.getRepository()), MessageType.RED_TEXT, false);
-			
 			if (!Util.getHeadName(repository.getRepository()).equals(commitId)) {
 
 				repository.checkout().setName("master").call();
@@ -163,7 +159,7 @@ public class SolrNode {
 
 		if (!new File(tarballLocation).exists()) {
 			if (!new File(packageFilename).exists()) {
-				Util.postMessage("** There were new changes, need to rebuild ...", MessageType.RED_TEXT, true);
+				logger.debug("There were new changes, need to rebuild ...");
 				Util.execute("ant ivy-bootstrap", gitDirectoryPath);
 				// Util.execute("ant compile", gitDirectoryPath);
 				Util.execute("ant package", gitDirectoryPath + File.separator + "solr");
@@ -185,18 +181,16 @@ public class SolrNode {
 				this.solrDirName = fileName;
 				packageFilename += fileName;
 				
-				System.out.println("Trying to copy: " + packageFilename + " to " + tarballLocation);
+				logger.debug("Trying to copy: " + packageFilename + " to " + tarballLocation);
 				Files.copy(Paths.get(packageFilename), Paths.get(tarballLocation));
-				System.out.println("File copied!");
+				logger.debug("File copied!");
 
 			} else {
 				throw new IOException("Couldn't build the package"); 
 			}
 		} 
-
-		Util.postMessage(
-				"** Do we have packageFilename? " + (new File(tarballLocation).exists() ? "yes" : "no") + " ...",
-				MessageType.PURPLE_TEXT, true);
+		
+		logger.debug("Do we have packageFilename? " + (new File(tarballLocation).exists() ? "yes" : "no") + " ...");
 	}
 
 	/**
@@ -235,9 +229,8 @@ public class SolrNode {
 
 		}
 		end = System.currentTimeMillis();
-		Util.postMessage("** Time taken for the node " + action + " activity is: " + (end - start) + " millisecond(s)",
-				MessageType.GREEN_TEXT, false);
-
+		
+		logger.info("Time taken for the node " + action + " activity is: " + (end - start) + " millisecond(s)");
 		return returnValue;
 	}
 
@@ -252,30 +245,26 @@ public class SolrNode {
 	public Map<String, String> createCollection(String coreName, String collectionName)
 			throws Exception {
 
+		long start;
+		long end;
+		int returnVal;
+
 		Thread thread = new Thread(
 				new MetricCollector(this.commitId, TestType.STANDALONE_CREATE_COLLECTION, this.port));
 		thread.start();
 
 		this.collectionName = collectionName;
-		Util.postMessage("** Creating core ... ", MessageType.CYAN_TEXT, true);
-
-		long start;
-		long end;
-		int returnVal;
+		logger.info("Creating core ... ");
 
 		start = System.currentTimeMillis();
 		returnVal = Util.execute(
 				"./solr create_core -c " + coreName + " -p " + port + " -collection " + collectionName + " -force",
 				nodeDirectory);
 		end = System.currentTimeMillis();
-
-		Util.postMessage("** Time for creating the core is: " + (end - start) + " millisecond(s)",
-				MessageType.GREEN_TEXT, false);
-
+		logger.info("Time for creating the core is: " + (end - start) + " millisecond(s)");
 		thread.stop();
 
 		Map<String, String> returnMap = new HashMap<String, String>();
-
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
@@ -304,7 +293,7 @@ public class SolrNode {
 		thread.start();
 
 		this.collectionName = collectionName;
-		Util.postMessage("** Creating collection ... ", MessageType.CYAN_TEXT, true);
+		logger.info("Creating collection ... ");
 
 		long start;
 		long end;
@@ -322,13 +311,10 @@ public class SolrNode {
 			end = System.currentTimeMillis();
 		}
 
-		Util.postMessage("** Time for creating the collection is: " + (end - start) + " millisecond(s)",
-				MessageType.GREEN_TEXT, false);
-
+		logger.info("Time for creating the collection is: " + (end - start) + " millisecond(s)");
 		thread.stop();
 
 		Map<String, String> returnMap = new HashMap<String, String>();
-
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
@@ -349,8 +335,7 @@ public class SolrNode {
 	public int deleteCollection(String collectionName) throws Exception {
 
 		this.collectionName = collectionName;
-		Util.postMessage("** Deleting collection ... ", MessageType.CYAN_TEXT, true);
-
+		logger.info("Deleting collection ... ");
 		return Util.execute("./solr delete -c " + collectionName + " -deleteConfig true", nodeDirectory);
 
 	}
