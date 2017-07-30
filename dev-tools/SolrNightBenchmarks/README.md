@@ -57,7 +57,7 @@ A comprehensive Solr performance benchmark framework.
                                                   to test with. Valid value lies in 
                                                   (with test-data-file-1M.csv data file) between 1 and 1000000.
      
-## Where and how to access the output.
+## Accessing Output
 
      * As soon as the system is up and running, a folder is created as directed by 
          SolrNightlyBenchmarks.benchmarkAppDirectory parameter in the properties file. An app 
@@ -69,7 +69,7 @@ A comprehensive Solr performance benchmark framework.
      * If this folder is a local folder and not the home folder for a web server, 
          please locate it and open "index.html" using your favorite browser. 
 
-## Sample output page
+## Sample Output
      * The page that you will access will look like the following. 
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot5.PNG)
@@ -85,4 +85,3 @@ A comprehensive Solr performance benchmark framework.
           download required files.
      
 [Download Data Files From This Link](http://212.47.227.9/data/)     
-      
