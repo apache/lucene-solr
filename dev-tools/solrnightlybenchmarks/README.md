@@ -46,9 +46,7 @@ Please read the following sections in order and follow instructions.
 ## [C-1] Possible parameters
 
      Below is a list of valid parameters usable on step 8 in the section above. 
-
-     * --silent                                Use this parameter if you do not want any output on console.
-     
+  
      * --archive                               Use this parameter to archive the data in the location as 
                                                   defined in properties file.
      * --clear-data                            Use this parameter to clear the data folder in the webapp directory.
