@@ -36,8 +36,10 @@ A comprehensive Solr performance benchmark framework.
         --latest-commit --clean-up 
      10 mvn jetty:stop
      
-     Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to execute step 8 before step 9
-     and also wait until Jetty server is started. Step 10 is optional and only needed when you want to shutdown the server.
+     Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to 
+     execute step 8 before step and also wait until Jetty server is started. 
+     Step 10 is optional and only needed when you want to shutdown the server.
+     
 
 ## [C-1] Possible parameters
 
