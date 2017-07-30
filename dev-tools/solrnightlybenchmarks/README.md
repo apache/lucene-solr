@@ -65,7 +65,7 @@ Please read the following sections in order and follow instructions.
      
 ## [D] Accessing Output
 
-     * localhost:4444 
+     * Please open localhost:4444 OR IP:4444 on your favorite browser as configured by the administrator. 
   
 ## [D-1] Sample Output
      * The page that you will access will look like the following. 
