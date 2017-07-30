@@ -27,12 +27,14 @@ A comprehensive Solr performance benchmark framework.
      8  mvn jetty:run 
      9  java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar 
         --latest-commit --clean-up 
-     10 mvn jetty:stop   
+     10 mvn jetty:stop
+     
+     Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to execute step 8 before step 9
+     and also wait until Jetty server is started.
 
 ## Possible parameters
 
-     Below is a list of valid parameters usable on step 8 in the section above. On the left of each line below, 
-     the entry starting with -- is the valid parameter and to the right of it is its short descritpion.  
+     Below is a list of valid parameters usable on step 8 in the section above. 
 
      * --silent                                Use this parameter if you do not want any output on console.
      
