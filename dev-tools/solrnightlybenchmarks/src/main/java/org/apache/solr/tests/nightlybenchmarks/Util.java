@@ -1089,16 +1089,16 @@ public class Util {
 			} else {
 
 				for (int i = 0; i < argsList.size(); i++) {
-					if (argsList.get(i).equals("--generate-data-file") || argsList.get(i).equals("--register-commit")
-							|| argsList.get(i).equals("--clean-up") || argsList.get(i).equals("--from-queue")
-							|| argsList.get(i).equals("--silent") || argsList.get(i).equals("--commit-id")
+					if (argsList.get(i).equals("--clean-up") 
+							|| argsList.get(i).equals("--commit-id")
 							|| argsList.get(i).equals("--test-with-number-of-documents")
-							|| argsList.get(i).equals("--latest-commit") || argsList.get(i).equals("--archive")
+							|| argsList.get(i).equals("--latest-commit") 
+							|| argsList.get(i).equals("--archive")
 							|| argsList.get(i).equals("--clear-data")) {
 					} else {
 						if (argsList.get(i).startsWith("--")) {
 							logger.debug("");
-							logger.debug(argsList.get(i) + " seems like an unrecognized argument...");
+							logger.info(argsList.get(i) + " seems like an unrecognized argument...");
 						}
 					}
 				}
@@ -1112,12 +1112,6 @@ public class Util {
 				if (argsList.contains("--archive")) {
 					atleastOne++;
 				}
-				if (argsList.contains("--generate-data-file")) {
-					atleastOne++;
-				}
-				if (argsList.contains("--register-commit")) {
-					atleastOne++;
-				}
 				if (argsList.contains("--test-with-number-of-documents")) {
 
 					try {
@@ -1129,12 +1123,6 @@ public class Util {
 						System.exit(0);
 					}
 
-				}
-				if (argsList.contains("--silent")) {
-					atleastOne++;
-				}
-				if (argsList.contains("--from-queue")) {
-					atleastOne++;
 				}
 				if (argsList.contains("--latest-commit")) {
 					atleastOne++;
@@ -1193,28 +1181,6 @@ public class Util {
 				System.exit(0);
 			}
 
-			if (argsList.contains("--generate-data-file")) {
-				createTestDataFile("test-data-file-1M.csv", 1000000);
-				System.exit(0);
-			}
-
-			if (argsList.contains("--register-commit")) {
-				logger.debug(" SolrNightlyBenchmarks Commit Registry Updater ...");
-				String commit = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
-
-				if (!BenchmarkAppConnector.isCommitInQueue(commit)) {
-					logger.debug(" Registering the latest commit in the queue ...");
-					BenchmarkAppConnector.writeToWebAppDataFile(commit, "", true, FileType.COMMIT_QUEUE);
-				} else {
-					logger.debug(
-							" Skipping Registering the latest commit in the queue since it already exists ...");
-				}
-
-				logger.debug(" SolrNightlyBenchmarks Commit Registry Updater [COMPLETE] now EXIT...");
-				System.exit(0);
-
-			}
-
 			if (argsList.contains("--test-with-number-of-documents")) {
 				long numDocuments = Long
 						.parseLong(argsList.get(argsList.indexOf("--test-with-number-of-documents") + 1));
@@ -1255,42 +1221,7 @@ public class Util {
 				Util.deleteRunningFile();
 			}
 
-			if (argsList.contains("--from-queue")) {
-				logger.debug(" Initiating processing from commit queue ...");
-
-				File[] currentCommits = BenchmarkAppConnector.getRegisteredCommitsFromQueue();
-				int length = currentCommits.length;
-
-				if (length == 0) {
-					logger.debug(" Commit queue empty! [EXIT] ...");
-				} else {
-					for (int i = 0; i < length; i++) {
-
-						String commitIDFromQueue = currentCommits[i].getName();
-						Util.COMMIT_ID = commitIDFromQueue;
-						String lastRun = BenchmarkAppConnector.getLastRunCommitID();
-
-						if (commitIDFromQueue.equals(lastRun)) {
-							logger.debug(
-									" The commit: " + commitIDFromQueue + " has already been processed skipping ...");
-							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
-						} else {
-							Util.createIsRunningFile();
-							logger.debug(" Processing benchmarks for commit: " + commitIDFromQueue);
-							TestPlans.execute();
-							BenchmarkAppConnector.publishDataForWebApp();
-							BenchmarkReportData.reset();
-							if (new File(Util.SOLR_PACKAGE_DIR).exists()) {
-								Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
-							}
-							BenchmarkAppConnector.deleteCommitFromQueue(commitIDFromQueue);
-							System.gc();
-						}
-
-					}
-					logger.debug(" Processing from commit queue [COMPLETE] ...");
-				}
-			} else if (argsList.contains("--latest-commit")) {
+			if (argsList.contains("--latest-commit")) {
 				Util.createIsRunningFile();
 				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
 				logger.debug("The latest commit ID is: " + Util.COMMIT_ID);
@@ -1316,7 +1247,6 @@ public class Util {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	/**
