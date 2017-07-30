@@ -4,16 +4,14 @@ A comprehensive Solr performance benchmark framework.
 
 ## Server/OS Requirements
 
-      * Java Version: 1.8.0_131 and above
+      * Java Version: 1.8.0_131 or above
       * Linux OS
       * Install Apache Ivy
       * Install lsof utility
       * Ant Version 1.9.2 or above
-      * Apache Maven 3.0.5 and above
-      * git version 2.11.1 and above
+      * Apache Maven 3.3.9 or above
+      * git version 2.11.1 or above
       * lshw utility installed on your linux machine
-      * [OPTIONAL] Apache HTTP webserver 
-        (If you want this framwork's output to be accessible over a network through a browser)
       * RAM 16 GB and above
       * CPU as strong as possible
 
@@ -22,13 +20,14 @@ A comprehensive Solr performance benchmark framework.
      1. git clone https://github.com/viveknarang/lucene-solr.git
      2. git checkout 'SolrNightlyBenchmarks'
      3. cd /dev-tools/
-     4. cp -r SolrNightlyBenchmarks to target location on your server
-     5  VERY IMPORTANT: Modify config.properties - point to data files correctly on your server, 
-        point your webapp directory to your apache HTTP server home
-     6  pwd to check that you are in SolrNightlyBenchmarks folder
+     4. cp -r solrnightlybenchmarks to target location on your server
+     5  VERY IMPORTANT: Modify config.properties - point to data files correctly on your server.
+     6  pwd to check that you are in solrnightlybenchmarks folder
      7  mvn clean compile assembly:single
-     8  java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar 
+     8  mvn jetty:run 
+     9  java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar 
         --latest-commit --clean-up 
+     10 mvn jetty:stop   
 
 ## Possible parameters
 
@@ -45,12 +44,6 @@ A comprehensive Solr performance benchmark framework.
                                                   latest commit to work on.
      * --commit-id XXXXXXXXXXXX                Use this parameter if you want the system to use the commit 
                                                   hash to work on.
-     * --from-queue                            Use this parameter if you want the system to work on the 
-                                                  commit hash present in the queue.
-     * --register-commit                       This parameter is used in conjunction with the last parameter. 
-     
-     * --generate-data-file                    Generates a fresh test data file with 1 million records 
-                                                  ~3.7GB size, in the webapp/data directory.     
      * --clean-up                              Use this parameter to instruct the system to clean up at the 
                                                   end of the work cycle.
      * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents 
@@ -59,22 +52,12 @@ A comprehensive Solr performance benchmark framework.
      
 ## Accessing Output
 
-     * As soon as the system is up and running, a folder is created as directed by 
-         SolrNightlyBenchmarks.benchmarkAppDirectory parameter in the properties file. An app 
-         (can be used both, offline and online through HTTP server) is deployed in the folder 
-         automatically. 
-     * If this folder is mapped to the HTTP server home you can simply access the app using 
-         the IP address and port of the webserver and you should land on the page where you 
-         will have options to view benchmark results.
-     * If this folder is a local folder and not the home folder for a web server, 
-         please locate it and open "index.html" using your favorite browser. 
-
+     * localhost:4444 
+  
 ## Sample Output
      * The page that you will access will look like the following. 
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot5.PNG)
 
 ## Data Files
-     * Please access the /scripts folder for the shell utility helpful in downloading data files. 
-
-
+     * Please access the /scripts folder for the shell utility that is helpful in downloading data files. 
