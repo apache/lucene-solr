@@ -1246,6 +1246,7 @@ public class Util {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 	}
 
@@ -1280,6 +1281,7 @@ public class Util {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 	}
 
