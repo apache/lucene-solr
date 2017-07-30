@@ -33,7 +33,7 @@ Please read the following sections in order and follow instructions.
      5  VERY IMPORTANT: Modify config.properties - point to data files correctly on your server.
      6  pwd to check that you are in solrnightlybenchmarks folder
      7  mvn clean compile assembly:single
-     8  mvn jetty:run 
+     8  mvn jetty:run [Please wait at this step until jetty is up and running ...]
      9  java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar 
         --latest-commit --clean-up 
      10 mvn jetty:stop
