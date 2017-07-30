@@ -59,8 +59,8 @@ A comprehensive Solr performance benchmark framework.
      * --clean-up                              Use this parameter to instruct the system to clean up at the 
                                                   end of the work cycle.
      * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents 
-                                                  to test with. Valid value lies in (with test-data-file-1M.csv data file) 
-                                                  between 1 and 1000000.
+                                                  to test with. Valid value lies in 
+                                                  (with test-data-file-1M.csv data file) between 1 and 1000000.
      
 ## Where and how to access the output.
 
