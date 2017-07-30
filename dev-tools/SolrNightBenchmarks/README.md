@@ -73,3 +73,8 @@ A comprehensive Solr performance benchmark framework.
      * The page that you will access will look like the following. 
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot5.PNG)
+
+## Data Files
+     * Please access the /scripts folder for the shell utility helpful in downloading data files. 
+
+
