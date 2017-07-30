@@ -12,7 +12,8 @@ A comprehensive Solr performance benchmark framework.
       * Apache Maven 3.0.5 and above
       * git version 2.11.1 and above
       * lshw utility installed on your linux machine
-      * [OPTIONAL] Apache HTTP webserver (If you want this framwork's output to be accessible over a network through a browser)
+      * [OPTIONAL] Apache HTTP webserver 
+        (If you want this framwork's output to be accessible over a network through a browser)
       * RAM 16 GB and above
       * CPU as strong as possible
 
@@ -31,7 +32,8 @@ A comprehensive Solr performance benchmark framework.
      
 ## Test Data Files
 
-     * The system has the ability to check and download required data files from the source, as specified in the properties file.
+     * The system has the ability to check and download required data files from the source, 
+       as specified in the properties file.
      * If you want to manually download files please use the link provided below. 
      
 [Download Data Files From This Link](http://212.47.227.9/data/) 
@@ -51,9 +53,13 @@ A comprehensive Solr performance benchmark framework.
      
 ## Where and how to access the output.
 
-     * As soon as the system is up and running, A folder is created as directed by "SolrNightlyBenchmarks.benchmarkAppDirectory" in the properties file. An app (can be used both, offline and online through HTTP server) is deployed in the folder automatically. 
-     * If this folder is mapped to the HTTP server home you can simply open the localhost and you should land on the page where you will have options to view results.
-     * If this folder is a local folder, please locate it and open "index.html" with your favorite browser to open the page for viewing the output. 
+     * As soon as the system is up and running, A folder is created as directed by 
+       "SolrNightlyBenchmarks.benchmarkAppDirectory" in the properties file. An app 
+       (can be used both, offline and online through HTTP server) is deployed in the folder automatically. 
+     * If this folder is mapped to the HTTP server home you can simply open the localhost
+       and you should land on the page where you will have options to view results.
+     * If this folder is a local folder, please locate it and open "index.html" with 
+       your favorite browser to open the page for viewing the output. 
 
 ## Sample output page
      * The page that you will access will look like the following. 
