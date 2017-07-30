@@ -993,7 +993,7 @@ public class Util {
 
 		Util.postMessage("** Verifying that the Webapp files are present ... ", MessageType.BLUE_TEXT, false);
 
-		File webAppSourceDir = new File("WebAppSource");
+		File webAppSourceDir = new File("webapp");
 		File webAppTargetDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
 
 		if (!webAppTargetDir.exists()) {
