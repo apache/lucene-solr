@@ -55,7 +55,7 @@ A comprehensive Solr performance benchmark framework.
                                                   end of the work cycle.
      * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents 
                                                   to test with. Valid value lies in 
-                                                  (with test-data-file-1M.csv data file) between 1 and 347776.
+                                                  (with en-wiki-data-2G-modified.csv data file) between 1 and 347776.
      
 ## Accessing Output
 
