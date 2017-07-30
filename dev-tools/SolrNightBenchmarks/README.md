@@ -76,7 +76,7 @@ A comprehensive Solr performance benchmark framework.
 
 ## Dependent Data Files 
 
-     * The files referred here are the files that have the data (example: file containing modified 
+     * The files referred here are the files that has the data (example: file containing modified 
           wikipedia data used during indexing throughput tests.
      * The system has the ability to check and download the required data files from the source, 
           as specified in the properties file.
