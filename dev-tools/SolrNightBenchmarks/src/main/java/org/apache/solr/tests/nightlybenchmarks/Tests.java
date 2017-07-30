@@ -17,7 +17,6 @@
 
 package org.apache.solr.tests.nightlybenchmarks;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -50,8 +49,9 @@ public class Tests {
 	 * 
 	 * @param commitID
 	 * @return boolean
+	 * @throws Exception 
 	 */
-	public static boolean createCollectionTestStandalone(String commitID) {
+	public static boolean createCollectionTestStandalone(String commitID) throws Exception {
 
 		try {
 			SolrNode node = new SolrNode(commitID, "", "", false);
@@ -63,6 +63,7 @@ public class Tests {
 			node.cleanup();
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 
 		return true;
@@ -74,8 +75,9 @@ public class Tests {
 	 * @param commitID
 	 * @param numDocuments
 	 * @return boolean
+	 * @throws Exception 
 	 */
-	public static boolean indexingTestsStandalone(String commitID, long numDocuments, ActionType action) {
+	public static boolean indexingTestsStandalone(String commitID, long numDocuments, ActionType action) throws Exception {
 
 		try {
 			SolrNode node = new SolrNode(commitID, "", "", false);
@@ -108,6 +110,7 @@ public class Tests {
 			node.cleanup();
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 		return true;
 	}
@@ -119,8 +122,9 @@ public class Tests {
 	 * @param commitID
 	 * @param numDocuments
 	 * @return boolean
+	 * @throws Exception 
 	 */
-	public static boolean indexingTestsStandaloneConcurrent(String commitID, long numDocuments, ActionType action) {
+	public static boolean indexingTestsStandaloneConcurrent(String commitID, long numDocuments, ActionType action) throws Exception {
 
 		try {
 
@@ -207,6 +211,7 @@ public class Tests {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 		return true;
 	}
@@ -221,9 +226,10 @@ public class Tests {
 	 * @param shards
 	 * @param replicas
 	 * @return boolean
+	 * @throws Exception 
 	 */
 	public static boolean indexingTestsCloudSerial(String commitID, long numDocuments, int nodes, String shards,
-			String replicas) {
+			String replicas) throws Exception {
 
 		Util.postMessage("** INITIATING TEST: Indexing Cloud Serial Nodes:" + nodes + " Shards:" + shards + " Replicas:"
 				+ replicas, MessageType.PURPLE_TEXT, false);
@@ -256,6 +262,7 @@ public class Tests {
 			BenchmarkReportData.returnCloudCreateCollectionMap = cloud.returnMapCreateCollection;
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 		Util.postMessage("** COMPLETING TEST: Indexing Cloud Serial Nodes:" + nodes + " Shards:" + shards + " Replicas:"
 				+ replicas, MessageType.GREEN_TEXT, false);
@@ -273,9 +280,10 @@ public class Tests {
 	 * @param shards
 	 * @param replicas
 	 * @return Map
+	 * @throws Exception 
 	 */
 	public static boolean indexingTestsCloudConcurrent(String commitID, long numDocuments, int nodes, String shards,
-			String replicas) {
+			String replicas) throws Exception {
 
 		Util.postMessage("** INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
 				+ " Replicas:" + replicas, MessageType.PURPLE_TEXT, false);
@@ -396,6 +404,7 @@ public class Tests {
 			cloud.shutdown();
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 		Util.postMessage("** COMPLETING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
 				+ " Replicas:" + replicas, MessageType.GREEN_TEXT, false);
@@ -412,9 +421,10 @@ public class Tests {
 	 * @param shards
 	 * @param replicas
 	 * @return Map
+	 * @throws Exception 
 	 */
 	public static boolean indexingTestsCloudConcurrentCustomClient(String commitID, long numDocuments, int nodes,
-			String shards, String replicas) {
+			String shards, String replicas) throws Exception {
 
 		Util.postMessage("** INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
 				+ " Replicas:" + replicas, MessageType.PURPLE_TEXT, false);
@@ -521,6 +531,7 @@ public class Tests {
 			cloud.shutdown();
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 		Util.postMessage("** COMPLETING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
 				+ " Replicas:" + replicas, MessageType.GREEN_TEXT, false);
@@ -539,11 +550,12 @@ public class Tests {
 	 * @param port
 	 * @param captureMetrics
 	 * @return Map
+	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
 	private static Map<String, String> cloudConcurrentIndexing(String zookeeperURL, String collectionName,
 			int numberOfThreads, int estimationDuration, String commitId, TestType type, String port,
-			boolean captureMetrics) {
+			boolean captureMetrics) throws Exception {
 
 		Util.postMessage("** Indexing documents through custom cloud concurrent client with parameters: Url:"
 				+ zookeeperURL + ", Collection Name:" + collectionName + " Thread Count:" + numberOfThreads
@@ -609,9 +621,8 @@ public class Tests {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
-
-		return null;
 	}
 
 	/**
@@ -625,10 +636,11 @@ public class Tests {
 	 * @param baseURL
 	 * @param collectionName
 	 * @return Map
+	 * @throws Exception 
 	 */
 	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType,
 			String numberOfThreads_, int estimationDuration, long delayEstimationBySeconds, String baseURL,
-			String collectionName, QueryClientType queryClientType, String zookeeperURL) {
+			String collectionName, QueryClientType queryClientType, String zookeeperURL) throws Exception {
 
 		int numberOfThreads = Integer.parseInt(numberOfThreads_);
 		try {
@@ -684,9 +696,8 @@ public class Tests {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
-
-		return null;
 	}
 
 	/**
@@ -700,10 +711,10 @@ public class Tests {
 	 * @param replicas
 	 * @param queueSize
 	 * @return String
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
 	private static String setUpCloudForFeatureTests(String commitID, long documentCount, int solrNodes, String shards,
-			String replicas, int queueSize) throws InterruptedException {
+			String replicas, int queueSize) throws Exception {
 
 		Util.postMessage("** Setting up cloud for feature tests ...", MessageType.PURPLE_TEXT, false);
 
@@ -724,8 +735,9 @@ public class Tests {
 	 * @param commitID
 	 * @param numDocuments
 	 * @return String
+	 * @throws Exception 
 	 */
-	private static String setUpStandaloneNodeForFeatureTests(String commitID, long numDocuments) {
+	private static String setUpStandaloneNodeForFeatureTests(String commitID, long numDocuments) throws Exception {
 
 		Util.postMessage("** Setting up standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
 
@@ -745,18 +757,15 @@ public class Tests {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
-
-		return "0";
 	}
 
 	/**
 	 * A method used for shutting down the solr cloud instance.
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
-	private static void shutDownCloud() throws IOException, InterruptedException {
+	private static void shutDownCloud() throws Exception {
 
 		Util.postMessage("** Shutting down cloud for feature tests ...", MessageType.PURPLE_TEXT, false);
 
@@ -765,11 +774,9 @@ public class Tests {
 
 	/**
 	 * A method used for shutting down the solr standalone mode instance.
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
-	private static void shutDownStandalone() throws IOException, InterruptedException {
+	private static void shutDownStandalone() throws Exception {
 
 		Util.postMessage("** Shutting down standalone node for feature tests ...", MessageType.PURPLE_TEXT, false);
 		node.deleteCollection(node.collectionName);
@@ -782,11 +789,10 @@ public class Tests {
 	 * mode.
 	 * 
 	 * @param numDocuments
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
-	public static void queryTestsCloud(long numDocuments) throws IOException, InterruptedException {
+	public static void queryTestsCloud(long numDocuments) throws Exception {
 
 		Util.postMessage("** INITIATING TEST: Query tests on cloud ...", MessageType.PURPLE_TEXT, false);
 
@@ -1416,11 +1422,10 @@ public class Tests {
 	 * standalone mode.
 	 * 
 	 * @param numDocuments
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
-	public static void queryTestsStandalone(long numDocuments) throws IOException, InterruptedException {
+	public static void queryTestsStandalone(long numDocuments) throws Exception {
 
 		Util.postMessage("** INITIATING TEST: Query tests on standalone node ...", MessageType.PURPLE_TEXT, false);
 

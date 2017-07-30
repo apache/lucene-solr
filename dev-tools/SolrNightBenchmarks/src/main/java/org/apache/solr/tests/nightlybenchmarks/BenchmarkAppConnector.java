@@ -315,8 +315,9 @@ public class BenchmarkAppConnector {
 	 * @param data
 	 * @param createNewFile
 	 * @param type
+	 * @throws IOException 
 	 */
-	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) {
+	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) throws IOException {
 
 		File dataDir = null;
 		File file = null;
@@ -421,12 +422,14 @@ public class BenchmarkAppConnector {
 
 		} catch (IOException ioe) {
 			Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
+			throw new IOException(ioe.getMessage());
 		} finally {
 			if (fw != null) {
 				try {
 					fw.close();
 				} catch (IOException e) {
 					e.printStackTrace();
+					throw new IOException(e.getMessage());
 				}
 			}
 		}
@@ -435,8 +438,9 @@ public class BenchmarkAppConnector {
 
 	/**
 	 * A method which publishes data to the WebApp once the cycle completes.
+	 * @throws Exception 
 	 */
-	public static void publishDataForWebApp() {
+	public static void publishDataForWebApp() throws Exception {
 
 		Util.postMessage("** Publishing data for webapp ..", MessageType.CYAN_TEXT, false);
 

@@ -17,8 +17,6 @@
 
 package org.apache.solr.tests.nightlybenchmarks;
 
-import java.io.IOException;
-
 /**
  * This class provides the Test Plan for Solr Standalone and Solr Cloud.
  * @author Vivek Narang
@@ -28,11 +26,9 @@ public class TestPlans {
 
 	/**
 	 * A method describing a test plan for benchmarking.
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
-	public static void execute() throws IOException, InterruptedException {
+	public static void execute() throws Exception {
 
 		Util.postMessage("** Executing the benchmark test plan ...", MessageType.BLUE_TEXT, false);
 

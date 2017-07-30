@@ -174,8 +174,9 @@ public class Util {
 	 * @param command
 	 * @param workingDirectoryPath
 	 * @return
+	 * @throws Exception 
 	 */
-	public static int execute(String command, String workingDirectoryPath) {
+	public static int execute(String command, String workingDirectoryPath) throws Exception {
 		Util.postMessage("Executing: " + command, MessageType.WHITE_TEXT, true);
 		Util.postMessage("Working dir: " + workingDirectoryPath, MessageType.WHITE_TEXT, true);
 		File workingDirectory = new File(workingDirectoryPath);
@@ -199,7 +200,7 @@ public class Util {
 			return proc.exitValue();
 		} catch (Exception e) {
 			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, true);
-			return -1;
+			throw new Exception(e.getMessage());
 		}
 	}
 
@@ -268,8 +269,9 @@ public class Util {
 	 * solr/zookeeper node on.
 	 * 
 	 * @return int
+	 * @throws Exception 
 	 */
-	public static int getFreePort() {
+	public static int getFreePort() throws Exception {
 
 		int port = ThreadLocalRandom.current().nextInt(10000, 60000);
 		Util.postMessage("Looking for a free port ... Checking availability of port number: " + port,
@@ -309,8 +311,9 @@ public class Util {
 	 * 
 	 * @param plaintext
 	 * @return String
+	 * @throws Exception 
 	 */
-	static public String md5(String plaintext) {
+	static public String md5(String plaintext) throws Exception {
 		MessageDigest m;
 		String hashtext = null;
 		try {
@@ -327,6 +330,7 @@ public class Util {
 			}
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 		return hashtext;
 	}
@@ -336,9 +340,9 @@ public class Util {
 	 * 
 	 * @param zipIn
 	 * @param filePath
-	 * @throws IOException
+	 * @throws Exception 
 	 */
-	public static void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
+	public static void extractFile(ZipInputStream zipIn, String filePath) throws Exception {
 
 		BufferedOutputStream bos = null;
 		try {
@@ -350,11 +354,9 @@ public class Util {
 				bos.write(bytesIn, 0, read);
 			}
 			bos.close();
-
 		} catch (Exception e) {
-
 			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, true);
-
+			throw new Exception(e.getMessage());
 		} finally {
 			bos.close();
 			// Marking for GC
@@ -367,8 +369,9 @@ public class Util {
 	 * 
 	 * @param downloadURL
 	 * @param fileDownloadLocation
+	 * @throws Exception 
 	 */
-	public static void download(String downloadURL, String fileDownloadLocation) {
+	public static void download(String downloadURL, String fileDownloadLocation) throws Exception {
 
 		URL link = null;
 		InputStream in = null;
@@ -389,13 +392,11 @@ public class Util {
 			}
 			fos.close();
 			in.close();
-
 		} catch (Exception e) {
 
 			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, false);
-
+			throw new Exception(e.getMessage());
 		}
-
 	}
 
 	/**
@@ -453,8 +454,9 @@ public class Util {
 
 	/**
 	 * A method for getting the commit information and publishing it on a file.
+	 * @throws Exception 
 	 */
-	public static void getAndPublishCommitInformation() {
+	public static void getAndPublishCommitInformation() throws Exception {
 		BenchmarkAppConnector.writeToWebAppDataFile(
 				Util.TEST_ID + "_" + Util.COMMIT_ID + "_COMMIT_INFORMATION_dump.csv", Util.getCommitInformation(), true,
 				FileType.COMMIT_INFORMATION_FILE);
@@ -464,8 +466,9 @@ public class Util {
 	 * A method used for getting the commit information.
 	 * 
 	 * @return String
+	 * @throws Exception 
 	 */
-	public static String getCommitInformation() {
+	public static String getCommitInformation() throws Exception {
 		Util.postMessage("** Getting the latest commit Information from local repository", MessageType.BLUE_TEXT,
 				false);
 		File directory = new File(Util.getLocalRepoPath());
@@ -483,10 +486,9 @@ public class Util {
 			}
 
 			return returnString;
-
 		} catch (IOException e) {
 			e.printStackTrace();
-			return "";
+			throw new Exception(e.getMessage());
 		} finally {
 			// Marking for GC
 			directory = null;
@@ -499,8 +501,9 @@ public class Util {
 
 	/**
 	 * A method used for getting the host system information.
+	 * @throws Exception 
 	 */
-	public static void getSystemEnvironmentInformation() {
+	public static void getSystemEnvironmentInformation() throws Exception {
 
 		Util.postMessage("** Getting the test environment information", MessageType.BLUE_TEXT, false);
 
@@ -540,6 +543,7 @@ public class Util {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		} finally {
 			reader = null;
 			returnString = null;
@@ -550,8 +554,9 @@ public class Util {
 	/**
 	 * A method used for reading the property file and injecting data into the
 	 * data variables.
+	 * @throws Exception 
 	 */
-	public static void getPropertyValues() {
+	public static void getPropertyValues() throws Exception {
 
 		// THIS METHOD SHOULD BE CALLED BEFORE ANYOTHER METHOD
 
@@ -665,12 +670,14 @@ public class Util {
 			}
 		} catch (IOException ex) {
 			ex.printStackTrace();
+			throw new Exception(ex.getMessage());
 		} finally {
 			if (input != null) {
 				try {
 					input.close();
 				} catch (IOException e) {
 					e.printStackTrace();
+					throw new Exception(e.getMessage());
 				}
 			}
 			// Marking for GC
@@ -682,8 +689,9 @@ public class Util {
 	
 	/**
 	 * A method to archive the data files.
+	 * @throws Exception 
 	 */
-	public static void archive() {
+	public static void archive() throws Exception {
 		
 		Util.postMessage("** Archiving data ...", MessageType.CYAN_TEXT, false);
 		File sourceDataFolder = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data");
@@ -710,8 +718,9 @@ public class Util {
 	
 	/**
 	 * A method to clean the data director in the webapp.
+	 * @throws Exception 
 	 */
-	public static void clearData() {
+	public static void clearData() throws Exception {
 		
 		Util.postMessage("** Clearing data ...", MessageType.CYAN_TEXT, false);
 		
@@ -724,8 +733,9 @@ public class Util {
 	/**
 	 * A method to check if all the data files are present.
 	 * @return boolean
+	 * @throws Exception 
 	 */
-	public static boolean checkDataFiles() {
+	public static boolean checkDataFiles() throws Exception {
 
 		Util.postMessage("** Checking if data files are present ...", MessageType.CYAN_TEXT, false);
 
@@ -883,8 +893,9 @@ public class Util {
 	 * @param url
 	 * @param type
 	 * @return
+	 * @throws Exception 
 	 */
-	public static String getResponse(String url, String type) {
+	public static String getResponse(String url, String type) throws Exception {
 
 		Client client;
 		ClientResponse response;
@@ -899,16 +910,14 @@ public class Util {
 			}
 
 			return response.getEntity(String.class);
-
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		} finally {
 			// Marking for GC
 			client = null;
 			response = null;
 		}
-
-		return "";
 	}
 
 	/**
@@ -916,8 +925,9 @@ public class Util {
 	 * 
 	 * @param commitID
 	 * @param port
+	 * @throws Exception 
 	 */
-	public static void getEnvironmentInformationFromMetricAPI(String commitID, String port) {
+	public static void getEnvironmentInformationFromMetricAPI(String commitID, String port) throws Exception {
 
 		String response = Util.getResponse("http://localhost:" + port + "/solr/admin/metrics?wt=json&group=jvm",
 				MediaType.APPLICATION_JSON);
@@ -977,8 +987,9 @@ public class Util {
 	/**
 	 * A method that checks if the webapp files are present. If not, this method
 	 * copies the required files into the required directory.
+	 * @throws Exception 
 	 */
-	public static void checkWebAppFiles() {
+	public static void checkWebAppFiles() throws Exception {
 
 		Util.postMessage("** Verifying that the Webapp files are present ... ", MessageType.BLUE_TEXT, false);
 
@@ -1024,6 +1035,7 @@ public class Util {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		} finally {
 			webAppSourceDir = null;
 			webAppTargetDir = null;
@@ -1036,8 +1048,9 @@ public class Util {
 	 * 
 	 * @param source
 	 * @param destination
+	 * @throws Exception 
 	 */
-	public static void copyFolder(File source, File destination) {
+	public static void copyFolder(File source, File destination) throws Exception {
 		
 		Util.postMessage("Copying: " + source, MessageType.YELLOW_TEXT, false);
 		
@@ -1069,16 +1082,14 @@ public class Util {
 					out.write(buffer, 0, length);
 				}
 			} catch (Exception e) {
+				throw new Exception(e.getMessage());
+			} finally {
 				try {
 					in.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-
-				try {
 					out.close();
 				} catch (IOException e1) {
 					e1.printStackTrace();
+					throw new Exception(e1.getMessage());
 				}
 			}
 		}
@@ -1132,6 +1143,7 @@ public class Util {
 	 * A method used for initializing and executing the benchmarks.
 	 * 
 	 * @param args
+	 * @throws Exception 
 	 */
 	public static void init(String[] args) {
 
@@ -1144,13 +1156,14 @@ public class Util {
 				false);
 		Util.postMessage("", MessageType.WHITE_TEXT, false);
 
-		Util.getPropertyValues();
 		
-		if (!Util.checkDataFiles()) {
-			System.exit(0);
-		}
-
 		try {
+			Util.getPropertyValues();
+
+			if (!Util.checkDataFiles()) {
+				System.exit(0);
+			}
+
 			argsList = Util.getArgs(args);
 
 			if (argsList.size() == 0) {
@@ -1446,8 +1459,9 @@ public class Util {
 
 	/**
 	 * A method used for creating the last run file.
+	 * @throws IOException 
 	 */
-	public static void createLastRunFile() {
+	public static void createLastRunFile() throws IOException {
 
 		BenchmarkAppConnector.deleteFolder(FileType.LAST_RUN_COMMIT);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.LAST_RUN_COMMIT);
@@ -1456,8 +1470,9 @@ public class Util {
 
 	/**
 	 * A method used for creating the running flag file.
+	 * @throws IOException 
 	 */
-	public static void createIsRunningFile() {
+	public static void createIsRunningFile() throws IOException {
 
 		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.IS_RUNNING_FILE);
@@ -1473,8 +1488,9 @@ public class Util {
 
 	/**
 	 * A method used for cleaning the run directory.
+	 * @throws Exception 
 	 */
-	public static void cleanRunDirectory() {
+	public static void cleanRunDirectory() throws Exception {
 		Util.execute("rm -r -f " + Util.RUN_DIR, Util.RUN_DIR);
 	}
 
@@ -1498,8 +1514,9 @@ public class Util {
 	 * 
 	 * @param fileName
 	 * @param numberOfDocuments
+	 * @throws IOException 
 	 */
-	public static void createTestDataFile(String fileName, int numberOfDocuments) {
+	public static void createTestDataFile(String fileName, int numberOfDocuments) throws IOException {
 		Util.postMessage("** Preparing 4k text documents", MessageType.WHITE_TEXT, false);
 		for (int i = 0; i < numberOfDocuments; i++) {
 			if (i % 100 == 0) {
@@ -1520,8 +1537,9 @@ public class Util {
 	 * 
 	 * @param fileName
 	 * @param numberOfDocuments
+	 * @throws IOException 
 	 */
-	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) {
+	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) throws IOException {
 		Util.postMessage("** Preparing sorted numeric query data ...", MessageType.WHITE_TEXT, false);
 		for (int i = 0; i < numberOfDocuments; i++) {
 			if (i % 100 == 0) {
@@ -1542,8 +1560,9 @@ public class Util {
 	 * A method used for locating and killing unused processes.
 	 * 
 	 * @param lookFor
+	 * @throws IOException 
 	 */
-	public static void killProcesses(String lookFor) {
+	public static void killProcesses(String lookFor) throws IOException {
 
 		Util.postMessage("** Searching and killing " + lookFor + " process(es) ...", MessageType.RED_TEXT, false);
 
@@ -1566,6 +1585,7 @@ public class Util {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new IOException(e.getMessage());
 		} finally {
 			// Marking for GC
 			reader = null;
@@ -1576,8 +1596,9 @@ public class Util {
 
 	/**
 	 * A utility method used for creating the Highlight keywords.
+	 * @throws Exception 
 	 */
-	public static void createHighlightKeywordsDataFile() {
+	public static void createHighlightKeywordsDataFile() throws Exception {
 
 		String line = "";
 		String cvsSplitBy = ",";
@@ -1600,14 +1621,16 @@ public class Util {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 
 	}
 
 	/**
 	 * A Method used for creating ranges for facet tests.
+	 * @throws Exception 
 	 */
-	public static void createRangeFacetDataFile() {
+	public static void createRangeFacetDataFile() throws Exception {
 
 		String line = "";
 		String cvsSplitBy = ",";
@@ -1653,14 +1676,16 @@ public class Util {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 
 	}
 
 	/**
 	 * A method used for creating test data file using Wikipedia data.
+	 * @throws Exception 
 	 */
-	public static void CreateWikiDataFile() {
+	public static void CreateWikiDataFile() throws Exception {
 
 		try {
 
@@ -1709,6 +1734,7 @@ public class Util {
 
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 	}
 	
@@ -1716,14 +1742,16 @@ public class Util {
 	 * A utility method used for getting the head name.
 	 * @param repo
 	 * @return string
+	 * @throws Exception 
 	 */
-	public static String getHeadName(Repository repo) {
+	public static String getHeadName(Repository repo) throws Exception {
 		  String result = null;
 		  try {
 		    ObjectId id = repo.resolve(Constants.HEAD);
 		    result = id.getName();
 		  } catch (IOException e) {
 		    e.printStackTrace();
+			throw new Exception(e.getMessage());
 		  }
 		  return result;
 	}

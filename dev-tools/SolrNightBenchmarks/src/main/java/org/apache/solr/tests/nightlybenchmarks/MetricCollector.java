@@ -17,6 +17,7 @@
 
 package org.apache.solr.tests.nightlybenchmarks;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -292,6 +293,12 @@ public class MetricCollector extends Thread {
 
 				Thread.sleep(Integer.parseInt(Util.METRIC_ESTIMATION_PERIOD));
 			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}

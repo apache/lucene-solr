@@ -72,8 +72,9 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	/**
 	 * A method invoked to inject the documents into the queue for indexing
 	 * threads to use.
+	 * @throws Exception 
 	 */
-	public static void prepare() {
+	public static void prepare() throws Exception {
 
 		Util.postMessage("** Preparing document queue ...", MessageType.CYAN_TEXT, false);
 
@@ -112,8 +113,10 @@ public class CloudConcurrentIndexingClient implements Runnable {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new IOException(e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 
 		Util.postMessage("** Preparing document queue [COMPLETE] ..." + documents.size(), MessageType.GREEN_TEXT,

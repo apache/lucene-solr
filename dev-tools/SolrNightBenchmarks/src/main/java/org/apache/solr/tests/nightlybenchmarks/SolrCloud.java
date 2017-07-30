@@ -59,9 +59,10 @@ public class SolrCloud {
 	 * @param configName
 	 * @param host
 	 * @param creatADefaultCollection
+	 * @throws Exception 
 	 */
 	public SolrCloud(int solrNodes, String shards, String replicas, String commitId, String configName, String host,
-			boolean creatADefaultCollection) {
+			boolean creatADefaultCollection) throws Exception {
 		super();
 		this.solrNodes = solrNodes;
 		this.shards = shards;
@@ -77,8 +78,9 @@ public class SolrCloud {
 
 	/**
 	 * A method used for getting ready to set up the Solr Cloud.
+	 * @throws Exception 
 	 */
-	private void init() {
+	private void init() throws Exception {
 
 		try {
 
@@ -108,10 +110,13 @@ public class SolrCloud {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new IOException(e.getMessage());
 		} catch (GitAPIException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		} catch (InterruptedException e) {
 			e.printStackTrace();
+			throw new InterruptedException(e.getMessage());
 		}
 	}
 
@@ -122,12 +127,14 @@ public class SolrCloud {
 	 * @param configName
 	 * @param shards
 	 * @param replicas
+	 * @throws Exception 
 	 */
-	public void createCollection(String collectionName, String configName, String shards, String replicas) {
+	public void createCollection(String collectionName, String configName, String shards, String replicas) throws Exception {
 		try {
 			nodes.get(0).createCollection(collectionName, configName, shards, replicas);
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 	}
 
@@ -135,12 +142,14 @@ public class SolrCloud {
 	 * A method for deleting a collection.
 	 * 
 	 * @param collectionName
+	 * @throws Exception 
 	 */
-	public void deleteCollection(String collectionName) {
+	public void deleteCollection(String collectionName) throws Exception {
 		try {
 			nodes.get(0).deleteCollection(collectionName);
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 	}
 
@@ -165,11 +174,9 @@ public class SolrCloud {
 
 	/**
 	 * A method used for shutting down the solr cloud.
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
-	public void shutdown() throws IOException, InterruptedException {
+	public void shutdown() throws Exception {
 		for (SolrNode node : nodes) {
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();

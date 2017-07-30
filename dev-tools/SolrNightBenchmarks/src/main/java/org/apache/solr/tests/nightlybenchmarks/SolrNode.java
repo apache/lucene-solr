@@ -65,11 +65,10 @@ public class SolrNode {
 	 * @param zooKeeperIp
 	 * @param zooKeeperPort
 	 * @param isRunningInCloudMode
-	 * @throws IOException
-	 * @throws GitAPIException
+	 * @throws Exception 
 	 */
 	public SolrNode(String commitId, String zooKeeperIp, String zooKeeperPort, boolean isRunningInCloudMode)
-			throws IOException, GitAPIException {
+			throws Exception {
 		super();
 		this.commitId = commitId;
 		this.zooKeeperIp = zooKeeperIp;
@@ -83,11 +82,10 @@ public class SolrNode {
 
 	/**
 	 * A method used for initializing the solr node.
-	 * @throws IOException
-	 * @throws GitAPIException
+	 * @throws Exception 
 	 * @throws InterruptedException 
 	 */
-	private void install() throws IOException, GitAPIException {
+	private void install() throws Exception {
 
 		Util.postMessage("** Installing Solr Node ...", MessageType.CYAN_TEXT, true);
 		this.port = String.valueOf(Util.getFreePort());
@@ -111,7 +109,7 @@ public class SolrNode {
 		} catch (Exception e) {
 
 			Util.postMessage(e.getMessage(), MessageType.RED_TEXT, true);
-
+			throw new Exception(e.getMessage());
 		}
 
 		this.checkoutCommitAndBuild();
@@ -122,10 +120,9 @@ public class SolrNode {
 
 	/**
 	 * A method used for checking out the solr code based on a commit and build the package for testing.
-	 * @throws IOException
-	 * @throws GitAPIException
+	 * @throws Exception 
 	 */
-	void checkoutCommitAndBuild() throws IOException, GitAPIException {
+	void checkoutCommitAndBuild() throws Exception {
 		Util.postMessage("** Checking out Solr: " + commitId + " ...", MessageType.CYAN_TEXT, true);
 
 		File gitDirectory = new File(gitDirectoryPath);
@@ -146,6 +143,7 @@ public class SolrNode {
 				    pullCmd.call();
 				} catch (GitAPIException e) {
 				    e.printStackTrace();  
+				    throw new Exception(e.getMessage());
 				}
 				
 				repository.checkout().setName(commitId).call();
@@ -205,8 +203,9 @@ public class SolrNode {
 	 * A method used to do action (start, stop ... etc.) a solr node. 
 	 * @param action
 	 * @return
+	 * @throws Exception 
 	 */
-	public int doAction(SolrNodeAction action) {
+	public int doAction(SolrNodeAction action) throws Exception {
 
 		long start = 0;
 		long end = 0;
@@ -247,12 +246,11 @@ public class SolrNode {
 	 * @param coreName
 	 * @param collectionName
 	 * @return
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
 	public Map<String, String> createCollection(String coreName, String collectionName)
-			throws IOException, InterruptedException {
+			throws Exception {
 
 		Thread thread = new Thread(
 				new MetricCollector(this.commitId, TestType.STANDALONE_CREATE_COLLECTION, this.port));
@@ -296,12 +294,11 @@ public class SolrNode {
 	 * @param shards
 	 * @param replicationFactor
 	 * @return
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
 	public Map<String, String> createCollection(String collectionName, String configName, String shards,
-			String replicationFactor) throws IOException, InterruptedException {
+			String replicationFactor) throws Exception {
 
 		Thread thread = new Thread(new MetricCollector(this.commitId, TestType.CLOUD_CREATE_COLLECTION, this.port));
 		thread.start();
@@ -347,10 +344,9 @@ public class SolrNode {
 	 * A method for deleting a collection on a solr cloud or a node. 
 	 * @param collectionName
 	 * @return
-	 * @throws IOException
-	 * @throws InterruptedException
+	 * @throws Exception 
 	 */
-	public int deleteCollection(String collectionName) throws IOException, InterruptedException {
+	public int deleteCollection(String collectionName) throws Exception {
 
 		this.collectionName = collectionName;
 		Util.postMessage("** Deleting collection ... ", MessageType.CYAN_TEXT, true);
@@ -385,8 +381,9 @@ public class SolrNode {
 
 	/**
 	 * A method used for cleaning up the files for the solr node. 
+	 * @throws Exception 
 	 */
-	public void cleanup() {
+	public void cleanup() throws Exception {
 		Util.execute("rm -r -f " + baseDirectory, baseDirectory);
 	}
 }

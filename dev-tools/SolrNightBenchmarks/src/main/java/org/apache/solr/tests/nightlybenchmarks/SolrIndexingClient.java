@@ -55,6 +55,7 @@ public class SolrIndexingClient {
 	private String host;
 	private String port;
 	private String commitId;
+	private Map<String, String> returnMetricMap;
 	Random r = new Random();
 
 	/**
@@ -86,10 +87,12 @@ public class SolrIndexingClient {
 	 * @param zookeeperIp
 	 * @param zookeeperPort
 	 * @return Map
+	 * @throws Exception 
 	 */
+	@SuppressWarnings("deprecation")
 	public Map<String, String> indexData(long numDocuments, String urlString, String collectionName, int queueSize,
 			int threadCount, TestType type, boolean captureMetrics, boolean deleteData, SolrClientType clientType,
-			String zookeeperIp, String zookeeperPort, ActionType action) {
+			String zookeeperIp, String zookeeperPort, ActionType action) throws Exception {
 
 		documentCount = numDocuments;
 
@@ -216,27 +219,29 @@ public class SolrIndexingClient {
 
 			br.close();
 
+			returnMetricMap = new HashMap<String, String>();
+
+			Date dNow = new Date();
+			SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+			returnMetricMap.put("TimeStamp", ft.format(dNow));
+			returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
+			returnMetricMap.put("IndexingTime", "" + (end - start));
+			returnMetricMap.put("IndexingThroughput",
+					"" + (double) numberOfDocuments / ((double) Math.floor(((end - start) / 1000d))));
+			returnMetricMap.put("ThroughputUnit", "doc/sec");
+			returnMetricMap.put("CommitID", this.commitId);
+
+			if (captureMetrics) {
+				thread.stop();
+			}
+
 		} catch (IOException e) {
 			e.printStackTrace();
+			throw new IOException(e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
-
-		Map<String, String> returnMetricMap = new HashMap<String, String>();
-
-		Date dNow = new Date();
-		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-
-		returnMetricMap.put("TimeStamp", ft.format(dNow));
-		returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
-		returnMetricMap.put("IndexingTime", "" + (end - start));
-		returnMetricMap.put("IndexingThroughput",
-				"" + (double) numberOfDocuments / ((double) Math.floor(((end - start) / 1000d))));
-		returnMetricMap.put("ThroughputUnit", "doc/sec");
-		returnMetricMap.put("CommitID", this.commitId);
-
-		if (captureMetrics) {
-			thread.stop();
+			throw new Exception(e.getMessage());
 		}
 
 		Util.postMessage("** Indexing documents COMPLETE ...", MessageType.GREEN_TEXT, false);

@@ -137,8 +137,9 @@ public class QueryClient implements Runnable {
 	/**
 	 * A method invoked to inject the query terms in the data variables for the
 	 * threads to use.
+	 * @throws Exception 
 	 */
-	public static void prepare() {
+	public static void prepare() throws Exception {
 		Util.postMessage("** Preparing Term Query queue ...", MessageType.CYAN_TEXT, false);
 
 		termNumericQueryParameterList = new ConcurrentLinkedQueue<String>();
@@ -172,6 +173,7 @@ public class QueryClient implements Runnable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
@@ -186,6 +188,7 @@ public class QueryClient implements Runnable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
@@ -199,6 +202,7 @@ public class QueryClient implements Runnable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
@@ -212,6 +216,7 @@ public class QueryClient implements Runnable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY || QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
@@ -230,6 +235,7 @@ public class QueryClient implements Runnable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Pair data queue preparation COMPLETE [READY NOW] ...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY || QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
@@ -245,6 +251,7 @@ public class QueryClient implements Runnable {
 	
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Preparing sorted query pair data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
@@ -260,6 +267,7 @@ public class QueryClient implements Runnable {
 	
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Preparing highlight terms data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
 		} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING 
@@ -276,6 +284,7 @@ public class QueryClient implements Runnable {
 	
 			} catch (Exception e) {
 				e.printStackTrace();
+				throw new Exception(e.getMessage());
 			}
 			Util.postMessage("** Preparing range facet data queue [COMPLETE]...", MessageType.GREEN_TEXT, false);
 		}

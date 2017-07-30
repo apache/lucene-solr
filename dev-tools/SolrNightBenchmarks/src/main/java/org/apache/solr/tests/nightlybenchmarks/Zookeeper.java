@@ -18,7 +18,6 @@
 package org.apache.solr.tests.nightlybenchmarks;
 
 import java.io.File;
-import java.io.IOException;
 
 enum ZookeeperAction {
 	ZOOKEEPER_START, ZOOKEEPER_STOP, ZOOKEEPER_CLEAN
@@ -42,20 +41,18 @@ public class Zookeeper {
 
 	/**
 	 * Constructor.
-	 * 
-	 * @throws IOException
+	 * @throws Exception 
 	 */
-	Zookeeper() throws IOException {
+	Zookeeper() throws Exception {
 		super();
 		this.install();
 	}
 
 	/**
 	 * A method for setting up zookeeper node.
-	 * 
-	 * @throws IOException
+	 * @throws Exception 
 	 */
-	private void install() throws IOException {
+	private void install() throws Exception {
 
 		Util.postMessage("** Installing Zookeeper Node ...", MessageType.CYAN_TEXT, false);
 
@@ -103,8 +100,9 @@ public class Zookeeper {
 	 * 
 	 * @param action
 	 * @return
+	 * @throws Exception 
 	 */
-	public int doAction(ZookeeperAction action) {
+	public int doAction(ZookeeperAction action) throws Exception {
 
 		new File(Util.ZOOKEEPER_DIR + "zookeeper-" + Util.ZOOKEEPER_RELEASE + File.separator + zooCommand)
 				.setExecutable(true);
