@@ -137,6 +137,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 					addDocument(collectionName, documents.poll());
 				} catch (SolrServerException | IOException e) {
 					e.printStackTrace();
+					throw new RuntimeException(e.getMessage());
 				}
 			} else if (running == false) {
 				// Break out from loop ...
@@ -170,13 +171,15 @@ public class CloudConcurrentIndexingClient implements Runnable {
 
 	/**
 	 * A method invoked to close the open CloudSolrClients.
+	 * @throws Exception 
 	 */
-	public void closeAndCommit() {
+	public void closeAndCommit() throws Exception {
 		try {
 			solrClient.commit(collectionName);
 			solrClient.close();
 		} catch (SolrServerException | IOException e) {
 			e.printStackTrace();
+			throw new Exception(e.getMessage());
 		}
 	}
 

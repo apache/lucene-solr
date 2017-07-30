@@ -20,9 +20,7 @@ package org.apache.solr.tests.nightlybenchmarks;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 
-import org.apache.commons.io.comparator.LastModifiedFileComparator;
 import org.apache.log4j.Logger;
 
 /**
@@ -149,105 +147,6 @@ public class BenchmarkAppConnector {
 		}
 
 		return dir.listFiles().length == 0 ? true : false;
-	}
-
-	/**
-	 * A method used to check if the commit queue is empty.
-	 * 
-	 * @return boolean
-	 */
-	public static boolean isCommitQueueEmpty() {
-
-		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-
-		if (!dir.exists()) {
-			dir.mkdirs();
-		}
-
-		return dir.listFiles().length == 0 ? true : false;
-	}
-
-	/**
-	 * A method used to delete a specific commit from the queue.
-	 * 
-	 * @param commit
-	 * @return boolean
-	 */
-	public static boolean deleteCommitFromQueue(String commit) {
-
-		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-
-		if (!dir.exists()) {
-			dir.mkdirs();
-		}
-
-		logger.info("Deleting registered commit " + commit + " from the queue ...");
-		File file = new File(
-				benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
-		return file.delete();
-
-	}
-
-	/**
-	 * A method used to get the oldest commit from the queue.
-	 * 
-	 * @return String
-	 */
-	public static String getOldestCommitFromQueue() {
-
-		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-
-		if (!directory.exists()) {
-			directory.mkdirs();
-		}
-
-		File[] files = directory.listFiles();
-
-		if (files.length == 0) {
-			return null;
-		}
-
-		Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-		return files[0].getName();
-	}
-
-	/**
-	 * A method used to get the array of registered commits from the queue.
-	 * 
-	 * @return File Array
-	 */
-	public static File[] getRegisteredCommitsFromQueue() {
-
-		File directory = new File(benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator);
-
-		if (!directory.exists()) {
-			directory.mkdirs();
-		}
-
-		File[] files = directory.listFiles();
-
-		Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-		logger.info("Number of registered commits in the queue: " + files.length);
-		return files;
-	}
-
-	/**
-	 * A method used to check if a particular commit is in the queue.
-	 * 
-	 * @param commit
-	 * @return boolean
-	 */
-	public static boolean isCommitInQueue(String commit) {
-
-		File file = new File(
-				benchmarkAppDirectory + "data" + File.separator + "commit_queue" + File.separator + commit);
-
-		if (!file.exists()) {
-			file.mkdirs();
-		}
-
-		return file.exists();
-
 	}
 
 	/**

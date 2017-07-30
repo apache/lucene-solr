@@ -481,8 +481,7 @@ public class QueryClient implements Runnable {
 				}
 
 			} else if (running == false) {
-				// Break out from loop ...
-				
+				// Break out from loop ...				
 				logger.debug("Ending State: | " + termNumericQueryParameterList.size() + "| "
 						+ greaterNumericQueryParameterList.size() + "| " + lesserNumericQueryParameterList.size() + "| "
 						+ andNumericQueryParameterList.size() + "| " + orNumericQueryParameterList.size() + "| "
@@ -547,7 +546,6 @@ public class QueryClient implements Runnable {
 	 * failing.
 	 */
 	private synchronized void setQueryFailureCount() {
-
 		queryFailureCount++;
 	}
 
@@ -556,7 +554,6 @@ public class QueryClient implements Runnable {
 	 * for running.
 	 */
 	private synchronized void setThreadReadyCount() {
-
 		threadReadyCount++;
 	}
 

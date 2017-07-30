@@ -257,6 +257,7 @@ public class Util {
 				try {
 					serverSocket.close();
 				} catch (IOException e) {
+					throw new IOException(e.getMessage());
 				}
 			}
 			// Marking for GC
@@ -354,7 +355,6 @@ public class Util {
 			fos.close();
 			in.close();
 		} catch (Exception e) {
-
 			logger.debug(e.getMessage());
 			throw new Exception(e.getMessage());
 		}

@@ -180,7 +180,6 @@ public class SolrCloud {
 		for (SolrNode node : nodes) {
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
-
 		}
 		zookeeperNode.doAction(ZookeeperAction.ZOOKEEPER_STOP);
 		zookeeperNode.doAction(ZookeeperAction.ZOOKEEPER_CLEAN);
