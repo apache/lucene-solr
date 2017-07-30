@@ -2,7 +2,7 @@
 
 A comprehensive Solr performance benchmark framework.
 
-## Server/OS Requirements
+## [A] Server/OS Requirements
 
       * Java Version: 1.8.0_131 or above
       * Linux OS
@@ -14,8 +14,15 @@ A comprehensive Solr performance benchmark framework.
       * lshw utility installed on your linux machine
       * RAM 16 GB and above
       * CPU as strong as possible
+      
+## [B] Data Files
 
-## Steps to launch
+     * These are the files that are used by this platform for benchmarking purposes. 
+     * Please access the /scripts folder for the shell utility that is helpful in downloading data files. 
+     * Please run the shell script 'download.sh' to download the required files.
+     * Please ensure that these files are downloaded properly and completely.  
+
+## [C] Steps to launch
 
      1. git clone https://github.com/viveknarang/lucene-solr.git
      2. git checkout 'SolrNightlyBenchmarks'
@@ -32,7 +39,7 @@ A comprehensive Solr performance benchmark framework.
      Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to execute step 8 before step 9
      and also wait until Jetty server is started.
 
-## Possible parameters
+## [C-1] Possible parameters
 
      Below is a list of valid parameters usable on step 8 in the section above. 
 
@@ -52,14 +59,11 @@ A comprehensive Solr performance benchmark framework.
                                                   to test with. Valid value lies in 
                                                   (with en-wiki-data-2G-modified.csv data file) between 1 and 347776.
      
-## Accessing Output
+## [D] Accessing Output
 
      * localhost:4444 
   
-## Sample Output
+## [D-1] Sample Output
      * The page that you will access will look like the following. 
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot5.PNG)
-
-## Data Files
-     * Please access the /scripts folder for the shell utility that is helpful in downloading data files. 
