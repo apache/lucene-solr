@@ -158,8 +158,20 @@
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 				</configuration>
-			</plugin>
+			</plugin>			
+			<plugin>
+			    <groupId>org.eclipse.jetty</groupId>
+			    <artifactId>jetty-maven-plugin</artifactId>
+			    <version>9.4.0.M0</version>
+			     <configuration>
+	                <httpConnector>
+	                    <port>4444</port>
+	                </httpConnector>
+				    <stopPort>9966</stopPort>
+				    <stopKey>foo</stopKey>
+				    <stopWait>10</stopWait>
+				  </configuration>
+			</plugin>		
 		</plugins>
 	</build>
-
 </project>
