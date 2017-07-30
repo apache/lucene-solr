@@ -32,7 +32,8 @@ A comprehensive Solr performance benchmark framework.
 
 ## Possible parameters
 
-     Below is a list of valid parameters used at step 8 in the section above.
+     Below is a list of valid parameters used at step 8 in the section above. On the left of each line below, 
+     the entry starting with -- is the valid parameter and to the right of it is its short descritpion.  
 
      * --silent                                Use this parameter if you do not want any output on console.
      
@@ -62,11 +63,11 @@ A comprehensive Solr performance benchmark framework.
          SolrNightlyBenchmarks.benchmarkAppDirectory parameter in the properties file. An app 
          (can be used both, offline and online through HTTP server) is deployed in the folder 
          automatically. 
-     * If this folder is mapped to the HTTP server home you can simply open the localhost
-         and you should land on the page where you will have options to view benchmark results.
-         from this platform.
-     * If this folder is a local folder, please locate it and open "index.html" using 
-         your favorite browser. 
+     * If this folder is mapped to the HTTP server home you can simply access the app using 
+         the IP address and port of the webserver and you should land on the page where you 
+         will have options to view benchmark results.
+     * If this folder is a local folder and not the home folder for a web server, 
+         please locate it and open "index.html" using your favorite browser. 
 
 ## Sample output page
      * The page that you will access will look like the following. 
