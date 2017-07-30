@@ -2,7 +2,7 @@
 
 A comprehensive Solr performance benchmark framework.
 
-## Requirements
+## Server/OS Requirements
 
       * Java Version: 1.8.0_131 and above
       * Linux OS
@@ -17,7 +17,7 @@ A comprehensive Solr performance benchmark framework.
       * RAM 16 GB and above
       * CPU as strong as possible
 
-## Steps to run
+## Steps to launch
 
      1. git clone https://github.com/viveknarang/lucene-solr.git
      2. git checkout 'SolrNightlyBenchmarks'
@@ -29,16 +29,10 @@ A comprehensive Solr performance benchmark framework.
      7  mvn clean compile assembly:single
      8  java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar 
         --latest-commit --clean-up 
-     
-## Test Data Files
-
-     * The system has the ability to check and download required data files from the source, 
-       as specified in the properties file.
-     * Otherwise, If you want to manually download files please use the link provided below. 
-     
-[Download Data Files From This Link](http://212.47.227.9/data/) 
 
 ## Possible parameters
+
+     Below is a list of valid parameters used at step 8 in the section above.
 
      * --silent                                Use this parameter if you do not want any output on console.
      
@@ -64,31 +58,32 @@ A comprehensive Solr performance benchmark framework.
      
 ## Where and how to access the output.
 
-     * As soon as the system is up and running, A folder is created as directed by 
-         **SolrNightlyBenchmarks.benchmarkAppDirectory** in the properties file. An app 
-         (can be used both, offline and online through HTTP server) is deployed in the folder automatically. 
+     * As soon as the system is up and running, a folder is created as directed by 
+         SolrNightlyBenchmarks.benchmarkAppDirectory parameter in the properties file. An app 
+         (can be used both, offline and online through HTTP server) is deployed in the folder 
+         automatically. 
      * If this folder is mapped to the HTTP server home you can simply open the localhost
-         and you should land on the page where you will have options to view results.
-     * If this folder is a local folder, please locate it and open "index.html" with 
-         your favorite browser to open the page for viewing the output. 
+         and you should land on the page where you will have options to view benchmark results.
+         from this platform.
+     * If this folder is a local folder, please locate it and open "index.html" using 
+         your favorite browser. 
 
 ## Sample output page
      * The page that you will access will look like the following. 
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot5.PNG)
 
-## Steps to run for last (n) days
+## Dependent Data Files 
+
+     * The files referred here are the files that have the data (example: file containing modified 
+          wikipedia data used during indexing throughput tests.
+     * The system has the ability to check and download the required data files from the source, 
+          as specified in the properties file.
+     * For any reason, If you want to manually download/view files please use the link provided below. 
+          Please note that this step is not required when the platform is configured properly to 
+          download required files.
      
-     * While there is no feature implemented (yet), that supports automatic crunching of 
-         performance data for commits for last (n) days, there is still a way to do this.
-     * Prepare and arrange (in order) a list of commit hashes for the (n) days, either one 
-         for each day or all of the commits for (n) days.
-     * Now create empty files with name (no extension) EXACTLY equal to commit hashes in 
-         the sub-folder /data/commit_queue/ found in the directory as configured in the
-         properties file for benchmarkAppDirectory parameter. The hashes will be picked 
-         in the order of their creation (FIFO).
-     * Finally, in the section "Steps to run" follow all the steps but for step 8 above, 
-         use parameter --from-queue instead of --latest-commit
+[Download Data Files From This Link](http://212.47.227.9/data/) 
 
 ## Notable Additional features
 
@@ -100,13 +95,13 @@ A comprehensive Solr performance benchmark framework.
          cycle is running. (An indicator on top right hand will light up telling the user 
          that currently a fresh benchmark cycle is running.) Once the cycle is complete 
          a refresh button will appear on top righ hand corner. 
-     * The webapp is deployed automatically when not present.  
+     * The webapp is deployed automatically when required.  
 
 ## Known Limitations
 
      * The current design of this framework does not allow two or more instances 
          of this system running on a single machine TOGETHER. For now, please do not run 
-         two instances of this system running on the same machine at the same time (one might kill the other).    
+         two instances on the same machine at the same time (as one might kill the other).    
      
      
 
