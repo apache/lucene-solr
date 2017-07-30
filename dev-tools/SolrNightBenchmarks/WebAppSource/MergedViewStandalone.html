@@ -61,6 +61,28 @@
         </nav>
 
                 <!-- Modal -->
+                <div id="noDataError" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Data Unavailable</h4>
+                            </div>
+                            <div class="modal-body">
+                            The benchmark data is not available yet. Perhaps this is a fresh installation?
+                            Please wait for the benchmark cycle to complete and data to become available.                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <!-- Modal -->
                 <div id="envDetails" class="modal fade" role="dialog">
                     <div class="modal-dialog">
 
@@ -910,6 +932,7 @@
 	    var memFile;
 	    var cpuFile;
 	    var row;
+	    var dataPresent = true;
 
 	    $(document).ready(function () {
 
@@ -933,8 +956,10 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData_indexing_throughput_data_standalone_regular = data.split("\n");
-                                    }
-
+                                    },
+		                            error: function() {
+		                            	dataPresent = false;
+		                            }
                             });
                             
                             $.ajax({
@@ -944,7 +969,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_indexing_throughput_data_standalone_concurrent = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -955,7 +983,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_indexing_throughput_data_standalone_partial_update = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -966,7 +997,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_partial_update_throughput_data_standalone_concurrent = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -977,7 +1011,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_create_collection_data_standalone_regular = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -988,7 +1025,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_term_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -999,7 +1039,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_range_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
  	                       });
                             
@@ -1010,7 +1053,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_lt_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1022,7 +1068,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_gt_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1033,7 +1082,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_and_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1044,7 +1096,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_or_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1055,7 +1110,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_sorting_numeric_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1066,7 +1124,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_term_text_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1077,7 +1138,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_phrase_text_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1088,7 +1152,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_sorting_text_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1099,7 +1166,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_highlighting_text_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1111,7 +1181,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_classic_term_faceting_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1122,7 +1195,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_classic_range_faceting_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                         
@@ -1134,7 +1210,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_json_term_faceting_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
                         	});
 
@@ -1146,10 +1225,21 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_json_range_faceting_query_benchmark_standalone = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
+                            
+                            setTimeout(function () {  
+                            	
+                            	if (!dataPresent) {
+                            		$("#noDataError").modal();
+                            	}
+                            	
+                            }, 2000);
                             
                             g20 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_standalone_regular.csv", {
                                 labelsDiv: document.getElementById('pointData2'), visibility: [false, true, false, true], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F'],

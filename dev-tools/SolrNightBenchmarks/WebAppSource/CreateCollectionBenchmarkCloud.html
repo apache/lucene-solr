@@ -61,6 +61,28 @@
         </nav>
 
                 <!-- Modal -->
+                <div id="noDataError" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Data Unavailable</h4>
+                            </div>
+                            <div class="modal-body">
+                            The benchmark data is not available yet. Perhaps this is a fresh installation?
+                            Please wait for the benchmark cycle to complete and data to become available.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Modal -->
                 <div id="envDetails" class="modal fade" role="dialog">
                     <div class="modal-dialog">
 
@@ -178,6 +200,7 @@
 	    var fileData;
 	    var commitID;
 	    var testID;
+	    var dataPresent = true;
 
 	    $(document).ready(function () {
 
@@ -190,10 +213,20 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
-                                    }
+                                    },
+		                            error: function() {
+		                            	dataPresent = false;
+		                            }
 
                             });
 
+                            setTimeout(function () {  
+                            	
+                            	if (!dataPresent) {
+                            		$("#noDataError").modal();
+                            	}
+                            	
+                            }, 2000);
 
                             $.ajax({
 

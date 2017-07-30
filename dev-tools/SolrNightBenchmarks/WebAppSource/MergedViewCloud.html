@@ -61,6 +61,29 @@
         </nav>
 
                 <!-- Modal -->
+                <div id="noDataError" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Data Unavailable</h4>
+                            </div>
+                            <div class="modal-body">
+                            The benchmark data is not available yet. Perhaps this is a fresh installation?
+                            Please wait for the benchmark cycle to complete and data to become available.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <!-- Modal -->
                 <div id="envDetails" class="modal fade" role="dialog">
                     <div class="modal-dialog">
 
@@ -1054,6 +1077,7 @@
 	    var testID;
 	    var point;
 	    var row_;
+	    var dataPresent = true;
 	    
 	    var memFile;
 	    var cpuFile;
@@ -1081,7 +1105,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_indexing_throughput_data_cloud_serial_2n1s2r = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1092,7 +1119,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_indexing_throughput_data_cloud_serial_2n2s1r = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1103,7 +1133,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_indexing_throughput_data_cloud_serial_3n1s3r = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1114,7 +1147,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_indexing_throughput_data_cloud_serial_4n2s2r = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1126,7 +1162,10 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData_indexing_throughput_data_cloud_concurrent_2n1s2r = data.split("\n");
-                                    }
+                                    },
+    	                            error: function() {
+    	                            	dataPresent = false;
+    	                            }
 
                             });
 
@@ -1137,7 +1176,10 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData_indexing_throughput_data_cloud_concurrent_2n2s1r = data.split("\n");
-                                    }
+                                    },
+    	                            error: function() {
+    	                            	dataPresent = false;
+    	                            }
 
                             });
 
@@ -1148,7 +1190,10 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData_indexing_throughput_data_cloud_concurrent_3n1s3r = data.split("\n");
-                                    }
+                                    },
+    	                            error: function() {
+    	                            	dataPresent = false;
+    	                            }
 
                             });
 
@@ -1159,7 +1204,10 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData_indexing_throughput_data_cloud_concurrent_4n2s2r = data.split("\n");
-                                    }
+                                    },
+    	                            error: function() {
+    	                            	dataPresent = false;
+    	                            }
 
                             });
                             
@@ -1170,7 +1218,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_create_collection_data_cloud_regular = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1181,7 +1232,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_term_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1192,7 +1246,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_range_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
  	                       });
                             
@@ -1203,7 +1260,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_lt_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1215,7 +1275,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_gt_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1226,7 +1289,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_and_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1237,7 +1303,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_or_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1248,7 +1317,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_sorting_numeric_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1259,7 +1331,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_term_text_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1270,7 +1345,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_phrase_text_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1281,7 +1359,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_sorting_text_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1292,7 +1373,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_highlighting_text_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                             
@@ -1304,7 +1388,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_classic_term_faceting_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
 
@@ -1315,7 +1402,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_classic_range_faceting_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
                         
@@ -1327,7 +1417,10 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_json_term_faceting_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
                         	});
 
@@ -1339,9 +1432,21 @@
                                 dataType: "text",
                                 success: function(data) {
                                     fileData_json_range_faceting_query_benchmark_cloud = data.split("\n");
-                                }
+                                },
+	                            error: function() {
+	                            	dataPresent = false;
+	                            }
 
 	                        });
+
+                            
+                            setTimeout(function () {  
+                            	
+                            	if (!dataPresent) {
+                            		$("#noDataError").modal();
+                            	}
+                            	
+                            }, 2000);
 
 
                             g20 = new Dygraph(document.getElementById("graphdiv2"), "data/indexing_throughput_data_cloud_serial_2n1s2r.csv", {

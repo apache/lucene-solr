@@ -61,6 +61,28 @@
         </nav>
 
                 <!-- Modal -->
+                <div id="noDataError" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">Data Unavailable</h4>
+                            </div>
+                            <div class="modal-body">
+                            The benchmark data is not available yet. Perhaps this is a fresh installation?
+                            Please wait for the benchmark cycle to complete and data to become available.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-warning" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Modal -->
                 <div id="envDetails" class="modal fade" role="dialog">
                     <div class="modal-dialog">
 
@@ -211,6 +233,7 @@
 	    var testID;
 	    var point;
 	    var row_;
+	    var dataPresent = true;
 
 	    $(document).ready(function () {
 
@@ -223,7 +246,10 @@
                                     dataType: "text",
                                     success: function(data) {
 	                                    fileData = data.split("\n");
-                                    }
+                                    },
+		                            error: function() {
+		                            	dataPresent = false;
+		                            }
 
                             });
 
@@ -239,6 +265,13 @@
 
                             });
 
+                            setTimeout(function () {  
+                            	
+                            	if (!dataPresent) {
+                            		$("#noDataError").modal();
+                            	}
+                            	
+                            }, 2000);
 
                             g2 = new Dygraph(document.getElementById("graphdiv2"), "data/numeric_query_benchmark_cloud.csv", {
                                 labelsDiv: document.getElementById('pointData'), visibility: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, false, false, false], colors: ['#6B8E23','#4B0082','#FF0000','#DA70D6','#CD853F','#00FFFF'],
