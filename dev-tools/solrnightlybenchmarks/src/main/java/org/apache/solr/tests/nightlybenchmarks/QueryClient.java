@@ -476,6 +476,7 @@ public class QueryClient implements Runnable {
 
 				} catch (SolrServerException | IOException e) {
 					setQueryFailureCount();
+					throw new RuntimeException(e.getMessage());
 				}
 
 			} else if (running == false) {
@@ -491,7 +492,7 @@ public class QueryClient implements Runnable {
 				try {
 					solrClient.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					throw new RuntimeException(e.getMessage());
 				}
 				
 				Util.postMessage("\r" + this.toString() + "** Getting out of critical section ...",

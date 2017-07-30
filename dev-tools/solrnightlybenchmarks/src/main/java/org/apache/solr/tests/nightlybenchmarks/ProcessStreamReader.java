@@ -56,7 +56,7 @@ public class ProcessStreamReader extends Thread {
 			}
 
 		} catch (IOException ioe) {
-			Util.postMessage(ioe.getMessage(), MessageType.RED_TEXT, false);
+			throw new RuntimeException(ioe.getMessage());
 		}
 	}
 }

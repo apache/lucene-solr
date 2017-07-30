@@ -293,13 +293,13 @@ public class MetricCollector extends Thread {
 
 				Thread.sleep(Integer.parseInt(Util.METRIC_ESTIMATION_PERIOD));
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				throw new RuntimeException(e.getMessage());
 			} catch (NumberFormatException e) {
-				e.printStackTrace();
+				throw new RuntimeException(e.getMessage());
 			} catch (IOException e) {
-				e.printStackTrace();
+				throw new RuntimeException(e.getMessage());
 			} catch (Exception e) {
-				e.printStackTrace();
+				throw new RuntimeException(e.getMessage());
 			}
 		}
 
