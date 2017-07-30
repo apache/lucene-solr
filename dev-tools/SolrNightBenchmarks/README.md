@@ -32,7 +32,7 @@ A comprehensive Solr performance benchmark framework.
 
 ## Possible parameters
 
-     Below is a list of valid parameters used at step 8 in the section above. On the left of each line below, 
+     Below is a list of valid parameters usable on step 8 in the section above. On the left of each line below, 
      the entry starting with -- is the valid parameter and to the right of it is its short descritpion.  
 
      * --silent                                Use this parameter if you do not want any output on console.
