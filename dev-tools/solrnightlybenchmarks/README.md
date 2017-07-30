@@ -2,6 +2,8 @@
 
 A comprehensive Solr performance benchmark framework.
 
+Please read the following sections in order and follow instructions. 
+
 ## [A] Server/OS Requirements
 
       * Java Version: 1.8.0_131 or above
@@ -36,15 +38,15 @@ A comprehensive Solr performance benchmark framework.
         --latest-commit --clean-up 
      10 mvn jetty:stop
      
-     Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to execute step 8 before step 9
-     and also wait until Jetty server is started.
+     Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to 
+     execute step 8 before step 9 and also wait until Jetty server is started. 
+     Step 10 is optional and only needed when you want to shutdown the server.
+     
 
 ## [C-1] Possible parameters
 
      Below is a list of valid parameters usable on step 8 in the section above. 
-
-     * --silent                                Use this parameter if you do not want any output on console.
-     
+  
      * --archive                               Use this parameter to archive the data in the location as 
                                                   defined in properties file.
      * --clear-data                            Use this parameter to clear the data folder in the webapp directory.
@@ -61,7 +63,7 @@ A comprehensive Solr performance benchmark framework.
      
 ## [D] Accessing Output
 
-     * localhost:4444 
+     * Please open localhost:4444 OR IP:4444 on your favorite browser as configured by the administrator. 
   
 ## [D-1] Sample Output
      * The page that you will access will look like the following. 
