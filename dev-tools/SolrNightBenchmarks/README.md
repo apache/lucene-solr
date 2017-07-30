@@ -55,7 +55,7 @@ A comprehensive Solr performance benchmark framework.
                                                   end of the work cycle.
      * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents 
                                                   to test with. Valid value lies in 
-                                                  (with test-data-file-1M.csv data file) between 1 and 1000000.
+                                                  (with en-wiki-data-2G-modified.csv data file) between 1 and 347776.
      
 ## Accessing Output
 
@@ -73,15 +73,3 @@ A comprehensive Solr performance benchmark framework.
      * The page that you will access will look like the following. 
 
 ![Alt text](http://www.viveknarang.com/gsoc/snb_screenshot5.PNG)
-
-## Dependent Data Files 
-
-     * The files referred here are the files that have the data (example: file containing modified 
-          wikipedia data used during indexing throughput tests.
-     * The system has the ability to check and download the required data files from the source, 
-          as specified in the properties file.
-     * For any reason, If you want to manually download/view files please use the link provided below. 
-          Please note that this step is not required when the platform is configured properly to 
-          download required files.
-     
-[Download Data Files From This Link](http://212.47.227.9/data/)     
