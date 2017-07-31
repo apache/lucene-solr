@@ -28,6 +28,7 @@ import java.util.Random;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -301,6 +302,24 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(commit());
     makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67");
     singleTest(extField,"\0",991,543210,992,-8,993,250);
+  }
+  
+  @Test
+  public void testOrdAndRordOverPointsField() throws Exception {
+    assumeTrue("Skipping test when points=false", Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
+    clearIndex();
+
+    String field = "a_" + new String[] {"i","l","d","f"}[random().nextInt(4)];
+    assertU(adoc("id", "1", field, "1"));
+    assertU(commit());
+
+    Exception e = expectThrows(SolrException.class, () -> h.query(req("q", "{!func}ord(" + field + ")", "fq", "id:1")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
+    assertTrue(e.getMessage().contains("ord() is not supported over Points based field " + field));
+
+    e = expectThrows(SolrException.class, () -> h.query(req("q", "{!func}rord(" + field + ")", "fq", "id:1")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
+    assertTrue(e.getMessage().contains("rord() is not supported over Points based field " + field));
   }
 
   @Test
