@@ -200,7 +200,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("copyOf", CopyOfEvaluator.class)
         .withFunctionName("copyOfRange", CopyOfRangeEvaluator.class)
         .withFunctionName("cov", CovarianceEvaluator.class)
-        .withFunctionName("cumulativeProbability", CumulativeProbabilityEvaluator.class)
         .withFunctionName("describe", DescribeEvaluator.class)
         .withFunctionName("distance", DistanceEvaluator.class)
         .withFunctionName("empiricalDistribution", EmpiricalDistributionEvaluator.class)
@@ -219,6 +218,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("addAll", AddAllEvaluator.class)
         .withFunctionName("residuals", ResidualsEvaluator.class)
         .withFunctionName("plot", PlotStream.class)
+        .withFunctionName("normalDistribution", NormalDistributionEvaluator.class)
+        .withFunctionName("uniformDistribution", UniformDistributionEvaluator.class)
+        .withFunctionName("sample", SampleEvaluator.class)
+        .withFunctionName("kolmogorovSmirnov", KolmogorovSmirnovEvaluator.class)
+        .withFunctionName("ks", KolmogorovSmirnovEvaluator.class)
+        .withFunctionName("asc", AscEvaluator.class)
 
         // Boolean Stream Evaluators
         .withFunctionName("and", AndEvaluator.class)
