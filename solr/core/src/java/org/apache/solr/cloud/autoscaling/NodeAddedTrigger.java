@@ -85,7 +85,7 @@ public class NodeAddedTrigger extends TriggerBase {
     }
     lastLiveNodes = new HashSet<>(container.getZkController().getZkStateReader().getClusterState().getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
-    this.enabled = (boolean) properties.getOrDefault("enabled", true);
+    this.enabled = Boolean.parseBoolean(String.valueOf(properties.getOrDefault("enabled", "true")));
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
     this.eventType = TriggerEventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
     log.debug("NodeAddedTrigger {} instantiated with properties: {}", name, properties);

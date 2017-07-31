@@ -617,7 +617,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     Map triggers = (Map) response.get("triggers");
     assertNotNull(triggers);
-    assertEquals(1, triggers.size());
+    assertEquals(2, triggers.size());
     assertTrue(triggers.containsKey("node_added_trigger1"));
     Map node_added_trigger1 = (Map) triggers.get("node_added_trigger1");
     assertEquals(4, node_added_trigger1.size());
