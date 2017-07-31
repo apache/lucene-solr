@@ -24,7 +24,7 @@ Please read the following sections in order and follow instructions.
      1. git clone https://github.com/viveknarang/lucene-solr.git --branch SolrNightlyBenchmarks solr-nightly-benchmarks
      2. cd solr-nightly-benchmarks/dev-tools/solrnightlybenchmarks
      3. cd data; ../scripts/download.sh; cd ..
-     4. nohup mvn jetty:run > logs/jetty.log
+     4. nohup mvn jetty:run & > logs/jetty.log
      5. mvn clean compile assembly:single
      6. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
              --latest-commit --clean-up 
