@@ -25,12 +25,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.noggit.JSONWriter;
 
@@ -40,7 +38,7 @@ import org.noggit.JSONWriter;
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
-  
+
   private final Integer znodeVersion;
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
@@ -291,9 +289,9 @@ public class ClusterState implements JSONWriter.Writable {
     }
     return null;
   }
-  
+
   /**
-   * Check if node is alive. 
+   * Check if node is alive.
    */
   public boolean liveNodesContain(String name) {
     return liveNodes.contains(name);
@@ -312,7 +310,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
   /**
    * Create ClusterState from json string that is typically stored in zookeeper.
-   * 
+   *
    * @param version zk version of the clusterstate.json file (bytes)
    * @param bytes clusterstate.json as a byte array
    * @param liveNodes list of live nodes
@@ -396,7 +394,7 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * The version of clusterstate.json in ZooKeeper.
-   * 
+   *
    * @return null if ClusterState was created for publication, not consumption
    * @deprecated true cluster state spans many ZK nodes, stop depending on the version number of the shared node!
    */
@@ -446,20 +444,7 @@ public class ClusterState implements JSONWriter.Writable {
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
-  public void forEachCollection(Consumer<DocCollection> consumer) {
-    collectionStates.forEach((s, collectionRef) -> {
-      try {
-        consumer.accept(collectionRef.get());
-      } catch (SolrException e) {
-        if (e.getCause() instanceof KeeperException.NoNodeException) {
-          //don't do anything. This collection does not exist
-        } else{
-          throw e;
-        }
-      }
-    });
 
-  }
   public static class CollectionRef {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;

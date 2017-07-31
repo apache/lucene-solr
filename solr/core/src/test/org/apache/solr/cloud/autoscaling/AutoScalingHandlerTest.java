@@ -287,27 +287,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
   }
 
-  @Test
-  public void testDeleteUsedPolicy() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
-    // add multiple policies
-    String setPolicyCommand = "{'set-policy': {" +
-        "    'nodelete':[" +
-        "      {'nodeRole':'overseer', 'replica':0}]}}";
-    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPolicyCommand));
-    CollectionAdminRequest.createCollection("COLL1", "conf", 1, 1)
-        .setPolicy("nodelete")
-        .process(cluster.getSolrClient());
-    String removePolicyCommand = "{remove-policy : nodelete}";
-    createAutoScalingRequest(SolrRequest.METHOD.POST, removePolicyCommand);
-    try {
-      solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, removePolicyCommand));
-      fail("should have failed");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("is being used by collection"));
-    }
-    solrClient.request(CollectionAdminRequest.deleteCollection("COLL1"));
-  }
 
   public static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String message) {
     return createAutoScalingRequest(m, null, message);
