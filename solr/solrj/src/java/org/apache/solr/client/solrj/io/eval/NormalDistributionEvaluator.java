@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
 
+
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -28,26 +29,27 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CumulativeProbabilityEvaluator extends ComplexEvaluator implements Expressible {
+public class NormalDistributionEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public NormalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
+
     if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (emperical distribution and a number) but found %d",expression,subEvaluators.size()));
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
     }
   }
 
-  public Number evaluate(Tuple tuple) throws IOException {
+  public Object evaluate(Tuple tuple) throws IOException {
 
-    StreamEvaluator r = subEvaluators.get(0);
-    StreamEvaluator d = subEvaluators.get(1);
+    StreamEvaluator numEval1 = subEvaluators.get(0);
+    StreamEvaluator numEval2 = subEvaluators.get(1);
 
-    EmpiricalDistributionEvaluator.EmpiricalDistributionTuple e = (EmpiricalDistributionEvaluator.EmpiricalDistributionTuple)r.evaluate(tuple);
-    Number n = (Number)d.evaluate(tuple);
-    return e.percentile(n.doubleValue());
+    Number mean = (Number)numEval1.evaluate(tuple);
+    Number stdDev = (Number)numEval2.evaluate(tuple);
+
+    return new NormalDistribution(mean.doubleValue(), stdDev.doubleValue());
   }
 
   @Override

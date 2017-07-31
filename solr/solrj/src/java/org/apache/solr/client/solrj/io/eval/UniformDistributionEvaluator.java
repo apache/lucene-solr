@@ -17,12 +17,10 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Arrays;
 
-import org.apache.commons.math3.random.EmpiricalDistribution;
+
+import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -31,36 +29,28 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements Expressible {
+public class UniformDistributionEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public EmpiricalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public UniformDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(1 != subEvaluators.size()){
+
+    if(2 != subEvaluators.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
     }
   }
 
   public Object evaluate(Tuple tuple) throws IOException {
 
-    StreamEvaluator colEval1 = subEvaluators.get(0);
+    StreamEvaluator numEval1 = subEvaluators.get(0);
+    StreamEvaluator numEval2 = subEvaluators.get(1);
 
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
+    Number lower = (Number)numEval1.evaluate(tuple);
+    Number upper = (Number)numEval2.evaluate(tuple);
 
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
-    }
-
-    Arrays.sort(column1);
-    EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
-    empiricalDistribution.load(column1);
-
-    return empiricalDistribution;
+    return new UniformRealDistribution(lower.doubleValue(), upper.doubleValue());
   }
-
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {

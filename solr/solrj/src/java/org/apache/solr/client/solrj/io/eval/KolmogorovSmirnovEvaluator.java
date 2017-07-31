@@ -19,10 +19,11 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Arrays;
 
-import org.apache.commons.math3.random.EmpiricalDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -31,36 +32,58 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements Expressible {
+public class KolmogorovSmirnovEvaluator extends ComplexEvaluator implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  public EmpiricalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public KolmogorovSmirnovEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
+
+    if(subEvaluators.size() != 2){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
     }
   }
 
-  public Object evaluate(Tuple tuple) throws IOException {
+  public Tuple evaluate(Tuple tuple) throws IOException {
 
-    StreamEvaluator colEval1 = subEvaluators.get(0);
+    StreamEvaluator se1 = subEvaluators.get(0);
+    StreamEvaluator se2 = subEvaluators.get(1);
 
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
+    KolmogorovSmirnovTest ks = new KolmogorovSmirnovTest();
+    List<Number> sample = (List<Number>)se2.evaluate(tuple);
+    double[] data = new double[sample.size()];
 
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
+    for(int i=0; i<data.length; i++) {
+      data[i] = sample.get(i).doubleValue();
     }
 
-    Arrays.sort(column1);
-    EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
-    empiricalDistribution.load(column1);
+    Object o = se1.evaluate(tuple);
 
-    return empiricalDistribution;
+    if(o instanceof RealDistribution) {
+      RealDistribution realDistribution = (RealDistribution)o;
+      double d = ks.kolmogorovSmirnovStatistic(realDistribution, data);
+      double p = ks.kolmogorovSmirnovTest(realDistribution, data);
+
+
+      Map m = new HashMap();
+      m.put("p-value", p);
+      m.put("d-statistic", d);
+      return new Tuple(m);
+    } else {
+      List<Number> sample2 = (List<Number>)o;
+      double[] data2 = new double[sample2.size()];
+      for(int i=0; i<data2.length; i++) {
+        data2[i] = sample2.get(i).doubleValue();
+      }
+
+      double d = ks.kolmogorovSmirnovStatistic(data, data2);
+      //double p = ks.(data, data2);
+      Map m = new HashMap();
+      //m.put("p-value", p);
+      m.put("d-statistic", d);
+      return new Tuple(m);
+    }
   }
-
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
