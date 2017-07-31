@@ -592,6 +592,9 @@ Other Changes
 
 * SOLR-10847: Provide a clear exception when attempting to use the terms component with points fields.
   (hossman, Steve Rowe)
+  
+* SOLR-10033: Provide a clear exception when attempting to facet with facet.mincount=0 over points fields.
+  (Steve Rowe)
 
 ==================  6.7.0 ==================
 
