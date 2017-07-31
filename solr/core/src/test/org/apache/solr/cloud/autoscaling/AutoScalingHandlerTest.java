@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -37,13 +36,12 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -62,73 +60,37 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig(CONFIGSET_NAME, configset("cloud-minimal"))
         .configure();
+    testAutoAddReplicas();
+  }
+
+  private static void testAutoAddReplicas() throws Exception {
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut()) {
+      byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+      ZkNodeProps loaded = ZkNodeProps.load(data);
+      Map triggers = (Map) loaded.get("triggers");
+      if (triggers != null && triggers.containsKey(".auto_add_replicas")) {
+        Map<String, Object> autoAddReplicasTrigger = (Map<String, Object>) triggers.get(".auto_add_replicas");
+        assertNotNull(autoAddReplicasTrigger);
+        List<Map<String, Object>> actions = (List<Map<String, Object>>) autoAddReplicasTrigger.get("actions");
+        assertNotNull(actions);
+        assertEquals(2, actions.size());
+        assertEquals("auto_add_replicas_plan", actions.get(0).get("name").toString());
+        assertEquals("solr.AutoAddReplicasPlanAction", actions.get(0).get("class").toString());
+        break;
+      } else {
+        Thread.sleep(300);
+      }
+    }
+    if (timeOut.hasTimedOut()) {
+      fail("Timeout waiting for .auto_add_replicas being created");
+    }
   }
 
   @Before
   public void beforeTest() throws Exception {
     // clear any persisted auto scaling configuration
     zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-  }
-
-  @Test
-  public void testAutoAddReplicas() throws Exception {
-    String collection = "test-collection";
-    CollectionAdminRequest
-        .createCollection(collection, CONFIGSET_NAME,1, 1)
-        .setAutoAddReplicas(true)
-        .process(cluster.getSolrClient());
-    byte[] data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
-    ZkNodeProps loaded = ZkNodeProps.load(data);
-    Map triggers = (Map) loaded.get("triggers");
-    assertNotNull(triggers);
-    assertEquals("auto add replicas trigger were not created", triggers.size(), 1);
-    Map<String, Object> autoAddReplicasTrigger = (Map<String, Object>) triggers.get(".auto_add_replicas");
-    assertNotNull(autoAddReplicasTrigger);
-    List<Map<String, Object>> actions = (List<Map<String, Object>>) autoAddReplicasTrigger.get("actions");
-    assertNotNull(actions);
-    assertEquals(2, actions.size());
-    assertEquals("auto_add_replicas_plan", actions.get(0).get("name").toString());
-    assertEquals("solr.AutoAddReplicasPlanAction", actions.get(0).get("class").toString());
-
-    // lets turn of autoAddReplicas, currently it doesn't change anything in autoscaling config
-    // because AutoAddReplicasPlanAction will just ignore any collections with autoAddReplicas turned off
-    new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
-      @Override
-      public SolrParams getParams() {
-        ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-        params.set("collection", collection);
-        params.set("autoAddReplicas", false);
-        return params;
-      }
-    }.process(cluster.getSolrClient());
-
-    // lets delete all autoscaling config
-    zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
-
-    // now enable autoAddReplicas and assert that the trigger was re-created correctly
-    new CollectionAdminRequest.AsyncCollectionAdminRequest(CollectionParams.CollectionAction.MODIFYCOLLECTION) {
-      @Override
-      public SolrParams getParams() {
-        ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-        params.set("collection", collection);
-        params.set("autoAddReplicas", true);
-        return params;
-      }
-    }.process(cluster.getSolrClient());
-    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
-    loaded = ZkNodeProps.load(data);
-    triggers = (Map) loaded.get("triggers");
-    assertNotNull(triggers);
-    assertEquals("auto add replicas trigger did not created", triggers.size(), 1);
-    autoAddReplicasTrigger = (Map<String, Object>) triggers.get(".auto_add_replicas");
-    assertNotNull(autoAddReplicasTrigger);
-    actions = (List<Map<String, Object>>) autoAddReplicasTrigger.get("actions");
-    assertNotNull(actions);
-    assertEquals(2, actions.size());
-    assertEquals("auto_add_replicas_plan", actions.get(0).get("name").toString());
-    assertEquals("solr.AutoAddReplicasPlanAction", actions.get(0).get("class").toString());
-
-    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
   @Test
@@ -191,7 +153,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(2, triggers.size());
+    assertEquals(2, countNotImplicitTriggers(triggers));
     assertTrue(triggers.containsKey("node_lost_trigger"));
     assertTrue(triggers.containsKey("node_added_trigger"));
     Map<String, Object> nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
@@ -216,7 +178,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(2, triggers.size());
+    assertEquals(2, countNotImplicitTriggers(triggers));
     nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(4, nodeLostTrigger.size());
     assertEquals("false", nodeLostTrigger.get("enabled").toString());
@@ -239,7 +201,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(2, triggers.size());
+    assertEquals(2, countNotImplicitTriggers(triggers));
     nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(4, nodeLostTrigger.size());
     assertEquals("false", nodeLostTrigger.get("enabled").toString());
@@ -262,7 +224,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(2, triggers.size());
+    assertEquals(2, countNotImplicitTriggers(triggers));
     nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(4, nodeLostTrigger.size());
     assertEquals("true", nodeLostTrigger.get("enabled").toString());
@@ -286,7 +248,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(2, triggers.size());
+    assertEquals(2, countNotImplicitTriggers(triggers));
     nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(5, nodeLostTrigger.size());
     assertEquals("false", nodeLostTrigger.get("enabled").toString());
@@ -316,7 +278,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     ZkNodeProps loaded = ZkNodeProps.load(data);
     Map<String, Object> triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(1, triggers.size());
+    assertEquals(1, countNotImplicitTriggers(triggers));
     assertTrue(triggers.containsKey("node_lost_trigger"));
     Map<String, Object> nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(4, nodeLostTrigger.size());
@@ -339,7 +301,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(1, triggers.size());
+    assertEquals(1, countNotImplicitTriggers(triggers));
     assertTrue(triggers.containsKey("node_lost_trigger"));
     nodeLostTrigger = (Map<String, Object>) triggers.get("node_lost_trigger");
     assertEquals(4, nodeLostTrigger.size());
@@ -422,7 +384,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     loaded = ZkNodeProps.load(data);
     triggers = (Map<String, Object>) loaded.get("triggers");
     assertNotNull(triggers);
-    assertEquals(0, triggers.size());
+    assertEquals(0, countNotImplicitTriggers(triggers));
 
     setListenerCommand = "{" +
         "'set-listener' : {" +
@@ -617,7 +579,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     Map triggers = (Map) response.get("triggers");
     assertNotNull(triggers);
-    assertEquals(2, triggers.size());
+    assertEquals(1, countNotImplicitTriggers(triggers));
     assertTrue(triggers.containsKey("node_added_trigger1"));
     Map node_added_trigger1 = (Map) triggers.get("node_added_trigger1");
     assertEquals(4, node_added_trigger1.size());
@@ -756,7 +718,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
     Map triggers = (Map) response.get("triggers");
     assertNotNull(triggers);
-    assertEquals(1, triggers.size());
+    assertEquals(1, countNotImplicitTriggers(triggers));
     assertTrue(triggers.containsKey("node_added_trigger1"));
     Map node_added_trigger1 = (Map) triggers.get("node_added_trigger1");
     assertEquals(4, node_added_trigger1.size());
@@ -766,6 +728,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
 
   }
 
+  private int countNotImplicitTriggers(Map triggers) {
+    if (triggers == null) return 0;
+    int count = 0;
+    for (Object trigger : triggers.keySet()) {
+      if (!trigger.toString().startsWith(".")) count++;
+    }
+    return count;
+  }
 
   public static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String message) {
     return createAutoScalingRequest(m, null, message);
