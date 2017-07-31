@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
