@@ -571,6 +571,8 @@ Other Changes
 
 * SOLR-11036: Separately report disk space metrics for solr.data.home and core root directory. (ab)
 
+* SOLR-10919: ord & rord functions give confusing errors with PointFields. (hossman, Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
