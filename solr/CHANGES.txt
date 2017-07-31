@@ -103,6 +103,8 @@ Other Changes
 * SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
   (Jason Gerlowski via Anshum Gupta)
 
+* SOLR-11157: remove-policy must fail if a policy to be deleted is used by a collection (noble)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
