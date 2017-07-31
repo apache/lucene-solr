@@ -482,6 +482,8 @@ Other Changes
 * SOLR-10756: Undeprecate ZkStateReader.updateClusterState(), mark as @lucene.internal, and rename to
   forciblyRefreshAllClusterStateSlow(). (hossman, shalin, Steve Rowe)
 
+* SOLR-11036: Separately report disk space metrics for solr.data.home and core root directory. (ab)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
