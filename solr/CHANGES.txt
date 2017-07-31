@@ -590,6 +590,9 @@ Other Changes
 
 * SOLR-10919: ord & rord functions give confusing errors with PointFields. (hossman, Steve Rowe)
 
+* SOLR-10847: Provide a clear exception when attempting to use the terms component with points fields.
+  (hossman, Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

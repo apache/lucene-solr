@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,7 +30,7 @@ import java.util.regex.Pattern;
  *
  **/
 // TermsComponent not currently supported for PointFields
-@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10847")
+@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-11173")
 public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -378,4 +379,31 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']");
   }
 
+  @Test
+  public void testPointField() throws Exception {
+    assertU(adoc("id", "10000", "foo_pi", "1"));
+    assertU(commit());
+    
+    try {
+      final SolrQueryRequest req = req(
+          "qt", "/terms",
+          "terms", "true",
+          "terms.fl", "foo_pi");
+      Exception e = expectThrows(SolrException.class, () -> h.query(req));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) e).code());
+      assertTrue(e.getMessage().contains("The terms component does not support Points-based field foo_pi"));
+
+      final SolrQueryRequest req2 = req(
+          "qt", "/terms",
+          "terms", "true",
+          "terms.fl", "foo_pi",
+          "terms.list", "1");
+      e = expectThrows(SolrException.class, () -> h.query(req2));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) e).code());
+      assertTrue(e.getMessage().contains("The terms component does not support Points-based field foo_pi"));
+    } finally {
+      assertU(delI("10000"));
+      assertU(commit());
+    }
+  }
 }
