@@ -1075,6 +1075,10 @@ public class Util {
 		try {
 			Util.getPropertyValues();
 
+			if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+				Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+			}
+			
 			argsList = Util.getArgs(args);
 
 			if (argsList.size() == 0) {
@@ -1223,8 +1227,8 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-				if (new File(Util.SOLR_PACKAGE_DIR).exists()) {
-					Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+				if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+					Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
 				}
 			} else if (argsList.contains("--commit-id")) {
 				Util.createIsRunningFile();
@@ -1233,8 +1237,8 @@ public class Util {
 				TestPlans.execute();
 				BenchmarkAppConnector.publishDataForWebApp();
 				BenchmarkReportData.reset();
-				if (new File(Util.SOLR_PACKAGE_DIR).exists()) {
-					Util.execute("rm -r -f " + Util.SOLR_PACKAGE_DIR, Util.SOLR_PACKAGE_DIR);
+				if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+					Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
 				}
 			}
 
