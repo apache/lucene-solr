@@ -7,43 +7,31 @@ Please read the following sections in order and follow instructions.
 ## [A] Server/OS Requirements
 
       * Java Version: 1.8.0_131 or above
-      * Linux OS
-      * Install Apache Ivy
-      * Install lsof utility
+      * GNU/Linux
+      * lsof, lshw utilities
+      * Apache Ivy 2.4.0 or above
       * Ant Version 1.9.2 or above
       * Apache Maven 3.3.9 or above
       * git version 2.11.1 or above
-      * lshw utility installed on your linux machine
       * RAM 16 GB and above
-      * CPU as strong as possible
+      * At least a quad-core CPU
+      * At least 10GB of free disk space
       
-## [B] Data Files
+## [B] Steps to launch
 
-     * These are the files that are used by this platform for benchmarking purposes. 
-     * Please access the /scripts folder for the shell utility that is helpful in downloading data files. 
-     * Please run the shell script 'download.sh' to download the required files.
-     * Please ensure that these files are downloaded properly and completely.  
+     Note: Please checkout in a location with ample free disk space (at least 10GB)
 
-## [C] Steps to launch
-
-     1. git clone https://github.com/viveknarang/lucene-solr.git
-     2. git checkout 'SolrNightlyBenchmarks'
-     3. cd /dev-tools/
-     4. cp -r solrnightlybenchmarks to target location on your server
-     5  VERY IMPORTANT: Modify config.properties - point to data files correctly on your server.
-     6  pwd to check that you are in solrnightlybenchmarks folder
-     7  mvn clean compile assembly:single
-     8  mvn jetty:run [Please wait at this step until jetty is up and running ...]
-     9  java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar 
-        --latest-commit --clean-up 
-     10 mvn jetty:stop
-     
-     Note: Please use separate terminals for steps 8, 9 and 10. Also please make sure to 
-     execute step 8 before step 9 and also wait until Jetty server is started. 
-     Step 10 is optional and only needed when you want to shutdown the server.
+     1. git clone https://github.com/viveknarang/lucene-solr.git --branch SolrNightlyBenchmarks solr-nightly-benchmarks
+     2. cd solr-nightly-benchmarks/dev-tools/solrnightlybenchmarks
+     3. cd data; ../scripts/download.sh; cd ..
+     4. nohup mvn jetty:run > logs/jetty.log
+     5. mvn clean compile assembly:single
+     6. java -jar target/org.apache.solr.tests.nightlybenchmarks-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
+             --latest-commit --clean-up 
+     7. mvn jetty:stop     # To stop the webserver that hosts the results/reports
      
 
-## [C-1] Possible parameters
+## [C] Parameters
 
      Below is a list of valid parameters usable on step 8 in the section above. 
   
@@ -63,7 +51,7 @@ Please read the following sections in order and follow instructions.
      
 ## [D] Accessing Output
 
-     * Please open localhost:4444 OR IP:4444 on your favorite browser as configured by the administrator. 
+     * Please open localhost:4444 OR IP:4444 on your favorite browser.
      * If you plan to change jetty port number please use your configured port number instead of 4444.
   
 ## [D-1] Sample Output
