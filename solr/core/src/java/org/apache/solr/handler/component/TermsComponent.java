@@ -108,6 +108,16 @@ public class TermsComponent extends SearchComponent {
     rb.rsp.add("terms", termsResult);
 
     if (fields == null || fields.length==0) return;
+    
+    for (String field : fields) {
+      FieldType fieldType = rb.req.getSchema().getFieldTypeNoEx(field);
+      if (null != fieldType) {
+        if (fieldType.isPointField()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "The terms component does not support Points-based field " + field);
+        }
+      }
+    }
 
     boolean termStats = params.getBool(TermsParams.TERMS_STATS, false);
 

@@ -26,7 +26,7 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10847")
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-11173")
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
   @Test
