@@ -340,6 +340,10 @@ public class QueryClient implements Runnable {
 						requestParams.add("q", "Int1_pi:" + termNumericQueryParameterList.poll());
 					} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
+						if (rangeNumericQueryParameterList == null || rangeNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+						
 						String pairData[] = rangeNumericQueryParameterList.poll().trim().split(",");
 
 						int ft_1 = Integer.parseInt(pairData[0]);
@@ -352,6 +356,10 @@ public class QueryClient implements Runnable {
 						}
 
 					} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY) {
+
+						if (sortedNumericQueryParameterList == null || sortedNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
 
 						String pairData[] = sortedNumericQueryParameterList.poll().trim().split(",");
 
@@ -368,6 +376,10 @@ public class QueryClient implements Runnable {
 
 					} else if (QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
 
+						if (sortedNumericQueryParameterList == null || sortedNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+
 						String pairData[] = sortedNumericQueryParameterList.poll().trim().split(",");
 
 						int ft_1 = Integer.parseInt(pairData[0]);
@@ -382,10 +394,24 @@ public class QueryClient implements Runnable {
 						requestParams.add("sort", "Text_s asc");
 
 					} else if (QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
+						
+						if (greaterNumericQueryParameterList == null || greaterNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+						
 						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 					} else if (QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
+						
+						if (lesserNumericQueryParameterList == null || lesserNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+						
 						requestParams.add("q", "Int1_pi:[* TO " + lesserNumericQueryParameterList.poll() + "]");
 					} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY) {
+
+						if (andNumericQueryParameterList == null || andNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
 
 						String pairData[] = andNumericQueryParameterList.poll().trim().split(",");
 
@@ -396,6 +422,10 @@ public class QueryClient implements Runnable {
 
 					} else if (QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
 
+						if (orNumericQueryParameterList == null || orNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+
 						String pairData[] = orNumericQueryParameterList.poll().trim().split(",");
 
 						int ft_1 = Integer.parseInt(pairData[0]);
@@ -404,25 +434,53 @@ public class QueryClient implements Runnable {
 						requestParams.add("q", "Int1_pi:" + ft_1 + " OR Int2_pi:" + ft_2);
 
 					} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
+						
+						if (textTerms == null || textTerms.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+						
 						requestParams.add("q", "Article_t:" + textTerms.poll().trim());
 					} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
+						
+						if (textPhrases == null || textPhrases.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+						
 						requestParams.add("q", "Title_t:" + textPhrases.poll().trim());
 					} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
+
+						if (highlightTerms == null || highlightTerms.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+
 						requestParams.add("hl", "on");
 						requestParams.add("hl.fl", "Article_t");
 						requestParams.add("q", "Article_t:" + highlightTerms.poll());
 					} else if (QueryClient.queryType == QueryType.CLASSIC_TERM_FACETING) {
+
+						if (greaterNumericQueryParameterList == null || greaterNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+						
 						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 						requestParams.add("facet", "true");
 						requestParams.add("facet.field", "Category_t");
 					} else if (QueryClient.queryType == QueryType.JSON_TERM_FACETING) {
+
+						if (greaterNumericQueryParameterList == null || greaterNumericQueryParameterList.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
+
 						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 						requestParams.add("facet", "true");
 						requestParams.add("json.facet", "{categories:{ terms: { field : Category_t }}}");
 					} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING) {
 
-						String pairData[] = rangeFacetRanges.poll().trim().split(",");
+						if (rangeFacetRanges == null || rangeFacetRanges.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
 
+						String pairData[] = rangeFacetRanges.poll().trim().split(",");
 						requestParams.add("q", "*:*");
 						requestParams.add("facet", "true");
 						requestParams.add("facet.range", "Int2_pi");
@@ -443,8 +501,11 @@ public class QueryClient implements Runnable {
 						
 					} else if (QueryClient.queryType == QueryType.JSON_RANGE_FACETING) {
 
-						String pairData[] = rangeFacetRanges.poll().trim().split(",");
+						if (rangeFacetRanges == null || rangeFacetRanges.size() == 0) {
+							throw new RuntimeException("Queue exhausted, no more items left ...");
+						}
 
+						String pairData[] = rangeFacetRanges.poll().trim().split(",");
 						requestParams.add("q", "*:*");
 						requestParams.add("facet", "true");
 						

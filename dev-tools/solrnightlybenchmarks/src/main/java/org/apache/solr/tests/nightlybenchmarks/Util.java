@@ -916,7 +916,7 @@ public class Util {
 
 		logger.debug(" Verifying that the Webapp files are present ... ");
 
-		File webAppSourceDir = new File("webapp");
+		File webAppSourceDir = new File("src/main/webapp");
 		File webAppTargetDir = new File(BenchmarkAppConnector.benchmarkAppDirectory);
 
 		if (!webAppTargetDir.exists()) {
@@ -1075,10 +1075,6 @@ public class Util {
 		try {
 			Util.getPropertyValues();
 
-			if (!Util.checkDataFiles()) {
-				System.exit(0);
-			}
-
 			argsList = Util.getArgs(args);
 
 			if (argsList.size() == 0) {
@@ -1195,8 +1191,6 @@ public class Util {
 				logger.debug(" Running silently since --silent parameter is set ...");
 				Util.SILENT = true;
 			}
-
-			Util.checkWebAppFiles();
 
 			Util.checkBaseAndTempDir();
 
