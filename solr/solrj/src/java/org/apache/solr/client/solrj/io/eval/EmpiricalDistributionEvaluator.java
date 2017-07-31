@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Arrays;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
