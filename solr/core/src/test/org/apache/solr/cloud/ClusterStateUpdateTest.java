@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -75,7 +76,8 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
     Map<String,Slice> slices = null;
     for (int i = 75; i > 0; i--) {
       clusterState2 = zkController2.getClusterState();
-      slices = clusterState2.getSlicesMap("testcore");
+      DocCollection docCollection = clusterState2.getCollectionOrNull("testcore");
+      slices = docCollection == null ? null : docCollection.getSlicesMap();
       
       if (slices != null && slices.containsKey("shard1")
           && slices.get("shard1").getReplicasMap().size() > 0) {

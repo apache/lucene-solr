@@ -186,7 +186,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         String key = jetty.getBaseUrl().toString().substring((jetty.getBaseUrl().getProtocol() + "://").length());
         jettyMap.put(key, jetty);
       }
-      Collection<Slice> slices = clusterState.getSlices(collectionName);
+      Collection<Slice> slices = clusterState.getCollection(collectionName).getSlices();
       // track the servers not host repliacs
       for (Slice slice : slices) {
         jettyMap.remove(slice.getLeader().getNodeName().replace("_solr", "/solr"));
@@ -256,7 +256,8 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         // check the collection's corelessness
         {
           int coreCount = 0; 
-          for (Map.Entry<String,Slice> entry : zkStateReader.getClusterState().getSlicesMap(collectionName).entrySet()) {
+          for (Map.Entry<String,Slice> entry : zkStateReader.getClusterState()
+              .getCollection(collectionName).getSlicesMap().entrySet()) {
             coreCount += entry.getValue().getReplicasMap().entrySet().size();
           }
           assertEquals(0, coreCount);
@@ -318,7 +319,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         final HashSet<Integer> followerIndices = new HashSet<Integer>();
         {
           final HashMap<String,Boolean> shardLeaderMap = new HashMap<String,Boolean>();
-          for (final Slice slice : clusterState.getSlices(collectionName)) {
+          for (final Slice slice : clusterState.getCollection(collectionName).getSlices()) {
             for (final Replica replica : slice.getReplicas()) {
               shardLeaderMap.put(replica.getNodeName().replace("_solr", "/solr"), Boolean.FALSE);
             }

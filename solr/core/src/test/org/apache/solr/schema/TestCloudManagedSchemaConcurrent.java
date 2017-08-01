@@ -342,7 +342,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     String testCollectionName = "collection1";
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    Replica shard1Leader = clusterState.getLeader(testCollectionName, "shard1");
+    Replica shard1Leader = clusterState.getCollection(testCollectionName).getLeader("shard1");
     final String coreUrl = (new ZkCoreNodeProps(shard1Leader)).getCoreUrl();
     assertNotNull(coreUrl);
 
@@ -362,7 +362,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
 
     // now loop over all replicas and verify each has the same schema version
     Replica randomReplicaNotLeader = null;
-    for (Slice slice : clusterState.getActiveSlices(testCollectionName)) {
+    for (Slice slice : clusterState.getCollection(testCollectionName).getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
         validateZkVersion(replica, schemaZkVersion, 0, false);
 

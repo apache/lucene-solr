@@ -31,6 +31,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -498,14 +499,20 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         ZkStateReader zkStateReader = zkController.getZkStateReader();
         zkStateReader.forceUpdateCollection(collection);
         ClusterState clusterState = zkStateReader.getClusterState();
-        Replica rep = (clusterState == null) ? null
-            : clusterState.getReplica(collection, leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
+        Replica rep = getReplica(clusterState, collection, leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
         if (rep != null && rep.getState() != Replica.State.ACTIVE
             && rep.getState() != Replica.State.RECOVERING) {
           log.debug("We have become the leader after core registration but are not in an ACTIVE state - publishing ACTIVE");
           zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
         }
       }
+  }
+  
+  private Replica getReplica(ClusterState clusterState, String collectionName, String replicaName) {
+    if (clusterState == null) return null;
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+    if (docCollection == null) return null;
+    return docCollection.getReplica(replicaName);
   }
 
   public void checkLIR(String coreName, boolean allReplicasInLine)
@@ -604,7 +611,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutms, TimeUnit.MILLISECONDS);
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
-    Slice slices = zkController.getClusterState().getSlice(collection, shardId);
+    DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(collection);
+    Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     int cnt = 0;
     while (!isClosed && !cc.isShutDown()) {
       // wait for everyone to be up
@@ -649,7 +657,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       Thread.sleep(500);
-      slices = zkController.getClusterState().getSlice(collection, shardId);
+      docCollection = zkController.getClusterState().getCollectionOrNull(collection);
+      slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
       cnt++;
     }
     return false;
@@ -658,9 +667,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   // returns true if all replicas are found to be up, false if not
   private boolean areAllReplicasParticipating() throws InterruptedException {
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
-    Slice slices = zkController.getClusterState().getSlice(collection, shardId);
+    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(collection);
     
-    if (slices != null) {
+    if (docCollection != null && docCollection.getSlice(shardId) != null) {
+      final Slice slices = docCollection.getSlice(shardId);
       int found = 0;
       try {
         found = zkClient.getChildren(shardsElectZkPath, null, true).size();

@@ -333,7 +333,7 @@ public class ChaosMonkey {
   }
 
   private String getRandomSlice() {
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getCollection(collection).getSlicesMap();
     
     List<String> sliceKeyList = new ArrayList<>(slices.size());
     sliceKeyList.addAll(slices.keySet());

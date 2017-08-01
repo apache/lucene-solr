@@ -65,16 +65,10 @@ public class DeleteShardCmd implements Cmd {
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
     log.info("Delete shard invoked");
-    Slice slice = clusterState.getSlice(collectionName, sliceId);
+    Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
+    if (slice == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "No shard with name " + sliceId + " exists for collection " + collectionName);
 
-    if (slice == null) {
-      if (clusterState.hasCollection(collectionName)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "No shard with name " + sliceId + " exists for collection " + collectionName);
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collectionName);
-      }
-    }
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
     final Slice.State state = slice.getState();

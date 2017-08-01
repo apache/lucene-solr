@@ -545,8 +545,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
         zkController.publish(core.getCoreDescriptor(), Replica.State.RECOVERING);
         
         
-        final Slice slice = zkStateReader.getClusterState().getSlice(cloudDesc.getCollectionName(),
-            cloudDesc.getShardId());
+        final Slice slice = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName())
+            .getSlice(cloudDesc.getShardId());
             
         try {
           prevSendPreRecoveryHttpUriRequest.abort();

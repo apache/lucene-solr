@@ -1036,8 +1036,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     for (int i = 0; i < numRetries; i++) {
       ClusterState clusterState = zkStateReader.getClusterState();
 
-      Collection<Slice> shards = clusterState.getSlices(collectionName);
-      if (shards != null) {
+      final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+      
+      if (docCollection != null && docCollection.getSlices() != null) {
+        Collection<Slice> shards = docCollection.getSlices();
         replicaNotAlive = null;
         for (Slice shard : shards) {
           Collection<Replica> replicas;

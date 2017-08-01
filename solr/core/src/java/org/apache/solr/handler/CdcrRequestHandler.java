@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -397,7 +398,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       log.warn("Error when updating cluster state", e);
     }
     ClusterState cstate = zkController.getClusterState();
-    Collection<Slice> shards = cstate.getActiveSlices(collection);
+    DocCollection docCollection = cstate.getCollectionOrNull(collection);
+    Collection<Slice> shards = docCollection == null? null : docCollection.getActiveSlices();
 
     ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("parallelCdcrExecutor"));
 

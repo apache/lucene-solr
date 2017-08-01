@@ -522,10 +522,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   String waitForCoreNodeName(String collectionName, String msgNodeName, String msgCore) {
     int retryCount = 320;
     while (retryCount-- > 0) {
-      Map<String,Slice> slicesMap = zkStateReader.getClusterState()
-          .getSlicesMap(collectionName);
-      if (slicesMap != null) {
-
+      final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+      if (docCollection != null && docCollection.getSlicesMap() != null) {
+        Map<String,Slice> slicesMap = docCollection.getSlicesMap();
         for (Slice slice : slicesMap.values()) {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this
