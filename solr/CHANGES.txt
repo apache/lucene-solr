@@ -497,6 +497,9 @@ Other Changes
 
 * SOLR-9321: Remove deprecated methods of ClusterState. (Jason Gerlowski, ishan, Cao Manh Dat)
 
+* SOLR-10033: When attempting to facet with facet.mincount=0 over points fields, raise mincount to 1
+  and log a warning. (Steve Rowe)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
