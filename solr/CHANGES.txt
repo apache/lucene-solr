@@ -63,6 +63,8 @@ New Features
 
 * SOLR-10858: Make UUIDUpdateProcessorFactory as Runtime URP (Amit Sarkar, noble)
 
+* SOLR-11126: Node level health check handler (Anshum Gupta)
+
 Bug Fixes
 ----------------------
 
