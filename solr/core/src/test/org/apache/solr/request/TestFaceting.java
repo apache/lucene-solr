@@ -335,7 +335,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount0() {
-    assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-10033) or single valued DV",
+    assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-11174) or single valued DV",
                 Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
     
     assertU(adoc("id", "1", "f_td", "-420.126"));
