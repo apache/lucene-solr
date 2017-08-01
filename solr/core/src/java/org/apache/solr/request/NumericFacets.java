@@ -43,7 +43,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
@@ -179,11 +178,6 @@ final class NumericFacets {
     if (numericType == null) {
       throw new IllegalStateException();
     }
-    if (zeros && ft.isPointField()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is Points-based");
-    }
-
     zeros = zeros && !ft.isPointField() && sf.indexed(); // We don't return zeros when using PointFields or when index=false
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
@@ -413,18 +407,11 @@ final class NumericFacets {
 
   private static NamedList<Integer> getCountsMultiValued(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
     // If facet.mincount=0 with PointFields the only option is to get the values from DocValues
-    // not currently supported. See SOLR-11174
-    boolean zeros = mincount <= 0;
+    // not currently supported. See SOLR-10033
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     final FieldType ft = sf.getType();
     assert sf.multiValued();
-
-    if (zeros && ft.isPointField()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Cannot use " + FacetParams.FACET_MINCOUNT + "=0 on field " + sf.getName() + " which is Points-based");
-    }
-
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
     // 1. accumulate
