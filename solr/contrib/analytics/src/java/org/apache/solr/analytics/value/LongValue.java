@@ -21,6 +21,7 @@ import java.util.function.DoubleConsumer;
 import java.util.function.LongConsumer;
 
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
+import org.apache.solr.analytics.value.constant.ConstantLongValue;
 
 /**
  * A single-valued analytics value that can be represented as a long.
@@ -88,6 +89,13 @@ public interface LongValue extends LongValueStream, AnalyticsValue {
       if (exists()) {
         cons.accept(val);
       }
+    }
+    @Override
+    public AnalyticsValue convertToConstant() {
+      if (getExpressionType().equals(ExpressionType.CONST)) {
+        return new ConstantLongValue(getLong());
+      }
+      return this;
     }
     @Override
     public ExpressionComparator<Long> getObjectComparator(String expression) {

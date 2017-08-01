@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.function.Consumer;
 
 import org.apache.solr.analytics.ExpressionFactory;
+import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
@@ -50,6 +51,22 @@ public interface AnalyticsValueStream {
    * @param cons The consumer to accept the values
    */
   void streamObjects(Consumer<Object> cons);
+  
+  /**
+   * Converts this value to a {@link ConstantValue} if it's expression type is {@link ExpressionType#CONST}.
+   * 
+   * If the value is reduced then no conversion will occur and the value itself will be returned.
+   * 
+   * @return a constant representation of this value
+   */
+  AnalyticsValueStream convertToConstant();
+  
+  public static abstract class AbstractAnalyticsValueStream implements AnalyticsValueStream {
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
+    }
+  }
   
   /**
    * The types of expressions.

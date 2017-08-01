@@ -24,9 +24,11 @@ import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValueStream;
+import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
 import org.apache.solr.analytics.value.DateValueStream.AbstractDateValueStream;
 import org.apache.solr.analytics.value.constant.ConstantStringValue;
+import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.util.DateMathParser;
@@ -46,8 +48,8 @@ public class DateMathFunction {
     }
     StringBuilder mathParam = new StringBuilder();
     for (int i = 1; i < params.length; ++i) {
-      if (params[i] instanceof ConstantStringValue) {
-        mathParam.append(((ConstantStringValue) params[i]).getString());
+      if (params[i] instanceof StringValue && params[i] instanceof ConstantValue) {
+        mathParam.append(((StringValue) params[i]).getString());
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires all math parameters to be a constant strings.");
       }
@@ -84,7 +86,7 @@ class DateMathValueFunction extends AbstractDateValue {
   @Override
   public long getLong() {
     Date date = getDate();
-    return (date == null) ? 0 : date.getTime();
+    return (exists) ? date.getTime() : 0;
   }
   @Override
   public Date getDate() {

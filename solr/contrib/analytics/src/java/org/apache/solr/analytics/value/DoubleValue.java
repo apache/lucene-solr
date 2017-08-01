@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
+import org.apache.solr.analytics.value.constant.ConstantDoubleValue;
 
 /**
  * A single-valued analytics value that can be represented as a date.
@@ -77,6 +78,13 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
       if (exists()) {
         cons.accept(val);
       }
+    }
+    @Override
+    public AnalyticsValue convertToConstant() {
+      if (getExpressionType().equals(ExpressionType.CONST)) {
+        return new ConstantDoubleValue(getDouble());
+      }
+      return this;
     }
     @Override
     public ExpressionComparator<Double> getObjectComparator(String expression) {

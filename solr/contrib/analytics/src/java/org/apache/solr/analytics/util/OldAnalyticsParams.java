@@ -27,6 +27,7 @@ import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsExpressionSortR
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsRangeFacetRequest;
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsSortRequest;
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsValueFacetRequest;
+import org.apache.solr.analytics.function.mapping.FillMissingFunction;
 
 /**
  * Specifies the format of the old olap-style analytics requests.
@@ -80,7 +81,7 @@ public interface OldAnalyticsParams {
       } else if (isOffset.test(param)) {
         getSort(facet).offset = Integer.parseInt(value);
       } else if (isShowMissing.test(param)) {
-        facet.expression = "fillmissing(" + facet.expression + ",\"(MISSING)\")";
+        facet.expression = FillMissingFunction.name + "(" + facet.expression + ",\"(MISSING)\")";
       } else if (isSortExpr.test(param)) {
         AnalyticsSortRequest sort = getSort(facet);
         AnalyticsExpressionSortRequest criterion;

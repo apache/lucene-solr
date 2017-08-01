@@ -29,9 +29,9 @@ import org.apache.solr.analytics.function.reduction.data.SortedListCollector.Sor
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedStringListCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DateValueStream;
+import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
 import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValue;
 import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValueStream;
@@ -41,7 +41,7 @@ import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
-import org.apache.solr.analytics.value.constant.ConstantIntValue;
+import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
@@ -56,14 +56,14 @@ public class PercentileFunction {
     }
     AnalyticsValueStream percValue = params[0];
     double perc = 0;
-    if (percValue instanceof ConstantIntValue) {
-      perc = ((IntValue)percValue).getInt();
-      if (perc < 0 || perc > 99) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a percentile between 0 and 99, " + ((int)perc) + " found.");
+    if (percValue instanceof DoubleValue && percValue instanceof ConstantValue) {
+      perc = ((DoubleValue)percValue).getDouble();
+      if (perc < 0 || perc >= 100) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a percentile between [0, 100), " + perc + " found.");
       }
       perc /= 100;
     } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a constant int value (the percentile) as the first argument.");
+      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a constant double value (the percentile) as the first argument.");
     }
     AnalyticsValueStream param = params[1];
     if (param instanceof DateValueStream) {
@@ -85,7 +85,7 @@ public class PercentileFunction {
   protected static String createPercentileExpressionString(AnalyticsValueStream param, double perc) {
     return String.format(Locale.ROOT, "%s(%s,%s)",
                          name,
-                         (int)(perc*100),
+                         perc,
                          param.getExpressionStr());
   }
 }

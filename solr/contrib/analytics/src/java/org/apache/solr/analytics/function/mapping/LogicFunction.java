@@ -53,7 +53,7 @@ public class LogicFunction {
       AnalyticsValueStream param1 = params[0];
       AnalyticsValueStream param2 = params[1];
       if (param1 instanceof BooleanValueStream && param2 instanceof BooleanValueStream) {
-        return LambdaFunction.createBooleanLambdaFunction(name, (a,b) -> a && b, (BooleanValueStream)param1, (BooleanValueStream)param2);
+        return LambdaFunction.createBooleanLambdaFunction(name, comp, (BooleanValueStream)param1, (BooleanValueStream)param2);
       }
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires boolean parameters.");
     }
