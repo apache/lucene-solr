@@ -497,7 +497,16 @@ public class SimpleFacets {
                       + FacetParams.FACET_EXCLUDETERMS + ") are not supported on numeric types");
             }
             if (ft.isPointField() && mincount <= 0) { // default is mincount=0.  See SOLR-10033 & SOLR-11174.
-              LOG.warn("Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.");
+              String warningMessage 
+                  = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
+              LOG.warn(warningMessage);
+              List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
+              if (null == warnings) {
+                warnings = new ArrayList<>();
+                rb.rsp.getResponseHeader().add("warnings", warnings);
+              }
+              warnings.add(warningMessage);
+
               mincount = 1;
             }
             counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);

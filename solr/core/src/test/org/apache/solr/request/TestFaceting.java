@@ -356,8 +356,28 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
   }
 
+  @Test
+  public void testFacetOverPointFieldWithMinCount0() {
+    String field = "f_" + new String[]{"i","l","f","d"}[random().nextInt(4)] + "_p";
+    String expectedWarning = "Raising facet.mincount from 0 to 1, because field " + field + " is Points-based.";
+    SolrQueryRequest req = req("q", "id:1.0",
+        FacetParams.FACET, "true",
+        FacetParams.FACET_FIELD, field,
+        FacetParams.FACET_MINCOUNT, "0");
+    assertQ(req
+        , "/response/lst[@name='responseHeader']/arr[@name='warnings']/str[.='" + expectedWarning + "']");
+    
+    field = "f_" + new String[]{"is","ls","fs","ds"}[random().nextInt(4)] + "_p";
+    expectedWarning = "Raising facet.mincount from 0 to 1, because field " + field + " is Points-based.";
+    req = req("q", "id:1.0",
+        FacetParams.FACET, "true",
+        FacetParams.FACET_FIELD, field,
+        FacetParams.FACET_MINCOUNT, "0");
+    assertQ(req
+        , "/response/lst[@name='responseHeader']/arr[@name='warnings']/str[.='" + expectedWarning + "']");
+  }
 
-    public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
+  public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
       clearIndex();
       String fname = "trait_ss";
       assertU(adoc("id", "42",
