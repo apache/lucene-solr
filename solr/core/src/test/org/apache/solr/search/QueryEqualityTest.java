@@ -171,7 +171,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testGraphTermsQuery() throws Exception {
     SolrQueryRequest req = req("q", "*:*");
     try {
-      assertQueryEquals("graphTerms", req, "{!graphTerms f=field1 maxDocFreq=1000}term1,term2");
+      assertQueryEquals("graphTerms", req, "{!graphTerms f=field1_s maxDocFreq=1000}term1,term2");
     } finally {
       req.close();
     }
