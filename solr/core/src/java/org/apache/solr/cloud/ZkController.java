@@ -942,7 +942,8 @@ public class ZkController {
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
         boolean joinAtHead = false;
-        Replica replica = zkStateReader.getClusterState().getReplica(collection, coreZkNodeName);
+        final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+        Replica replica = (docCollection == null) ? null : docCollection.getReplica(coreZkNodeName);
         if (replica != null) {
           joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
         }
@@ -994,7 +995,7 @@ public class ZkController {
         // we will call register again after zk expiration and on reload
         if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
-          Slice slice = getClusterState().getSlice(collection, shardId);
+          Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
@@ -1354,7 +1355,8 @@ public class ZkController {
       assert false : "No collection was specified [" + collection + "]";
       return;
     }
-    Replica replica = zkStateReader.getClusterState().getReplica(collection, coreNodeName);
+    final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+    Replica replica = (docCollection == null) ? null : docCollection.getReplica(coreNodeName);
     
     if (replica == null || replica.getType() != Type.PULL) {
       ElectionContext context = electionContexts.remove(new ContextKey(collection, coreNodeName));
@@ -1408,10 +1410,10 @@ public class ZkController {
     int retryCount = 320;
     log.debug("look for our core node name");
     while (retryCount-- > 0) {
-      Map<String, Slice> slicesMap = zkStateReader.getClusterState()
-          .getSlicesMap(descriptor.getCloudDescriptor().getCollectionName());
-      if (slicesMap != null) {
-
+      final DocCollection docCollection = zkStateReader.getClusterState()
+          .getCollectionOrNull(descriptor.getCloudDescriptor().getCollectionName());
+      if (docCollection != null && docCollection.getSlicesMap() != null) {
+        final Map<String, Slice> slicesMap = docCollection.getSlicesMap();
         for (Slice slice : slicesMap.values()) {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this

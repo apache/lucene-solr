@@ -193,7 +193,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
       lastFailMsg = "";
       ClusterState clusterState = client.getZkStateReader().getClusterState();
-      for (Slice slice : clusterState.getSlices(collectionName)) {
+      for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {
         Boolean foundLeader = false;
         Boolean foundPreferred = false;
         for (Replica replica : slice.getReplicas()) {
