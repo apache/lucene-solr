@@ -57,7 +57,8 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     Replica replica = null;
     for (int idx = 0; idx < 300; ++idx) {
       clusterState = client.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(collectionName, replicaName);
+      final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+      replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }
@@ -82,7 +83,8 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
       clusterState = client.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(collectionName, replicaName);
+      final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+      replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }

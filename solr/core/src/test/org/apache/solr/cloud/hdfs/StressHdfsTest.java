@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -160,8 +161,10 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     // data dirs should be in zk, SOLR-8913
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    Slice slice = clusterState.getSlice(DELETE_DATA_DIR_COLLECTION, "shard1");
-    assertNotNull(clusterState.getSlices(DELETE_DATA_DIR_COLLECTION).toString(), slice);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(DELETE_DATA_DIR_COLLECTION);
+    assertNotNull("Could not find :"+DELETE_DATA_DIR_COLLECTION, docCollection);
+    Slice slice = docCollection.getSlice("shard1");
+    assertNotNull(docCollection.getSlices().toString(), slice);
     Collection<Replica> replicas = slice.getReplicas();
     for (Replica replica : replicas) {
       assertNotNull(replica.getProperties().toString(), replica.get("dataDir"));

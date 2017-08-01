@@ -253,6 +253,9 @@ Upgrading from Solr 6.x
   replaced with 'sourceNode' and 'targetNode' instead. The old names will continue to work for back-compatibility
   but they will be removed in 8.0. See SOLR-11068 for more details.
 
+* All deperated methods of ClusterState (except getZkClusterStateVersion())
+  have been removed. Use DocCollection methods instead.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -595,6 +598,8 @@ Other Changes
   
 * SOLR-10033: Provide a clear exception when attempting to facet with facet.mincount=0 over points fields.
   (Steve Rowe)
+
+* SOLR-9321: Remove deprecated methods of ClusterState. (Jason Gerlowski, ishan, Cao Manh Dat)
 
 ==================  6.7.0 ==================
 

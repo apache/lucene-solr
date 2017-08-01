@@ -649,7 +649,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
-    ZkNodeProps leader = clusterState.getLeader(collection, slice);
+    ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
     }
@@ -850,10 +850,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // we added a role of none on these creates - check for it
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
     zkStateReader.forceUpdateCollection(oneInstanceCollection2);
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(oneInstanceCollection2);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
     
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "shard1"));
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState()
+        .getCollection(oneInstanceCollection2).getLeader("shard1"));
     
     // now test that unloading a core gets us a new leader
     try (HttpSolrClient unloadClient = getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
