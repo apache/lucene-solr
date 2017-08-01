@@ -120,6 +120,9 @@ Other Changes
 * SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
   (Jason Gerlowski via Anshum Gupta)
 
+* SOLR-11140: Remove unused parameter in (private) SolrMetricManager.prepareCloudPlugins method.
+  (Omar Abdelnabi via Christine Poerschke)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
