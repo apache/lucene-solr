@@ -27,7 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.uninverting.DocTermOrds;
@@ -336,7 +335,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount0() {
-    assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-11174) or single valued DV",
+    assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-10033) or single valued DV",
                 Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
     
     assertU(adoc("id", "1", "f_td", "-420.126"));
@@ -357,31 +356,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
   }
 
-  @Test
-  public void testFacetOverPointFieldWithMinCount0() {
-    String field = "f_" + new String[]{"i","l","f","d"}[random().nextInt(4)] + "_p";
-    final SolrQueryRequest req = req("q", "id:1.0", 
-        FacetParams.FACET, "true", 
-        FacetParams.FACET_FIELD, field, 
-        FacetParams.FACET_MINCOUNT, "0", 
-        FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc);
-    Exception e = expectThrows(SolrException.class, () -> h.query(req));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
-    assertTrue(e.getMessage().contains("Cannot use facet.mincount=0 on field " + field + " which is Points-based"));
 
-    String mvField = "f_" + new String[]{"is","ls","fs","ds"}[random().nextInt(4)] + "_p";
-    final SolrQueryRequest req2 = req("q", "id:1.0",
-        FacetParams.FACET, "true",
-        FacetParams.FACET_FIELD, mvField,
-        FacetParams.FACET_MINCOUNT, "0",
-        FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc);
-    e = expectThrows(SolrException.class, () -> h.query(req2));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException)e).code());
-    assertTrue(e.getMessage().contains("Cannot use facet.mincount=0 on field " + mvField + " which is Points-based"));
-  }
-
-
-  public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
+    public void testSimpleFacetCountsWithMultipleConfigurationsForSameField() {
       clearIndex();
       String fname = "trait_ss";
       assertU(adoc("id", "42",
