@@ -54,7 +54,16 @@ The number of shards to be created as part of the collection. This is a required
 A comma separated list of shard names, e.g., `shard-x,shard-y,shard-z`. This is a required parameter when the `router.name` is `implicit`.
 
 `replicationFactor`::
-The number of replicas to be created for each shard. The default is `1`.
+The number of replicas to be created for each shard. The default is `1`. This will create a NRT type of replica. If you want another type of replica, see the `tlogReplicas` and `pullReplica` parameters. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`nrtReplicas`::
+The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. If you want all of your replicas to be of this type, you can simply use `replicationFactor` instead.
+
+`tlogReplicas`::
+The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
+
+`pullReplicas`::
+The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
 `maxShardsPerNode`::
 When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
@@ -711,10 +720,21 @@ Ignored if the `shard` param is also specified.
 The name of the node where the replica should be created.
 
 `instanceDir`::
-The instanceDir for the core that will be created
+The instanceDir for the core that will be created.
 
 `dataDir`::
-The directory in which the core should be created
+The directory in which the core should be created.
+
+`type`::
+The type of replica to create. These possible values are allowed:
++
+--
+* `nrt`: The NRT type maintains a transaction log and updates its index locally. This is the default and the most commonly used.
+* `tlog`: The TLOG type maintains a transaction log but only updates its index via replication.
+* `pull`: The PULL type does not maintain a transaction log and only updates its index via replication. This type is not eligible to become a leader.
+--
++
+See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica type options.
 
 `property._name_=_value_`::
 Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
