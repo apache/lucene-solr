@@ -50,6 +50,11 @@ public abstract class AnalyticsField implements AnalyticsValueStream {
     return ExpressionType.FIELD;
   }
   
+  @Override
+  public AnalyticsValueStream convertToConstant() {
+    return this;
+  }
+  
   /**
    * Set the segment reader context
    * 

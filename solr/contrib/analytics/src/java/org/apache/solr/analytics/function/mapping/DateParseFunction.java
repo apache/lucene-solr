@@ -16,10 +16,8 @@
  */
 package org.apache.solr.analytics.function.mapping;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.function.LongConsumer;
 
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
@@ -103,7 +101,6 @@ class LongStreamToDateParseFunction extends AbstractDateValueStream {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  public static final DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss.SSS", Locale.ROOT);
   
   public LongStreamToDateParseFunction(LongValueStream param) throws SolrException {
     this.param = param;
@@ -134,7 +131,6 @@ class StringToDateParseFunction extends AbstractDateValue {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  public static final DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss.SSS", Locale.ROOT);
   
   public StringToDateParseFunction(StringValue param) throws SolrException {
     this.param = param;
@@ -147,9 +143,12 @@ class StringToDateParseFunction extends AbstractDateValue {
   public long getLong() {
     long value = 0;
     try {
-      value = formatter.parse(param.toString()).getTime();
+      String paramStr = param.getString();
       exists = param.exists();
-    } catch (ParseException e) {
+      if (exists) {
+        value = Instant.parse(paramStr).toEpochMilli();
+      }
+    } catch (DateTimeParseException e) {
       exists = false;
     }
     return value;
@@ -177,7 +176,6 @@ class StringStreamToDateParseFunction extends AbstractDateValueStream {
   public static final String name = DateParseFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  public static final DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss.SSS", Locale.ROOT);
   
   public StringStreamToDateParseFunction(StringValueStream param) throws SolrException {
     this.param = param;
@@ -189,13 +187,11 @@ class StringStreamToDateParseFunction extends AbstractDateValueStream {
   public void streamLongs(LongConsumer cons) {
     param.streamStrings(value -> {
       try {
-        cons.accept(formatter.parse(value).getTime());
-      } catch (ParseException e) {
-      }
+        cons.accept(Instant.parse(value).toEpochMilli());
+      } catch (DateTimeParseException e) {}
     });
   }
 
-  @Override
   public String getName() {
     return name;
   }
