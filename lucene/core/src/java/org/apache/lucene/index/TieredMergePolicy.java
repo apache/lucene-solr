@@ -298,7 +298,7 @@ public class TieredMergePolicy extends MergePolicy {
     // call size() once per segment and sort by that:
     Map<SegmentCommitInfo,Long> sizeInBytes = getSegmentSizes(writer, infos.asList());
     
-    Collections.sort(infosSorted, new SegmentByteSizeDescending(sizeInBytes));
+    infosSorted.sort(new SegmentByteSizeDescending(sizeInBytes));
 
     // Compute total index bytes & print details about the index
     long totIndexBytes = 0;
@@ -439,9 +439,7 @@ public class TieredMergePolicy extends MergePolicy {
           }
           final OneMerge merge = new OneMerge(best);
           spec.add(merge);
-          for(SegmentCommitInfo info : merge.segments) {
-            toBeMerged.add(info);
-          }
+          toBeMerged.addAll(merge.segments);
 
           if (verbose(writer)) {
             message("  add merge=" + writer.segString(merge.segments) + " size=" + String.format(Locale.ROOT, "%.3f MB", bestMergeBytes/1024./1024.) + " score=" + String.format(Locale.ROOT, "%.3f", bestScore.getScore()) + " " + bestScore.getExplanation() + (bestTooLarge ? " [max merge]" : ""), writer);
@@ -553,7 +551,7 @@ public class TieredMergePolicy extends MergePolicy {
       return null;
     }
 
-    Collections.sort(eligible, new SegmentByteSizeDescending(sizeInBytes));
+    eligible.sort(new SegmentByteSizeDescending(sizeInBytes));
 
     if (verbose(writer)) {
       message("eligible=" + eligible, writer);
@@ -614,7 +612,7 @@ public class TieredMergePolicy extends MergePolicy {
     // call size() once per segment and sort by that:
     Map<SegmentCommitInfo,Long> sizeInBytes = getSegmentSizes(writer, infos.asList());
 
-    Collections.sort(eligible, new SegmentByteSizeDescending(sizeInBytes));
+    eligible.sort(new SegmentByteSizeDescending(sizeInBytes));
 
     if (verbose(writer)) {
       message("eligible=" + eligible, writer);
