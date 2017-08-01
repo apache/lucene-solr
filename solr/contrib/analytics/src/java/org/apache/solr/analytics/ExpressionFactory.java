@@ -17,6 +17,7 @@
 package org.apache.solr.analytics;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,15 +29,14 @@ import java.util.regex.Pattern;
 import org.apache.solr.analytics.function.MergingReductionCollectionManager;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.analytics.function.mapping.*;
-import org.apache.solr.analytics.function.mapping.CompareFunction.EqualFunction;
-import org.apache.solr.analytics.function.mapping.CompareFunction.GTEFunction;
-import org.apache.solr.analytics.function.mapping.CompareFunction.GTFunction;
-import org.apache.solr.analytics.function.mapping.CompareFunction.LTEFunction;
-import org.apache.solr.analytics.function.mapping.CompareFunction.LTFunction;
-import org.apache.solr.analytics.function.mapping.ConcatFunction.ConcatSeparatedFunction;
-import org.apache.solr.analytics.function.mapping.NumericConvertFunction.CeilingFunction;
-import org.apache.solr.analytics.function.mapping.NumericConvertFunction.FloorFunction;
-import org.apache.solr.analytics.function.mapping.NumericConvertFunction.RoundFunction;
+import org.apache.solr.analytics.function.mapping.ComparisonFunction.GTEFunction;
+import org.apache.solr.analytics.function.mapping.ComparisonFunction.GTFunction;
+import org.apache.solr.analytics.function.mapping.ComparisonFunction.LTEFunction;
+import org.apache.solr.analytics.function.mapping.ComparisonFunction.LTFunction;
+import org.apache.solr.analytics.function.mapping.ConcatFunction.SeparatedConcatFunction;
+import org.apache.solr.analytics.function.mapping.DecimalNumericConversionFunction.CeilingFunction;
+import org.apache.solr.analytics.function.mapping.DecimalNumericConversionFunction.FloorFunction;
+import org.apache.solr.analytics.function.mapping.DecimalNumericConversionFunction.RoundFunction;
 import org.apache.solr.analytics.function.mapping.LogicFunction.AndFunction;
 import org.apache.solr.analytics.function.mapping.LogicFunction.OrFunction;
 import org.apache.solr.analytics.function.reduction.*;
@@ -177,13 +177,17 @@ public class ExpressionFactory {
   /**
    * Add a variable function that will be treated like a system function.
    * 
-   * @param functionSignature the function signature of the variable function (e.g. {@code func(a,b)} )
+   * @param functionName the function's name
+   * @param functionParams the comma separated and ordered parameters of the function (e.g. {@code "a,b"} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
    * @return this factory, to easily chain function adds
    * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
    */
-  public ExpressionFactory addSystemVariableFunction(final String functionSignature, final String returnSignature) throws SolrException {
-    return addVariableFunction(functionSignature, returnSignature, systemVariableFunctions);
+  public ExpressionFactory addSystemVariableFunction(final String functionName, final String functionParams, final String returnSignature) throws SolrException {
+    return addVariableFunction(functionName, 
+                               Arrays.stream(functionParams.split(",")).map(param -> param.trim()).toArray(size -> new String[size]),
+                               returnSignature,
+                               systemVariableFunctions);
   }
 
   /**
@@ -210,12 +214,29 @@ public class ExpressionFactory {
   private ExpressionFactory addVariableFunction(final String functionSignature,
                                                 final String returnSignature,
                                                 Map<String,VariableFunctionInfo> variableFunctions) throws SolrException {
-    String functionName = getFunctionName(functionSignature);
+    addVariableFunction(getFunctionName(functionSignature), getParams(functionSignature, null, null), returnSignature, variableFunctions);
+    return this;
+  }
+  
+  /**
+   * Add a variable function to the given map of variable functions. 
+   * 
+   * @param functionName the function's name
+   * @param functionParams the parameters of the function (this is ordered)
+   * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
+   * @param variableFunctions the map of variable functions to add the new function to
+   * @return this factory, to easily chain function adds
+   * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
+   */
+  private ExpressionFactory addVariableFunction(final String functionName,
+                                                final String[] functionParams,
+                                                final String returnSignature,
+                                                Map<String,VariableFunctionInfo> variableFunctions) throws SolrException {
     if (expressionCreators.containsKey(functionName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"Users cannot define a variable function with the same name as an existing function: " + functionName);
     }
     VariableFunctionInfo varFuncInfo = new VariableFunctionInfo();
-    varFuncInfo.params = getParams(functionSignature, null, null);
+    varFuncInfo.params = functionParams;
     varFuncInfo.returnSignature = returnSignature;
     variableFunctions.put(functionName, varFuncInfo);
     return this;
@@ -292,13 +313,9 @@ public class ExpressionFactory {
       // Not a constant
       // If the expression has parens, it is an expression otherwise it is a field
       if (!expressionStr.contains("(")) {
-        try {
-          // Try to make a field out of it
-          expression = createField(schema.getField(expressionStr));
-          isField = true;
-        } catch (SolrException e2) {
-          throw new SolrException(ErrorCode.BAD_REQUEST,"The following is not a field, constant or function : " + expressionStr); 
-        }  
+        // Try to make a field out of it
+        expression = createField(schema.getField(expressionStr));
+        isField = true;
       } else {
         // Must be a function
         expression = createFunction(expressionStr, varFuncParams, varFuncVarParamName, varFuncVarParamValues);
@@ -367,6 +384,9 @@ public class ExpressionFactory {
 
     final String[] params = getParams(expressionStr, varFuncVarParamName, varFuncVarParamValues);
     AnalyticsValueStream[] paramStreams = new AnalyticsValueStream[params.length];
+    
+    boolean allParamsConstant = true;
+    
     for (int i = 0; i < params.length; i++) {
       // First check if the parameter is a variable function variable otherwise create the expression
       if (varFuncParams.containsKey(params[i])) {
@@ -374,7 +394,11 @@ public class ExpressionFactory {
       } else {
         paramStreams[i] = createExpression(params[i], varFuncParams, varFuncVarParamName, varFuncVarParamValues);
       }
+      
+      // Then update whether all of the params are constant
+      allParamsConstant &= paramStreams[i].getExpressionType().equals(ExpressionType.CONST);
     }
+    
     // Check to see if the function name is a variable function name, if so apply the variables to the return signature
     if (variableFunctions.containsKey(name)) {
       if (variableFunctionNameHistory.contains(name)) {
@@ -386,6 +410,10 @@ public class ExpressionFactory {
       
       boolean varLenEnd = false;
       
+      if (paramStreams.length < newVarFunc.params.length) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,"The variable function '" + name + "' requires at least " + newVarFunc.params.length + " parameters."
+            + " Only " + paramStreams.length + " arguments given in the following invocation : " + expressionStr);
+      }
       for (int i = 0; i < newVarFunc.params.length; ++i) {
         String variable = newVarFunc.params[i];
         if (variable.endsWith(variableLengthParamSuffix)) {
@@ -408,16 +436,23 @@ public class ExpressionFactory {
         }
       }
       if (!varLenEnd) {
+        if (paramStreams.length > newVarFunc.params.length) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,"The variable function '" + name + "' requires " + newVarFunc.params.length + " parameters."
+              + " " + paramStreams.length + " arguments given in the following invocation : " + expressionStr);
+        }
         expression = createExpression(newVarFunc.returnSignature, newVarFuncParams, null, null);
       }
       variableFunctionNameHistory.remove(name);
-      return expression;
     } else if (expressionCreators.containsKey(name)) {
       // It is a regular system function
       expression = expressionCreators.get(name).apply(paramStreams);
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The following function does not exist: " + name);
     }
+    
+    // If the all params are constant, then try to convert the expression to a constant value.
+    expression = expression.convertToConstant();
+    
     return expression;
   }
 
@@ -751,19 +786,18 @@ public class ExpressionFactory {
     expressionCreators.put(BottomFunction.name, BottomFunction.creatorFunction);
     expressionCreators.put(CeilingFunction.name, CeilingFunction.creatorFunction);
     expressionCreators.put(ConcatFunction.name, ConcatFunction.creatorFunction);
-    expressionCreators.put(ConcatSeparatedFunction.name, ConcatSeparatedFunction.creatorFunction);
+    expressionCreators.put(SeparatedConcatFunction.name, SeparatedConcatFunction.creatorFunction);
     expressionCreators.put(DateMathFunction.name, DateMathFunction.creatorFunction);
     expressionCreators.put(DateParseFunction.name, DateParseFunction.creatorFunction);
     expressionCreators.put(DivideFunction.name, DivideFunction.creatorFunction);
-    expressionCreators.put(DocCountFunction.name, DocCountFunction.creatorFunction);
     expressionCreators.put(EqualFunction.name,EqualFunction.creatorFunction);
+    expressionCreators.put(ExistsFunction.name,ExistsFunction.creatorFunction);
     expressionCreators.put(FillMissingFunction.name, FillMissingFunction.creatorFunction);
     expressionCreators.put(FilterFunction.name, FilterFunction.creatorFunction);
     expressionCreators.put(FloorFunction.name, FloorFunction.creatorFunction);
     expressionCreators.put(GTFunction.name,GTFunction.creatorFunction);
     expressionCreators.put(GTEFunction.name,GTEFunction.creatorFunction);
     expressionCreators.put(IfFunction.name, IfFunction.creatorFunction);
-    expressionCreators.put(JoinFunction.name, JoinFunction.creatorFunction);
     expressionCreators.put(LogFunction.name,LogFunction.creatorFunction);
     expressionCreators.put(LTFunction.name,LTFunction.creatorFunction);
     expressionCreators.put(LTEFunction.name,LTEFunction.creatorFunction);
@@ -780,7 +814,9 @@ public class ExpressionFactory {
     
     // Reduction Functions
     expressionCreators.put(CountFunction.name, CountFunction.creatorFunction);
+    expressionCreators.put(DocCountFunction.name, DocCountFunction.creatorFunction);
     expressionCreators.put(MaxFunction.name, MaxFunction.creatorFunction);
+    expressionCreators.put(MeanFunction.name, MeanFunction.creatorFunction);
     expressionCreators.put(MedianFunction.name, MedianFunction.creatorFunction);
     expressionCreators.put(MinFunction.name, MinFunction.creatorFunction);
     expressionCreators.put(MissingFunction.name, MissingFunction.creatorFunction);
@@ -790,14 +826,13 @@ public class ExpressionFactory {
     expressionCreators.put(UniqueFunction.name, UniqueFunction.creatorFunction);
     
     // Variables
-    addSystemVariableFunction("wmean(a,b)","div(mean(prod(a,b)),sum(b))");
-    addSystemVariableFunction("mean(a)","div(sum(a),count(a))");
-    addSystemVariableFunction("sumofsquares(a)","sum(pow(a,2))");
-    addSystemVariableFunction("sqrt(a)","pow(a,0.5)");
-    addSystemVariableFunction("variance(a)","sub(mean(pow(a,2)),pow(mean(a),2))");
-    addSystemVariableFunction("stddev(a)","sqrt(variance(a))");
-    addSystemVariableFunction("csv(a..)","concatsep(',',a)");
-    addSystemVariableFunction("csv_output(a..)","concatsep(',',a:fillmissing(join(_,';'),''))");
+    addSystemVariableFunction(WeightedMeanVariableFunction.name, WeightedMeanVariableFunction.params, WeightedMeanVariableFunction.function);
+    addSystemVariableFunction(SumOfSquaresVariableFunction.name, SumOfSquaresVariableFunction.params, SumOfSquaresVariableFunction.function);
+    addSystemVariableFunction(SquareRootVariableFunction.name, SquareRootVariableFunction.params, SquareRootVariableFunction.function);
+    addSystemVariableFunction(VarianceVariableFunction.name, VarianceVariableFunction.params, VarianceVariableFunction.function);
+    addSystemVariableFunction(SandardDeviationVariableFunction.name, SandardDeviationVariableFunction.params, SandardDeviationVariableFunction.function);
+    addSystemVariableFunction(CSVVariableFunction.name, CSVVariableFunction.params, CSVVariableFunction.function);
+    addSystemVariableFunction(CSVOutputVariableFunction.name, CSVOutputVariableFunction.params, CSVOutputVariableFunction.function);
   }
 
   /**
@@ -818,4 +853,39 @@ public class ExpressionFactory {
 class VariableFunctionInfo {
   public String[] params;
   public String returnSignature;
+}
+class WeightedMeanVariableFunction {
+  public static final String name = "wmean";
+  public static final String params = "a,b";
+  public static final String function = DivideFunction.name+"("+SumFunction.name+"("+MultFunction.name+"(a,b)),"+SumFunction.name+"("+FilterFunction.name+"(b,"+ExistsFunction.name+"(a))))";
+}
+class SumOfSquaresVariableFunction {
+  public static final String name = "sumofsquares";
+  public static final String params = "a";
+  public static final String function = SumFunction.name+"("+PowerFunction.name+"(a,2))";
+}
+class SquareRootVariableFunction {
+  public static final String name = "sqrt";
+  public static final String params = "a";
+  public static final String function = PowerFunction.name+"(a,0.5)";
+}
+class VarianceVariableFunction {
+  public static final String name = "variance";
+  public static final String params = "a";
+  public static final String function = SubtractFunction.name+"("+MeanFunction.name+"("+PowerFunction.name+"(a,2)),"+PowerFunction.name+"("+MeanFunction.name+"(a),2))";
+}
+class SandardDeviationVariableFunction {
+  public static final String name = "stddev";
+  public static final String params = "a";
+  public static final String function = SquareRootVariableFunction.name+"("+VarianceVariableFunction.name+"(a))";
+}
+class CSVVariableFunction {
+  public static final String name = "csv";
+  public static final String params = "a"+ExpressionFactory.variableLengthParamSuffix;
+  public static final String function = SeparatedConcatFunction.name+"(',',a)";
+}
+class CSVOutputVariableFunction {
+  public static final String name = "csv_output";
+  public static final String params = "a"+ExpressionFactory.variableLengthParamSuffix;
+  public static final String function = "concat_sep(',',a"+ExpressionFactory.variableForEachSep+FillMissingFunction.name+"("+SeparatedConcatFunction.name+"(';',"+ExpressionFactory.variableForEachParam+"),''))";
 }

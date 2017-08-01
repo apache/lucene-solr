@@ -73,34 +73,8 @@ public class AnalyticsRequestParser {
   
   public static final String analyticsParamName = "analytics";
 
-  private static Predicate<String> request         = acceptNames("request", "req");
-  private static Predicate<String> functions       = acceptNames("functions", "funcs", "f");
-  private static Predicate<String> expressions     = acceptNames("expressions", "exprs", "e");
-
-  private static Predicate<String> grouping        = acceptNames("grouping", "group", "g");
-  
-  private static Predicate<String> valueFacet      = acceptNames("valuefacet", "vf");
-  
-  private static Predicate<String> pivotFacet      = acceptNames("pivotfacet", "pf");
-  private static Predicate<String> pivot           = acceptNames("pivot", "p");
-  
-  private static Predicate<String> sort            = acceptNames("sort", "s");
-  private static Predicate<String> sortExpression  = acceptNames("expression", "expr");
-  private static Predicate<String> sortFacetValue  = acceptNames("facetvalue", "fv");
-  private static Predicate<String> sortDirection   = acceptNames("direction", "dir");
   private static Predicate<String> sortAscending   = acceptNames("ascending", "asc", "a");
   private static Predicate<String> sortDescending  = acceptNames("descending", "desc", "d");
-  private static Predicate<String> sortLimit       = acceptNames("limit", "l");
-  private static Predicate<String> sortOffset      = acceptNames("offset", "o");
-  
-  private static Predicate<String> rangeFacet      = acceptNames("rangefacet", "rf");
-  private static Predicate<String> rangeGaps       = acceptNames("gaps", "g");
-  private static Predicate<String> rangeHardEnd    = acceptNames("hardend", "he");
-  private static Predicate<String> rangeInclude    = acceptNames("include", "i");
-  private static Predicate<String> rangeOthers     = acceptNames("others", "o");
-  
-  private static Predicate<String> queryFacet      = acceptNames("queryfacet", "qf");
-  private static Predicate<String> query           = acceptNames("query", "q");
   
   private static Predicate<String> acceptNames(String... names) {
     return Pattern.compile("^(?:" + Arrays.stream(names).reduce((a,b) -> a + "|" + b).orElse("") + ")$", Pattern.CASE_INSENSITIVE).asPredicate();

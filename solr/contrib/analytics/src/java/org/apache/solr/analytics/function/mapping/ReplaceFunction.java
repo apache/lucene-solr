@@ -41,6 +41,7 @@ import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
@@ -136,7 +137,7 @@ public class ReplaceFunction {
     
   });
 }
-class StreamReplaceFunction implements AnalyticsValueStream {
+class StreamReplaceFunction extends AbstractAnalyticsValueStream {
   private final AnalyticsValueStream baseExpr;
   private final AnalyticsValue compExpr;
   private final AnalyticsValue fillExpr;
@@ -156,8 +157,8 @@ class StreamReplaceFunction implements AnalyticsValueStream {
   public void streamObjects(Consumer<Object> cons) {
     Object compValue = compExpr.getObject();
     if (compExpr.exists()) {
-      Object fillValue = fillExpr.getObject();
-      boolean fillExists = fillExpr.exists();
+      final Object fillValue = fillExpr.getObject();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamObjects(value -> {
         if (value.equals(compValue)) {
           if (fillExists) {
@@ -209,7 +210,7 @@ class ValueReplaceFunction extends AbstractAnalyticsValue {
     Object value = baseExpr.getObject();
     exists = baseExpr.exists();
     Object comp = compExpr.getObject();
-    if (value.equals(comp) && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value.equals(comp)) {
       value = fillExpr.getObject();
       exists = fillExpr.exists();
     }
@@ -253,10 +254,10 @@ class BooleanStreamReplaceFunction extends AbstractBooleanValueStream {
   public void streamBooleans(BooleanConsumer cons) {
     boolean compValue = compExpr.getBoolean();
     if (compExpr.exists()) {
-      boolean fillValue = fillExpr.getBoolean();
-      boolean fillExists = fillExpr.exists();
+      final boolean fillValue = fillExpr.getBoolean();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamBooleans(value -> {
-        if (value==compValue) {
+        if (value == compValue) {
           if (fillExists) {
             cons.accept(fillValue);
           }
@@ -306,7 +307,7 @@ class BooleanReplaceFunction extends AbstractBooleanValue {
     boolean value = baseExpr.getBoolean();
     exists = baseExpr.exists();
     boolean comp = compExpr.getBoolean();
-    if (value==comp && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value == comp) {
       value = fillExpr.getBoolean();
       exists = fillExpr.exists();
     }
@@ -350,10 +351,10 @@ class IntStreamReplaceFunction extends AbstractIntValueStream {
   public void streamInts(IntConsumer cons) {
     int compValue = compExpr.getInt();
     if (compExpr.exists()) {
-      int fillValue = fillExpr.getInt();
-      boolean fillExists = fillExpr.exists();
+      final int fillValue = fillExpr.getInt();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamInts(value -> {
-        if (value==compValue) {
+        if (value == compValue) {
           if (fillExists) {
             cons.accept(fillValue);
           }
@@ -403,7 +404,7 @@ class IntReplaceFunction extends AbstractIntValue {
     int value = baseExpr.getInt();
     exists = baseExpr.exists();
     int comp = compExpr.getInt();
-    if (value==comp && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value == comp) {
       value = fillExpr.getInt();
       exists = fillExpr.exists();
     }
@@ -447,10 +448,10 @@ class LongStreamReplaceFunction extends AbstractLongValueStream {
   public void streamLongs(LongConsumer cons) {
     long compValue = compExpr.getLong();
     if (compExpr.exists()) {
-      long fillValue = fillExpr.getLong();
-      boolean fillExists = fillExpr.exists();
+      final long fillValue = fillExpr.getLong();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamLongs(value -> {
-        if (value==compValue) {
+        if (value == compValue) {
           if (fillExists) {
             cons.accept(fillValue);
           }
@@ -500,7 +501,7 @@ class LongReplaceFunction extends AbstractLongValue {
     long value = baseExpr.getLong();
     exists = baseExpr.exists();
     long comp = compExpr.getLong();
-    if (value==comp && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value == comp) {
       value = fillExpr.getLong();
       exists = fillExpr.exists();
     }
@@ -544,10 +545,10 @@ class FloatStreamReplaceFunction extends AbstractFloatValueStream {
   public void streamFloats(FloatConsumer cons) {
     float compValue = compExpr.getFloat();
     if (compExpr.exists()) {
-      float fillValue = fillExpr.getFloat();
-      boolean fillExists = fillExpr.exists();
+      final float fillValue = fillExpr.getFloat();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamFloats(value -> {
-        if (value==compValue) {
+        if (value == compValue) {
           if (fillExists) {
             cons.accept(fillValue);
           }
@@ -597,7 +598,7 @@ class FloatReplaceFunction extends AbstractFloatValue {
     float value = baseExpr.getFloat();
     exists = baseExpr.exists();
     float comp = compExpr.getFloat();
-    if (value==comp && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value == comp) {
       value = fillExpr.getFloat();
       exists = fillExpr.exists();
     }
@@ -641,10 +642,10 @@ class DoubleStreamReplaceFunction extends AbstractDoubleValueStream {
   public void streamDoubles(DoubleConsumer cons) {
     double compValue = compExpr.getDouble();
     if (compExpr.exists()) {
-      double fillValue = fillExpr.getDouble();
-      boolean fillExists = fillExpr.exists();
+      final double fillValue = fillExpr.getDouble();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamDoubles(value -> {
-        if (value==compValue) {
+        if (value == compValue) {
           if (fillExists) {
             cons.accept(fillValue);
           }
@@ -694,7 +695,7 @@ class DoubleReplaceFunction extends AbstractDoubleValue {
     double value = baseExpr.getDouble();
     exists = baseExpr.exists();
     double comp = compExpr.getDouble();
-    if (value==comp && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value == comp) {
       value = fillExpr.getDouble();
       exists = fillExpr.exists();
     }
@@ -738,10 +739,10 @@ class DateStreamReplaceFunction extends AbstractDateValueStream {
   public void streamLongs(LongConsumer cons) {
     long compValue = compExpr.getLong();
     if (compExpr.exists()) {
-      long fillValue = fillExpr.getLong();
-      boolean fillExists = fillExpr.exists();
+      final long fillValue = fillExpr.getLong();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamLongs(value -> {
-        if (value==compValue) {
+        if (value == compValue) {
           if (fillExists) {
             cons.accept(fillValue);
           }
@@ -791,7 +792,7 @@ class DateReplaceFunction extends AbstractDateValue {
     long value = baseExpr.getLong();
     exists = baseExpr.exists();
     long comp = compExpr.getLong();
-    if (value==comp && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value == comp) {
       value = fillExpr.getLong();
       exists = fillExpr.exists();
     }
@@ -833,10 +834,10 @@ class StringStreamReplaceFunction extends AbstractStringValueStream {
 
   @Override
   public void streamStrings(Consumer<String> cons) {
-    String compValue = compExpr.toString();
+    String compValue = compExpr.getString();
     if (compExpr.exists()) {
-      String fillValue = fillExpr.toString();
-      boolean fillExists = fillExpr.exists();
+      final String fillValue = fillExpr.getString();
+      final boolean fillExists = fillExpr.exists();
       baseExpr.streamStrings(value -> {
         if (value.equals(compValue)) {
           if (fillExists) {
@@ -888,7 +889,7 @@ class StringReplaceFunction extends AbstractStringValue {
     String value = baseExpr.getString();
     exists = baseExpr.exists();
     String comp = compExpr.getString();
-    if (value.equals(comp) && exists==compExpr.exists()) {
+    if (exists && compExpr.exists() && value.equals(comp)) {
       value = fillExpr.getString();
       exists = fillExpr.exists();
     }

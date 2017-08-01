@@ -41,6 +41,7 @@ import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
@@ -128,7 +129,7 @@ public class FilterFunction {
     return new StreamFilterFunction(baseExpr,filterExpr);
   });
 }
-class StreamFilterFunction implements AnalyticsValueStream {
+class StreamFilterFunction extends AbstractAnalyticsValueStream {
   private final AnalyticsValueStream baseExpr;
   private final BooleanValue filterExpr;
   public static final String name = FilterFunction.name;
