@@ -225,6 +225,9 @@ New Features
 
 * SOLR-11093: Add support for PointFields for {!graph} query. (yonik)
 
+* SOLR-10845: Add support for PointFields to {!graphTerms} query that is internally
+  used by some graph traversal streaming expressions.  (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
