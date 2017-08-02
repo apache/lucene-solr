@@ -48,6 +48,10 @@ Please read the following sections in order and follow instructions.
      * --test-with-number-of-documents XXXX    Use this parameter to specify the subset of the available documents 
                                                   to test with. Valid value lies in 
                                                   (with en-wiki-data-2G-modified.csv data file) between 1 and 347776.
+     * --use-sample-dataset X.XX               Use this option when you want to work in dev-mode (i.e while enhancing
+                                               /debugging this project.). Please also pass a value in the range 0.01 to 1
+                                               with this parameter. This value is the percentage of data set that is used
+                                               in this mode. 
      
 ## [D] Accessing Output
 
