@@ -90,7 +90,7 @@ For multivalued fields, specifies a distance between multiple values, which prev
 `autoGeneratePhraseQueries`:: For text fields. If `true`, Solr automatically generates phrase queries for adjacent terms. If `false`, terms must be enclosed in double-quotes to be treated as phrases.
 
 `enableGraphQueries`::
-For text fields, applicable when querying with <<the-standard-query-parser.adoc#standard-query-parser-parameters,`sow=false`>>. Use `true` (the default) for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filter-descriptions.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
+For text fields, applicable when querying with <<the-standard-query-parser.adoc#standard-query-parser-parameters,`sow=false`>> (which is the default for the `sow` parameter). Use `true`, the default, for field types with query analyzers including graph-aware filters, e.g., <<filter-descriptions.adoc#synonym-graph-filter,Synonym Graph Filter>> and <<filter-descriptions.adoc#word-delimiter-graph-filter,Word Delimiter Graph Filter>>.
 +
 Use `false` for field types with query analyzers including filters that can match docs when some tokens are missing, e.g., <<filter-descriptions.adoc#shingle-filter,Shingle Filter>>.
 
