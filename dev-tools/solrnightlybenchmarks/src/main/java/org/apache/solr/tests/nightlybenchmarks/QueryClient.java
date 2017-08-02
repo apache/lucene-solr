@@ -331,13 +331,13 @@ public class QueryClient implements Runnable {
 					requestParams.remove("facet");
 					requestParams.remove("facet.field");
 					requestParams.remove("facet.range");
-					requestParams.remove("f.Int2_pi.facet.range.start");
-					requestParams.remove("f.Int2_pi.facet.range.end");
-					requestParams.remove("f.Int2_pi.facet.range.gap");
+					requestParams.remove("f.Int2_i.facet.range.start");
+					requestParams.remove("f.Int2_i.facet.range.end");
+					requestParams.remove("f.Int2_i.facet.range.gap");
 					requestParams.remove("json.facet");
 
 					if (QueryClient.queryType == QueryType.TERM_NUMERIC_QUERY) {
-						requestParams.add("q", "Int1_pi:" + termNumericQueryParameterList.poll());
+						requestParams.add("q", "Int1_i:" + termNumericQueryParameterList.poll());
 					} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
 						if (rangeNumericQueryParameterList == null || rangeNumericQueryParameterList.size() == 0) {
@@ -350,9 +350,9 @@ public class QueryClient implements Runnable {
 						int ft_2 = Integer.parseInt(pairData[1]);
 
 						if (ft_2 > ft_1) {
-							requestParams.add("q", "Int1_pi:[" + ft_1 + " TO " + ft_2 + "]");
+							requestParams.add("q", "Int1_i:[" + ft_1 + " TO " + ft_2 + "]");
 						} else {
-							requestParams.add("q", "Int1_pi:[" + ft_2 + " TO " + ft_1 + "]");
+							requestParams.add("q", "Int1_i:[" + ft_2 + " TO " + ft_1 + "]");
 						}
 
 					} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY) {
@@ -372,7 +372,7 @@ public class QueryClient implements Runnable {
 							requestParams.add("q", "id:[" + ft_2 + " TO " + ft_1 + "]");
 						}
 
-						requestParams.add("sort", "Int1_pi asc");
+						requestParams.add("sort", "Int1_i asc");
 
 					} else if (QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
 
@@ -399,14 +399,14 @@ public class QueryClient implements Runnable {
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
-						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
+						requestParams.add("q", "Int1_i:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 					} else if (QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
 						
 						if (lesserNumericQueryParameterList == null || lesserNumericQueryParameterList.size() == 0) {
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
-						requestParams.add("q", "Int1_pi:[* TO " + lesserNumericQueryParameterList.poll() + "]");
+						requestParams.add("q", "Int1_i:[* TO " + lesserNumericQueryParameterList.poll() + "]");
 					} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY) {
 
 						if (andNumericQueryParameterList == null || andNumericQueryParameterList.size() == 0) {
@@ -418,7 +418,7 @@ public class QueryClient implements Runnable {
 						int ft_1 = Integer.parseInt(pairData[0]);
 						int ft_2 = Integer.parseInt(pairData[1]);
 
-						requestParams.add("q", "Int1_pi:" + ft_1 + " AND Int2_pi:" + ft_2);
+						requestParams.add("q", "Int1_i:" + ft_1 + " AND Int2_i:" + ft_2);
 
 					} else if (QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
 
@@ -431,7 +431,7 @@ public class QueryClient implements Runnable {
 						int ft_1 = Integer.parseInt(pairData[0]);
 						int ft_2 = Integer.parseInt(pairData[1]);
 
-						requestParams.add("q", "Int1_pi:" + ft_1 + " OR Int2_pi:" + ft_2);
+						requestParams.add("q", "Int1_i:" + ft_1 + " OR Int2_i:" + ft_2);
 
 					} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
 						
@@ -462,7 +462,7 @@ public class QueryClient implements Runnable {
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
-						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
+						requestParams.add("q", "Int1_i:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 						requestParams.add("facet", "true");
 						requestParams.add("facet.field", "Category_t");
 					} else if (QueryClient.queryType == QueryType.JSON_TERM_FACETING) {
@@ -471,7 +471,7 @@ public class QueryClient implements Runnable {
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
-						requestParams.add("q", "Int1_pi:[" + greaterNumericQueryParameterList.poll() + " TO *]");
+						requestParams.add("q", "Int1_i:[" + greaterNumericQueryParameterList.poll() + " TO *]");
 						requestParams.add("facet", "true");
 						requestParams.add("json.facet", "{categories:{ terms: { field : Category_t }}}");
 					} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING) {
@@ -483,20 +483,20 @@ public class QueryClient implements Runnable {
 						String pairData[] = rangeFacetRanges.poll().trim().split(",");
 						requestParams.add("q", "*:*");
 						requestParams.add("facet", "true");
-						requestParams.add("facet.range", "Int2_pi");
+						requestParams.add("facet.range", "Int2_i");
 						
 						long ft_1 = Long.parseLong(pairData[0]) - 1;
 						long ft_2 = Long.parseLong(pairData[1]) - 1;
 
 						if (ft_2 > ft_1) {
-							requestParams.add("f.Int2_pi.facet.range.start", "" + ft_1);
-							requestParams.add("f.Int2_pi.facet.range.end", "" + ft_2);
-							requestParams.add("f.Int2_pi.facet.range.gap", pairData[2].trim());
+							requestParams.add("f.Int2_i.facet.range.start", "" + ft_1);
+							requestParams.add("f.Int2_i.facet.range.end", "" + ft_2);
+							requestParams.add("f.Int2_i.facet.range.gap", pairData[2].trim());
 
 						} else {
-							requestParams.add("f.Int2_pi.facet.range.start", "" + ft_2);
-							requestParams.add("f.Int2_pi.facet.range.end", "" + ft_1);
-							requestParams.add("f.Int2_pi.facet.range.gap", pairData[2].trim());
+							requestParams.add("f.Int2_i.facet.range.start", "" + ft_2);
+							requestParams.add("f.Int2_i.facet.range.end", "" + ft_1);
+							requestParams.add("f.Int2_i.facet.range.gap", pairData[2].trim());
 						}
 						
 					} else if (QueryClient.queryType == QueryType.JSON_RANGE_FACETING) {
@@ -513,9 +513,9 @@ public class QueryClient implements Runnable {
 						long ft_2 = Long.parseLong(pairData[1]) - 1;
 
 						if (ft_2 > ft_1) {
-							requestParams.add("json.facet", "{ prices : { range : {field : Int2_pi ,start : "+ ft_1 +", end : "+ ft_2 +", gap : "+ pairData[2].trim() +"}}}");
+							requestParams.add("json.facet", "{ prices : { range : {field : Int2_i ,start : "+ ft_1 +", end : "+ ft_2 +", gap : "+ pairData[2].trim() +"}}}");
 						} else {
-							requestParams.add("json.facet", "{ prices : { range : {field : Int2_pi ,start : "+ ft_2 +", end : "+ ft_1 +", gap : "+ pairData[2].trim() +"}}}");
+							requestParams.add("json.facet", "{ prices : { range : {field : Int2_i ,start : "+ ft_2 +", end : "+ ft_1 +", gap : "+ pairData[2].trim() +"}}}");
 						}
 
 					}

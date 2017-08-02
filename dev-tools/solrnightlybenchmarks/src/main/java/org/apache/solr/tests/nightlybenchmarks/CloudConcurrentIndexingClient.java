@@ -98,11 +98,11 @@ public class CloudConcurrentIndexingClient implements Runnable {
 				document.addField("Title_t", data[1].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Article_t", data[2].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				document.addField("Category_t", data[3].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				document.addField("Int1_pi", Integer.parseInt(data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Int2_pi", Integer.parseInt(data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Float1_pf", Float.parseFloat(data[6].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Long1_pl", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
-				document.addField("Double1_pd", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Int1_i", Integer.parseInt(data[4].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Int2_i", Integer.parseInt(data[5].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Float1_f", Float.parseFloat(data[6].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Long1_l", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
+				document.addField("Double1_d", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Text_s", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
 				documentCount++;
 				documents.add(document);
