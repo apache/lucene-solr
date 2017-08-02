@@ -65,7 +65,7 @@ public class Tests {
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
@@ -112,7 +112,7 @@ public class Tests {
 			node.doAction(SolrNodeAction.NODE_STOP);
 			node.cleanup();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 		return true;
@@ -213,7 +213,7 @@ public class Tests {
 				node.cleanup();
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 		return true;
@@ -264,7 +264,7 @@ public class Tests {
 			cloud.shutdown();
 			BenchmarkReportData.returnCloudCreateCollectionMap = cloud.returnMapCreateCollection;
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 		logger.info("COMPLETING TEST: Indexing Cloud Serial Nodes:" + nodes + " Shards:" + shards + " Replicas:"
@@ -406,7 +406,7 @@ public class Tests {
 
 			cloud.shutdown();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 		logger.info("COMPLETING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
@@ -533,7 +533,7 @@ public class Tests {
 
 			cloud.shutdown();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
@@ -623,7 +623,7 @@ public class Tests {
 			return returnMap;
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -698,7 +698,7 @@ public class Tests {
 			return returnMap;
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -759,6 +759,7 @@ public class Tests {
 			return node.port;
 
 		} catch (Exception e) {
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}

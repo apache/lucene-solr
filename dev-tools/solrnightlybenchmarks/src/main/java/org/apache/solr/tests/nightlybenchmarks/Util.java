@@ -153,7 +153,7 @@ public class Util {
 			proc.waitFor();
 			return proc.exitValue();
 		} catch (Exception e) {
-			logger.debug(e.getMessage());
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -257,6 +257,7 @@ public class Util {
 				try {
 					serverSocket.close();
 				} catch (IOException e) {
+					logger.error(e.getMessage());
 					throw new IOException(e.getMessage());
 				}
 			}
@@ -291,7 +292,7 @@ public class Util {
 				hashtext = "0" + hashtext;
 			}
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 		return hashtext;
@@ -317,7 +318,7 @@ public class Util {
 			}
 			bos.close();
 		} catch (Exception e) {
-			logger.debug(e.getMessage());
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		} finally {
 			bos.close();
@@ -355,7 +356,7 @@ public class Util {
 			fos.close();
 			in.close();
 		} catch (Exception e) {
-			logger.debug(e.getMessage());
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -375,6 +376,7 @@ public class Util {
 			ZipFile zip = new ZipFile(filename);
 			zip.extractAll(filePath);
 		} catch (ZipException ex) {
+			logger.error(ex.getMessage());
 			throw new IOException(ex);
 		}
 	}
@@ -447,7 +449,7 @@ public class Util {
 
 			return returnString;
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		} finally {
 			// Marking for GC
@@ -502,7 +504,7 @@ public class Util {
 			BenchmarkAppConnector.writeToWebAppDataFile("testEnv.csv", returnString, true, FileType.TEST_ENV_FILE);
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		} finally {
 			reader = null;
@@ -601,14 +603,14 @@ public class Util {
 				BenchmarkAppConnector.benchmarkAppDirectory += File.separator;
 			}
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			logger.error(ex.getMessage());
 			throw new Exception(ex.getMessage());
 		} finally {
 			if (input != null) {
 				try {
 					input.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error(e.getMessage());
 					throw new Exception(e.getMessage());
 				}
 			}
@@ -829,12 +831,13 @@ public class Util {
 			response = webResource.accept(type).get(ClientResponse.class);
 
 			if (response.getStatus() != 200) {
+				logger.error("Failed : HTTP error code : " + response.getStatus());
 				throw new RuntimeException("Failed : HTTP error code : " + response.getStatus());
 			}
 
 			return response.getEntity(String.class);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		} finally {
 			// Marking for GC
@@ -955,7 +958,7 @@ public class Util {
 			}
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		} finally {
 			webAppSourceDir = null;
@@ -1003,13 +1006,14 @@ public class Util {
 					out.write(buffer, 0, length);
 				}
 			} catch (Exception e) {
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			} finally {
 				try {
 					in.close();
 					out.close();
 				} catch (IOException e1) {
-					e1.printStackTrace();
+					logger.error(e1.getMessage());
 					throw new Exception(e1.getMessage());
 				}
 			}
@@ -1171,6 +1175,24 @@ public class Util {
 				System.exit(0);
 			}
 			
+			if (argsList.contains("--clean-up")) {
+				logger.debug("Initiating Housekeeping activities! ... ");
+				
+				File dir = new File(Util.DOWNLOAD_DIR);
+				if (dir != null && dir.isDirectory()) {
+					File[] files = dir.listFiles();
+					for (File f : files) {
+							if (f.getName().contains("git-repository")) {
+								continue;		
+							} else if (f.getName().contains("zookeeper")) {
+								continue;
+							} else {
+								f.delete();
+							}
+					}
+ 				}
+			}
+			
 			if (argsList.contains("--archive")) {
 				Util.archive();
 				System.exit(0);
@@ -1254,25 +1276,6 @@ public class Util {
 	public static void destroy() {
 
 		try {
-
-			if (argsList.contains("--clean-up")) {
-				logger.debug(" Initiating Housekeeping activities! ... ");
-				
-				File dir = new File(Util.DOWNLOAD_DIR);
-				if (dir != null && dir.isDirectory()) {
-					File[] files = dir.listFiles();
-					for (File f : files) {
-							if (f.getName().contains("git-repository")) {
-								continue;		
-							} else if (f.getName().contains("zookeeper")) {
-								continue;
-							} else {
-								f.delete();
-							}
-					}
- 				}
-			}
-
 			Util.setDeadFlag();
 			Util.createLastRunFile();
 			Util.deleteRunningFile();
@@ -1285,9 +1288,9 @@ public class Util {
 
 	/**
 	 * A method used for creating the last run file.
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public static void createLastRunFile() throws IOException {
+	public static void createLastRunFile() throws Exception {
 
 		BenchmarkAppConnector.deleteFolder(FileType.LAST_RUN_COMMIT);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.LAST_RUN_COMMIT);
@@ -1296,9 +1299,9 @@ public class Util {
 
 	/**
 	 * A method used for creating the running flag file.
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public static void createIsRunningFile() throws IOException {
+	public static void createIsRunningFile() throws Exception {
 
 		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
 		BenchmarkAppConnector.writeToWebAppDataFile(Util.COMMIT_ID, "", true, FileType.IS_RUNNING_FILE);
@@ -1307,8 +1310,9 @@ public class Util {
 
 	/**
 	 * A method used for deleting the running file.
+	 * @throws Exception 
 	 */
-	public static void deleteRunningFile() {
+	public static void deleteRunningFile() throws Exception {
 		BenchmarkAppConnector.deleteFolder(FileType.IS_RUNNING_FILE);
 	}
 
@@ -1340,9 +1344,9 @@ public class Util {
 	 * 
 	 * @param fileName
 	 * @param numberOfDocuments
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public static void createTestDataFile(String fileName, int numberOfDocuments) throws IOException {
+	public static void createTestDataFile(String fileName, int numberOfDocuments) throws Exception {
 		logger.debug(" Preparing 4k text documents");
 		for (int i = 0; i < numberOfDocuments; i++) {
 			if (i % 100 == 0) {
@@ -1363,9 +1367,9 @@ public class Util {
 	 * 
 	 * @param fileName
 	 * @param numberOfDocuments
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) throws IOException {
+	public static void createNumericSortedQueryDataFile(String fileName, int numberOfDocuments) throws Exception {
 		logger.debug(" Preparing sorted numeric query data ...");
 		for (int i = 0; i < numberOfDocuments; i++) {
 			if (i % 100 == 0) {
@@ -1409,7 +1413,7 @@ public class Util {
 			reader.close();
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new IOException(e.getMessage());
 		} finally {
 			// Marking for GC
@@ -1445,7 +1449,7 @@ public class Util {
 			}
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
@@ -1500,6 +1504,7 @@ public class Util {
 			}
 			
 		} catch (Exception e) {
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
@@ -1557,6 +1562,7 @@ public class Util {
 			}
 
 		} catch (Exception e) {
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -1573,6 +1579,7 @@ public class Util {
 		    ObjectId id = repo.resolve(Constants.HEAD);
 		    result = id.getName();
 		  } catch (IOException e) {
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		  }
 		  return result;

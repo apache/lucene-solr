@@ -175,7 +175,7 @@ public class QueryClient implements Runnable {
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing Term Query queue [COMPLETE] ...");
@@ -190,7 +190,7 @@ public class QueryClient implements Runnable {
 					rangeNumericQueryParameterList.add(line.trim());
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			
@@ -205,7 +205,7 @@ public class QueryClient implements Runnable {
 					textTerms.add(line.trim());
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing text terms query data [COMPLETE]...");			
@@ -219,7 +219,7 @@ public class QueryClient implements Runnable {
 					textPhrases.add(line.trim());
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing text phrase query data [COMPLETE] ...");			
@@ -238,7 +238,7 @@ public class QueryClient implements Runnable {
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing query pair data for AND/OR queue [COMPLETE] ...");			
@@ -254,7 +254,7 @@ public class QueryClient implements Runnable {
 				}
 	
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing sorted query pair data queue [COMPLETE] ...");			
@@ -270,7 +270,7 @@ public class QueryClient implements Runnable {
 				}
 	
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing highlight terms data queue [COMPLETE] ...");			
@@ -287,7 +287,7 @@ public class QueryClient implements Runnable {
 				}
 	
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 				throw new Exception(e.getMessage());
 			}
 			logger.debug("Preparing range facet data queue [COMPLETE]...");			
@@ -341,6 +341,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.RANGE_NUMERIC_QUERY) {
 
 						if (rangeNumericQueryParameterList == null || rangeNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
@@ -358,6 +359,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.SORTED_NUMERIC_QUERY) {
 
 						if (sortedNumericQueryParameterList == null || sortedNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -377,6 +379,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.SORTED_TEXT_QUERY) {
 
 						if (sortedNumericQueryParameterList == null || sortedNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -396,6 +399,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.GREATER_THAN_NUMERIC_QUERY) {
 						
 						if (greaterNumericQueryParameterList == null || greaterNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
@@ -403,6 +407,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.LESS_THAN_NUMERIC_QUERY) {
 						
 						if (lesserNumericQueryParameterList == null || lesserNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
@@ -410,6 +415,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.AND_NUMERIC_QUERY) {
 
 						if (andNumericQueryParameterList == null || andNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -423,6 +429,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.OR_NUMERIC_QUERY) {
 
 						if (orNumericQueryParameterList == null || orNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -436,6 +443,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.TEXT_TERM_QUERY) {
 						
 						if (textTerms == null || textTerms.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
@@ -443,6 +451,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.TEXT_PHRASE_QUERY) {
 						
 						if (textPhrases == null || textPhrases.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
@@ -450,6 +459,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.HIGHLIGHT_QUERY) {
 
 						if (highlightTerms == null || highlightTerms.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -459,6 +469,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.CLASSIC_TERM_FACETING) {
 
 						if (greaterNumericQueryParameterList == null || greaterNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 						
@@ -468,6 +479,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.JSON_TERM_FACETING) {
 
 						if (greaterNumericQueryParameterList == null || greaterNumericQueryParameterList.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -477,6 +489,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.CLASSIC_RANGE_FACETING) {
 
 						if (rangeFacetRanges == null || rangeFacetRanges.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -502,6 +515,7 @@ public class QueryClient implements Runnable {
 					} else if (QueryClient.queryType == QueryType.JSON_RANGE_FACETING) {
 
 						if (rangeFacetRanges == null || rangeFacetRanges.size() == 0) {
+							logger.error("Queue exhausted, no more items left ...");
 							throw new RuntimeException("Queue exhausted, no more items left ...");
 						}
 
@@ -538,6 +552,7 @@ public class QueryClient implements Runnable {
 
 				} catch (SolrServerException | IOException e) {
 					setQueryFailureCount();
+					logger.error(e.getMessage());
 					throw new RuntimeException(e.getMessage());
 				}
 
@@ -552,6 +567,7 @@ public class QueryClient implements Runnable {
 				try {
 					solrClient.close();
 				} catch (IOException e) {
+					logger.error(e.getMessage());
 					throw new RuntimeException(e.getMessage());
 				}
 				

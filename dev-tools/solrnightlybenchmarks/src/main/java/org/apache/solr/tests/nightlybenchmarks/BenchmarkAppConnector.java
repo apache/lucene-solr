@@ -105,12 +105,12 @@ public class BenchmarkAppConnector {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
 
-		if (!dir.exists()) {
+		if (dir != null && !dir.exists()) {
 			dir.mkdirs();
 		}
 
 		File dataDir = new File(benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
-		if (dataDir.listFiles().length != 0) {
+		if (dataDir != null && dataDir.listFiles().length != 0) {
 			return dataDir.listFiles()[0].getName().trim();
 		} else {
 			return null;
@@ -126,7 +126,7 @@ public class BenchmarkAppConnector {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
 
-		if (!dir.exists()) {
+		if (dir != null && !dir.exists()) {
 			dir.mkdirs();
 		}
 
@@ -142,7 +142,7 @@ public class BenchmarkAppConnector {
 
 		File dir = new File(benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
 
-		if (!dir.exists()) {
+		if (dir != null && !dir.exists()) {
 			dir.mkdirs();
 		}
 
@@ -153,14 +153,19 @@ public class BenchmarkAppConnector {
 	 * A method used to delete a specific folder.
 	 * 
 	 * @param type
+	 * @throws Exception 
 	 */
-	public static void deleteFolder(FileType type) {
+	public static void deleteFolder(FileType type) throws Exception {
+		
+		if (type == null) {
+			throw new Exception("File type is undefined!");
+		}
 
 		if (type == FileType.LAST_RUN_COMMIT) {
 			File dir = new File(
 					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "lastrun" + File.separator);
 
-			if (!dir.exists()) {
+			if (dir != null && !dir.exists()) {
 				dir.mkdirs();
 			} else {
 				for (File file : dir.listFiles()) {
@@ -172,7 +177,7 @@ public class BenchmarkAppConnector {
 			File dir = new File(
 					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "running" + File.separator);
 
-			if (!dir.exists()) {
+			if (dir != null && !dir.exists()) {
 				dir.mkdirs();
 			} else {
 				for (File file : dir.listFiles()) {
@@ -184,7 +189,7 @@ public class BenchmarkAppConnector {
 			File dir = new File(
 					BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "cloning" + File.separator);
 
-			if (!dir.exists()) {
+			if (dir != null && !dir.exists()) {
 				dir.mkdirs();
 			} else {
 				for (File file : dir.listFiles()) {
@@ -196,7 +201,7 @@ public class BenchmarkAppConnector {
 			File dir = new File(BenchmarkAppConnector.benchmarkAppDirectory + "data" + File.separator + "commit_queue"
 					+ File.separator);
 
-			if (!dir.exists()) {
+			if (dir != null && !dir.exists()) {
 				dir.mkdirs();
 			} else {
 				for (File file : dir.listFiles()) {
@@ -214,10 +219,10 @@ public class BenchmarkAppConnector {
 	 * @param data
 	 * @param createNewFile
 	 * @param type
-	 * @throws IOException 
+	 * @throws Exception 
 	 */
-	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) throws IOException {
-
+	public static void writeToWebAppDataFile(String fileName, String data, boolean createNewFile, FileType type) throws Exception {
+		
 		File dataDir = null;
 		File file = null;
 		FileWriter fw = null;
@@ -344,6 +349,14 @@ public class BenchmarkAppConnector {
 		logger.info("Publishing data for webapp ..");
 
 		if (BenchmarkReportData.metricMapIndexingStandalone != null) {
+			
+			if (BenchmarkReportData.metricMapIndexingStandalone.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapIndexingStandalone.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapIndexingStandalone.get("CommitID") == null) {
+				logger.error(BenchmarkReportData.metricMapIndexingStandalone.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+			
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_regular.csv",
 					BenchmarkReportData.metricMapIndexingStandalone.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapIndexingStandalone.get("IndexingThroughput") + ", "
@@ -352,6 +365,14 @@ public class BenchmarkAppConnector {
 		}
 
 		if (BenchmarkReportData.metricMapCloudSerial_2N1S2R != null) {
+
+			if (BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("CommitID") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudSerial_2N1S2R.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+			
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_2n1s2r.csv",
 					BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudSerial_2N1S2R.get("IndexingThroughput") + ", "
@@ -359,6 +380,14 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
 		}
 		if (BenchmarkReportData.metricMapCloudSerial_2N2S1R != null) {
+			
+			if (BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("CommitID") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudSerial_2N2S1R.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+			
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_2n2s1r.csv",
 					BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudSerial_2N2S1R.get("IndexingThroughput") + ", "
@@ -366,6 +395,14 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
 		}
 		if (BenchmarkReportData.metricMapCloudSerial_3N1S3R != null) {
+
+			if (BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("CommitID") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudSerial_3N1S3R.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_3n1s3r.csv",
 					BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudSerial_3N1S3R.get("IndexingThroughput") + ", "
@@ -373,6 +410,14 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
 		}
 		if (BenchmarkReportData.metricMapCloudSerial_4N2S2R != null) {
+			
+			if (BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("CommitID") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudSerial_4N2S2R.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+			
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_serial_4n2s2r.csv",
 					BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudSerial_4N2S2R.get("IndexingThroughput") + ", "
@@ -380,7 +425,22 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_SERIAL_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R != null 
+				&& BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R != null) {
+
+			if (BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("CommitID") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R.get("IndexingThroughput") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R.toString());
+
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_2n1s2r.csv",
 					BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R.get("CommitID") + ", "
@@ -389,7 +449,22 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		if (BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R != null) {
+
+			if (BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("CommitID") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R.get("IndexingThroughput") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R.toString());
+
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_2n2s1r.csv",
 					BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R.get("CommitID") + ", "
@@ -398,7 +473,22 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		if (BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R != null) {
+
+			if (BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("CommitID") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R.get("IndexingThroughput") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R.toString());
+
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_3n1s3r.csv",
 					BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R.get("CommitID") + ", "
@@ -407,7 +497,22 @@ public class BenchmarkAppConnector {
 							+ BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R.get("IndexingThroughput"),
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
-		if (BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R != null) {
+		if (BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R != null
+				&& BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R != null) {
+
+			if (BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("CommitID") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R.get("IndexingThroughput") == null) {
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R.toString());
+				logger.error(BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R.toString());
+
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_cloud_concurrent_4n2s2r.csv",
 					BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R.get("CommitID") + ", "
@@ -417,7 +522,22 @@ public class BenchmarkAppConnector {
 					false, FileType.CLOUD_CONCURRENT_INDEXING_THROUGHPUT);
 		}
 
-		if (BenchmarkReportData.metricMapStandaloneIndexingConcurrent1 != null) {
+		if (BenchmarkReportData.metricMapStandaloneIndexingConcurrent1 != null
+				&& BenchmarkReportData.metricMapStandaloneIndexingConcurrent2 != null
+				&& BenchmarkReportData.metricMapStandaloneIndexingConcurrent3 != null) {
+
+			if (BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("TimeStamp") == null 
+					|| BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("CommitID") == null
+					|| BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapStandaloneIndexingConcurrent2.get("IndexingThroughput") == null
+					|| BenchmarkReportData.metricMapStandaloneIndexingConcurrent3.get("IndexingThroughput") == null) {
+				logger.error(BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.toString());
+				logger.error(BenchmarkReportData.metricMapStandaloneIndexingConcurrent2.toString());
+				logger.error(BenchmarkReportData.metricMapStandaloneIndexingConcurrent3.toString());
+
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("indexing_throughput_data_standalone_concurrent.csv",
 					BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.metricMapStandaloneIndexingConcurrent1.get("CommitID") + ", "
@@ -428,6 +548,14 @@ public class BenchmarkAppConnector {
 		}
 
 		if (BenchmarkReportData.returnStandaloneCreateCollectionMap != null) {
+	
+			if (BenchmarkReportData.returnStandaloneCreateCollectionMap.get("TimeStamp") == null 
+					|| BenchmarkReportData.returnStandaloneCreateCollectionMap.get("CommitID") == null
+					|| BenchmarkReportData.returnStandaloneCreateCollectionMap.get("CreateCollectionTime") == null) {
+				logger.error(BenchmarkReportData.returnStandaloneCreateCollectionMap.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("create_collection_data_standalone_regular.csv",
 					BenchmarkReportData.returnStandaloneCreateCollectionMap.get("TimeStamp") + ", " + Util.TEST_ID
 							+ ", " + BenchmarkReportData.returnStandaloneCreateCollectionMap.get("CreateCollectionTime")
@@ -436,6 +564,14 @@ public class BenchmarkAppConnector {
 		}
 
 		if (BenchmarkReportData.returnCloudCreateCollectionMap != null) {
+			
+			if (BenchmarkReportData.returnCloudCreateCollectionMap.get("TimeStamp") == null 
+					|| BenchmarkReportData.returnCloudCreateCollectionMap.get("CommitID") == null
+					|| BenchmarkReportData.returnCloudCreateCollectionMap.get("CreateCollectionTime") == null) {
+				logger.error(BenchmarkReportData.returnCloudCreateCollectionMap.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("create_collection_data_cloud_regular.csv",
 					BenchmarkReportData.returnCloudCreateCollectionMap.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.returnCloudCreateCollectionMap.get("CreateCollectionTime") + ", "
@@ -446,6 +582,45 @@ public class BenchmarkAppConnector {
 
 		if (BenchmarkReportData.queryTNQMetricS_T1 != null && BenchmarkReportData.queryTNQMetricS_T2 != null
 				&& BenchmarkReportData.queryTNQMetricS_T3 != null && BenchmarkReportData.queryTNQMetricS_T4 != null) {
+			
+			if (BenchmarkReportData.queryTNQMetricS_T1.get("TimeStamp") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("CommitID") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("MinQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("MaxQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("75thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("95thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("99thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T1.get("99.9thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("MinQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("MaxQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("75thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("95thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("99thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T2.get("99.9thQtime") == null					
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("MinQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("MaxQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("75thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("95thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("99thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T3.get("99.9thQtime") == null					
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("MinQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("MaxQTime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("75thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("95thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("99thQtime") == null
+					|| BenchmarkReportData.queryTNQMetricS_T4.get("99.9thQtime") == null) {
+				
+				logger.error(BenchmarkReportData.queryTNQMetricS_T1.toString());
+				logger.error(BenchmarkReportData.queryTNQMetricS_T2.toString());
+				logger.error(BenchmarkReportData.queryTNQMetricS_T3.toString());
+				logger.error(BenchmarkReportData.queryTNQMetricS_T4.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+
 			BenchmarkAppConnector.writeToWebAppDataFile("term_numeric_query_benchmark_standalone.csv",
 					BenchmarkReportData.queryTNQMetricS_T1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.queryTNQMetricS_T1.get("CommitID") + ", "
@@ -482,6 +657,45 @@ public class BenchmarkAppConnector {
 
 		if (BenchmarkReportData.queryRNQMetricS_T1 != null && BenchmarkReportData.queryRNQMetricS_T2 != null
 				&& BenchmarkReportData.queryRNQMetricS_T3 != null && BenchmarkReportData.queryRNQMetricS_T4 != null) {
+			
+			if (BenchmarkReportData.queryRNQMetricS_T1.get("TimeStamp") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("CommitID") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("MinQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("MaxQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("75thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("95thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("99thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T1.get("99.9thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("MinQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("MaxQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("75thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("95thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("99thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T2.get("99.9thQtime") == null					
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("MinQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("MaxQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("75thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("95thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("99thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T3.get("99.9thQtime") == null					
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("QueriesPerSecond") == null
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("MinQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("MaxQTime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("75thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("95thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("99thQtime") == null
+					|| BenchmarkReportData.queryRNQMetricS_T4.get("99.9thQtime") == null) {
+				
+				logger.error(BenchmarkReportData.queryRNQMetricS_T1.toString());
+				logger.error(BenchmarkReportData.queryRNQMetricS_T2.toString());
+				logger.error(BenchmarkReportData.queryRNQMetricS_T3.toString());
+				logger.error(BenchmarkReportData.queryRNQMetricS_T4.toString());
+				throw new Exception("PublishDataForWebApp: Null Values Observed.");
+			}
+			
 			BenchmarkAppConnector.writeToWebAppDataFile("range_numeric_query_benchmark_standalone.csv",
 					BenchmarkReportData.queryRNQMetricS_T1.get("TimeStamp") + ", " + Util.TEST_ID + ", "
 							+ BenchmarkReportData.queryRNQMetricS_T1.get("CommitID") + ", "

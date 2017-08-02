@@ -239,10 +239,10 @@ public class SolrIndexingClient {
 			}
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new IOException(e.getMessage());
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 		

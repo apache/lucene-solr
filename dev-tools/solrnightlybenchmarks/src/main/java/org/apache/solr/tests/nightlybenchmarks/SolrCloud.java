@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.log4j.Logger;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 /**
@@ -31,6 +32,8 @@ import org.eclipse.jgit.api.errors.GitAPIException;
  *
  */
 public class SolrCloud {
+
+	public final static Logger logger = Logger.getLogger(SolrCloud.class);
 
 	public int solrNodes;
 	public String shards;
@@ -90,6 +93,7 @@ public class SolrCloud {
 				this.zookeeperIp = zookeeperNode.getZookeeperIp();
 				this.zookeeperPort = zookeeperNode.getZookeeperPort();
 			} else {
+				logger.error("Failed to start Zookeeper!");
 				throw new RuntimeException("Failed to start Zookeeper!");
 			}
 
@@ -109,13 +113,13 @@ public class SolrCloud {
 			this.url = "http://" + this.host + ":" + this.port + "/solr/" + this.collectionName;
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new IOException(e.getMessage());
 		} catch (GitAPIException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new InterruptedException(e.getMessage());
 		}
 	}
@@ -133,7 +137,7 @@ public class SolrCloud {
 		try {
 			nodes.get(0).createCollection(collectionName, configName, shards, replicas);
 		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
@@ -148,7 +152,7 @@ public class SolrCloud {
 		try {
 			nodes.get(0).deleteCollection(collectionName);
 		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}

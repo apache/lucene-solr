@@ -60,6 +60,7 @@ public class ProcessStreamReader extends Thread {
 			}
 
 		} catch (IOException ioe) {
+			logger.error(ioe.getMessage());
 			throw new RuntimeException(ioe.getMessage());
 		}
 	}

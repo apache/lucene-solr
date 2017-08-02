@@ -107,6 +107,7 @@ public class SolrNode {
 			} 
 
 		} catch (Exception e) {
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
@@ -138,7 +139,7 @@ public class SolrNode {
 				try {
 				    pullCmd.call();
 				} catch (GitAPIException e) {
-				    e.printStackTrace();  
+					logger.error(e.getMessage());
 				    throw new Exception(e.getMessage());
 				}
 				
@@ -186,6 +187,7 @@ public class SolrNode {
 				logger.debug("File copied!");
 
 			} else {
+				logger.error("Couldn't build the package");
 				throw new IOException("Couldn't build the package"); 
 			}
 		} 

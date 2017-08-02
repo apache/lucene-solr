@@ -114,10 +114,10 @@ public class CloudConcurrentIndexingClient implements Runnable {
 			br.close();
 
 		} catch (IOException e) {
-			logger.error("CloudConcurrentIndexingClient: " + e.getMessage());
+			logger.error(e.getMessage());
 			throw new IOException(e.getMessage());
 		} catch (Exception e) {
-			logger.error("CloudConcurrentIndexingClient: " + e.getMessage());
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 
@@ -136,7 +136,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 				try {
 					addDocument(collectionName, documents.poll());
 				} catch (SolrServerException | IOException e) {
-					e.printStackTrace();
+					logger.error(e.getMessage());
 					throw new RuntimeException(e.getMessage());
 				}
 			} else if (running == false) {
@@ -178,7 +178,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 			solrClient.commit(collectionName);
 			solrClient.close();
 		} catch (SolrServerException | IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
 	}
