@@ -230,7 +230,7 @@ public class SolrIndexingClient {
 			returnMetricMap.put("TimeFormat", "yyyy/MM/dd HH:mm:ss");
 			returnMetricMap.put("IndexingTime", "" + (end - start));
 			returnMetricMap.put("IndexingThroughput",
-					"" + (double) numberOfDocuments / ((double) Math.floor(((end - start) / 1000d))));
+					"" + (double) numberOfDocuments / ((double) ((end - start) / 1000d)));
 			returnMetricMap.put("ThroughputUnit", "doc/sec");
 			returnMetricMap.put("CommitID", this.commitId);
 

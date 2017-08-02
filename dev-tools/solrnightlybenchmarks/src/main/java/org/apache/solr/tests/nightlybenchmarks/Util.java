@@ -1098,7 +1098,8 @@ public class Util {
 							|| argsList.get(i).equals("--test-with-number-of-documents")
 							|| argsList.get(i).equals("--latest-commit") 
 							|| argsList.get(i).equals("--archive")
-							|| argsList.get(i).equals("--clear-data")) {
+							|| argsList.get(i).equals("--clear-data")
+							|| argsList.get(i).equals("--use-sample-dataset")) {
 					} else {
 						if (argsList.get(i).startsWith("--")) {
 							logger.debug("");
@@ -1111,6 +1112,9 @@ public class Util {
 				int atleastOne = 0;
 				
 				if (argsList.contains("--clear-data")) {
+					atleastOne++;
+				}
+				if (argsList.contains("--use-sample-dataset")) {
 					atleastOne++;
 				}
 				if (argsList.contains("--archive")) {
@@ -1240,30 +1244,72 @@ public class Util {
 				Util.cleanRunDirectory();
 				Util.deleteRunningFile();
 			}
-
-			if (argsList.contains("--latest-commit")) {
-				Util.createIsRunningFile();
-				Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
-				logger.debug("The latest commit ID is: " + Util.COMMIT_ID);
-
-				TestPlans.execute();
-				BenchmarkAppConnector.publishDataForWebApp();
-				BenchmarkReportData.reset();
-				if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
-					Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+			
+			if (argsList.contains("--use-sample-dataset")) {
+				
+				String load;
+				try {
+					 load = argsList.get(argsList.indexOf("--use-sample-dataset") + 1); // load from 0 to 1
+				} catch (Exception e) {
+					throw new Exception("Value for --use-sample-dataset is not defined!");
 				}
-			} else if (argsList.contains("--commit-id")) {
-				Util.createIsRunningFile();
-				Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
-				logger.debug(" Executing benchmarks with commit: " + Util.COMMIT_ID);
-				TestPlans.execute();
-				BenchmarkAppConnector.publishDataForWebApp();
-				BenchmarkReportData.reset();
-				if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
-					Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+				
+				if (Double.parseDouble(load) > 1.0 || Double.parseDouble(load) < 0) {
+					throw new Exception("--use-sample-dataset not in range: please set value between 0 < x <= 1");
+				}
+				
+				if (argsList.contains("--latest-commit")) {
+					Util.createIsRunningFile();
+					Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
+					logger.debug("The latest commit ID is: " + Util.COMMIT_ID);
+					TestPlans.sampleTest(Double.parseDouble(load));
+					BenchmarkAppConnector.publishDataForWebApp();
+					BenchmarkReportData.reset();
+					if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+						Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+					}
+				} else if (argsList.contains("--commit-id")) {
+
+					try {
+						Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
+					} catch (Exception e) {
+						throw new Exception("Value for --commit-id is not defined!");
+					}
+					
+					Util.createIsRunningFile();
+					logger.debug(" Executing benchmarks with commit: " + Util.COMMIT_ID);
+					TestPlans.sampleTest(Double.parseDouble(load));
+					BenchmarkAppConnector.publishDataForWebApp();
+					BenchmarkReportData.reset();
+					if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+						Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+					}
+				}
+			} else {
+
+				if (argsList.contains("--latest-commit")) {
+					Util.createIsRunningFile();
+					Util.COMMIT_ID = Util.getLatestCommitID(Util.LUCENE_SOLR_REPOSITORY_URL);
+					logger.debug("The latest commit ID is: " + Util.COMMIT_ID);
+	
+					TestPlans.execute();
+					BenchmarkAppConnector.publishDataForWebApp();
+					BenchmarkReportData.reset();
+					if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+						Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+					}
+				} else if (argsList.contains("--commit-id")) {
+					Util.createIsRunningFile();
+					Util.COMMIT_ID = argsList.get(argsList.indexOf("--commit-id") + 1);
+					logger.debug(" Executing benchmarks with commit: " + Util.COMMIT_ID);
+					TestPlans.execute();
+					BenchmarkAppConnector.publishDataForWebApp();
+					BenchmarkReportData.reset();
+					if (new File(Util.DOWNLOAD_DIR + "git-repository/solr/package/").exists()) {
+						Util.execute("rm -r -f " + Util.DOWNLOAD_DIR + "git-repository/solr/package/", Util.DOWNLOAD_DIR);
+					}
 				}
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error(e.getMessage());

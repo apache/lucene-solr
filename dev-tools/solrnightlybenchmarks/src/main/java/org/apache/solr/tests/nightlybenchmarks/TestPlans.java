@@ -21,16 +21,22 @@ import org.apache.log4j.Logger;
 
 /**
  * This class provides the Test Plan for Solr Standalone and Solr Cloud.
+ * 
  * @author Vivek Narang
  *
  */
 public class TestPlans {
-	
+
 	public final static Logger logger = Logger.getLogger(TestPlans.class);
+
+	public enum BenchmarkTestType {
+		PROD_TEST, DEV_TEST
+	}
 
 	/**
 	 * A method describing a test plan for benchmarking.
-	 * @throws Exception 
+	 * 
+	 * @throws Exception
 	 */
 	public static void execute() throws Exception {
 
@@ -41,24 +47,66 @@ public class TestPlans {
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.INDEX);
 
 		Tests.indexingTestsStandalone(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.PARTIAL_UPDATE);
-		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, ActionType.PARTIAL_UPDATE);
-		
-		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
+		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
+				ActionType.PARTIAL_UPDATE);
+
+		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS, BenchmarkTestType.PROD_TEST);
 
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 3, "1", "3");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
 
-		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
-		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1");
-		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 3, "1", "3");
-		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2");
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2",
+				BenchmarkTestType.PROD_TEST);
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1",
+				BenchmarkTestType.PROD_TEST);
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 3, "1", "3",
+				BenchmarkTestType.PROD_TEST);
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2",
+				BenchmarkTestType.PROD_TEST);
 
-		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS);
+		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS, BenchmarkTestType.PROD_TEST);
 
 		logger.info("Executing the benchmark test plan [COMPLETE] ...");
 
 	}
 
+	public static void sampleTest(double load) throws Exception {
+
+		logger.info("Executing the benchmark sanity test plan: load " + load + " number of documents: "
+				+ (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load));
+
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load),
+				ActionType.INDEX);
+		Tests.createCollectionTestStandalone(Util.COMMIT_ID);
+		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load),
+				ActionType.INDEX);
+
+		Tests.indexingTestsStandalone(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load),
+				ActionType.PARTIAL_UPDATE);
+		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load),
+				ActionType.PARTIAL_UPDATE);
+
+		Tests.queryTestsStandalone((long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), BenchmarkTestType.DEV_TEST);
+
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 2, "1", "2");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 2, "2", "1");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 3, "1", "3");
+		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 4, "2", "2");
+
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID,
+				(long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 2, "1", "2", BenchmarkTestType.DEV_TEST);
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID,
+				(long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 2, "2", "1", BenchmarkTestType.DEV_TEST);
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID,
+				(long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 3, "1", "3", BenchmarkTestType.DEV_TEST);
+		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID,
+				(long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 4, "2", "2", BenchmarkTestType.DEV_TEST);
+
+		Tests.queryTestsCloud((long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), BenchmarkTestType.DEV_TEST);
+
+		logger.info("Executing the benchmark sanity test plan [COMPLETE] ...");
+
+	}
 }

@@ -68,7 +68,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 		solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperURL).build();
 		solrClient.setDefaultCollection(collectionName);
 		solrClient.connect();
-		logger.debug(this.toString() + " QUERY CLIENT CREATED ... Testing Type: ");
+		logger.debug(this.toString() + " INDEXING CLIENT CREATED ...");
 	}
 
 	/**
