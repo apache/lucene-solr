@@ -106,6 +106,8 @@ Other Changes
 * SOLR-11140: Remove unused parameter in (private) SolrMetricManager.prepareCloudPlugins method.
   (Omar Abdelnabi via Christine Poerschke)
 
+* SOLR-11187: contrib/ltr TestModelManagerPersistence improvements. (Yuki Yano via Christine Poerschke)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
