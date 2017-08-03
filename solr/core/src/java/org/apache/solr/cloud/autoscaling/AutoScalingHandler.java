@@ -273,6 +273,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (policies == null || !policies.containsKey(policyName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No policy exists with name: " + policyName);
     }
+    container.getZkController().getZkStateReader().getClusterState().forEachCollection(coll -> {
+      if (policyName.equals(coll.getPolicyName())) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          StrUtils.formatString("policy : {0} is being used by collection {1}", policyName, coll.getName()));
+    });
+
     policies = new HashMap<>(policies);
     policies.remove(policyName);
     Policy p = currentConfig.getPolicy().withPolicies(policies);
