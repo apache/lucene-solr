@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public class GeoCompositePolygon extends GeoCompositeMembershipShape implements GeoPolygon {
+public class GeoCompositePolygon extends GeoCompositeAreaShape implements GeoPolygon {
   /** Constructor.
    */
   public GeoCompositePolygon() {

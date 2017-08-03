@@ -140,6 +140,14 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
+    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
+    return geoShape.intersects(leftPlane, planePoints) ||
+        geoShape.intersects(rightPlane, planePoints);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -148,30 +156,6 @@ class GeoWideLongitudeSlice extends GeoBaseBBox {
       .addIntersection(planetModel, leftPlane, rightPlane)
       .addPoint(planetModel.NORTH_POLE)
       .addPoint(planetModel.SOUTH_POLE);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE)
-      return OVERLAPS;
-
-    final boolean insideShape = path.isWithin(planetModel.NORTH_POLE);
-
-    if (insideRectangle == ALL_INSIDE && insideShape)
-      return OVERLAPS;
-
-    if (path.intersects(leftPlane, planePoints) ||
-        path.intersects(rightPlane, planePoints))
-      return OVERLAPS;
-
-    if (insideRectangle == ALL_INSIDE)
-      return WITHIN;
-
-    if (insideShape)
-      return CONTAINS;
-
-    return DISJOINT;
   }
 
   @Override

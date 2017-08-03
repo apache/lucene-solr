@@ -14,23 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * All bounding box shapes can derive from this base class, which furnishes
- * some common code
+ * Shape that implements GeoArea. This type of shapes are able to resolve the
+ * spatial relationship of other shapes with itself.
  *
- * @lucene.internal
+ * @lucene.experimental
  */
-abstract class GeoBaseBBox extends GeoBaseAreaShape implements GeoBBox {
 
-  /** Construct, given planet model.
-   *@param planetModel is the planet model.
+public interface GeoAreaShape extends GeoMembershipShape, GeoArea{
+
+  /**
+   * Assess whether a shape intersects with any of the edges this shape.
+   * Note well that this method return false if the shape contains, is within
+   * or is disjoint with the given shape.
+   *
+   * @param geoShape is the shape to assess for intersection with this shape's edges.
+   *
+   * @return true if there's such an intersection, false if not.
    */
-  public GeoBaseBBox(final PlanetModel planetModel) {
-    super(planetModel);
-  }
-
-
+  boolean intersects(GeoShape geoShape);
 }
-

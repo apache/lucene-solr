@@ -197,6 +197,14 @@ class GeoRectangle extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(GeoShape geoShape) {
+    return geoShape.intersects(topPlane, topPlanePoints, bottomPlane, leftPlane, rightPlane) ||
+        geoShape.intersects(bottomPlane, bottomPlanePoints, topPlane, leftPlane, rightPlane) ||
+        geoShape.intersects(leftPlane, leftPlanePoints, rightPlane, topPlane, bottomPlane) ||
+        geoShape.intersects(rightPlane,  rightPlanePoints, leftPlane, topPlane, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.addHorizontalPlane(planetModel, topLat, topPlane, bottomPlane, leftPlane, rightPlane)
@@ -205,43 +213,6 @@ class GeoRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, bottomPlane, rightPlane)
       .addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(LLHC).addPoint(LRHC);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" getrelationship with "+path);
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
-      return OVERLAPS;
-    }
-
-    final boolean insideShape = path.isWithin(ULHC);
-
-    if (insideRectangle == ALL_INSIDE && insideShape) {
-      //System.err.println(" inside of each other");
-      return OVERLAPS;
-    }
-
-    if (path.intersects(topPlane, topPlanePoints, bottomPlane, leftPlane, rightPlane) ||
-        path.intersects(bottomPlane, bottomPlanePoints, topPlane, leftPlane, rightPlane) ||
-        path.intersects(leftPlane, leftPlanePoints, topPlane, bottomPlane, rightPlane) ||
-        path.intersects(rightPlane, rightPlanePoints, leftPlane, topPlane, bottomPlane)) {
-      //System.err.println(" edges intersect");
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      //System.err.println(" shape contains rectangle");
-      return CONTAINS;
-    }
-    //System.err.println(" disjoint");
-    return DISJOINT;
   }
 
   @Override

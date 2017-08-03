@@ -173,6 +173,13 @@ class GeoSouthRectangle extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(topPlane, topPlanePoints, leftPlane, rightPlane) ||
+        geoShape.intersects(leftPlane, leftPlanePoints, rightPlane, topPlane) ||
+        geoShape.intersects(rightPlane, rightPlanePoints, leftPlane, topPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
@@ -181,42 +188,6 @@ class GeoSouthRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, leftPlane)
       .addIntersection(planetModel, rightPlane, leftPlane, topPlane)
       .addPoint(URHC).addPoint(ULHC).addPoint(planetModel.SOUTH_POLE);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" getrelationship with "+path);
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
-      return OVERLAPS;
-    }
-
-    final boolean insideShape = path.isWithin(planetModel.SOUTH_POLE);
-
-    if (insideRectangle == ALL_INSIDE && insideShape) {
-      //System.err.println(" inside of each other");
-      return OVERLAPS;
-    }
-
-    if (path.intersects(topPlane, topPlanePoints, leftPlane, rightPlane) ||
-        path.intersects(leftPlane, leftPlanePoints, topPlane, rightPlane) ||
-        path.intersects(rightPlane, rightPlanePoints, leftPlane, topPlane)) {
-      //System.err.println(" edges intersect");
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      //System.err.println(" shape contains rectangle");
-      return CONTAINS;
-    }
-    //System.err.println(" disjoint");
-    return DISJOINT;
   }
 
   @Override
