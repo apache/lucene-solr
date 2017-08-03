@@ -97,6 +97,11 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints, boundingPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
@@ -107,7 +112,7 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   @Override
   public int getRelationship(final GeoShape path) {
     // Look for intersections.
-    if (path.intersects(plane, planePoints, boundingPlane))
+    if (intersects(path))
       return OVERLAPS;
 
     if (path.isWithin(interiorPoint))

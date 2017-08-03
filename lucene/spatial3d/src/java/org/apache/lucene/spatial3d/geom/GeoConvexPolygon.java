@@ -356,6 +356,27 @@ class GeoConvexPolygon extends GeoBasePolygon {
     return false;
   }
 
+  @Override
+  public boolean intersects(GeoShape shape) {
+    for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+      final SidedPlane edge = edges[edgeIndex];
+      final GeoPoint[] points = this.notableEdgePoints[edgeIndex];
+      if (!isInternalEdges.get(edgeIndex)) {
+        if (shape.intersects(edge, points, eitherBounds.get(edge))) {
+          return true;
+        }
+      }
+    }
+    if (holes != null) {
+      for (final GeoPolygon hole : holes) {
+        if (hole.intersects(shape)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /** A membership implementation representing polygon edges that must apply.
    */
   protected static class EitherBound implements Membership {

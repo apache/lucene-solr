@@ -155,6 +155,11 @@ class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints, leftPlane, rightPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.addHorizontalPlane(planetModel, latitude, plane, leftPlane, rightPlane)
@@ -164,7 +169,7 @@ class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   @Override
   public int getRelationship(final GeoShape path) {
     //System.err.println("getting relationship between "+this+" and "+path);
-    if (path.intersects(plane, planePoints, leftPlane, rightPlane)) {
+    if (intersects(path)) {
       //System.err.println(" overlaps");
       return OVERLAPS;
     }
