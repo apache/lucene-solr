@@ -106,6 +106,8 @@ Other Changes
 * SOLR-11140: Remove unused parameter in (private) SolrMetricManager.prepareCloudPlugins method.
   (Omar Abdelnabi via Christine Poerschke)
 
+* SOLR-11187: contrib/ltr TestModelManagerPersistence improvements. (Yuki Yano via Christine Poerschke)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
@@ -395,6 +397,9 @@ Bug Fixes
 
 * SOLR-11154: Child documents' return fields now include useDocValuesAsStored fields (Mohammed Sheeri Shaketi Nauage via
   Ishan Chattopadhyaya)
+
+* SOLR-11163: Fix contrib/ltr Normalizer persistence after solr core reload or restart.
+  (Yuki Yano via Christine Poerschke)
 
 Optimizations
 ----------------------
