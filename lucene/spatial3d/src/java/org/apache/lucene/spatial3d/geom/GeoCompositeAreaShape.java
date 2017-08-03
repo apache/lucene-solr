@@ -18,7 +18,7 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * GeoCompositeAreShape is a set of GeoAreaShape's, treated as a unit.
+ * GeoCompositeAreaShape is a set of GeoAreaShape's, treated as a unit.
  *
  * @lucene.experimental
  */
@@ -37,6 +37,7 @@ public class GeoCompositeAreaShape extends GeoCompositeMembershipShape implement
     shapes.add(shape);
   }
 
+  @Override
   public boolean intersects(GeoShape geoShape){
     for(GeoShape inShape : shapes){
       if (((GeoAreaShape)inShape).intersects(geoShape)){
