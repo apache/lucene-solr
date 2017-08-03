@@ -396,6 +396,9 @@ Bug Fixes
 * SOLR-11154: Child documents' return fields now include useDocValuesAsStored fields (Mohammed Sheeri Shaketi Nauage via
   Ishan Chattopadhyaya)
 
+* SOLR-11163: Fix contrib/ltr Normalizer persistence after solr core reload or restart.
+  (Yuki Yano via Christine Poerschke)
+
 Optimizations
 ----------------------
 
