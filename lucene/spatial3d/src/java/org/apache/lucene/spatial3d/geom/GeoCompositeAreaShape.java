@@ -24,6 +24,11 @@ package org.apache.lucene.spatial3d.geom;
  */
 public class GeoCompositeAreaShape extends GeoCompositeMembershipShape implements GeoAreaShape {
 
+  /** Constructor.
+   */
+  public GeoCompositeAreaShape() {
+  }
+
   /**
    * Add a shape to the composite. It throw an IllegalArgumentException
    * if the shape is not a GeoAreaShape
