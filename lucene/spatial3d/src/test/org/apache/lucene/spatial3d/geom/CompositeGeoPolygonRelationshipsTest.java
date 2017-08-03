@@ -705,11 +705,11 @@ public class CompositeGeoPolygonRelationshipsTest {
                                      double lon4,double lat4,
                                      double lon5,double lat5)
   {
-    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat1), Math.toRadians(lon1));
-    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat2), Math.toRadians(lon2));
-    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat3), Math.toRadians(lon3));
-    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat4), Math.toRadians(lon4));
-    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat5), Math.toRadians(lon5));
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat1), Geo3DUtil.fromDegrees(lon1));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat2), Geo3DUtil.fromDegrees(lon2));
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat3), Geo3DUtil.fromDegrees(lon3));
+    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat4), Geo3DUtil.fromDegrees(lon4));
+    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat5), Geo3DUtil.fromDegrees(lon5));
     final List<GeoPoint> points = new ArrayList<>();
     points.add(point1);
     points.add(point2);
@@ -724,10 +724,10 @@ public class CompositeGeoPolygonRelationshipsTest {
                                             double lon3,double lat3,
                                             double lon4,double lat4)
   {
-    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat1), Math.toRadians(lon1));
-    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat2), Math.toRadians(lon2));
-    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat3), Math.toRadians(lon3));
-    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat4), Math.toRadians(lon4));
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat1), Geo3DUtil.fromDegrees(lon1));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat2), Geo3DUtil.fromDegrees(lon2));
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat3), Geo3DUtil.fromDegrees(lon3));
+    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(lat4), Geo3DUtil.fromDegrees(lon4));
     final List<GeoPoint> points = new ArrayList<>();
     points.add(point1);
     points.add(point2);
@@ -738,14 +738,14 @@ public class CompositeGeoPolygonRelationshipsTest {
 
   private GeoPolygon getCompositePolygon(){
     //POLYGON((0 80, 45 85 ,90 80,135 85,180 80, -135 85, -90 80, -45 85,0 80))
-    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(0));
-    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(45));
-    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(90));
-    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(135));
-    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(180));
-    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(-135));
-    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(-90));
-    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(-45));
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(0));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(45));
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(90));
+    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(135));
+    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(180));
+    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(-135));
+    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(-90));
+    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(-45));
     final List<GeoPoint> points = new ArrayList<>();
     points.add(point1);
     points.add(point2);
@@ -760,14 +760,14 @@ public class CompositeGeoPolygonRelationshipsTest {
 
   private GeoPolygon getComplexPolygon(){
     //POLYGON((0 80, 45 85 ,90 80,135 85,180 80, -135 85, -90 80, -45 85,0 80))
-    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(0));
-    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(45));
-    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(90));
-    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(135));
-    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(180));
-    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(-135));
-    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(80), Math.toRadians(-90));
-    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(85), Math.toRadians(-45));
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(0));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(45));
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(90));
+    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(135));
+    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(180));
+    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(-135));
+    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(80), Geo3DUtil.fromDegrees(-90));
+    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(85), Geo3DUtil.fromDegrees(-45));
     final List<GeoPoint> points = new ArrayList<>();
     points.add(point1);
     points.add(point2);
@@ -784,20 +784,20 @@ public class CompositeGeoPolygonRelationshipsTest {
   private GeoPolygon getMultiPolygon(){
     //MULTIPOLYGON(((-145.790967486 -5.17543698881, -145.790854979 -5.11348060995, -145.853073512 -5.11339421216, -145.853192037 -5.17535061936, -145.790967486 -5.17543698881)),
     //((-145.8563923 -5.17527125408, -145.856222168 -5.11332154814, -145.918433943 -5.11317773171, -145.918610092 -5.17512738429, -145.8563923 -5.17527125408)))
-    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.17543698881), Math.toRadians(-145.790967486));
-    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.11348060995), Math.toRadians(-145.790854979));
-    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.11339421216), Math.toRadians(-145.853073512));
-    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.17535061936), Math.toRadians(-145.853192037));
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.17543698881), Geo3DUtil.fromDegrees(-145.790967486));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.11348060995), Geo3DUtil.fromDegrees(-145.790854979));
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.11339421216), Geo3DUtil.fromDegrees(-145.853073512));
+    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.17535061936), Geo3DUtil.fromDegrees(-145.853192037));
     final List<GeoPoint> points1 = new ArrayList<>();
     points1.add(point1);
     points1.add(point2);
     points1.add(point3);
     points1.add(point4);
     GeoPolygonFactory.PolygonDescription pd1 = new GeoPolygonFactory.PolygonDescription(points1);
-    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.17527125408), Math.toRadians(-145.8563923));
-    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.11332154814), Math.toRadians(-145.856222168));
-    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.11317773171), Math.toRadians(-145.918433943));
-    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-5.17512738429), Math.toRadians(-145.918610092));
+    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.17527125408), Geo3DUtil.fromDegrees(-145.8563923));
+    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.11332154814), Geo3DUtil.fromDegrees(-145.856222168));
+    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.11317773171), Geo3DUtil.fromDegrees(-145.918433943));
+    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-5.17512738429), Geo3DUtil.fromDegrees(-145.918610092));
     final List<GeoPoint> points2 = new ArrayList<>();
     points2.add(point5);
     points2.add(point6);
@@ -813,19 +813,19 @@ public class CompositeGeoPolygonRelationshipsTest {
   public GeoShape getInsideCompositeShape(){
     //MULTIPOLYGON(((19.945091 -60.552631, 20.319948 -61.555652, 20.9 -61.5, 20.9 -61, 19.945091 -60.552631)),
     // ((21.1 -61.5,  23.107901 -61.253298, 22.720804 -60.457713,21.1 -61, 21.1 -61.5)))
-    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-60.552631), Math.toRadians(19.945091));
-    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-61.555652), Math.toRadians(20.319948));
-    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-61.5), Math.toRadians(20.9));
-    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-61), Math.toRadians(20.9));
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-60.552631), Geo3DUtil.fromDegrees(19.945091));
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-61.555652), Geo3DUtil.fromDegrees(20.319948));
+    GeoPoint point3 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-61.5), Geo3DUtil.fromDegrees(20.9));
+    GeoPoint point4 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-61), Geo3DUtil.fromDegrees(20.9));
     final List<GeoPoint> points1 = new ArrayList<>();
     points1.add(point1);
     points1.add(point2);
     points1.add(point3);
     points1.add(point4);
-    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-61.5), Math.toRadians(21.1));
-    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-61.253298), Math.toRadians(23.107901));
-    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-60.457713), Math.toRadians(22.720804));
-    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(-61), Math.toRadians(21.1));
+    GeoPoint point5 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-61.5), Geo3DUtil.fromDegrees(21.1));
+    GeoPoint point6 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-61.253298), Geo3DUtil.fromDegrees(23.107901));
+    GeoPoint point7 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-60.457713), Geo3DUtil.fromDegrees(22.720804));
+    GeoPoint point8 = new GeoPoint(PlanetModel.SPHERE, Geo3DUtil.fromDegrees(-61), Geo3DUtil.fromDegrees(21.1));
     final List<GeoPoint> points2 = new ArrayList<>();
     points2.add(point5);
     points2.add(point6);
