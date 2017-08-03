@@ -82,8 +82,8 @@ public class StandardNormalizer extends Normalizer {
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
     final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
-    params.put("avg", '"'+Float.toString(avg)+'"');
-    params.put("std", '"'+Float.toString(std)+'"');
+    params.put("avg", Float.toString(avg));
+    params.put("std", Float.toString(std));
     return params;
   }
 

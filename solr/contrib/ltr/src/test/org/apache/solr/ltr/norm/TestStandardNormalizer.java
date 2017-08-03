@@ -40,7 +40,7 @@ public class TestStandardNormalizer {
     final StandardNormalizer sn = (StandardNormalizer)n;
     assertEquals(sn.getAvg(), expectedAvg, 0.0);
     assertEquals(sn.getStd(), expectedStd, 0.0);
-    assertEquals("{avg=\""+expectedAvg+"\", std=\""+expectedStd+"\"}", sn.paramsToMap().toString());
+    assertEquals("{avg="+expectedAvg+", std="+expectedStd+"}", sn.paramsToMap().toString());
     return n;
   }
 
@@ -129,5 +129,20 @@ public class TestStandardNormalizer {
         10000000f}) {
       assertEquals((v - 10f) / (1.5f), norm.normalize(v), 0.0001);
     }
+  }
+
+  @Test
+  public void testParamsToMap() {
+    final StandardNormalizer n1 = new StandardNormalizer();
+    n1.setAvg(2.0f);
+    n1.setStd(3.0f);
+
+    final Map<String, Object> params = n1.paramsToMap();
+    final StandardNormalizer n2 = (StandardNormalizer) Normalizer.getInstance(
+        new SolrResourceLoader(),
+        StandardNormalizer.class.getName(),
+        params);
+    assertEquals(n1.getAvg(), n2.getAvg(), 1e-6);
+    assertEquals(n1.getStd(), n2.getStd(), 1e-6);
   }
 }
