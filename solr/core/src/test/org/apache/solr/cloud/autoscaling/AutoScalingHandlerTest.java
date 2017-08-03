@@ -342,12 +342,12 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeTriggerCommand);
     try {
-      response = solrClient.request(req);
-      String errorMsg = (String) ((NamedList)response.get("error")).get("msg");
-      assertTrue(errorMsg.contains("Cannot remove trigger: node_lost_trigger because it has active listeners: ["));
+      solrClient.request(req);
+      fail("expected exception");
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(e.getMessage().contains("Cannot remove trigger: node_lost_trigger because it has active listeners: ["));
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/errorMessages[0]/errorMessages[0]")).contains("Cannot remove trigger: node_lost_trigger because it has active listeners: ["));
     }
 
     String removeListenerCommand = "{\n" +
@@ -398,12 +398,12 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
     try {
-      response = solrClient.request(req);
-      String errorMsg = (String) ((NamedList)response.get("error")).get("msg");
-      assertTrue(errorMsg.contains("A trigger with the name node_lost_trigger does not exist"));
+      solrClient.request(req);
+      fail("should have thrown Exception");
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
-      assertTrue(e.getMessage().contains("A trigger with the name node_lost_trigger does not exist"));
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/errorMessages[0]/errorMessages[0]")).contains("A trigger with the name node_lost_trigger does not exist"));
     }
   }
 
@@ -753,8 +753,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, removePolicyCommand));
       fail("should have failed");
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      assertTrue(String.valueOf(getObjectByPath(e.getMetaData(), true, "error/errorMessages[0]/errorMessages[0]"))
+          .contains("is being used by collection"));
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains("is being used by collection"));
+      fail("Only RemoteExecutionException expected");
     }
     solrClient.request(CollectionAdminRequest.deleteCollection("COLL1"));
   }
@@ -764,7 +767,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String subPath, String message) {
-    boolean useV1 = random().nextBoolean();
+    boolean useV1 = false;
     String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
     path += subPath != null ? subPath : "";
     return useV1

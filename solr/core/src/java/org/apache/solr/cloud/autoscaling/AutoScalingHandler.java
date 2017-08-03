@@ -70,8 +70,8 @@ import org.slf4j.LoggerFactory;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
-import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.AutoScalingParams.*;
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 /**
  * Handler for /cluster/autoscaling
@@ -184,9 +184,14 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
             currentConfig = handleSetClusterPolicy(req, rsp, op, currentConfig);
             break;
           default:
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + op.name);
+            op.addError("Unknown command: " + op.name);
         }
       }
+      List errs = CommandOperation.captureErrors(ops);
+      if (!errs.isEmpty()) {
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", errs);
+      }
+
       if (!currentConfig.equals(initialConfig)) {
         // update in ZK
         if (zkSetAutoScalingConfig(container.getZkController().getZkStateReader(), currentConfig)) {
@@ -242,7 +247,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
                                                    AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> clusterPolicy = (List<Map<String, Object>>) op.getCommandData();
     if (clusterPolicy == null || !(clusterPolicy instanceof List)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster policies was not found");
+      op.addError("set-cluster-policy expects an array of objects");
+      return currentConfig;
     }
     List<Clause> cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
     Policy p = currentConfig.getPolicy().withClusterPolicy(cp);
@@ -254,7 +260,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
                                                         AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> preferences = (List<Map<String, Object>>) op.getCommandData();
     if (preferences == null || !(preferences instanceof List)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster preferences not found");
+      op.addError("A list of cluster preferences not found");
+      return currentConfig;
     }
     List<Preference> prefs = preferences.stream().map(Preference::new).collect(Collectors.toList());
     Policy p = currentConfig.getPolicy().withClusterPreferences(prefs);
@@ -264,20 +271,21 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   private AutoScalingConfig handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
-    String policyName = (String) op.getCommandData();
+    String policyName = (String) op.getVal("");
 
-    if (policyName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be empty");
-    }
+    if (op.hasError()) return currentConfig;
+
     Map<String, List<Clause>> policies = currentConfig.getPolicy().getPolicies();
     if (policies == null || !policies.containsKey(policyName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No policy exists with name: " + policyName);
+      op.addError("No policy exists with name: " + policyName);
+      return currentConfig;
     }
-    container.getZkController().getZkStateReader().getClusterState().forEachCollection(coll -> {
-      if (policyName.equals(coll.getPolicyName())) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          StrUtils.formatString("policy : {0} is being used by collection {1}", policyName, coll.getName()));
-    });
 
+    container.getZkController().getZkStateReader().getClusterState().forEachCollection(coll -> {
+      if (policyName.equals(coll.getPolicyName()))
+        op.addError(StrUtils.formatString("policy : {0} is being used by collection {1}", policyName, coll.getName()));
+    });
+    if (op.hasError()) return currentConfig;
     policies = new HashMap<>(policies);
     policies.remove(policyName);
     Policy p = currentConfig.getPolicy().withPolicies(policies);
@@ -291,7 +299,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     for (Map.Entry<String, Object> policy : policiesMap.entrySet()) {
       String policyName = policy.getKey();
       if (policyName == null || policyName.trim().length() == 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");
+        op.addError("The policy name cannot be null or empty");
+        return currentConfig;
       }
     }
     List<String> params = new ArrayList<>(currentConfig.getPolicy().getParams());
@@ -307,14 +316,12 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private AutoScalingConfig handleResumeTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                 AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
-
-    if (triggerName == null || triggerName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
-    }
+    if (op.hasError()) return currentConfig;
     Map<String, AutoScalingConfig.TriggerConfig> triggers = currentConfig.getTriggerConfigs();
     Set<String> changed = new HashSet<>();
     if (!Policy.EACH.equals(triggerName) && !triggers.containsKey(triggerName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+      op.addError("No trigger exists with name: " + triggerName);
+      return currentConfig;
     }
     Map<String, AutoScalingConfig.TriggerConfig> newTriggers = new HashMap<>();
     for (Map.Entry<String, AutoScalingConfig.TriggerConfig> entry : triggers.entrySet()) {
@@ -341,11 +348,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private AutoScalingConfig handleSuspendTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                  AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String triggerName = op.getStr(NAME);
-
-    if (triggerName == null || triggerName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
-    }
-
+    if (op.hasError()) return currentConfig;
     String timeout = op.getStr(TIMEOUT, null);
     Date resumeTime = null;
     if (timeout != null) {
@@ -354,7 +357,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         resumeTime = new Date(TimeUnit.MILLISECONDS.convert(timeSource.getTime(), TimeUnit.NANOSECONDS)
             + TimeUnit.MILLISECONDS.convert(timeoutSeconds, TimeUnit.SECONDS));
       } catch (IllegalArgumentException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'timeout' value for suspend trigger: " + triggerName);
+        op.addError("Invalid 'timeout' value for suspend trigger: " + triggerName);
+        return currentConfig;
       }
     }
 
@@ -362,7 +366,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     Set<String> changed = new HashSet<>();
 
     if (!Policy.EACH.equals(triggerName) && !triggers.containsKey(triggerName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+      op.addError("No trigger exists with name: " + triggerName);
+      return currentConfig;
     }
     Map<String, AutoScalingConfig.TriggerConfig> newTriggers = new HashMap<>();
     for (Map.Entry<String, AutoScalingConfig.TriggerConfig> entry : triggers.entrySet()) {
@@ -393,12 +398,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
                                     AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     String listenerName = op.getStr(NAME);
 
-    if (listenerName == null || listenerName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The listener name cannot be null or empty");
-    }
+    if (op.hasError()) return currentConfig;
     Map<String, AutoScalingConfig.TriggerListenerConfig> listeners = currentConfig.getTriggerListenerConfigs();
     if (listeners == null || !listeners.containsKey(listenerName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No listener exists with name: " + listenerName);
+      op.addError("No listener exists with name: " + listenerName);
+      return currentConfig;
     }
     currentConfig = currentConfig.withoutTriggerListenerConfig(listenerName);
     return currentConfig;
@@ -413,37 +417,37 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     List<String> beforeActions = op.getStrs(BEFORE_ACTION, Collections.emptyList());
     List<String> afterActions = op.getStrs(AFTER_ACTION, Collections.emptyList());
 
-    if (listenerName == null || listenerName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The listener name cannot be null or empty");
-    }
+    if (op.hasError()) return currentConfig;
 
     Map<String, AutoScalingConfig.TriggerConfig> triggers = currentConfig.getTriggerConfigs();
     if (triggers == null || !triggers.containsKey(triggerName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A trigger with the name " + triggerName + " does not exist");
+      op.addError("A trigger with the name " + triggerName + " does not exist");
+      return currentConfig;
     }
     AutoScalingConfig.TriggerConfig triggerConfig = triggers.get(triggerName);
 
     if (stageNames.isEmpty() && beforeActions.isEmpty() && afterActions.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either 'stage' or 'beforeAction' or 'afterAction' must be specified");
+      op.addError("Either 'stage' or 'beforeAction' or 'afterAction' must be specified");
+      return currentConfig;
     }
 
     for (String stage : stageNames) {
       try {
         TriggerEventProcessorStage.valueOf(stage);
       } catch (IllegalArgumentException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid stage name: " + stage);
+        op.addError("Invalid stage name: " + stage);
       }
     }
+    if (op.hasError()) return currentConfig;
 
-    if (listenerClass == null || listenerClass.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The 'class' of the listener cannot be null or empty");
-    }
     // validate that we can load the listener class
     // todo nocommit -- what about MemClassLoader?
     try {
       container.getResourceLoader().findClass(listenerClass, TriggerListener.class);
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Listener not found: " + listenerClass, e);
+      log.warn("error loading listener class ", e);
+      op.addError("Listener not found: " + listenerClass + ". error message:" + e.getMessage());
+      return currentConfig;
     }
 
     Set<String> actionNames = new HashSet<>();
@@ -453,7 +457,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       actionNames.remove(action.name);
     }
     if (!actionNames.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger '" + triggerName + "' does not have actions named: " + actionNames);
+      op.addError("The trigger '" + triggerName + "' does not have actions named: " + actionNames);
+      return currentConfig;
     }
     AutoScalingConfig.TriggerListenerConfig listener = new AutoScalingConfig.TriggerListenerConfig(listenerName, op.getValuesExcluding("name"));
     // todo - handle races between competing set-trigger and set-listener invocations
@@ -464,28 +469,25 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private AutoScalingConfig handleSetTrigger(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                              AutoScalingConfig currentConfig) throws KeeperException, InterruptedException {
     // we're going to modify the op - use a copy
-    op = new CommandOperation(op.name, Utils.getDeepCopy((Map)op.getCommandData(), 10));
     String triggerName = op.getStr(NAME);
-
-    if (triggerName == null || triggerName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
-    }
-
     String eventTypeStr = op.getStr(EVENT);
-    if (eventTypeStr == null || eventTypeStr.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The event type cannot be null or empty in trigger: " + triggerName);
-    }
+
+    if (op.hasError()) return currentConfig;
     TriggerEventType eventType = TriggerEventType.valueOf(eventTypeStr.trim().toUpperCase(Locale.ROOT));
 
     String waitForStr = op.getStr(WAIT_FOR, null);
+
+    CommandOperation opCopy = new CommandOperation(op.name, Utils.getDeepCopy((Map) op.getCommandData(), 10));
+
     if (waitForStr != null) {
       int seconds = 0;
       try {
         seconds = parseHumanTime(waitForStr);
       } catch (IllegalArgumentException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid 'waitFor' value '" + waitForStr + "' in trigger: " + triggerName);
+        op.addError("Invalid 'waitFor' value '" + waitForStr + "' in trigger: " + triggerName);
+        return currentConfig;
       }
-      op.getDataMap().put(WAIT_FOR, seconds);
+      opCopy.getDataMap().put(WAIT_FOR, seconds);
     }
 
     Integer lowerBound = op.getInt(LOWER_BOUND, null);
@@ -494,23 +496,26 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     List<Map<String, String>> actions = (List<Map<String, String>>) op.getVal(ACTIONS);
     if (actions == null) {
       actions = DEFAULT_ACTIONS;
-      op.getDataMap().put(ACTIONS, actions);
+      opCopy.getDataMap().put(ACTIONS, actions);
     }
 
     // validate that we can load all the actions
     // todo nocommit -- what about MemClassLoader?
     for (Map<String, String> action : actions) {
       if (!action.containsKey(NAME) || !action.containsKey(CLASS)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'name' or 'class' specified for action: " + action);
+        op.addError("No 'name' or 'class' specified for action: " + action);
+        return currentConfig;
       }
       String klass = action.get(CLASS);
       try {
         container.getResourceLoader().findClass(klass, TriggerAction.class);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Action not found: " + klass, e);
+        log.warn("Could not load class : ", e);
+        op.addError("Action not found: " + klass + " " + e.getMessage());
+        return currentConfig;
       }
     }
-    AutoScalingConfig.TriggerConfig trigger = new AutoScalingConfig.TriggerConfig(triggerName, op.getValuesExcluding("name"));
+    AutoScalingConfig.TriggerConfig trigger = new AutoScalingConfig.TriggerConfig(triggerName, opCopy.getValuesExcluding("name"));
     currentConfig = currentConfig.withTriggerConfig(trigger);
     // check that there's a default SystemLogListener, unless user specified another one
     return withSystemLogListener(currentConfig, triggerName);
@@ -563,12 +568,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     String triggerName = op.getStr(NAME);
     boolean removeListeners = op.getBoolean(REMOVE_LISTENERS, false);
 
-    if (triggerName == null || triggerName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The trigger name cannot be null or empty");
-    }
+    if (op.hasError()) return currentConfig;
     Map<String, AutoScalingConfig.TriggerConfig> triggerConfigs = currentConfig.getTriggerConfigs();
     if (!triggerConfigs.containsKey(triggerName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No trigger exists with name: " + triggerName);
+      op.addError("No trigger exists with name: " + triggerName);
+      return currentConfig;
     }
     triggerConfigs = new HashMap<>(triggerConfigs);
     Set<String> activeListeners = new HashSet<>();
@@ -583,8 +587,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         listeners = new HashMap<>(listeners);
         listeners.keySet().removeAll(activeListeners);
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot remove trigger: " + triggerName + " because it has active listeners: " + activeListeners);
+        op.addError("Cannot remove trigger: " + triggerName + " because it has active listeners: " + activeListeners);
+        return currentConfig;
       }
     }
     triggerConfigs.remove(triggerName);
