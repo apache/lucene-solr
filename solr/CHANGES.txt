@@ -309,6 +309,8 @@ Bug Fixes
 * SOLR-11163: Fix contrib/ltr Normalizer persistence after solr core reload or restart.
   (Yuki Yano via Christine Poerschke)
 
+* SOLR-11182: A split shard failure on IOException should be logged (Varun Thacker)
+
 Optimizations
 ----------------------
 
