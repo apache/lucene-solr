@@ -1,7 +1,7 @@
 = Searching
 :page-shortname: searching
 :page-permalink: searching.html
-:page-children: overview-of-searching-in-solr, velocity-search-ui, relevance, query-syntax-and-parsing, faceting, highlighting, spell-checking, query-re-ranking, transforming-result-documents, suggester, morelikethis, pagination-of-results, collapse-and-expand-results, result-grouping, result-clustering, spatial-search, the-terms-component, the-term-vector-component, the-stats-component, the-query-elevation-component, response-writers, near-real-time-searching, realtime-get, exporting-result-sets, streaming-expressions, parallel-sql-interface
+:page-children: overview-of-searching-in-solr, velocity-search-ui, relevance, query-syntax-and-parsing, faceting, highlighting, spell-checking, query-re-ranking, transforming-result-documents, suggester, morelikethis, pagination-of-results, collapse-and-expand-results, result-grouping, result-clustering, spatial-search, the-terms-component, the-term-vector-component, the-stats-component, the-query-elevation-component, response-writers, near-real-time-searching, realtime-get, exporting-result-sets, streaming-expressions, parallel-sql-interface, analytics
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -55,3 +55,4 @@ This section describes how Solr works with search requests. It covers the follow
 * <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>: Functionality to export large result sets out of Solr.
 * <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
 * <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>>: An interface for sending SQL statements to Solr, and using advanced parallel query processing and relational algebra for complex data analysis.
+* <<analytics.adoc#analytics,The Analytics Component>>: A framework to compute complex analytics over a result set.
