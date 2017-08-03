@@ -221,7 +221,7 @@ The run in-foreground option (`-f`) is not compatible with the `-e` option since
 
 === Stop
 
-The `stop` command sends a STOP request to a running Solr node, which allows it to shutdown gracefully. The command will wait up to 5 seconds for Solr to stop gracefully and then will forcefully kill the process (kill -9).
+The `stop` command sends a STOP request to a running Solr node, which allows it to shutdown gracefully. The command will wait up to 180 seconds for Solr to stop gracefully and then will forcefully kill the process (kill -9).
 
 `bin/solr stop [options]`
 
