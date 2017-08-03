@@ -145,6 +145,11 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints, boundingPlane, topPlane, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.addVerticalPlane(planetModel, longitude, plane, boundingPlane, topPlane, bottomPlane)
@@ -154,7 +159,7 @@ public class GeoDegenerateVerticalLine extends GeoBaseBBox {
   @Override
   public int getRelationship(final GeoShape path) {
     //System.err.println(this+" relationship to "+path);
-    if (path.intersects(plane, planePoints, boundingPlane, topPlane, bottomPlane)) {
+    if (intersects(path)) {
       //System.err.println(" overlaps");
       return OVERLAPS;
     }

@@ -177,6 +177,16 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
+    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
+    return
+        geoShape.intersects(bottomPlane, bottomPlanePoints, eitherBound) ||
+            geoShape.intersects(leftPlane, leftPlanePoints, bottomPlane) ||
+            geoShape.intersects(rightPlane, rightPlanePoints, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -185,44 +195,6 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane)
       .addIntersection(planetModel, leftPlane, rightPlane, bottomPlane)
       .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" comparing to "+path);
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
-      return OVERLAPS;
-    }
-
-    final boolean insideShape = path.isWithin(planetModel.NORTH_POLE);
-
-    if (insideRectangle == ALL_INSIDE && insideShape) {
-      //System.err.println(" both inside each other");
-      return OVERLAPS;
-    }
-
-    if (
-        path.intersects(bottomPlane, bottomPlanePoints, eitherBound) ||
-            path.intersects(leftPlane, leftPlanePoints, bottomPlane) ||
-            path.intersects(rightPlane, rightPlanePoints, bottomPlane)) {
-      //System.err.println(" edges intersect");
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      //System.err.println(" rectangle inside shape");
-      return CONTAINS;
-    }
-
-    //System.err.println(" disjoint");
-    return DISJOINT;
   }
 
   @Override

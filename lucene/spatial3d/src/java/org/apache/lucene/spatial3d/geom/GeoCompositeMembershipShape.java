@@ -17,6 +17,7 @@
 package org.apache.lucene.spatial3d.geom;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -57,7 +58,11 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape {
 
   @Override
   public GeoPoint[] getEdgePoints() {
-    return shapes.get(0).getEdgePoints();
+    List<GeoPoint> edgePoints = new ArrayList<>();
+    for(int i=0;i<shapes.size();i++){
+      edgePoints.addAll(Arrays.asList(shapes.get(i).getEdgePoints()));
+    }
+    return edgePoints.toArray(new GeoPoint[edgePoints.size()]);
   }
 
   @Override

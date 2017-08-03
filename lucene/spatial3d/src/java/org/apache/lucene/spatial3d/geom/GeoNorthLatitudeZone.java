@@ -99,42 +99,16 @@ class GeoNorthLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return
+        geoShape.intersects(bottomPlane, planePoints);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE)
-      return OVERLAPS;
-
-    final boolean insideShape = path.isWithin(bottomBoundaryPoint);
-
-    if (insideRectangle == ALL_INSIDE && insideShape)
-      return OVERLAPS;
-
-    // Second, the shortcut of seeing whether endpoints are in/out is not going to
-    // work with no area endpoints.  So we rely entirely on intersections.
-
-    if (path.intersects(bottomPlane, planePoints))
-      return OVERLAPS;
-
-    // There is another case for latitude zones only.  This is when the boundaries of the shape all fit
-    // within the zone, but the shape includes areas outside the zone crossing a pole.
-    // In this case, the above "overlaps" check is insufficient.  We also need to check a point on either boundary
-    // whether it is within the shape.  If both such points are within, then CONTAINS is the right answer.  If
-    // one such point is within, then OVERLAPS is the right answer.
-
-    if (insideShape)
-      return CONTAINS;
-
-    if (insideRectangle == ALL_INSIDE)
-      return WITHIN;
-
-    return DISJOINT;
   }
 
   @Override
