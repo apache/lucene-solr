@@ -54,7 +54,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 /** Represents an finite state machine (FST), using a
  *  compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
- *  (http://sourceforge.net/projects/morfologik).
+ *  (https://github.com/morfologik/morfologik-stemming).
  *  
  *  <p> See the {@link org.apache.lucene.util.fst package
  *      documentation} for some simple examples.
