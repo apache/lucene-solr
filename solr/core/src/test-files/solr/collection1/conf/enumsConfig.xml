@@ -27,7 +27,26 @@
         <value>Low</value>
         <value>Medium</value>
         <value>High</value>
+        <!-- we define a bunch of "filler" enum values to ensure "Critical" gets a value
+             of "11" so we can sanity check that sorting and range queries don't use lexical ordering
+             Low(1) < High(3) < Critical(11)
+             -->
+        <value>x4</value>
+        <value>x5</value>
+        <value>x6</value>
+        <value>x7</value>
+        <value>x8</value>
+        <value>x9</value>
+        <value>x10</value>
         <value>Critical</value>
+        <!-- More "filler" enum values to exceed SolrQueryParser.TERMS_QUERY_THRESHOLD, to generate set queries -->
+        <value>x12</value>
+        <value>x13</value>
+        <value>x14</value>
+        <value>x15</value>
+        <value>x16</value>
+        <value>x17</value>
+        <value>x18</value>
     </enum>
 </enumsConfig>
 

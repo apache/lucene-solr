@@ -56,7 +56,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.BoolField;
-import org.apache.solr.schema.EnumField;
+import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
@@ -465,8 +465,8 @@ public class SolrDocumentFetcher {
               newVal = Double.longBitsToDouble(val);
             } else if (schemaField.getType() instanceof TrieDateField) {
               newVal = new Date(val);
-            } else if (schemaField.getType() instanceof EnumField) {
-              newVal = ((EnumField) schemaField.getType()).intValueToStringValue(val.intValue());
+            } else if (schemaField.getType() instanceof AbstractEnumField) {
+              newVal = ((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(val.intValue());
             }
           }
           doc.addField(fieldName, newVal);
@@ -501,7 +501,7 @@ public class SolrDocumentFetcher {
           break;
         case SORTED_NUMERIC:
           final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
-          NumberType type = schemaField.getType().getNumberType();
+          final NumberType type = schemaField.getType().getNumberType();
           if (numericDv != null) {
             if (numericDv.advance(localId) == localId) {
               final List<Object> outValues = new ArrayList<Object>(numericDv.docValueCount());
@@ -509,7 +509,12 @@ public class SolrDocumentFetcher {
                 long number = numericDv.nextValue();
                 switch (type) {
                   case INTEGER:
-                    outValues.add((int)number);
+                    final int raw = (int)number;
+                    if (schemaField.getType() instanceof AbstractEnumField) {
+                      outValues.add(((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(raw));
+                    } else {
+                      outValues.add(raw);
+                    }
                     break;
                   case LONG:
                     outValues.add(number);

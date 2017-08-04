@@ -47,7 +47,7 @@ DocValues are only available for specific field types. The types chosen determin
 * `StrField` and `UUIDField`.
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the SORTED type.
 ** If the field is multi-valued, Lucene will use the SORTED_SET type.
-* Any `Trie*` numeric fields, date fields and `EnumField`.
+* Any `Trie*` numeric fields, date fields and `EnumFieldType`.
 ** If the field is single-valued (i.e., multi-valued is false), Lucene will use the NUMERIC type.
 ** If the field is multi-valued, Lucene will use the SORTED_SET type.
 * Boolean fields
