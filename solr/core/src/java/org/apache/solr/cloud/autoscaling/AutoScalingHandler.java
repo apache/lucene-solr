@@ -250,7 +250,13 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       op.addError("set-cluster-policy expects an array of objects");
       return currentConfig;
     }
-    List<Clause> cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+    List<Clause> cp = null;
+    try {
+      cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+    } catch (Exception e) {
+      op.addError(e.getMessage());
+      return currentConfig;
+    }
     Policy p = currentConfig.getPolicy().withClusterPolicy(cp);
     currentConfig = currentConfig.withPolicy(p);
     return currentConfig;
@@ -263,7 +269,13 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       op.addError("A list of cluster preferences not found");
       return currentConfig;
     }
-    List<Preference> prefs = preferences.stream().map(Preference::new).collect(Collectors.toList());
+    List<Preference> prefs = null;
+    try {
+      prefs = preferences.stream().map(Preference::new).collect(Collectors.toList());
+    } catch (Exception e) {
+      op.addError(e.getMessage());
+      return currentConfig;
+    }
     Policy p = currentConfig.getPolicy().withClusterPreferences(prefs);
     currentConfig = currentConfig.withPolicy(p);
     return currentConfig;
@@ -305,8 +317,14 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     List<String> params = new ArrayList<>(currentConfig.getPolicy().getParams());
     Map<String, List<Clause>> mergedPolicies = new HashMap<>(currentConfig.getPolicy().getPolicies());
-    Map<String, List<Clause>> newPolicies = Policy.policiesFromMap((Map<String, List<Map<String, Object>>>)op.getCommandData(),
-            params);
+    Map<String, List<Clause>> newPolicies = null;
+    try {
+      newPolicies = Policy.policiesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
+          params);
+    } catch (Exception e) {
+      op.addError(e.getMessage());
+      return currentConfig;
+    }
     mergedPolicies.putAll(newPolicies);
     Policy p = currentConfig.getPolicy().withPolicies(mergedPolicies).withParams(params);
     currentConfig = currentConfig.withPolicy(p);

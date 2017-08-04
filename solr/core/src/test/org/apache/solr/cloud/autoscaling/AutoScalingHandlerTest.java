@@ -344,10 +344,10 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("expected exception");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (HttpSolrClient.RemoteExecutionException e) {
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
-          false, "error/errorMessages[0]/errorMessages[0]")).contains("Cannot remove trigger: node_lost_trigger because it has active listeners: ["));
+      assertTrue(String.valueOf(getObjectByPath(e.getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("Cannot remove trigger: node_lost_trigger because it has active listeners: ["));
     }
 
     String removeListenerCommand = "{\n" +
@@ -403,10 +403,31 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     } catch (HttpSolrClient.RemoteSolrException e) {
       // expected
       assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
-          false, "error/errorMessages[0]/errorMessages[0]")).contains("A trigger with the name node_lost_trigger does not exist"));
+          false, "error/details[0]/errorMessages[0]")).contains("A trigger with the name node_lost_trigger does not exist"));
     }
   }
 
+  @Test
+  public void testErrorHandling() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    try {
+      SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+      solrClient.request(req);
+      fail("expect exception");
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      String message = String.valueOf(Utils.getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"));
+      assertTrue(message.contains("replica is required in"));
+    }
+
+  }
   @Test
   public void testPolicyAndPreferences() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -428,7 +449,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       fail("Adding a policy with 'cores' attribute should not have succeeded.");
     } catch (HttpSolrClient.RemoteSolrException e)  {
       // expected
-      assertTrue(e.getMessage().contains("cores is only allowed in 'cluster-policy'"));
+      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("cores is only allowed in 'cluster-policy'"));
     }
 
     setPolicyCommand =  "{'set-policy': {" +
@@ -754,7 +776,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, removePolicyCommand));
       fail("should have failed");
     } catch (HttpSolrClient.RemoteExecutionException e) {
-      assertTrue(String.valueOf(getObjectByPath(e.getMetaData(), true, "error/errorMessages[0]/errorMessages[0]"))
+      assertTrue(String.valueOf(getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"))
           .contains("is being used by collection"));
     } catch (Exception e) {
       fail("Only RemoteExecutionException expected");

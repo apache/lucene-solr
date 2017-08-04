@@ -52,7 +52,7 @@ public class ResponseUtils {
       info.add("metadata", errorMetadata);
       if (ex instanceof ApiBag.ExceptionWithErrObject) {
         ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
-        info.add(CommandOperation.ERR_MSGS, exception.getErrs() );
+        info.add("details", exception.getErrs() );
       }
     }
     
