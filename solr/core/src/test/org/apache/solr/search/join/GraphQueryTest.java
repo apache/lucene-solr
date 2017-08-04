@@ -39,6 +39,9 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
     doGraph( params("node_id","node_lp", "edge_id","edge_lps") );
     doGraph( params("node_id","node_fp", "edge_id","edge_fps") );
     doGraph( params("node_id","node_dp", "edge_id","edge_dps") );
+    
+    // normal strings with docvalues
+    doGraph( params("node_id","node_sdN", "edge_id","edge_sdsN") );
   }
 
   public void doGraph(SolrParams p) throws Exception {

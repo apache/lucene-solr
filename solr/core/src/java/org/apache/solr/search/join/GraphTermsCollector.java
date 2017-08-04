@@ -34,6 +34,7 @@ import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermInSetQuery;
@@ -209,7 +210,8 @@ class GraphTermsCollector extends GraphEdgeCollector {
           collectorTerms.get(i, ref);
           termList.add(ref);
         }
-        q = new TermInSetQuery(gq.getFromField(), termList);
+        q = weight.fromSchemaField.hasDocValues() ? new DocValuesTermsQuery(gq.getFromField(), termList)
+            : new TermInSetQuery(gq.getFromField(), termList);
       }
 
       return q;
