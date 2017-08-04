@@ -31,7 +31,9 @@ import org.apache.solr.schema.TrieFloatField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieFloatField} with DocValues enabled.
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class FloatMultiTrieField extends AnalyticsField implements CastingFloatValueStream {
   private SortedSetDocValues docValues;
   private int count;

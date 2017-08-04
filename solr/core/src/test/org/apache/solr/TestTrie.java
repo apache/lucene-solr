@@ -34,7 +34,9 @@ import org.junit.Test;
  *
  *
  * @since solr 1.4
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TestTrie extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
