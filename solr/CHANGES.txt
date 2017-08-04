@@ -597,6 +597,8 @@ Other Changes
 * SOLR-10033: When attempting to facet with facet.mincount=0 over points fields, raise mincount to 1
   and log a warning. (Steve Rowe)
 
+* SOLR-11178: Change error handling in AutoScalingHandler to be consistent w/ other APIs (noble)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
