@@ -2720,6 +2720,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumField");
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
@@ -2731,6 +2732,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumFieldType");
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }

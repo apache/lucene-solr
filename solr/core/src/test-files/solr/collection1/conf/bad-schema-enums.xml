@@ -15,25 +15,20 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="tiny" version="1.1">
+<schema name="bad-schema-enums" version="1.6">
   <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
-  <!-- Test EnumField and EnumFieldType -->
-  <field name="severity" type="severityType" indexed="${solr.tests.EnumFieldTest.indexed}" stored="true" multiValued="false" docValues="${solr.tests.numeric.dv}"/>
-  <field name="severity_mv" type="severityType" indexed="${solr.tests.EnumFieldTest.indexed}" stored="true" multiValued="true" docValues="${solr.tests.numeric.dv}"/>
-  <field name="text" type="text" indexed="true" stored="true" multiValued="true"/>
+
+  <!-- Test EnumFieldType -->
+  <!-- Begin bad stuff: EnumFieldType requires docValues -->
+  <field name="severity" type="severityType" indexed="${solr.tests.EnumFieldTest.indexed}" stored="true" multiValued="false" docValues="false"/>
+  <!-- End bad stuff -->
+
   <uniqueKey>id</uniqueKey>
 
-  <fieldType name="text" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-    </analyzer>
-  </fieldType>
   <!-- note: you cannot change the order/existing values in enum without reindexing.
        but you can always add new values to the end. -->
-  <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="severityType" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="severity"/>
   <fieldType name="string" class="solr.StrField"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-
 </schema>
