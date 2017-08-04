@@ -30,7 +30,9 @@ import org.apache.solr.schema.TrieLongField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieLongField} with DocValues enabled.
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class LongMultiTrieField extends AnalyticsField implements CastingLongValueStream {
   private SortedSetDocValues docValues;
   private int count;

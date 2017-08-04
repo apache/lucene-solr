@@ -25,7 +25,9 @@ import org.apache.solr.schema.TrieDateField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieDateField} with DocValues enabled.
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class DateMultiTrieField extends LongMultiTrieField implements CastingDateValueStream {
 
   public DateMultiTrieField(String fieldName) {
