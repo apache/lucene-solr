@@ -210,7 +210,8 @@ class GraphTermsCollector extends GraphEdgeCollector {
           collectorTerms.get(i, ref);
           termList.add(ref);
         }
-        q = weight.fromSchemaField.hasDocValues() ? new DocValuesTermsQuery(gq.getFromField(), termList)
+        q = (weight.fromSchemaField.hasDocValues() && !weight.fromSchemaField.indexed())
+            ? new DocValuesTermsQuery(gq.getFromField(), termList)
             : new TermInSetQuery(gq.getFromField(), termList);
       }
 
