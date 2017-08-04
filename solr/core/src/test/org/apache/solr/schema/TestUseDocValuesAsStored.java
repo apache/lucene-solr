@@ -336,7 +336,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
       // so cardinality depends on the value source
       final int expectedCardinality =
         (isStoredField(field) || (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
-                                  && ! (field.startsWith("enum") || field.startsWith("test_s"))))
+                                  && ! field.startsWith("test_s")))
         ? value.length : valueSet.size();
       xpaths[value.length] = "*[count(//arr[@name='"+field+"']/"+type+")="+expectedCardinality+"]";
       assertU(adoc(fieldAndValues));

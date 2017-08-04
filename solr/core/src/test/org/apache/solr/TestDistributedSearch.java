@@ -1062,7 +1062,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                  rsp.getFieldStatsInfo().get(fieldName).getMin());
     query("q", "*:*", "stats", "true", "stats.field", fieldName,  
           StatsParams.STATS_CALC_DISTINCT, "true");
-    assertEquals(new EnumFieldValue(4, "Critical"),
+    assertEquals(new EnumFieldValue(11, "Critical"),
                  rsp.getFieldStatsInfo().get(fieldName).getMax());
 
     handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order

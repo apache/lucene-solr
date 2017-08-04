@@ -152,6 +152,8 @@ Upgrading from Solr 6.x
 * All deperated methods of ClusterState (except getZkClusterStateVersion())
   have been removed. Use DocCollection methods instead.
 
+* SOLR-11023: EnumField has been deprecated in favor of new EnumFieldType.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -506,6 +508,9 @@ Other Changes
   and log a warning. (Steve Rowe)
 
 * SOLR-11178: Change error handling in AutoScalingHandler to be consistent w/ other APIs (noble)
+
+* SOLR-11023: Added EnumFieldType, a non-Trie-based version of EnumField, and deprecated EnumField
+  in favor of EnumFieldType. (hossman, Steve Rowe)
 
 ==================  6.7.0 ==================
 
