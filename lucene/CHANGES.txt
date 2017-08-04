@@ -14,13 +14,18 @@ Changes in Runtime Behavior
 
 
 ======================= Lucene 7.1.0 =======================
-(No Changes)
 
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
   SortedSetDocValuesFacetCounts and others) builds its map (Robert
   Muir, Adrien Grand, Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-7914: Add a maximum recursion level in automaton recursive
+  functions (Operations.isFinite and Operations.topsortState) to prevent
+  large automaton to overflow the stack (Robert Muir, Adrien Grand, Jim Ferenczi)
 
 ======================= Lucene 7.0.0 =======================
 
