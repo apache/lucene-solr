@@ -122,6 +122,8 @@ Jetty 9.3.14.v20161028
 Upgrading from Solr 6.x
 ----------------------
 
+* All Trie* numeric and date field types have been deprecated in favor of *Point field types.
+
 * The default response type is now JSON ("wt=json") instead of XML, and line indentation is now on by default
   ("indent=on"). If you expect the responses to your queries to be returned in the previous format (XML
   format, no indentation), you must now you must now explicitly pass in "wt=xml" and "indent=off" as query
@@ -603,6 +605,8 @@ Other Changes
 
 * SOLR-11023: Added EnumFieldType, a non-Trie-based version of EnumField, and deprecated EnumField
   in favor of EnumFieldType. (hossman, Steve Rowe)
+  
+* SOLR-10803: Mark all Trie/LegacyNumeric based fields @deprecated in Solr7.  (Steve Rowe)
 
 ==================  6.7.0 ==================
 

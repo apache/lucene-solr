@@ -49,7 +49,9 @@ import org.apache.lucene.util.mutable.MutableValueDouble;
  * 
  * @see Double
  * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java Language Specification, s4.2.3</a>
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
   {
     type = NumberType.DOUBLE;

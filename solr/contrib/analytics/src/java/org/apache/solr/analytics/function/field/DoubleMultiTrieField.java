@@ -30,7 +30,9 @@ import org.apache.solr.schema.TrieDoubleField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieDoubleField} with DocValues enabled.
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubleValueStream {
   private SortedSetDocValues docValues;
   private int count;
