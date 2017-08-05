@@ -208,6 +208,7 @@
         def lineNumber = 0;
         singleLineSplitter.split(text).each {
           ++lineNumber;
+          it.trim(); // remove trailing carriage return after split on Windows with native line endings
           if (underSourceHeader) { // This line is either a single source line, or the boundary of a code block
             inCodeBlock = blockBoundaryPattern.matcher(it).matches();
             if ( ! blockTitlePattern.matcher(it).matches()) { // Keep underSourceHeader=true
