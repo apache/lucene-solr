@@ -117,6 +117,7 @@ public class Util {
 	public static String RANGE_FACET_DATA = "";
 	public static String TEST_DATA_ARCHIVE_LOCATION = "";
 	public static long NUMBER_OF_QUERIES_TO_RUN = 1000;
+	public static long NUMBER_OF_QUERIES_TO_RUN_FOR_FACETING = 1000;
 	public static long TEST_WITH_NUMBER_OF_DOCUMENTS = 100000;
 	public static boolean USE_COLORED_TEXT_ON_CONSOLE = true;
 	public static boolean SILENT = false;
@@ -599,6 +600,8 @@ public class Util {
 			logger.debug("Getting Property Value for testDataArchiveLocation: " + Util.TEST_DATA_ARCHIVE_LOCATION);
 			Util.NUMBER_OF_QUERIES_TO_RUN = Long.parseLong(prop.getProperty("SolrNightlyBenchmarks.numberOfQueriesToRun"));
 			logger.debug("Getting Property Value for numberOfQueriesToRun: " + Util.NUMBER_OF_QUERIES_TO_RUN);
+			Util.NUMBER_OF_QUERIES_TO_RUN_FOR_FACETING = Long.parseLong(prop.getProperty("SolrNightlyBenchmarks.numberOfQueriesToRunForFaceting"));
+			logger.debug("Getting Property Value for numberOfQueriesToRunForFaceting: " + Util.NUMBER_OF_QUERIES_TO_RUN_FOR_FACETING);
 			
 			if (BenchmarkAppConnector.benchmarkAppDirectory
 					.charAt(BenchmarkAppConnector.benchmarkAppDirectory.length() - 1) != File.separator.charAt(0)) {
