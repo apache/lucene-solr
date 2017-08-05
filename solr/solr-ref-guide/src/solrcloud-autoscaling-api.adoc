@@ -169,7 +169,7 @@ Changing the cluster preferences after the cluster is already built doesn't auto
 {
     "set-cluster-preferences" : [
       {"minimize": "cores"}
-	]
+    ]
 }
 ----
 
@@ -229,9 +229,9 @@ You can see the __TODO__ section to know more about the allowed values for each 
 [source,json]
 ----
 {
-	"set-cluster-policy": [
-		{"replica": "<2", "shard": "#EACH", "node": "#ANY"}
-	]
+    "set-cluster-policy": [
+        {"replica": "<2", "shard": "#EACH", "node": "#ANY"}
+    ]
 }
 ----
 
