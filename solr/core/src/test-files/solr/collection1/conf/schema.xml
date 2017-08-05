@@ -648,7 +648,7 @@
   <field name="payloadDelimited" type="payloadDelimited"/>
 
   <!-- EnumType -->
-  <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
+  <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
 
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
