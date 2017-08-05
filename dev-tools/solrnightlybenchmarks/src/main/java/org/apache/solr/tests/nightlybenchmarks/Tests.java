@@ -23,13 +23,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 import org.apache.solr.tests.nightlybenchmarks.QueryClient.QueryClientType;
 import org.apache.solr.tests.nightlybenchmarks.QueryClient.QueryType;
-import org.apache.solr.tests.nightlybenchmarks.TestPlans.BenchmarkTestType;
 
 enum ConfigurationType {
 	STANDALONE, CLOUD
@@ -432,14 +432,6 @@ public class Tests {
 
 		logger.info("INITIATING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
 				+ " Replicas:" + replicas);
-		
-		int estimationDuration = 60;
-		
-		if (type == BenchmarkTestType.DEV_TEST) {
-			estimationDuration = 10;
-		} else if (type == BenchmarkTestType.PROD_TEST) {
-			estimationDuration = 60;
-		}
 
 		try {
 
@@ -451,22 +443,22 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N1S2R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_1T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N1S2R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_2T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N1S2R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N1S2R_3T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 2 && shards == "2" && replicas == "1") {
@@ -474,22 +466,22 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_2N2S1R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_1T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_2N2S1R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_2T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_2N2S1R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_2N2S1R_3T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 3 && shards == "1" && replicas == "3") {
@@ -497,22 +489,22 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_3N1S3R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_1T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_3N1S3R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_2T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_3N1S3R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_3N1S3R_3T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName3);
 
 			} else if (nodes == 4 && shards == "2" && replicas == "2") {
@@ -520,32 +512,29 @@ public class Tests {
 				String collectionName1 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName1, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent1_4N2S2R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName1, 1, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_1T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName1);
 
 				String collectionName2 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName2, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent2_4N2S2R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName2, 2, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_2T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName2);
 
 				String collectionName3 = "" + UUID.randomUUID();
 				cloud.createCollection(collectionName3, null, shards, replicas);
 				BenchmarkReportData.metricMapCloudConcurrent3_4N2S2R = Tests.cloudConcurrentIndexing(
-						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, estimationDuration, Util.COMMIT_ID,
-						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, cloud.port, true);
+						cloud.zookeeperIp + ":" + cloud.zookeeperPort, collectionName3, 3, Util.COMMIT_ID,
+						TestType.CLOUD_INDEXING_THROUGHPUT_CONCURRENT_4N2S2R_3T, cloud.port, true, numDocuments);
 				cloud.deleteCollection(collectionName3);
-
 			}
-
-			cloud.shutdown();
+			cloud.shutdown();			
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new Exception(e.getMessage());
 		}
-
 		logger.info("COMPLETING TEST: Indexing Cloud Concurrent Nodes:" + nodes + " Shards:" + shards
 				+ " Replicas:" + replicas);
 		return true;
@@ -567,22 +556,24 @@ public class Tests {
 	 */
 	@SuppressWarnings("deprecation")
 	private static Map<String, String> cloudConcurrentIndexing(String zookeeperURL, String collectionName,
-			int numberOfThreads, int estimationDuration, String commitId, TestType type, String port,
-			boolean captureMetrics) throws Exception {
+			int numberOfThreads, String commitId, TestType type, String port,
+			boolean captureMetrics, long numberOfDocumentsToIndex) throws Exception {
 
 		logger.info("Indexing documents through custom cloud concurrent client with parameters: Url:"
 				+ zookeeperURL + ", Collection Name:" + collectionName + " Thread Count:" + numberOfThreads
-				+ " Estimation Duration:" + estimationDuration + " seconds");
+				+ " Number of documents to Index: " + numberOfDocumentsToIndex);
 
 		try {
 			CloudConcurrentIndexingClient.reset();
+			CloudConcurrentIndexingClient.documentCountLimit = numberOfDocumentsToIndex;
 			CloudConcurrentIndexingClient.prepare();
 
+			CountDownLatch latch = new CountDownLatch(numberOfThreads);
 			ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 			LinkedList<CloudConcurrentIndexingClient> list = new LinkedList<CloudConcurrentIndexingClient>();
 
 			for (int i = 0; i < numberOfThreads; i++) {
-				CloudConcurrentIndexingClient client = new CloudConcurrentIndexingClient(zookeeperURL, collectionName);
+				CloudConcurrentIndexingClient client = new CloudConcurrentIndexingClient(zookeeperURL, collectionName, latch);
 				list.add(client);
 			}
 
@@ -598,9 +589,7 @@ public class Tests {
 				executorService.execute(list.get(i));
 			}
 
-			Thread.sleep(estimationDuration * 1000);
-
-			CloudConcurrentIndexingClient.running = false;
+			latch.await();
 
 			if (captureMetrics) {
 				thread.stop();
@@ -613,7 +602,7 @@ public class Tests {
 			executorService.shutdownNow();
 
 			Thread.sleep(5000);
-
+			
 			Map<String, String> returnMap = new HashMap<String, String>();
 
 			Date dNow = new Date();
@@ -651,22 +640,26 @@ public class Tests {
 	 * @throws Exception 
 	 */
 	private static Map<String, String> numericQueryTests(String commitID, QueryClient.QueryType queryType,
-			String numberOfThreads_, int estimationDuration, long delayEstimationBySeconds, String baseURL,
-			String collectionName, QueryClientType queryClientType, String zookeeperURL) throws Exception {
+			String numberOfThreads_, String baseURL,
+			String collectionName, QueryClientType queryClientType, String zookeeperURL, long numberOfQueriesToRun) throws Exception {
 
 		int numberOfThreads = Integer.parseInt(numberOfThreads_);
+		int delayEstimationBySeconds = 10;
+		
 		try {
 			QueryClient.reset();
 			QueryClient.queryType = queryType;
 			QueryClient.prepare();
+			QueryClient.queryCountLimit = numberOfQueriesToRun;
 
+            CountDownLatch latch = new CountDownLatch(numberOfThreads);
 			ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 			LinkedList<QueryClient> list = new LinkedList<QueryClient>();
 
 			for (int i = 0; i < numberOfThreads; i++) {
 				QueryClient client = new QueryClient(baseURL, collectionName, numberOfThreads, delayEstimationBySeconds,
-						queryClientType, zookeeperURL);
-				list.add(client);
+						queryClientType, zookeeperURL, latch);
+				list.add(client);				
 			}
 
 			QueryClient.running = true;
@@ -675,9 +668,7 @@ public class Tests {
 				executorService.execute(list.get(i));
 			}
 
-			Thread.sleep(estimationDuration * 1000);
-
-			QueryClient.running = false;
+			latch.await();
 
 			executorService.shutdownNow();
 
@@ -691,7 +682,7 @@ public class Tests {
 			returnMap.put("TimeStamp", ft.format(dNow));
 			returnMap.put("CommitID", commitID);
 			returnMap.put("TotalQueriesExecuted", "" + QueryClient.queryCount);
-			returnMap.put("QueriesPerSecond", "" + ((float) QueryClient.queryCount / (float) (estimationDuration)));
+			returnMap.put("QueriesPerSecond", "" + ((float) QueryClient.queryCount / (float) ((QueryClient.endTime - QueryClient.startTime)/1000d)));
 			returnMap.put("MinQTime", "" + QueryClient.minQtime);
 			returnMap.put("MaxQTime", "" + QueryClient.maxQtime);
 			returnMap.put("QueryFailureCount", "" + QueryClient.queryFailureCount);
@@ -700,6 +691,9 @@ public class Tests {
 			returnMap.put("95thQtime", "" + QueryClient.getNthPercentileQTime(95));
 			returnMap.put("99thQtime", "" + QueryClient.getNthPercentileQTime(99));
 			returnMap.put("99.9thQtime", "" + QueryClient.getNthPercentileQTime(99.9));
+			returnMap.put("startTime", "" + QueryClient.startTime);
+			returnMap.put("endTime", "" + QueryClient.endTime);	
+			returnMap.put("activeTime(MS)", "" + (QueryClient.endTime - QueryClient.startTime));	
 
 			logger.debug(returnMap.toString());
 			QueryClient.reset();
@@ -803,18 +797,7 @@ public class Tests {
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
-	public static void queryTestsCloud(long numDocuments, TestPlans.BenchmarkTestType type) throws Exception {
-		
-		int estimationDuration = 120;
-		int delayEstimationBySeconds = 30;
-		
-		if (type == BenchmarkTestType.DEV_TEST) {
-			estimationDuration = 10;
-			delayEstimationBySeconds = 4;			
-		} else if (type == BenchmarkTestType.PROD_TEST) {
-			estimationDuration = 120;
-			delayEstimationBySeconds = 30;			
-		}
+	public static void queryTestsCloud(long numDocuments, TestPlans.BenchmarkTestType type, long numberOfQueriesToRun) throws Exception {
 
 		logger.info("INITIATING TEST: Query tests on cloud ...");
 
@@ -825,8 +808,8 @@ public class Tests {
 		numericQueryTNQMetricC1.start();
 
 		BenchmarkReportData.queryTNQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTNQMetricC1.stop();
 
@@ -835,8 +818,8 @@ public class Tests {
 		numericQueryTNQMetricC2.start();
 
 		BenchmarkReportData.queryTNQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTNQMetricC2.stop();
 
@@ -845,8 +828,8 @@ public class Tests {
 		numericQueryTNQMetricC3.start();
 
 		BenchmarkReportData.queryTNQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTNQMetricC3.stop();
 
@@ -855,8 +838,8 @@ public class Tests {
 		numericQueryTNQMetricC4.start();
 
 		BenchmarkReportData.queryTNQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTNQMetricC4.stop();
 
@@ -865,8 +848,8 @@ public class Tests {
 		numericQueryRNQMetricC1.start();
 
 		BenchmarkReportData.queryRNQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryRNQMetricC1.stop();
 
@@ -875,8 +858,8 @@ public class Tests {
 		numericQueryRNQMetricC2.start();
 
 		BenchmarkReportData.queryRNQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryRNQMetricC2.stop();
 
@@ -885,8 +868,8 @@ public class Tests {
 		numericQueryRNQMetricC3.start();
 
 		BenchmarkReportData.queryRNQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryRNQMetricC3.stop();
 
@@ -895,8 +878,8 @@ public class Tests {
 		numericQueryRNQMetricC4.start();
 
 		BenchmarkReportData.queryRNQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryRNQMetricC4.stop();
 
@@ -905,9 +888,9 @@ public class Tests {
 		numericQueryLNQMetricC1.start();
 
 		BenchmarkReportData.queryLNQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryLNQMetricC1.stop();
 
@@ -916,9 +899,9 @@ public class Tests {
 		numericQueryLNQMetricC2.start();
 
 		BenchmarkReportData.queryLNQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryLNQMetricC2.stop();
 
@@ -927,9 +910,9 @@ public class Tests {
 		numericQueryLNQMetricC3.start();
 
 		BenchmarkReportData.queryLNQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryLNQMetricC3.stop();
 
@@ -938,9 +921,9 @@ public class Tests {
 		numericQueryLNQMetricC4.start();
 
 		BenchmarkReportData.queryLNQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryLNQMetricC4.stop();
 
@@ -949,9 +932,9 @@ public class Tests {
 		numericQueryGNQMetricC1.start();
 
 		BenchmarkReportData.queryGNQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryGNQMetricC1.stop();
 
@@ -960,9 +943,9 @@ public class Tests {
 		numericQueryGNQMetricC2.start();
 
 		BenchmarkReportData.queryGNQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryGNQMetricC2.stop();
 
@@ -971,9 +954,9 @@ public class Tests {
 		numericQueryGNQMetricC3.start();
 
 		BenchmarkReportData.queryGNQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryGNQMetricC3.stop();
 
@@ -982,9 +965,9 @@ public class Tests {
 		numericQueryGNQMetricC4.start();
 
 		BenchmarkReportData.queryGNQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryGNQMetricC4.stop();
 
@@ -993,8 +976,8 @@ public class Tests {
 		numericQueryANQMetricC1.start();
 
 		BenchmarkReportData.queryANQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryANQMetricC1.stop();
 
@@ -1003,8 +986,8 @@ public class Tests {
 		numericQueryANQMetricC2.start();
 
 		BenchmarkReportData.queryANQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryANQMetricC2.stop();
 
@@ -1013,8 +996,8 @@ public class Tests {
 		numericQueryANQMetricC3.start();
 
 		BenchmarkReportData.queryANQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryANQMetricC3.stop();
 
@@ -1023,8 +1006,8 @@ public class Tests {
 		numericQueryANQMetricC4.start();
 
 		BenchmarkReportData.queryANQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryANQMetricC4.stop();
 
@@ -1033,8 +1016,8 @@ public class Tests {
 		numericQueryONQMetricC1.start();
 
 		BenchmarkReportData.queryONQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryONQMetricC1.stop();
 
@@ -1043,8 +1026,8 @@ public class Tests {
 		numericQueryONQMetricC2.start();
 
 		BenchmarkReportData.queryONQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryONQMetricC2.stop();
 
@@ -1053,8 +1036,8 @@ public class Tests {
 		numericQueryONQMetricC3.start();
 
 		BenchmarkReportData.queryONQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryONQMetricC3.stop();
 
@@ -1063,8 +1046,8 @@ public class Tests {
 		numericQueryONQMetricC4.start();
 
 		BenchmarkReportData.queryONQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryONQMetricC4.stop();
 
@@ -1073,8 +1056,8 @@ public class Tests {
 		numericQuerySNQMetricC1.start();
 
 		BenchmarkReportData.querySNQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySNQMetricC1.stop();
 
@@ -1083,8 +1066,8 @@ public class Tests {
 		numericQuerySNQMetricC2.start();
 
 		BenchmarkReportData.querySNQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySNQMetricC2.stop();
 
@@ -1093,8 +1076,8 @@ public class Tests {
 		numericQuerySNQMetricC3.start();
 
 		BenchmarkReportData.querySNQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySNQMetricC3.stop();
 
@@ -1103,8 +1086,8 @@ public class Tests {
 		numericQuerySNQMetricC4.start();
 
 		BenchmarkReportData.querySNQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySNQMetricC4.stop();
 
@@ -1113,8 +1096,8 @@ public class Tests {
 		numericQueryTTQMetricC1.start();
 
 		BenchmarkReportData.queryTTQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTTQMetricC1.stop();
 
@@ -1123,8 +1106,8 @@ public class Tests {
 		numericQueryTTQMetricC2.start();
 
 		BenchmarkReportData.queryTTQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTTQMetricC2.stop();
 
@@ -1133,8 +1116,8 @@ public class Tests {
 		numericQueryTTQMetricC3.start();
 
 		BenchmarkReportData.queryTTQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTTQMetricC3.stop();
 
@@ -1143,8 +1126,8 @@ public class Tests {
 		numericQueryTTQMetricC4.start();
 
 		BenchmarkReportData.queryTTQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryTTQMetricC4.stop();
 
@@ -1153,8 +1136,8 @@ public class Tests {
 		numericQueryPTQMetricC1.start();
 
 		BenchmarkReportData.queryPTQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryPTQMetricC1.stop();
 
@@ -1163,8 +1146,8 @@ public class Tests {
 		numericQueryPTQMetricC2.start();
 
 		BenchmarkReportData.queryPTQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryPTQMetricC2.stop();
 
@@ -1173,8 +1156,8 @@ public class Tests {
 		numericQueryPTQMetricC3.start();
 
 		BenchmarkReportData.queryPTQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryPTQMetricC3.stop();
 
@@ -1183,8 +1166,8 @@ public class Tests {
 		numericQueryPTQMetricC4.start();
 
 		BenchmarkReportData.queryPTQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryPTQMetricC4.stop();
 
@@ -1193,8 +1176,8 @@ public class Tests {
 		numericQuerySTQMetricC1.start();
 
 		BenchmarkReportData.querySTQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySTQMetricC1.stop();
 
@@ -1203,8 +1186,8 @@ public class Tests {
 		numericQuerySTQMetricC2.start();
 
 		BenchmarkReportData.querySTQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySTQMetricC2.stop();
 
@@ -1213,8 +1196,8 @@ public class Tests {
 		numericQuerySTQMetricC3.start();
 
 		BenchmarkReportData.querySTQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySTQMetricC3.stop();
 
@@ -1223,8 +1206,8 @@ public class Tests {
 		numericQuerySTQMetricC4.start();
 
 		BenchmarkReportData.querySTQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQuerySTQMetricC4.stop();
 
@@ -1233,8 +1216,8 @@ public class Tests {
 		numericQueryHTQMetricC1.start();
 
 		BenchmarkReportData.queryHTQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryHTQMetricC1.stop();
 
@@ -1243,8 +1226,8 @@ public class Tests {
 		numericQueryHTQMetricC2.start();
 
 		BenchmarkReportData.queryHTQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryHTQMetricC2.stop();
 
@@ -1253,8 +1236,8 @@ public class Tests {
 		numericQueryHTQMetricC3.start();
 
 		BenchmarkReportData.queryHTQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryHTQMetricC3.stop();
 
@@ -1263,8 +1246,8 @@ public class Tests {
 		numericQueryHTQMetricC4.start();
 
 		BenchmarkReportData.queryHTQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryHTQMetricC4.stop();
 
@@ -1273,9 +1256,9 @@ public class Tests {
 		numericQueryCTFQMetricC1.start();
 
 		BenchmarkReportData.queryCTFQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricC1.stop();
 
@@ -1284,9 +1267,9 @@ public class Tests {
 		numericQueryCTFQMetricC2.start();
 
 		BenchmarkReportData.queryCTFQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricC2.stop();
 
@@ -1295,9 +1278,9 @@ public class Tests {
 		numericQueryCTFQMetricC3.start();
 
 		BenchmarkReportData.queryCTFQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricC3.stop();
 
@@ -1306,9 +1289,9 @@ public class Tests {
 		numericQueryCTFQMetricC4.start();
 
 		BenchmarkReportData.queryCTFQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricC4.stop();
 
@@ -1317,9 +1300,9 @@ public class Tests {
 		numericQueryCRFQMetricC1.start();
 
 		BenchmarkReportData.queryCRFQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricC1.stop();
 
@@ -1328,9 +1311,9 @@ public class Tests {
 		numericQueryCRFQMetricC2.start();
 
 		BenchmarkReportData.queryCRFQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricC2.stop();
 
@@ -1339,9 +1322,9 @@ public class Tests {
 		numericQueryCRFQMetricC3.start();
 
 		BenchmarkReportData.queryCRFQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricC3.stop();
 
@@ -1350,9 +1333,9 @@ public class Tests {
 		numericQueryCRFQMetricC4.start();
 
 		BenchmarkReportData.queryCRFQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(),
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(),
 				Tests.cloud.collectionName, QueryClientType.CLOUD_SOLR_CLIENT,
-				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricC4.stop();
 
@@ -1361,8 +1344,8 @@ public class Tests {
 		numericQueryJTFQMetricC1.start();
 
 		BenchmarkReportData.queryJTFQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricC1.stop();
 
@@ -1371,8 +1354,8 @@ public class Tests {
 		numericQueryJTFQMetricC2.start();
 
 		BenchmarkReportData.queryJTFQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricC2.stop();
 
@@ -1381,8 +1364,8 @@ public class Tests {
 		numericQueryJTFQMetricC3.start();
 
 		BenchmarkReportData.queryJTFQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricC3.stop();
 
@@ -1391,8 +1374,8 @@ public class Tests {
 		numericQueryJTFQMetricC4.start();
 
 		BenchmarkReportData.queryJTFQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricC4.stop();
 
@@ -1401,8 +1384,8 @@ public class Tests {
 		numericQueryJRFQMetricC1.start();
 
 		BenchmarkReportData.queryJRFQMetricC_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricC1.stop();
 
@@ -1411,8 +1394,8 @@ public class Tests {
 		numericQueryJRFQMetricC2.start();
 
 		BenchmarkReportData.queryJRFQMetricC_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_SECOND, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricC2.stop();
 
@@ -1421,8 +1404,8 @@ public class Tests {
 		numericQueryJRFQMetricC3.start();
 
 		BenchmarkReportData.queryJRFQMetricC_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_THIRD, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricC3.stop();
 
@@ -1431,8 +1414,8 @@ public class Tests {
 		numericQueryJRFQMetricC4.start();
 
 		BenchmarkReportData.queryJRFQMetricC_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.cloud.getuRL(), Tests.cloud.collectionName,
-				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort);
+				Util.QUERY_THREAD_COUNT_FOURTH, Tests.cloud.getuRL(), Tests.cloud.collectionName,
+				QueryClientType.CLOUD_SOLR_CLIENT, Tests.cloud.zookeeperIp + ":" + Tests.cloud.zookeeperPort, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricC4.stop();
 
@@ -1449,21 +1432,10 @@ public class Tests {
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("deprecation")
-	public static void queryTestsStandalone(long numDocuments, TestPlans.BenchmarkTestType type) throws Exception {
+	public static void queryTestsStandalone(long numDocuments, TestPlans.BenchmarkTestType type, long numberOfQueriesToRun) throws Exception {
 		
 		logger.info("INITIATING TEST: Query tests on standalone node ...");
 		
-		int estimationDuration = 120;
-		int delayEstimationBySeconds = 30;
-		
-		if (type == BenchmarkTestType.DEV_TEST) {
-			estimationDuration = 10;
-			delayEstimationBySeconds = 4;			
-		} else if (type == BenchmarkTestType.PROD_TEST) {
-			estimationDuration = 120;
-			delayEstimationBySeconds = 30;			
-		}
-
 		String port = Tests.setUpStandaloneNodeForFeatureTests(Util.COMMIT_ID, numDocuments);
 
 		Thread numericQueryTNQMetricS1 = new Thread(
@@ -1471,8 +1443,8 @@ public class Tests {
 		numericQueryTNQMetricS1.start();
 
 		BenchmarkReportData.queryTNQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST, Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTNQMetricS1.stop();
 
@@ -1481,8 +1453,8 @@ public class Tests {
 		numericQueryTNQMetricS2.start();
 
 		BenchmarkReportData.queryTNQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTNQMetricS2.stop();
 
@@ -1491,8 +1463,8 @@ public class Tests {
 		numericQueryTNQMetricS3.start();
 
 		BenchmarkReportData.queryTNQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTNQMetricS3.stop();
 
@@ -1501,8 +1473,8 @@ public class Tests {
 		numericQueryTNQMetricS4.start();
 
 		BenchmarkReportData.queryTNQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TERM_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTNQMetricS4.stop();
 
@@ -1511,8 +1483,8 @@ public class Tests {
 		numericQueryRNQMetricS1.start();
 
 		BenchmarkReportData.queryRNQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryRNQMetricS1.stop();
 
@@ -1521,8 +1493,8 @@ public class Tests {
 		numericQueryRNQMetricS2.start();
 
 		BenchmarkReportData.queryRNQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryRNQMetricS2.stop();
 
@@ -1531,8 +1503,8 @@ public class Tests {
 		numericQueryRNQMetricS3.start();
 
 		BenchmarkReportData.queryRNQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryRNQMetricS3.stop();
 
@@ -1541,8 +1513,8 @@ public class Tests {
 		numericQueryRNQMetricS4.start();
 
 		BenchmarkReportData.queryRNQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.RANGE_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryRNQMetricS4.stop();
 
@@ -1551,8 +1523,8 @@ public class Tests {
 		numericQueryLNQMetricS1.start();
 
 		BenchmarkReportData.queryLNQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryLNQMetricS1.stop();
 
@@ -1561,8 +1533,8 @@ public class Tests {
 		numericQueryLNQMetricS2.start();
 
 		BenchmarkReportData.queryLNQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryLNQMetricS2.stop();
 
@@ -1571,8 +1543,8 @@ public class Tests {
 		numericQueryLNQMetricS3.start();
 
 		BenchmarkReportData.queryLNQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryLNQMetricS3.stop();
 
@@ -1581,8 +1553,8 @@ public class Tests {
 		numericQueryLNQMetricS4.start();
 
 		BenchmarkReportData.queryLNQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.LESS_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryLNQMetricS4.stop();
 
@@ -1591,8 +1563,8 @@ public class Tests {
 		numericQueryGNQMetricS1.start();
 
 		BenchmarkReportData.queryGNQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryGNQMetricS1.stop();
 
@@ -1601,8 +1573,8 @@ public class Tests {
 		numericQueryGNQMetricS2.start();
 
 		BenchmarkReportData.queryGNQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryGNQMetricS2.stop();
 
@@ -1611,8 +1583,8 @@ public class Tests {
 		numericQueryGNQMetricS3.start();
 
 		BenchmarkReportData.queryGNQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryGNQMetricS3.stop();
 
@@ -1621,8 +1593,8 @@ public class Tests {
 		numericQueryGNQMetricS4.start();
 
 		BenchmarkReportData.queryGNQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.GREATER_THAN_NUMERIC_QUERY, Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryGNQMetricS4.stop();
 
@@ -1631,8 +1603,8 @@ public class Tests {
 		numericQueryANQMetricS1.start();
 
 		BenchmarkReportData.queryANQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryANQMetricS1.stop();
 
@@ -1641,8 +1613,8 @@ public class Tests {
 		numericQueryANQMetricS2.start();
 
 		BenchmarkReportData.queryANQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryANQMetricS2.stop();
 
@@ -1651,8 +1623,8 @@ public class Tests {
 		numericQueryANQMetricS3.start();
 
 		BenchmarkReportData.queryANQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryANQMetricS3.stop();
 
@@ -1661,8 +1633,8 @@ public class Tests {
 		numericQueryANQMetricS4.start();
 
 		BenchmarkReportData.queryANQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.AND_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryANQMetricS4.stop();
 
@@ -1671,8 +1643,8 @@ public class Tests {
 		numericQueryONQMetricS1.start();
 
 		BenchmarkReportData.queryONQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryONQMetricS1.stop();
 
@@ -1681,8 +1653,8 @@ public class Tests {
 		numericQueryONQMetricS2.start();
 
 		BenchmarkReportData.queryONQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryONQMetricS2.stop();
 
@@ -1691,8 +1663,8 @@ public class Tests {
 		numericQueryONQMetricS3.start();
 
 		BenchmarkReportData.queryONQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryONQMetricS3.stop();
 
@@ -1701,8 +1673,8 @@ public class Tests {
 		numericQueryONQMetricS4.start();
 
 		BenchmarkReportData.queryONQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.OR_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryONQMetricS4.stop();
 
@@ -1711,8 +1683,8 @@ public class Tests {
 		numericQuerySNQMetricS1.start();
 
 		BenchmarkReportData.querySNQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySNQMetricS1.stop();
 
@@ -1721,8 +1693,8 @@ public class Tests {
 		numericQuerySNQMetricS2.start();
 
 		BenchmarkReportData.querySNQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySNQMetricS2.stop();
 
@@ -1731,8 +1703,8 @@ public class Tests {
 		numericQuerySNQMetricS3.start();
 
 		BenchmarkReportData.querySNQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySNQMetricS3.stop();
 
@@ -1741,8 +1713,8 @@ public class Tests {
 		numericQuerySNQMetricS4.start();
 
 		BenchmarkReportData.querySNQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_NUMERIC_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySNQMetricS4.stop();
 
@@ -1751,8 +1723,8 @@ public class Tests {
 		numericQueryTTQMetricS1.start();
 
 		BenchmarkReportData.queryTTQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTTQMetricS1.stop();
 
@@ -1761,8 +1733,8 @@ public class Tests {
 		numericQueryTTQMetricS2.start();
 
 		BenchmarkReportData.queryTTQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTTQMetricS2.stop();
 
@@ -1771,8 +1743,8 @@ public class Tests {
 		numericQueryTTQMetricS3.start();
 
 		BenchmarkReportData.queryTTQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTTQMetricS3.stop();
 
@@ -1781,8 +1753,8 @@ public class Tests {
 		numericQueryTTQMetricS4.start();
 
 		BenchmarkReportData.queryTTQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_TERM_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryTTQMetricS4.stop();
 
@@ -1791,8 +1763,8 @@ public class Tests {
 		numericQueryPTQMetricS1.start();
 
 		BenchmarkReportData.queryPTQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryPTQMetricS1.stop();
 
@@ -1801,8 +1773,8 @@ public class Tests {
 		numericQueryPTQMetricS2.start();
 
 		BenchmarkReportData.queryPTQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryPTQMetricS2.stop();
 
@@ -1811,8 +1783,8 @@ public class Tests {
 		numericQueryPTQMetricS3.start();
 
 		BenchmarkReportData.queryPTQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryPTQMetricS3.stop();
 
@@ -1821,8 +1793,8 @@ public class Tests {
 		numericQueryPTQMetricS4.start();
 
 		BenchmarkReportData.queryPTQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.TEXT_PHRASE_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryPTQMetricS4.stop();
 
@@ -1831,8 +1803,8 @@ public class Tests {
 		numericQuerySTQMetricS1.start();
 
 		BenchmarkReportData.querySTQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySTQMetricS1.stop();
 
@@ -1841,8 +1813,8 @@ public class Tests {
 		numericQuerySTQMetricS2.start();
 
 		BenchmarkReportData.querySTQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySTQMetricS2.stop();
 
@@ -1851,8 +1823,8 @@ public class Tests {
 		numericQuerySTQMetricS3.start();
 
 		BenchmarkReportData.querySTQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySTQMetricS3.stop();
 
@@ -1861,8 +1833,8 @@ public class Tests {
 		numericQuerySTQMetricS4.start();
 
 		BenchmarkReportData.querySTQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.SORTED_TEXT_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQuerySTQMetricS4.stop();
 
@@ -1871,8 +1843,8 @@ public class Tests {
 		numericQueryHTQMetricS1.start();
 
 		BenchmarkReportData.queryHTQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryHTQMetricS1.stop();
 
@@ -1881,8 +1853,8 @@ public class Tests {
 		numericQueryHTQMetricS2.start();
 
 		BenchmarkReportData.queryHTQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryHTQMetricS2.stop();
 
@@ -1891,8 +1863,8 @@ public class Tests {
 		numericQueryHTQMetricS3.start();
 
 		BenchmarkReportData.queryHTQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryHTQMetricS3.stop();
 
@@ -1901,8 +1873,8 @@ public class Tests {
 		numericQueryHTQMetricS4.start();
 
 		BenchmarkReportData.queryHTQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.HIGHLIGHT_QUERY,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryHTQMetricS4.stop();
 
@@ -1911,8 +1883,8 @@ public class Tests {
 		numericQueryCTFQMetricS1.start();
 
 		BenchmarkReportData.queryCTFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricS1.stop();
 
@@ -1921,8 +1893,8 @@ public class Tests {
 		numericQueryCTFQMetricS2.start();
 
 		BenchmarkReportData.queryCTFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricS2.stop();
 
@@ -1931,8 +1903,8 @@ public class Tests {
 		numericQueryCTFQMetricS3.start();
 
 		BenchmarkReportData.queryCTFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricS3.stop();
 
@@ -1941,8 +1913,8 @@ public class Tests {
 		numericQueryCTFQMetricS4.start();
 
 		BenchmarkReportData.queryCTFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_TERM_FACETING, Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCTFQMetricS4.stop();
 
@@ -1951,8 +1923,8 @@ public class Tests {
 		numericQueryCRFQMetricS1.start();
 
 		BenchmarkReportData.queryCRFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricS1.stop();
 
@@ -1961,8 +1933,8 @@ public class Tests {
 		numericQueryCRFQMetricS2.start();
 
 		BenchmarkReportData.queryCRFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricS2.stop();
 
@@ -1971,8 +1943,8 @@ public class Tests {
 		numericQueryCRFQMetricS3.start();
 
 		BenchmarkReportData.queryCRFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricS3.stop();
 
@@ -1981,8 +1953,8 @@ public class Tests {
 		numericQueryCRFQMetricS4.start();
 
 		BenchmarkReportData.queryCRFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID,
-				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(),
-				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null);
+				QueryType.CLASSIC_RANGE_FACETING, Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(),
+				Tests.node.collectionName, QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryCRFQMetricS4.stop();
 
@@ -1991,8 +1963,8 @@ public class Tests {
 		numericQueryJTFQMetricS1.start();
 
 		BenchmarkReportData.queryJTFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricS1.stop();
 
@@ -2001,8 +1973,8 @@ public class Tests {
 		numericQueryJTFQMetricS2.start();
 
 		BenchmarkReportData.queryJTFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricS2.stop();
 
@@ -2011,8 +1983,8 @@ public class Tests {
 		numericQueryJTFQMetricS3.start();
 
 		BenchmarkReportData.queryJTFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricS3.stop();
 
@@ -2021,8 +1993,8 @@ public class Tests {
 		numericQueryJTFQMetricS4.start();
 
 		BenchmarkReportData.queryJTFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_TERM_FACETING,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJTFQMetricS4.stop();
 
@@ -2031,8 +2003,8 @@ public class Tests {
 		numericQueryJRFQMetricS1.start();
 
 		BenchmarkReportData.queryJRFQMetricS_T1 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_FIRST, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FIRST,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricS1.stop();
 
@@ -2041,8 +2013,8 @@ public class Tests {
 		numericQueryJRFQMetricS2.start();
 
 		BenchmarkReportData.queryJRFQMetricS_T2 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_SECOND, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_SECOND,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricS2.stop();
 
@@ -2051,8 +2023,8 @@ public class Tests {
 		numericQueryJRFQMetricS3.start();
 
 		BenchmarkReportData.queryJRFQMetricS_T3 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_THIRD, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_THIRD,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricS3.stop();
 
@@ -2061,8 +2033,8 @@ public class Tests {
 		numericQueryJRFQMetricS4.start();
 
 		BenchmarkReportData.queryJRFQMetricS_T4 = Tests.numericQueryTests(Util.COMMIT_ID, QueryType.JSON_RANGE_FACETING,
-				Util.QUERY_THREAD_COUNT_FOURTH, estimationDuration, delayEstimationBySeconds, Tests.node.getBaseUrl(), Tests.node.collectionName,
-				QueryClientType.HTTP_SOLR_CLIENT, null);
+				Util.QUERY_THREAD_COUNT_FOURTH,  Tests.node.getBaseUrl(), Tests.node.collectionName,
+				QueryClientType.HTTP_SOLR_CLIENT, null, numberOfQueriesToRun);
 
 		numericQueryJRFQMetricS4.stop();
 

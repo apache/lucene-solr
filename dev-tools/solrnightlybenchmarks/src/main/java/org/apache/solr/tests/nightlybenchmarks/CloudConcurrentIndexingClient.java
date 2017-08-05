@@ -22,6 +22,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.log4j.Logger;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -42,9 +43,11 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	public static boolean running;
 	public static boolean endLock = false;
 	public static long documentCount = 0;
+	public static long documentCountLimit = 0;
 	public static ConcurrentLinkedQueue<SolrInputDocument> documents = new ConcurrentLinkedQueue<SolrInputDocument>();
 	public static long totalTime = 0;
 
+    CountDownLatch latch;
 	String urlString;
 	String collectionName;
 	SolrParams params;
@@ -62,9 +65,11 @@ public class CloudConcurrentIndexingClient implements Runnable {
 	 * @param zookeeperURL
 	 * @param collectionName
 	 */
-	public CloudConcurrentIndexingClient(String zookeeperURL, String collectionName) {
+	public CloudConcurrentIndexingClient(String zookeeperURL, String collectionName, CountDownLatch latch) {
 		super();
 		this.collectionName = collectionName;
+		this.latch = latch;
+
 		solrClient = new CloudSolrClient.Builder().withZkHost(zookeeperURL).build();
 		solrClient.setDefaultCollection(collectionName);
 		solrClient.connect();
@@ -84,7 +89,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 
 		String line = "";
 		String cvsSplitBy = ",";
-		int documentCount = 0;
+		int documentCountInQueue = 0;
 
 		try (BufferedReader br = new BufferedReader(new FileReader(Util.TEST_DATA_DIRECTORY + Util.ONEM_TEST_DATA))) {
 
@@ -104,10 +109,9 @@ public class CloudConcurrentIndexingClient implements Runnable {
 				document.addField("Long1_l", Long.parseLong(data[7].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Double1_d", Double.parseDouble(data[8].replaceAll("[^\\sa-zA-Z0-9]", "").trim()));
 				document.addField("Text_s", data[9].replaceAll("[^\\sa-zA-Z0-9]", "").trim());
-				documentCount++;
 				documents.add(document);
-
-				if (documentCount > 25000) {
+				documentCountInQueue++;
+				if (documentCountInQueue == CloudConcurrentIndexingClient.documentCountLimit + 1000) {
 					break;
 				}
 			}
@@ -121,7 +125,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 			throw new Exception(e.getMessage());
 		}
 
-		logger.info("Preparing document queue ...");
+		logger.info("Preparing document queue [COMPLETE] ...");
 	}
 
 	/**
@@ -131,14 +135,15 @@ public class CloudConcurrentIndexingClient implements Runnable {
 
 		startTime = System.currentTimeMillis();
 		while (true) {
+
 			if (running == true) {
 				// Critical Section ....
-				try {
-					addDocument(collectionName, documents.poll());
-				} catch (SolrServerException | IOException e) {
-					logger.error(e.getMessage());
-					throw new RuntimeException(e.getMessage());
-				}
+					try {
+						addDocument(collectionName, documents.poll());
+					} catch (SolrServerException | IOException e) {
+						logger.error(e.getMessage());
+						throw new RuntimeException(e.getMessage());
+					}
 			} else if (running == false) {
 				// Break out from loop ...
 				synchronized (this) {
@@ -151,7 +156,12 @@ public class CloudConcurrentIndexingClient implements Runnable {
 				logger.debug("Getting out of critical section ...");
 				break;
 			}
+			
+			if (CloudConcurrentIndexingClient.documentCount >= CloudConcurrentIndexingClient.documentCountLimit) {
+				CloudConcurrentIndexingClient.running = false;
+			}		
 		}
+        latch.countDown();
 	}
 
 	/**
@@ -191,6 +201,7 @@ public class CloudConcurrentIndexingClient implements Runnable {
 		running = false;
 		endLock = false;
 		documentCount = 0;
+		documentCountLimit = 0;
 	}
 
 }

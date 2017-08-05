@@ -266,6 +266,8 @@ public class SolrNode {
 		logger.info("Time for creating the core is: " + (end - start) + " millisecond(s)");
 		thread.stop();
 
+		Thread.sleep(5000);
+		
 		Map<String, String> returnMap = new HashMap<String, String>();
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -316,6 +318,8 @@ public class SolrNode {
 		logger.info("Time for creating the collection is: " + (end - start) + " millisecond(s)");
 		thread.stop();
 
+		Thread.sleep(5000);
+		
 		Map<String, String> returnMap = new HashMap<String, String>();
 		Date dNow = new Date();
 		SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");

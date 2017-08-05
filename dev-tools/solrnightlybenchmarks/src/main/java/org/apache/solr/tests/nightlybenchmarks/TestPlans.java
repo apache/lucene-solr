@@ -50,7 +50,8 @@ public class TestPlans {
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS,
 				ActionType.PARTIAL_UPDATE);
 
-		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS, BenchmarkTestType.PROD_TEST);
+		Tests.queryTestsStandalone(Util.TEST_WITH_NUMBER_OF_DOCUMENTS, BenchmarkTestType.PROD_TEST,
+				Util.NUMBER_OF_QUERIES_TO_RUN);
 
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 2, "2", "1");
@@ -66,12 +67,18 @@ public class TestPlans {
 		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID, Util.TEST_WITH_NUMBER_OF_DOCUMENTS, 4, "2", "2",
 				BenchmarkTestType.PROD_TEST);
 
-		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS, BenchmarkTestType.PROD_TEST);
+		Tests.queryTestsCloud(Util.TEST_WITH_NUMBER_OF_DOCUMENTS, BenchmarkTestType.PROD_TEST,
+				Util.NUMBER_OF_QUERIES_TO_RUN);
 
 		logger.info("Executing the benchmark test plan [COMPLETE] ...");
 
 	}
 
+	/**
+	 * A test plan for use in the dev mode. 
+	 * @param load
+	 * @throws Exception
+	 */
 	public static void sampleTest(double load) throws Exception {
 
 		logger.info("Executing the benchmark sanity test plan: load " + load + " number of documents: "
@@ -88,7 +95,8 @@ public class TestPlans {
 		Tests.indexingTestsStandaloneConcurrent(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load),
 				ActionType.PARTIAL_UPDATE);
 
-		Tests.queryTestsStandalone((long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), BenchmarkTestType.DEV_TEST);
+		Tests.queryTestsStandalone((long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), BenchmarkTestType.DEV_TEST,
+				(long) (Util.NUMBER_OF_QUERIES_TO_RUN * load));
 
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 2, "1", "2");
 		Tests.indexingTestsCloudSerial(Util.COMMIT_ID, (long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 2, "2", "1");
@@ -104,7 +112,8 @@ public class TestPlans {
 		Tests.indexingTestsCloudConcurrentCustomClient(Util.COMMIT_ID,
 				(long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), 4, "2", "2", BenchmarkTestType.DEV_TEST);
 
-		Tests.queryTestsCloud((long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), BenchmarkTestType.DEV_TEST);
+		Tests.queryTestsCloud((long) (Util.TEST_WITH_NUMBER_OF_DOCUMENTS * load), BenchmarkTestType.DEV_TEST,
+				(long) (Util.NUMBER_OF_QUERIES_TO_RUN * load));
 
 		logger.info("Executing the benchmark sanity test plan [COMPLETE] ...");
 
