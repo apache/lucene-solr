@@ -33,7 +33,7 @@ Please read the following sections in order and follow instructions.
 
 ## [C] Parameters
 
-     Below is a list of valid parameters usable on step 8 in the section above. 
+     Below is a list of valid parameters usable on step 6 in the section above. 
   
      * --archive                               Use this parameter to archive the data in the location as 
                                                   defined in properties file.
