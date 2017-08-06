@@ -407,6 +407,8 @@ Bug Fixes
 
 * SOLR-11182: A split shard failure on IOException should be logged (Varun Thacker)
 
+* SOLR-10353: TestSQLHandler reproducible failure: No match found for function signature min(<NUMERIC>) (Kevin Risden)
+
 Optimizations
 ----------------------
 
