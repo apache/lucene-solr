@@ -6287,8 +6287,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Map regression = (Map)tuple.get("regress");
     double slope = (double)regression.get("slope");
     double intercept= (double) regression.get("intercept");
+    double rSquare= (double) regression.get("RSquare");
     assertTrue(slope == 2.0D);
     assertTrue(intercept == 0.0D);
+    assertTrue(rSquare == 1.0D);
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
   }
