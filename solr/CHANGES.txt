@@ -154,6 +154,8 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 
 * SOLR-11104: LbHttpSolrClient ignores given HttpClient in constructor on 6.x (shalin)
 
+* SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
