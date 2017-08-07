@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -79,9 +78,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
   @Test
   public void doTest() throws Exception {
-
-    assumeFalse("This test fails on UNIX with Turkish default locale", new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
-
     waitForRecoveriesToFinish(false);
 
     testBasicSelect();

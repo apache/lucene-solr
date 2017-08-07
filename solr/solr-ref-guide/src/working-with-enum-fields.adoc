@@ -18,16 +18,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The EnumField type allows defining a field whose values are a closed set, and the sort order is pre-determined but is not alphabetic nor numeric. Examples of this are severity lists, or risk definitions.
+EnumFieldType allows defining a field whose values are a closed set, and the sort order is pre-determined but is not alphabetic nor numeric. Examples of this are severity lists, or risk definitions.
 
-== Defining an EnumField in schema.xml
+.EnumField has been Deprecated
+[WARNING]
+====
+EnumField has been deprecated in favor of EnumFieldType; all configuration examples below use EnumFieldType.
+====
 
-The EnumField type definition is quite simple, as in this example defining field types for "priorityLevel" and "riskLevel" enumerations:
+== Defining an EnumFieldType in schema.xml
+
+The EnumFieldType type definition is quite simple, as in this example defining field types for "priorityLevel" and "riskLevel" enumerations:
 
 [source,xml]
 ----
-<fieldType name="priorityLevel" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="priority"/>
-<fieldType name="riskLevel"     class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="risk"    />
+<fieldType name="priorityLevel" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="priority"/>
+<fieldType name="riskLevel"     class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="risk"    />
 ----
 
 Besides the `name` and the `class`, which are common to all field types, this type also takes two additional parameters:
@@ -35,7 +41,9 @@ Besides the `name` and the `class`, which are common to all field types, this ty
 `enumsConfig`:: the name of a configuration file that contains the `<enum/>` list of field values and their order that you wish to use with this field type. If a path to the file is not defined specified, the file should be in the `conf` directory for the collection.
 `enumName`:: the name of the specific enumeration in the `enumsConfig` file to use for this type.
 
-== Defining the EnumField Configuration File
+Note that `docValues="true"` must be specified either in the EnumFieldType fieldType or field specification.
+
+== Defining the EnumFieldType Configuration File
 
 The file named with the `enumsConfig` parameter can contain multiple enumeration value lists with different names if there are multiple uses for enumerations in your Solr schema.
 

@@ -25,6 +25,7 @@ import java.util.TreeSet;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
@@ -133,15 +134,15 @@ public class GraphQuery extends Query {
     private int currentDepth = -1;
     private Filter filter;
     private DocSet resultSet;
-    SchemaField fromSchemaField;
-    SchemaField toSchemaField;
+    SchemaField collectSchemaField;  // the field to collect values from
+    SchemaField matchSchemaField;    // the field to match those values
 
     public GraphQueryWeight(SolrIndexSearcher searcher, float boost) {
       // Grab the searcher so we can run additional searches.
       super(null);
       this.fromSearcher = searcher;
-      this.fromSchemaField = searcher.getSchema().getField(fromField);
-      this.toSchemaField = searcher.getSchema().getField(toField);
+      this.matchSchemaField = searcher.getSchema().getField(fromField);
+      this.collectSchemaField = searcher.getSchema().getField(toField);
     }
 
     GraphQuery getGraphQuery() {
@@ -196,13 +197,25 @@ public class GraphQuery extends Query {
         } else {
           // when we're not at the max depth level, we need to collect edges          
           // Create the graph result collector for this level
-          GraphEdgeCollector graphResultCollector = toSchemaField.getType().isPointField()
-              ? new GraphPointsCollector(this, capacity, resultBits, leafNodes)
-              : new GraphTermsCollector(this, capacity, resultBits, leafNodes);
+          GraphEdgeCollector graphResultCollector = collectSchemaField.getType().isPointField()
+              ? new GraphPointsCollector(collectSchemaField, new BitDocSet(resultBits), leafNodes)
+              : new GraphTermsCollector(collectSchemaField, new BitDocSet(resultBits), leafNodes);
+
+          fromSet = new BitDocSet(new FixedBitSet(capacity));
+          graphResultCollector.setCollectDocs(fromSet.getBits());
 
           fromSearcher.search(frontierQuery, graphResultCollector);
-          fromSet = graphResultCollector.getDocSet();
-          frontierQuery = graphResultCollector.getFrontierQuery();
+
+          frontierQuery = graphResultCollector.getResultQuery(matchSchemaField, isUseAutn());
+          // If there is a filter to be used while crawling the graph, add that.
+          if (frontierQuery != null && getTraversalFilter() != null) {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.add(frontierQuery, BooleanClause.Occur.MUST);
+            builder.add(getTraversalFilter(), BooleanClause.Occur.MUST);
+            frontierQuery = builder.build();
+          }
+
+
         }
         if (currentDepth == 0 && !returnRoot) {
           // grab a copy of the root bits but only if we need it.
@@ -230,9 +243,9 @@ public class GraphQuery extends Query {
     }
     
     private DocSet resolveLeafNodes() throws IOException {
-      String field = toSchemaField.getName();
+      String field = collectSchemaField.getName();
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
-      Query edgeQuery = toSchemaField.hasDocValues() ? new DocValuesFieldExistsQuery(field) : new WildcardQuery(new Term(field, "*"));
+      Query edgeQuery = collectSchemaField.hasDocValues() ? new DocValuesFieldExistsQuery(field) : new WildcardQuery(new Term(field, "*"));
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
       DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
       return leafNodes;

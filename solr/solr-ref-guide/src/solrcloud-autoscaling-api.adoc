@@ -1,0 +1,326 @@
+= Autoscaling API
+:page-shortname: solrcloud-autoscaling-api
+:page-permalink: solrcloud-autoscaling-api.html
+:page-toclevels: 2
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Autoscaling API is used to manage autoscaling policies and preferences, and to get diagnostics on the state of the cluster.
+
+== Read API
+
+The autoscaling Read API is available at `/admin/autoscaling` or `/v2/cluster/autoscaling`. It returns information about the configured cluster preferences, cluster policy and collection-specific policies.
+
+This API does not take any parameters.
+
+=== Read API Response
+
+The output will contain cluster preferences, cluster policy and collection specific policies.
+
+=== Examples using Read API
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 2
+    },
+    "cluster-policy": [
+        {
+            "replica": "<2",
+            "shard": "#EACH",
+            "node": "#ANY"
+        }
+    ],
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+== Diagnostics API
+
+The diagnostics API shows the violations, if any, of all conditions in the cluster and, if applicable, the collection-specific policy. It is available at the `/admin/autoscaling/diagnostics` path.
+
+This API does not take any parameters.
+
+=== Diagnostics API Response
+
+The output will contain `sortedNodes` which is a list of nodes in the cluster sorted according to overall load in descending order (as determined by the preferences) and `violations` which is a list of nodes along with the conditions that they violate.
+
+=== Examples Using Diagnostics API
+
+Here is an example with no violations but in the `sortedNodes` section, we can see that the first node is most loaded (according to number of cores):
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 65
+    },
+    "diagnostics": {
+        "sortedNodes": [
+            {
+                "node": "127.0.0.1:8983_solr",
+                "cores": 3
+            },
+            {
+                "node": "127.0.0.1:7574_solr",
+                "cores": 2
+            }
+        ],
+        "violations": []
+    },
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+Suppose we added a condition to the cluster policy as follows:
+
+[source,json]
+----
+{"replica": "<2", "shard": "#EACH", "node": "#ANY"}
+----
+
+However, since the first node in the first example had more than 1 replica for a shard already, then the diagnostics API will return:
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 45
+    },
+    "diagnostics": {
+        "sortedNodes": [
+            {
+                "node": "127.0.0.1:8983_solr",
+                "cores": 3
+            },
+            {
+                "node": "127.0.0.1:7574_solr",
+                "cores": 2
+            }
+        ],
+        "violations": [
+            {
+                "collection": "gettingstarted",
+                "shard": "shard1",
+                "node": "127.0.0.1:8983_solr",
+                "tagKey": "127.0.0.1:8983_solr",
+                "violation": {
+                    "replica": "2",
+                    "delta": 0
+                },
+                "clause": {
+                    "replica": "<2",
+                    "shard": "#EACH",
+                    "node": "#ANY",
+                    "collection": "gettingstarted"
+                }
+            }
+        ]
+    },
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
+
+== Write API
+
+The Write API is available at the same `/admin/autoscaling` and `/v2/cluster/autoscaling` endpoints as the read API but can only be used with the *POST* HTTP verb.
+
+The payload of the POST request is a JSON message with commands to set and remove components. Multiple commands can be specified together in the payload. The commands are executed in the order specified and the changes are atomic, i.e., either all succeed or none.
+
+=== Create and Modify Cluster Preferences
+
+Cluster preferences are specified as a list of sort preferences. Multiple sorting preferences can be specified and they are applied in order.
+
+They are defined using the `set-cluster-preferences` command.
+
+Each preference is a JSON map having the following syntax:
+
+`{'<sort_order>':'<sort_param>', 'precision':'<precision_val>'}`
+
+See the section <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>> for details about the allowed values for the `sort_order`, `sort_param` and `precision` parameters.
+
+Changing the cluster preferences after the cluster is already built doesn't automatically reconfigure the cluster. However, all future cluster management operations will use the changed preferences.
+
+*Input*
+
+[source,json]
+----
+{
+"set-cluster-preferences" : [
+  {"minimize": "cores"}
+  ]
+}
+----
+
+*Output*
+
+The output has a key named `result` which will return either `success` or `failure` depending on whether the command succeeded or failed.
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 138
+    },
+    "result": "success",
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+==== Example Setting Cluster Preferences
+
+In this example we add cluster preferences that sort on three different parameters:
+
+[source,json]
+----
+{
+  "set-cluster-preferences": [
+    {
+      "minimize": "cores",
+      "precision": 2
+    },
+    {
+      "maximize": "freedisk",
+      "precision": 100
+    },
+    {
+      "minimize": "sysLoadAvg",
+      "precision": 10
+    }
+  ]
+}
+----
+
+We can remove all cluster preferences by setting preferences to an empty list.
+[source,json]
+----
+{
+  "set-cluster-preferences": []
+}
+----
+
+=== Create and Modify Cluster Policies
+
+Cluster policies are set using the `set-cluster-policy` command.
+
+Like `set-cluster-preferences`, the policy definition is a JSON map defining the desired attributes and values.
+
+Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specification,Policy Specification>> section for details of the allowed values for each condition in the policy.
+
+*Input*:
+[source,json]
+----
+{
+"set-cluster-policy": [
+  {"replica": "<2", "shard": "#EACH", "node": "#ANY"}
+  ]
+}
+----
+
+Output:
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 47
+    },
+    "result": "success",
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+We can remove all cluster policy conditions by setting policy to an empty list.
+
+[source,json]
+----
+{
+  "set-cluster-policy": []
+}
+----
+
+Changing the cluster policy after the cluster is already built doesn't automatically reconfigure the cluster. However, all future cluster management operations will use the changed cluster policy.
+
+=== Create and Modify Collection-Specific Policy
+
+The `set-policy` command accepts a map of policy names to the list of conditions for that policy. Multiple named policies can be specified together. A named policy that does not exist already is created and if the named policy accepts already then it is replaced.
+
+Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specification,Policy Specification>> section for details of the allowed values for each condition in the policy.
+
+*Input*
+
+[source,json]
+----
+{
+"set-policy": {
+  "policy1": [
+    {"replica": "1", "shard": "#EACH", "port": "8983"}
+    ]
+  }
+}
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 246
+    },
+    "result": "success",
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+Changing the policy after the collection is already built doesn't automatically reconfigure the collection. However, all future cluster management operations will use the changed policy.
+
+=== Remove a Collection-Specific Policy
+
+The `remove-policy` command accepts a policy name to be removed from Solr. The policy being removed must not be attached to any collection otherwise the command will fail.
+
+*Input*
+[source,json]
+----
+{"remove-policy": "policy1"}
+----
+
+*Output*
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 42
+    },
+    "result": "success",
+    "WARNING": "This response format is experimental.  It is likely to change in the future."
+}
+----
+
+If you attempt to remove a policy that is being used by a collection, this command will fail to delete the policy until the collection itself is deleted.

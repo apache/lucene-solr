@@ -78,7 +78,7 @@ public class StatsValuesFactory {
       return statsValue;
     } else if (StrField.class.isInstance(fieldType)) {
       return new StringStatsValues(statsField);
-    } else if (sf.getType().getClass().equals(EnumField.class)) {
+    } else if (AbstractEnumField.class.isInstance(fieldType)) {
       return new EnumStatsValues(statsField);
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

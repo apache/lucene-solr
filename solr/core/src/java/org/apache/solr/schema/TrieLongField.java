@@ -42,7 +42,9 @@ import org.apache.lucene.util.mutable.MutableValueLong;
  * </ul>
  * 
  * @see Long
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TrieLongField extends TrieField implements LongValueFieldType {
   {
     type = NumberType.LONG;

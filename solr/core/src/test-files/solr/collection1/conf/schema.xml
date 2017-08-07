@@ -506,7 +506,7 @@
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
-  <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
@@ -648,7 +648,7 @@
   <field name="payloadDelimited" type="payloadDelimited"/>
 
   <!-- EnumType -->
-  <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
+  <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
 
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields

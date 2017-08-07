@@ -14,28 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.schema;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.legacy.LegacyFieldType;
-import org.apache.solr.legacy.LegacyIntField;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.solr.legacy.LegacyNumericType;
-import org.apache.solr.legacy.LegacyNumericUtils;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
@@ -45,35 +46,36 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Field type for support of string values with custom sort order.
- * @deprecated use {@link EnumFieldType} instead.
  */
-@Deprecated
-public class EnumField extends AbstractEnumField {
-
+public class EnumFieldType extends AbstractEnumField {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected static final int DEFAULT_PRECISION_STEP = Integer.MAX_VALUE;
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
-    if (sf.multiValued()) {
-      return Type.SORTED_SET_INTEGER;
-    } else {
-      return Type.LEGACY_INTEGER;
-    }
+    return null;
   }
-
+  
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Integer minValue = enumMapping.stringValueToIntValue(min);
     Integer maxValue = enumMapping.stringValueToIntValue(max);
 
-    if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
-      // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
-      return super.getRangeQuery(parser, field, minValue.toString(), maxValue.toString(), minInclusive, maxInclusive);
-    }
-    Query query = null;
-    final boolean matchOnly = field.hasDocValues() && !field.indexed();
-    if (matchOnly) {
+    if (field.indexed()) {
+      BytesRef minBytes = null;
+      if (min != null) {
+        byte[] bytes = new byte[Integer.BYTES];
+        NumericUtils.intToSortableBytes(minValue, bytes, 0);
+        minBytes = new BytesRef(bytes);
+      }
+      BytesRef maxBytes = null;
+      if (max != null) {
+        byte[] bytes = new byte[Integer.BYTES];
+        NumericUtils.intToSortableBytes(maxValue, bytes, 0);
+        maxBytes = new BytesRef(bytes);
+      }
+      return new TermRangeQuery(field.getName(), minBytes, maxBytes, minInclusive, maxInclusive);
+
+    } else {
       long lowerValue = Long.MIN_VALUE;
       long upperValue = Long.MAX_VALUE;
       if (minValue != null) {
@@ -88,15 +90,14 @@ public class EnumField extends AbstractEnumField {
           --upperValue;
         }
       }
-      query = new ConstantScoreQuery(NumericDocValuesField.newSlowRangeQuery(field.getName(), lowerValue, upperValue));
-    } else {
-      query = LegacyNumericRangeQuery.newIntRange(field.getName(), DEFAULT_PRECISION_STEP,
-          min == null ? null : minValue,
-          max == null ? null : maxValue,
-          minInclusive, maxInclusive);
+      if (field.multiValued()) {
+        return new ConstantScoreQuery(SortedNumericDocValuesField.newSlowRangeQuery
+                                      (field.getName(), lowerValue, upperValue));
+      } else {
+        return new ConstantScoreQuery(NumericDocValuesField.newSlowRangeQuery
+                                      (field.getName(), lowerValue, upperValue));
+      }
     }
-
-    return query;
   }
 
   @Override
@@ -105,8 +106,10 @@ public class EnumField extends AbstractEnumField {
     if (s == null)
       return;
 
+    result.grow(Integer.BYTES);
+    result.setLength(Integer.BYTES);
     final Integer intValue = enumMapping.stringValueToIntValue(s);
-    LegacyNumericUtils.intToPrefixCoded(intValue, 0, result);
+    NumericUtils.intToSortableBytes(intValue, result.bytes(), 0);
   }
 
   @Override
@@ -114,13 +117,13 @@ public class EnumField extends AbstractEnumField {
     if (indexedForm == null)
       return null;
     final BytesRef bytesRef = new BytesRef(indexedForm);
-    final Integer intValue = LegacyNumericUtils.prefixCodedToInt(bytesRef);
+    final Integer intValue = NumericUtils.sortableBytesToInt(bytesRef.bytes, 0);
     return enumMapping.intValueToStringValue(intValue);
   }
 
   @Override
   public CharsRef indexedToReadable(BytesRef input, CharsRefBuilder output) {
-    final Integer intValue = LegacyNumericUtils.prefixCodedToInt(input);
+    final Integer intValue = NumericUtils.sortableBytesToInt(input.bytes, 0);
     final String stringValue = enumMapping.intValueToStringValue(intValue);
     output.grow(stringValue.length());
     output.setLength(stringValue.length());
@@ -130,7 +133,7 @@ public class EnumField extends AbstractEnumField {
 
   @Override
   public EnumFieldValue toObject(SchemaField sf, BytesRef term) {
-    final Integer intValue = LegacyNumericUtils.prefixCodedToInt(term);
+    final Integer intValue = NumericUtils.sortableBytesToInt(term.bytes, 0);
     final String stringValue = enumMapping.intValueToStringValue(intValue);
     return new EnumFieldValue(intValue, stringValue);
   }
@@ -141,21 +144,14 @@ public class EnumField extends AbstractEnumField {
     if (val == null)
       return null;
     final BytesRefBuilder bytes = new BytesRefBuilder();
-    LegacyNumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
+    bytes.grow(Integer.BYTES);
+    bytes.setLength(Integer.BYTES);
+    NumericUtils.intToSortableBytes(val.intValue(), bytes.bytes(), 0);
     return bytes.get().utf8ToString();
   }
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    final boolean indexed = field.indexed();
-    final boolean stored = field.stored();
-    final boolean docValues = field.hasDocValues();
-
-    if (!indexed && !stored && !docValues) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
-      return null;
-    }
     final Integer intValue = enumMapping.stringValueToIntValue(value.toString());
     if (intValue == null || intValue.equals(EnumMapping.DEFAULT_VALUE)) {
       String exceptionMessage = String.format(Locale.ENGLISH, "Unknown value for enum field: %s, value: %s",
@@ -163,9 +159,8 @@ public class EnumField extends AbstractEnumField {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  exceptionMessage);
     }
 
-    final LegacyFieldType newType = new LegacyFieldType();
-
-    newType.setTokenized(field.isTokenized());
+    org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
+    newType.setTokenized(false);
     newType.setStored(field.stored());
     newType.setOmitNorms(field.omitNorms());
     newType.setIndexOptions(field.indexOptions());
@@ -173,30 +168,46 @@ public class EnumField extends AbstractEnumField {
     newType.setStoreTermVectorOffsets(field.storeTermOffsets());
     newType.setStoreTermVectorPositions(field.storeTermPositions());
     newType.setStoreTermVectorPayloads(field.storeTermPayloads());
-    newType.setNumericType(LegacyNumericType.INT);
-    newType.setNumericPrecisionStep(DEFAULT_PRECISION_STEP);
-
-    return new LegacyIntField(field.getName(), intValue.intValue(), newType);
+    
+    byte[] bytes = new byte[Integer.BYTES];
+    NumericUtils.intToSortableBytes(intValue, bytes, 0);         
+    return new Field(field.getName(), bytes, newType) {
+      @Override public Number numericValue() {
+        return NumericUtils.sortableBytesToInt(((BytesRef)fieldsData).bytes, 0);
+      }
+    };
   }
 
   @Override
   public List<IndexableField> createFields(SchemaField sf, Object value) {
-    if (sf.hasDocValues()) {
-      List<IndexableField> fields = new ArrayList<>();
-      final IndexableField field = createField(sf, value);
-      fields.add(field);
-
-      if (sf.multiValued()) {
-        BytesRefBuilder bytes = new BytesRefBuilder();
-        readableToIndexed(enumMapping.stringValueToIntValue(value.toString()).toString(), bytes);
-        fields.add(new SortedSetDocValuesField(sf.getName(), bytes.toBytesRef()));
-      } else {
-        final long bits = field.numericValue().intValue();
-        fields.add(new NumericDocValuesField(sf.getName(), bits));
-      }
-      return fields;
-    } else {
-      return Collections.singletonList(createField(sf, value));
+    if ( ! sf.hasDocValues()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+          getClass().getSimpleName() + " requires docValues=\"true\".");
     }
+    final IndexableField field = createField(sf, value);
+    final List<IndexableField> fields = new ArrayList<>();
+    fields.add(field);
+    final long longValue = field.numericValue().longValue();
+    if (sf.multiValued()) {
+      fields.add(new SortedNumericDocValuesField(sf.getName(), longValue));
+    } else {
+      fields.add(new NumericDocValuesField(sf.getName(), longValue));
+    }
+    return fields;
+  }
+
+  @Override
+  public final ValueSource getSingleValueSource(MultiValueSelector choice, SchemaField field, QParser parser) {
+    if ( ! field.multiValued()) {           // trivial base case
+      return getValueSource(field, parser); // single value matches any selector
+    }
+    SortedNumericSelector.Type selectorType = choice.getSortedNumericSelectorType();
+    if (null == selectorType) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          choice.toString() + " is not a supported option for picking a single value"
+              + " from the multivalued field: " + field.getName() +
+              " (type: " + this.getTypeName() + ")");
+    }
+    return new MultiValuedIntFieldSource(field.getName(), selectorType);
   }
 }
