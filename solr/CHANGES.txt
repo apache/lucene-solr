@@ -343,6 +343,9 @@ New Features
 * SOLR-10845: Add support for PointFields to {!graphTerms} query that is internally
   used by some graph traversal streaming expressions.  (yonik)
 
+* SOLR-10939: Add support for PointsFields to {!join} query. Joined fields should
+  also have docValues enabled. (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
