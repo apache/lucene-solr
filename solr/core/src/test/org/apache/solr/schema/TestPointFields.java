@@ -746,7 +746,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       max = sortedValues.get(sortedValues.size() - 1).val;
       buffer = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min))
           .divide(BigDecimal.valueOf(numValues / 2), RoundingMode.HALF_UP).doubleValue();
-      gap = BigDecimal.valueOf(max + buffer).subtract(BigDecimal.valueOf(min - buffer))
+      gap = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min)).add(BigDecimal.valueOf(buffer * 2.0D))
           .divide(BigDecimal.valueOf(numBuckets), RoundingMode.HALF_UP).doubleValue();
     } while (max >= Double.MAX_VALUE - buffer || min <= -Double.MAX_VALUE + buffer);
     // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
