@@ -369,14 +369,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
 
     waitForState("Expecting property 'preferredleader' to appear on replica " + replica.getName(), collection,
-        (n, c) -> "true".equals(c.getReplica(replica.getName()).getStr("property.preferredleader")));
+        (n, c) -> "true".equals(c.getReplica(replica.getName()).getProperty("preferredleader")));
 
     response = CollectionAdminRequest.deleteReplicaProperty(collection, "shard1", replica.getName(), "property.preferredleader")
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
     waitForState("Expecting property 'preferredleader' to be removed from replica " + replica.getName(), collection,
-        (n, c) -> c.getReplica(replica.getName()).getStr("property.preferredleader") == null);
+        (n, c) -> c.getReplica(replica.getName()).getProperty("preferredleader") == null);
 
   }
 
@@ -396,7 +396,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       for (Slice slice : c) {
         int count = 0;
         for (Replica replica : slice) {
-          if ("true".equals(replica.getStr("property.preferredleader")))
+          if ("true".equals(replica.getProperty("preferredleader")))
             count += 1;
         }
         if (count != 1)

@@ -159,6 +159,17 @@ public class Replica extends ZkNodeProps {
     return this.type;
   }
 
+  public String getProperty(String propertyName) {
+    final String propertyKey;
+    if (!propertyName.startsWith(ZkStateReader.PROPERTY_PROP_PREFIX)) {
+      propertyKey = ZkStateReader.PROPERTY_PROP_PREFIX+propertyName;
+    } else {
+      propertyKey = propertyName;
+    }
+    final String propertyValue = getStr(propertyKey);
+    return propertyValue;
+  }
+
   @Override
   public String toString() {
     return name + ':' + JSONUtil.toJSON(propMap, -1); // small enough, keep it on one line (i.e. no indent)
