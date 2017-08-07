@@ -975,7 +975,7 @@ shape:
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).getShape(0);
     GeoPolygon polygonConcave = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points);
     assertEquals(polygon,polygonConcave);
   }
@@ -994,7 +994,7 @@ shape:
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
     GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
 
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).getShape(0);
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
     assertEquals(polygon,polygon2);
   }
@@ -1006,7 +1006,7 @@ shape:
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, 0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0));
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).getShape(0);
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points);
     assertEquals(polygon,polygon2);
   }
@@ -1025,7 +1025,7 @@ shape:
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
     GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
 
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).getShape(0);
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
     assertEquals(polygon,polygon2);
   }
