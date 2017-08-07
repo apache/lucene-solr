@@ -21,6 +21,9 @@ Optimizations
   SortedSetDocValuesFacetCounts and others) builds its map (Robert
   Muir, Adrien Grand, Mike McCandless)
 
+* LUCENE-7655: Speed up geo-distance queries in case of dense single-valued
+  fields when most documents match. (Maciej Zasada via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7914: Add a maximum recursion level in automaton recursive
