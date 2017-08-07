@@ -157,10 +157,11 @@ The CDC Replicator is a background thread that is responsible for replicating up
 
 The current design of CDCR has some limitations. CDCR will continue to evolve over time and many of these limitations will be addressed. Among them are:
 
-* CDCR is unlikely to be satisfactory for bulk-load situations where the update rate is high, especially if the bandwidth between the Source and target clusters is restricted. In this scenario, the initial bulk load should be performed, the Source and target data centers synchronized and CDCR be utilized for incremental updates.
-* CDCR is currently only active-passive; data is pushed from the Source cluster to the target cluster. There is active work being done in this area in the 6x code line to remove this limitation.
-* CDCR works most robustly with the same number of shards in the Source and target collection. The shards in the two collections may have different numbers of replicas.
+* CDCR is unlikely to be satisfactory for bulk-load situations where the update rate is high, especially if the bandwidth between the Source and Target clusters is restricted. In this scenario, the initial bulk load should be performed, the Source and Target data centers synchronized and CDCR be utilized for incremental updates.
+* CDCR is currently only active-passive; data is pushed from the Source cluster to the Target cluster. There is active work being done in this area in the 6x code line to remove this limitation.
+* CDCR works most robustly with the same number of shards in the Source and Target collection. The shards in the two collections may have different numbers of replicas.
 * Running CDCR with the indexes on HDFS is not currently supported, see the https://issues.apache.org/jira/browse/SOLR-9861[Solr CDCR over HDFS] JIRA issue.
+* Configuration files (solrconfig.xml, schema etc.) are not automatically synchronized between the Source and Target clusters. This means that when the Source schema or solrconfig files are changed, those changes must be replicated manually to the Target cluster. This includes adding fields by the <<schema-api.adoc#schema-api,Schema API>> or <<managed-resources.adoc#managed-resources,Managed Resources>>  as well as hand editing those files.
 
 == CDCR Configuration
 
