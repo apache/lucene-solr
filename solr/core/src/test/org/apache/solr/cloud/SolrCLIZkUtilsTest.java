@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
@@ -41,12 +40,8 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -451,11 +446,6 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path locEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
-    log.info("EOE Checking file at (var1) " + locEmpty.toAbsolutePath().toString()); // TODO: remove me EOE
-    log.info("EOE Checking file at (var2) " + locEmpty.toFile().getAbsolutePath()); // TODO: remove me EOE
-    log.info("EOE Checking file exists: " + Boolean.toString(locEmpty.toFile().exists()));
-    log.info("EOE Checking isFile: " + Boolean.toString(locEmpty.toFile().isFile()));
-    log.info("EOE Checking isDirectory: " + Boolean.toString(locEmpty.toFile().isDirectory())); //TODO: remove me EOE to here.
     assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
   }
 
