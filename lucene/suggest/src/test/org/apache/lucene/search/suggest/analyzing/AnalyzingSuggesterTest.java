@@ -176,9 +176,11 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       Document nextDoc = lineFile.nextDoc();
       String title = nextDoc.getField("title").stringValue();
       int randomWeight = random().nextInt(100);
-      keys.add(new Input(title, randomWeight));
-      if (!mapping.containsKey(title) || mapping.get(title) < randomWeight) {
-          mapping.put(title, Long.valueOf(randomWeight));
+      int maxLen = Math.min(title.length(), 500);
+      String prefix = title.substring(0, maxLen);
+      keys.add(new Input(prefix, randomWeight));
+      if (!mapping.containsKey(prefix) || mapping.get(prefix) < randomWeight) {
+        mapping.put(prefix, Long.valueOf(randomWeight));
       }
     }
     Analyzer indexAnalyzer = new MockAnalyzer(random());
