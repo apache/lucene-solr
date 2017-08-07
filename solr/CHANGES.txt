@@ -751,6 +751,9 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 
 * SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
 
+* SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
+  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
+
 Optimizations
 ----------------------
 * SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
