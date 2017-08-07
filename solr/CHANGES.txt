@@ -107,13 +107,13 @@ Bug Fixes
 * SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
   resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
   (yonik)
-  
+
 * SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
   (Erick Erickson)
 
 * SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
   yarn. (Hrishikesh via Mark Miller)
-  
+
 * SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
 
 * SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
@@ -156,6 +156,8 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 
 * SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
 
+* SOLR-10983: Fix DOWNNODE -> queue-work explosion (Scott Blum, Joshua Humphries) Backported for potential 6.7 release
+
 * SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
   them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
 
@@ -173,8 +175,8 @@ Other Changes
 
 * SOLR-10617: JDBCStream accepts columns of type TIME, DATE & TIMESTAMP as well as CLOBs and decimal
   numeric types (James Dyer)
-                                      
-* SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with 
+
+* SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
   FieldType.getNumberType() or SchemaField.getSortField() where appropriate. (hossman, Steve Rowe)
   
 * SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
@@ -218,7 +220,7 @@ Other Changes
 
 * SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
   (Uwe Schindler)
-  
+
  * SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
    (Erick Erickson)
 
@@ -431,9 +433,9 @@ Bug Fixes
 
 * SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true (David Smiley)
 
-* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed. 
-  After core container shutdown or severe initialization problem Solr responds with 
-  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev) 
+* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed.
+  After core container shutdown or severe initialization problem Solr responds with
+  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev)
 
 * SOLR-8149: Admin UI - Plugins / Stats - active item is now highlighted (Labuzov Dmitriy via janhoy)
 
@@ -529,9 +531,9 @@ Other Changes
 
 * SOLR-10587: Ban defaultSearchField in schema for luceneMatchVersion =>6.6.0 (Jason Gerlowski, janhoy)
 
-* SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool.
   Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
-  
+
 * SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
   was an improvement for the json "arrntv" format, it caused problems for the default json format.
   (James Dyer, reported by Nikita Pchelintsev)
