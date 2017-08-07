@@ -308,13 +308,18 @@ public class ZkMaintenanceUtils {
   public static void downloadFromZK(SolrZkClient zkClient, String zkPath, Path file) throws IOException {
     try {
       List<String> children = zkClient.getChildren(zkPath, null, true);
-      // If it has no children, it's a leaf node, write the assoicated data from the ZNode. 
+      // If it has no children, it's a leaf node, write the associated data from the ZNode.
       // Otherwise, continue recursing, but write the associated data to a special file if any
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a marker on the local
-        // disk so create a dir.
+        // disk so create an empty file.
         if (copyDataDown(zkClient, zkPath, file.toFile()) == 0) {
-          Files.createDirectories(file);
+          log.info("EOE Creating  file at (var 1)" + file.toAbsolutePath().toString()); // TODO remove me EOE
+          log.info("EOE Creating  file at (var2) " + file.toFile().getAbsolutePath()); // TODO remove me EOE
+          Files.createFile(file);
+          log.info("EOE Creating file exists: " + Boolean.toString(file.toFile().exists()));
+          log.info("EOE Creating isFile: " + Boolean.toString(file.toFile().isFile()));
+          log.info("EOE Creating isDirectory: " + Boolean.toString(file.toFile().isDirectory())); //TODO: remove me EOE to here.
         }
       } else {
         Files.createDirectories(file); // Make parent dir.

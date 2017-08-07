@@ -426,6 +426,8 @@ Bug Fixes
 
 * SOLR-11182: A split shard failure on IOException should be logged (Varun Thacker)
 
+* SOLR-10353: TestSQLHandler reproducible failure: No match found for function signature min(<NUMERIC>) (Kevin Risden)
+
 Optimizations
 ----------------------
 
@@ -764,6 +766,8 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 * SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
 
 * SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
+
+* SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
 
 Optimizations
 ----------------------
