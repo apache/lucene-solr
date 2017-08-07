@@ -608,7 +608,7 @@ public class CoreContainer {
 
       for (final CoreDescriptor cd : cds) {
         if (cd.isTransient() || !cd.isLoadOnStartup()) {
-          solrCores.getTransientCacheHandler().addTransientDescriptor(cd.getName(), cd);
+          solrCores.addCoreDescriptor(cd);
         } else if (asyncSolrCoreLoad) {
           solrCores.markCoreAsLoading(cd);
         }
@@ -845,7 +845,6 @@ public class CoreContainer {
       core.close();
       throw new IllegalStateException("This CoreContainer has been closed");
     }
-    solrCores.addCoreDescriptor(cd);
     SolrCore old = solrCores.putCore(cd, core);
       /*
       * set both the name of the descriptor and the name of the
