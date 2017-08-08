@@ -719,13 +719,15 @@ public class TestSuggestField extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document document = lineFileDocs.nextDoc();
       String title = document.getField("title").stringValue();
+      int maxLen = Math.min(title.length(), 500);
+      String prefix = title.substring(0, maxLen);
       int weight = random().nextInt(Integer.MAX_VALUE);
-      Integer prevWeight = mappings.get(title);
+      Integer prevWeight = mappings.get(prefix);
       if (prevWeight == null || prevWeight < weight) {
-        mappings.put(title, weight);
+        mappings.put(prefix, weight);
       }
       Document doc = new Document();
-      doc.add(new SuggestField("suggest_field", title, weight));
+      doc.add(new SuggestField("suggest_field", prefix, weight));
       iw.addDocument(doc);
 
       if (rarely()) {
