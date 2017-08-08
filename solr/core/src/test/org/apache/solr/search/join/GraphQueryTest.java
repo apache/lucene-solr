@@ -17,6 +17,7 @@
 package org.apache.solr.search.join;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,7 +26,6 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeTests() throws Exception {
-    
     initCore("solrconfig.xml","schema_latest.xml");
   }
 
@@ -45,7 +45,7 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
     doGraph( params("node_id","node_dp",  "edge_id","edge_dps") );
     
     // normal strings with docvalues
-	doGraph( params("node_id","node_sdN", "edge_id","edge_sdsN") );
+    doGraph( params("node_id","node_sdN", "edge_id","edge_sdsN") );
   }
 
   public void doGraph(SolrParams p) throws Exception {
@@ -120,4 +120,22 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
     );
   }
   
+  @Test
+  public void testGraphQueryParser() throws Exception {
+    // from schema field existence
+    doGraphQueryParser( params("node_id","node_nothere",  "edge_id","edge_ss", 
+        "message", "from field is defined", "errorCode", String.valueOf(SolrException.ErrorCode.BAD_REQUEST.code)) );
+    // to schema field existence
+    doGraphQueryParser( params("node_id","node_s",  "edge_id","edge_notthere", 
+        "message", "to field is defined", "errorCode", String.valueOf(SolrException.ErrorCode.BAD_REQUEST.code)) );
+  }
+  
+  public void doGraphQueryParser(SolrParams p) throws Exception {    
+    String message = p.get("message");
+    int errorCode = p.getInt("errorCode", SolrException.ErrorCode.UNKNOWN.code);
+    
+    assertQEx(message , req(p, "q","{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=1}id:doc_1")
+        , errorCode
+    );
+  }
 }
