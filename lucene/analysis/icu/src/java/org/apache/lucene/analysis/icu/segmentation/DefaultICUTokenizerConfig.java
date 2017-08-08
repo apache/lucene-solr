@@ -60,6 +60,10 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   // we keep the cjk breaking separate, thats because it cannot be customized (because dictionary
   // is only triggered when kind = WORD, but kind = LINE by default and we have no non-evil way to change it)
   private static final BreakIterator cjkBreakIterator = BreakIterator.getWordInstance(ULocale.ROOT);
+
+  // TODO: if the wrong version of the ICU jar is used, loading these data files may give a strange error.
+  // maybe add an explicit check? http://icu-project.org/apiref/icu4j/com/ibm/icu/util/VersionInfo.html
+
   // the same as ROOT, except no dictionary segmentation for cjk
   private static final BreakIterator defaultBreakIterator = 
     readBreakIterator("Default.brk");
