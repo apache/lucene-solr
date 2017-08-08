@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -38,17 +40,27 @@ public class PredictEvaluator extends ComplexEvaluator implements Expressible {
     if(2 != subEvaluators.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (regression result and a number) but found %d",expression,subEvaluators.size()));
     }
-
   }
 
-  public Number evaluate(Tuple tuple) throws IOException {
+  public Object evaluate(Tuple tuple) throws IOException {
 
     StreamEvaluator r = subEvaluators.get(0);
     StreamEvaluator d = subEvaluators.get(1);
 
     RegressionEvaluator.RegressionTuple rt= (RegressionEvaluator.RegressionTuple)r.evaluate(tuple);
-    Number n = (Number)d.evaluate(tuple);
-    return rt.predict(n.doubleValue());
+
+    Object o = d.evaluate(tuple);
+    if(o instanceof Number) {
+      Number n = (Number)o;
+      return rt.predict(n.doubleValue());
+    } else {
+      List<Number> list = (List<Number>)o;
+      List<Number> predications = new ArrayList();
+      for(Number n : list) {
+        predications.add(rt.predict(n.doubleValue()));
+      }
+      return predications;
+    }
   }
 
   @Override
