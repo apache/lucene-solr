@@ -30,6 +30,11 @@ Bug Fixes
   functions (Operations.isFinite and Operations.topsortState) to prevent
   large automaton to overflow the stack (Robert Muir, Adrien Grand, Jim Ferenczi)
 
+* LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
+  with a different ICU JAR version than it is compiled against. Note, this is
+  not recommended, lucene-analyzers-icu contains binary data structures
+  specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
