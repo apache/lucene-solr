@@ -212,8 +212,6 @@ final class DocumentsWriterPerThreadPool {
     state.unlock();
     synchronized (this) {
       freeList.add(state);
-      // In case any thread is waiting, wake one of them up since we just released a thread state:
-      notify();
     }
   }
   
