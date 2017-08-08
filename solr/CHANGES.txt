@@ -65,6 +65,11 @@ New Features
 
 * SOLR-11126: Node level health check handler (Anshum Gupta)
 
+* SOLR-11199: Payloads supports an "operator" param. Supported operators are 'or', "phrase" ( default ).
+  A new "sum" function is also added. Example :
+  {!payload_score f=payload_field func=sum operator=or}A B C" (Varun Thacker)
+
+
 Bug Fixes
 ----------------------
 

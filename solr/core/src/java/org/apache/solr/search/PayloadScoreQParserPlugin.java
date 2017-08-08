@@ -37,11 +37,12 @@ import org.apache.solr.util.PayloadUtils;
  * <br>Other parameters:
  * <br><code>f</code>, the field (required)
  * <br><code>func</code>, payload function (min, max, or average; required)
- * <br><code>includeSpanScore</code>, multiple payload function result by similarity score or not (default: false)
+ * <br><code>includeSpanScore</code>, multiply payload function result by similarity score or not (default: false)
  * <br>Example: <code>{!payload_score f=weighted_terms_dpf}Foo Bar</code> creates a SpanNearQuery with "Foo" followed by "Bar"
  */
 public class PayloadScoreQParserPlugin extends QParserPlugin {
   public static final String NAME = "payload_score";
+  public static final String DEFAULT_OPERATOR = "phrase";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -51,6 +52,10 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
         String field = localParams.get(QueryParsing.F);
         String value = localParams.get(QueryParsing.V);
         String func = localParams.get("func");
+        String operator = localParams.get("operator", DEFAULT_OPERATOR);
+        if (!(operator.equalsIgnoreCase(DEFAULT_OPERATOR) || operator.equalsIgnoreCase("or"))) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Supported operators are : or , phrase");
+        }
         boolean includeSpanScore = localParams.getBool("includeSpanScore", false);
 
         if (field == null) {
@@ -63,9 +68,9 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
 
         FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query = null;
+        SpanQuery query;
         try {
-          query = PayloadUtils.createSpanQuery(field, value, analyzer);
+          query = PayloadUtils.createSpanQuery(field, value, analyzer, operator);
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,e);
         }
