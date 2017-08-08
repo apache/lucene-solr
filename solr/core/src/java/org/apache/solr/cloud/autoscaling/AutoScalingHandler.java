@@ -262,11 +262,6 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig;
   }
 
-  private void checkErr(CommandOperation op) {
-    if (!op.hasError()) return;
-    throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", CommandOperation.captureErrors(Collections.singletonList(op)));
-  }
-
   private AutoScalingConfig handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op,
                                                         AutoScalingConfig currentConfig) throws KeeperException, InterruptedException, IOException {
     List<Map<String, Object>> preferences = (List<Map<String, Object>>) op.getCommandData();
