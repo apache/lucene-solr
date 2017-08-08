@@ -369,6 +369,32 @@ class GeoComplexPolygon extends GeoBasePolygon {
     return true;
   }
 
+  @Override
+  public boolean intersects(GeoShape geoShape) {
+    // Create the intersector
+    final EdgeIterator intersector = new IntersectorShapeIterator(geoShape);
+    // First, compute the bounds for the the plane
+    final XYZBounds xyzBounds = new XYZBounds();
+    geoShape.getBounds(xyzBounds);
+
+    // Figure out which tree likely works best
+    final double xDelta = xyzBounds.getMaximumX() - xyzBounds.getMinimumX();
+    final double yDelta = xyzBounds.getMaximumY() - xyzBounds.getMinimumY();
+    final double zDelta = xyzBounds.getMaximumZ() - xyzBounds.getMinimumZ();
+    // Select the smallest range
+    if (xDelta <= yDelta && xDelta <= zDelta) {
+      // Drill down in x
+      return !xTree.traverse(intersector, xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+    } else if (yDelta <= xDelta && yDelta <= zDelta) {
+      // Drill down in y
+      return !yTree.traverse(intersector, xyzBounds.getMinimumY(), xyzBounds.getMaximumY());
+    } else if (zDelta <= xDelta && zDelta <= yDelta) {
+      // Drill down in z
+      return !zTree.traverse(intersector, xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+    }
+    return true;
+  }
+
 
   @Override
   public void getBounds(Bounds bounds) {
@@ -492,7 +518,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         if (left != null && left.traverse(edgeIterator, minValue, maxValue) == false) {
           return false;
         }
-        if (right != null && minValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
+        if (right != null && maxValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
           return false;
         }
       }
@@ -691,7 +717,24 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
 
   }
-  
+
+
+  /** Assess whether edge intersects the provided shape.
+   */
+  private class IntersectorShapeIterator implements EdgeIterator {
+
+    private final GeoShape shape;
+
+    public IntersectorShapeIterator(final GeoShape shape) {
+      this.shape = shape;
+    }
+
+    @Override
+    public boolean matches(final Edge edge) {
+      return !shape.intersects(edge.plane, edge.notablePoints, edge.startPlane, edge.endPlane);
+    }
+  }
+
   /** Count the number of verifiable edge crossings.
    */
   private class LinearCrossingEdgeIterator implements EdgeIterator {

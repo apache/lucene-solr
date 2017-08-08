@@ -2705,7 +2705,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, ""+useDV);
     
     // consume a consistent amount of random data even if sysprop/annotation is set
-    final boolean randUsePoints = random().nextBoolean();
+    final boolean randUsePoints = 0 != random().nextInt(5);  // 80% likelihood
 
     final String usePointsStr = System.getProperty(USE_NUMERIC_POINTS_SYSPROP);
     final boolean usePoints = (null == usePointsStr) ? randUsePoints : Boolean.parseBoolean(usePointsStr);
@@ -2720,6 +2720,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumField");
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else {
@@ -2731,6 +2732,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
+      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Enum.class, "solr.EnumFieldType");
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }

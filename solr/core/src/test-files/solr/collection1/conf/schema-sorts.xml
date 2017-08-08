@@ -109,10 +109,9 @@ NOTE: Tests expect every field in this schema to be sortable.
   <field name="enum" type="enum"/>
   <field name="enum_last" type="enum_last"/>
   <field name="enum_first" type="enum_first"/>
-  <!-- EnumField incorrectly disallows missing DocValues - see SOLR-5927 -->
-  <!-- <field name="enum_dv" type="enum_dv" />                   -->
-  <!-- <field name="enum_dv_last" type="enum_dv_last" />         -->
-  <!-- <field name="enum_dv_first" type="enum_dv_first" />       -->
+  <field name="enum_dv" type="enum_dv" />
+  <field name="enum_dv_last" type="enum_dv_last" />
+  <field name="enum_dv_first" type="enum_dv_first" />
 
   <!-- ensure function sorts don't mistakenly get interpreted as field sorts
        https://issues.apache.org/jira/browse/SOLR-5354?focusedCommentId=13835891&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-13835891
@@ -185,10 +184,9 @@ NOTE: Tests expect every field in this schema to be sortable.
 
   <copyField source="enum" dest="enum_last"/>
   <copyField source="enum" dest="enum_first"/>
-  <!-- EnumField incorrectly disallows missing DocValues - see SOLR-5927 -->
-  <!-- <copyField source="enum" dest="enum_dv" />                -->
-  <!-- <copyField source="enum" dest="enum_dv_last" />           -->
-  <!-- <copyField source="enum" dest="enum_dv_first" />          -->
+  <copyField source="enum" dest="enum_dv" />
+  <copyField source="enum" dest="enum_dv_last" />
+  <copyField source="enum" dest="enum_dv_first" />
 
 
   <fieldType name="str" class="solr.StrField" stored="true" indexed="true"/>
@@ -309,9 +307,8 @@ NOTE: Tests expect every field in this schema to be sortable.
              sortMissingLast="true"/>
   <fieldType name="enum_first" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"
              sortMissingFirst="true"/>
-  <!-- EnumField incorrectly disallows missing DocValues - see SOLR-5927 -->
-  <!-- <fieldType name="enum_dv" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true"/> -->
-  <!-- <fieldType name="enum_dv_last" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingLast="true"/> -->
-  <!-- <fieldType name="enum_dv_first" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingFirst="true"/> -->
+  <fieldType name="enum_dv" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true"/>
+  <fieldType name="enum_dv_last" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingLast="true"/>
+  <fieldType name="enum_dv_first" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity" docValues="true" sortMissingFirst="true"/>
 
 </schema>

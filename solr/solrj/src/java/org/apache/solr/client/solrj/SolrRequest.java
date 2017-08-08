@@ -195,4 +195,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return process(client, null);
   }
 
+  public String getCollection() {
+    return getParams() == null ? null : getParams().get("collection");
+  }
+
 }

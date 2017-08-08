@@ -45,7 +45,7 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
     }
   }
 
-  public List<Map> evaluate(Tuple tuple) throws IOException {
+  public List<Tuple> evaluate(Tuple tuple) throws IOException {
 
     StreamEvaluator colEval1 = subEvaluators.get(0);
 
@@ -66,7 +66,7 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
     EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution(bins);
     empiricalDistribution.load(column1);
 
-    List<Map> binList = new ArrayList();
+    List<Tuple> binList = new ArrayList();
 
     List<SummaryStatistics> summaries = empiricalDistribution.getBinStats();
     for(SummaryStatistics statisticalSummary : summaries) {
@@ -78,7 +78,7 @@ public class HistogramEvaluator extends ComplexEvaluator implements Expressible 
       map.put("sum", statisticalSummary.getSum());
       map.put("N", statisticalSummary.getN());
       map.put("var", statisticalSummary.getVariance());
-      binList.add(map);
+      binList.add(new Tuple(map));
     }
 
     return binList;

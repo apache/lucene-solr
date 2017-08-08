@@ -412,7 +412,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     SolrQuery query = new SolrQuery();
     query.set(CommonParams.QT, "/analysis/field");
-    query.set(AnalysisParams.FIELD_TYPE, "int");
+    query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     try {
       client.query( query );
@@ -1937,14 +1937,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     server.deleteByQuery("*:*");
 
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
-    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
-    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200", "type_s", "child"));
-    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"));
-    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"));
-    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
-    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200", "type_s", "child"));
-    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_ti", "1", "test_tl", "100000", "test_tf", "2000", "type_s", "child"));
-    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_ti", "2", "test_tl", "100000", "test_tf", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"));
+    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"));
+    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"));
+    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_i", "2", "test_l", "100000", "test_f", "200", "type_s", "child"));
 
     server.add(docs);
     server.commit();
@@ -1953,7 +1953,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     msParams.add("q", "*:*");
     msParams.add("fq", "{!collapse field=group_s}");
     msParams.add("defType", "edismax");
-    msParams.add("bf", "field(test_ti)");
+    msParams.add("bf", "field(test_i)");
     msParams.add("expand", "true");
     QueryResponse resp = server.query(msParams);
 

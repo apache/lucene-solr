@@ -176,6 +176,7 @@ public interface CommonParams {
   String OMIT_HEADER = "omitHeader";
   String CORES_HANDLER_PATH = "/admin/cores";
   String COLLECTIONS_HANDLER_PATH = "/admin/collections";
+  String HEALTH_CHECK_HANDLER_PATH = "/admin/health";
   String INFO_HANDLER_PATH = "/admin/info";
   String CONFIGSETS_HANDLER_PATH = "/admin/configs";
   String AUTHZ_PATH = "/admin/authorization";
@@ -185,9 +186,15 @@ public interface CommonParams {
   String AUTOSCALING_PATH = "/admin/autoscaling";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
 
+  String STATUS = "status";
+
+  String OK = "OK";
+  String FAILURE = "FAILURE";
+
   Set<String> ADMIN_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       CORES_HANDLER_PATH,
       COLLECTIONS_HANDLER_PATH,
+      HEALTH_CHECK_HANDLER_PATH,
       CONFIGSETS_HANDLER_PATH,
       AUTHC_PATH,
       AUTHZ_PATH,

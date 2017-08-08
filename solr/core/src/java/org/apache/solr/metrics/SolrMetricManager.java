@@ -1005,8 +1005,7 @@ public class SolrMetricManager {
 
   private List<PluginInfo> prepareCloudPlugins(PluginInfo[] pluginInfos, String group, String className,
                                                       Map<String, String> defaultAttributes,
-                                                      Map<String, Object> defaultInitArgs,
-                                                      PluginInfo defaultPlugin) {
+                                                      Map<String, Object> defaultInitArgs) {
     List<PluginInfo> result = new ArrayList<>();
     if (pluginInfos == null) {
       pluginInfos = new PluginInfo[0];
@@ -1019,12 +1018,6 @@ public class SolrMetricManager {
       info = preparePlugin(info, className, defaultAttributes, defaultInitArgs);
       if (info != null) {
         result.add(info);
-      }
-    }
-    if (result.isEmpty() && defaultPlugin != null) {
-      defaultPlugin = preparePlugin(defaultPlugin, className, defaultAttributes, defaultInitArgs);
-      if (defaultPlugin != null) {
-        result.add(defaultPlugin);
       }
     }
     return result;
@@ -1077,7 +1070,7 @@ public class SolrMetricManager {
     String registryName = core.getCoreMetricManager().getRegistryName();
     // collect infos and normalize
     List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.shard.toString(), SolrShardReporter.class.getName(),
-        attrs, initArgs, null);
+        attrs, initArgs);
     for (PluginInfo info : infos) {
       try {
         SolrMetricReporter reporter = loadReporter(registryName, core.getResourceLoader(), info,
@@ -1100,7 +1093,7 @@ public class SolrMetricManager {
     Map<String, Object> initArgs = new HashMap<>();
     initArgs.put("period", DEFAULT_CLOUD_REPORTER_PERIOD);
     List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.cluster.toString(), SolrClusterReporter.class.getName(),
-        attrs, initArgs, null);
+        attrs, initArgs);
     String registryName = getRegistryName(SolrInfoBean.Group.cluster);
     for (PluginInfo info : infos) {
       try {

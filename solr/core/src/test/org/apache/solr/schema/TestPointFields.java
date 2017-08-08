@@ -615,7 +615,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       max = sortedValues.get(sortedValues.size() - 1);
       buffer = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min))
           .divide(BigDecimal.valueOf(numValues / 2), RoundingMode.HALF_UP).doubleValue();
-      gap = BigDecimal.valueOf(max + buffer).subtract(BigDecimal.valueOf(min - buffer))
+      gap = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min)).add(BigDecimal.valueOf(buffer * 2.0D))
           .divide(BigDecimal.valueOf(numBuckets), RoundingMode.HALF_UP).doubleValue();
     } while (max >= Double.MAX_VALUE - buffer || min <= -Double.MAX_VALUE + buffer);
     // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
@@ -746,7 +746,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       max = sortedValues.get(sortedValues.size() - 1).val;
       buffer = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min))
           .divide(BigDecimal.valueOf(numValues / 2), RoundingMode.HALF_UP).doubleValue();
-      gap = BigDecimal.valueOf(max + buffer).subtract(BigDecimal.valueOf(min - buffer))
+      gap = BigDecimal.valueOf(max).subtract(BigDecimal.valueOf(min)).add(BigDecimal.valueOf(buffer * 2.0D))
           .divide(BigDecimal.valueOf(numBuckets), RoundingMode.HALF_UP).doubleValue();
     } while (max >= Double.MAX_VALUE - buffer || min <= -Double.MAX_VALUE + buffer);
     // System.err.println("min: " + min + "   max: " + max + "   gap: " + gap + "   buffer: " + buffer);
@@ -2648,8 +2648,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private void doTestPointFieldMultiValuedRangeQuery(String fieldName, String type, String[] numbers) throws Exception {
     assert numbers != null && numbers.length == 20;
-    assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
-    assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
+    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
+    assertTrue(sf.multiValued());
+    assertTrue(sf.getType() instanceof PointField);
     for (int i=9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i+10]));
     }
@@ -2723,6 +2724,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
                 "fl", "id, " + fieldName, "sort", "id asc"),
         "//*[@numFound='1']",
         "//result/doc[1]/arr[@name='" + fieldName + "']/" + type + "[1][.='" + numbers[0] + "']");
+    
+    if (sf.getType().getNumberType() == NumberType.FLOAT || sf.getType().getNumberType() == NumberType.DOUBLE) {
+      doTestDoubleFloatRangeLimits(fieldName, sf.getType().getNumberType() == NumberType.DOUBLE);
+    }
+    
   }
 
   private void doTestPointFieldMultiValuedFacetField(String nonDocValuesField, String dvFieldName, String[] numbers) throws Exception {
@@ -3191,45 +3197,98 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertQ(req("q", fieldName + ":{" + arr[0] + " TO " + arr[i] + "}", "fl", "id, " + fieldName), 
           "//*[@numFound='" + (Math.max(0,  i-1)) + "']");
     }
-    
-    clearIndex();
-    assertU(adoc("id", "1", fieldName, String.valueOf(Float.MAX_VALUE)));
-    assertU(adoc("id", "2", fieldName, String.valueOf(Float.MIN_VALUE)));
-    assertU(adoc("id", "3", fieldName, String.valueOf(Float.NEGATIVE_INFINITY)));
-    assertU(adoc("id", "4", fieldName, String.valueOf(Float.POSITIVE_INFINITY)));
-    assertU(commit());
-    assertQ(req("q", fieldName + ":[* TO *]", "fl", "id, " + fieldName), 
-        "//*[@numFound='4']");
-//    TODO: Awaits fix: SOLR-11070
-//    assertQ(req("q", fieldName + ":{* TO *}", "fl", "id, " + fieldName), 
-//        "//*[@numFound='4']");
-    assertQ(req("q", fieldName + ":[" + Float.MIN_VALUE + " TO " + Float.MAX_VALUE + "]", "fl", "id, " + fieldName), 
-        "//*[@numFound='2']");
-    assertQ(req("q", fieldName + ":{" + Float.MIN_VALUE + " TO " + Float.MAX_VALUE + "]", "fl", "id, " + fieldName), 
-        "//*[@numFound='1']");
-    assertQ(req("q", fieldName + ":[" + Float.MIN_VALUE + " TO " + Float.MAX_VALUE + "}", "fl", "id, " + fieldName), 
-        "//*[@numFound='1']");
-    if (testDouble) {
-      assertQ(req("q", fieldName + ":[" + Double.MIN_VALUE + " TO " + Double.MIN_VALUE + "}", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":{" + Double.MAX_VALUE + " TO " + Double.MAX_VALUE + "]", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":{" + Double.NEGATIVE_INFINITY + " TO " + Double.NEGATIVE_INFINITY + "]", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":[" + Double.POSITIVE_INFINITY + " TO " + Double.POSITIVE_INFINITY + "}", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-    } else {
-      assertQ(req("q", fieldName + ":[" + Float.MIN_VALUE + " TO " + Float.MIN_VALUE + "}", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":{" + Float.MAX_VALUE + " TO " + Float.MAX_VALUE + "]", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":{" + Float.NEGATIVE_INFINITY + " TO " + Float.NEGATIVE_INFINITY + "]", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-      assertQ(req("q", fieldName + ":[" + Float.POSITIVE_INFINITY + " TO " + Float.POSITIVE_INFINITY + "}", "fl", "id, " + fieldName), 
-          "//*[@numFound='0']");
-    }
+    doTestDoubleFloatRangeLimits(fieldName, testDouble);
   }
   
+  private void doTestDoubleFloatRangeLimits(String fieldName, boolean testDouble) {
+    // POSITIVE/NEGATIVE_INFINITY toString is the same for Double and Float, it's OK to use this code for both cases
+    String positiveInfinity = String.valueOf(Double.POSITIVE_INFINITY);
+    String negativeInfinity = String.valueOf(Double.NEGATIVE_INFINITY);
+    String minVal = String.valueOf(testDouble?Double.MIN_VALUE:Float.MIN_VALUE);
+    String maxVal = String.valueOf(testDouble?Double.MAX_VALUE:Float.MAX_VALUE);
+    String negativeMinVal = "-" + minVal;
+    String negativeMaxVal =  "-" + maxVal;
+    clearIndex();
+    assertU(adoc("id", "1", fieldName, minVal));
+    assertU(adoc("id", "2", fieldName, maxVal));
+    assertU(adoc("id", "3", fieldName, negativeInfinity));
+    assertU(adoc("id", "4", fieldName, positiveInfinity));
+    assertU(adoc("id", "5", fieldName, negativeMinVal));
+    assertU(adoc("id", "6", fieldName, negativeMaxVal));
+    assertU(commit());
+    //negative to negative
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "-1", 2, 2, 2, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeInfinity, "-1", 1, 2, 1, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeMaxVal, negativeMinVal, 0, 1, 1, 2);
+    //negative to cero
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "-0.0f", 3, 3, 3, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeInfinity, "-0.0f", 2, 3, 2, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeMinVal, "-0.0f", 0, 1, 0, 1);
+    
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "0", 3, 3, 3, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeInfinity, "0", 2, 3, 2, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeMinVal, "0", 0, 1, 0, 1);
+    //negative to positive
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "1", 4, 4, 4, 4);
+    assertAllInclusiveExclusiveVariations(fieldName, "-1", "*", 4, 4, 4, 4);
+    assertAllInclusiveExclusiveVariations(fieldName, "-1", "1", 2, 2, 2, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "*", 6, 6, 6, 6);
+    
+    assertAllInclusiveExclusiveVariations(fieldName, "-1", positiveInfinity, 3, 3, 4, 4);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeInfinity, "1", 3, 4, 3, 4);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeInfinity, positiveInfinity, 4, 5, 5, 6);
+    
+    assertAllInclusiveExclusiveVariations(fieldName, negativeMinVal, minVal, 0, 1, 1, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, negativeMaxVal, maxVal, 2, 3, 3, 4);
+    //cero to positive
+    assertAllInclusiveExclusiveVariations(fieldName, "-0.0f", "*", 3, 3, 3, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, "-0.0f", positiveInfinity, 2, 2, 3, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, "-0.0f", minVal, 0, 0, 1, 1);
+    
+    assertAllInclusiveExclusiveVariations(fieldName, "0", "*", 3, 3, 3, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, "0", positiveInfinity, 2, 2, 3, 3);
+    assertAllInclusiveExclusiveVariations(fieldName, "0", minVal, 0, 0, 1, 1);
+    //positive to positive
+    assertAllInclusiveExclusiveVariations(fieldName, "1", "*", 2, 2, 2, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, "1", positiveInfinity, 1, 1, 2, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, minVal, maxVal, 0, 1, 1, 2);
+    
+    // inverted limits
+    assertAllInclusiveExclusiveVariations(fieldName, "1", "-1", 0, 0, 0, 0);
+    assertAllInclusiveExclusiveVariations(fieldName, positiveInfinity, negativeInfinity, 0, 0, 0, 0);
+    assertAllInclusiveExclusiveVariations(fieldName, minVal, negativeMinVal, 0, 0, 0, 0);
+    
+    // MatchNoDocs cases
+    assertAllInclusiveExclusiveVariations(fieldName, negativeInfinity, negativeInfinity, 0, 0, 0, 1);
+    assertAllInclusiveExclusiveVariations(fieldName, positiveInfinity, positiveInfinity, 0, 0, 0, 1);
+    
+    clearIndex();
+    assertU(adoc("id", "1", fieldName, "0.0"));
+    assertU(adoc("id", "2", fieldName, "-0.0"));
+    assertU(commit());
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "*", 2, 2, 2, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "0", 1, 1, 2, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, "0", "*", 0, 1, 0, 1);
+    assertAllInclusiveExclusiveVariations(fieldName, "*", "-0.0f", 0, 0, 1, 1);
+    assertAllInclusiveExclusiveVariations(fieldName, "-0.0f", "*", 1, 2, 1, 2);
+    assertAllInclusiveExclusiveVariations(fieldName, "-0.0f", "0", 0, 1, 1, 2);
+  }
+
+  private void assertAllInclusiveExclusiveVariations(String fieldName, String min, String max,
+      int countExclusiveExclusive,
+      int countInclusiveExclusive,
+      int countExclusiveInclusive,
+      int countInclusiveInclusive) {
+    assertQ(req("q", fieldName + ":{" + min + " TO " + max + "}", "fl", "id, " + fieldName), 
+        "//*[@numFound='" + countExclusiveExclusive +"']");
+    assertQ(req("q", fieldName + ":[" + min + " TO " + max + "}", "fl", "id, " + fieldName), 
+        "//*[@numFound='" + countInclusiveExclusive +"']");
+    assertQ(req("q", fieldName + ":{" + min + " TO " + max + "]", "fl", "id, " + fieldName), 
+        "//*[@numFound='" + countExclusiveInclusive +"']");
+    assertQ(req("q", fieldName + ":[" + min + " TO " + max + "]", "fl", "id, " + fieldName), 
+        "//*[@numFound='" + countInclusiveInclusive +"']");
+  }
+
   private void doTestFloatPointFunctionQuery(String field) throws Exception {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     int numVals = 10 * RANDOM_MULTIPLIER;

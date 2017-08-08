@@ -14,13 +14,26 @@ Changes in Runtime Behavior
 
 
 ======================= Lucene 7.1.0 =======================
-(No Changes)
 
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
   SortedSetDocValuesFacetCounts and others) builds its map (Robert
   Muir, Adrien Grand, Mike McCandless)
+
+* LUCENE-7655: Speed up geo-distance queries in case of dense single-valued
+  fields when most documents match. (Maciej Zasada via Adrien Grand)
+
+Bug Fixes
+
+* LUCENE-7914: Add a maximum recursion level in automaton recursive
+  functions (Operations.isFinite and Operations.topsortState) to prevent
+  large automaton to overflow the stack (Robert Muir, Adrien Grand, Jim Ferenczi)
+
+* LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
+  with a different ICU JAR version than it is compiled against. Note, this is
+  not recommended, lucene-analyzers-icu contains binary data structures
+  specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
 
 ======================= Lucene 7.0.0 =======================
 

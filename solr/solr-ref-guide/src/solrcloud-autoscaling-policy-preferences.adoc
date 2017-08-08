@@ -1,0 +1,209 @@
+= Autoscaling Policy and Preferences
+:page-shortname: solrcloud-autoscaling-policy-preferences
+:page-permalink: solrcloud-autoscaling-policy-preferences.html
+:page-toclevels: 2
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The autoscaling policy and preferences are a set of rules and sorting preferences that help Solr select the target of cluster management operations so the overall load on the cluster remains balanced.
+
+== Cluster Preferences Specification
+
+A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to add a replica, Solr can apply the preferences and choose the node with the least number of cores.
+
+More than one preferences can be added to break ties. For example, we may choose to use free disk space to break ties if the number of cores on two nodes are the same so the node with the higher free disk space can be chosen as the target of the cluster operation.
+
+Each preference is of the following form:
+
+[source,json]
+{"<sort_order>":"<sort_param>", "precision":"<precision_val>"}
+
+`sort_order`::
+The value can be either `maximize` or `minimize`. `minimize` sorts the nodes with least value as the least loaded. For example, `{"minimize":"cores"}` sorts the nodes with the least number of cores as the least loaded node. A sort order such as `{"maximize":"freedisk"}` sorts the nodes with maximum free disk space as the least loaded node.
++
+The objective of the system is to make every node the least loaded. So, in case of a `MOVEREPLICA` operation, it usually targets the _most loaded_ node and takes load off of it. In a sort of more loaded to less loaded, `minimize` is akin to sort in descending order and `maximize` is akin to sorting in ascending order.
++
+This is a required parameter.
+
+`sort_param`::
+One and only one of the following supported parameters must be specified:
+
+. `cores`: The number of total Solr cores on a node.
+. `freedisk`: The amount of free disk space for Solr's data home directory. This is always in gigabytes.
+. `sysLoadAvg`: The system load average on a node as reported by the Metrics API under the key `solr.jvm/os.systemLoadAverage`. This is always a double value between 0 and 1 and the higher the value, the more loaded the node is.
+. `heapUsage`: The heap usage of a node as reported by the Metrics API under the key `solr.jvm/memory.heap.usage`. This is always a double value between 0 and 1 and the higher the value, the more loaded the node is.
+
+`precision`::
+Precision tells the system the minimum (absolute) difference between 2 values to treat them as distinct values.
++
+For example, a precision of 10 for `freedisk` means that two nodes whose free disk space is within 10GB of each other should be treated as equal for the purpose of sorting. This helps create ties without which specifying multiple preferences is not useful. This is an optional parameter whose value must be a positive integer. The maximum value of `precision` must be less than the maximum value of the `sort_value`, if any.
+
+See the section <<solrcloud-autoscaling-api.adoc#create-and-modify-cluster-preferences,set-cluster-preferences API>> for details on how to manage cluster preferences.
+
+=== Examples of Cluster Preferences
+
+==== Default Preferences
+The following shows the default cluster preferences. This is applied automatically by Solr when no explicit cluster preferences have been set using the <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>.
+
+[source,json]
+[{"minimize":"cores"}]
+
+==== Minimize Cores; Maximize Free Disk
+In this example, we want to minimize the number of Solr cores and in case of a tie, maximize the amount of free disk space on each node.
+
+[source,json]
+[
+  {"minimize" : "cores"},
+  {"maximize" : "freedisk"}
+]
+
+==== Add Precision to Free Disk; Minimize System Load
+In this example, we add a precision to the `freedisk` parameter so that nodes with free disk space within 10GB of each other are considered equal. In such a case, the tie is broken by minimizing `sysLoadAvg`.
+
+[source,json]
+[
+  {"minimize" : "cores"},
+  {"maximize" : "freedisk", "precision" : 10},
+  {"minimize" : "sysLoadAvg"}
+]
+
+== Policy Specification
+
+A policy is a hard rule to be satisfied by each node. If a node does not satisfy the rule then it is called a *violation*. Solr ensures that the number of violations are minimized while invoking any cluster management operations.
+
+=== Policy Attributes
+A policy can have the following attributes:
+
+`cores`::
+This is a special attribute that applies to the entire cluster. It can only be used along with the `node` attribute and no other. This attribute is optional.
+
+`collection`::
+The name of the collection to which the policy rule should apply. If omitted, the rule applies to all collections. This attribute is optional.
+
+`shard`::
+The name of the shard to which the policy rule should apply. If omitted, the rule is applied for all shards in the collection. It supports a special value `#EACH` which means that the rule is applied for each shard in the collection.
+
+`replica`::
+The number of replicas that must exist to satisfy the rule. This must be a positive integer. This is a required attribute.
+
+`strict`::
+An optional boolean value. The default is `true`. If true, the rule must be satisfied. If false, Solr tries to satisfy the rule on a best effort basis but if no node can satisfy the rule then any node may be chosen.
+
+One and only one of the following attributes can be specified in addition to the above attributes:
+
+`node`::
+The name of the node to which the rule should apply. The default value is `#ANY` which means that any node in the cluster may satisfy the rule.
+
+`port`::
+The port of the node to which the rule should apply.
+
+`freedisk`::
+The free disk space in gigabytes of the node. This must be a positive 64-bit integer value.
+
+`host`::
+The host name of the node.
+
+`sysLoadAvg`::
+The system load average of the node as reported by the Metrics API under the key `solr.jvm/os.systemLoadAverage`. This is floating point value between 0 and 1.
+
+`heapUsage`::
+The heap usage of the node as reported by the Metrics API under the key `solr.jvm/memory.heap.usage`. This is floating point value between 0 and 1.
+
+`nodeRole`::
+The role of the node. The only supported value currently is `overseer`.
+
+`ip_1 , ip_2, ip_3, ip_4`::
+The least significant to most significant segments of IP address. For example, for an IP address `192.168.1.2`, `ip_1 = 2`, `ip_2 = 1`, `ip_3 = 168`, `ip_4 = 192`.
+
+`sysprop.<system_property_name>`::
+Any arbitrary system property set on the node on startup.
+
+=== Policy Operators
+
+Each attribute in the policy may specify one of the following operators along with the value.
+
+* `<`: Less than
+* `>`: Greater than
+* `!`: Not
+* None means equal
+
+=== Examples of Policy Rules
+
+==== Limit Replica Placement
+Do not place more than one replica of the same shard on the same node:
+
+[source,json]
+{"replica": "<2", "shard": "#EACH", "node": "#ANY"}
+
+==== Limit Cores per Node
+Do not place more than 10 cores in any node. This rule can only be added to the cluster policy because it mentions the `cores` attribute that is only applicable cluster-wide.
+
+[source,json]
+{"cores": "<10", "node": "#ANY"}
+
+==== Place Replicas Based on Port
+Place exactly 1 replica of each shard of collection `xyz` on a node running on port `8983`
+
+[source,json]
+{"replica": 1, "shard": "#EACH", "collection": "xyz", "port": "8983"}
+
+==== Place Replicas Based on a System Property
+Place all replicas on a node with system property `availability_zone=us-east-1a`. Note that we have to write this rule in the negative sense i.e., *0* replicas must be on nodes *not* having the system property `availability_zone=us-east-1a`
+
+[source,json]
+{"replica": 0, "sysprop.availability_zone": "!us-east-1a"}
+
+==== Place Replicas Based on Node Role
+Do not place any replica on a node which has the overseer role. Note that the role is added by the `addRole` collection API. It is *not* automatically the node which is currently the overseer.
+
+[source,json]
+{"replica": 0, "nodeRole": "overseer"}
+
+==== Place Replicas Based on Free Disk
+Place all replicas in nodes with freedisk more than 500GB. Here again, we have to write the rule in the negative sense.
+
+[source,json]
+{"replica": 0, "freedisk": "<500"}
+
+==== Try to Place Replicas Based on Free Disk
+Place all replicas in nodes with freedisk more than 500GB when possible. Here we use the strict keyword to signal that this rule is to be honored on a best effort basis.
+
+[source,json]
+{"replica": 0, "freedisk": "<500", "strict" : false}
+
+== Defining Collection-Specific Policies
+
+By default, the cluster policy, if it exists, is used automatically for all collections in the cluster. However, we can create named policies which can be attached to a collection at the time of its creation by specifying the policy name along with a `policy` parameter.
+
+When a collection-specific policy is used, the rules in that policy are *appended* to the rules in the cluster policy and the combination of both are used. Therefore, it is recommended that you do not add rules to collection-specific policy that conflict with the ones in the cluster policy. Doing so will disqualify all nodes in the cluster from matching all criteria and make the policy useless.
+
+It is possible to override conditions specified in the cluster policy using collection-specific policy. For example, if a clause `{replica:'<3', node:'#ANY'}` is present in the cluster policy and the collection-specific policy has a clause `{replica:'<4', node:'#ANY'}`, the cluster policy is ignored in favor of the collection policy.
+
+Also, if `maxShardsPerNode` is specified during the time of collection creation, then both `maxShardsPerNode` and the policy rules must be satisfied.
+
+Some attributes such as `cores` can only be used in the cluster policy. See the section above on policy attributes for details.
+
+The policy is used by these <<collections-api.adoc#collections-api,Collections API>> commands:
+
+* CREATE
+* CREATESHARD
+* ADDREPLICA
+* RESTORE
+* SPLITSHARD
+
+In the future, the policy and preferences will be used by the Autoscaling framework to automatically change the cluster in response to events such as a node being added or lost.

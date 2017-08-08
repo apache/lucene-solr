@@ -289,6 +289,23 @@ class GeoStandardPath extends GeoBasePath {
   }
 
   @Override
+  public boolean intersects(GeoShape geoShape) {
+    for (final SegmentEndpoint pathPoint : endPoints) {
+      if (pathPoint.intersects(geoShape)) {
+        return true;
+      }
+    }
+
+    for (final PathSegment pathSegment : segments) {
+      if (pathSegment.intersects(geoShape)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     // For building bounds, order matters.  We want to traverse
@@ -549,6 +566,17 @@ class GeoStandardPath extends GeoBasePath {
       return circlePlane.intersects(planetModel, p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
     }
 
+    /** Determine if this endpoint intersects a GeoShape.
+     *@param geoShape is the GeoShape.
+     *@return true if there is shape intersect this endpoint.
+     */
+    public boolean intersects(final GeoShape geoShape) {
+      //System.err.println("  looking for intersection between plane "+p+" and circle "+circlePlane+" on proper side of "+cutoffPlanes+" within "+bounds);
+      if (circlePlane == null)
+        return false;
+      return geoShape.intersects(circlePlane, this.notablePoints, this.cutoffPlanes);
+    }
+
     /** Get the bounds for a segment endpoint.
      *@param planetModel is the planet model.
      *@param bounds are the bounds to be modified.
@@ -797,6 +825,15 @@ class GeoStandardPath extends GeoBasePath {
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
       return upperConnectingPlane.intersects(planetModel, p, notablePoints, upperConnectingPlanePoints, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
           lowerConnectingPlane.intersects(planetModel, p, notablePoints, lowerConnectingPlanePoints, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+    }
+
+    /** Determine if this endpoint intersects a specified GeoShape.
+     *@param geoShape is the GeoShape.
+     *@return true if there GeoShape intersects this endpoint.
+     */
+    public boolean intersects(final GeoShape geoShape) {
+      return geoShape.intersects(upperConnectingPlane, upperConnectingPlanePoints, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
+          geoShape.intersects(lowerConnectingPlane, lowerConnectingPlanePoints, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
     }
 
     /** Get the bounds for a segment endpoint.

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.queries.function.ValueSource;
@@ -40,14 +42,8 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     return type;
   }
 
-  private static long FLOAT_NEGATIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.NEGATIVE_INFINITY);
-  private static long DOUBLE_NEGATIVE_INFINITY_BITS = Double.doubleToLongBits(Double.NEGATIVE_INFINITY);
-  private static long FLOAT_POSITIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.POSITIVE_INFINITY);
-  private static long DOUBLE_POSITIVE_INFINITY_BITS = Double.doubleToLongBits(Double.POSITIVE_INFINITY);
   private static long FLOAT_MINUS_ZERO_BITS = (long)Float.floatToIntBits(-0f);
   private static long DOUBLE_MINUS_ZERO_BITS = Double.doubleToLongBits(-0d);
-  private static long FLOAT_ZERO_BITS = (long)Float.floatToIntBits(0f);
-  private static long DOUBLE_ZERO_BITS = Double.doubleToLongBits(0d);
 
   protected Query getDocValuesRangeQuery(QParser parser, SchemaField field, String min, String max,
       boolean minInclusive, boolean maxInclusive) {
@@ -89,50 +85,119 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
   protected Query getRangeQueryForFloatDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Query query;
     String fieldName = sf.getName();
-
-    Number minVal = min == null ? null : getNumberType() == NumberType.FLOAT ? parseFloatFromUser(sf.getName(), min): parseDoubleFromUser(sf.getName(), min);
-    Number maxVal = max == null ? null : getNumberType() == NumberType.FLOAT ? parseFloatFromUser(sf.getName(), max): parseDoubleFromUser(sf.getName(), max);
-    
-    Long minBits = 
-        min == null ? null : getNumberType() == NumberType.FLOAT ? (long) Float.floatToIntBits(minVal.floatValue()): Double.doubleToLongBits(minVal.doubleValue());
-    Long maxBits = 
-        max == null ? null : getNumberType() == NumberType.FLOAT ? (long) Float.floatToIntBits(maxVal.floatValue()): Double.doubleToLongBits(maxVal.doubleValue());
-    
-    long negativeInfinityBits = getNumberType() == NumberType.FLOAT ? FLOAT_NEGATIVE_INFINITY_BITS : DOUBLE_NEGATIVE_INFINITY_BITS;
-    long positiveInfinityBits = getNumberType() == NumberType.FLOAT ? FLOAT_POSITIVE_INFINITY_BITS : DOUBLE_POSITIVE_INFINITY_BITS;
-    long minusZeroBits = getNumberType() == NumberType.FLOAT ? FLOAT_MINUS_ZERO_BITS : DOUBLE_MINUS_ZERO_BITS;
-    long zeroBits = getNumberType() == NumberType.FLOAT ? FLOAT_ZERO_BITS : DOUBLE_ZERO_BITS;
-    
-    // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
-    if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) && 
-        (maxVal == null || (maxVal.doubleValue() > 0d || maxBits == zeroBits))) {
-
-      ValueSource vs = getValueSource(sf, null);
-      query = new FunctionRangeQuery(new ValueSourceRangeFilter(vs, min, max, minInclusive, maxInclusive));
-
-    } else { // If both max and min are negative (or -0d), then issue range query with max and min reversed
-      if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) &&
-          (maxVal != null && (maxVal.doubleValue() < 0d || maxBits == minusZeroBits))) {
-        query = numericDocValuesRangeQuery
-            (fieldName, maxBits, (min == null ? Long.valueOf(negativeInfinityBits) : minBits), maxInclusive, minInclusive, false);
-      } else { // If both max and min are positive, then issue range query
-        query = numericDocValuesRangeQuery
-            (fieldName, minBits, (max == null ? Long.valueOf(positiveInfinityBits) : maxBits), minInclusive, maxInclusive, false);
+    long minBits, maxBits;
+    boolean minNegative, maxNegative;
+    Number minVal, maxVal;
+    if (getNumberType() == NumberType.FLOAT) {
+      if (min == null) {
+        minVal = Float.NEGATIVE_INFINITY;
+      } else {
+        minVal = parseFloatFromUser(sf.getName(), min);
+        if (!minInclusive) {
+          if (minVal.floatValue() == Float.POSITIVE_INFINITY) return new MatchNoDocsQuery();
+          minVal = FloatPoint.nextUp(minVal.floatValue());
+        }
       }
+      if (max == null) {
+        maxVal = Float.POSITIVE_INFINITY;
+      } else {
+        maxVal = parseFloatFromUser(sf.getName(), max);
+        if (!maxInclusive) {
+          if (maxVal.floatValue() == Float.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
+          maxVal = FloatPoint.nextDown(maxVal.floatValue());
+        }
+      }
+      minBits = Float.floatToIntBits(minVal.floatValue());
+      maxBits = Float.floatToIntBits(maxVal.floatValue());
+      minNegative = minVal.floatValue() < 0f || minBits == FLOAT_MINUS_ZERO_BITS;
+      maxNegative = maxVal.floatValue() < 0f || maxBits == FLOAT_MINUS_ZERO_BITS;
+    } else {
+      assert getNumberType() == NumberType.DOUBLE;
+      if (min == null) {
+        minVal = Double.NEGATIVE_INFINITY;
+      } else {
+        minVal = parseDoubleFromUser(sf.getName(), min);
+        if (!minInclusive) {
+          if (minVal.doubleValue() == Double.POSITIVE_INFINITY) return new MatchNoDocsQuery();
+          minVal = DoublePoint.nextUp(minVal.doubleValue());
+        }
+      }
+      if (max == null) {
+        maxVal = Double.POSITIVE_INFINITY;
+      } else {
+        maxVal = parseDoubleFromUser(sf.getName(), max);
+        if (!maxInclusive) {
+          if (maxVal.doubleValue() == Double.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
+          maxVal = DoublePoint.nextDown(maxVal.doubleValue());
+        }
+      }
+      minBits = Double.doubleToLongBits(minVal.doubleValue());
+      maxBits = Double.doubleToLongBits(maxVal.doubleValue());
+      minNegative = minVal.doubleValue() < 0d || minBits == DOUBLE_MINUS_ZERO_BITS;
+      maxNegative = maxVal.doubleValue() < 0d || maxBits == DOUBLE_MINUS_ZERO_BITS;
+    }
+    // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
+    if (minNegative && !maxNegative) {
+      ValueSource vs = getValueSource(sf, null);
+      query = new FunctionRangeQuery(new ValueSourceRangeFilter(vs, minVal.toString(), maxVal.toString(), true, true));
+    } else if (minNegative && maxNegative) {// If both max and min are negative (or -0d), then issue range query with max and min reversed
+      query = numericDocValuesRangeQuery
+          (fieldName, maxBits, minBits, true, true, false);
+    } else { // If both max and min are positive, then issue range query
+      query = numericDocValuesRangeQuery
+          (fieldName, minBits, maxBits, true, true, false);
     }
     return query;
   }
-  
+
   protected Query getRangeQueryForMultiValuedDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    Long minBits = min == null ? NumericUtils.doubleToSortableLong(Double.NEGATIVE_INFINITY): NumericUtils.doubleToSortableLong(parseDoubleFromUser(sf.getName(), min));
-    Long maxBits = max == null ? NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY): NumericUtils.doubleToSortableLong(parseDoubleFromUser(sf.getName(), max));
-    return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, minInclusive, maxInclusive, true);
+    double minVal,maxVal;
+    if (min == null) {
+      minVal = Double.NEGATIVE_INFINITY;
+    } else {
+      minVal = parseDoubleFromUser(sf.getName(), min);
+      if (!minInclusive) {
+        if (minVal == Double.POSITIVE_INFINITY) return new MatchNoDocsQuery();
+        minVal = DoublePoint.nextUp(minVal);
+      }
+    }
+    if (max == null) {
+      maxVal = Double.POSITIVE_INFINITY;
+    } else {
+      maxVal = parseDoubleFromUser(sf.getName(), max);
+      if (!maxInclusive) {
+        if (maxVal == Double.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
+        maxVal = DoublePoint.nextDown(maxVal);
+      }
+    }
+    Long minBits = NumericUtils.doubleToSortableLong(minVal);
+    Long maxBits = NumericUtils.doubleToSortableLong(maxVal);
+    return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, true, true, true);
   }
-  
+
   protected Query getRangeQueryForMultiValuedFloatDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    Long minBits = (long)(min == null ? NumericUtils.floatToSortableInt(Float.NEGATIVE_INFINITY): NumericUtils.floatToSortableInt(parseFloatFromUser(sf.getName(), min)));
-    Long maxBits = (long)(max == null ? NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY): NumericUtils.floatToSortableInt(parseFloatFromUser(sf.getName(), max)));
-    return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, minInclusive, maxInclusive, true);
+    float minVal,maxVal;
+    if (min == null) {
+      minVal = Float.NEGATIVE_INFINITY;
+    } else {
+      minVal = parseFloatFromUser(sf.getName(), min);
+      if (!minInclusive) {
+        if (minVal == Float.POSITIVE_INFINITY) return new MatchNoDocsQuery();
+        minVal = FloatPoint.nextUp(minVal);
+      }
+    }
+    if (max == null) {
+      maxVal = Float.POSITIVE_INFINITY;
+    } else {
+      maxVal = parseFloatFromUser(sf.getName(), max);
+      if (!maxInclusive) {
+        if (maxVal == Float.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
+        maxVal = FloatPoint.nextDown(maxVal);
+      }
+    }
+    Long minBits = (long)NumericUtils.floatToSortableInt(minVal);
+    Long maxBits = (long)NumericUtils.floatToSortableInt(maxVal);
+    return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, true, true, true);
   }
   
   public static Query numericDocValuesRangeQuery(

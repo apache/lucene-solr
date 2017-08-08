@@ -5825,10 +5825,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(p, 2.4, 0.001);
   }
 
-  /*
+
   @Test
-  public void testArraySort() throws Exception {
-    String cexpr = "arraySort(array(11.5, 12.3, 4, 3, 1, 0))";
+  public void testAscend() throws Exception {
+    String cexpr = "asc(array(11.5, 12.3, 4, 3, 1, 0))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -5851,52 +5851,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(asort.get(5).doubleValue(), 12.3, 0.0);
   }
 
-*/
-  @Test
-  public void testCumulativeProbability() throws Exception {
-    UpdateRequest updateRequest = new UpdateRequest();
 
-    int i=0;
-    while(i<100) {
-      i=i+2;
-      updateRequest.add(id, "id_"+(i), "price_f", Integer.toString(i));
-    }
-
-    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-    String expr = "search("+COLLECTIONORALIAS+", q=\"*:*\", fl=\"price_f\", sort=\"price_f asc\", rows=\"200\")";
-    String cexpr = "let(a="+expr+", c=col(a, price_f), e=empiricalDistribution(c), " +
-        "tuple(p1=cumulativeProbability(e, 88), " +
-        "p2=cumulativeProbability(e, 2), " +
-        "p3=cumulativeProbability(e, 99), " +
-        "p4=cumulativeProbability(e, 77), " +
-        "p5=cumulativeProbability(e, 98)))";
-
-    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", cexpr);
-    paramsLoc.set("qt", "/stream");
-
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
-
-    StreamContext context = new StreamContext();
-    solrStream.setStreamContext(context);
-    List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    double percentile1 = tuples.get(0).getDouble("p1");
-    double percentile2 = tuples.get(0).getDouble("p2");
-    double percentile3 = tuples.get(0).getDouble("p3");
-    double percentile4 = tuples.get(0).getDouble("p4");
-    double percentile5 = tuples.get(0).getDouble("p5");
-
-
-    assertEquals(.88D, percentile1, 0.001);
-    assertEquals(.0D, percentile2, 0.001);
-    assertEquals(1.0D, percentile3, 0.001);
-    assertEquals(.78D, percentile4, 0.001);
-    assertEquals(.98D, percentile5, 0.001);
-
-  }
 
   @Test
   public void testRankTransform() throws Exception {
@@ -6020,6 +5975,71 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(7).intValue() == 8);
     assertTrue(out.get(8).intValue() == 9);
   }
+
+
+  @Test
+  public void testDistributions() throws Exception {
+    String cexpr = "let(a=normalDistribution(10, 2), " +
+                       "b=sample(a, 250), " +
+                       "c=normalDistribution(100, 6), " +
+                       "d=sample(c, 250), " +
+                       "u=uniformDistribution(1, 6),"+
+                       "t=sample(u, 250),"+
+                       "e=empiricalDistribution(d),"+
+                       "f=sample(e, 250),"+
+                       "tuple(sample=b, ks=ks(a,b), ks2=ks(a, d), ks3=ks(u, t)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    try {
+      TupleStream solrStream = new SolrStream(url, paramsLoc);
+      StreamContext context = new StreamContext();
+      solrStream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(solrStream);
+      assertTrue(tuples.size() == 1);
+      List<Number> out = (List<Number>) tuples.get(0).get("sample");
+
+      Map ks = (Map) tuples.get(0).get("ks");
+      Map ks2 = (Map) tuples.get(0).get("ks2");
+      Map ks3 = (Map) tuples.get(0).get("ks3");
+
+      assertTrue(out.size() == 250);
+      Number pvalue = (Number) ks.get("p-value");
+      Number pvalue2 = (Number) ks2.get("p-value");
+      Number pvalue3 = (Number) ks3.get("p-value");
+
+      assertTrue(pvalue.doubleValue() > .05D);
+      assertTrue(pvalue2.doubleValue() == 0);
+      assertTrue(pvalue3.doubleValue() > .05D);
+
+    } catch(AssertionError e) {
+
+      //This test will have random failures do to the random sampling. So if it fails try it again.
+      //If it fails twice in a row, we probably broke some code.
+
+      TupleStream solrStream = new SolrStream(url, paramsLoc);
+      StreamContext context = new StreamContext();
+      solrStream.setStreamContext(context);
+      List<Tuple> tuples = getTuples(solrStream);
+      assertTrue(tuples.size() == 1);
+      List<Number> out = (List<Number>) tuples.get(0).get("sample");
+
+      Map ks = (Map) tuples.get(0).get("ks");
+      Map ks2 = (Map) tuples.get(0).get("ks2");
+      Map ks3 = (Map) tuples.get(0).get("ks3");
+
+      assertTrue(out.size() == 250);
+      Number pvalue = (Number) ks.get("p-value");
+      Number pvalue2 = (Number) ks2.get("p-value");
+      Number pvalue3 = (Number) ks3.get("p-value");
+
+      assertTrue(pvalue.doubleValue() > .05D);
+      assertTrue(pvalue2.doubleValue() == 0);
+      assertTrue(pvalue3.doubleValue() > .05D);
+    }
+  }
+
 
 
   @Test
@@ -6267,8 +6287,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Map regression = (Map)tuple.get("regress");
     double slope = (double)regression.get("slope");
     double intercept= (double) regression.get("intercept");
+    double rSquare= (double) regression.get("RSquare");
     assertTrue(slope == 2.0D);
     assertTrue(intercept == 0.0D);
+    assertTrue(rSquare == 1.0D);
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
   }
@@ -6653,6 +6675,31 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuple1.getLong("test").equals(2L));
     assertTrue(tuple1.getLong("test1").equals(4L));
     assertTrue(tuple1.getLong("test2").equals(9L));
+
+
+  }
+  
+  @Test
+  public void testGetStreamForEOFTuple() throws Exception {
+    UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(id, "hello", "test_t", "l b c d c e", "test_i", "5");
+    updateRequest.add(id, "hello1", "test_t", "l b c d c", "test_i", "4");
+
+    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr = "search("+COLLECTIONORALIAS+", q=\"id:hello2\", fl=\"id,test_t, test_i\", sort=\"id desc\")";
+    String cat = "let(a ="+expr+",get(a))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cat);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 0);
 
 
   }

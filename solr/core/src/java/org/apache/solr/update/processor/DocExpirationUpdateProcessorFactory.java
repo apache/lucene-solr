@@ -469,7 +469,7 @@ public final class DocExpirationUpdateProcessorFactory
     CloudDescriptor desc = core.getCoreDescriptor().getCloudDescriptor();
     String col = desc.getCollectionName();
 
-    List<Slice> slices = new ArrayList<Slice>(zk.getClusterState().getActiveSlices(col));
+    List<Slice> slices = new ArrayList<Slice>(zk.getClusterState().getCollection(col).getActiveSlices());
     Collections.sort(slices, COMPARE_SLICES_BY_NAME);
     if (slices.isEmpty()) {
       log.error("Collection {} has no active Slices?", col);

@@ -23,14 +23,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.Before;
+import org.apache.solr.ltr.store.FeatureStore;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 
 public class TestModelManagerPersistence extends TestRerankBase {
 
-  @Before
-  public void init() throws Exception {
+  @BeforeClass
+  public static void init() throws Exception {
     setupPersistenttest(true);
   }
 
@@ -98,24 +99,90 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/responseHeader/status==0");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/==[]");
-    assertJQ(ManagedModelStore.REST_END_POINT + "/test-model2",
+    assertJQ(ManagedModelStore.REST_END_POINT,
         "/models/[0]/name=='test-model'");
     restTestHarness.reload();
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/==[]");
-    assertJQ(ManagedModelStore.REST_END_POINT + "/test-model2",
+    assertJQ(ManagedModelStore.REST_END_POINT,
         "/models/[0]/name=='test-model'");
 
-    assertJDelete(ManagedModelStore.REST_END_POINT + "/test-model1",
+    assertJDelete(ManagedModelStore.REST_END_POINT + "/test-model",
         "/responseHeader/status==0");
     assertJDelete(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/responseHeader/status==0");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/==[]");
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
     restTestHarness.reload();
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/==[]");
-
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
   }
 
+  @Test
+  public void testFilePersistence() throws Exception {
+    // check whether models and features are empty
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/==[]");
+
+    // load models and features from files
+    loadFeatures("features-linear.json");
+    loadModels("linear-model.json");
+
+    // check loaded models and features
+    final String modelName = "6029760550880411648";
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/[0]/name=='"+modelName+"'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/[0]/name=='title'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/[1]/name=='description'");
+
+    // check persistence after reload
+    restTestHarness.reload();
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/[0]/name=='"+modelName+"'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/[0]/name=='title'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/[1]/name=='description'");
+
+    // check persistence after restart
+    jetty.stop();
+    jetty.start();
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/[0]/name=='"+modelName+"'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/[0]/name=='title'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/[1]/name=='description'");
+
+    // delete loaded models and features
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/"+modelName);
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/==[]");
+
+    // check persistence after reload
+    restTestHarness.reload();
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/==[]");
+
+    // check persistence after restart
+    jetty.stop();
+    jetty.start();
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        "/models/==[]");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+        "/features/==[]");
+  }
 }

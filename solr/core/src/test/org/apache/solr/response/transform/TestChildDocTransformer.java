@@ -59,6 +59,8 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     
     testSubQueryXML();
     testSubQueryJSON();
+
+    testChildDocNonStoredDVFields();
   }
 
   private void testChildDoctransformerXML() {
@@ -205,6 +207,36 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "/response/docs/[0]/_childDocuments_/[1]/id=='5'"
     };
 
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:foo\"]"), test2);
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+  }
+
+  private void testChildDocNonStoredDVFields() throws Exception {
+    String[] test1 = new String[] {
+      "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[1]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[2]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[3]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[4]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[5]/intDvoDefault==42"
+    };
+
+    String[] test2 = new String[] {
+      "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[1]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[2]/intDvoDefault==42"
+    };
+
+    String[] test3 = new String[] {
+      "/response/docs/[0]/_childDocuments_/[0]/intDvoDefault==42",
+      "/response/docs/[0]/_childDocuments_/[1]/intDvoDefault==42"
+    };
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "*,[child parentFilter=\"subject:parentDocument\"]"), test1);
@@ -214,6 +246,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+
   }
 
   private void createSimpleIndex() {

@@ -447,10 +447,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("Adding a policy with 'cores' attribute should not have succeeded.");
-    } catch (HttpSolrClient.RemoteSolrException e)  {
+    } catch (HttpSolrClient.RemoteExecutionException e)  {
+      String message = String.valueOf(Utils.getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"));
+
       // expected
-      assertTrue(String.valueOf(getObjectByPath(((HttpSolrClient.RemoteExecutionException) e).getMetaData(),
-          false, "error/details[0]/errorMessages[0]")).contains("cores is only allowed in 'cluster-policy'"));
+      assertTrue(message.contains("cores is only allowed in 'cluster-policy'"));
     }
 
     setPolicyCommand =  "{'set-policy': {" +

@@ -17,15 +17,20 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * GeoCompositePolygon is a specific implementation of GeoMembershipShape, which implements GeoPolygon explicitly.
+ * GeoCompositePolygon is a specific implementation of GeoCompositeAreaShape, which implements GeoPolygon explicitly.
  *
  * @lucene.experimental
  */
-public class GeoCompositePolygon extends GeoCompositeMembershipShape implements GeoPolygon {
-  /** Constructor.
+public class GeoCompositePolygon extends GeoBaseCompositeAreaShape<GeoPolygon> implements GeoPolygon {
+  /**
+   * Constructor.
    */
   public GeoCompositePolygon() {
   }
 
+  @Override
+  public String toString() {
+    return "GeoCompositePolygon: {" + shapes + '}';
+  }
 }
   

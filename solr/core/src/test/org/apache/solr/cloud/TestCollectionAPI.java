@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
@@ -768,10 +769,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     client.getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = client.getZkStateReader().getClusterState();
-    Replica replica = clusterState.getReplica(collectionName, replicaName);
-    if (replica == null) {
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+    if (docCollection == null || docCollection.getReplica(replicaName) == null) {
       fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
     }
+    Replica replica = docCollection.getReplica(replicaName);
     Map<String, String> propMap = new HashMap<>();
     for (String prop : props) {
       propMap.put(prop, replica.getStr(prop));

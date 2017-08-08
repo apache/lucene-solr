@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -80,6 +81,29 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     ));
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
     assertNotNull( nl.get("ADMIN").get("org.apache.solr.handler.admin.CollectionsHandler"));
+  }
+
+  @Test
+  public void testAddedMBeanDiff() throws Exception {
+    String xml = h.query(req(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        CommonParams.WT,"xml"
+    ));
+
+    // Artificially convert a long value to a null, to trigger the ADD case in SolrInfoMBeanHandler.diffObject()
+    xml = xml.replaceFirst("<long\\s+(name\\s*=\\s*\"ADMIN./admin/mbeans.totalTime\"\\s*)>[^<]*</long>", "<null $1/>");
+
+    LocalSolrQueryRequest req = lrf.makeRequest(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        CommonParams.WT,"xml",
+        "diff","true");
+    req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(xml)));
+    xml = h.query(req);
+
+    NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
+    assertNotNull(((NamedList)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADD ADMIN./admin/mbeans.totalTime"));
   }
 
   @Test

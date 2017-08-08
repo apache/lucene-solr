@@ -1,0 +1,59 @@
+= Overview of SolrCloud Autoscaling
+:page-shortname: solrcloud-autoscaling-overview
+:page-permalink: solrcloud-autoscaling-overview.html
+:page-toclevels: 1
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Autoscaling in Solr aims to provide good defaults so a SolrCloud cluster remains balanced and stable in the face of various cluster change events. This balance is achieved by satisfying a set of rules and sorting preferences to select the target of cluster management operations.
+
+== Cluster Preferences
+
+Cluster preferences, as the name suggests, apply to all cluster management operations regardless of which collection they affect.
+
+A preference is a set of conditions that help Solr select nodes that either maximize or minimize given metrics. For example, a preference such as `{minimize:cores}` will help Solr select nodes such that the number of cores on each node is minimized. We write cluster preferences in a way that reduces the overall load on the system. You can add more than one preferences to break ties.
+
+The default cluster preferences consist of the above example (`{minimize : cores}`) which is to minimize the number of cores on all nodes.
+
+You can learn more about preferences in the <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Cluster Preferences>> section.
+
+== Cluster Policy
+
+A cluster policy is a set of conditions that a node, shard, or collection must satisfy before it can be chosen as the target of a cluster management operation. These conditions are applied across the cluster regardless of the collection being managed. For example, the condition `{"cores":"<10", "node":"#ANY"}` means that any node must have less than 10 Solr cores in total regardless of which collection they belong to.
+
+There are many metrics on which the condition can be based, e.g., system load average, heap usage, free disk space, etc. The full list of supported metrics can be found in the section describing <<solrcloud-autoscaling-policy-preferences.adoc#policy-attributes,Policy Attributes>>.
+
+When a node, shard, or collection does not satisfy the policy, we call it a *violation*. Solr ensures that cluster management operations minimize the number of violations. Cluster management operations are currently invoked manually. In the future, these cluster management operations may be invoked automatically in response to cluster events such as a node being added or lost.
+
+== Collection-Specific Policies
+
+A collection may need conditions in addition to those specified in the cluster policy. In such cases, we can create named policies that can be used for specific collections. Firstly, we can use the `set-policy` API to create a new policy and then specify the `policy=<policy_name>` parameter to the CREATE command of the Collection API.
+
+`/admin/collections?action=CREATE&name=coll1&numShards=1&replicationFactor=2&policy=policy1`
+
+The above create collection command will associate a policy named `policy1` with the collection named `coll1`. Only a single policy may be associated with a collection.
+
+Note that the collection-specific policy is applied *in addition to* the cluster policy, i.e., it is not an override but an augmentation. Therefore the collection will follow all conditions laid out in the cluster preferences, cluster policy, and the policy named `policy1`.
+
+You can learn more about collection-specific policies in the section  <<solrcloud-autoscaling-policy-preferences.adoc#defining-collection-specific-policies,Defining Collection-Specific Policies>>.
+
+== Autoscaling APIs
+
+The autoscaling APIs available at `/admin/autoscaling` can be used to read and modify each of the components discussed above.
+
+You can learn more about these APIs in the section <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>.

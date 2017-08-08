@@ -303,10 +303,11 @@ public class ZkStateReader implements Closeable {
   /**
    * Forcibly refresh cluster state from ZK. Do this only to avoid race conditions because it's expensive.
    *
-   * @deprecated Don't call this, call {@link #forceUpdateCollection(String)} on a single collection if you must.
+   * It is cheaper to call {@link #forceUpdateCollection(String)} on a single collection if you must.
+   * 
+   * @lucene.internal
    */
-  @Deprecated
-  public void updateClusterState() throws KeeperException, InterruptedException {
+  public void forciblyRefreshAllClusterStateSlow() throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
       if (clusterState == null) {
         // Never initialized, just run normal initialization.
@@ -637,7 +638,7 @@ public class ZkStateReader implements Closeable {
    * In fact this is a clever way to avoid doing a ZK exists check on
    * the /collections/collection_name/state.json znode
    * Such an exists check is done in {@link ClusterState#hasCollection(String)} and
-   * {@link ClusterState#getCollections()} and {@link ClusterState#getCollectionsMap()} methods
+   * {@link ClusterState#getCollectionsMap()} methods
    * have a safeguard against exposing wrong collection names to the users
    */
   private void refreshCollectionList(Watcher watcher) throws KeeperException, InterruptedException {
@@ -852,12 +853,13 @@ public class ZkStateReader implements Closeable {
     if (clusterState == null) {
       return null;
     }
-    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
-    if (slices == null) {
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    if (docCollection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + collection);
     }
     
+    Map<String,Slice> slices = docCollection.getSlicesMap();
     Slice replicas = slices.get(shardId);
     if (replicas == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);

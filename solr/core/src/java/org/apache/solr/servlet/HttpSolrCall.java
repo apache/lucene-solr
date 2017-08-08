@@ -898,7 +898,8 @@ public class HttpSolrCall {
 
   private String getRemotCoreUrl(String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
-    Collection<Slice> slices = clusterState.getActiveSlices(collectionName);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+    Collection<Slice> slices = (docCollection != null) ? docCollection.getActiveSlices() : null;
     boolean byCoreName = false;
 
     if (slices == null) {

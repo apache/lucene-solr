@@ -36,7 +36,7 @@ Specifies the default operator for query expressions, overriding the default ope
 Specifies a default field, overriding the definition of a default field in the Schema.
 
 `sow`::
-Split on whitespace: if set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g. multi-word synonyms and shingles. Defaults to `true`: text analysis is invoked separately for each individual whitespace-separated term.
+Split on whitespace. If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.  The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.
 
 Default parameter values are specified in `solrconfig.xml`, or overridden by query-time values in the request.
 

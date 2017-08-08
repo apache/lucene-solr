@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 package org.apache.solr.servlet;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.CommandOperation;
-import org.slf4j.Logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
 
 /**
  * Response helper methods.

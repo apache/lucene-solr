@@ -241,6 +241,9 @@ public class SolrXmlConfig {
         case "collectionsHandler":
           builder.setCollectionsAdminHandlerClass(value);
           break;
+        case "healthCheckHandler":
+          builder.setHealthCheckHandlerClass(value);
+          break;
         case "infoHandler":
           builder.setInfoHandlerClass(value);
           break;

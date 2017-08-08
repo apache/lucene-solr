@@ -26,7 +26,7 @@
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0"/>
-  <fieldType name="enumField" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  <fieldType name="enumField" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

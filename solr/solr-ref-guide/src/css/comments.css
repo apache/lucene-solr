@@ -22,10 +22,6 @@
 
 
 /* in general */
-#comments_thread p {
-    line-height: 1.3em;
-    color: #003;
-}
 
 #comments_thread h4 {
    font-size: 14px;

@@ -1819,7 +1819,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
    * to parent/child domains preserve any existing parent/children from the original domain - eg: when q=*:*)
    * </p>
    */
-  public void testQureyJoinBooksAndPages() throws Exception {
+  public void testQueryJoinBooksAndPages() throws Exception {
 
     final Client client = Client.localClient();
 
@@ -1854,8 +1854,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // the domains we'll be testing, initially setup for block join
     final String toChildren = "join: { from:'id', to:'book_id_s' }";
     final String toParents = "join: { from:'book_id_s', to:'id' }";
-    final String toBogusChildren = "join: { from:'id', to:'does_not_exist' }";
-    final String toBogusParents = "join: { from:'book_id_s', to:'does_not_exist' }";
+    final String toBogusChildren = "join: { from:'id', to:'does_not_exist_s' }";
+    final String toBogusParents = "join: { from:'book_id_s', to:'does_not_exist_s' }";
 
     client.testJQ(params(p, "q", "*:*"
             , "json.facet", "{ " +

@@ -551,8 +551,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         if (id == null) {
           for (Entry<String, RoutingRule> entry : routingRules.entrySet()) {
             String targetCollectionName = entry.getValue().getTargetCollectionName();
-            Collection<Slice> activeSlices = cstate.getActiveSlices(targetCollectionName);
-            if (activeSlices != null && !activeSlices.isEmpty()) {
+            final DocCollection docCollection = cstate.getCollectionOrNull(targetCollectionName);
+            if (docCollection != null && docCollection.getActiveSlices() != null && !docCollection.getActiveSlices().isEmpty()) {
+              final Collection<Slice> activeSlices = docCollection.getActiveSlices();
               Slice any = activeSlices.iterator().next();
               if (nodes == null) nodes = new ArrayList<>();
               nodes.add(new StdNode(new ZkCoreNodeProps(any.getLeader())));
@@ -1973,11 +1974,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, EnumSet<Replica.Type> types) {
     ClusterState clusterState = req.getCore()
         .getCoreContainer().getZkController().getClusterState();
-    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
-    if (slices == null) {
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    if (collection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + clusterState);
     }
+    Map<String,Slice> slices = docCollection.getSlicesMap();
     final List<Node> urls = new ArrayList<>(slices.size());
     for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
       Slice replicas = slices.get(sliceEntry.getKey());

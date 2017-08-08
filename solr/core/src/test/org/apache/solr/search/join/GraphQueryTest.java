@@ -31,19 +31,30 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGraph() throws Exception {
-    doGraph( params("node_id","node_s", "edge_id","edge_ss") );
-    // TODO: try with numeric fields...   doGraph( params("node_id","node_i", "edge_id","edge_is") );
+    // normal strings
+    doGraph( params("node_id","node_s",  "edge_id","edge_ss") );
+    doGraph( params("node_id","node_ss", "edge_id","edge_ss") );
+
+    // point based fields with docvalues (single and multi-valued for the node field)
+    doGraph( params("node_id","node_ip",  "edge_id","edge_ips") );
+    doGraph( params("node_id","node_ips", "edge_id","edge_ips") );
+    doGraph( params("node_id","node_lp",  "edge_id","edge_lps") );
+    doGraph( params("node_id","node_lps", "edge_id","edge_lps") );
+    doGraph( params("node_id","node_fp",  "edge_id","edge_fps") );
+    doGraph( params("node_id","node_fps", "edge_id","edge_fps") );
+    doGraph( params("node_id","node_dp",  "edge_id","edge_dps") );
+    doGraph( params("node_id","node_dps", "edge_id","edge_dps") );
   }
 
   public void doGraph(SolrParams p) throws Exception {
     String node_id = p.get("node_id");
     String edge_id = p.get("edge_id");
-    
-    // 1 -> 2 -> 3 -> ( 4 5 )
-    // 7 -> 1
-    // 8 -> ( 1 2 )
-    assertU(adoc("id", "doc_1", node_id, "1", edge_id, "2", "text", "foo", "title", "foo10" ));
-    assertU(adoc("id", "doc_2", node_id, "2", edge_id, "3", "text", "foo" ));
+
+    // NOTE: from/to fields are reversed from {!join}... values are looked up in the "toField" and then matched on the "fromField"
+    // 1->-2->(3,9)->(4,5)->7
+    // 8->(1,-2)->...
+    assertU(adoc("id", "doc_1", node_id, "1", edge_id, "-2", "text", "foo", "title", "foo10" ));
+    assertU(adoc("id", "doc_2", node_id, "-2", edge_id, "3", "text", "foo" ));
     assertU(commit());
     assertU(adoc("id", "doc_3", node_id, "3", edge_id, "4", edge_id, "5"));
     assertU(adoc("id", "doc_4", node_id, "4" ));
@@ -51,12 +62,12 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "doc_5", node_id, "5", edge_id, "7" ));
     assertU(adoc("id", "doc_6", node_id, "6", edge_id, "3" ));
     assertU(adoc("id", "doc_7", node_id, "7", edge_id, "1" ));
-    assertU(adoc("id", "doc_8", node_id, "8", edge_id, "1", edge_id, "2" ));
+    assertU(adoc("id", "doc_8", node_id, "8", edge_id, "1", edge_id, "-2" ));
     assertU(adoc("id", "doc_9", node_id, "9"));
     assertU(commit());
     // update docs so they're in a new segment.
-    assertU(adoc("id", "doc_1", node_id, "1", edge_id, "2", "text", "foo"));
-    assertU(adoc("id", "doc_2", node_id, "2", edge_id, "3", edge_id, "9", "text", "foo11"));
+    assertU(adoc("id", "doc_1", node_id, "1", edge_id, "-2", "text", "foo"));
+    assertU(adoc("id", "doc_2", node_id, "-2", edge_id, "3", edge_id, "9", "text", "foo11"));
     assertU(commit());
     // a graph for testing traversal filter 10 - 11 -> (12 | 13)
     assertU(adoc("id", "doc_10", node_id, "10", edge_id, "11", "title", "foo"));
@@ -71,6 +82,13 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
     assertJQ(req(p, "q","{!graph from=${node_id} to=${edge_id}}id:doc_1")
         , "/response/numFound==7"
     );
+
+    // reverse the order to test single/multi-valued on the opposite fields
+    // start with doc1, look up node_id (1) and match to edge_id (docs 7 and 8)
+    assertJQ(req(p, "q","{!graph from=${edge_id} to=${node_id} maxDepth=1}id:doc_1")
+        , "/response/numFound==3"
+    );
+
     assertJQ(req(p, "q","{!graph from=${node_id} to=${edge_id} returnRoot=true returnOnlyLeaf=false}id:doc_8")
         , "/response/numFound==8"
     );

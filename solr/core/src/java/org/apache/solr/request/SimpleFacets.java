@@ -17,6 +17,7 @@
 package org.apache.solr.request;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,6 +94,8 @@ import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -103,6 +106,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * to leverage any of its functionality.
  */
 public class SimpleFacets {
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
@@ -492,10 +496,19 @@ public class SimpleFacets {
                       + FacetParams.FACET_CONTAINS + ", "
                       + FacetParams.FACET_EXCLUDETERMS + ") are not supported on numeric types");
             }
-//            We should do this, but mincount=0 is currently the default
-//            if (ft.isPointField() && mincount <= 0) {
-//              throw new SolrException(ErrorCode.BAD_REQUEST, FacetParams.FACET_MINCOUNT + " <= 0 is not supported on point types");
-//            }
+            if (ft.isPointField() && mincount <= 0) { // default is mincount=0.  See SOLR-10033 & SOLR-11174.
+              String warningMessage 
+                  = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
+              LOG.warn(warningMessage);
+              List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
+              if (null == warnings) {
+                warnings = new ArrayList<>();
+                rb.rsp.getResponseHeader().add("warnings", warnings);
+              }
+              warnings.add(warningMessage);
+
+              mincount = 1;
+            }
             counts = NumericFacets.getCounts(searcher, docs, field, offset, limit, mincount, missing, sort);
           } else {
             PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, docs, field, offset, limit, mincount, missing, sort, prefix, termFilter);

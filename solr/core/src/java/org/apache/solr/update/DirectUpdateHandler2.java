@@ -911,6 +911,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } catch (IOException e) {
       numErrors.increment();
       numErrorsCumulative.mark();
+      throw e;
     }
   }
 

@@ -61,6 +61,8 @@ import com.ibm.icu.text.Normalizer2;
  * </p>
  */
 public final class ICUFoldingFilter extends ICUNormalizer2Filter {
+  // TODO: if the wrong version of the ICU jar is used, loading these data files may give a strange error.
+  // maybe add an explicit check? http://icu-project.org/apiref/icu4j/com/ibm/icu/util/VersionInfo.html
   private static final Normalizer2 normalizer =  Normalizer2.getInstance(
       ICUFoldingFilter.class.getResourceAsStream("utr30.nrm"), 
       "utr30", Normalizer2.Mode.COMPOSE);

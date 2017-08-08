@@ -42,7 +42,9 @@ import org.apache.lucene.util.mutable.MutableValueInt;
  * </ul>
  * 
  * @see Integer
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TrieIntField extends TrieField implements IntValueFieldType {
   {
     type = NumberType.INTEGER;
