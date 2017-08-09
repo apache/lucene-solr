@@ -139,6 +139,8 @@ Other Changes
 
 * SOLR-11061: Add a spins metric for data directory paths. (ab)
 
+* SOLR-11071: Improve TestIntervalFacets.testRandom (Tomás Fernández Löbbe)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
