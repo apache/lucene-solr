@@ -88,6 +88,9 @@ Bug Fixes
   may not have a registered searcher. This causes spikes in response times when adding a replica
   in busy clusters. (Ludovic Boutros, Timothy Potter, shalin)
 
+* SOLR-11190: GraphQuery also supports string fields which are indexed=false and docValues=true. Please refer to the
+  Javadocs for DocValuesTermsQuery for it's performance characteristics. (Karthik Ramachandran, Varun Thacker)
+
 Optimizations
 ----------------------
 
