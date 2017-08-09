@@ -87,7 +87,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 2));
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION1);
     lostJetty.start();
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000));
+    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 90000));
 
     // check cluster property is considered
     disableAutoAddReplicasInCluster();
@@ -96,7 +96,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForNodeLeave(lostNodeName);
     waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 1));
     jetty3.start();
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 30000));
+    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 90000));
     enableAutoAddReplicasInCluster();
 
 
@@ -171,7 +171,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
     ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS);
+    TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS);
     while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
       Thread.sleep(100);
       if (timeOut.hasTimedOut()) fail("Wait for " + lostNodeName + " to leave failed!");
