@@ -134,6 +134,8 @@ Other Changes
 
 * SOLR-11090: Add Replica.getProperty accessor. (Christine Poerschke)
 
+* SOLR-11061: Add a spins metric for data directory paths. (ab)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
