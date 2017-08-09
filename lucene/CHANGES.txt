@@ -156,6 +156,8 @@ Optimizations
 
 Other
 
+* LUCENE-7923: Removed FST.Arc.node field (unused). (Dawid Weiss)
+
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 
 * LUCENE-7360: Remove Explanation.toHtml() (Alan Woodward)
