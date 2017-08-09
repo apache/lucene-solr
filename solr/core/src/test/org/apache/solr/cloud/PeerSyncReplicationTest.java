@@ -37,7 +37,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,6 +48,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -63,7 +63,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * This test is modeled after SyncSliceTest
  */
 @Slow
-@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10126")
 public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -181,13 +180,21 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       assertEquals(nodePeerSynced, shardToLeaderJetty.get("shard1"));
 
       // assert metrics
-      MetricRegistry registry = nodePeerSynced.jetty.getCoreContainer().getMetricManager().registry("solr.core.collection1");
+      SolrMetricManager manager = nodePeerSynced.jetty.getCoreContainer().getMetricManager();
+      MetricRegistry registry = null;
+      for (String name : manager.registryNames()) {
+        if (name.startsWith("solr.core.collection1")) {
+          registry = manager.registry(name);
+          break;
+        }
+      }
+      assertNotNull(registry);
       Map<String, Metric> metrics = registry.getMetrics();
-      assertTrue("REPLICATION.time present", metrics.containsKey("REPLICATION.time"));
-      assertTrue("REPLICATION.errors present", metrics.containsKey("REPLICATION.errors"));
-      Timer timer = (Timer)metrics.get("REPLICATION.time");
+      assertTrue("REPLICATION.peerSync.time present", metrics.containsKey("REPLICATION.peerSync.time"));
+      assertTrue("REPLICATION.peerSync.errors present", metrics.containsKey("REPLICATION.peerSync.errors"));
+      Timer timer = (Timer)metrics.get("REPLICATION.peerSync.time");
       assertEquals(1L, timer.getCount());
-      Counter counter = (Counter)metrics.get("REPLICATION.errors");
+      Counter counter = (Counter)metrics.get("REPLICATION.peerSync.errors");
       assertEquals(0L, counter.getCount());
       success = true;
     } finally {
