@@ -27,6 +27,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermInSetQuery;
@@ -173,7 +174,9 @@ class GraphTermsCollector extends GraphEdgeCollector {
           collectorTerms.get(i, ref);
           termList.add(ref);
         }
-        q = new TermInSetQuery(matchField.getName(), termList);
+        q = (matchField.hasDocValues() && !matchField.indexed())
+            ? new DocValuesTermsQuery(matchField.getName(), termList)
+            : new TermInSetQuery(matchField.getName(), termList);
       }
 
       return q;

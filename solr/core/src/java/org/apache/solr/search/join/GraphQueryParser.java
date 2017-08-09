@@ -44,6 +44,12 @@ public class GraphQueryParser extends QParser {
     // NOTE: the from/to are reversed from {!join}
     String fromField = localParams.get("from", "node_id");
     String toField = localParams.get("to", "edge_ids");
+    if (req.getSchema().getField(fromField) == null) {
+      throw new SyntaxError("from [" + fromField + "] field not defined in schema");
+    }
+    if (req.getSchema().getField(toField) == null) {
+      throw new SyntaxError("to [" + toField + "] field not defined in schema");
+    }
 
     // only documents that do not have values in the edge id fields.
     boolean onlyLeafNodes = localParams.getBool("returnOnlyLeaf", false);
