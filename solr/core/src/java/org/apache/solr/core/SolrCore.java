@@ -1162,7 +1162,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     File dataDirFile = dataDirPath.toFile();
     manager.registerGauge(this, registry, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
     manager.registerGauge(this, registry, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
-    manager.registerGauge(this, registry, () -> dataDirPath.toAbsolutePath().toString(), true, "fs", "dataDir");
+    manager.registerGauge(this, registry, () -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
     manager.registerGauge(this, registry, () -> {
       try {
         return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
@@ -1170,7 +1170,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         // default to spinning
         return true;
       }
-    }, true, "spins", Category.CORE.toString(), "fs", "dataDir");
+    }, true, "spins", Category.CORE.toString(), "fs");
   }
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {

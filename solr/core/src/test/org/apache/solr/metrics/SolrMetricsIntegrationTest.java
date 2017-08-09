@@ -178,11 +178,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertEquals(g.getValue(), cc.getResourceLoader().getInstancePath().toAbsolutePath().toString());
     boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
     g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
-    g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
     assertEquals(spins, g.getValue());
+    g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
     if (cc.getConfig().getSolrDataHome() != null) {
       spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
-      g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
+      assertEquals(spins, g.getValue());
+    } else {
       assertEquals(spins, g.getValue());
     }
   }
