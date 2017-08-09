@@ -44,8 +44,10 @@ import org.apache.zookeeper.server.auth.AuthenticationProvider;
 import org.apache.zookeeper.server.auth.ProviderRegistry;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
