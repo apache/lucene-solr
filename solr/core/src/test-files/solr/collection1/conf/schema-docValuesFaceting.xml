@@ -28,7 +28,7 @@
   <fieldType name="plong" class="solr.LongPointField"/>
   <fieldType name="pdouble" class="solr.DoublePointField"/>
   <fieldType name="pfloat" class="solr.FloatPointField"/>
-  <!-- fieldType name="pdate" class="solr.DatePointField"/ -->
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
   <field name="id" type="string" indexed="true" stored="true" docValues="false" multiValued="false" required="true"/>
   <field name="id_dv" type="string" indexed="false" stored="false" docValues="true" multiValued="false"
@@ -63,7 +63,10 @@
   <dynamicField name="*_ds_p" type="pdouble" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="false" docValues="${solr.tests.numeric.dv}"/>
   <dynamicField name="*_dt_dv" type="date" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_dt_p" type="pdate" indexed="true" stored="false" docValues="true"/>
+  <dynamicField name="*_dts" type="date" indexed="true" stored="false" docValues="${solr.tests.numeric.dv}" multiValued="true"/>
   <dynamicField name="*_dts_dv" type="date" indexed="true" stored="false" docValues="true" multiValued="true"/>
+  <dynamicField name="*_dts_p" type="pdate" indexed="true" stored="false" docValues="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 
@@ -78,6 +81,8 @@
   <copyField source="*_l" dest="*_l_p"/>
   <copyField source="*_d" dest="*_d_dv"/>
   <copyField source="*_d" dest="*_d_p"/>
+  <copyField source="*_dt" dest="*_dt_dv"/>
+  <copyField source="*_dt" dest="*_dt_p"/>
   <copyField source="*_ss" dest="*_ss_dv"/>
   <copyField source="*_fs" dest="*_fs_dv"/>
   <copyField source="*_fs" dest="*_fs_p"/>
@@ -85,5 +90,7 @@
   <copyField source="*_ls" dest="*_ls_p"/>
   <copyField source="*_ds" dest="*_ds_dv"/>
   <copyField source="*_ds" dest="*_ds_p"/>
+  <copyField source="*_dts" dest="*_dts_dv"/>
+  <copyField source="*_dts" dest="*_dts_p"/>
   <copyField source="id" dest="id_dv"/>
 </schema>

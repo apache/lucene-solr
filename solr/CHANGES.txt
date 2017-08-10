@@ -46,6 +46,10 @@ New Features
 
 * SOLR-10858: Make UUIDUpdateProcessorFactory as Runtime URP (Amit Sarkar, noble)
 
+* SOLR-11199: Payloads supports an "operator" param. Supported operators are 'or', "phrase" ( default ).
+  A new "sum" function is also added. Example :
+  {!payload_score f=payload_field func=sum operator=or}A B C" (Varun Thacker)
+
 Bug Fixes
 ----------------------
 
@@ -63,6 +67,9 @@ Bug Fixes
 * SOLR-6086: Replica is active during autowarming resulting in queries being sent to a replica that
   may not have a registered searcher. This causes spikes in response times when adding a replica
   in busy clusters. (Ludovic Boutros, Timothy Potter, shalin)
+
+* SOLR-11190: GraphQuery also supports string fields which are indexed=false and docValues=true. Please refer to the
+  Javadocs for DocValuesTermsQuery for it's performance characteristics. (Karthik Ramachandran, Varun Thacker)
 
 Optimizations
 ----------------------
@@ -107,6 +114,12 @@ Other Changes
   (Omar Abdelnabi via Christine Poerschke)
 
 * SOLR-11187: contrib/ltr TestModelManagerPersistence improvements. (Yuki Yano via Christine Poerschke)
+
+* SOLR-11090: Add Replica.getProperty accessor. (Christine Poerschke)
+
+* SOLR-11061: Add a spins metric for data directory paths. (ab)
+
+* SOLR-11071: Improve TestIntervalFacets.testRandom (Tomás Fernández Löbbe)
 
 ==================  7.0.0 ==================
 
@@ -323,6 +336,9 @@ New Features
 
 * SOLR-10845: Add support for PointFields to {!graphTerms} query that is internally
   used by some graph traversal streaming expressions.  (yonik)
+
+* SOLR-10939: Add support for PointsFields to {!join} query. Joined fields should
+  also have docValues enabled. (yonik)
 
 Bug Fixes
 ----------------------
@@ -747,6 +763,9 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 * SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
 
 * SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
+
+* SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
+  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
 
 Optimizations
 ----------------------

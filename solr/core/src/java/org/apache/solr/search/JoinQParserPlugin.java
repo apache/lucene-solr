@@ -52,7 +52,9 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.search.join.ScoreJoinQParserPlugin;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -281,6 +283,7 @@ class JoinQuery extends Query {
     }
 
 
+    // most of these statistics are only used for the enum method
     int fromSetSize;          // number of docs in the fromSet (that match the from query)
     long resultListDocs;      // total number of docs collected
     int fromTermCount;
@@ -295,6 +298,33 @@ class JoinQuery extends Query {
 
 
     public DocSet getDocSet() throws IOException {
+      SchemaField fromSchemaField = fromSearcher.getSchema().getField(fromField);
+      SchemaField toSchemaField = toSearcher.getSchema().getField(toField);
+
+      boolean usePoints = false;
+      if (toSchemaField.getType().isPointField()) {
+        if (!fromSchemaField.hasDocValues()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "join from field " + fromSchemaField + " should have docValues to join with points field " + toSchemaField);
+        }
+        usePoints = true;
+      }
+
+      if (!usePoints) {
+        return getDocSetEnumerate();
+      }
+
+      // point fields
+      GraphPointsCollector collector = new GraphPointsCollector(fromSchemaField, null, null);
+      fromSearcher.search(q, collector);
+      Query resultQ = collector.getResultQuery(toSchemaField, false);
+      // don't cache the resulting docSet... the query may be very large.  Better to cache the results of the join query itself
+      DocSet result = resultQ==null ? DocSet.EMPTY : toSearcher.getDocSetNC(resultQ, null);
+      return result;
+    }
+
+
+
+    public DocSet getDocSetEnumerate() throws IOException {
       FixedBitSet resultBits = null;
 
       // minimum docFreq to use the cache

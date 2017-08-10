@@ -16,11 +16,18 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
-import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.bkd.BKDWriter;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
@@ -52,5 +59,33 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   @Override
   protected double quantizeLon(double lonRaw) {
     return GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(lonRaw));
+  }
+
+  public void testDistanceQueryWithInvertedIntersection() throws IOException {
+    final int numMatchingDocs = atLeast(10 * BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+
+    try (Directory dir = newDirectory()) {
+
+      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        for (int i = 0; i < numMatchingDocs; ++i) {
+          Document doc = new Document();
+          addPointToDoc("field", doc, 18.313694, -65.227444);
+          w.addDocument(doc);
+        }
+
+        // Add a handful of docs that don't match
+        for (int i = 0; i < 11; ++i) {
+          Document doc = new Document();
+          addPointToDoc("field", doc, 10, -65.227444);
+          w.addDocument(doc);
+        }
+        w.forceMerge(1);
+      }
+
+      try (IndexReader r = DirectoryReader.open(dir)) {
+        IndexSearcher searcher = newSearcher(r);
+        assertEquals(numMatchingDocs, searcher.count(newDistanceQuery("field", 18, -65, 50_000)));
+      }
+    }
   }
 }

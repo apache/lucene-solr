@@ -19,6 +19,7 @@ package org.apache.solr.search.join;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
@@ -45,6 +46,9 @@ public class GraphQueryParser extends QParser {
     String fromField = localParams.get("from", "node_id");
     String toField = localParams.get("to", "edge_ids");
 
+    validateFields(fromField);
+    validateFields(toField);
+
     // only documents that do not have values in the edge id fields.
     boolean onlyLeafNodes = localParams.getBool("returnOnlyLeaf", false);
     // choose if you want to return documents that match the initial query or not.
@@ -64,6 +68,32 @@ public class GraphQueryParser extends QParser {
     gq.setUseAutn(useAutn);
     // return the parsed graph query.
     return gq;
+  }
+
+  public void validateFields(String field) throws SyntaxError {
+
+    if (req.getSchema().getField(field) == null) {
+      throw new SyntaxError("field " + field + " not defined in schema");
+    }
+
+    if (req.getSchema().getField(field).getType().isPointField()) {
+      if (req.getSchema().getField(field).hasDocValues()) {
+        return;
+      } else {
+        throw new SyntaxError("point field " + field + " must have docValues=true");
+      }
+    }
+
+    if (req.getSchema().getField(field).getType() instanceof StrField) {
+      if ((req.getSchema().getField(field).hasDocValues() || req.getSchema().getField(field).indexed())) {
+        return;
+      } else {
+        throw new SyntaxError("string field " + field + " must have indexed=true or docValues=true");
+      }
+    }
+
+    throw new SyntaxError("FieldType for field=" + field + " not supported");
+
   }
   
 }

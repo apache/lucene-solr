@@ -33,12 +33,15 @@ import org.apache.lucene.queries.payloads.AveragePayloadFunction;
 import org.apache.lucene.queries.payloads.MaxPayloadFunction;
 import org.apache.lucene.queries.payloads.MinPayloadFunction;
 import org.apache.lucene.queries.payloads.PayloadFunction;
+import org.apache.lucene.queries.payloads.SumPayloadFunction;
 import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.PayloadScoreQParserPlugin;
 
 public class PayloadUtils {
   public static String getPayloadEncoder(FieldType fieldType) {
@@ -95,15 +98,22 @@ public class PayloadUtils {
     if ("average".equals(func)) {
       payloadFunction = new AveragePayloadFunction();
     }
-
+    if ("sum".equals(func)) {
+      payloadFunction = new SumPayloadFunction();
+    }
     return payloadFunction;
   }
+
+  public static SpanQuery createSpanQuery(String field, String value, Analyzer analyzer) throws IOException {
+    return createSpanQuery(field, value, analyzer, PayloadScoreQParserPlugin.DEFAULT_OPERATOR);
+  }
+
 
   /**
    * The generated SpanQuery will be either a SpanTermQuery or an ordered, zero slop SpanNearQuery, depending
    * on how many tokens are emitted.
    */
-  public static SpanQuery createSpanQuery(String field, String value, Analyzer analyzer) throws IOException {
+  public static SpanQuery createSpanQuery(String field, String value, Analyzer analyzer, String operator) throws IOException {
     // adapted this from QueryBuilder.createSpanQuery (which isn't currently public) and added reset(), end(), and close() calls
     List<SpanTermQuery> terms = new ArrayList<>();
     try (TokenStream in = analyzer.tokenStream(field, value)) {
@@ -121,9 +131,11 @@ public class PayloadUtils {
       query = null;
     } else if (terms.size() == 1) {
       query = terms.get(0);
+    } else if (operator != null && operator.equalsIgnoreCase("or")) {
+        query = new SpanOrQuery(terms.toArray(new SpanTermQuery[terms.size()]));
     } else {
-      query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
-    }
+        query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
+      }
     return query;
   }
 }

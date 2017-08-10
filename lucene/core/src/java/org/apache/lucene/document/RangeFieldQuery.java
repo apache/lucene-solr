@@ -312,7 +312,7 @@ abstract class RangeFieldQuery extends Query {
         if (allDocsMatch) {
           return new ScorerSupplier() {
             @Override
-            public Scorer get(boolean randomAccess) {
+            public Scorer get(long leadCost) {
               return new ConstantScoreScorer(weight, score(), DocIdSetIterator.all(reader.maxDoc()));
             }
 
@@ -329,7 +329,7 @@ abstract class RangeFieldQuery extends Query {
             long cost = -1;
 
             @Override
-            public Scorer get(boolean randomAccess) throws IOException {
+            public Scorer get(long leadCost) throws IOException {
               values.intersect(visitor);
               DocIdSetIterator iterator = result.build().iterator();
               return new ConstantScoreScorer(weight, score(), iterator);
@@ -354,7 +354,7 @@ abstract class RangeFieldQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
     };
   }

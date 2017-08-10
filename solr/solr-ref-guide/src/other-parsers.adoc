@@ -307,6 +307,10 @@ The `graph` query parser does a breadth first, cyclic aware, graph traversal of 
 
 The graph is built according to linkages between documents based on the terms found in `from` and `to` fields that you specify as part of the query.
 
+The supported fieldTypes are point fields with docValues enabled or string fields with indexed=true or docValues=true.
+For string fields which are indexed=false and docValues=true please refer to the javadocs for `DocValuesTermsQuery`
+for it's performance characteristics so indexed=true will perform better for most use-cases.
+
 === Graph Query Parameters
 
 `to`::
@@ -657,7 +661,11 @@ This parser accepts the following parameters:
 The field to use (required).
 
 `func`::
-Payload function: min, max, average (required).
+Payload function: min, max, average, sum (required).
+
+`operator`::
+Search operator: or , phrase ( default ) (optional). This defines if the search query should be an OR
+query or a phrase query
 
 `includeSpanScore`::
 If `true`, multiples computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
