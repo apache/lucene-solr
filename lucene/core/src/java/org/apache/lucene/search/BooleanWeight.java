@@ -296,7 +296,7 @@ final class BooleanWeight extends Weight {
     if (scorerSupplier == null) {
       return null;
     }
-    return scorerSupplier.get(false);
+    return scorerSupplier.get(Long.MAX_VALUE);
   }
 
   @Override
