@@ -141,13 +141,22 @@ public final class IndexOrDocValuesQuery extends Query {
         }
         return new ScorerSupplier() {
           @Override
-          public Scorer get(boolean randomAccess) throws IOException {
-            return (randomAccess ? dvScorerSupplier : indexScorerSupplier).get(randomAccess);
+          public Scorer get(long leadCost) throws IOException {
+            // At equal costs, doc values tend to be worse than points since they
+            // still need to perform one comparison per document while points can
+            // do much better than that given how values are organized. So we give
+            // an arbitrary 8x penalty to doc values.
+            final long threshold = cost() >>> 3;
+            if (threshold <= leadCost) {
+              return indexScorerSupplier.get(leadCost);
+            } else {
+              return dvScorerSupplier.get(leadCost);
+            }
           }
 
           @Override
           public long cost() {
-            return Math.min(indexScorerSupplier.cost(), dvScorerSupplier.cost());
+            return indexScorerSupplier.cost();
           }
         };
       }
@@ -158,7 +167,7 @@ public final class IndexOrDocValuesQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
     };
   }

@@ -109,7 +109,7 @@ public class ToParentBlockJoinQuery extends Query {
       if (scorerSupplier == null) {
         return null;
       }
-      return scorerSupplier.get(false);
+      return scorerSupplier.get(Long.MAX_VALUE);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -132,8 +132,8 @@ public class ToParentBlockJoinQuery extends Query {
       return new ScorerSupplier() {
 
         @Override
-        public Scorer get(boolean randomAccess) throws IOException {
-          return new BlockJoinScorer(BlockJoinWeight.this, childScorerSupplier.get(randomAccess), parents, scoreMode);
+        public Scorer get(long leadCost) throws IOException {
+          return new BlockJoinScorer(BlockJoinWeight.this, childScorerSupplier.get(leadCost), parents, scoreMode);
         }
 
         @Override

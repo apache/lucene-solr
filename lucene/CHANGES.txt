@@ -14,6 +14,10 @@ Optimizations
 * LUCENE-7655: Speed up geo-distance queries in case of dense single-valued
   fields when most documents match. (Maciej Zasada via Adrien Grand)
 
+* LUCENE-7897: IndexOrDocValuesQuery now requires the range cost to be more
+  than 8x greater than the cost of the lead iterator in order to use doc values.
+  (Murali Krishna P via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used

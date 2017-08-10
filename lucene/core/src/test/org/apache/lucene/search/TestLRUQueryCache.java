@@ -1289,14 +1289,14 @@ public class TestLRUQueryCache extends LuceneTestCase {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          return scorerSupplier(context).get(false);
+          return scorerSupplier(context).get(Long.MAX_VALUE);
         }
         @Override
         public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           final Weight weight = this;
           return new ScorerSupplier() {
             @Override
-            public Scorer get(boolean randomAccess) throws IOException {
+            public Scorer get(long leadCost) throws IOException {
               scorerCreated.set(true);
               return new ConstantScoreScorer(weight, boost, DocIdSetIterator.all(1));
             }
@@ -1344,7 +1344,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     Weight weight = searcher.createNormalizedWeight(query, false);
     ScorerSupplier supplier = weight.scorerSupplier(searcher.getIndexReader().leaves().get(0));
     assertFalse(scorerCreated.get());
-    supplier.get(random().nextBoolean());
+    supplier.get(random().nextLong() & 0x7FFFFFFFFFFFFFFFL);
     assertTrue(scorerCreated.get());
 
     reader.close();
