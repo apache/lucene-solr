@@ -568,12 +568,30 @@ public class CoreContainer {
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     metricManager.registerGauge(null, registryName, () -> dataHome.toAbsolutePath().toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    metricManager.registerGauge(null, registryName, () -> {
+          try {
+            return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
+          } catch (IOException e) {
+            // default to spinning
+            return true;
+          }
+        },
+        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    metricManager.registerGauge(null, registryName, () -> {
+          try {
+            return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
+          } catch (IOException e) {
+            // default to spinning
+            return true;
+          }
+        },
+        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     // add version information
     metricManager.registerGauge(null, registryName, () -> this.getClass().getPackage().getSpecificationVersion(),
         true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
@@ -608,7 +626,7 @@ public class CoreContainer {
 
       for (final CoreDescriptor cd : cds) {
         if (cd.isTransient() || !cd.isLoadOnStartup()) {
-          solrCores.getTransientCacheHandler().addTransientDescriptor(cd.getName(), cd);
+          solrCores.addCoreDescriptor(cd);
         } else if (asyncSolrCoreLoad) {
           solrCores.markCoreAsLoading(cd);
         }
@@ -845,7 +863,6 @@ public class CoreContainer {
       core.close();
       throw new IllegalStateException("This CoreContainer has been closed");
     }
-    solrCores.addCoreDescriptor(cd);
     SolrCore old = solrCores.putCore(cd, core);
       /*
       * set both the name of the descriptor and the name of the

@@ -266,6 +266,14 @@ public class PeerSync implements SolrMetricProducer {
         requestVersions(replica);
       }
 
+      try {
+        // waiting a little bit, there are a chance that an update is sending from leader,
+        // so it will present in the response, but not in our recent updates (SOLR-10126)
+        Thread.sleep(300);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+
       try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
         ourUpdates = recentUpdates.getVersions(nUpdates);
       }

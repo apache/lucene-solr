@@ -1,4 +1,4 @@
-= SolrCloud Autoscaling API
+= Autoscaling API
 :page-shortname: solrcloud-autoscaling-api
 :page-permalink: solrcloud-autoscaling-api.html
 :page-toclevels: 2
@@ -20,7 +20,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Autoscaling API can be used to manage autoscaling policies and preferences, and to get diagnostics on the state of the cluster.
+The Autoscaling API is used to manage autoscaling policies and preferences, and to get diagnostics on the state of the cluster.
 
 == Read API
 
@@ -56,7 +56,7 @@ The output will contain cluster preferences, cluster policy and collection speci
 
 == Diagnostics API
 
-The diagnostics API shows the violations, if any, of all conditions in the cluster or collection-specific policy. It is available at the `/admin/autoscaling/diagnostics` path.
+The diagnostics API shows the violations, if any, of all conditions in the cluster and, if applicable, the collection-specific policy. It is available at the `/admin/autoscaling/diagnostics` path.
 
 This API does not take any parameters.
 
@@ -150,15 +150,17 @@ The Write API is available at the same `/admin/autoscaling` and `/v2/cluster/aut
 
 The payload of the POST request is a JSON message with commands to set and remove components. Multiple commands can be specified together in the payload. The commands are executed in the order specified and the changes are atomic, i.e., either all succeed or none.
 
-=== set-cluster-preferences: Create and Modify Cluster Preferences
+=== Create and Modify Cluster Preferences
 
-The cluster preferences are specified as a list of sort preferences. Multiple sorting preferences can be specified and they are applied in order.
+Cluster preferences are specified as a list of sort preferences. Multiple sorting preferences can be specified and they are applied in order.
+
+They are defined using the `set-cluster-preferences` command.
 
 Each preference is a JSON map having the following syntax:
 
-`{'<sort_order>': '<sort_param>', 'precision' : '<precision_val>'}`
+`{'<sort_order>':'<sort_param>', 'precision':'<precision_val>'}`
 
-You can see the __TODO__ section to know more about the allowed values for the `sort_order`, `sort_param` and `precision` parameters.
+See the section <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>> for details about the allowed values for the `sort_order`, `sort_param` and `precision` parameters.
 
 Changing the cluster preferences after the cluster is already built doesn't automatically reconfigure the cluster. However, all future cluster management operations will use the changed preferences.
 
@@ -167,9 +169,9 @@ Changing the cluster preferences after the cluster is already built doesn't auto
 [source,json]
 ----
 {
-    "set-cluster-preferences" : [
-      {"minimize": "cores"}
-    ]
+"set-cluster-preferences" : [
+  {"minimize": "cores"}
+  ]
 }
 ----
 
@@ -221,17 +223,21 @@ We can remove all cluster preferences by setting preferences to an empty list.
 }
 ----
 
-=== set-cluster-policy: Create and Modify Cluster Policies
+=== Create and Modify Cluster Policies
 
-You can see the __TODO__ section to know more about the allowed values for each condition in the policy.
+Cluster policies are set using the `set-cluster-policy` command.
+
+Like `set-cluster-preferences`, the policy definition is a JSON map defining the desired attributes and values.
+
+Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specification,Policy Specification>> section for details of the allowed values for each condition in the policy.
 
 *Input*:
 [source,json]
 ----
 {
-    "set-cluster-policy": [
-        {"replica": "<2", "shard": "#EACH", "node": "#ANY"}
-    ]
+"set-cluster-policy": [
+  {"replica": "<2", "shard": "#EACH", "node": "#ANY"}
+  ]
 }
 ----
 
@@ -249,6 +255,7 @@ Output:
 ----
 
 We can remove all cluster policy conditions by setting policy to an empty list.
+
 [source,json]
 ----
 {
@@ -258,21 +265,21 @@ We can remove all cluster policy conditions by setting policy to an empty list.
 
 Changing the cluster policy after the cluster is already built doesn't automatically reconfigure the cluster. However, all future cluster management operations will use the changed cluster policy.
 
-=== set-policy: Create and Modify Collection-Specific Policy
+=== Create and Modify Collection-Specific Policy
 
-This command accepts a map of policy name to the list of conditions for that policy. Multiple named policies can be specified together. A named policy that does not exist already is created and if the named policy accepts already then it is replaced.
+The `set-policy` command accepts a map of policy names to the list of conditions for that policy. Multiple named policies can be specified together. A named policy that does not exist already is created and if the named policy accepts already then it is replaced.
 
-You can see the __TODO__ section to know more about the allowed values for each condition in the policy.
+Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specification,Policy Specification>> section for details of the allowed values for each condition in the policy.
 
 *Input*
 
 [source,json]
 ----
 {
-    "set-policy": {
-      "policy1": [
-        {"replica": "1", "shard": "#EACH", "port": "8983"}
-      ]
+"set-policy": {
+  "policy1": [
+    {"replica": "1", "shard": "#EACH", "port": "8983"}
+    ]
   }
 }
 ----
@@ -293,9 +300,9 @@ You can see the __TODO__ section to know more about the allowed values for each 
 
 Changing the policy after the collection is already built doesn't automatically reconfigure the collection. However, all future cluster management operations will use the changed policy.
 
-=== remove-policy: Remove a Collection-Specific Policy
+=== Remove a Collection-Specific Policy
 
-This command accepts a policy name to be removed from Solr. The policy being removed must not be attached to any collection otherwise the command will fail.
+The `remove-policy` command accepts a policy name to be removed from Solr. The policy being removed must not be attached to any collection otherwise the command will fail.
 
 *Input*
 [source,json]
@@ -316,4 +323,4 @@ This command accepts a policy name to be removed from Solr. The policy being rem
 }
 ----
 
-If you attempt to remove a policy that is being used by a collection then this command will fail to delete the policy until the collection itself is deleted.
+If you attempt to remove a policy that is being used by a collection, this command will fail to delete the policy until the collection itself is deleted.

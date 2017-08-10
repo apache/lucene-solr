@@ -26,7 +26,6 @@ import java.util.OptionalLong;
 import java.util.stream.Stream;
 
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.util.PriorityQueue;
 
 final class Boolean2ScorerSupplier extends ScorerSupplier {
 
@@ -84,17 +83,18 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
   }
 
   @Override
-  public Scorer get(boolean randomAccess) throws IOException {
+  public Scorer get(long leadCost) throws IOException {
     // three cases: conjunction, disjunction, or mix
+    leadCost = Math.min(leadCost, cost());
 
     // pure conjunction
     if (subs.get(Occur.SHOULD).isEmpty()) {
-      return excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), randomAccess), subs.get(Occur.MUST_NOT));
+      return excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost);
     }
 
     // pure disjunction
     if (subs.get(Occur.FILTER).isEmpty() && subs.get(Occur.MUST).isEmpty()) {
-      return excl(opt(subs.get(Occur.SHOULD), minShouldMatch, needsScores, randomAccess), subs.get(Occur.MUST_NOT));
+      return excl(opt(subs.get(Occur.SHOULD), minShouldMatch, needsScores, leadCost), subs.get(Occur.MUST_NOT), leadCost);
     }
 
     // conjunction-disjunction mix:
@@ -103,38 +103,23 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
     // optional side must match. otherwise it's required + optional
 
     if (minShouldMatch > 0) {
-      boolean reqRandomAccess = true;
-      boolean msmRandomAccess = true;
-      if (randomAccess == false) {
-        // We need to figure out whether the MUST/FILTER or the SHOULD clauses would lead the iteration
-        final long reqCost = Stream.concat(
-            subs.get(Occur.MUST).stream(),
-            subs.get(Occur.FILTER).stream())
-            .mapToLong(ScorerSupplier::cost)
-            .min().getAsLong();
-        final long msmCost = MinShouldMatchSumScorer.cost(
-            subs.get(Occur.SHOULD).stream().mapToLong(ScorerSupplier::cost),
-            subs.get(Occur.SHOULD).size(), minShouldMatch);
-        reqRandomAccess = reqCost > msmCost;
-        msmRandomAccess = msmCost > reqCost;
-      }
-      Scorer req = excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), reqRandomAccess), subs.get(Occur.MUST_NOT));
-      Scorer opt = opt(subs.get(Occur.SHOULD), minShouldMatch, needsScores, msmRandomAccess);
+      Scorer req = excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost);
+      Scorer opt = opt(subs.get(Occur.SHOULD), minShouldMatch, needsScores, leadCost);
       return new ConjunctionScorer(weight, Arrays.asList(req, opt), Arrays.asList(req, opt));
     } else {
       assert needsScores;
       return new ReqOptSumScorer(
-          excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), randomAccess), subs.get(Occur.MUST_NOT)),
-          opt(subs.get(Occur.SHOULD), minShouldMatch, needsScores, true));
+          excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost),
+          opt(subs.get(Occur.SHOULD), minShouldMatch, needsScores, leadCost));
     }
   }
 
   /** Create a new scorer for the given required clauses. Note that
    *  {@code requiredScoring} is a subset of {@code required} containing
    *  required clauses that should participate in scoring. */
-  private Scorer req(Collection<ScorerSupplier> requiredNoScoring, Collection<ScorerSupplier> requiredScoring, boolean randomAccess) throws IOException {
+  private Scorer req(Collection<ScorerSupplier> requiredNoScoring, Collection<ScorerSupplier> requiredScoring, long leadCost) throws IOException {
     if (requiredNoScoring.size() + requiredScoring.size() == 1) {
-      Scorer req = (requiredNoScoring.isEmpty() ? requiredScoring : requiredNoScoring).iterator().next().get(randomAccess);
+      Scorer req = (requiredNoScoring.isEmpty() ? requiredScoring : requiredNoScoring).iterator().next().get(leadCost);
 
       if (needsScores == false) {
         return req;
@@ -158,16 +143,13 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
 
       return req;
     } else {
-      long minCost = Math.min(
-          requiredNoScoring.stream().mapToLong(ScorerSupplier::cost).min().orElse(Long.MAX_VALUE),
-          requiredScoring.stream().mapToLong(ScorerSupplier::cost).min().orElse(Long.MAX_VALUE));
       List<Scorer> requiredScorers = new ArrayList<>();
       List<Scorer> scoringScorers = new ArrayList<>();
       for (ScorerSupplier s : requiredNoScoring) {
-        requiredScorers.add(s.get(randomAccess || s.cost() > minCost));
+        requiredScorers.add(s.get(leadCost));
       }
       for (ScorerSupplier s : requiredScoring) {
-        Scorer scorer = s.get(randomAccess || s.cost() > minCost);
+        Scorer scorer = s.get(leadCost);
         requiredScorers.add(scorer);
         scoringScorers.add(scorer);
       }
@@ -175,42 +157,28 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
     }
   }
 
-  private Scorer excl(Scorer main, Collection<ScorerSupplier> prohibited) throws IOException {
+  private Scorer excl(Scorer main, Collection<ScorerSupplier> prohibited, long leadCost) throws IOException {
     if (prohibited.isEmpty()) {
       return main;
     } else {
-      return new ReqExclScorer(main, opt(prohibited, 1, false, true));
+      return new ReqExclScorer(main, opt(prohibited, 1, false, leadCost));
     }
   }
 
   private Scorer opt(Collection<ScorerSupplier> optional, int minShouldMatch,
-      boolean needsScores, boolean randomAccess) throws IOException {
+      boolean needsScores, long leadCost) throws IOException {
     if (optional.size() == 1) {
-      return optional.iterator().next().get(randomAccess);
-    } else if (minShouldMatch > 1) {
-      final List<Scorer> optionalScorers = new ArrayList<>();
-      final PriorityQueue<ScorerSupplier> pq = new PriorityQueue<ScorerSupplier>(subs.get(Occur.SHOULD).size() - minShouldMatch + 1) {
-        @Override
-        protected boolean lessThan(ScorerSupplier a, ScorerSupplier b) {
-          return a.cost() > b.cost();
-        }
-      };
-      for (ScorerSupplier scorer : subs.get(Occur.SHOULD)) {
-        ScorerSupplier overflow = pq.insertWithOverflow(scorer);
-        if (overflow != null) {
-          optionalScorers.add(overflow.get(true));
-        }
-      }
-      for (ScorerSupplier scorer : pq) {
-        optionalScorers.add(scorer.get(randomAccess));
-      }
-      return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
+      return optional.iterator().next().get(leadCost);
     } else {
       final List<Scorer> optionalScorers = new ArrayList<>();
       for (ScorerSupplier scorer : optional) {
-        optionalScorers.add(scorer.get(randomAccess));
+        optionalScorers.add(scorer.get(leadCost));
       }
-      return new DisjunctionSumScorer(weight, optionalScorers, needsScores);
+      if (minShouldMatch > 1) {
+        return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
+      } else {
+        return new DisjunctionSumScorer(weight, optionalScorers, needsScores);
+      }
     }
   }
 

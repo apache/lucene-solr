@@ -116,7 +116,7 @@ public abstract class Weight {
     }
     return new ScorerSupplier() {
       @Override
-      public Scorer get(boolean randomAccess) {
+      public Scorer get(long leadCost) {
         return scorer;
       }
 

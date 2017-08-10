@@ -27,7 +27,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    log.info("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName());
+    log.debug("Invoked HealthCheckHandler on [{}]", coreContainer.getZkController().getNodeName());
     CoreContainer cores = getCoreContainer();
 
     if(cores == null) {
@@ -73,6 +72,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
       return;
     }
     if(!cores.isZooKeeperAware()) {
+      //TODO: Support standalone instances
       rsp.setException(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Health check is only available when running in SolrCloud mode"));
       return;
     }
@@ -85,19 +85,12 @@ public class HealthCheckHandler extends RequestHandlerBase {
       return;
     }
 
-    try {
-      zkStateReader.updateLiveNodes();
-
-      // Set status to true if this node is in live_nodes
-      if (clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
-        rsp.add(STATUS, OK);
-      } else {
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
-      }
-    } catch (KeeperException e) {
+    // Set status to true if this node is in live_nodes
+    if (clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
+      rsp.add(STATUS, OK);
+    } else {
       rsp.add(STATUS, FAILURE);
-      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk"));
+      rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
     }
 
     rsp.setHttpCaching(false);

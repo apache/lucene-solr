@@ -6270,7 +6270,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     String expr1 = "search("+COLLECTIONORALIAS+", q=\"col_s:a\", fl=\"price_f, order_i\", sort=\"order_i asc\")";
     String expr2 = "search("+COLLECTIONORALIAS+", q=\"col_s:b\", fl=\"price_f, order_i\", sort=\"order_i asc\")";
 
-    String cexpr = "let(a="+expr1+", b="+expr2+", c=col(a, price_f), d=col(b, price_f), e=regress(c, d), tuple(regress=e, p=predict(e, 300)))";
+    String cexpr = "let(a="+expr1+", b="+expr2+", c=col(a, price_f), d=col(b, price_f), e=regress(c, d), tuple(regress=e, p=predict(e, 300), pl=predict(e, c)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -6293,6 +6293,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(rSquare == 1.0D);
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
+    List<Number> predictions = (List<Number>)tuple.get("pl");
+    assertList(predictions, 200.0, 400.0, 600.0, 200.0, 400.0, 800.0, 1200.0);
   }
 
 
