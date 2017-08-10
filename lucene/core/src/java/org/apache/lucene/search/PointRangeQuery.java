@@ -262,7 +262,7 @@ public abstract class PointRangeQuery extends Query {
           // all docs have a value and all points are within bounds, so everything matches
           return new ScorerSupplier() {
             @Override
-            public Scorer get(boolean randomAccess) {
+            public Scorer get(long leadCost) {
               return new ConstantScoreScorer(weight, score(),
                   DocIdSetIterator.all(reader.maxDoc()));
             }
@@ -280,7 +280,7 @@ public abstract class PointRangeQuery extends Query {
             long cost = -1;
 
             @Override
-            public Scorer get(boolean randomAccess) throws IOException {
+            public Scorer get(long leadCost) throws IOException {
               if (values.getDocCount() == reader.maxDoc()
                   && values.getDocCount() == values.size()
                   && cost() > reader.maxDoc() / 2) {
@@ -319,7 +319,7 @@ public abstract class PointRangeQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
     };
   }
