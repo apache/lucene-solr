@@ -51,6 +51,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+  }
+
+  @Test
+  public void testSimple() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
     JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
     JettySolrRunner jetty3 = cluster.getJettySolrRunner(2);
@@ -70,12 +74,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .setAutoAddReplicas(false)
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
-  }
 
-  @Test
-  public void testSimple() throws Exception{
-    JettySolrRunner jetty2 = cluster.getJettySolrRunner(1);
-    JettySolrRunner jetty3 = cluster.getJettySolrRunner(2);
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
 
     // start the tests
@@ -96,7 +95,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForNodeLeave(lostNodeName);
     waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 1));
     jetty3.start();
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 90000));
+    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 2));
+    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 2));
     enableAutoAddReplicasInCluster();
 
 
