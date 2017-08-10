@@ -108,7 +108,7 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoSh
 
   @Override
   public int hashCode() {
-    return super.hashCode() * 31 + shapes.hashCode();//TODO cache
+    return shapes.hashCode();
   }
 
   @Override
@@ -116,6 +116,6 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoSh
     if (!(o instanceof GeoBaseCompositeShape<?>))
       return false;
     GeoBaseCompositeShape<?> other = (GeoBaseCompositeShape<?>) o;
-    return super.equals(o) && shapes.equals(other.shapes);
+    return shapes.equals(other.shapes);
   }
 }
