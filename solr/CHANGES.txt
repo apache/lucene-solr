@@ -75,6 +75,9 @@ Bug Fixes
 * SOLR-11190: GraphQuery also supports string fields which are indexed=false and docValues=true. Please refer to the
   Javadocs for DocValuesTermsQuery for it's performance characteristics. (Karthik Ramachandran, Varun Thacker)
 
+* SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
+  will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
+
 Optimizations
 ----------------------
 
