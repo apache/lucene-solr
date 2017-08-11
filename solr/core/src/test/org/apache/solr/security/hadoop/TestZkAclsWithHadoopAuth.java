@@ -16,10 +16,13 @@
  */
 package org.apache.solr.security.hadoop;
 
+import static org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
+
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -28,10 +31,10 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
+import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.Code;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -39,30 +42,33 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.ServerCnxn;
-import org.apache.zookeeper.server.auth.AuthenticationProvider;
-import org.apache.zookeeper.server.auth.ProviderRegistry;
+import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
+  private static final String SOLR_PASSWD = "solr";
+  private static final String FOO_PASSWD = "foo";
+  private static final Id SOLR_ZK_ID = new Id("digest", digest ("solr", SOLR_PASSWD));
+  private static final Id FOO_ZK_ID = new Id("digest", digest ("foo", FOO_PASSWD));
 
   @BeforeClass
   public static void setupClass() throws Exception {
     assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
     assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
 
-    System.setProperty("zookeeper.authProvider.1", DummyZKAuthProvider.class.getName());
-    System.setProperty("zkCredentialsProvider", DummyZkCredentialsProvider.class.getName());
-    System.setProperty("zkACLProvider", DummyZkAclProvider.class.getName());
-
-    ProviderRegistry.initialize();
+    System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
+    System.setProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
+    System.setProperty(DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "solr");
+    System.setProperty(DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, SOLR_PASSWD);
+    System.setProperty(DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "foo");
+    System.setProperty(DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, FOO_PASSWD);
 
     configureCluster(NUM_SERVERS)// nodes
         .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML)
@@ -73,9 +79,12 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownClass() {
-    System.clearProperty("zookeeper.authProvider.1");
-    System.clearProperty("zkCredentialsProvider");
-    System.clearProperty("zkACLProvider");
+    System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    System.clearProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    System.clearProperty(DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME);
+    System.clearProperty(DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
+    System.clearProperty(DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
+    System.clearProperty(DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
   }
 
   @Test
@@ -89,7 +98,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
         }
       });
 
-      keeper.addAuthInfo("dummyauth", "solr".getBytes(StandardCharsets.UTF_8));
+      keeper.addAuthInfo("digest", ("solr:"+SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
 
       // Test well known paths.
       checkNonSecurityACLs(keeper, "/solr.xml");
@@ -135,84 +144,22 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
     List<ACL> acls = keeper.getACL(path, new Stat());
     String message = String.format(Locale.ROOT, "Path %s ACLs found %s", path, acls);
     assertEquals(message, 1, acls.size());
-    assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.ALL, new Id("dummyauth", "solr"))));
+    assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.ALL, SOLR_ZK_ID)));
   }
 
   private void checkNonSecurityACLs(ZooKeeper keeper, String path)  throws Exception {
     List<ACL> acls = keeper.getACL(path, new Stat());
     String message = String.format(Locale.ROOT, "Path %s ACLs found %s", path, acls);
     assertEquals(message, 2, acls.size());
-    assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.ALL, new Id("dummyauth", "solr"))));
-    assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.READ, new Id("world", "anyone"))));
+    assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.ALL, SOLR_ZK_ID)));
+    assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.READ, FOO_ZK_ID)));
   }
 
-  public static class DummyZKAuthProvider implements AuthenticationProvider {
-    public static final String zkSuperUser = "zookeeper";
-    public static final Collection<String> validUsers = Arrays.asList(zkSuperUser, "solr", "foo");
-
-    @Override
-    public String getScheme() {
-      return "dummyauth";
-    }
-
-    @Override
-    public Code handleAuthentication(ServerCnxn arg0, byte[] arg1) {
-      String userName = new String(arg1, StandardCharsets.UTF_8);
-
-      if (validUsers.contains(userName)) {
-        if (zkSuperUser.equals(userName)) {
-          arg0.addAuthInfo(new Id("super", ""));
-        }
-        arg0.addAuthInfo(new Id(getScheme(), userName));
-        return KeeperException.Code.OK;
-      }
-
-      return KeeperException.Code.AUTHFAILED;
-    }
-
-    @Override
-    public boolean isAuthenticated() {
-      return true;
-    }
-
-    @Override
-    public boolean isValid(String arg0) {
-      return (arg0 != null) && validUsers.contains(arg0);
-    }
-
-    @Override
-    public boolean matches(String arg0, String arg1) {
-      return arg0.equals(arg1);
+  private static String digest (String userName, String passwd) {
+    try {
+      return DigestAuthenticationProvider.generateDigest(userName+":"+passwd);
+    } catch (NoSuchAlgorithmException ex) {
+      throw new RuntimeException(ex);
     }
   }
-
-  public static class DummyZkCredentialsProvider implements ZkCredentialsProvider {
-    public static final Collection<ZkCredentials> solrCreds =
-        Arrays.asList(new ZkCredentials("dummyauth", "solr".getBytes(StandardCharsets.UTF_8)));
-
-    @Override
-    public Collection<ZkCredentials> getCredentials() {
-      return solrCreds;
-    }
-  }
-
-  public static class DummyZkAclProvider extends SecurityAwareZkACLProvider {
-
-    @Override
-    protected List<ACL> createNonSecurityACLsToAdd() {
-      List<ACL> result = new ArrayList<>(2);
-      result.add(new ACL(ZooDefs.Perms.ALL, new Id("dummyauth", "solr")));
-      result.add(new ACL(ZooDefs.Perms.READ, ZooDefs.Ids.ANYONE_ID_UNSAFE));
-
-      return result;
-    }
-
-    @Override
-    protected List<ACL> createSecurityACLsToAdd() {
-      List<ACL> ret = new ArrayList<ACL>();
-      ret.add(new ACL(ZooDefs.Perms.ALL, new Id("dummyauth", "solr")));
-      return ret;
-    }
-  }
-
 }
