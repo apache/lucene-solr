@@ -69,6 +69,9 @@ Bug Fixes
 
 * SOLR-10698: StreamHandler should allow connections to be closed early (Joel Bernstein, Varun Thacker, Erick Erickson)
 
+* SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
+  will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
