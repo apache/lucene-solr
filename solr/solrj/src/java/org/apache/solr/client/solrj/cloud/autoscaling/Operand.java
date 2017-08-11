@@ -58,6 +58,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
         return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == 1 ? PASS : FAIL;
       }
@@ -73,6 +74,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
         return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == -1 ? PASS : FAIL;
       }
@@ -91,10 +93,6 @@ public enum Operand {
   Operand(String val, int priority) {
     this.operand = val;
     this.priority = priority;
-  }
-
-  public String toStr(Object expectedVal) {
-    return operand + expectedVal.toString();
   }
 
   public TestStatus match(Object ruleVal, Object testVal) {

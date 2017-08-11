@@ -32,6 +32,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -53,6 +54,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREFIX;
 
 /**
  * Class that implements {@link ClusterStateProvider} accepting a SolrClient
@@ -165,6 +168,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
       readSysProps(solrNode, requestedTags, snitchContext);
+      readMetrics(solrNode, requestedTags, snitchContext);
       Set<String> groups = new HashSet<>();
       List<String> prefixes = new ArrayList<>();
       if (requestedTags.contains(DISK)) {
@@ -217,6 +221,34 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
       }
     }
 
+    private void readMetrics(String solrNode, Set<String> requestedTags, ClientSnitchCtx snitchContext) {
+      List<String> metricsNames = null;
+      for (String tag : requestedTags) {
+        if (tag.startsWith(METRICS_PREFIX)) {
+          if (metricsNames == null) metricsNames = new ArrayList<>();
+          metricsNames.add(tag);
+        }
+      }
+      if (metricsNames == null) return;
+      for (String metricsName : metricsNames) {
+        List<String> ss = StrUtils.splitSmart(metricsName, ':');
+        if (ss.size() < 3 || ss.size() > 4) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid metrics name" + metricsName);
+        }
+        try {
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.add("group", ss.get(1));
+          params.add("prefix", ss.get(2));
+          if (ss.size() == 4) params.add("property", ss.get(3));
+          SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
+          Object v = Utils.getObjectByPath(rsp.nl, true, ss);
+          if (v != null) snitchContext.getTags().put(metricsName, v);
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        }
+      }
+    }
+
     private void readSysProps(String solrNode, Set<String> requestedTags, ClientSnitchCtx snitchContext) {
       List<String> prefixes = null;
       ModifiableSolrParams params;
@@ -237,9 +269,8 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
       for (String s : sysProp) params.add("property", s);
       try {
         SimpleSolrResponse rsp = snitchContext.invoke(solrNode, CommonParams.METRICS_PATH, params);
-        Map m = rsp.nl.asMap(6);
         for (String s : sysProp) {
-          Object v = Utils.getObjectByPath(m, true,
+          Object v = Utils.getObjectByPath(rsp.nl, true,
               Arrays.asList("metrics", "solr.jvm", "system.properties", s));
           if (v != null) snitchContext.getTags().put("sysprop." + s, v);
         }

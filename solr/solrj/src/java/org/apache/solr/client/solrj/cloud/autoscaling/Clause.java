@@ -84,6 +84,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
     if (tag == null)
       throw new RuntimeException("Invalid op, must have one and only one tag other than collection, shard,replica " + Utils.toJSONString(m));
+    if (tag.name.startsWith(Clause.METRICS_PREFIX)) {
+      List<String> ss = StrUtils.splitSmart(tag.name, ':');
+      if (ss.size() < 3 || ss.size() > 4) {
+        throw new RuntimeException("Invalid metrics: param in " + Utils.toJSONString(m) + " must have at 2 or 3 segments after 'metrics:' separated by ':'");
+      }
+    }
 
   }
 
@@ -153,12 +159,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
       this.op = op;
     }
 
-    public boolean isPass(Object inputVal) {
+    boolean isPass(Object inputVal) {
       if (inputVal instanceof ReplicaCount) inputVal = ((ReplicaCount) inputVal).getVal(type);
-      return op.match(val, validate(name, inputVal, false)) == PASS;
+      ValidateInfo validator = getValidator(name);
+      if (validator == LazyValidator.INST) { // we don't know the type
+        return op.match(parseString(val), parseString(inputVal)) == PASS;
+      } else {
+        return op.match(val, validate(name, inputVal, false)) == PASS;
+      }
     }
 
-    public boolean isPass(Row row) {
+
+    boolean isPass(Row row) {
       return op.match(val, row.getVal(name)) == PASS;
     }
 
@@ -172,7 +184,13 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
 
     public Long delta(Object val) {
-      return op.delta(this.val, val);
+      if (this.val instanceof String) {
+        if (op == LESS_THAN || op == GREATER_THAN) {
+          return op.delta(Clause.parseDouble(name, this.val), Clause.parseDouble(name, val));
+        } else {
+          return 0l;
+        }
+      } else return op.delta(this.val, val);
     }
 
     public String getName() {
@@ -376,8 +394,57 @@ public class Clause implements MapWriter, Comparable<Clause> {
       if (max != null && !type.isInstance(max))
         throw new RuntimeException("wrong max value type, expected: " + type.getName() + " actual: " + max.getClass().getName());
     }
+
+    public Object validate(String name, Object val, boolean isRuleVal) {
+      if (type == Double.class) {
+        Double num = parseDouble(name, val);
+        if (isRuleVal) {
+          if (min != null)
+            if (Double.compare(num, (Double) min) == -1)
+              throw new RuntimeException(name + ": " + val + " must be greater than " + min);
+          if (max != null)
+            if (Double.compare(num, (Double) max) == 1)
+              throw new RuntimeException(name + ": " + val + " must be less than " + max);
+        }
+        return num;
+      } else if (type == Long.class) {
+        Long num = parseLong(name, val);
+        if (isRuleVal) {
+          if (min != null)
+            if (num < min.longValue())
+              throw new RuntimeException(name + ": " + val + " must be greater than " + min);
+          if (max != null)
+            if (num > max.longValue())
+              throw new RuntimeException(name + ": " + val + " must be less than " + max);
+        }
+        return num;
+      } else if (type == String.class) {
+        if (isRuleVal && vals != null && !vals.contains(val))
+          throw new RuntimeException(name + ": " + val + " must be one of " + StrUtils.join(vals, ','));
+        return val;
+      } else {
+        throw new RuntimeException("Invalid type ");
+      }
+
+    }
   }
 
+  static class LazyValidator extends ValidateInfo {
+    static final LazyValidator INST = new LazyValidator();
+
+    LazyValidator() {
+      super(null, null, null, null);
+    }
+
+    @Override
+    public Object validate(String name, Object val, boolean isRuleVal) {
+      return parseString(val);
+    }
+  }
+
+  public static String parseString(Object val) {
+    return val == null ? null : String.valueOf(val);
+  }
 
   /**
    * @param name      name of the condition
@@ -385,40 +452,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
    * @param isRuleVal is this provided in the rule
    * @return actual validated value
    */
-  public static Object validate(String name, Object val, boolean isRuleVal) {
+  public static Object  validate(String name, Object val, boolean isRuleVal) {
     if (val == null) return null;
+    ValidateInfo info = getValidator(name);
+    if (info == null) throw new RuntimeException("Unknown type :" + name);
+    return info.validate(name, val, isRuleVal);
+  }
+
+  private static ValidateInfo getValidator(String name) {
     ValidateInfo info = validatetypes.get(name);
     if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get("STRING");
-    if (info == null) throw new RuntimeException("Unknown type :" + name);
-    if (info.type == Double.class) {
-      Double num = parseDouble(name, val);
-      if (isRuleVal) {
-        if (info.min != null)
-          if (Double.compare(num, (Double) info.min) == -1)
-            throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
-        if (info.max != null)
-          if (Double.compare(num, (Double) info.max) == 1)
-            throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
-      }
-      return num;
-    } else if (info.type == Long.class) {
-      Long num = parseLong(name, val);
-      if (isRuleVal) {
-        if (info.min != null)
-          if (num < info.min.longValue())
-            throw new RuntimeException(name + ": " + val + " must be greater than " + info.min);
-        if (info.max != null)
-          if (num > info.max.longValue())
-            throw new RuntimeException(name + ": " + val + " must be less than " + info.max);
-      }
-      return num;
-    } else if (info.type == String.class) {
-      if (isRuleVal && info.vals != null && !info.vals.contains(val))
-        throw new RuntimeException(name + ": " + val + " must be one of " + StrUtils.join(info.vals, ','));
-      return val;
-    } else {
-      throw new RuntimeException("Invalid type ");
-    }
+    if (info == null && name.startsWith(METRICS_PREFIX)) info = LazyValidator.INST;
+    return info;
   }
 
   public static Long parseLong(String name, Object val) {
@@ -467,6 +512,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     throw new RuntimeException(name + ": " + val + "not a valid number");
   }
 
+  public static final String METRICS_PREFIX = "metrics:";
+
   private static final Map<String, ValidateInfo> validatetypes = new HashMap<>();
 
   static {
@@ -482,6 +529,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     validatetypes.put("NUMBER", new ValidateInfo(Long.class, null, 0L, Long.MAX_VALUE));//generic number validation
     validatetypes.put("STRING", new ValidateInfo(String.class, null, null, null));//generic string validation
     validatetypes.put("node", new ValidateInfo(String.class, null, null, null));
+    validatetypes.put("LAZY", LazyValidator.INST);
     for (String ip : ImplicitSnitch.IP_SNITCHES) validatetypes.put(ip, new ValidateInfo(Long.class, null, 0L, 255L));
   }
 }

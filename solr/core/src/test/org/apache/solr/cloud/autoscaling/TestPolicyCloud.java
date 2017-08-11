@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 @LuceneTestCase.Slow
 public class TestPolicyCloud extends SolrCloudTestCase {
@@ -133,6 +135,49 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     assertEquals("Expected exactly three replica of collection on node with port: " + firstNodePort, 3, replicasOnNode1);
     assertEquals("Expected exactly three replica of collection on node with port: " + secondNodePort, 3, replicasOnNode2);
+  }
+
+  public void testMetricsTag() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'metrics:abc':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    try {
+      solrClient.request(req);
+      fail("expected exception");
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(e.getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("Invalid metrics: param in"));
+    }
+    setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'metrics:solr.node:ADMIN./admin/authorization.clientErrors:count':'>58768765', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    solrClient.request(req);
+
+    //org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
+    CollectionAdminRequest.createCollection("metricsTest", "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    DocCollection collection = getCollectionState("metricsTest");
+    SolrClientDataProvider provider = new SolrClientDataProvider(solrClient);
+    List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
+        "metrics:solr.jvm:buffers.direct.Count");
+    Map<String, Object> val = provider.getNodeValues(collection .getReplicas().get(0).getNodeName(), tags);
+    for (String tag : tags) {
+      assertNotNull( "missing : "+ tag , val.get(tag));
+    }
+
+
   }
 
   public void testCreateCollectionWithPolicyAndMaxShardsPerNode() throws Exception {

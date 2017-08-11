@@ -76,6 +76,8 @@ New Features
 
 * SOLR-11031: Implement SystemLogListener for autoscaling (ab)
 
+* SOLR-11205: Any metrics value can be directly accessed in autoscaling policies (noble)
+
 Bug Fixes
 ----------------------
 

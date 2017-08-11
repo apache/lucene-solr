@@ -31,14 +31,12 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -189,6 +187,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(c.tag.isPass(12.8d));
     assertFalse(c.tag.isPass("12.6"));
     assertFalse(c.tag.isPass(12.6d));
+
+    c = new Clause((Map<String, Object>) Utils.fromJSONString("{replica:0, 'metrics:x:y:z':'>12.7'}"));
+    assertTrue(c.tag.val instanceof String);
+    assertTrue(c.tag.isPass("12.8"));
+    assertTrue(c.tag.isPass(12.8d));
+    assertFalse(c.tag.isPass("12.6"));
+    assertFalse(c.tag.isPass(12.6d));
+
   }
 
   public void testNodeLost() {
@@ -1201,8 +1207,6 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester = suggester.getSession().getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
     op = suggester.getOperation();
     assertNull(op);
-
-
   }
 
 
