@@ -35,7 +35,11 @@ Detailed Change List
 Upgrade Notes
 ----------------------
 
-(No Notes)
+* SOLR-11195: shard and cluster metric reporter configuration now requires a class attribute.
+  If a reporter configures the group="shard" attribute then please also configure the
+  class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute.
+  If a reporter configures the group="cluster" attribute then please also configure the
+  class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute.
 
 New Features
 ----------------------
@@ -120,6 +124,8 @@ Other Changes
 * SOLR-11061: Add a spins metric for data directory paths. (ab)
 
 * SOLR-11071: Improve TestIntervalFacets.testRandom (Tomás Fernández Löbbe)
+
+* SOLR-11195: Require class attribute for shard and cluster metric reporter configuration. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 
