@@ -90,6 +90,9 @@ public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implemen
     if (getInt(args, "stemEnglishPossessive", 1) != 0) {
       flags |= STEM_ENGLISH_POSSESSIVE;
     }
+    if (getInt(args, "camelCase", 1) != 0) {
+      flags |= CAMEL_CASE;
+    }
     wordFiles = get(args, PROTECTED_TOKENS);
     types = get(args, TYPES);
     this.flags = flags;

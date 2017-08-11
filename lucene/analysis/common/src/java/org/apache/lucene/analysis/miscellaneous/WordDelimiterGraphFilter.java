@@ -151,6 +151,13 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
+
+  /**
+   * Suport camel case better.
+   * <p>
+   * "HTTPRequest" =&gt; "HTTP", "Request"
+   */
+  public static final int CAMEL_CASE = 512;
   
   /**
    * If not null is the set of tokens to protect from being delimited
@@ -220,13 +227,14 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
           PRESERVE_ORIGINAL |
           SPLIT_ON_CASE_CHANGE |
           SPLIT_ON_NUMERICS |
-          STEM_ENGLISH_POSSESSIVE)) != 0) {
+          STEM_ENGLISH_POSSESSIVE |
+          CAMEL_CASE)) != 0) {
       throw new IllegalArgumentException("flags contains unrecognized flag: " + configurationFlags);
     }
     this.flags = configurationFlags;
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(
-        charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE));
+        charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE), has(CAMEL_CASE));
   }
 
   /**
@@ -682,6 +690,12 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         b.append(" | ");
       }
       b.append("STEM_ENGLISH_POSSESSIVE");
+    }
+    if ((flags & CAMEL_CASE) != 0) {
+      if (b.length() > 0) {
+        b.append(" | ");
+      }
+      b.append("CAMEL_CASE");
     }
 
     return b.toString();

@@ -158,6 +158,13 @@ public final class WordDelimiterFilter extends TokenFilter {
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
+
+  /**
+   * Suport camel case better.
+   * <p>
+   * "HTTPRequest" =&gt; "HTTP", "Request"
+   */
+  public static final int CAMEL_CASE = 512;
   
   /**
    * If not null is the set of tokens to protect from being delimited
@@ -214,7 +221,7 @@ public final class WordDelimiterFilter extends TokenFilter {
     this.flags = configurationFlags;
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(
-        charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE));
+        charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE), has(CAMEL_CASE));
   }
 
   /**

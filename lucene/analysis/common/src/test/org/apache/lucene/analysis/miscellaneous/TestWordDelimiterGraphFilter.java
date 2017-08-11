@@ -721,6 +721,21 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
                        "PowerShot 100017 Plus");
   }
 
+  public void testCamelCase() throws Exception {
+    assertGraphStrings(getAnalyzer(GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CAMEL_CASE),
+        "HTTPRequest",
+        "HTTP Request");
+    assertGraphStrings(getAnalyzer(GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CAMEL_CASE),
+        "NExpect",
+        "N Expect");
+    assertGraphStrings(getAnalyzer(GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CAMEL_CASE),
+        "3DPlot",
+        "3D Plot");
+    assertGraphStrings(getAnalyzer(GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CAMEL_CASE),
+        "Plot3D",
+        "Plot 3D");
+  }
+
   /*
   public void testToDot() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE | PRESERVE_ORIGINAL | CATENATE_WORDS | CATENATE_NUMBERS | STEM_ENGLISH_POSSESSIVE;
