@@ -91,6 +91,76 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     super.setUp();
 
   }
+  
+  public void testSoftAndHardCommitMaxDocs() throws Exception {
+
+    // NOTE WHEN READING THIS TEST...
+    // The maxDocs settings on the CommitTrackers are the "upper bound"
+    // of how many docs can be added with out doing a commit.
+    // That means they are one less then the actual number of docs that will trigger a commit.
+    final int softCommitMaxDocs = 5;
+    final int hardCommitMaxDocs = 7;
+
+    assert softCommitMaxDocs < hardCommitMaxDocs; // remainder of test designed with these assumptions
+    
+    CommitTracker hardTracker = updater.commitTracker;
+    CommitTracker softTracker = updater.softCommitTracker;
+    
+    // wait out any leaked commits
+    monitor.hard.poll(3000, MILLISECONDS);
+    monitor.soft.poll(0, MILLISECONDS);
+    monitor.clear();
+    
+    softTracker.setDocsUpperBound(softCommitMaxDocs);
+    softTracker.setTimeUpperBound(-1);
+    hardTracker.setDocsUpperBound(hardCommitMaxDocs);
+    hardTracker.setTimeUpperBound(-1);
+    // simplify whats going on by only having soft auto commits trigger new searchers
+    hardTracker.setOpenSearcher(false);
+
+    // Note: doc id counting starts at 0, see comment at start of test regarding "upper bound"
+
+    // add num docs up to the soft commit upper bound
+    for (int i = 0; i < softCommitMaxDocs; i++) {
+      assertU(adoc("id", ""+(8000 + i), "subject", "testMaxDocs"));
+    }
+    // the first soft commit we see must be after this.
+    final long minSoftCommitNanos = System.nanoTime();
+    
+    // now add the doc that will trigger the soft commit,
+    // as well as additional docs up to the hard commit upper bound
+    for (int i = softCommitMaxDocs; i < hardCommitMaxDocs; i++) {
+      assertU(adoc("id", ""+(8000 + i), "subject", "testMaxDocs"));
+    }
+    // the first hard commit we see must be after this.
+    final long minHardCommitNanos = System.nanoTime();
+
+    // a final doc to trigger the hard commit
+    assertU(adoc("id", ""+(8000 + hardCommitMaxDocs), "subject", "testMaxDocs"));
+
+    // now poll our monitors for the timestamps on the first commits
+    final Long firstSoftNanos = monitor.soft.poll(5000, MILLISECONDS);
+    final Long firstHardNanos = monitor.hard.poll(5000, MILLISECONDS);
+
+    assertNotNull("didn't get a single softCommit after adding the max docs", firstSoftNanos);
+    assertNotNull("didn't get a single hardCommit after adding the max docs", firstHardNanos);
+                  
+    assertTrue("softCommit @ " + firstSoftNanos + "ns is before the maxDocs should have triggered it @ " +
+               minSoftCommitNanos + "ns",
+               minSoftCommitNanos < firstSoftNanos);
+    assertTrue("hardCommit @ " + firstHardNanos + "ns is before the maxDocs should have triggered it @ " +
+               minHardCommitNanos + "ns",
+               minHardCommitNanos < firstHardNanos);
+
+    // wait a bit, w/o other action we shouldn't see any new hard/soft commits 
+    assertNull("Got a hard commit we weren't expecting",
+               monitor.hard.poll(1000, MILLISECONDS));
+    assertNull("Got a soft commit we weren't expecting",
+               monitor.soft.poll(0, MILLISECONDS));
+    
+    monitor.assertSaneOffers();
+    monitor.clear();
+  }
 
   public void testSoftAndHardCommitMaxTimeMixedAdds() throws Exception {
     final int softCommitWaitMillis = 500;
