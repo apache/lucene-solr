@@ -121,7 +121,10 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
             }
           }
 
-          docSize = Math.min(docSize, maxTotalChars);
+          if (docSize > maxTotalChars) {
+            docSize = maxTotalChars;
+            break;
+          }
         }
       }
     }
