@@ -112,13 +112,18 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
   private int getExpectedSize(SolrInputDocument doc, String[] fields) {
     int docSize = 0;
     for (String field : fields) {
-      Collection<Object> contents = doc.getFieldValues(field);
-      for (Object content : contents) {
-        if (content instanceof String) {
-          docSize += Math.min(((String) content).length(), maxFieldValueChars);
+      if (doc.containsKey(field)) {
+        Collection<Object> contents = doc.getFieldValues(field);
+        if (contents != null) {
+          for (Object content : contents) {
+            if (content instanceof String) {
+              docSize += Math.min(((String) content).length(), maxFieldValueChars);
+            }
+          }
+
+          docSize = Math.min(docSize, maxTotalChars);
         }
       }
-      docSize = Math.min(docSize, maxTotalChars);
     }
     return docSize;
   }
