@@ -68,7 +68,7 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
 
   @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
-    Map map = new HashMap<>(getOriginalArgs());
+    Map<String,String> map = new HashMap<>(getOriginalArgs());
     map.remove("maxTokenLen"); //removing "maxTokenLen" argument for LowerCaseFilterFactory init
     return new LowerCaseFilterFactory(map);
   }

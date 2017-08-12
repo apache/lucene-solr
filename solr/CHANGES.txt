@@ -52,7 +52,11 @@ Detailed Change List
 Upgrade Notes
 ----------------------
 
-(No Notes)
+* SOLR-11195: shard and cluster metric reporter configuration now requires a class attribute.
+  If a reporter configures the group="shard" attribute then please also configure the
+  class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute.
+  If a reporter configures the group="cluster" attribute then please also configure the
+  class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute.
 
 New Features
 ----------------------
@@ -90,6 +94,9 @@ Bug Fixes
 
 * SOLR-11190: GraphQuery also supports string fields which are indexed=false and docValues=true. Please refer to the
   Javadocs for DocValuesTermsQuery for it's performance characteristics. (Karthik Ramachandran, Varun Thacker)
+
+* SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
+  will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
 
 Optimizations
 ----------------------
@@ -140,6 +147,8 @@ Other Changes
 * SOLR-11061: Add a spins metric for data directory paths. (ab)
 
 * SOLR-11071: Improve TestIntervalFacets.testRandom (Tomás Fernández Löbbe)
+
+* SOLR-11195: Require class attribute for shard and cluster metric reporter configuration. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 

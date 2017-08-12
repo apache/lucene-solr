@@ -91,6 +91,19 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
     assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
     assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
+    assertEquals("5", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals("6", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals("7", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals("8", queryResponse.getResults().get(7).get("id").toString());
+
+    final Float original_result0_score = (Float)queryResponse.getResults().get(0).get("score");
+    final Float original_result1_score = (Float)queryResponse.getResults().get(1).get("score");
+    final Float original_result2_score = (Float)queryResponse.getResults().get(2).get("score");
+    final Float original_result3_score = (Float)queryResponse.getResults().get(3).get("score");
+    final Float original_result4_score = (Float)queryResponse.getResults().get(4).get("score");
+    final Float original_result5_score = (Float)queryResponse.getResults().get(5).get("score");
+    final Float original_result6_score = (Float)queryResponse.getResults().get(6).get("score");
+    final Float original_result7_score = (Float)queryResponse.getResults().get(7).get("score");
 
     final String result0_features= FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS","64.0", "c3","2.0");
@@ -100,9 +113,40 @@ public class TestLTROnSolrCloud extends TestRerankBase {
         "powpularityS","36.0", "c3","2.0");
     final String result3_features= FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS","25.0", "c3","2.0");
+    final String result4_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS","16.0", "c3","2.0");
+    final String result5_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS", "9.0", "c3","2.0");
+    final String result6_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS", "4.0", "c3","2.0");
+    final String result7_features= FeatureLoggerTestUtils.toFeatureVector(
+        "powpularityS", "1.0", "c3","2.0");
 
-    // Test re-rank and feature vectors returned
+
+    // Test feature vectors returned (without re-ranking)
     query.setFields("*,score,features:[fv]");
+    queryResponse =
+        solrCluster.getSolrClient().query(COLLECTION,query);
+    assertEquals(8, queryResponse.getResults().getNumFound());
+    assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
+    assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
+    assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
+    assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
+    assertEquals("5", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals("6", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals("7", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals("8", queryResponse.getResults().get(7).get("id").toString());
+
+    assertEquals(original_result0_score, queryResponse.getResults().get(0).get("score"));
+    assertEquals(original_result1_score, queryResponse.getResults().get(1).get("score"));
+    assertEquals(original_result2_score, queryResponse.getResults().get(2).get("score"));
+    assertEquals(original_result3_score, queryResponse.getResults().get(3).get("score"));
+    assertEquals(original_result4_score, queryResponse.getResults().get(4).get("score"));
+    assertEquals(original_result5_score, queryResponse.getResults().get(5).get("score"));
+    assertEquals(original_result6_score, queryResponse.getResults().get(6).get("score"));
+    assertEquals(original_result7_score, queryResponse.getResults().get(7).get("score"));
+
+    // Test feature vectors returned (with re-ranking)
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
     queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
@@ -119,6 +163,18 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("5", queryResponse.getResults().get(3).get("id").toString());
     assertEquals(result3_features,
         queryResponse.getResults().get(3).get("features").toString());
+    assertEquals("4", queryResponse.getResults().get(4).get("id").toString());
+    assertEquals(result4_features,
+        queryResponse.getResults().get(4).get("features").toString());
+    assertEquals("3", queryResponse.getResults().get(5).get("id").toString());
+    assertEquals(result5_features,
+        queryResponse.getResults().get(5).get("features").toString());
+    assertEquals("2", queryResponse.getResults().get(6).get("id").toString());
+    assertEquals(result6_features,
+        queryResponse.getResults().get(6).get("features").toString());
+    assertEquals("1", queryResponse.getResults().get(7).get("id").toString());
+    assertEquals(result7_features,
+        queryResponse.getResults().get(7).get("features").toString());
   }
 
   private void setupSolrCluster(int numShards, int numReplicas, int numServers, int maxShardsPerNode) throws Exception {
