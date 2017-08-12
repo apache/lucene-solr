@@ -138,7 +138,7 @@
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
         'properties', 'mdtext',
-        'template', 'adoc',
+        'template', 'adoc', 'json',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
