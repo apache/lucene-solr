@@ -417,7 +417,7 @@ public class ScheduledTriggers implements Closeable {
               try {
                 oldListener.close();
               } catch (Exception e) {
-                log.warn("Exception closing old listener " + listener.getConfig(), e);
+                log.warn("Exception closing old listener " + oldListener.getConfig(), e);
               }
             } else {
               listener = oldListener; // reuse
@@ -430,17 +430,15 @@ public class ScheduledTriggers implements Closeable {
             } catch (Exception e) {
               log.warn("Invalid TriggerListener class name '" + clazz + "', skipping...", e);
             }
-            try {
-              listener.init(coreContainer, config);
-              listenersPerName.put(config.name, listener);
-            } catch (Exception e) {
-              log.warn("Error initializing TriggerListener " + config, e);
+            if (listener != null) {
               try {
-                listener.close();
-              } catch (Exception e1) {
-                // ignore
+                listener.init(coreContainer, config);
+                listenersPerName.put(config.name, listener);
+              } catch (Exception e) {
+                log.warn("Error initializing TriggerListener " + config, e);
+                IOUtils.closeQuietly(listener);
+                listener = null;
               }
-              listener = null;
             }
           }
           if (listener == null) {
