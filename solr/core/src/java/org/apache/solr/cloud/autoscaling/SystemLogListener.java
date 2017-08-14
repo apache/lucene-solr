@@ -22,9 +22,11 @@ import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -56,6 +58,14 @@ public class SystemLogListener extends TriggerListenerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SOURCE_FIELD = "source_s";
+  public static final String EVENT_SOURCE_FIELD = "event.source_s";
+  public static final String EVENT_TYPE_FIELD = "event.type_s";
+  public static final String STAGE_FIELD = "stage_s";
+  public static final String ACTION_FIELD = "action_s";
+  public static final String MESSAGE_FIELD = "message_t";
+  public static final String BEFORE_ACTIONS_FIELD = "before.actions_ss";
+  public static final String AFTER_ACTIONS_FIELD = "after.actions_ss";
+  public static final String COLLECTIONS_FIELD = "collections_ss";
   public static final String SOURCE = SystemLogListener.class.getSimpleName();
   public static final String DOC_TYPE = "autoscaling_event";
 
@@ -84,17 +94,17 @@ public class SystemLogListener extends TriggerListenerBase {
       doc.addField(SOURCE_FIELD, SOURCE);
       doc.addField("id", IdUtils.timeRandomId());
       doc.addField("event.id_s", event.getId());
-      doc.addField("event.type_s", event.getEventType().toString());
-      doc.addField("event.source_s", event.getSource());
+      doc.addField(EVENT_TYPE_FIELD, event.getEventType().toString());
+      doc.addField(EVENT_SOURCE_FIELD, event.getSource());
       doc.addField("event.time_l", event.getEventTime());
       doc.addField("timestamp", new Date());
       addMap("event.property.", doc, event.getProperties());
-      doc.addField("stage_s", stage.toString());
+      doc.addField(STAGE_FIELD, stage.toString());
       if (actionName != null) {
-        doc.addField("action_s", actionName);
+        doc.addField(ACTION_FIELD, actionName);
       }
       if (message != null) {
-        doc.addField("message_t", message);
+        doc.addField(MESSAGE_FIELD, message);
       }
       addError(doc, error);
       // add JSON versions of event and context
@@ -105,8 +115,8 @@ public class SystemLogListener extends TriggerListenerBase {
         addOperations(doc, (List<SolrRequest>)context.getProperties().get("operations"));
         // capture specifics of responses after execute_plan action
         addResponses(doc, (List<NamedList<Object>>)context.getProperties().get("responses"));
-        addActions("before", doc, (List<String>)context.getProperties().get(TriggerEventProcessorStage.BEFORE_ACTION.toString()));
-        addActions("after", doc, (List<String>)context.getProperties().get(TriggerEventProcessorStage.AFTER_ACTION.toString()));
+        addActions(BEFORE_ACTIONS_FIELD, doc, (List<String>)context.getProperties().get(TriggerEventProcessorStage.BEFORE_ACTION.toString()));
+        addActions(AFTER_ACTIONS_FIELD, doc, (List<String>)context.getProperties().get(TriggerEventProcessorStage.AFTER_ACTION.toString()));
         String contextJson = Utils.toJSONString(context);
         doc.addField("context_str", contextJson);
       }
@@ -124,11 +134,11 @@ public class SystemLogListener extends TriggerListenerBase {
     }
   }
 
-  private void addActions(String prefix, SolrInputDocument doc, List<String> actions) {
+  private void addActions(String field, SolrInputDocument doc, List<String> actions) {
     if (actions == null) {
       return;
     }
-    actions.forEach(a -> doc.addField(prefix + ".actions_ss", a));
+    actions.forEach(a -> doc.addField(field, a));
   }
 
   private void addMap(String prefix, SolrInputDocument doc, Map<String, Object> map) {
@@ -147,10 +157,14 @@ public class SystemLogListener extends TriggerListenerBase {
     if (operations == null || operations.isEmpty()) {
       return;
     }
+    Set<String> collections = new HashSet<>();
     for (SolrRequest req : operations) {
       SolrParams params = req.getParams();
       if (params == null) {
         continue;
+      }
+      if (params.get(CollectionAdminParams.COLLECTION) != null) {
+        collections.add(params.get(CollectionAdminParams.COLLECTION));
       }
       // build a whitespace-separated param string
       StringJoiner paramJoiner = new StringJoiner(" ");
@@ -166,6 +180,9 @@ public class SystemLogListener extends TriggerListenerBase {
       if (!paramString.isEmpty()) {
         doc.addField("operations.params_ts", paramString);
       }
+    }
+    if (!collections.isEmpty()) {
+      doc.addField(COLLECTIONS_FIELD, collections);
     }
   }
 
