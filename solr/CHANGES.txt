@@ -78,6 +78,8 @@ Bug Fixes
 * SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
   will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
 
+* SOLR-11084: Issue with starting script with solr.home (-s) == solr (Leil Ireson, Amrit Sarkar via Erick Erickson)
+
 Optimizations
 ----------------------
 
