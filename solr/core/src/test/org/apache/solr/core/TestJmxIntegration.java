@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
