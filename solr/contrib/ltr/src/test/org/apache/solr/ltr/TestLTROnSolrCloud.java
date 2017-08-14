@@ -124,7 +124,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
 
     // Test feature vectors returned (without re-ranking)
-    query.setFields("*,score,features:[fv]");
+    query.setFields("*,score,features:[fv store=test]");
     queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
@@ -146,7 +146,25 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals(original_result6_score, queryResponse.getResults().get(6).get("score"));
     assertEquals(original_result7_score, queryResponse.getResults().get(7).get("score"));
 
+    assertEquals(result7_features,
+        queryResponse.getResults().get(0).get("features").toString());
+    assertEquals(result6_features,
+        queryResponse.getResults().get(1).get("features").toString());
+    assertEquals(result5_features,
+        queryResponse.getResults().get(2).get("features").toString());
+    assertEquals(result4_features,
+        queryResponse.getResults().get(3).get("features").toString());
+    assertEquals(result3_features,
+        queryResponse.getResults().get(4).get("features").toString());
+    assertEquals(result2_features,
+        queryResponse.getResults().get(5).get("features").toString());
+    assertEquals(result1_features,
+        queryResponse.getResults().get(6).get("features").toString());
+    assertEquals(result0_features,
+        queryResponse.getResults().get(7).get("features").toString());
+
     // Test feature vectors returned (with re-ranking)
+    query.setFields("*,score,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
     queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
