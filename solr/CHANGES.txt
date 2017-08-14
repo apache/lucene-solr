@@ -436,6 +436,9 @@ Bug Fixes
 
 * SOLR-10353: TestSQLHandler reproducible failure: No match found for function signature min(<NUMERIC>) (Kevin Risden)
 
+* SOLR-11221: SolrJmxReporter broken on core reload. This resulted in some or most metrics not being reported
+  via JMX after core reloads, depending on timing. (ab)
+
 Optimizations
 ----------------------
 
