@@ -59,6 +59,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   private final boolean useCachedStatsBetweenGetMBeanInfoCalls = Boolean.getBoolean("useCachedStatsBetweenGetMBeanInfoCalls");
 
   private BiConsumer<Boolean, Map<String, Object>> initializer;
+  private Map<String, String> jmxAttributes = new HashMap<>();
   private volatile Map<String,Object> cachedValue;
 
   public MetricsMap(BiConsumer<Boolean, Map<String,Object>> initializer) {
@@ -83,6 +84,11 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
   @Override
   public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException {
     Object val;
+    // jmxAttributes override any real values
+    val = jmxAttributes.get(attribute);
+    if (val != null) {
+      return val;
+    }
     Map<String,Object> stats = null;
     if (useCachedStatsBetweenGetMBeanInfoCalls) {
       Map<String,Object> cachedStats = this.cachedValue;
@@ -111,7 +117,7 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
 
   @Override
   public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
-    throw new UnsupportedOperationException("Operation not Supported");
+    jmxAttributes.put(attribute.getName(), String.valueOf(attribute.getValue()));
   }
 
   @Override
@@ -144,8 +150,15 @@ public class MetricsMap implements Gauge<Map<String,Object>>, DynamicMBean {
     if (useCachedStatsBetweenGetMBeanInfoCalls) {
       cachedValue = stats;
     }
+    jmxAttributes.forEach((k, v) -> {
+      attrInfoList.add(new MBeanAttributeInfo(k, String.class.getName(),
+          null, true, false, false));
+    });
     try {
       stats.forEach((k, v) -> {
+        if (jmxAttributes.containsKey(k)) {
+          return;
+        }
         Class type = v.getClass();
         OpenType typeBox = determineType(type);
         if (type.equals(String.class) || typeBox == null) {

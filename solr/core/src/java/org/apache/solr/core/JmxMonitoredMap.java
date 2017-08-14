@@ -53,7 +53,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.JmxConfiguration;
 import org.apache.solr.metrics.SolrCoreMetricManager;
-import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

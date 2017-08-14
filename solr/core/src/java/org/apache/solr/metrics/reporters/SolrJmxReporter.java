@@ -27,8 +27,11 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.PluginInfo;
+
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +54,10 @@ public class SolrJmxReporter extends SolrMetricReporter {
   private String rootName;
   private List<String> filters = new ArrayList<>();
 
-  private JmxReporter reporter;
   private MetricRegistry registry;
   private MBeanServer mBeanServer;
+  private JmxMetricsReporter reporter;
+  private boolean started;
 
   /**
    * Creates a new instance of {@link SolrJmxReporter}.
@@ -111,18 +115,19 @@ public class SolrJmxReporter extends SolrMetricReporter {
     if (filters.isEmpty()) {
       filter = MetricFilter.ALL;
     } else {
-      // apply also prefix filters
       filter = new SolrMetricManager.PrefixFilter(filters);
     }
 
-    reporter = JmxReporter.forRegistry(registry)
+    String tag = Integer.toHexString(this.hashCode());
+    reporter = JmxMetricsReporter.forRegistry(registry)
                           .registerWith(mBeanServer)
                           .inDomain(fullDomain)
                           .filter(filter)
                           .createsObjectNamesWith(jmxObjectNameFactory)
+                          .withTag(tag)
                           .build();
     reporter.start();
-
+    started = true;
     log.info("JMX monitoring for '" + fullDomain + "' (registry '" + registryName + "') enabled at server: " + mBeanServer);
   }
 
@@ -131,6 +136,8 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   @Override
   public synchronized void close() {
+    log.info("Closing reporter " + this + " for registry " + registryName + " / " + registry);
+    started = false;
     if (reporter != null) {
       reporter.close();
       reporter = null;
@@ -242,10 +249,18 @@ public class SolrJmxReporter extends SolrMetricReporter {
 
   /**
    * For unit tests.
-   * @return true if this reporter is actively reporting metrics to JMX.
+   * @return true if this reporter is going to report metrics to JMX.
    */
   public boolean isActive() {
     return reporter != null;
+  }
+
+  /**
+   * For unit tests.
+   * @return true if this reporter has been started and is reporting metrics to JMX.
+   */
+  public boolean isStarted() {
+    return started;
   }
 
   @Override
@@ -253,5 +268,4 @@ public class SolrJmxReporter extends SolrMetricReporter {
     return String.format(Locale.ENGLISH, "[%s@%s: rootName = %s, domain = %s, service url = %s, agent id = %s]",
         getClass().getName(), Integer.toHexString(hashCode()), rootName, domain, serviceUrl, agentId);
   }
-
 }
