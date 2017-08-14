@@ -39,13 +39,12 @@ import org.junit.Test;
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   int leaderRegistries;
   int clusterRegistries;
-  static int jmxReporter;
+  int jmxReporter;
 
 
   @BeforeClass
   public static void configureDummyCluster() throws Exception {
     configureCluster(0).configure();
-    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
   }
 
   @Before
@@ -53,6 +52,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     shutdownCluster();
     leaderRegistries = 0;
     clusterRegistries = 0;
+    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
   }
 
   @Test
