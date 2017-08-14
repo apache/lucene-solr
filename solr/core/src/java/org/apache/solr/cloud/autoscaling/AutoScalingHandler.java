@@ -556,7 +556,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     properties.put(AutoScalingParams.TRIGGER, triggerName);
     properties.put(AutoScalingParams.STAGE, EnumSet.allOf(TriggerEventProcessorStage.class));
     AutoScalingConfig.TriggerListenerConfig listener =
-        new AutoScalingConfig.TriggerListenerConfig(CollectionAdminParams.SYSTEM_COLL, properties);
+        new AutoScalingConfig.TriggerListenerConfig(triggerName + CollectionAdminParams.SYSTEM_COLL, properties);
     autoScalingConfig = autoScalingConfig.withTriggerListenerConfig(listener);
     return autoScalingConfig;
   }

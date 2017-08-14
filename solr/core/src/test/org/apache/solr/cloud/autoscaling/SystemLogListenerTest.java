@@ -105,7 +105,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     // remove default listener
     String removeListenerCommand = "{\n" +
         "\t\"remove-listener\" : {\n" +
-        "\t\t\"name\" : \".system\"\n" +
+        "\t\t\"name\" : \"node_lost_trigger.system\"\n" +
         "\t}\n" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
