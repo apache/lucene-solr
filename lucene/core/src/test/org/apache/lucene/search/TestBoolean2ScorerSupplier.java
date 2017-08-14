@@ -70,22 +70,22 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
   private static class FakeScorerSupplier extends ScorerSupplier {
 
     private final long cost;
-    private final Boolean randomAccess;
+    private final Long leadCost;
 
     FakeScorerSupplier(long cost) {
       this.cost = cost;
-      this.randomAccess = null;
+      this.leadCost = null;
     }
 
-    FakeScorerSupplier(long cost, boolean randomAccess) {
+    FakeScorerSupplier(long cost, long leadCost) {
       this.cost = cost;
-      this.randomAccess = randomAccess;
+      this.leadCost = leadCost;
     }
 
     @Override
-    public Scorer get(boolean randomAccess) throws IOException {
-      if (this.randomAccess != null) {
-        assertEquals(this.toString(), this.randomAccess, randomAccess);
+    public Scorer get(long leadCost) throws IOException {
+      if (this.leadCost != null) {
+        assertEquals(this.toString(), this.leadCost.longValue(), leadCost);
       }
       return new FakeScorer(cost);
     }
@@ -97,7 +97,7 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     
     @Override
     public String toString() {
-      return "FakeLazyScorer(cost=" + cost + ",randomAccess=" + randomAccess + ")";
+      return "FakeLazyScorer(cost=" + cost + ",leadCost=" + leadCost + ")";
     }
 
   }
@@ -127,17 +127,17 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42));
     ScorerSupplier s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0);
     assertEquals(42, s.cost());
-    assertEquals(42, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(42, s.get(random().nextInt(100)).iterator().cost());
 
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12));
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0);
     assertEquals(42 + 12, s.cost());
-    assertEquals(42 + 12, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(42 + 12, s.get(random().nextInt(100)).iterator().cost());
 
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20));
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0);
     assertEquals(42 + 12 + 20, s.cost());
-    assertEquals(42 + 12 + 20, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(42 + 12 + 20, s.get(random().nextInt(100)).iterator().cost());
   }
 
   public void testDisjunctionWithMinShouldMatchCost() throws IOException {
@@ -150,26 +150,26 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12));
     ScorerSupplier s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 1);
     assertEquals(42 + 12, s.cost());
-    assertEquals(42 + 12, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(42 + 12, s.get(random().nextInt(100)).iterator().cost());
 
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20));
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 1);
     assertEquals(42 + 12 + 20, s.cost());
-    assertEquals(42 + 12 + 20, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(42 + 12 + 20, s.get(random().nextInt(100)).iterator().cost());
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2);
     assertEquals(12 + 20, s.cost());
-    assertEquals(12 + 20, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(12 + 20, s.get(random().nextInt(100)).iterator().cost());
 
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30));
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 1);
     assertEquals(42 + 12 + 20 + 30, s.cost());
-    assertEquals(42 + 12 + 20 + 30, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(42 + 12 + 20 + 30, s.get(random().nextInt(100)).iterator().cost());
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2);
     assertEquals(12 + 20 + 30, s.cost());
-    assertEquals(12 + 20 + 30, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(12 + 20 + 30, s.get(random().nextInt(100)).iterator().cost());
     s = new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 3);
     assertEquals(12 + 20, s.cost());
-    assertEquals(12 + 20, s.get(random().nextBoolean()).iterator().cost());
+    assertEquals(12 + 20, s.get(random().nextInt(100)).iterator().cost());
   }
 
   public void testDuelCost() throws Exception {
@@ -205,128 +205,149 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
       Boolean2ScorerSupplier supplier = new Boolean2ScorerSupplier(null,
           subs, needsScores, minShouldMatch);
       long cost1 = supplier.cost();
-      long cost2 = supplier.get(false).iterator().cost();
+      long cost2 = supplier.get(Long.MAX_VALUE).iterator().cost();
       assertEquals("clauses=" + subs + ", minShouldMatch=" + minShouldMatch, cost1, cost2);
     }
   }
 
   // test the tester...
   public void testFakeScorerSupplier() {
-    FakeScorerSupplier randomAccessSupplier = new FakeScorerSupplier(random().nextInt(100), true);
-    expectThrows(AssertionError.class, () -> randomAccessSupplier.get(false));
-    FakeScorerSupplier sequentialSupplier = new FakeScorerSupplier(random().nextInt(100), false);
-    expectThrows(AssertionError.class, () -> sequentialSupplier.get(true));
+    FakeScorerSupplier randomAccessSupplier = new FakeScorerSupplier(random().nextInt(100), 30);
+    expectThrows(AssertionError.class, () -> randomAccessSupplier.get(70));
+    FakeScorerSupplier sequentialSupplier = new FakeScorerSupplier(random().nextInt(100), 70);
+    expectThrows(AssertionError.class, () -> sequentialSupplier.get(30));
   }
 
-  public void testConjunctionRandomAccess() throws IOException {
+  public void testConjunctionLeadCost() throws IOException {
     Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    // If sequential access is required, only the least costly clause does not use random-access
-    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(42, true));
-    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(12, false));
-    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(false); // triggers assertions as a side-effect
+    // If the clauses are less costly than the lead cost, the min cost is the new lead cost
+    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(42, 12));
+    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(12, 12));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(Long.MAX_VALUE); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    // If random access is required, then we propagate to sub clauses
-    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(42, true));
-    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(12, true));
-    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(true); // triggers assertions as a side-effect
+    // If the lead cost is less that the clauses' cost, then we don't modify it
+    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(42, 7));
+    subs.get(RandomPicks.randomFrom(random(), Arrays.asList(Occur.FILTER, Occur.MUST))).add(new FakeScorerSupplier(12, 7));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(7); // triggers assertions as a side-effect
   }
 
-  public void testDisjunctionRandomAccess() throws IOException {
-    // disjunctions propagate
-    for (boolean randomAccess : new boolean[] {false, true}) {
-      Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
-      for (Occur occur : Occur.values()) {
-        subs.put(occur, new ArrayList<>());
-      }
-      subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, randomAccess));
-      subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, randomAccess));
-      new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(randomAccess); // triggers assertions as a side-effect
+  public void testDisjunctionLeadCost() throws IOException {
+    Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
+    for (Occur occur : Occur.values()) {
+      subs.put(occur, new ArrayList<>());
     }
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 54));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 54));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(100); // triggers assertions as a side-effect
+
+    subs.get(Occur.SHOULD).clear();
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 20));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 20));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(20); // triggers assertions as a side-effect
   }
 
-  public void testDisjunctionWithMinShouldMatchRandomAccess() throws IOException {
+  public void testDisjunctionWithMinShouldMatchLeadCost() throws IOException {
     Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    // Only the most costly clause uses random-access in that case:
-    // most of time, we will find agreement between the 2 least costly
-    // clauses and only then check whether the 3rd one matches too
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, true));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, false));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, false));
-    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2).get(false); // triggers assertions as a side-effect
+    // minShouldMatch is 2 so the 2 least costly clauses will lead iteration
+    // and their cost will be 30+12=42
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(50, 42));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 42));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 42));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2).get(100); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    // When random-access is true, just propagate
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, true));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, true));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, true));
-    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2).get(true); // triggers assertions as a side-effect
+    // If the leadCost is less than the msm cost, then it wins
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 20));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 20));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 20));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2).get(20); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, true));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, false));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, false));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, false));
-    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2).get(false); // triggers assertions as a side-effect
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 62));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 62));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 62));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, 62));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 2).get(100); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, true));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, false));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, true));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, false));
-    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 3).get(false); // triggers assertions as a side-effect
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 32));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 32));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 32));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, 32));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 3).get(100); // triggers assertions as a side-effect
   }
 
-  public void testProhibitedRandomAccess() throws IOException {
-    for (boolean randomAccess : new boolean[] {false, true}) {
-      Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
-      for (Occur occur : Occur.values()) {
-        subs.put(occur, new ArrayList<>());
-      }
-
-      // The MUST_NOT clause always uses random-access
-      subs.get(Occur.MUST).add(new FakeScorerSupplier(42, randomAccess));
-      subs.get(Occur.MUST_NOT).add(new FakeScorerSupplier(TestUtil.nextInt(random(), 1, 100), true));
-      new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(randomAccess); // triggers assertions as a side-effect
+  public void testProhibitedLeadCost() throws IOException {
+    Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
+    for (Occur occur : Occur.values()) {
+      subs.put(occur, new ArrayList<>());
     }
+
+    // The MUST_NOT clause is called with the same lead cost as the MUST clause
+    subs.get(Occur.MUST).add(new FakeScorerSupplier(42, 42));
+    subs.get(Occur.MUST_NOT).add(new FakeScorerSupplier(30, 42));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(100); // triggers assertions as a side-effect
+
+    subs.get(Occur.MUST).clear();
+    subs.get(Occur.MUST_NOT).clear();
+    subs.get(Occur.MUST).add(new FakeScorerSupplier(42, 42));
+    subs.get(Occur.MUST_NOT).add(new FakeScorerSupplier(80, 42));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(100); // triggers assertions as a side-effect
+
+    subs.get(Occur.MUST).clear();
+    subs.get(Occur.MUST_NOT).clear();
+    subs.get(Occur.MUST).add(new FakeScorerSupplier(42, 20));
+    subs.get(Occur.MUST_NOT).add(new FakeScorerSupplier(30, 20));
+    new Boolean2ScorerSupplier(null, subs, random().nextBoolean(), 0).get(20); // triggers assertions as a side-effect
   }
 
-  public void testMixedRandomAccess() throws IOException {
-    for (boolean randomAccess : new boolean[] {false, true}) {
-      Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
-      for (Occur occur : Occur.values()) {
-        subs.put(occur, new ArrayList<>());
-      }
-
-      // The SHOULD clause always uses random-access if there is a MUST clause
-      subs.get(Occur.MUST).add(new FakeScorerSupplier(42, randomAccess));
-      subs.get(Occur.SHOULD).add(new FakeScorerSupplier(TestUtil.nextInt(random(), 1, 100), true));
-      new Boolean2ScorerSupplier(null, subs, true, 0).get(randomAccess); // triggers assertions as a side-effect
+  public void testMixedLeadCost() throws IOException {
+    Map<Occur, Collection<ScorerSupplier>> subs = new EnumMap<>(Occur.class);
+    for (Occur occur : Occur.values()) {
+      subs.put(occur, new ArrayList<>());
     }
+
+    // The SHOULD clause is always called with the same lead cost as the MUST clause
+    subs.get(Occur.MUST).add(new FakeScorerSupplier(42, 42));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 42));
+    new Boolean2ScorerSupplier(null, subs, true, 0).get(100); // triggers assertions as a side-effect
+
+    subs.get(Occur.MUST).clear();
+    subs.get(Occur.SHOULD).clear();
+    subs.get(Occur.MUST).add(new FakeScorerSupplier(42, 42));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(80, 42));
+    new Boolean2ScorerSupplier(null, subs, true, 0).get(100); // triggers assertions as a side-effect
+
+    subs.get(Occur.MUST).clear();
+    subs.get(Occur.SHOULD).clear();
+    subs.get(Occur.MUST).add(new FakeScorerSupplier(42, 20));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(80, 20));
+    new Boolean2ScorerSupplier(null, subs, true, 0).get(20); // triggers assertions as a side-effect
   }
 
 }

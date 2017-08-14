@@ -224,6 +224,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("kolmogorovSmirnov", KolmogorovSmirnovEvaluator.class)
         .withFunctionName("ks", KolmogorovSmirnovEvaluator.class)
         .withFunctionName("asc", AscEvaluator.class)
+        .withFunctionName("cumulativeProbability", CumulativeProbabilityEvaluator.class)
 
         // Boolean Stream Evaluators
         .withFunctionName("and", AndEvaluator.class)

@@ -46,7 +46,7 @@ class AssertingWeight extends FilterWeight {
         // Evil: make sure computing the cost has no side effects
         scorerSupplier.cost();
       }
-      return scorerSupplier.get(false);
+      return scorerSupplier.get(Long.MAX_VALUE);
     }
   }
 
@@ -59,10 +59,11 @@ class AssertingWeight extends FilterWeight {
     return new ScorerSupplier() {
       private boolean getCalled = false;
       @Override
-      public Scorer get(boolean randomAccess) throws IOException {
+      public Scorer get(long leadCost) throws IOException {
         assert getCalled == false;
         getCalled = true;
-        return AssertingScorer.wrap(new Random(random.nextLong()), inScorerSupplier.get(randomAccess), needsScores);
+        assert leadCost >= 0 : leadCost;
+        return AssertingScorer.wrap(new Random(random.nextLong()), inScorerSupplier.get(leadCost), needsScores);
       }
 
       @Override

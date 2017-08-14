@@ -61,6 +61,12 @@ Upgrade Notes
   2. Deprecations: Enabling/disabling autoAddReplicas cluster wide with the API will be deprecated; use
   suspend/resume trigger APIs with name='.auto_add_replicas' instead.
 
+* SOLR-11195: shard and cluster metric reporter configuration now requires a class attribute.
+  If a reporter configures the group="shard" attribute then please also configure the
+  class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute.
+  If a reporter configures the group="cluster" attribute then please also configure the
+  class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute.
+
 New Features
 ----------------------
 
@@ -77,6 +83,11 @@ New Features
 * SOLR-11031: Implement SystemLogListener for autoscaling (ab)
 
 * SOLR-11205: Any metrics value can be directly accessed in autoscaling policies (noble)
+
+* SOLR-11199: Payloads supports an "operator" param. Supported operators are 'or', "phrase" ( default ).
+  A new "sum" function is also added. Example :
+  {!payload_score f=payload_field func=sum operator=or}A B C" (Varun Thacker)
+
 
 Bug Fixes
 ----------------------
@@ -100,6 +111,14 @@ Bug Fixes
 * SOLR-6086: Replica is active during autowarming resulting in queries being sent to a replica that
   may not have a registered searcher. This causes spikes in response times when adding a replica
   in busy clusters. (Ludovic Boutros, Timothy Potter, shalin)
+
+* SOLR-11190: GraphQuery also supports string fields which are indexed=false and docValues=true. Please refer to the
+  Javadocs for DocValuesTermsQuery for it's performance characteristics. (Karthik Ramachandran, Varun Thacker)
+
+* SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
+  will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
+
+* SOLR-11084: Issue with starting script with solr.home (-s) == solr (Leil Ireson, Amrit Sarkar via Erick Erickson)
 
 Optimizations
 ----------------------
@@ -151,6 +170,14 @@ Other Changes
   (Cao Manh Dat, shalin)
 
 * SOLR-11157: remove-policy must fail if a policy to be deleted is used by a collection (noble)
+
+* SOLR-11090: Add Replica.getProperty accessor. (Christine Poerschke)
+
+* SOLR-11061: Add a spins metric for data directory paths. (ab)
+
+* SOLR-11071: Improve TestIntervalFacets.testRandom (Tomás Fernández Löbbe)
+
+* SOLR-11195: Require class attribute for shard and cluster metric reporter configuration. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 

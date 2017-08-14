@@ -620,8 +620,7 @@ public final class Util {
    * 
    * <p>
    * Note: larger FSTs (a few thousand nodes) won't even
-   * render, don't bother.  If the FST is &gt; 2.1 GB in size
-   * then this method will throw strange exceptions.
+   * render, don't bother.
    * 
    * @param sameRank
    *          If <code>true</code>, the resulting <code>dot</code> file will try
@@ -945,7 +944,6 @@ public final class Util {
           arc.flags = 0;
           // NOTE: nextArc is a node (not an address!) in this case:
           arc.nextArc = follow.target;
-          arc.node = follow.target;
         }
         arc.output = follow.nextFinalOutput;
         arc.label = FST.END_LABEL;

@@ -88,6 +88,7 @@ public class ZkStateReader implements Closeable {
   public static final String NUM_SHARDS_PROP = "numShards";
   public static final String LEADER_PROP = "leader";
   public static final String PROPERTY_PROP = "property";
+  public static final String PROPERTY_PROP_PREFIX = "property.";
   public static final String PROPERTY_VALUE_PROP = "property.value";
   public static final String MAX_AT_ONCE_PROP = "maxAtOnce";
   public static final String MAX_WAIT_SECONDS_PROP = "maxWaitSeconds";

@@ -1,5 +1,5 @@
 {
-  "documentation": "TODO NOCOMMIT",
+  "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-api.html",
   "description": "The Scaling API provides API for adding cluster level scaling rules, triggers and event listeners",
   "methods": [
     "GET",

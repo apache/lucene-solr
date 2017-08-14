@@ -338,7 +338,8 @@ function print_usage() {
     echo "                  while reusing the same server directory set using the -d parameter. If set, the"
     echo "                  specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
     echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
-    echo "                  on which example is run. The default value is server/solr."
+    echo "                  on which example is run. The default value is server/solr. If passed relative dir,"
+    echo "                  validation with current dir will be done, before trying default server/<dir>"
     echo ""
     echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store data (index)."
     echo "                  If not set, Solr uses solr.solr.home for config and data."
@@ -481,23 +482,23 @@ function print_usage() {
     print_short_zk_usage ""
     echo "         Be sure to check the Solr logs in case of errors."
     echo ""
-    echo "             -z zkHost Optional Zookeeper connection string for all commands. If specified it"
+    echo "             -z zkHost  Optional Zookeeper connection string for all commands. If specified it"
     echo "                        overrides the 'ZK_HOST=...'' defined in solr.in.sh."
     echo ""
     echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
     echo ""
     echo "         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)"
     echo ""
-    echo "             -n configName   Name of the configset in Zookeeper that will be the destination of"
+    echo "             -n configName    Name of the configset in Zookeeper that will be the destination of"
     echo "                             'upconfig' and the source for 'downconfig'."
     echo ""
-    echo "             -d confdir      The local directory the configuration will be uploaded from for"
+    echo "             -d confdir      The local directory the configuration will be uploaded from for"
     echo "                             'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of"
     echo "                             ...solr/server/solr/configsets' then the configs will be copied from/to"
     echo "                             that directory. Otherwise it is interpreted as a simple local path."
     echo ""
     echo "         cp copies files or folders to/from Zookeeper or Zokeeper -> Zookeeper"
-    echo "             -r   Recursively copy <src> to <dst>. Command will fail if <src> has children and "
+    echo "             -r    Recursively copy <src> to <dst>. Command will fail if <src> has children and "
     echo "                        -r is not specified. Optional"
     echo ""
     echo "             <src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node"
@@ -527,9 +528,9 @@ function print_usage() {
     echo "             Wildcards are supported when copying from local, trailing only and must be quoted."
     echo ""
     echo "         rm deletes files or folders on Zookeeper"
-    echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
+    echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
     echo "                    has children and -r is not specified. Optional"
-    echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
+    echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
     echo ""
     echo "         mv moves (renames) znodes on Zookeeper"
     echo "             <src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional."
@@ -1328,14 +1329,15 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
+
   if [ -z "$SOLR_HOME" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
-  else
-    if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+  elif [[ $SOLR_HOME != /* ]]; then
+    if [[ -d "`pwd`/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd)/$SOLR_HOME"
+    elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
       SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
       SOLR_PID_DIR="$SOLR_HOME"
-    elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
-      SOLR_HOME="$(pwd)/$SOLR_HOME"
     fi
   fi
 
@@ -1674,12 +1676,12 @@ fi
 
 if [ -z "$SOLR_HOME" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
-else
-  if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+elif [[ $SOLR_HOME != /* ]]; then
+  if [[ -d "`pwd`/$SOLR_HOME" ]]; then
+    SOLR_HOME="$(pwd)/$SOLR_HOME"
+  elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
     SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
     SOLR_PID_DIR="$SOLR_HOME"
-  elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
-    SOLR_HOME="$(pwd)/$SOLR_HOME"
   fi
 fi
 

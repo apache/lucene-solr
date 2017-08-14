@@ -239,6 +239,10 @@
   <dynamicField name="*_ddsS" type="double" indexed="true" stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  
+  <!-- docvalues, not indexed (N suffix) and not stored -->
+  <dynamicField name="*_sdN" type="string" indexed="false" stored="false" docValues="true"/>
+  <dynamicField name="*_sdsN" type="string" indexed="false" stored="false" multiValued="true" docValues="true"/>
 
   <!-- explicit points with docValues (since they can't be uninverted with FieldCache -->
   <dynamicField name="*_ip"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>

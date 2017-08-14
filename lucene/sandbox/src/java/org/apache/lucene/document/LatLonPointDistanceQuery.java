@@ -114,7 +114,7 @@ final class LatLonPointDistanceQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
 
       @Override
@@ -142,7 +142,7 @@ final class LatLonPointDistanceQuery extends Query {
           long cost = -1;
 
           @Override
-          public Scorer get(boolean randomAccess) throws IOException {
+          public Scorer get(long leadCost) throws IOException {
             if (values.getDocCount() == reader.maxDoc()
                 && values.getDocCount() == values.size()
                 && cost() > reader.maxDoc() / 2) {

@@ -35,7 +35,6 @@ public class TestPayloadScoreQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test() {
-    clearIndex();
 
     assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf v=B func=min}"), "//float[@name='score']='2.0'");
     assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf v=mult func=min}"), "//float[@name='score']='50.0'");
@@ -46,6 +45,15 @@ public class TestPayloadScoreQParserPlugin extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=max}B C"), "//float[@name='score']='3.0'");
     assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=average}B C"), "//float[@name='score']='2.5'");
     assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=max}A B C"), "//float[@name='score']='3.0'");
+
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=sum}A B C"), "//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=sum operator=or}A C"), "//float[@name='score']='4.0'");
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=sum operator=or}A"), "//float[@name='score']='1.0'");
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=sum operator=or}foo"), "//result[@numFound='0']");
+
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=max operator=or}A C"), "//float[@name='score']='3.0'");
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=min operator=or}A x"), "//float[@name='score']='1.0'");
+    assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf func=average operator=or}A C"), "//float[@name='score']='2.0'");
 
     // TODO: fix this includeSpanScore test to be less brittle - score result is score of "A" (via BM25) multipled by 1.0 (payload value)
     assertQ(req("fl","*,score", "q", "{!payload_score f=vals_dpf v=A func=min}"), "//float[@name='score']='1.0'");

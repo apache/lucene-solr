@@ -1003,7 +1003,7 @@ public class SolrMetricManager {
     }
   }
 
-  private List<PluginInfo> prepareCloudPlugins(PluginInfo[] pluginInfos, String group, String className,
+  private List<PluginInfo> prepareCloudPlugins(PluginInfo[] pluginInfos, String group,
                                                       Map<String, String> defaultAttributes,
                                                       Map<String, Object> defaultInitArgs) {
     List<PluginInfo> result = new ArrayList<>();
@@ -1015,7 +1015,7 @@ public class SolrMetricManager {
       if (!group.equals(groupAttr)) {
         continue;
       }
-      info = preparePlugin(info, className, defaultAttributes, defaultInitArgs);
+      info = preparePlugin(info, defaultAttributes, defaultInitArgs);
       if (info != null) {
         result.add(info);
       }
@@ -1023,18 +1023,12 @@ public class SolrMetricManager {
     return result;
   }
 
-  private PluginInfo preparePlugin(PluginInfo info, String className, Map<String, String> defaultAttributes,
+  private PluginInfo preparePlugin(PluginInfo info, Map<String, String> defaultAttributes,
                                    Map<String, Object> defaultInitArgs) {
     if (info == null) {
       return null;
     }
     String classNameAttr = info.attributes.get("class");
-    if (className != null) {
-      if (classNameAttr != null && !className.equals(classNameAttr)) {
-        log.warn("Conflicting class name attributes, expected " + className + " but was " + classNameAttr + ", skipping " + info);
-        return null;
-      }
-    }
 
     Map<String, String> attrs = new HashMap<>(info.attributes);
     defaultAttributes.forEach((k, v) -> {
@@ -1042,7 +1036,7 @@ public class SolrMetricManager {
         attrs.put(k, v);
       }
     });
-    attrs.put("class", className);
+    attrs.put("class", classNameAttr);
     Map<String, Object> initArgs = new HashMap<>();
     if (info.initArgs != null) {
       initArgs.putAll(info.initArgs.asMap(10));
@@ -1069,7 +1063,7 @@ public class SolrMetricManager {
 
     String registryName = core.getCoreMetricManager().getRegistryName();
     // collect infos and normalize
-    List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.shard.toString(), SolrShardReporter.class.getName(),
+    List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.shard.toString(),
         attrs, initArgs);
     for (PluginInfo info : infos) {
       try {
@@ -1092,7 +1086,7 @@ public class SolrMetricManager {
     attrs.put("group", SolrInfoBean.Group.cluster.toString());
     Map<String, Object> initArgs = new HashMap<>();
     initArgs.put("period", DEFAULT_CLOUD_REPORTER_PERIOD);
-    List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.cluster.toString(), SolrClusterReporter.class.getName(),
+    List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.cluster.toString(),
         attrs, initArgs);
     String registryName = getRegistryName(SolrInfoBean.Group.cluster);
     for (PluginInfo info : infos) {

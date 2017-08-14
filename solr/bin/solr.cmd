@@ -310,7 +310,8 @@ goto done
 @echo                   while reusing the same server directory set using the -d parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
-@echo                   on which example is run. The default value is server/solr.
+@echo                   on which example is run. The default value is server/solr. If passed a relative dir
+@echo                   validation with the current dir will be done before trying the default server/<dir>
 @echo.
 @echo   -t dir        Sets the solr.data.home system property, used as root for ^<instance_dir^>/data directories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
@@ -1425,7 +1426,6 @@ if "!CREATE_PORT!"=="" (
   set "SCRIPT_ERROR=Could not find a running Solr instance on this host! Please use the -p option to specify the port."
   goto err
 )
-
 
 if "!CREATE_CONFDIR!"=="_default" (
   echo WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is
