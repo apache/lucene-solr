@@ -530,3 +530,371 @@ raw(true) // "true" (note: this returns the string "true" and not the boolean tr
 eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA"
 ----
 
+== movingAvg
+
+The `movingAvg` function calculates a moving average over an array of numbers.
+(https://en.wikipedia.org/wiki/Moving_average)
+
+
+=== movingAvg Parameters
+
+* `numeric array`
+* `window size`
+
+=== movingAvg Returns
+
+A numeric array with the moving average. The array returned will be smaller then the
+orignal array by the window size.
+
+=== movingAvg Syntax
+
+movingAverage(numericArray, 30)
+
+
+== anova
+
+The `anova` function calculates the analysis of variance for two or more numeric arrays.
+
+(https://en.wikipedia.org/wiki/Analysis_of_variance)
+
+=== anova Parameters
+
+* `numeric array` ... (two or more)
+
+=== anova Returns
+
+A tuple with the results of ANOVA
+
+=== anova Syntax
+
+anova(numericArray1, numericArray2) // calculats ANOVA for two numeric arrays
+anova(numericArray1, numericArray2, numericArray2) // calculats ANOVA for three numeric arrays
+
+== hist
+
+The `hist` function creates a histogram from a numeric array. The hist function is designed
+to work with continuous variables.
+
+=== hist Parameters
+
+* `numeric array`
+* `bins` (The number of bins in the histogram)
+
+=== hist Returns
+
+A List of containing a tuple for each bin the the histogram. Each tuple contains
+summary statistics for the observations that were within the bin.
+
+=== hist Sytnax
+
+hist(numericArray, bins)
+
+== array
+
+The array function returns an array of numerics or other objects including other arrays.
+
+=== array Parameters
+
+* `numeric` | `array` ...
+
+=== array Syntax
+
+array(1, 2, 3)  // Array of numerics
+
+array(array(1,2,3), array(4,5,6)) // Array of arrays
+
+== sequence
+
+The `sequence` function returns an array of numbers based on its parameters.
+
+=== sequence Parameters
+
+* `length`
+* `start`
+* `stride`
+
+=== sequence Returns
+
+numeric array
+
+=== sequence Syntax
+
+sequence(100, 0, 1) // Returns a sequence of length 100, starting from 0 with a stride of 1.
+
+== finddelay
+
+The `finddelay` function performs a cross-correlation between two numeric arrays and returns the delay.
+
+=== finddelay Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== finddelay Returns
+
+Integer delay
+
+=== finddelay Syntax
+
+finddelay(numericArray1, numericArray2)
+
+== describe
+
+The `describe` function returns a tuple containing the desciptive statistics for an array.
+
+=== describe Parameters
+
+* `numeric array`
+
+=== describe Returns
+
+Tuple containing descriptive statistics
+
+=== describe Syntax
+
+describe(numericArray)
+
+== copyOfRange
+
+The `copyOfRange` function creates a copy of a range of a numeric array.
+
+=== copyOfRange Parameters
+
+* `numeric array`
+* `start index`
+* `end index`
+
+=== copyOfRange Returns
+
+A copy of an arrar starting from the start index inclusive and ending at the end index
+exclusive.
+
+=== copyOfRange Syntax
+
+copyOfRange(numericArray, startIndex, endIndex)
+
+== copyOf
+
+The `copyOf` function creates a copy of a numeric array.
+
+=== copyOf Parameters
+
+* `numeric array`
+* `length`
+
+=== copyOf Returns
+
+A copy of the numeric array starting from zero of size of the length parameter. The returned
+ array will be right padded with zeros if the length parameter exceeds the size of the
+ original array.
+
+=== copyOf Syntax
+
+copyOf(numericArray, length)
+
+== distance
+
+The `distance` function calculates the Euclidian distance of two numeric arrays.
+
+=== distance Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== distance Returns
+
+number
+
+=== distance syntax
+
+distance(numericArray1, numuericArray2))
+
+== scale
+
+The `scale` function multiplies all the elements of an array by a number.
+
+=== scale Parameters
+
+* `number`
+* `numeric array`
+
+=== scale Returns
+
+A numeric array with the scaled values
+
+=== scale syntax
+
+scale(number, numericArray)
+
+== rank
+
+The `rank` performs a *rank transformaion* on a numeric array.
+
+=== rank Parameters
+
+* `numeric array`
+
+
+=== rank Returns
+
+numeric array with rank transformed values
+
+=== rank Syntax
+
+rank(numericArray)
+
+== length
+
+The `length` function returns the length of a numeric array.
+
+=== length Parameters
+
+* `numeric array`
+
+=== length Returns
+
+integer
+
+=== length syntax
+
+length(numericArray)
+
+== rev
+
+The `rev` function reverses the order of a numeric array.
+
+=== rev Parameters
+
+* `numeric array`
+
+=== rev Returns
+
+A copy of a numeric array with its elements reveresed.
+
+=== rev Syntax
+
+rev(numericArray)
+
+== regress
+
+The `regress` function performs a simple regression on two numeric arrays.
+
+=== regress Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== regress Returns
+
+A regression result tuple which holds the regression results. The regression
+result tuple is also used by the predict function.
+
+=== regress Syntax
+
+regress(numericArray1, numericArray2)
+
+
+== predict
+
+The `predict` function predicts the value of an dependent variable based on
+the output of the regress function.
+
+=== predict Parameters
+
+* `regress output`
+* `numeric predictor`
+
+=== predict Returns
+
+The predicted value
+
+=== predict Syntax
+
+predict(regressOutput, predictor)
+
+== col
+
+The `col` function returns a numeric array from a list of Tuples. The col
+function is used to create numeric arrays from stream sources.
+
+=== col Parameters
+
+* `list of Tuples`
+* `field name`
+
+=== col Returns
+
+A numeric array from a list of tuples. The field name parameter specifies which field
+to create the array from.
+
+=== col Syntax
+
+col(tupleList, fieldName)
+
+== cov
+
+The `cov` function returns the covariance of two numeric arrays.
+
+=== cov Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== cov Returns
+
+Number
+
+=== cov Syntax
+
+cov(numericArray, numericArray)
+
+== corr
+
+The `corr` function returns the Pearson Product Moment Correlation of two numeric arrays.
+
+=== corr Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== corr Returns
+
+double between -1 and 1
+
+=== corr Synax
+
+corr(numericArray1, numericArray2)
+
+== conv
+
+The `conv` function returns the convolution (https://en.wikipedia.org/wiki/Convolution) of two numeric arrays.
+
+=== conv Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== conv Returns
+
+A numeric array with the convolution of the two array parameters.
+
+=== conv Syntax
+
+conv(numericArray1, numericArray2)
+
+== normalize
+
+The `normalize` function normalizes a numeric array so that values within the array
+have a mean of 0 and standard deviation of 1.
+
+=== normalize Parameters
+
+* `numeric array`
+
+=== normalize Returns
+
+A numeric array with normalized values.
+
+=== normalize Syntax
+
+normalize(numericArray)
