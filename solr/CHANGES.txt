@@ -179,6 +179,8 @@ Other Changes
 
 * SOLR-11195: Require class attribute for shard and cluster metric reporter configuration. (Christine Poerschke)
 
+* SOLR:10822: Share a Policy.session object between multiple collection admin calls to get the correct computations (noble)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components

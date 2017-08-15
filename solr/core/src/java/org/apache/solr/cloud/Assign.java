@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
@@ -236,8 +235,7 @@ public class Assign {
     return nodeList;
   }
 
-  public static List<ReplicaPosition> identifyNodes(Supplier<CoreContainer> coreContainer,
-                                                    ZkStateReader zkStateReader,
+  public static List<ReplicaPosition> identifyNodes(OverseerCollectionMessageHandler ocmh,
                                                     ClusterState clusterState,
                                                     List<String> nodeList,
                                                     String collectionName,
@@ -248,7 +246,7 @@ public class Assign {
                                                     int numPullReplicas) throws KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
     String policyName = message.getStr(POLICY);
-    AutoScalingConfig autoScalingConfig = zkStateReader.getAutoScalingConfig();
+    AutoScalingConfig autoScalingConfig = ocmh.zkStateReader.getAutoScalingConfig();
 
     if (rulesMap == null && policyName == null && autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
       log.debug("Identify nodes using default");
@@ -275,8 +273,16 @@ public class Assign {
     if (policyName != null || !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
       if (message.getStr(CREATE_NODE_SET) == null)
         nodeList = Collections.emptyList();// unless explicitly specified do not pass node list to Policy
-      return getPositionsUsingPolicy(collectionName,
-          shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas, policyName, zkStateReader, nodeList);
+      synchronized (ocmh) {
+        PolicyHelper.SESSION_REF.set(ocmh.policySessionRef);
+        try {
+          return getPositionsUsingPolicy(collectionName,
+              shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas, policyName, ocmh.zkStateReader, nodeList);
+        } finally {
+          PolicyHelper.SESSION_REF.remove();
+        }
+
+      }
     } else {
       log.debug("Identify nodes using rules framework");
       List<Rule> rules = new ArrayList<>();
@@ -289,7 +295,7 @@ public class Assign {
           (List<Map>) message.get(SNITCH),
           new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
           nodeList,
-          coreContainer.get(),
+          ocmh.overseer.getZkController().getCoreContainer(),
           clusterState);
 
       Map<ReplicaPosition, String> nodeMappings = replicaAssigner.getNodeMappings();

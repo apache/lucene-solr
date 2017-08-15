@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -40,6 +41,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.junit.Test;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
@@ -832,7 +834,82 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .getOperation();
     assertNotNull(opReq);
     assertEquals("node5", opReq.getParams().get("targetNode"));
+  }
 
+  @Test
+  public void testSessionCaching() {
+    PolicyHelper.SessionRef ref1 = new PolicyHelper.SessionRef();
+    String autoScalingjson = "  '{cluster-policy':[" +
+        "    {      'cores':'<10',      'node':'#ANY'}," +
+        "    {      'replica':'<2',      'shard':'#EACH',      'node':'#ANY'}," +
+        "    {      'nodeRole':'overseer','replica':0}]," +
+        "  'cluster-preferences':[{'minimize':'cores'}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    PolicyHelper.SESSION_REF.set(ref1);
+    String nodeValues = " {" +
+        "    'node4':{" +
+        "      'node':'10.0.0.4:8987_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node3':{" +
+        "      'node':'10.0.0.4:8989_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "    'node2':{" +
+        "      'node':'10.0.0.4:7574_solr'," +
+        "      'cores':1," +
+        "      'freedisk':884.7097854614258}," +
+        "}";
+
+    ClusterDataProvider provider = getClusterDataProvider((Map<String, Map>) Utils.fromJSONString(nodeValues), clusterState);
+    Map policies = (Map) Utils.fromJSONString("{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 50}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, 'nodeRole': 'overseer'}" +
+        "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "  ]" +
+        "}");
+    AutoScalingConfig config = new AutoScalingConfig(policies);
+
+    List<ReplicaPosition> locations = PolicyHelper.getReplicaLocations("c", config, provider, null,
+        Arrays.asList("s1", "s2"), 1, 0, 0,
+        null);
+
+    long sessionRefVersion =  PolicyHelper.REF_VERSION.get();
+    PolicyHelper.SessionRef ref1Copy = PolicyHelper.SESSION_REF.get();
+    PolicyHelper.SESSION_REF.remove();
+    Policy.Session session = ref1Copy.get();
+    assertNotNull(session);
+    assertEquals(ref1, ref1Copy);
+    assertTrue(session.getPolicy() == config.getPolicy());
+    ref1Copy.decref(sessionRefVersion);
+    PolicyHelper.SESSION_REF.set(ref1);
+    AutoScalingConfig config2 = new AutoScalingConfig(policies);
+    locations = PolicyHelper.getReplicaLocations("c2", config2, provider, null, Arrays.asList("s1", "s2"), 1, 0, 0,
+        null);
+    sessionRefVersion =  PolicyHelper.REF_VERSION.get();
+    ref1Copy = PolicyHelper.SESSION_REF.get();
+    PolicyHelper.SESSION_REF.remove();
+    session = ref1Copy.get();
+    ref1Copy.decref(sessionRefVersion);
+    assertEquals(ref1, ref1Copy);
+    assertFalse(session.getPolicy() == config2.getPolicy());
+    assertTrue(session.getPolicy() == config.getPolicy());
+    assertEquals(2, ref1Copy.getRefCount());
+    ref1.decref(sessionRefVersion);//decref 1
+    ref1.decref(sessionRefVersion);//decref 2
+    PolicyHelper.SESSION_REF.set(ref1);
+    locations = PolicyHelper.getReplicaLocations("c3", config2, provider, null, Arrays.asList("s1", "s2"), 1, 0, 0,
+        null);
+    sessionRefVersion =  PolicyHelper.REF_VERSION.get();
+    ref1Copy = PolicyHelper.SESSION_REF.get();
+    PolicyHelper.SESSION_REF.remove();
+    session = ref1Copy.get();
+    ref1Copy.decref(sessionRefVersion);
+    assertTrue(session.getPolicy() == config2.getPolicy());
 
   }
 
@@ -1176,7 +1253,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         dataProvider, Collections.singletonMap("newColl", "policy1"), Arrays.asList("shard1", "shard2"), 3,0,0, null);
     assertTrue(locations.stream().allMatch(it -> ImmutableList.of("node2", "node1", "node3").contains(it.node)) );
   }
-  
+
   public void testMoveReplicaSuggester(){
     String dataproviderdata = "{" +
         "  'liveNodes':[" +

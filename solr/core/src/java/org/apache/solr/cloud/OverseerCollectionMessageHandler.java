@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -972,6 +973,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     );
   }
+
+  public final PolicyHelper.SessionRef policySessionRef = new PolicyHelper.SessionRef();
 
   @Override
   public void close() throws IOException {

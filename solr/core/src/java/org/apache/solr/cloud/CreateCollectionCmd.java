@@ -30,6 +30,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -196,8 +197,7 @@ public class CreateCollectionCmd implements Cmd {
           }
         }
 
-        replicaPositions = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
-            ocmh.zkStateReader
+        replicaPositions = Assign.identifyNodes(ocmh
             , clusterState, nodeList, collectionName, message, shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas);
       }
 
@@ -331,6 +331,8 @@ public class CreateCollectionCmd implements Cmd {
       throw ex;
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
+    } finally {
+      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
     }
   }
   String getConfigName(String coll, ZkNodeProps message) throws KeeperException, InterruptedException {
