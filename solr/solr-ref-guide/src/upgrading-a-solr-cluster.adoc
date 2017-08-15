@@ -21,24 +21,19 @@
 
 This page covers how to upgrade an existing Solr cluster that was installed using the <<taking-solr-to-production.adoc#taking-solr-to-production,service installation scripts>>.
 
-[IMPORTANT]
-====
-
-The steps outlined on this page assume you use the default service name of "```solr```". If you use an alternate service name or Solr installation directory, some of the paths and commands mentioned below will have to be modified accordingly.
-
-====
+IMPORTANT: The steps outlined on this page assume you use the default service name of `solr`. If you use an alternate service name or Solr installation directory, some of the paths and commands mentioned below will have to be modified accordingly.
 
 == Planning Your Upgrade
 
 Here is a checklist of things you need to prepare before starting the upgrade process:
 
-1.  Examine the <<upgrading-solr.adoc#upgrading-solr,Upgrading Solr>> page to determine if any behavior changes in the new version of Solr will affect your installation.
-2.  If not using replication (ie: collections with replicationFactor > 1), then you should make a backup of each collection. If all of your collections use replication, then you don't technically need to make a backup since you will be upgrading and verifying each node individually.
-3.  Determine which Solr node is currently hosting the Overseer leader process in SolrCloud, as you should upgrade this node last. To determine the Overseer, use the Overseer Status API, see: <<collections-api.adoc#collections-api,Collections API>>.
-4.  Plan to perform your upgrade during a system maintenance window if possible. You'll be doing a rolling restart of your cluster (each node, one-by-one), but we still recommend doing the upgrade when system usage is minimal.
-5.  Verify the cluster is currently healthy and all replicas are active, as you should not perform an upgrade on a degraded cluster.
-6.  Re-build and test all custom server-side components against the new Solr JAR files.
-7.  Determine the values of the following variables that are used by the Solr Control Scripts:
+. Examine the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> page to determine if any behavior changes in the new version of Solr will affect your installation.
+. If not using replication (ie: collections with replicationFactor > 1), then you should make a backup of each collection. If all of your collections use replication, then you don't technically need to make a backup since you will be upgrading and verifying each node individually.
+. Determine which Solr node is currently hosting the Overseer leader process in SolrCloud, as you should upgrade this node last. To determine the Overseer, use the Overseer Status API, see: <<collections-api.adoc#collections-api,Collections API>>.
+. Plan to perform your upgrade during a system maintenance window if possible. You'll be doing a rolling restart of your cluster (each node, one-by-one), but we still recommend doing the upgrade when system usage is minimal.
+. Verify the cluster is currently healthy and all replicas are active, as you should not perform an upgrade on a degraded cluster.
+. Re-build and test all custom server-side components against the new Solr JAR files.
+. Determine the values of the following variables that are used by the Solr Control Scripts:
 * `ZK_HOST`: The ZooKeeper connection string your current SolrCloud nodes use to connect to ZooKeeper; this value will be the same for all nodes in the cluster.
 * `SOLR_HOST`: The hostname each Solr node used to register with ZooKeeper when joining the SolrCloud cluster; this value will be used to set the *host* Java system property when starting the new Solr process.
 * `SOLR_PORT`: The port each Solr node is listening on, such as 8983.

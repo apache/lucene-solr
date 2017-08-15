@@ -1,6 +1,6 @@
-= Upgrading Solr
-:page-shortname: upgrading-solr
-:page-permalink: upgrading-solr.html
+= Solr Upgrade Notes
+:page-shortname: solr-upgrade-notes
+:page-permalink: solr-upgrade-notes.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,9 +18,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-If you are already using Solr 6.5, Solr 6.6 should not present any major problems. However, you should review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package for changes and updates that may effect your existing implementation. Detailed steps for upgrading a Solr cluster can be found in the appendix: <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+The following notes describe changes to Solr in recent releases that you should be aware of before upgrading.
+
+These notes are meant to highlight the biggest changes that may impact the largest number of implementations. It is not a comprehensive list of all changes to Solr in any release.
+
+When planning your Solr upgrade, consider the customizations you have made to your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package. That file includes all of the changes and updates that may effect your existing implementation. Detailed steps for upgrading a Solr cluster can be found in the appendix: <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
 == Upgrading from 6.5.x
+
+If you are already using Solr 6.5, Solr 6.6 should not present any major problems.
 
 * Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
 
