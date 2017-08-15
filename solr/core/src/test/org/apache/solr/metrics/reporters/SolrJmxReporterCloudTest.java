@@ -63,13 +63,6 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
   }
 
-  @AfterClass
-  public static void releaseMBeanServer() throws Exception {
-    if (mBeanServer != null) {
-      MBeanServerFactory.releaseMBeanServer(mBeanServer);
-    }
-  }
-
   @Test
   public void testJmxReporter() throws Exception {
     CollectionAdminRequest.reloadCollection(COLLECTION).processAndWait(cluster.getSolrClient(), 60);
