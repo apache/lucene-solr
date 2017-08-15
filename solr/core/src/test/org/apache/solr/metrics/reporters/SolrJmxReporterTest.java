@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics.reporters;
 
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
@@ -172,6 +173,41 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     assertEquals(metrics.size(), objects.stream().
         filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
             rootName.equals(o.getObjectName().getDomain())).count());
+  }
+
+  private static boolean stopped = false;
+
+  @Test
+  public void testClosedCore() throws Exception {
+    Set<ObjectInstance> objects = mBeanServer.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+    assertEquals("Unexpected number of indexDir beans: " + objects.toString(), 1, objects.size());
+    final ObjectInstance inst = objects.iterator().next();
+    stopped = false;
+    try {
+      Thread t = new Thread() {
+        public void run() {
+          while (!stopped) {
+            try {
+              Object value = mBeanServer.getAttribute(inst.getObjectName(), "Value");
+              assertNotNull(value);
+            } catch (InstanceNotFoundException x) {
+              // no longer present
+              break;
+            } catch (Exception e) {
+              fail("Unexpected error retrieving attribute: " + e.toString());
+            }
+          }
+        }
+      };
+      t.start();
+      Thread.sleep(500);
+      h.getCoreContainer().unload(h.getCore().getName());
+      Thread.sleep(2000);
+      objects = mBeanServer.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+      assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
+    } finally {
+      stopped = true;
+    }
   }
 
   @Test
