@@ -459,6 +459,8 @@ Bug Fixes
 * SOLR-11221: SolrJmxReporter broken on core reload. This resulted in some or most metrics not being reported
   via JMX after core reloads, depending on timing. (ab)
 
+* SOLR-11235: Some SolrCore metrics should check if core is closed before reporting. (ab)
+
 Optimizations
 ----------------------
 
