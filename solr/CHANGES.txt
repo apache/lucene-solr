@@ -325,6 +325,8 @@ Bug Fixes
 
 * SOLR-11235: Some SolrCore metrics should check if core is closed before reporting. (ab)
 
+* SOLR-10698: StreamHandler should allow connections to be closed early (Joel Bernstein, Varun Thacker, Erick Erickson)
+
 Optimizations
 ----------------------
 
