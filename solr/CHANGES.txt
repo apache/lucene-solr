@@ -128,9 +128,6 @@ Other Changes
 * SOLR-11106: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong server name
   (Kensho Hirasawa via Erick Erickson)
   
-* SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
-  (Erick Erickson)
-
 * SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
 * SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster 
@@ -712,9 +709,6 @@ New Features
 
 * SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs, Michael Suzuki via Mark Miller)
 
-* SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
-  (Erick Erickson)
-  
 * SOLR-10379: Add ManagedSynonymGraphFilterFactory, deprecate ManagedSynonymFilterFactory. (Steve Rowe)
 
 * SOLR-10479: Adds support for HttpShardHandlerFactory.loadBalancerRequests(MinimumAbsolute|MaximumFraction)
@@ -804,19 +798,9 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 * SOLR-10963: Fix example json in MultipleAdditiveTreesModel javadocs.
   (Stefan Langenmaier via Christine Poerschke)
 
-* SOLR-10910: Clean up a few details left over from pluggable transient core and untangling
-  CoreDescriptor/CoreContainer references (Erick Erickson)
-
 * SOLR-10914: RecoveryStrategy's sendPrepRecoveryCmd can get stuck for 5 minutes if leader is unloaded. (shalin)
 
-* SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
-
-* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
-
 * SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
-
-* SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
-  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
 
 Optimizations
 ----------------------
@@ -884,6 +868,23 @@ Bug Fixes
 ----------------------
 
 * SOLR-10857: standalone Solr loads UNLOADed core on request (Erick Erickson, Mikhail Khludnev)
+
+* SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
+
+* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
+
+* SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
+  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
+
+* SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
+  (Erick Erickson)
+
+* SOLR-10910: Clean up a few details left over from pluggable transient core and untangling
+  CoreDescriptor/CoreContainer references (Erick Erickson)
+
+* SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
+  (Erick Erickson)
+
 
 ==================  6.6.0 ==================
 
