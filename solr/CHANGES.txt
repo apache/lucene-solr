@@ -40,6 +40,23 @@ Bug Fixes
 
 * SOLR-10857: standalone Solr loads UNLOADed core on request (Erick Erickson, Mikhail Khludnev)
 
+* SOLR-11024: ParallelStream should set the StreamContext when constructing SolrStreams (Joel Bernstein)
+
+* SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
+
+* SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
+  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
+
+* SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
+  (Erick Erickson)
+
+* SOLR-10910: Clean up a few details left over from pluggable transient core and untangling
+  CoreDescriptor/CoreContainer references (Erick Erickson)
+
+* SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
+  (Erick Erickson)
+
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -242,9 +259,9 @@ Bug Fixes
 
 * SOLR-10549: The new 'large' attribute had been forgotten in /schema/fieldtypes?showDefaults=true (David Smiley)
 
-* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed. 
-  After core container shutdown or severe initialization problem Solr responds with 
-  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev) 
+* SOLR-10615: requests are suspended until SolrDispatchFilter initialization is completed.
+  After core container shutdown or severe initialization problem Solr responds with
+  http stauts 404 Not Found instead of 500 as it was before (Mikhail Khludnev)
 
 * SOLR-8149: Admin UI - Plugins / Stats - active item is now highlighted (Labuzov Dmitriy via janhoy)
 
@@ -340,9 +357,9 @@ Other Changes
 
 * SOLR-10587: Ban defaultSearchField in schema for luceneMatchVersion =>6.6.0 (Jason Gerlowski, janhoy)
 
-* SOLR-10614: Static fields have turned to instance's field in SimplePostTool. 
+* SOLR-10614: Static fields have turned to instance's field in SimplePostTool.
   Enabled TestSolrCLIRunExample.testTechproductsExample(). (Andrey Kudryavtsev, Mikhail Khludnev)
-  
+
 * SOLR-10522: Revert SpellCheckComponent response format change from SOLR-9972 (rel. 6.5.0).  While this
   was an improvement for the json "arrntv" format, it caused problems for the default json format.
   (James Dyer, reported by Nikita Pchelintsev)
