@@ -885,6 +885,7 @@ Bug Fixes
 * SOLR-10721: Provide a way to know when Core Discovery is finished and when all async cores are done loading
   (Erick Erickson)
 
+* SOLR-11069: CDCR bootstrapping can get into an infinite loop when a core is reloaded (Amrit Sarkar, Erick Erickson)
 
 ==================  6.6.0 ==================
 
