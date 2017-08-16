@@ -17,12 +17,17 @@
 package org.apache.solr.core;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import com.google.common.collect.ImmutableMap;
@@ -47,15 +52,15 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir().toFile();
+  private final Path solrHomeDirectory = createTempDir();
 
   private void setMeUp(String alternateCoreDir) throws Exception {
-    System.setProperty("solr.solr.home", solrHomeDirectory.getAbsolutePath());
+    System.setProperty("solr.solr.home", solrHomeDirectory.toAbsolutePath().toString());
     String xmlStr = SOLR_XML;
     if (alternateCoreDir != null) {
       xmlStr = xmlStr.replace("<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
     }
-    File tmpFile = new File(solrHomeDirectory, SolrXmlConfig.SOLR_XML_FILE);
+    File tmpFile = new File(solrHomeDirectory.toFile(), SolrXmlConfig.SOLR_XML_FILE);
     FileUtils.write(tmpFile, xmlStr, IOUtils.UTF_8);
 
   }
@@ -64,7 +69,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp(null);
   }
 
-  private Properties makeCorePropFile(String name, boolean isTransient, boolean loadOnStartup, String... extraProps) {
+  private Properties makeCoreProperties(String name, boolean isTransient, boolean loadOnStartup, String... extraProps) {
     Properties props = new Properties();
     props.put(CoreDescriptor.CORE_NAME, name);
     props.put(CoreDescriptor.CORE_SCHEMA, "schema-tiny.xml");
@@ -89,14 +94,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     } finally {
       out.close();
     }
-
     addConfFiles(new File(propFile.getParent(), "conf"));
-
   }
 
   private void addCoreWithProps(String name, Properties stockProps) throws Exception {
 
-    File propFile = new File(new File(solrHomeDirectory, name), CorePropertiesLocator.PROPERTIES_FILENAME);
+    File propFile = new File(new File(solrHomeDirectory.toFile(), name), CorePropertiesLocator.PROPERTIES_FILENAME);
     File parent = propFile.getParentFile();
     assertTrue("Failed to mkdirs for " + parent.getAbsolutePath(), parent.mkdirs());
     addCoreWithProps(stockProps, propFile);
@@ -142,12 +145,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp();
 
     // name, isLazy, loadOnStartup
-    addCoreWithProps("core1", makeCorePropFile("core1", false, true, "dataDir=core1"));
-    addCoreWithProps("core2", makeCorePropFile("core2", false, false, "dataDir=core2"));
+    addCoreWithProps("core1", makeCoreProperties("core1", false, true, "dataDir=core1"));
+    addCoreWithProps("core2", makeCoreProperties("core2", false, false, "dataDir=core2"));
 
     // I suspect what we're adding in here is a "configset" rather than a schema or solrconfig.
     //
-    addCoreWithProps("lazy1", makeCorePropFile("lazy1", true, false, "dataDir=lazy1"));
+    addCoreWithProps("lazy1", makeCoreProperties("lazy1", true, false, "dataDir=lazy1"));
 
     CoreContainer cc = init();
     try {
@@ -172,6 +175,34 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
         assertEquals("schema-tiny.xml", desc.getSchemaName());
 
         TestLazyCores.checkInCores(cc, "core1", "core2", "lazy1");
+        // Can we persist an existing core's properties?
+
+        // Insure we can persist a new properties file if we want.
+        CoreDescriptor cd1 = core1.getCoreDescriptor();
+        Properties persistable = cd1.getPersistableUserProperties();
+        persistable.setProperty("bogusprop", "bogusval");
+        cc.getCoresLocator().persist(cc, cd1);
+        File propFile = new File(new File(solrHomeDirectory.toFile(), "core1"), CorePropertiesLocator.PROPERTIES_FILENAME);
+        Properties newProps = new Properties();
+        try (InputStreamReader is = new InputStreamReader(new FileInputStream(propFile), StandardCharsets.UTF_8)) {
+          newProps.load(is);
+        }
+        // is it there?
+        assertEquals("Should have persisted bogusprop to disk", "bogusval", newProps.getProperty("bogusprop"));
+        // is it in the user properties?
+        CorePropertiesLocator cpl = new CorePropertiesLocator(solrHomeDirectory);
+        List<CoreDescriptor> cores = cpl.discover(cc);
+        boolean found = false;
+        for (CoreDescriptor cd : cores) {
+          if (cd.getName().equals("core1")) {
+            found = true;
+            assertEquals("Should have persisted bogusprop to disk in user properties",
+                "bogusval",
+                cd.getPersistableUserProperties().getProperty("bogusprop"));
+            break;
+          }
+        }
+        assertTrue("Should have found core descriptor for core1", found);
       }
 
     } finally {
@@ -179,6 +210,71 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testPropFilePersistence() throws Exception {
+    setMeUp();
+
+    // Test that an existing core.properties file is _not_ deleted if the core fails to load.
+    Properties badProps = makeCoreProperties("corep1", false, true);
+    badProps.setProperty(CoreDescriptor.CORE_SCHEMA, "not-there.xml");
+
+    addCoreWithProps("corep1", badProps);
+    // Sanity check that a core did get loaded
+    addCoreWithProps("corep2", makeCoreProperties("corep2", false, true));
+
+    Path coreP1PropFile = Paths.get(solrHomeDirectory.toString(), "corep1", "core.properties");
+    assertTrue("Core.properties file should exist for before core load failure core corep1",
+        Files.exists(coreP1PropFile));
+
+    CoreContainer cc = init();
+    try {
+      try {
+        cc.getCore("corep1");
+        fail("Should have thrown exception");
+      } catch (SolrCoreInitializationException scie) {
+        assertTrue(scie.getMessage().contains("init failure"));
+      }
+      try (SolrCore sc = cc.getCore("corep2")) {
+        assertNotNull("Core corep2 should be loaded", sc);
+      }
+      assertTrue("Core.properties file should still exist for core corep1", Files.exists(coreP1PropFile));
+
+      // Creating a core successfully should create a core.properties file
+      Path corePropFile = Paths.get(solrHomeDirectory.toString(), "corep3", "core.properties");
+      assertFalse("Should not be a properties file yet", Files.exists(corePropFile));
+      cc.create("corep3", ImmutableMap.of("configSet", "minimal"));
+      assertTrue("Should be a properties file for newly created core", Files.exists(corePropFile));
+
+      // Failing to create a core should _not_ leave a core.properties file hanging around.
+      corePropFile = Paths.get(solrHomeDirectory.toString(), "corep4", "core.properties");
+      assertFalse("Should not be a properties file yet for corep4", Files.exists(corePropFile));
+
+      try {
+        cc.create("corep4", ImmutableMap.of(
+            CoreDescriptor.CORE_NAME, "corep4",
+            CoreDescriptor.CORE_SCHEMA, "not-there.xml",
+            CoreDescriptor.CORE_CONFIG, "solrconfig-minimal.xml",
+            CoreDescriptor.CORE_TRANSIENT, "false",
+            CoreDescriptor.CORE_LOADONSTARTUP, "true"));
+        fail("Should have thrown exception getting core ");
+      } catch (SolrException se) {
+        assertTrue(se.getMessage().contains("Can't find resource"));
+      }
+      assertFalse("Failed corep4 should not have left a core.properties file around", Files.exists(corePropFile));
+
+      // Finally, just for yucks, let's determine that a this create path also leaves a prop file.
+
+      corePropFile = Paths.get(solrHomeDirectory.toString(), "corep5", "core.properties");
+      assertFalse("Should not be a properties file yet for corep5", Files.exists(corePropFile));
+
+      cc.create("corep5", ImmutableMap.of("configSet", "minimal"));
+      
+      assertTrue("corep5 should have left a core.properties file on disk", Files.exists(corePropFile));
+
+    } finally {
+      cc.shutdown();
+    }
+  }
 
 
   // Insure that if the number of transient cores that are loaded on startup is greater than the cache size that Solr
@@ -199,16 +295,16 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp();
 
     // name, isLazy, loadOnStartup
-    addCoreWithProps("coreLOS", makeCorePropFile("coreLOS", false, true, "dataDir=coreLOS"));
-    addCoreWithProps("coreT1", makeCorePropFile("coreT1", true, true, "dataDir=coreT1"));
-    addCoreWithProps("coreT2", makeCorePropFile("coreT2", true, true, "dataDir=coreT2"));
-    addCoreWithProps("coreT3", makeCorePropFile("coreT3", true, true, "dataDir=coreT3"));
-    addCoreWithProps("coreT4", makeCorePropFile("coreT4", true, true, "dataDir=coreT4"));
-    addCoreWithProps("coreT5", makeCorePropFile("coreT5", true, true, "dataDir=coreT5"));
-    addCoreWithProps("coreT6", makeCorePropFile("coreT6", true, true, "dataDir=coreT6"));
+    addCoreWithProps("coreLOS", makeCoreProperties("coreLOS", false, true, "dataDir=coreLOS"));
+    addCoreWithProps("coreT1", makeCoreProperties("coreT1", true, true, "dataDir=coreT1"));
+    addCoreWithProps("coreT2", makeCoreProperties("coreT2", true, true, "dataDir=coreT2"));
+    addCoreWithProps("coreT3", makeCoreProperties("coreT3", true, true, "dataDir=coreT3"));
+    addCoreWithProps("coreT4", makeCoreProperties("coreT4", true, true, "dataDir=coreT4"));
+    addCoreWithProps("coreT5", makeCoreProperties("coreT5", true, true, "dataDir=coreT5"));
+    addCoreWithProps("coreT6", makeCoreProperties("coreT6", true, true, "dataDir=coreT6"));
 
     // Do this specially since we need to search.
-    final CoreContainer cc = new CoreContainer(solrHomeDirectory.getPath().toString());
+    final CoreContainer cc = new CoreContainer(solrHomeDirectory.toString());
     try {
       cc.load();
       // Just check that the proper number of cores are loaded since making the test depend on order would be fragile
@@ -246,8 +342,8 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     setMeUp();
 
     // name, isLazy, loadOnStartup
-    addCoreWithProps("core1", makeCorePropFile("core1", false, true));
-    addCoreWithProps("core2", makeCorePropFile("core2", false, false, "name=core1"));
+    addCoreWithProps("core1", makeCoreProperties("core1", false, true));
+    addCoreWithProps("core2", makeCoreProperties("core2", false, false, "name=core1"));
     CoreContainer cc = null;
     try {
       cc = init();
@@ -274,9 +370,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     File alt = createTempDir().toFile();
 
     setMeUp(alt.getAbsolutePath());
-    addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
+    addCoreWithProps(makeCoreProperties("core1", false, true, "dataDir=core1"),
         new File(alt, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
-    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
+    addCoreWithProps(makeCoreProperties("core2", false, false, "dataDir=core2"),
         new File(alt, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -295,13 +391,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     setMeUp(relative);
     // two cores under the relative directory
-    addCoreWithProps(makeCorePropFile("core1", false, true, "dataDir=core1"),
-        solrHomeDirectory.toPath().resolve(relative).resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME).toFile());
-    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
-        solrHomeDirectory.toPath().resolve(relative).resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME).toFile());
+    addCoreWithProps(makeCoreProperties("core1", false, true, "dataDir=core1"),
+        solrHomeDirectory.resolve(relative).resolve("core1").resolve(CorePropertiesLocator.PROPERTIES_FILENAME).toFile());
+    addCoreWithProps(makeCoreProperties("core2", false, false, "dataDir=core2"),
+        solrHomeDirectory.resolve(relative).resolve("core2").resolve(CorePropertiesLocator.PROPERTIES_FILENAME).toFile());
     // one core *not* under the relative directory
-    addCoreWithProps(makeCorePropFile("core0", false, true, "datadir=core0"),
-        solrHomeDirectory.toPath().resolve("core0").resolve(CorePropertiesLocator.PROPERTIES_FILENAME).toFile());
+    addCoreWithProps(makeCoreProperties("core0", false, true, "datadir=core0"),
+        solrHomeDirectory.resolve("core0").resolve(CorePropertiesLocator.PROPERTIES_FILENAME).toFile());
 
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -323,9 +419,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   public void testNoCoreDir() throws Exception {
     File noCoreDir = createTempDir().toFile();
     setMeUp(noCoreDir.getAbsolutePath());
-    addCoreWithProps(makeCorePropFile("core1", false, true),
+    addCoreWithProps(makeCoreProperties("core1", false, true),
         new File(noCoreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
-    addCoreWithProps(makeCorePropFile("core2", false, false),
+    addCoreWithProps(makeCoreProperties("core2", false, false),
         new File(noCoreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
     CoreContainer cc = init();
     try (SolrCore core1 = cc.getCore("core1");
@@ -339,13 +435,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testCoreDirCantRead() throws Exception {
-    File coreDir = solrHomeDirectory;
+    File coreDir = solrHomeDirectory.toFile();
     setMeUp(coreDir.getAbsolutePath());
-    addCoreWithProps(makeCorePropFile("core1", false, true),
+    addCoreWithProps(makeCoreProperties("core1", false, true),
         new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     // Insure that another core is opened successfully
-    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
+    addCoreWithProps(makeCoreProperties("core2", false, false, "dataDir=core2"),
         new File(coreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     File toSet = new File(coreDir, "core1");
@@ -365,15 +461,15 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testNonCoreDirCantRead() throws Exception {
-    File coreDir = solrHomeDirectory;
+    File coreDir = solrHomeDirectory.toFile();
     setMeUp(coreDir.getAbsolutePath());
-    addCoreWithProps(makeCorePropFile("core1", false, true),
+    addCoreWithProps(makeCoreProperties("core1", false, true),
         new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    addCoreWithProps(makeCorePropFile("core2", false, false, "dataDir=core2"),
+    addCoreWithProps(makeCoreProperties("core2", false, false, "dataDir=core2"),
         new File(coreDir, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    File toSet = new File(solrHomeDirectory, "cantReadDir");
+    File toSet = new File(solrHomeDirectory.toFile(), "cantReadDir");
     assertTrue("Should have been able to make directory '" + toSet.getAbsolutePath() + "' ", toSet.mkdirs());
     assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
     assumeFalse("Appears we are a super user, skip test", toSet.canRead());
@@ -392,12 +488,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testFileCantRead() throws Exception {
-    File coreDir = solrHomeDirectory;
+    File coreDir = solrHomeDirectory.toFile();
     setMeUp(coreDir.getAbsolutePath());
-    addCoreWithProps(makeCorePropFile("core1", false, true),
+    addCoreWithProps(makeCoreProperties("core1", false, true),
         new File(coreDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
-    File toSet = new File(solrHomeDirectory, "cantReadFile");
+    File toSet = new File(solrHomeDirectory.toFile(), "cantReadFile");
     assertTrue("Should have been able to make file '" + toSet.getAbsolutePath() + "' ", toSet.createNewFile());
     assumeTrue("Cannot make " + toSet + " non-readable. Test aborted.", toSet.setReadable(false, false));
     CoreContainer cc = init();
@@ -412,7 +508,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrHomeDoesntExist() throws Exception {
-    File homeDir = solrHomeDirectory;
+    File homeDir = solrHomeDirectory.toFile();
     IOUtils.rm(homeDir.toPath());
     CoreContainer cc = null;
     try {
@@ -430,9 +526,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrHomeNotReadable() throws Exception {
-    File homeDir = solrHomeDirectory;
+    File homeDir = solrHomeDirectory.toFile();
     setMeUp(homeDir.getAbsolutePath());
-    addCoreWithProps(makeCorePropFile("core1", false, true),
+    addCoreWithProps(makeCoreProperties("core1", false, true),
         new File(homeDir, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
 
     assumeTrue("Cannot make " + homeDir + " non-readable. Test aborted.", homeDir.setReadable(false, false));
@@ -468,13 +564,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   @Test
   public void testRootDirectoryResolution() {
 
-    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory.toPath());
+    SolrResourceLoader loader = new SolrResourceLoader(solrHomeDirectory);
 
     NodeConfig config = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">relative</str></solr>");
-    assertThat(config.getCoreRootDirectory().toString(), containsString(solrHomeDirectory.getAbsolutePath()));
+    assertThat(config.getCoreRootDirectory().toString(), containsString(solrHomeDirectory.toAbsolutePath().toString()));
 
     NodeConfig absConfig = SolrXmlConfig.fromString(loader, "<solr><str name=\"coreRootDirectory\">/absolute</str></solr>");
-    assertThat(absConfig.getCoreRootDirectory().toString(), not(containsString(solrHomeDirectory.getAbsolutePath())));
+    assertThat(absConfig.getCoreRootDirectory().toString(), not(containsString(solrHomeDirectory.toAbsolutePath().toString())));
   }
   
 }
