@@ -40,6 +40,7 @@ import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -47,12 +48,15 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  * Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example]
@@ -481,12 +485,125 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     File node1SolrHome = new File(solrExampleDir, "cloud/node1/solr");
     if (!node1SolrHome.isDirectory()) {
+      fail(node1SolrHome.getAbsolutePath() + " not found! run cloud example failed; tool output: " + toolOutput);
+    }
+
+    // delete the collection
+    SolrCLI.DeleteTool deleteTool = new SolrCLI.DeleteTool(stdoutSim);
+    String[] deleteArgs = new String[]{"-name", collectionName, "-solrUrl", solrUrl};
+    deleteTool.runTool(
+        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(deleteTool.getOptions()), deleteArgs));
+
+    // dump all the output written by the SolrCLI commands to stdout
+    //System.out.println(toolOutput);
+
+    // stop the test instance
+    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+  }
+
+  @Test
+  public void testInteractiveSolrCloudExampleWithAutoScalingPolicy() throws Exception {
+    File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
+    if (!solrHomeDir.isDirectory())
+      fail(solrHomeDir.getAbsolutePath() + " not found and is required to run this test!");
+
+    Path tmpDir = createTempDir();
+    File solrExampleDir = tmpDir.toFile();
+
+    File solrServerDir = solrHomeDir.getParentFile();
+
+    String[] toolArgs = new String[]{
+        "-example", "cloud",
+        "-serverDir", solrServerDir.getAbsolutePath(),
+        "-exampleDir", solrExampleDir.getAbsolutePath()
+    };
+
+    int bindPort = -1;
+    try (ServerSocket socket = new ServerSocket(0)) {
+      bindPort = socket.getLocalPort();
+    }
+
+    String collectionName = "testCloudExamplePrompt1";
+
+    // this test only support launching one SolrCloud node due to how MiniSolrCloudCluster works
+    // and the need for setting the host and port system properties ...
+    String userInput = "1\n" + bindPort + "\n" + collectionName + "\n2\n2\n_default\n";
+
+    // simulate user input from stdin
+    InputStream userInputSim = new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8));
+
+    // capture tool output to stdout
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+
+    RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
+    closeables.add(executor);
+
+    SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, userInputSim, stdoutSim);
+    try {
+      tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+    } catch (Exception e) {
+      System.err.println("RunExampleTool failed due to: " + e +
+          "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+      throw e;
+    }
+
+    String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+
+    // verify Solr is running on the expected port and verify the collection exists
+    String solrUrl = "http://localhost:" + bindPort + "/solr";
+    String collectionListUrl = solrUrl + "/admin/collections?action=list";
+    if (!SolrCLI.safeCheckCollectionExists(collectionListUrl, collectionName)) {
+      fail("After running Solr cloud example, test collection '" + collectionName +
+          "' not found in Solr at: " + solrUrl + "; tool output: " + toolOutput);
+    }
+
+    // index some docs - to verify all is good for both shards
+    CloudSolrClient cloudClient = null;
+
+    try {
+      cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
+      String setClusterPolicyCommand = "{" +
+          " 'set-cluster-policy': [" +
+          "      {'cores':'<10', 'node':'#ANY'}," +
+          "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+          "      {'nodeRole':'overseer', 'replica':0}" +
+          "    ]" +
+          "}";
+      SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+      NamedList<Object> response = cloudClient.request(req);
+      assertEquals(response.get("result").toString(), "success");
+      SolrCLI.CreateCollectionTool createCollectionTool = new SolrCLI.CreateCollectionTool(stdoutSim);
+      String[] createArgs = new String[]{"create_collection", "-name", "newColl", "-configsetsDir", "_default", "-solrUrl", solrUrl};
+      createCollectionTool.runTool(
+          SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(createCollectionTool.getOptions()), createArgs));
+      solrUrl = "http://localhost:" + bindPort + "/solr";
+      collectionListUrl = solrUrl + "/admin/collections?action=list";
+      if (!SolrCLI.safeCheckCollectionExists(collectionListUrl, "newColl")) {
+        toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+        fail("After running Solr cloud example, test collection 'newColl' not found in Solr at: " + solrUrl + "; tool output: " + toolOutput);
+      }
+    } finally {
+      if (cloudClient != null) {
+        try {
+          cloudClient.close();
+        } catch (Exception ignore) {
+        }
+      }
+    }
+
+    File node1SolrHome = new File(solrExampleDir, "cloud/node1/solr");
+    if (!node1SolrHome.isDirectory()) {
       fail(node1SolrHome.getAbsolutePath()+" not found! run cloud example failed; tool output: "+toolOutput);
     }
 
     // delete the collection
     SolrCLI.DeleteTool deleteTool = new SolrCLI.DeleteTool(stdoutSim);
     String[] deleteArgs = new String[] { "-name", collectionName, "-solrUrl", solrUrl };
+    deleteTool.runTool(
+        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(deleteTool.getOptions()), deleteArgs));
+    deleteTool = new SolrCLI.DeleteTool(stdoutSim);
+    deleteArgs = new String[]{"-name", "newColl", "-solrUrl", solrUrl};
     deleteTool.runTool(
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(deleteTool.getOptions()), deleteArgs));
 
@@ -496,7 +613,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // stop the test instance
     executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p "+bindPort));
   }
-  
+
   @Test
   public void testFailExecuteScript() throws Exception {
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
