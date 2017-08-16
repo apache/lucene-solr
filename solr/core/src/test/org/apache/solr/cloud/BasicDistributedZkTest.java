@@ -25,8 +25,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
@@ -521,9 +523,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
-    SolrClient client = clients.get(0);
-    String url3 = getBaseUrl(client);
-    try (final HttpSolrClient httpSolrClient = getHttpSolrClient(url3)) {
+    JettySolrRunner jetty = jettys.get(0);
+    try (final HttpSolrClient httpSolrClient = (HttpSolrClient) jetty.newClient()) {
       httpSolrClient.setConnectionTimeout(15000);
       httpSolrClient.setSoTimeout(60000);
       ThreadPoolExecutor executor = null;
@@ -534,7 +535,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         int cnt = 3;
 
         // create the cores
-        createCores(httpSolrClient, executor, "multiunload2", 1, cnt);
+        createCollectionInOneInstance(httpSolrClient, jetty.getNodeName(), executor, "multiunload2", 1, cnt);
       } finally {
         if (executor != null) {
           ExecutorUtil.shutdownAndAwaitTermination(executor);
@@ -559,9 +560,21 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   }
 
-  protected void createCores(final HttpSolrClient client,
-      ThreadPoolExecutor executor, final String collection, final int numShards, int cnt) {
-    for (int i = 0; i < cnt; i++) {
+  /**
+   * Create a collection in single node
+   */
+  protected void createCollectionInOneInstance(final SolrClient client, String nodeName,
+                                               ThreadPoolExecutor executor, final String collection,
+                                               final int numShards, int numReplicas) {
+    assertNotNull(nodeName);
+    try {
+      assertEquals(0, CollectionAdminRequest.createCollection(collection, "conf1", numShards, 1)
+          .setCreateNodeSet("")
+          .process(client).getStatus());
+    } catch (SolrServerException | IOException e) {
+      throw new RuntimeException(e);
+    }
+    for (int i = 0; i < numReplicas; i++) {
       final int freezeI = i;
       executor.execute(() -> {
         Create createCmd = new Create();

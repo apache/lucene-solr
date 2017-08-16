@@ -1138,7 +1138,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     manager.registerGauge(registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     manager.registerGauge(registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      manager.registerGauge(registry, () -> coreContainer.getCoreNames(this), true, "aliases", Category.CORE.toString());
+      manager.registerGauge(registry, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         manager.registerGauge(registry, () -> {
@@ -2833,7 +2833,7 @@ public final class SolrCore implements SolrInfoMBean, SolrMetricProducer, Closea
     CoreDescriptor cd = getCoreDescriptor();
     if (cd != null) {
       if (coreContainer != null) {
-        lst.add("aliases", coreContainer.getCoreNames(this));
+        lst.add("aliases", coreContainer.getNamesForCore(this));
       }
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       if (cloudDesc != null) {
