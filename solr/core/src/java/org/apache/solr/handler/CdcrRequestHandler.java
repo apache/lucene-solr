@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -61,6 +60,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CdcrUpdateLog;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -617,10 +617,6 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.ERRORS, hosts);
   }
 
-  private AtomicBoolean running = new AtomicBoolean();
-  private volatile Future<Boolean> bootstrapFuture;
-  private volatile BootstrapCallable bootstrapCallable;
-
   private void handleBootstrapAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
     String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     String shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
@@ -633,14 +629,19 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     Runnable runnable = () -> {
       Lock recoveryLock = req.getCore().getSolrCoreState().getRecoveryLock();
       boolean locked = recoveryLock.tryLock();
+      SolrCoreState coreState = core.getSolrCoreState();
       try {
         if (!locked)  {
           handleCancelBootstrap(req, rsp);
         } else if (leaderStateManager.amILeader())  {
-          running.set(true);
+          coreState.setCdcrBootstrapRunning(true);
+          //running.set(true);
           String masterUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
-          bootstrapCallable = new BootstrapCallable(masterUrl, core);
-          bootstrapFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(bootstrapCallable);
+          BootstrapCallable bootstrapCallable = new BootstrapCallable(masterUrl, core);
+          coreState.setCdcrBootstrapCallable(bootstrapCallable);
+          Future<Boolean> bootstrapFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor()
+              .submit(bootstrapCallable);
+          coreState.setCdcrBootstrapFuture(bootstrapFuture);
           try {
             bootstrapFuture.get();
           } catch (InterruptedException e) {
@@ -654,7 +655,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         }
       } finally {
         if (locked) {
-          running.set(false);
+          coreState.setCdcrBootstrapRunning(false);
           recoveryLock.unlock();
         }
       }
@@ -670,19 +671,20 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void handleCancelBootstrap(SolrQueryRequest req, SolrQueryResponse rsp) {
-    BootstrapCallable callable = this.bootstrapCallable;
+    BootstrapCallable callable = (BootstrapCallable)core.getSolrCoreState().getCdcrBootstrapCallable();
     IOUtils.closeQuietly(callable);
     rsp.add(RESPONSE_STATUS, "cancelled");
   }
 
   private void handleBootstrapStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
-    if (running.get()) {
+    SolrCoreState coreState = core.getSolrCoreState();
+    if (coreState.getCdcrBootstrapRunning()) {
       rsp.add(RESPONSE_STATUS, RUNNING);
       return;
     }
 
-    Future<Boolean> future = bootstrapFuture;
-    BootstrapCallable callable = this.bootstrapCallable;
+    Future<Boolean> future = coreState.getCdcrBootstrapFuture();
+    BootstrapCallable callable = (BootstrapCallable)coreState.getCdcrBootstrapCallable();
     if (future == null) {
       rsp.add(RESPONSE_STATUS, "notfound");
       rsp.add(RESPONSE_MESSAGE, "No bootstrap found in running, completed or failed states");
