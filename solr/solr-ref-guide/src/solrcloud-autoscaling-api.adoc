@@ -324,3 +324,31 @@ The `remove-policy` command accepts a policy name to be removed from Solr. The p
 ----
 
 If you attempt to remove a policy that is being used by a collection, this command will fail to delete the policy until the collection itself is deleted.
+
+== History API
+History of autoscaling events is available at `/admin/autoscaling/history`. It returs information
+about past autoscaling events and details about their processing. This history is kept in
+the `.system` collection, and populated by a trigger listener `SystemLogListener` - by default this
+listener is added to all new triggers.
+
+History events are regular Solr documents so they can be also accessed directly by
+searching on the `.system` collection. History handler acts as a regular search handler, so all
+query parameters supported by `/select` handler for that collection are supported here too.
+However, the history handler makes this
+process easier by offering a simpler syntax and knowledge of field names
+used by `SystemLogListener` for serialization of event data.
+
+History documents contain also the action context, if it was available, which gives
+further insight into eg. exact operations that were computed and/or executed.
+
+Specifically, the following query parameters can be used (they are turned into
+filter queries, so an implicit AND is applied):
+
+* `trigger` - trigger name
+* `eventType` - event type / trigger type (eg. `nodeAdded`)
+* `collection` - collection name involved in event processing
+* `stage` - event processing stage
+* `action` - trigger action
+* `node` - node name that the event refers to
+* `beforeAction` - beforeAction stage
+* `afterAction` - afterAction stage
