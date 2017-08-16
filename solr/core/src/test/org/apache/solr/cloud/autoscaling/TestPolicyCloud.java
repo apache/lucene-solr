@@ -104,7 +104,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     String collectionName = "testCreateCollectionSplitShard";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPolicy("c1")
-        .setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());
 
     DocCollection docCollection = getCollectionState(collectionName);
