@@ -17,7 +17,6 @@
 package org.apache.solr.metrics.reporters;
 
 import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.Query;
 import javax.management.QueryExp;
@@ -36,7 +35,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -61,13 +59,6 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-  }
-
-  @AfterClass
-  public static void releaseMBeanServer() throws Exception {
-    if (mBeanServer != null) {
-      MBeanServerFactory.releaseMBeanServer(mBeanServer);
-    }
   }
 
   @Test
