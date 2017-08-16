@@ -250,7 +250,7 @@ public class Assign {
     String policyName = message.getStr(POLICY);
     Map autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
 
-    if (rulesMap == null && policyName == null) {
+    if (rulesMap == null && policyName == null && autoScalingJson.get(Policy.CLUSTER_POLICY) == null) {
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
       for (String aShard : shardNames) {
@@ -274,10 +274,7 @@ public class Assign {
       }
     }
 
-    if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
-      return getPositionsUsingPolicy(collectionName,
-          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
-    } else {
+    if (rulesMap != null && !rulesMap.isEmpty()) {
       List<Rule> rules = new ArrayList<>();
       for (Object map : rulesMap) rules.add(new Rule((Map) map));
       Map<String, Integer> sharVsReplicaCount = new HashMap<>();
@@ -295,6 +292,9 @@ public class Assign {
       return nodeMappings.entrySet().stream()
           .map(e -> new ReplicaPosition(e.getKey().shard, e.getKey().index, e.getKey().type, e.getValue()))
           .collect(Collectors.toList());
+    } else {
+      return getPositionsUsingPolicy(collectionName,
+          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
     }
   }
 

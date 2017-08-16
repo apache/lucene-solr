@@ -443,6 +443,8 @@ Bug Fixes
 
 * SOLR-10698: StreamHandler should allow connections to be closed early (Joel Bernstein, Varun Thacker, Erick Erickson)
 
+* SOLR-11243: Replica Placement rules are ignored if a cluster policy exists. (shalin)
+
 Optimizations
 ----------------------
 
