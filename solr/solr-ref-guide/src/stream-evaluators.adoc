@@ -269,30 +269,157 @@ if(gt(fieldA,fieldB),floor(fieldA),floor(fieldB)) // if fieldA > fieldB then ret
 
 
 == sin
-//TODO
+The `sin` function returns the trigonometirc sine of a number.
+
+=== sin Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the sine of.
+
+=== sin Syntax
+
+[source,text]
+----
+sin(100.4)  // returns the sine of 100.4
+sine(fieldA) // returns the sine for fieldA.
+if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the sine of fieldA, else return the sine of fieldB
+----
+
 
 == asin
-//TODO
+The `asin` function returns the trigonometirc arcsine of a number.
 
-== sinh
-//TODO
+=== asin Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the arcsine of.
+
+=== asin Syntax
+
+[source,text]
+----
+asin(100.4)  // returns the sine of 100.4
+asine(fieldA) // returns the sine for fieldA.
+if(gt(fieldA,fieldB),asin(fieldA),asin(fieldB)) // if fieldA > fieldB then return the asine of fieldA, else return the asine of fieldB
+----
+
+
+== hsin
+The `hsin` function returns the trigonometirc  hyperbolic sine of a number.
+
+=== hsin Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the hyperbolic sine of.
+
+=== hsin Syntax
+
+[source,text]
+----
+hsin(100.4)  // returns the hsine of 100.4
+hsine(fieldA) // returns the hsine for fieldA.
+if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the hsine of fieldA, else return the hsine of fieldB
+----
+
 
 == cos
-//TODO
+The `cos` function returns the trigonometirc  cosine of a number.
+
+=== cos Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the hyperbolic cosine of.
+
+=== cos Syntax
+
+[source,text]
+----
+cos(100.4)  // returns the arccosine of 100.4
+cos(fieldA) // returns the arccosine for fieldA.
+if(gt(fieldA,fieldB),cos(fieldA),cos(fieldB)) // if fieldA > fieldB then return the arccosine of fieldA, else return the cosine of fieldB
+----
 
 == acos
-//TODO
+
+The `acos` function returns the trigonometirc arccosine of a number.
+
+=== acos Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the arccosine of.
+
+=== acos Syntax
+
+[source,text]
+----
+acos(100.4)  // returns the arccosine of 100.4
+acos(fieldA) // returns the arccosine for fieldA.
+if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the arccosine of fieldA, else return the arccosine of fieldB
+----
 
 == atan
-//TODO
+
+The `atan` function returns the trigonometirc arctangent of a number.
+
+=== atan Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the arctangent of.
+
+=== atan Syntax
+
+[source,text]
+----
+atan(100.4)  // returns the arctangent of 100.4
+atan(fieldA) // returns the arctangent for fieldA.
+if(gt(fieldA,fieldB),atan(fieldA),atan(fieldB)) // if fieldA > fieldB then return the arctanget of fieldA, else return the arctangent of fieldB
+----
 
 == round
-//TODO
+
+The `round` function returns the closest whole number to the argument
+
+=== round Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the square root of.
+
+=== round Syntax
+
+[source,text]
+----
+round(100.4)
+round(fieldA)
+if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the round of fieldA, else return the round of fieldB
+----
 
 == sqrt
-//TODO
+
+The `sqrt` function returns the trigonometirc square root of a number.
+
+=== sqrt Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the square root of.
+
+=== sqrt Syntax
+
+[source,text]
+----
+sqrt(100.4)  // returns the square root of 100.4
+sqrt(fieldA) // returns the square root for fieldA.
+if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the sqrt of fieldA, else return the sqrt of fieldB
+----
 
 == cbrt
+
+The `cbrt` function returns the trigonometirc cube root of a number.
+
+=== cbrt Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the cube root of.
+
+=== cbrt Syntax
+
+[source,text]
+----
+cbrt(100.4)  // returns the square root of 100.4
+cbrt(fieldA) // returns the square root for fieldA.
+if(gt(fieldA,fieldB),cbrt(fieldA),cbrt(fieldB)) // if fieldA > fieldB then return the cbrt of fieldA, else return the cbrt of fieldB
+----
+
 
 == and
 
@@ -550,7 +677,6 @@ orignal array by the window size.
 
 movingAverage(numericArray, 30)
 
-
 == anova
 
 The `anova` function calculates the analysis of variance for two or more numeric arrays.
@@ -596,6 +722,10 @@ The array function returns an array of numerics or other objects including other
 === array Parameters
 
 * `numeric` | `array` ...
+
+=== array Returns
+
+array
 
 === array Syntax
 
@@ -705,7 +835,7 @@ The `distance` function calculates the Euclidian distance of two numeric arrays.
 
 number
 
-=== distance syntax
+=== distance Syntax
 
 distance(numericArray1, numuericArray2))
 
@@ -722,7 +852,7 @@ The `scale` function multiplies all the elements of an array by a number.
 
 A numeric array with the scaled values
 
-=== scale syntax
+=== scale Syntax
 
 scale(number, numericArray)
 
@@ -755,7 +885,7 @@ The `length` function returns the length of a numeric array.
 
 integer
 
-=== length syntax
+=== length Syntax
 
 length(numericArray)
 
