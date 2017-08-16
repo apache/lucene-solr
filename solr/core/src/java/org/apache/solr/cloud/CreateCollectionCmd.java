@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.common.cloud.ReplicaPosition;
@@ -85,6 +86,7 @@ public class CreateCollectionCmd implements Cmd {
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
+    boolean usePolicyFramework = usePolicyFramework(ocmh.zkStateReader, message);
 
     String configName = getConfigName(collectionName, message);
     if (configName == null) {
@@ -118,7 +120,10 @@ public class CreateCollectionCmd implements Cmd {
       }
 
       int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-
+      if (usePolicyFramework && message.getStr(MAX_SHARDS_PER_NODE) != null && maxShardsPerNode > 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'maxShardsPerNode>0' is not supported when autoScaling policies are used");
+      }
+      if (maxShardsPerNode == -1 || usePolicyFramework) maxShardsPerNode = Integer.MAX_VALUE;
       if (numNrtReplicas + numTlogReplicas <= 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
       }
@@ -149,7 +154,9 @@ public class CreateCollectionCmd implements Cmd {
               + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
         }
 
-        int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
+        int maxShardsAllowedToCreate = maxShardsPerNode == Integer.MAX_VALUE ?
+            Integer.MAX_VALUE :
+            maxShardsPerNode * nodeList.size();
         int requestedShardsToCreate = numSlices * totalNumReplicas;
         if (maxShardsAllowedToCreate < requestedShardsToCreate) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
@@ -484,4 +491,15 @@ public class CreateCollectionCmd implements Cmd {
           "Could not find configName for collection " + collection + " found:" + configNames);
     }
   }
+
+  public static boolean usePolicyFramework(ZkStateReader zkStateReader, ZkNodeProps message) {
+    Map autoScalingJson = Collections.emptyMap();
+    try {
+      autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    } catch (Exception e) {
+      return false;
+    }
+    return autoScalingJson.get(Policy.CLUSTER_POLICY) != null || message.getStr(Policy.POLICY) != null;
+  }
+
 }

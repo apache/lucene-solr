@@ -272,6 +272,9 @@ Upgrading from Solr 6.x
 
 * SOLR-11023: EnumField has been deprecated in favor of new EnumFieldType.
 
+* SOLR-11239: The use of maxShardsPerNode is not supported when a cluster policy is in effect or
+  when a collection specific policy is specified during collection creation.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -645,6 +648,12 @@ Other Changes
   in favor of EnumFieldType. (hossman, Steve Rowe)
   
 * SOLR-10803: Mark all Trie/LegacyNumeric based fields @deprecated in Solr7.  (Steve Rowe)
+
+* SOLR-11239: A special value of -1 can be specified for 'maxShardsPerNode' to denote that
+  there is no limit. The bin/solr script send maxShardsPerNode=-1 when creating collections. The
+  use of maxShardsPerNode is not supported when a cluster policy is in effect or when a
+  collection specific policy is specified during collection creation.
+  (Noble Paul, shalin)
 
 ==================  6.7.0 ==================
 
