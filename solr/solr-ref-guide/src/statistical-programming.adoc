@@ -659,10 +659,10 @@ let(cityA=sort(random(bookings, q="city:cityA", rows="1000", fl="rate_d"), by="r
     ratesE=col(cityE, rate_d),
     top(n=1,
         sort="distance asc",
-        list(tuple(city=B, distance=distance(rateA, rateB)),
-             tuple(city=C, distance=distance(rateA, rateC)),
-             tuple(city=D, distance=distance(rateA, rateD)),
-             tuple(city=E, distance=distance(rateA, rateD)))))
+        list(tuple(city=B, distance=distance(ratesA, ratesB)),
+             tuple(city=C, distance=distance(ratesA, ratesC)),
+             tuple(city=D, distance=distance(ratesA, ratesD)),
+             tuple(city=E, distance=distance(ratesA, ratesE)))))
 ----
 
 ==== The code explained
