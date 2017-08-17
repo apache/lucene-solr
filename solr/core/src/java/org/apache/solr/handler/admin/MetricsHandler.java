@@ -23,12 +23,14 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -58,9 +60,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String PROPERTY_PARAM = "property";
   public static final String REGISTRY_PARAM = "registry";
   public static final String GROUP_PARAM = "group";
+  public static final String KEY_PARAM = "key";
   public static final String TYPE_PARAM = "type";
 
   public static final String ALL = "all";
+
+  private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
 
   public MetricsHandler() {
     this.container = null;
@@ -84,6 +89,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     boolean compact = req.getParams().getBool(COMPACT_PARAM, true);
+    String[] keys = req.getParams().getParams(KEY_PARAM);
+    if (keys != null && keys.length > 0) {
+      handleKeyRequest(keys, req, rsp);
+      return;
+    }
     MetricFilter mustMatchFilter = parseMustMatchFilter(req);
     MetricUtils.PropertyFilter propertyFilter = parsePropertyFilter(req);
     List<MetricType> metricTypes = parseMetricTypes(req);
@@ -101,6 +111,62 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
     }
     rsp.getValues().add("metrics", response);
+  }
+
+  private void handleKeyRequest(String[] keys, SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    SimpleOrderedMap result = new SimpleOrderedMap();
+    SimpleOrderedMap errors = new SimpleOrderedMap();
+    for (String key : keys) {
+      if (key == null || key.isEmpty()) {
+        continue;
+      }
+      String[] parts = KEY_REGEX.split(key);
+      if (parts.length < 2 || parts.length > 3) {
+        errors.add(key, "at least two and at most three colon-separated parts must be provided");
+        continue;
+      }
+      final String registryName = unescape(parts[0]);
+      final String metricName = unescape(parts[1]);
+      final String propertyName = parts.length > 2 ? unescape(parts[2]) : null;
+      if (!metricManager.hasRegistry(registryName)) {
+        errors.add(key, "registry '" + registryName + "' not found");
+        continue;
+      }
+      MetricRegistry registry = metricManager.registry(registryName);
+      Metric m = registry.getMetrics().get(metricName);
+      if (m == null) {
+        errors.add(key, "metric '" + metricName + "' not found");
+        continue;
+      }
+      MetricUtils.PropertyFilter propertyFilter = MetricUtils.PropertyFilter.ALL;
+      boolean simple = false;
+      if (propertyName != null) {
+        propertyFilter = (name) -> name.equals(propertyName);
+        simple = true;
+        // use escaped versions
+        key = parts[0] + ":" + parts[1];
+      }
+      MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, simple, ":", (k, v) -> result.add(k, v));
+    }
+    rsp.getValues().add("metrics", result);
+    if (errors.size() > 0) {
+      rsp.getValues().add("errors", errors);
+    }
+  }
+
+  private static String unescape(String s) {
+    if (s.indexOf('\\') == -1) {
+      return s;
+    }
+    StringBuilder sb = new StringBuilder(s.length());
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      if (c == '\\') {
+        continue;
+      }
+      sb.append(c);
+    }
+    return sb.toString();
   }
 
   private MetricFilter parseMustMatchFilter(SolrQueryRequest req) {
