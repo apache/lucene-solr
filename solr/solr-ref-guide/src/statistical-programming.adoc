@@ -645,6 +645,8 @@ comparing room rates from lowest to highest in both markets.
 
 === The code
 
+[source,text]
+----
 let(cityA=sort(random(bookings, q="city:cityA", rows="1000", fl="rate_d"), by="rate_d asc"),
     cityB=sort(random(bookings, q="city:cityB", rows="1000", fl="rate_d"), by="rate_d asc"),
     cityC=sort(random(bookings, q="city:cityC", rows="1000", fl="rate_d"), by="rate_d asc"),
@@ -661,7 +663,7 @@ let(cityA=sort(random(bookings, q="city:cityA", rows="1000", fl="rate_d"), by="r
              tuple(city=C, distance=distance(rateA, rateC)),
              tuple(city=D, distance=distance(rateA, rateD)),
              tuple(city=E, distance=distance(rateA, rateD)))))
-
+----
 
 ==== The code explained
 
