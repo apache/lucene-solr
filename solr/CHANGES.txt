@@ -27,7 +27,7 @@ Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
-Jetty 9.3.14.v20161028
+Jetty 9.3.20.v20170531
 
 
 (No Changes)
@@ -43,7 +43,7 @@ Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
-Jetty 9.3.14.v20161028
+Jetty 9.3.20.v20170531
 
 Detailed Change List
 ----------------------
@@ -148,6 +148,8 @@ Other Changes
 * SOLR-11071: Improve TestIntervalFacets.testRandom (Tomás Fernández Löbbe)
 
 * SOLR-11195: Require class attribute for shard and cluster metric reporter configuration. (Christine Poerschke)
+
+* SOLR-11249: Upgrade Jetty from 9.3.14.v20161028 to 9.3.20.v20170531 (Michael Braun via David Smiley)
 
 ==================  7.0.0 ==================
 
