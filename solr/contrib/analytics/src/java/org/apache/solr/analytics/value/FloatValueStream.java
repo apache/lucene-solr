@@ -56,5 +56,9 @@ public interface FloatValueStream extends AnalyticsValueStream {
     public void streamObjects(Consumer<Object> cons) {
       streamFloats((float val) -> cons.accept(val));
     }
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
+    }
   }
 }

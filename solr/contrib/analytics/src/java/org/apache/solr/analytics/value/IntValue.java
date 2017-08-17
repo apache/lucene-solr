@@ -23,6 +23,7 @@ import java.util.function.LongConsumer;
 
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.util.function.FloatConsumer;
+import org.apache.solr.analytics.value.constant.ConstantIntValue;
 
 /**
  * A single-valued analytics value that can be represented as an int.
@@ -112,6 +113,13 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
       if (exists()) {
         cons.accept(val);
       }
+    }
+    @Override
+    public AnalyticsValue convertToConstant() {
+      if (getExpressionType().equals(ExpressionType.CONST)) {
+        return new ConstantIntValue(getInt());
+      }
+      return this;
     }
     @Override
     public ExpressionComparator<Integer> getObjectComparator(String expression) {

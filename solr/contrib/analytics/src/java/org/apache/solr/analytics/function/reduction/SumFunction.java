@@ -31,7 +31,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A reduction function which returns the sum of the sorted values of the given expression.
+ * A reduction function which returns the sum of the values of the given expression.
  */
 public class SumFunction extends AbstractDoubleValue implements ReductionFunction {
   private SumCollector collector;

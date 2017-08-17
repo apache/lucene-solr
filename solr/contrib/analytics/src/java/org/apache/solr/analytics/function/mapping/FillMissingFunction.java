@@ -41,6 +41,7 @@ import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
@@ -71,7 +72,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * (e.g. {@value #name}(double,int) will return a double)
  */
 public class FillMissingFunction {
-  public static final String name = "fillmissing";
+  public static final String name = "fill_missing";
 
   public static final CreatorFunction creatorFunction = (params -> {
     if (params.length != 2) {
@@ -128,7 +129,7 @@ public class FillMissingFunction {
     return new StreamFillMissingFunction(baseExpr,fillExpr);
   });
 }
-class StreamFillMissingFunction implements AnalyticsValueStream, Consumer<Object> {
+class StreamFillMissingFunction extends AbstractAnalyticsValueStream implements Consumer<Object> {
   private final AnalyticsValueStream baseExpr;
   private final AnalyticsValueStream fillExpr;
   public static final String name = FillMissingFunction.name;

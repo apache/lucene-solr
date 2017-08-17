@@ -26,6 +26,7 @@ import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.AnalyticsValue;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
+import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValueStream;
 import org.apache.solr.analytics.value.DateValue;
@@ -77,7 +78,7 @@ public class RemoveFunction {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramaters, " + params.length + " found.");
     }
     if (!(params[1] instanceof AnalyticsValue)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires the remove paramater to be single-valued.");
+      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires the remove (2nd) paramater to be single-valued.");
     }
 
     AnalyticsValueStream baseExpr = params[0];
@@ -131,7 +132,7 @@ public class RemoveFunction {
     return new StreamRemoveFunction(baseExpr,removeExpr);
   });
 }
-class StreamRemoveFunction implements AnalyticsValueStream {
+class StreamRemoveFunction extends AbstractAnalyticsValueStream {
   private final AnalyticsValueStream baseExpr;
   private final AnalyticsValue removeExpr;
   public static final String name = RemoveFunction.name;
@@ -150,7 +151,7 @@ class StreamRemoveFunction implements AnalyticsValueStream {
     Object removeValue = removeExpr.getObject();
     if (removeExpr.exists()) {
       baseExpr.streamObjects(value -> {
-        if (removeValue.equals(value)) cons.accept(value);
+        if (!removeValue.equals(value)) cons.accept(value);
       });
     } else {
       baseExpr.streamObjects(cons);
@@ -193,7 +194,7 @@ class ValueRemoveFunction extends AbstractAnalyticsValue {
     Object value = baseExpr.getObject();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value.equals(removeExpr.toString()) ? removeExpr.exists()? false : true : true;
+      exists = value.equals(removeExpr.getObject()) ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -237,7 +238,7 @@ class BooleanStreamRemoveFunction extends AbstractBooleanValueStream {
     boolean removeValue = removeExpr.getBoolean();
     if (removeExpr.exists()) {
       baseExpr.streamBooleans(value -> {
-        if (removeValue==value) cons.accept(value);
+        if (removeValue != value) cons.accept(value);
       });
     } else {
       baseExpr.streamBooleans(cons);
@@ -280,7 +281,7 @@ class BooleanRemoveFunction extends AbstractBooleanValue {
     boolean value = baseExpr.getBoolean();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value==removeExpr.getBoolean() ? removeExpr.exists()? false : true : true;
+      exists = value==removeExpr.getBoolean() ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -321,7 +322,7 @@ class IntStreamRemoveFunction extends AbstractIntValueStream {
     int removeValue = removeExpr.getInt();
     if (removeExpr.exists()) {
       baseExpr.streamInts(value -> {
-        if (removeValue==value) cons.accept(value);
+        if (removeValue != value) cons.accept(value);
       });
     } else {
       baseExpr.streamInts(cons);
@@ -362,7 +363,7 @@ class IntRemoveFunction extends AbstractIntValue {
     int value = baseExpr.getInt();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value==removeExpr.getInt() ? removeExpr.exists()? false : true : true;
+      exists = value==removeExpr.getInt() ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -403,7 +404,7 @@ class LongStreamRemoveFunction extends AbstractLongValueStream {
     long removeValue = removeExpr.getLong();
     if (removeExpr.exists()) {
       baseExpr.streamLongs(value -> {
-        if (removeValue==value) cons.accept(value);
+        if (removeValue != value) cons.accept(value);
       });
     } else {
       baseExpr.streamLongs(cons);
@@ -444,7 +445,7 @@ class LongRemoveFunction extends AbstractLongValue {
     long value = baseExpr.getLong();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value==removeExpr.getLong() ? removeExpr.exists()? false : true : true;
+      exists = value==removeExpr.getLong() ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -485,7 +486,7 @@ class FloatStreamRemoveFunction extends AbstractFloatValueStream {
     float removeValue = removeExpr.getFloat();
     if (removeExpr.exists()) {
       baseExpr.streamFloats(value -> {
-        if (removeValue==value) cons.accept(value);
+        if (removeValue != value) cons.accept(value);
       });
     } else {
       baseExpr.streamFloats(cons);
@@ -526,7 +527,7 @@ class FloatRemoveFunction extends AbstractFloatValue {
     float value = baseExpr.getFloat();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value==removeExpr.getFloat() ? removeExpr.exists()? false : true : true;
+      exists = value==removeExpr.getFloat() ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -567,7 +568,7 @@ class DoubleStreamRemoveFunction extends AbstractDoubleValueStream {
     double removeValue = removeExpr.getDouble();
     if (removeExpr.exists()) {
       baseExpr.streamDoubles(value -> {
-        if (removeValue==value) cons.accept(value);
+        if (removeValue != value) cons.accept(value);
       });
     } else {
       baseExpr.streamDoubles(cons);
@@ -608,7 +609,7 @@ class DoubleRemoveFunction extends AbstractDoubleValue {
     double value = baseExpr.getDouble();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value==removeExpr.getDouble() ? removeExpr.exists()? false : true : true;
+      exists = value==removeExpr.getDouble() ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -649,7 +650,7 @@ class DateStreamRemoveFunction extends AbstractDateValueStream {
     long removeValue = removeExpr.getLong();
     if (removeExpr.exists()) {
       baseExpr.streamLongs(value -> {
-        if (removeValue==value) cons.accept(value);
+        if (removeValue != value) cons.accept(value);
       });
     } else {
       baseExpr.streamLongs(cons);
@@ -690,7 +691,7 @@ class DateRemoveFunction extends AbstractDateValue {
     long value = baseExpr.getLong();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value==removeExpr.getLong() ? removeExpr.exists() ? false : true : true;
+      exists = value==removeExpr.getLong() ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }
@@ -728,10 +729,10 @@ class StringStreamRemoveFunction extends AbstractStringValueStream {
 
   @Override
   public void streamStrings(Consumer<String> cons) {
-    String removeValue = removeExpr.toString();
+    String removeValue = removeExpr.getString();
     if (removeExpr.exists()) {
       baseExpr.streamStrings(value -> {
-        if (removeValue.equals(value)) cons.accept(value);
+        if (!removeValue.equals(value)) cons.accept(value);
       });
     } else {
       baseExpr.streamStrings(cons);
@@ -772,7 +773,7 @@ class StringRemoveFunction extends AbstractStringValue {
     String value = baseExpr.getString();
     exists = false;
     if (baseExpr.exists()) {
-      exists = value.equals(removeExpr.getString()) ? removeExpr.exists()? false : true : true;
+      exists = value.equals(removeExpr.getString()) ? (removeExpr.exists() ? false : true) : true;
     }
     return value;
   }

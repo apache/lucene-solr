@@ -16,18 +16,18 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file for cloud analytics, version 1.0  -->
+<!-- The Solr schema file for cloud analytics, version 1.6  -->
 
-<schema name="cloud-analytics" version="1.0">
+<schema name="cloud-analytics" version="1.6">
 
-  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="boolean" class="solr.BoolField" docValues="true" sortMissingLast="true"/>
+  <fieldType name="string" class="solr.StrField" docValues="true" sortMissingLast="true"/>
   
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
-  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="true" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
 
@@ -39,20 +39,40 @@
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
 
   <!-- dynamic fields with doc-values (for analytics) -->
-  <dynamicField name="*_id"  type="int" docValues="true"    indexed="true"  stored="true"/>
-  <dynamicField name="*_idm" type="int" docValues="true"    indexed="true"  stored="true"  multiValued="true"/>
-  <dynamicField name="*_sd"  type="string" docValues="true"  indexed="true"  stored="true" />
-  <dynamicField name="*_sdm" type="string" docValues="true"  indexed="true"  stored="true" multiValued="true"/>
-  <dynamicField name="*_ld"  type="long" docValues="true"   indexed="true"  stored="true"/>
-  <dynamicField name="*_ldm" type="long" docValues="true"   indexed="true"  stored="true"  multiValued="true"/>
-  <dynamicField name="*_bd"  type="boolean" docValues="true" indexed="true" stored="true"/>
-  <dynamicField name="*_bdm" type="boolean" docValues="true" indexed="true" stored="true"  multiValued="true"/>
-  <dynamicField name="*_fd"  type="float" docValues="true"  indexed="true"  stored="true"/>
-  <dynamicField name="*_fdm" type="float" docValues="true"  indexed="true"  stored="true"  multiValued="true"/>
-  <dynamicField name="*_dd"  type="double" docValues="true" indexed="true"  stored="true"/>
-  <dynamicField name="*_ddm" type="double" docValues="true" indexed="true"  stored="true"  multiValued="true"/>
-  <dynamicField name="*_dtd"  type="date" docValues="true" indexed="true"  stored="true"/>
-  <dynamicField name="*_dtdm" type="date" docValues="true" indexed="true"  stored="true"  multiValued="true"/>
+  <dynamicField name="*_i"  type="int" indexed="true" stored="true"/>
+  <dynamicField name="*_im" type="int" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_id"  type="int" indexed="true" stored="true"/>
+  <dynamicField name="*_idm" type="int" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_s"  type="string" indexed="true" stored="true" />
+  <dynamicField name="*_sm" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_sd"  type="string" indexed="true" stored="true" />
+  <dynamicField name="*_sdm" type="string" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_l"  type="long" indexed="true" stored="true"/>
+  <dynamicField name="*_lm" type="long" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_ld"  type="long" indexed="true" stored="true"/>
+  <dynamicField name="*_ldm" type="long" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_b"  type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_bm" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_bd"  type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_bdm" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_f"  type="float" indexed="true" stored="true"/>
+  <dynamicField name="*_fm" type="float" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_fd"  type="float" indexed="true" stored="true"/>
+  <dynamicField name="*_fdm" type="float" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_d"  type="double" indexed="true" stored="true"/>
+  <dynamicField name="*_dm" type="double" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dd"  type="double" indexed="true" stored="true"/>
+  <dynamicField name="*_ddm" type="double" indexed="true" stored="true" multiValued="true"/>
+  
+  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_dtm" type="date" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dtd" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_dtdm" type="date" indexed="true" stored="true" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>

@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
+import org.apache.solr.analytics.value.constant.ConstantDateValue;
 
 /**
  * A single-valued analytics value that can be represented as a date.
@@ -63,8 +64,7 @@ public interface DateValue extends DateValueStream, LongValue {
     }
     @Override
     public Object getObject() {
-      long val = getLong();
-      return exists() ? new Date(val) : null;
+      return getDate();
     }
     @Override
     public void streamDates(Consumer<Date> cons) {
@@ -93,6 +93,13 @@ public interface DateValue extends DateValueStream, LongValue {
       if (exists()) {
         cons.accept(val);
       }
+    }
+    @Override
+    public AnalyticsValue convertToConstant() {
+      if (getExpressionType().equals(ExpressionType.CONST)) {
+        return new ConstantDateValue(getLong());
+      }
+      return this;
     }
     @Override
     public ExpressionComparator<Date> getObjectComparator(String expression) {

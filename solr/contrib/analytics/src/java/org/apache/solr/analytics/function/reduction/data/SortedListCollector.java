@@ -68,7 +68,6 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     calcMedian = false;
     calcPercs = new HashSet<>();
     calcOrds = new HashSet<>();
-    calcRevOrds = new HashSet<>();
   }
   
   private List<T> list;
@@ -76,7 +75,6 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
   private boolean calcMedian;
   private Set<Double> calcPercs;
   private Set<Integer> calcOrds;
-  private Set<Integer> calcRevOrds;
 
   public int size() {
     return list.size();
@@ -108,20 +106,10 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
   }
 
   /**
-   * Informs the collector that the following reverse ordinal needs to be computed.
-   * Reverse ordinals are ordinals that start at the end of the list.
-   * 
-   * @param reverseOrdinal requested reverseOrdinal
-   */
-  public void calcReverseOrdinal(int reverseOrdinal) {
-    calcRevOrds.add(reverseOrdinal);
-  }
-
-  /**
    * Once the data has been set by either {@link #setData} or {@link #setMergedData},
    * this returns the value at the given sorted index. 
    * 
-   * Only the indices specified by {@link #calcMedian}, {@link #calcPercentile}, {@link #calcOrdinal}, and {@link #calcReverseOrdinal}
+   * Only the indices specified by {@link #calcMedian}, {@link #calcPercentile}, and {@link #calcOrdinal}
    * will contain valid data. All other indices may return unsorted data.
    * 
    * @param index the index of the sorted data to return
@@ -207,11 +195,14 @@ public abstract class SortedListCollector<T extends Comparable<T>> extends Reduc
     // Ordinals start at 0 and end at size-1
     Set<Integer> ordinals = new HashSet<>();
     for (double percentile : calcPercs) {
-      ordinals.add((int) Math.ceil(percentile * size) - 1);
+      ordinals.add((int) Math.round(percentile * size - .5));
     }
-    ordinals.addAll(calcOrds);
-    for (int reverseOrdinal : calcRevOrds) {
-      ordinals.add(size + reverseOrdinal);
+    for (int ordinal : calcOrds) {
+      if (ordinal > 0) {
+        ordinals.add(ordinal - 1);
+      } else if (ordinal < 0){
+        ordinals.add(size + ordinal);
+      }
     }
     if (calcMedian) {
       int mid = list.size() / 2;

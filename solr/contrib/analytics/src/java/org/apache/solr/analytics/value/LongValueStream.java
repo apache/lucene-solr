@@ -56,5 +56,9 @@ public interface LongValueStream extends AnalyticsValueStream {
     public void streamObjects(Consumer<Object> cons) {
       streamLongs((long val) -> cons.accept(val));
     }
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
+    }
   }
 }
