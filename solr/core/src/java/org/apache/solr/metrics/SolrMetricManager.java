@@ -353,6 +353,17 @@ public class SolrMetricManager {
   }
 
   /**
+   * Check whether a registry with a given (overridable) name already exists.
+   * @param name registry name
+   * @return true if this name points to a registry that already exists, false otherwise
+   */
+  public boolean hasRegistry(String name) {
+    Set<String> names = registryNames();
+    name = overridableRegistryName(name);
+    return names.contains(name);
+  }
+
+  /**
    * Return set of existing registry names that match a regex pattern
    * @param patterns regex patterns. NOTE: users need to make sure that patterns that
    *                 don't start with a wildcard use the full registry name starting with

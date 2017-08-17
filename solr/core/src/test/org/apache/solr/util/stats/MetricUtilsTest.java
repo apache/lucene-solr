@@ -47,7 +47,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     }
     // obtain timer metrics
     Map<String,Object> map = new HashMap<>();
-    MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, (k, v) -> {
+    MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, ".", (k, v) -> {
       map.putAll((Map<String,Object>)v);
     });
     NamedList lst = new NamedList(map);

@@ -210,7 +210,7 @@ public class MetricUtils {
         .filter(s -> mustMatchFilter.matches(s, metrics.get(s)))
         .forEach(n -> {
           Metric metric = metrics.get(n);
-          convertMetric(n, metric, propertyFilter, skipHistograms, skipAggregateValues, compact, simple, consumer);
+          convertMetric(n, metric, propertyFilter, skipHistograms, skipAggregateValues, compact, simple, ".", consumer);
         });
   }
 
@@ -247,7 +247,7 @@ public class MetricUtils {
     names.stream()
         .forEach(n -> {
           Metric metric = metrics.get(n);
-          convertMetric(n, metric, PropertyFilter.ALL, skipHistograms, skipAggregateValues, compact, simple, consumer);
+          convertMetric(n, metric, PropertyFilter.ALL, skipHistograms, skipAggregateValues, compact, simple, ".", consumer);
         });
   }
 
@@ -263,15 +263,15 @@ public class MetricUtils {
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
    */
-  static void convertMetric(String n, Metric metric, PropertyFilter propertyFilter, boolean skipHistograms, boolean skipAggregateValues,
-                              boolean compact, boolean simple, BiConsumer<String, Object> consumer) {
+  public static void convertMetric(String n, Metric metric, PropertyFilter propertyFilter, boolean skipHistograms, boolean skipAggregateValues,
+                              boolean compact, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (metric instanceof Counter) {
       Counter counter = (Counter) metric;
       convertCounter(n, counter, propertyFilter, compact, consumer);
     } else if (metric instanceof Gauge) {
       Gauge gauge = (Gauge) metric;
       try {
-        convertGauge(n, gauge, propertyFilter, simple, compact, consumer);
+        convertGauge(n, gauge, propertyFilter, simple, compact, separator, consumer);
       } catch (InternalError ie) {
         if (n.startsWith("memory.") && ie.getMessage().contains("Memory Pool not found")) {
           LOG.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
@@ -282,17 +282,17 @@ public class MetricUtils {
       }
     } else if (metric instanceof Meter) {
       Meter meter = (Meter) metric;
-      convertMeter(n, meter, propertyFilter, simple, consumer);
+      convertMeter(n, meter, propertyFilter, simple, separator, consumer);
     } else if (metric instanceof Timer) {
       Timer timer = (Timer) metric;
-      convertTimer(n, timer, propertyFilter, skipHistograms, simple, consumer);
+      convertTimer(n, timer, propertyFilter, skipHistograms, simple, separator, consumer);
     } else if (metric instanceof Histogram) {
       if (!skipHistograms) {
         Histogram histogram = (Histogram) metric;
-        convertHistogram(n, histogram, propertyFilter, simple, consumer);
+        convertHistogram(n, histogram, propertyFilter, simple, separator, consumer);
       }
     } else if (metric instanceof AggregateMetric) {
-      convertAggregateMetric(n, (AggregateMetric)metric, propertyFilter, skipAggregateValues, simple, consumer);
+      convertAggregateMetric(n, (AggregateMetric)metric, propertyFilter, skipAggregateValues, simple, separator, consumer);
     }
   }
 
@@ -308,10 +308,10 @@ public class MetricUtils {
    */
   static void convertAggregateMetric(String name, AggregateMetric metric,
       PropertyFilter propertyFilter,
-      boolean skipAggregateValues, boolean simple, BiConsumer<String, Object> consumer) {
+      boolean skipAggregateValues, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (simple) {
       if (propertyFilter.accept(MEAN)) {
-        consumer.accept(name + "." + MEAN, metric.getMean());
+        consumer.accept(name + separator + MEAN, metric.getMean());
       }
     } else {
       Map<String, Object> response = new LinkedHashMap<>();
@@ -353,11 +353,11 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    */
   static void convertHistogram(String name, Histogram histogram, PropertyFilter propertyFilter,
-                                              boolean simple, BiConsumer<String, Object> consumer) {
+                                              boolean simple, String separator, BiConsumer<String, Object> consumer) {
     Snapshot snapshot = histogram.getSnapshot();
     if (simple) {
       if (propertyFilter.accept(MEAN)) {
-        consumer.accept(name + "." + MEAN, snapshot.getMean());
+        consumer.accept(name + separator + MEAN, snapshot.getMean());
       }
     } else {
       Map<String, Object> response = new LinkedHashMap<>();
@@ -411,11 +411,11 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    */
   public static void convertTimer(String name, Timer timer, PropertyFilter propertyFilter, boolean skipHistograms,
-                                                boolean simple, BiConsumer<String, Object> consumer) {
+                                                boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (simple) {
       String prop = "meanRate";
       if (propertyFilter.accept(prop)) {
-        consumer.accept(name + "." + prop, timer.getMeanRate());
+        consumer.accept(name + separator + prop, timer.getMeanRate());
       }
     } else {
       Map<String, Object> response = new LinkedHashMap<>();
@@ -448,10 +448,10 @@ public class MetricUtils {
    *             only the selected (name "." key, value) pairs will be produced.
    * @param consumer consumer that accepts produced objects
    */
-  static void convertMeter(String name, Meter meter, PropertyFilter propertyFilter, boolean simple, BiConsumer<String, Object> consumer) {
+  static void convertMeter(String name, Meter meter, PropertyFilter propertyFilter, boolean simple, String separator, BiConsumer<String, Object> consumer) {
     if (simple) {
       if (propertyFilter.accept("count")) {
-        consumer.accept(name + ".count", meter.getCount());
+        consumer.accept(name + separator + "count", meter.getCount());
       }
     } else {
       Map<String, Object> response = new LinkedHashMap<>();
@@ -483,7 +483,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    */
   static void convertGauge(String name, Gauge gauge, PropertyFilter propertyFilter, boolean simple, boolean compact,
-                             BiConsumer<String, Object> consumer) {
+                             String separator, BiConsumer<String, Object> consumer) {
     if (compact || simple) {
       Object o = gauge.getValue();
       if (o instanceof Map) {
@@ -491,7 +491,7 @@ public class MetricUtils {
           for (Map.Entry<?, ?> entry : ((Map<?, ?>)o).entrySet()) {
             String prop = entry.getKey().toString();
             if (propertyFilter.accept(prop)) {
-              consumer.accept(name + "." + prop, entry.getValue());
+              consumer.accept(name + separator + prop, entry.getValue());
             }
           }
         } else {

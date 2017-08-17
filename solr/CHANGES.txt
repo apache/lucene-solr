@@ -32,7 +32,6 @@ Jetty 9.3.14.v20161028
 
 (No Changes)
 
-
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -73,6 +72,7 @@ New Features
   A new "sum" function is also added. Example :
   {!payload_score f=payload_field func=sum operator=or}A B C" (Varun Thacker)
 
+* SOLR-11215: Make a metric accessible through a single param. (ab)
 
 Bug Fixes
 ----------------------
