@@ -19,14 +19,12 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -34,15 +32,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -115,31 +109,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Could not fully remove collection: " + collection);
       }
-      String collectionSpecificPolicy = "COLL_POLICY_" + collection;
-      if (collectionSpecificPolicy.equals(policy)) {
-        for (Map.Entry<String, ClusterState.CollectionRef> e : state.getCollectionStates().entrySet()) {
-          if (collection.equals(e.getKey())) continue;
-          DocCollection c = e.getValue().get();
-          if (collectionSpecificPolicy.equals(c.getPolicyName())) {
-            log.info(StrUtils.formatString("{0} is being used by collection {1} . So, it's not deleted", collectionSpecificPolicy, e.getKey()));
-            return;
-          }
-
-        }
-        AutoScalingHandler ash = (AutoScalingHandler) ocmh.overseer.getZkController().getCoreContainer()
-            .getRequestHandler(AutoScalingHandler.HANDLER_PATH);
-        SolrQueryResponse rsp = new SolrQueryResponse();
-        try {
-          ash.processOps(null, rsp, Collections.singletonList(new CommandOperation(AutoScalingParams.CMD_REMOVE_POLICY, collectionSpecificPolicy)));
-        } catch (SolrException e) {
-          if (e.getMessage().contains("No policy exists with name")) {
-            log.warn("The policy: " + collectionSpecificPolicy + " does not exist to be removed");
-          } else {
-            throw e;
-          }
-        }
-      }
-
 
     } finally {
 

@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 @LuceneTestCase.Slow
@@ -177,47 +176,6 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       assertNotNull( "missing : "+ tag , val.get(tag));
     }
 
-
-  }
-
-  public void testCreateCollectionWithPolicyAndMaxShardsPerNode() throws Exception {
-    CloudSolrClient solrClient = cluster.getSolrClient();
-    Map original = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-    String setClusterPolicyCommand = "{" +
-        " 'set-cluster-policy': [" +
-        "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-    Map data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-    List clusterPolicy = (List) data.get("cluster-policy");
-    assertNotNull(clusterPolicy);
-    assertEquals(3, clusterPolicy.size());
-
-    CollectionAdminRequest.createCollection("myColl", "conf", 1, 2)
-        .process(cluster.getSolrClient());
-    data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-    assertEquals("Did create unexpected new policy  " + Utils.toJSONString(data),
-       null,  Utils.getObjectByPath(data, false, "policies/COLL_POLICY_myColl"));
-    CollectionAdminRequest.createCollection("myColl2", "conf", 1, 2)
-        .setMaxShardsPerNode(4)
-        .process(cluster.getSolrClient());
-    data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-
-    assertEquals("Did not create expected new policy  " + Utils.toJSONString(data),
-        "<5",  Utils.getObjectByPath(data, false, "policies/COLL_POLICY_myColl2[0]/replica"));
-
-    CollectionAdminRequest.deleteCollection("myColl2").process(cluster.getSolrClient());
-
-    data = Utils.getJson(solrClient.getZkStateReader().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-    assertEquals("Did not delete new policy  " + Utils.toJSONString(data),
-        null,  Utils.getObjectByPath(data, false, "policies/COLL_POLICY_myColl2"));
-
-    solrClient.getZkStateReader().getZkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(original), true);
 
   }
 
