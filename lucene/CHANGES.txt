@@ -15,6 +15,11 @@ Changes in Runtime Behavior
 
 ======================= Lucene 7.1.0 =======================
 
+New Features
+
+* LUCENE-7621: Add CoveringQuery, a query whose required number of matching
+  clauses can be defined per document. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
