@@ -165,7 +165,7 @@ Returns the following response:
 }
 ----
 
-== Arrays
+== Array (data structure)
 
 The first data structure we'll explore is the *array*.
 
@@ -370,7 +370,7 @@ Returns the following response:
 ----
 
 
-== Tuples
+== Tuple (data structure)
 
 The *tuple* is the next data structure we'll explore.
 
@@ -419,7 +419,7 @@ Returns the following response:
 }
 ----
 
-== Lists
+== List (data structure)
 
 Next we have the *list* data structure.
 
@@ -467,7 +467,7 @@ Returns the following response:
 }
 ----
 
-== Variables with the `let` function
+== Let (setting variables)
 
 The `let` function sets *variables* and runs a Streaming Expression that references the variables. The `let` funtion can be used to
 write small statistical programs.
