@@ -29,6 +29,7 @@ import org.apache.lucene.util.Accountable;
  * @lucene.internal */
 public class RAMFile implements Accountable {
   protected final ArrayList<byte[]> buffers = new ArrayList<>();
+  private volatile int numBuffers;
   long length;
   RAMDirectory directory;
   protected long sizeInBytes;
@@ -53,6 +54,7 @@ public class RAMFile implements Accountable {
     byte[] buffer = newBuffer(size);
     synchronized(this) {
       buffers.add(buffer);
+      numBuffers = buffers.size();
       sizeInBytes += size;
     }
 
@@ -66,8 +68,8 @@ public class RAMFile implements Accountable {
     return buffers.get(index);
   }
 
-  protected final synchronized int numBuffers() {
-    return buffers.size();
+  protected final int numBuffers() {
+    return numBuffers;
   }
 
   /**
