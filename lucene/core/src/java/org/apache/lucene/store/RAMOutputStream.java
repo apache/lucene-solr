@@ -32,7 +32,7 @@ import org.apache.lucene.util.Accountables;
  * @lucene.internal
  */
 public class RAMOutputStream extends IndexOutput implements Accountable {
-  static final int BUFFER_SIZE = 1024;
+  static final int BUFFER_SIZE = Integer.getInteger( "org.apache.lucene.store.RAMOutputStream.BUFFER_SIZE", 1024 );
 
   private final RAMFile file;
 
