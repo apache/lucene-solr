@@ -128,9 +128,11 @@ public class CreateCollectionCmd implements Cmd {
         ClusterStateMutator.getShardNames(numSlices, shardNames);
       }
 
-      int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, usePolicyFramework? 0: 1);
-      if(maxShardsPerNode == 0) message.getProperties().put(MAX_SHARDS_PER_NODE, "0");
-
+      int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
+      if (usePolicyFramework && message.getStr(MAX_SHARDS_PER_NODE) != null && maxShardsPerNode > 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'maxShardsPerNode>0' is not supported when autoScaling policies are used");
+      }
+      if (maxShardsPerNode == -1 || usePolicyFramework) maxShardsPerNode = Integer.MAX_VALUE;
       if (numNrtReplicas + numTlogReplicas <= 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
       }
@@ -161,9 +163,11 @@ public class CreateCollectionCmd implements Cmd {
               + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
         }
 
-        int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
+        int maxShardsAllowedToCreate = maxShardsPerNode == Integer.MAX_VALUE ?
+            Integer.MAX_VALUE :
+            maxShardsPerNode * nodeList.size();
         int requestedShardsToCreate = numSlices * totalNumReplicas;
-        if (!usePolicyFramework &&  maxShardsAllowedToCreate < requestedShardsToCreate) {
+        if (maxShardsAllowedToCreate < requestedShardsToCreate) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
               + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
               + ", and the number of nodes currently live or live and part of your "+CREATE_NODE_SET+" is " + nodeList.size()
@@ -496,4 +500,15 @@ public class CreateCollectionCmd implements Cmd {
           "Could not find configName for collection " + collection + " found:" + configNames);
     }
   }
+
+  public static boolean usePolicyFramework(ZkStateReader zkStateReader, ZkNodeProps message) {
+    Map autoScalingJson = Collections.emptyMap();
+    try {
+      autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    } catch (Exception e) {
+      return false;
+    }
+    return autoScalingJson.get(Policy.CLUSTER_POLICY) != null || message.getStr(Policy.POLICY) != null;
+  }
+
 }

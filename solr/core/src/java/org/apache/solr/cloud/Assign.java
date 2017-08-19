@@ -270,21 +270,7 @@ public class Assign {
       }
     }
 
-    if (policyName != null || !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
-      if (message.getStr(CREATE_NODE_SET) == null)
-        nodeList = Collections.emptyList();// unless explicitly specified do not pass node list to Policy
-      synchronized (ocmh) {
-        PolicyHelper.SESSION_REF.set(ocmh.policySessionRef);
-        try {
-          return getPositionsUsingPolicy(collectionName,
-              shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas, policyName, ocmh.zkStateReader, nodeList);
-        } finally {
-          PolicyHelper.SESSION_REF.remove();
-        }
-
-      }
-    } else {
-      log.debug("Identify nodes using rules framework");
+    if (rulesMap != null && !rulesMap.isEmpty()) {
       List<Rule> rules = new ArrayList<>();
       for (Object map : rulesMap) rules.add(new Rule((Map) map));
       Map<String, Integer> sharVsReplicaCount = new HashMap<>();
@@ -302,6 +288,19 @@ public class Assign {
       return nodeMappings.entrySet().stream()
           .map(e -> new ReplicaPosition(e.getKey().shard, e.getKey().index, e.getKey().type, e.getValue()))
           .collect(Collectors.toList());
+    } else  {
+      if (message.getStr(CREATE_NODE_SET) == null)
+        nodeList = Collections.emptyList();// unless explicitly specified do not pass node list to Policy
+      synchronized (ocmh) {
+        PolicyHelper.SESSION_REF.set(ocmh.policySessionRef);
+        try {
+          return getPositionsUsingPolicy(collectionName,
+              shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas, policyName, ocmh.zkStateReader, nodeList);
+        } finally {
+          PolicyHelper.SESSION_REF.remove();
+        }
+
+      }
     }
   }
 

@@ -25,7 +25,7 @@ You can start and stop Solr, create and delete collections or cores, perform ope
 
 You can find the script in the `bin/` directory of your Solr installation. The `bin/solr` script makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
 
-More examples of `bin/solr` in use are available throughout the Solr Reference Guide, but particularly in the sections <<running-solr.adoc#running-solr,Running Solr>> and <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
+More examples of `bin/solr` in use are available throughout the Solr Reference Guide, but particularly in the sections <<installing-solr.adoc#starting-solr,Starting Solr>> and <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
 
 == Starting and Stopping
 

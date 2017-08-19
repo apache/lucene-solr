@@ -339,6 +339,15 @@ prefix:: The first characters of metric name that will filter the metrics return
 
 property:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.
 
+key:: fully-qualified metric name, which specifies one concrete metric instance (parameter can be
+specified multiple times to retrieve multiple concrete metrics). *NOTE: when this parameter is used other
+selection methods listed above are ignored.* Fully-qualified name consists of registry name, colon and
+metric name, with optional colon and metric property. Colons in names can be escaped using back-slash `\`
+character. Examples:
+`key=solr.node:CONTAINER.fs.totalSpace`
+`key=solr.core.collection1:QUERY./select.requestTimes:max_ms`
+`key=solr.jvm:system.properties:user.name`
+
 compact:: When false, a more verbose format of the response will be returned. Instead of a response like this:
 +
 [source,json]
@@ -395,3 +404,7 @@ Request only "counter" type metrics in the "core" group, returned in JSON:
 Request only "core" group metrics that start with "INDEX", returned in XML:
 
 `\http://localhost:8983/solr/admin/metrics?wt=xml&prefix=INDEX&group=core`
+
+Request only "user.name" property of "system.properties" metric from registry "solr.jvm":
+
+`\http://localhost:8983/solr/admin/metrics?wt=xml?key=solr.jvm:system.properties:user.name`

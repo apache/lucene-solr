@@ -655,35 +655,43 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(violations);
     assertEquals(0, violations.size());
 
-    // temporarily increase replica limit in cluster policy so that we can create a collection with 6 replicas
-    setClusterPolicyCommand = "{" +
-        " 'set-cluster-policy': [" +
-        "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<4', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]" +
+    String setEmptyClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': []" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setEmptyClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, "{set-cluster-policy : []}");
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     // lets create a collection which violates the rule replicas < 2
-    CollectionAdminResponse adminResponse = CollectionAdminRequest.Create
-        .createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6)
-        .process(solrClient);
+    try {
+      CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
+      create.setMaxShardsPerNode(10);
+      create.process(solrClient);
+      fail();
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("'maxShardsPerNode>0' is not supported when autoScaling policies are used"));
+
+    }
+
+
+    // lets create a collection which violates the rule replicas < 2
+    CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
+    CollectionAdminResponse adminResponse = create.process(solrClient);
     assertTrue(adminResponse.isSuccess());
 
-    // reset to original cluster policy which allows only 1 replica per shard per node
-    setClusterPolicyCommand = "{" +
-        " 'set-cluster-policy': [" +
-        "      {'cores':'<10', 'node':'#ANY'}," +
-        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'nodeRole':'overseer', 'replica':0}" +
-        "    ]" +
-        "}";
+    // reset the original cluster policy
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
 
     // get the diagnostics output again
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/diagnostics", null);

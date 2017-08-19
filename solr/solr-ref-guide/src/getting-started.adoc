@@ -1,7 +1,7 @@
 = Getting Started
 :page-shortname: getting-started
 :page-permalink: getting-started.html
-:page-children: installing-solr, running-solr, a-quick-overview, a-step-closer, solr-control-script-reference
+:page-children: a-quick-overview, solr-system-requirements, installing-solr, solr-configuration-files, solr-upgrade-notes, taking-solr-to-production, upgrading-a-solr-cluster
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -19,25 +19,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr makes it easy for programmers to develop sophisticated, high-performance search applications with advanced features such as faceting (arranging search results in columns with numerical counts of key terms).
+[.lead]
+Solr makes it easy for programmers to develop sophisticated, high-performance search applications with advanced features.
 
-Solr builds on another open source search technology: Lucene, a Java library that provides indexing and search technology, as well as spellchecking, hit highlighting and advanced analysis/tokenization capabilities. Both Solr and Lucene are managed by the Apache Software Foundation (http://www.apache.org/[www.apache.org)].
-
-The Lucene search library currently ranks among the top 15 open source projects and is one of the top 5 Apache projects, with installations at over 4,000 companies. Lucene/Solr downloads have grown nearly ten times over the past three years, with a current run-rate of over 6,000 downloads a day. The Solr search server, which provides application builders a ready-to-use search platform on top of the Lucene search library, is the fastest growing Lucene sub-project. Apache Lucene/Solr offers an attractive alternative to the proprietary licensed search and discovery software vendors.
-
-This section helps you get Solr up and running quickly, and introduces you to the basic Solr architecture and features. It covers the following topics:
-
-<<installing-solr.adoc#installing-solr,Installing Solr>>: A walkthrough of the Solr installation process.
-
-<<running-solr.adoc#running-solr,Running Solr>>: An introduction to running Solr. Includes information on starting up the servers, adding documents, and running queries.
+This section introduces you to the basic Solr architecture and features to help you get up and running quickly. It covers the following topics:
 
 <<a-quick-overview.adoc#a-quick-overview,A Quick Overview>>: A high-level overview of how Solr works.
 
-<<a-step-closer.adoc#a-step-closer,A Step Closer>>: An introduction to Solr's home directory and configuration options.
+<<installing-solr.adoc#installing-solr,Installing Solr>>: A walkthrough of the Solr installation process.
 
-<<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>>: a complete reference of all of the commands and options available with the bin/solr script.
+<<solr-configuration-files.adoc#solr-configuration-files,Solr Configuration Files>>: Overview of the installation layout and major configuration files.
 
-[TIP]
-====
-Solr includes a Quick Start tutorial which will be helpful if you are just starting out with Solr. You can find it online at http://lucene.apache.org/solr/quickstart.html.
-====
+<<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>>: Information about changes made in Solr releases.
+
+<<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>: Detailed steps to help you install Solr as a service and take your application to production.
+
+<<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>: Information for upgrading a production SolrCloud cluster.
+
+TIP: Solr includes a Quick Start tutorial which will be helpful if you are just starting out with Solr. You can find it in this Guide at <<solr-tutorial.adoc#solr-tutorial,Solr Tutorial>>.

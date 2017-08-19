@@ -1134,9 +1134,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     manager.registerGauge(this, registry, () -> startTime, true, "startTime", Category.CORE.toString());
     manager.registerGauge(this, registry, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
     manager.registerGauge(this, registry, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> getIndexDir(), true, "indexDir", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    manager.registerGauge(this, registry, () -> NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
       manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
@@ -1489,6 +1489,16 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
     log.info(logid+" CLOSING SolrCore " + this);
 
+    // stop reporting metrics
+    try {
+      coreMetricManager.close();
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+      if (e instanceof  Error) {
+        throw (Error) e;
+      }
+    }
+
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {
          try {
@@ -1583,15 +1593,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     } catch (Throwable e) {
       SolrException.log(log, e);
       if (e instanceof Error) {
-        throw (Error) e;
-      }
-    }
-
-    try {
-      coreMetricManager.close();
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-      if (e instanceof  Error) {
         throw (Error) e;
       }
     }

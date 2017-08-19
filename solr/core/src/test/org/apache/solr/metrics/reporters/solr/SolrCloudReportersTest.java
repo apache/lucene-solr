@@ -28,7 +28,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.apache.solr.util.JmxUtil;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,13 +39,13 @@ import org.junit.Test;
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   int leaderRegistries;
   int clusterRegistries;
-  static int jmxReporter;
+  int jmxReporter;
+
 
 
   @BeforeClass
   public static void configureDummyCluster() throws Exception {
     configureCluster(0).configure();
-    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
   }
 
   @Before
@@ -99,6 +99,12 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
       assertEquals(5, sor.getPeriod());
       for (String registryName : metricManager.registryNames(".*\\.shard[0-9]\\.replica.*")) {
         reporters = metricManager.getReporters(registryName);
+        jmxReporter = 0;
+        reporters.forEach((k, v) -> {
+          if (v instanceof SolrJmxReporter) {
+            jmxReporter++;
+          }
+        });
         assertEquals(reporters.toString(), 1 + jmxReporter, reporters.size());
         reporter = null;
         for (String name : reporters.keySet()) {
@@ -158,6 +164,12 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
       assertEquals(reporters.toString(), 0, reporters.size());
       for (String registryName : metricManager.registryNames(".*\\.shard[0-9]\\.replica.*")) {
         reporters = metricManager.getReporters(registryName);
+        jmxReporter = 0;
+        reporters.forEach((k, v) -> {
+          if (v instanceof SolrJmxReporter) {
+            jmxReporter++;
+          }
+        });
         assertEquals(reporters.toString(), 0 + jmxReporter, reporters.size());
       }
     });

@@ -1,6 +1,6 @@
-= A Step Closer
-:page-shortname: a-step-closer
-:page-permalink: a-step-closer.html
+= Solr Configuration Files
+:page-shortname: solr-configuration-files
+:page-permalink: solr-configuration-files.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -18,9 +18,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-You already have some idea of Solr's schema. This section describes Solr's home directory and other configuration options.
+Solr has several configuration files that you will interact with during your implementation.
 
-When Solr runs in an application server, it needs access to a home directory. The home directory contains important configuration information and is the place where Solr will store its index. The layout of the home directory will look a little different when you are running Solr in standalone mode vs when you are running in SolrCloud mode.
+Many of these files are in XML format, although APIs that interact with configuration settings tend to accept JSON for programmatic access as needed.
+
+== Solr Home
+When Solr runs, it needs access to a home directory.
+
+When you first install Solr, your home directory is `server/solr`. However, some examples may change this location (such as, if you run `bin/solr start -e cloud`, your home directory will be `example/cloud`).
+
+The home directory contains important configuration information and is the place where Solr will store its index. The layout of the home directory will look a little different when you are running Solr in standalone mode vs. when you are running in SolrCloud mode.
 
 The crucial parts of the Solr home directory are shown in these examples:
 
@@ -56,7 +63,10 @@ The crucial parts of the Solr home directory are shown in these examples:
       data/
 ----
 
-You may see other files, but the main ones you need to know are:
+You may see other files, but the main ones you need to know are discussed in the next section.
+
+== Configuration Files
+Inside Solr's Home, you'll find these files:
 
 * `solr.xml` specifies configuration options for your Solr server instance. For more information on `solr.xml` see <<solr-cores-and-solr-xml.adoc#solr-cores-and-solr-xml,Solr Cores and solr.xml>>.
 * Per Solr Core:
@@ -67,4 +77,4 @@ You may see other files, but the main ones you need to know are:
 
 Note that the SolrCloud example does not include a `conf` directory for each Solr Core (so there is no `solrconfig.xml` or Schema file). This is because the configuration files usually found in the `conf` directory are stored in ZooKeeper so they can be propagated across the cluster.
 
-If you are using SolrCloud with the embedded ZooKeeper instance, you may also see `zoo.cfg` and `zoo.data` which are ZooKeeper configuration and data files. However, if you are running your own ZooKeeper ensemble, you would supply your own ZooKeeper configuration file when you start it and the copies in Solr would be unused. For more information about ZooKeeper and SolrCloud, see the section <<solrcloud.adoc#solrcloud,SolrCloud>>.
+If you are using SolrCloud with the embedded ZooKeeper instance, you may also see `zoo.cfg` and `zoo.data` which are ZooKeeper configuration and data files. However, if you are running your own ZooKeeper ensemble, you would supply your own ZooKeeper configuration file when you start it and the copies in Solr would be unused. For more information about SolrCloud, see the section <<solrcloud.adoc#solrcloud,SolrCloud>>.

@@ -1502,10 +1502,6 @@ public class SolrCLI {
 
       if (cli.hasOption("maxShardsPerNode")) {
         maxShardsPerNode = Integer.parseInt(cli.getOptionValue("maxShardsPerNode"));
-      } else {
-        // need number of live nodes to determine maxShardsPerNode if it is not set
-        int numNodes = liveNodes.size();
-        maxShardsPerNode = ((numShards*replicationFactor)+numNodes-1)/numNodes;
       }
 
       String confname = cli.getOptionValue("confname");
