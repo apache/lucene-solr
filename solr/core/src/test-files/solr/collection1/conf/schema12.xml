@@ -633,7 +633,11 @@
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
 
-  <dynamicField name="*_pi" type="pint" indexed="true" stored="true" docValues="false" multiValued="false"/>
+  <dynamicField name="*_pi" type="pint" indexed="true" multiValued="false"/>
+  <dynamicField name="*_pl" type="plong" indexed="true" multiValued="false"/>
+  <dynamicField name="*_pf" type="pfloat" indexed="true" multiValued="false"/>
+  <dynamicField name="*_pd" type="pdouble" indexed="true" multiValued="false"/>
+  <dynamicField name="*_pdt" type="pdate" indexed="true" multiValued="false"/>
 
   <!-- some trie-coded dynamic fields for faster range queries -->
   <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>

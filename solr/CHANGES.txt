@@ -373,6 +373,8 @@ New Features
 * SOLR-10939: Add support for PointsFields to {!join} query. Joined fields should
   also have docValues enabled. (yonik)
 
+* SOLR-11173 TermsComponent support for Points fields. (yonik)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
