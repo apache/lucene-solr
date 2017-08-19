@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
+import java.util.Arrays;
+import java.util.regex.Pattern;
+
+import org.apache.lucene.util.mutable.MutableValueDouble;
+import org.apache.lucene.util.mutable.MutableValueFloat;
+import org.apache.lucene.util.mutable.MutableValueInt;
+import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.PointMerger;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.regex.Pattern;
 
-/**
- *
- *
- **/
-// TermsComponent not currently supported for PointFields
-@SolrTestCaseJ4.SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-11173")
 public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -283,10 +285,12 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
        ,"//int[@name='1'][.='2']"
     );
 
+    /* terms.raw only applies to indexed fields
     assertQ(req("indent","true", "qt","/terms",  "terms","true",
        "terms.fl","foo_i", "terms.raw","true")
        ,"not(//int[@name='1'][.='2'])"
     );
+    */
 
     // check something at the end of the index
     assertQ(req("indent","true", "qt","/terms",  "terms","true",
@@ -381,28 +385,121 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPointField() throws Exception {
-    assertU(adoc("id", "10000", "foo_pi", "1"));
-    assertU(commit());
-    
-    try {
-      final SolrQueryRequest req = req(
-          "qt", "/terms",
-          "terms", "true",
-          "terms.fl", "foo_pi");
-      Exception e = expectThrows(SolrException.class, () -> h.query(req));
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) e).code());
-      assertTrue(e.getMessage().contains("The terms component does not support Points-based field foo_pi"));
+    int nvals = 10000; int maxval = 1000000;
+    // int nvals = 5; int maxval = 2;
+    final int vals[] = new int[nvals];
+    for (int i=0; i<nvals; i++) {
+      vals[i] = random().nextInt(maxval);
+      String v = Integer.toString(vals[i]);
+      assertU(adoc("id", Integer.toString(100000+i), "foo_pi",v, "foo_pl",v, "foo_pf",v, "foo_pd",v) );
+      if (random().nextInt(1000) == 0) assertU(commit());  // make multiple segments
+    }
 
-      final SolrQueryRequest req2 = req(
-          "qt", "/terms",
-          "terms", "true",
-          "terms.fl", "foo_pi",
-          "terms.list", "1");
-      e = expectThrows(SolrException.class, () -> h.query(req2));
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ((SolrException) e).code());
-      assertTrue(e.getMessage().contains("The terms component does not support Points-based field foo_pi"));
+    assertU(commit());
+    // assertU(optimize());
+
+    Arrays.sort(vals);
+
+    // find the first two values and account for dups
+    int val1 = vals[0];
+    int val2 = vals[1];
+    for (int i=2; i<vals.length; i++) {
+      if (val2 != val1) break;
+      val2 = vals[i];
+    }
+
+    SolrQueryRequest req = req(
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "foo_pi");
+    ;
+    try {
+      SchemaField sf = req.getSchema().getField("foo_pi");
+
+      /**
+      LeafReader r = req.getSearcher().getIndexReader().leaves().get(0).reader();
+      PointValues pv = r.getPointValues("foo_pi");
+      System.out.println("pv=" + pv);
+      if (pv instanceof AssertingLeafReader.AssertingPointValues) {
+        pv = ((AssertingLeafReader.AssertingPointValues) pv).getWrapped();
+      }
+      System.out.println("pv=" + pv);
+      BKDReader bkdr = (BKDReader)pv;
+
+       for (int i=0; i<Math.min(10,nvals); i++) { System.out.println("INDEXED VAL=" + vals[i]); }
+      **/
+
+
+      //
+      // iterate all values
+      //
+      int totBuff = random().nextInt(50)+1;
+      int minSegBuff = random().nextInt(10)+1;
+      PointMerger.ValueIterator iter = new PointMerger.ValueIterator(req.getSchema().getField("foo_pi"), req.getSearcher().getIndexReader().leaves(), totBuff, minSegBuff);
+      MutableValueInt v = (MutableValueInt)iter.getMutableValue();
+      int i=0;
+      for (;;) {
+        long count = iter.getNextCount();
+        if (count < 0) break;
+        assertEquals( vals[i], v.value );
+        i += count;
+        // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
+      }
+      assert(i==nvals);
+
+      totBuff = random().nextInt(50)+1;
+      minSegBuff = random().nextInt(10)+1;
+      iter = new PointMerger.ValueIterator(req.getSchema().getField("foo_pl"), req.getSearcher().getIndexReader().leaves());
+      MutableValueLong lv = (MutableValueLong)iter.getMutableValue();
+      i=0;
+      for (;;) {
+        long count = iter.getNextCount();
+        if (count < 0) break;
+        assertEquals( vals[i], lv.value );
+        i += count;
+        // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
+      }
+      assert(i==nvals);
+
+      totBuff = random().nextInt(50)+1;
+      minSegBuff = random().nextInt(10)+1;
+      iter = new PointMerger.ValueIterator(req.getSchema().getField("foo_pf"), req.getSearcher().getIndexReader().leaves());
+      MutableValueFloat fv = (MutableValueFloat)iter.getMutableValue();
+      i=0;
+      for (;;) {
+        long count = iter.getNextCount();
+        if (count < 0) break;
+        assertEquals( vals[i], fv.value, 0);
+        i += count;
+        // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
+      }
+      assert(i==nvals);
+
+      totBuff = random().nextInt(50)+1;
+      minSegBuff = random().nextInt(10)+1;
+      iter = new PointMerger.ValueIterator(req.getSchema().getField("foo_pd"), req.getSearcher().getIndexReader().leaves());
+      MutableValueDouble dv = (MutableValueDouble)iter.getMutableValue();
+      i=0;
+      for (;;) {
+        long count = iter.getNextCount();
+        if (count < 0) break;
+        assertEquals( vals[i], dv.value, 0);
+        i += count;
+        // if (i < 10) System.out.println("COUNT=" + count + " OBJ="+v.toObject());
+      }
+      assert(i==nvals);
+
+      assertQ(req("indent","true", "qt","/terms",  "terms","true",
+          "terms.fl","foo_pi", "terms.sort","index", "terms.limit","2")
+          ,"count(//lst[@name='foo_pi']/*)=2"
+          ,"//lst[@name='foo_pi']/int[1][@name='" +val1+ "']"
+          ,"//lst[@name='foo_pi']/int[2][@name='" +val2+ "']"
+      );
+
+
     } finally {
-      assertU(delI("10000"));
+      req.close();
+      assertU(delQ("foo_pi:[* TO *]"));
       assertU(commit());
     }
   }

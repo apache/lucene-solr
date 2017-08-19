@@ -884,6 +884,8 @@ public class AssertingLeafReader extends FilterLeafReader {
       assertStats(maxDoc);
     }
 
+    public PointValues getWrapped() { return in; }
+
     private void assertStats(int maxDoc) {
       assert in.size() > 0;
       assert in.getDocCount() > 0;
