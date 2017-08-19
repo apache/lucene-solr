@@ -357,7 +357,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "}";
     String removeListenerCommand1 = "{\n" +
         "\t\"remove-listener\" : {\n" +
-        "\t\t\"name\" : \".system\"\n" +
+        "\t\t\"name\" : \"node_lost_trigger.system\"\n" +
         "\t}\n" +
         "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
@@ -655,18 +655,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(violations);
     assertEquals(0, violations.size());
 
-    String setEmptyClusterPolicyCommand = "{" +
-        " 'set-cluster-policy': []" +
-        "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setEmptyClusterPolicyCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, "{set-cluster-policy : []}");
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-
-    // lets create a collection which violates the rule replicas < 2
+    // assert that when a cluster policy is in effect, using maxShardsPerNode throws an exception
     try {
       CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
       create.setMaxShardsPerNode(10);
@@ -674,9 +663,19 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       fail();
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("'maxShardsPerNode>0' is not supported when autoScaling policies are used"));
-
     }
 
+    // temporarily increase replica limit in cluster policy so that we can create a collection with 6 replicas
+    String tempClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<4', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, tempClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
 
     // lets create a collection which violates the rule replicas < 2
     CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
@@ -687,11 +686,6 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-
 
     // get the diagnostics output again
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/diagnostics", null);
