@@ -355,7 +355,7 @@ public class HttpSolrClient extends SolrClient {
 
     if (request instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = baseUrl.replace("/solr", "/v2");
+        basePath = baseUrl.replace("/solr", "/api");
       } else {
         basePath = baseUrl + "/____v2";
       }
