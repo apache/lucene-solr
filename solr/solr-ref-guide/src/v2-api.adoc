@@ -41,38 +41,38 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 [width="100%",options="header",]
 |===
 |Path prefix |Some Supported Operations
-|`/v2/collections` or equivalently: `/v2/c` |Create, alias, backup, and restore a collection.
-|`/v2/c/_collection-name_/update` |Update requests.
-|`/v2/c/_collection-name_/config` |Configuration requests.
-|`/v2/c/_collection-name_/schema` |Schema requests.
-|`/v2/c/_collection-name_/_handler-name_` |Handler-specific requests.
-|`/v2/c/_collection-name_/shards` |Split a shard, create a shard, add a replica.
-|`/v2/c/_collection-name_/shards/_shard-name_` |Delete a shard, force leader election
-|`/v2/c/_collection-name_/shards/_shard-name_/_replica-name_` |Delete a replica.
-|`/v2/cores` |Create a core.
-|`/v2/cores/_core-name_` |Reload, rename, delete, and unload a core.
-|`/v2/node` |Perform overseer operation, rejoin leader election.
-|`/v2/cluster` |Add role, remove role, set cluster property.
-|`/v2/c/.system/blob` |Upload and download blobs and metadata.
+|`/api/collections` or equivalently: `/api/c` |Create, alias, backup, and restore a collection.
+|`/api/c/_collection-name_/update` |Update requests.
+|`/api/c/_collection-name_/config` |Configuration requests.
+|`/api/c/_collection-name_/schema` |Schema requests.
+|`/api/c/_collection-name_/_handler-name_` |Handler-specific requests.
+|`/api/c/_collection-name_/shards` |Split a shard, create a shard, add a replica.
+|`/api/c/_collection-name_/shards/_shard-name_` |Delete a shard, force leader election
+|`/api/c/_collection-name_/shards/_shard-name_/_replica-name_` |Delete a replica.
+|`/api/cores` |Create a core.
+|`/api/cores/_core-name_` |Reload, rename, delete, and unload a core.
+|`/api/node` |Perform overseer operation, rejoin leader election.
+|`/api/cluster` |Add role, remove role, set cluster property.
+|`/api/c/.system/blob` |Upload and download blobs and metadata.
 |===
 
 == Introspect
 
 Append `/_introspect` to any valid v2 API path and the API specification will be returned in JSON format.
 
-`\http://localhost:8983/v2/c/_introspect`
+`\http://localhost:8983/api/c/_introspect`
 
 To limit the introspect output to include just one particular HTTP method, add request param `method` with value `GET`, `POST`, or `DELETE`.
 
-`\http://localhost:8983/v2/c/_introspect?method=POST`
+`\http://localhost:8983/api/c/_introspect?method=POST`
 
 Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_` .
 
-`\http://localhost:8983/v2/c/gettingstarted/_introspect?method=POST&command=modify`
+`\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 
 === Interpreting the Introspect Output
 
-Example : `\http://localhost:8983/v2/c/gettingstarted/get/_introspect`
+Example : `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 
 [source,json]
 ----
@@ -107,7 +107,7 @@ Description of some of the keys in the above example:
 * `**spec/url/params**` : List of supported URL request params
 * `**availableSubPaths**` : List of valid URL subpaths and the HTTP method(s) each supports
 
-Example of introspect for a POST API: `\http://localhost:8983/v2/c/gettingstarted/_introspect?method=POST&command=modify`
+Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 
 [source,json]
 ----
@@ -161,7 +161,7 @@ For the "gettingstarted" collection, set the replication factor and whether to a
 
 [source,bash]
 ----
-$ curl http://localhost:8983/v2/c/gettingstarted -H 'Content-type:application/json' -d '
+$ curl http://localhost:8983/api/c/gettingstarted -H 'Content-type:application/json' -d '
 { modify: { replicationFactor: "3", autoAddReplicas: false } }'
 
 {"responseHeader":{"status":0,"QTime":842}}
@@ -171,7 +171,7 @@ See the state of the cluster:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/v2/cluster
+$ curl http://localhost:8983/api/cluster
 
 {"responseHeader":{"status":0,"QTime":0},"collections":["gettingstarted",".system"]}
 ----
@@ -180,7 +180,7 @@ Set a cluster property:
 
 [source,bash]
 ----
-$ curl http://localhost:8983/v2/cluster -H 'Content-type: application/json' -d '
+$ curl http://localhost:8983/api/cluster -H 'Content-type: application/json' -d '
 { set-property: { name: autoAddReplicas, val: "false" } }'
 
 {"responseHeader":{"status":0,"QTime":4}}
