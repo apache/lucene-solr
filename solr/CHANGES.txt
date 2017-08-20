@@ -159,6 +159,9 @@ Upgrading from Solr 6.x
 * SOLR-11239: The use of maxShardsPerNode is not supported when a cluster policy is in effect or
   when a collection specific policy is specified during collection creation.
 
+* V2 APIs are now available at /api, in addition to /v2 (which is now deprecated). Legacy APIs continue to remain
+  available at /solr.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -540,6 +543,8 @@ Other Changes
   use of maxShardsPerNode is not supported when a cluster policy is in effect or when a
   collection specific policy is specified during collection creation.
   (Noble Paul, shalin)
+
+* SOLR-11183: V2 APIs are now available at /api endpoint. (Ishan Chattopadhyaya)
 
 ==================  6.7.0 ==================
 
