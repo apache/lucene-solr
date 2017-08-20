@@ -116,7 +116,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.Java9InitHack;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -162,11 +161,6 @@ import static java.util.Objects.requireNonNull;
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  // this must be a static init block to be safe!
-  static {
-    Java9InitHack.initJava9();
-  }
 
   private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
       "org.junit.",
