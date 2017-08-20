@@ -61,7 +61,7 @@ Bug Fixes
 * SOLR-11221: SolrJmxReporter broken on core reload. This resulted in some or most metrics not being reported
   via JMX after core reloads, depending on timing. (ab)
 
-* SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
+* SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
 
 ==================  6.6.0 ==================
