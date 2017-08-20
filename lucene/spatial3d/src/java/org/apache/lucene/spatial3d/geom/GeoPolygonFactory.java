@@ -336,19 +336,19 @@ public class GeoPolygonFactory {
     final SidedPlane initialPlane = new SidedPlane(testPoint, filteredPointList.get(0), filteredPointList.get(1));
     // We don't know if this is the correct siding choice.  We will only know as we build the complex polygon.
     // So we need to be prepared to try both possibilities.
-    GeoCompositePolygon rval = new GeoCompositePolygon();
+    GeoCompositePolygon rval = new GeoCompositePolygon(planetModel);
     MutableBoolean seenConcave = new MutableBoolean();
     if (buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, testPoint) == false) {
       // The testPoint was within the shape.  Was that intended?
       if (testPointInside) {
         // Yes: build it for real
-        rval = new GeoCompositePolygon();
+        rval = new GeoCompositePolygon(planetModel);
         seenConcave = new MutableBoolean();
         buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, null);
         return rval;
       }
       // No: do the complement and return that.
-      rval = new GeoCompositePolygon();
+      rval = new GeoCompositePolygon(planetModel);
       seenConcave = new MutableBoolean();
       buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
       return rval;
@@ -359,7 +359,7 @@ public class GeoPolygonFactory {
         return rval;
       }
       // No: return the complement
-      rval = new GeoCompositePolygon();
+      rval = new GeoCompositePolygon(planetModel);
       seenConcave = new MutableBoolean();
       buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
       return rval;

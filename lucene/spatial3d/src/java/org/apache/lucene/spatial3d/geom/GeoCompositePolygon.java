@@ -25,7 +25,15 @@ public class GeoCompositePolygon extends GeoBaseCompositeAreaShape<GeoPolygon> i
   /**
    * Constructor.
    */
-  public GeoCompositePolygon() {
+  public GeoCompositePolygon(PlanetModel planetModel) {
+    super(planetModel);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof GeoCompositePolygon))
+      return false;
+    return super.equals(o);
   }
 
   @Override

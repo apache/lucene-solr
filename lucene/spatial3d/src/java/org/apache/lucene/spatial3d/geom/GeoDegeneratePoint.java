@@ -40,6 +40,11 @@ class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
   }
 
   @Override
+  public PlanetModel getPlanetModel() {
+    return planetModel;
+  }
+
+  @Override
   public GeoBBox expand(final double angle) {
     final double newTopLat = latitude + angle;
     final double newBottomLat = latitude - angle;
