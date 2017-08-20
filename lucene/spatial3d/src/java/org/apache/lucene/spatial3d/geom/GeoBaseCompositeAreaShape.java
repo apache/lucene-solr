@@ -35,7 +35,8 @@ abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape> extends GeoBase
   /**
    * Constructor.
    */
-  public GeoBaseCompositeAreaShape() {
+  public GeoBaseCompositeAreaShape(PlanetModel planetModel) {
+    super(planetModel);
   }
 
   @Override
@@ -50,6 +51,9 @@ abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape> extends GeoBase
 
   @Override
   public int getRelationship(GeoShape geoShape) {
+    if (!geoShape.getPlanetModel().equals(planetModel)) {
+      throw new IllegalArgumentException("Cannot relate shapes with different planet models.");
+    }
     final int insideGeoAreaShape = isShapeInsideGeoAreaShape(geoShape);
     if (insideGeoAreaShape == SOME_INSIDE) {
       return GeoArea.OVERLAPS;

@@ -29,7 +29,8 @@ abstract class GeoBaseCompositeMembershipShape<T extends GeoMembershipShape>
   /**
    * Constructor.
    */
-  GeoBaseCompositeMembershipShape() {
+  GeoBaseCompositeMembershipShape(PlanetModel planetModel) {
+    super(planetModel);
   }
 
   @Override

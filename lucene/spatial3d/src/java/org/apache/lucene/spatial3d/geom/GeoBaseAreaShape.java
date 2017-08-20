@@ -94,6 +94,9 @@ abstract class GeoBaseAreaShape extends GeoBaseMembershipShape implements GeoAre
 
   @Override
   public int getRelationship(GeoShape geoShape) {
+    if (!geoShape.getPlanetModel().equals(planetModel)) {
+      throw new IllegalArgumentException("Cannot relate shapes with different planet models.");
+    }
     final int insideGeoAreaShape = isShapeInsideGeoAreaShape(geoShape);
     if (insideGeoAreaShape == SOME_INSIDE) {
       return GeoArea.OVERLAPS;
