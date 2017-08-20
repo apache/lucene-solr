@@ -212,7 +212,7 @@ Other Changes
   with point fields and provides control over dynamic fields used for the raw amount and currency
   code sub-fields.  (hossman, Steve Rowe)
 
-* SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
+* SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
 
  * SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
