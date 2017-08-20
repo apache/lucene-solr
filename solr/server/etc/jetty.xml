@@ -105,6 +105,14 @@
            </New>
          </Arg>
        </Call>
+       <Call name="addRule">
+         <Arg>
+           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+             <Set name="pattern">/api/*</Set>
+             <Set name="replacement">/solr/____v2</Set>
+           </New>
+         </Arg>
+       </Call>
        <Set name="handler">
          <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
            <Set name="handlers">
