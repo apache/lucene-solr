@@ -18,29 +18,12 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * GeoCompositeAreaShape is a set of GeoAreaShape's, treated as a unit.
+ * Relates all Geo3d shape with a specific {@link PlanetModel}.
  *
  * @lucene.experimental
  */
-public class GeoCompositeAreaShape extends GeoBaseCompositeAreaShape<GeoAreaShape> {
+public interface PlanetObject {
 
-  /**
-   * Constructor.
-   */
-  public GeoCompositeAreaShape(PlanetModel planetModel) {
-    super(planetModel);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof GeoCompositeAreaShape))
-      return false;
-    return super.equals(o);
-  }
-
-  @Override
-  public String toString() {
-    return "GeoCompositeAreaShape: {" + shapes + '}';
-  }
-
+  /** Returns the {@link PlanetModel} provided when this shape was created. */
+  PlanetModel getPlanetModel();
 }
