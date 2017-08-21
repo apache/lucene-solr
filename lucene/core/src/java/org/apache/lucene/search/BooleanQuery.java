@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -332,6 +333,69 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       }
     }
 
+    // Deduplicate SHOULD clauses by summing up their boosts
+    if (clauseSets.get(Occur.SHOULD).size() > 0 && minimumNumberShouldMatch <= 1) {
+      Map<Query, Double> shouldClauses = new HashMap<>();
+      for (Query query : clauseSets.get(Occur.SHOULD)) {
+        double boost = 1;
+        while (query instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) query;
+          boost *= bq.getBoost();
+          query = bq.getQuery();
+        }
+        shouldClauses.put(query, shouldClauses.getOrDefault(query, 0d) + boost);
+      }
+      if (shouldClauses.size() != clauseSets.get(Occur.SHOULD).size()) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder()
+            .setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+        for (Map.Entry<Query,Double> entry : shouldClauses.entrySet()) {
+          Query query = entry.getKey();
+          float boost = entry.getValue().floatValue();
+          if (boost != 1f) {
+            query = new BoostQuery(query, boost);
+          }
+          builder.add(query, Occur.SHOULD);
+        }
+        for (BooleanClause clause : clauses) {
+          if (clause.getOccur() != Occur.SHOULD) {
+            builder.add(clause);
+          }
+        }
+        return builder.build();
+      }
+    }
+
+    // Deduplicate MUST clauses by summing up their boosts
+    if (clauseSets.get(Occur.MUST).size() > 0) {
+      Map<Query, Double> mustClauses = new HashMap<>();
+      for (Query query : clauseSets.get(Occur.MUST)) {
+        double boost = 1;
+        while (query instanceof BoostQuery) {
+          BoostQuery bq = (BoostQuery) query;
+          boost *= bq.getBoost();
+          query = bq.getQuery();
+        }
+        mustClauses.put(query, mustClauses.getOrDefault(query, 0d) + boost);
+      }
+      if (mustClauses.size() != clauseSets.get(Occur.MUST).size()) {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder()
+            .setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+        for (Map.Entry<Query,Double> entry : mustClauses.entrySet()) {
+          Query query = entry.getKey();
+          float boost = entry.getValue().floatValue();
+          if (boost != 1f) {
+            query = new BoostQuery(query, boost);
+          }
+          builder.add(query, Occur.MUST);
+        }
+        for (BooleanClause clause : clauses) {
+          if (clause.getOccur() != Occur.MUST) {
+            builder.add(clause);
+          }
+        }
+        return builder.build();
+      }
+    }
 
     // Rewrite queries whose single scoring clause is a MUST clause on a
     // MatchAllDocsQuery to a ConstantScoreQuery
