@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public abstract class BasePlanetObject {
+public abstract class BasePlanetObject implements PlanetObject {
 
   /** This is the planet model embedded in all objects derived from this
    * class. */
@@ -35,7 +35,7 @@ public abstract class BasePlanetObject {
     this.planetModel = planetModel;
   }
 
-  /** Returns the {@link PlanetModel} provided when this shape was created. */
+  @Override
   public PlanetModel getPlanetModel() {
     return planetModel;
   }

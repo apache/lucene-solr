@@ -18,8 +18,6 @@ package org.apache.solr.servlet;
 
 import javax.servlet.Filter;
 
-import org.apache.solr.util.Java9InitHack;
-
 /**
  * All Solr filters available to the user's webapp should
  * extend this class and not just implement {@link Filter}.
@@ -30,7 +28,6 @@ abstract class BaseSolrFilter implements Filter {
   
   static {
     CheckLoggingConfiguration.check();
-    Java9InitHack.initJava9();
   }
   
 }

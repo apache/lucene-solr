@@ -165,7 +165,7 @@ Returns the following response:
 }
 ----
 
-== Arrays
+== Array (data structure)
 
 The first data structure we'll explore is the *array*.
 
@@ -370,7 +370,7 @@ Returns the following response:
 ----
 
 
-== Tuple
+== Tuple (data structure)
 
 The *tuple* is the next data structure we'll explore.
 
@@ -419,7 +419,7 @@ Returns the following response:
 }
 ----
 
-== List
+== List (data structure)
 
 Next we have the *list* data structure.
 
@@ -467,7 +467,7 @@ Returns the following response:
 }
 ----
 
-== Let
+== Let (setting variables)
 
 The `let` function sets *variables* and runs a Streaming Expression that references the variables. The `let` funtion can be used to
 write small statistical programs.
@@ -529,7 +529,7 @@ Here is the output:
 }
 ----
 
-== Col
+== Creating arrays with `col` function
 
 The `col` function is used to move a column of numbers from a list of tuples into an `array`.
 This is an important function because Streaming Expressions such as `sql`, `random` and `timeseries` return tuples,
@@ -586,7 +586,7 @@ The response shows the arrays:
 }
 ----
 
-== Statistical Programming
+== Statistical Programming Example
 
 We've covered how the *data structures*, *variables* and a few *statistical functions* work.
 Let's dive into an example that puts these tools to use.
@@ -623,7 +623,7 @@ The use case we're reasoning about can often be approached using a K Nearest Nei
 With knn we use a *distance* measure to compare vectors of data to find the k nearest neighbors to
 a specific vector.
 
-=== Distance
+=== Euclidean Distance
 
 The Streaming Expression statistical function library has a function called `distance`. The `distance` function
 computes the Euclidean distance between two vectors. This looks promising for comparing vectors of room rates.

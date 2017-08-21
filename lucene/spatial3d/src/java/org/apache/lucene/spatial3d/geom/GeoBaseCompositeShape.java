@@ -27,7 +27,7 @@ import java.util.List;
  * @param <T> is the type of GeoShapes of the composite.
  * @lucene.experimental
  */
-public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoShape {
+public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlanetObject implements GeoShape {
 
   /**
    * Shape's container
@@ -37,7 +37,8 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoSh
   /**
    * Constructor.
    */
-  public GeoBaseCompositeShape() {
+  public GeoBaseCompositeShape(PlanetModel planetModel) {
+    super(planetModel);
   }
 
   /**
@@ -46,6 +47,9 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoSh
    * @param shape is the shape to add.
    */
   public void addShape(final T shape) {
+    if (!shape.getPlanetModel().equals(planetModel)) {
+      throw new IllegalArgumentException("Cannot add a shape into a composite with different planet models.");
+    }
     shapes.add(shape);
   }
 
@@ -108,7 +112,7 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoSh
 
   @Override
   public int hashCode() {
-    return shapes.hashCode();
+    return super.hashCode() + shapes.hashCode();
   }
 
   @Override
@@ -116,6 +120,6 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> implements GeoSh
     if (!(o instanceof GeoBaseCompositeShape<?>))
       return false;
     GeoBaseCompositeShape<?> other = (GeoBaseCompositeShape<?>) o;
-    return shapes.equals(other.shapes);
+    return super.equals(other) && shapes.equals(other.shapes);
   }
 }

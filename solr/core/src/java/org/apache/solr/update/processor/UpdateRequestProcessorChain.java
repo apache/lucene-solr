@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -278,7 +279,9 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
           PluginInfo pluginInfo = new PluginInfo("updateProcessor",
               Utils.makeMap("name", s,
                   "class", factoryClass.getName()));
-          core.getUpdateProcessors().put(s, p = core.getUpdateProcessors().createPlugin(pluginInfo).get());
+          UpdateRequestProcessorFactory plugin = p = core.getUpdateProcessors().createPlugin(pluginInfo).get();
+          if (plugin instanceof SolrCoreAware) ((SolrCoreAware) plugin).inform(core);
+          core.getUpdateProcessors().put(s, plugin);
         }
         if (p == null)
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
