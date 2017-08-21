@@ -16,8 +16,8 @@
  */
 package org.apache.solr.core;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.metrics.MetricsMap;
@@ -25,7 +25,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 
 class MockInfoBean implements SolrInfoBean, SolrMetricProducer {
-  Set<String> metricNames = new HashSet<>();
+  Set<String> metricNames = ConcurrentHashMap.newKeySet();
   MetricRegistry registry;
 
   @Override

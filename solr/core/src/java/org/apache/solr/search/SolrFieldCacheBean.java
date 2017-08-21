@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.SolrInfoBean;
@@ -36,7 +36,7 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   private boolean disableJmxEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
 
   private MetricRegistry registry;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
   @Override
   public String getName() { return this.getClass().getName(); }

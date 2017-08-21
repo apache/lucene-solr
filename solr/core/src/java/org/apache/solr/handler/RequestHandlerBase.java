@@ -18,8 +18,8 @@ package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
@@ -74,7 +74,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   private PluginInfo pluginInfo;
 
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")

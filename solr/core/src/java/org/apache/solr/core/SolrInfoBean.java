@@ -66,6 +66,7 @@ public interface SolrInfoBean {
    * Modifiable set of metric names that this component reports (default is null,
    * which means none). If not null then this set is used by {@link #registerMetricName(String)}
    * to capture what metrics names are reported from this component.
+   * <p><b>NOTE: this set has to allow iteration under modifications.</b></p>
    */
   default Set<String> getMetricNames() {
     return null;
