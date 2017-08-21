@@ -180,6 +180,8 @@ Other Changes
 
 * SOLR-11249: Upgrade Jetty from 9.3.14.v20161028 to 9.3.20.v20170531 (Michael Braun via David Smiley)
 
+* SOLR-11270: Automatically added SystemLogListener should not prevent deleting a trigger. (ab)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components

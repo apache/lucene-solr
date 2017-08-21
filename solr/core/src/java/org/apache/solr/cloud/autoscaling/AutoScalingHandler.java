@@ -601,7 +601,15 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
     }
     if (!activeListeners.isEmpty()) {
-      if (removeListeners) {
+      boolean onlySystemLog = false;
+      if (activeListeners.size() == 1) {
+        AutoScalingConfig.TriggerListenerConfig cfg = listeners.get(activeListeners.iterator().next());
+        if (SystemLogListener.class.getName().equals(cfg.listenerClass) ||
+            ("solr." + SystemLogListener.class.getSimpleName()).equals(cfg.listenerClass)) {
+          onlySystemLog = true;
+        }
+      }
+      if (removeListeners || onlySystemLog) {
         listeners = new HashMap<>(listeners);
         listeners.keySet().removeAll(activeListeners);
       } else {

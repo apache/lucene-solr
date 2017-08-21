@@ -355,22 +355,14 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         "\t\t\"name\" : \"xyz\"\n" +
         "\t}\n" +
         "}";
-    String removeListenerCommand1 = "{\n" +
-        "\t\"remove-listener\" : {\n" +
-        "\t\t\"name\" : \"node_lost_trigger.system\"\n" +
-        "\t}\n" +
-        "}";
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, removeListenerCommand1);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     listeners = (Map<String, Object>) loaded.get("listeners");
     assertNotNull(listeners);
-    assertEquals(0, listeners.size());
+    assertEquals(1, listeners.size());
 
     removeTriggerCommand = "{" +
         "'remove-trigger' : {" +
