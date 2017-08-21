@@ -33,6 +33,9 @@ Optimizations
   than 8x greater than the cost of the lead iterator in order to use doc values.
   (Murali Krishna P via Adrien Grand)
 
+* LUCENE-7925: Collapse duplicate SHOULD or MUST clauses by summing up their
+  boosts. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
