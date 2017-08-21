@@ -152,6 +152,12 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
                minHardCommitNanos + "ns",
                minHardCommitNanos < firstHardNanos);
 
+    final Long firstSearcherNanos = monitor.searcher.poll(5000, MILLISECONDS);
+    assertNotNull("didn't get a single new searcher", firstSearcherNanos);
+    for (int i = 0; i <= softCommitMaxDocs; i++) {
+      assertQ("should find one", req("id:"+(8000 + i)) ,"//result[@numFound=1]" );
+    }
+
     // wait a bit, w/o other action we shouldn't see any new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
                monitor.hard.poll(1000, MILLISECONDS));
