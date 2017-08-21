@@ -471,9 +471,6 @@ Bug Fixes
 
 * SOLR-11268: AtomicUpdateProcessor complains missing UpdateLog (noble, Ishan Chattopadhyaya)
 
-* SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
-  will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
-
 Optimizations
 ----------------------
 
@@ -903,6 +900,9 @@ Bug Fixes
 
 * SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
+
+* SOLR-11228: Exclude static html files in the partials directory from authentication and authorization checks. The UI
+  will open correctly with kerberos enabled (Ishan Chattopadhyaya, Varun Thacker)
 
 ==================  6.6.0 ==================
 
