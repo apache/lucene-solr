@@ -151,6 +151,8 @@ Other Changes
 
 * SOLR-11249: Upgrade Jetty from 9.3.14.v20161028 to 9.3.20.v20170531 (Michael Braun via David Smiley)
 
+* SOLR-5129: Timeout property for waiting ZK get started. (Cao Manh Dat, Hrishikesh Gadre, Varun Thacker)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
