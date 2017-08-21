@@ -33,6 +33,12 @@ Bug Fixes
   not recommended, lucene-analyzers-icu contains binary data structures
   specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
 
+Build
+
+* SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
+  instead of locally installing first, to workaround a double repository push of
+  *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
