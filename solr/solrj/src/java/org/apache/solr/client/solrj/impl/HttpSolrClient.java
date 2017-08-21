@@ -513,6 +513,7 @@ public class HttpSolrClient extends SolrClient {
     try {
       HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
       final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
+
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
@@ -551,6 +552,7 @@ public class HttpSolrClient extends SolrClient {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
+        rsp.add("closeableResponse", response);
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;

@@ -67,6 +67,8 @@ Bug Fixes
 * SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked directory
   (Erick Erickson)
 
+* SOLR-10698: StreamHandler should allow connections to be closed early (Joel Bernstein, Varun Thacker, Erick Erickson)
+
 ==================  6.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
