@@ -454,6 +454,8 @@ Bug Fixes
 
 * SOLR-11243: Replica Placement rules are ignored if a cluster policy exists. (shalin)
 
+* SOLR-11268: AtomicUpdateProcessor complains missing UpdateLog (noble, Ishan Chattopadhyaya)
+
 Optimizations
 ----------------------
 
