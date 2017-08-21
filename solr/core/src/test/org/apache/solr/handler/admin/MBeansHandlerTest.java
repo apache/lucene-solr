@@ -19,14 +19,20 @@ package org.apache.solr.handler.admin;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -119,5 +125,75 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
 
     assertTrue("external entity ignored properly", true);
+  }
+
+  boolean runSnapshots;
+
+  @Test
+  public void testMetricsSnapshot() throws Exception {
+    final CountDownLatch counter = new CountDownLatch(500);
+    MetricRegistry registry = new MetricRegistry();
+    Set<String> names = ConcurrentHashMap.newKeySet();
+    SolrInfoBean bean = new SolrInfoBean() {
+      @Override
+      public String getName() {
+        return "foo";
+      }
+
+      @Override
+      public String getDescription() {
+        return "foo";
+      }
+
+      @Override
+      public Category getCategory() {
+        return Category.ADMIN;
+      }
+
+      @Override
+      public Set<String> getMetricNames() {
+        return names;
+      }
+
+      @Override
+      public MetricRegistry getMetricRegistry() {
+        return registry;
+      }
+    };
+    runSnapshots = true;
+    Thread modifier = new Thread(() -> {
+      int i = 0;
+      while (runSnapshots) {
+        bean.registerMetricName("name-" + i++);
+        try {
+          Thread.sleep(31);
+        } catch (InterruptedException e) {
+          runSnapshots = false;
+          break;
+        }
+      }
+    });
+    Thread reader = new Thread(() -> {
+      while (runSnapshots) {
+        try {
+          bean.getMetricsSnapshot();
+        } catch (Exception e) {
+          runSnapshots = false;
+          e.printStackTrace();
+          fail("Exception getting metrics snapshot: " + e.toString());
+        }
+        try {
+          Thread.sleep(53);
+        } catch (InterruptedException e) {
+          runSnapshots = false;
+          break;
+        }
+        counter.countDown();
+      }
+    });
+    modifier.start();
+    reader.start();
+    counter.await(30, TimeUnit.SECONDS);
+    runSnapshots = false;
   }
 }

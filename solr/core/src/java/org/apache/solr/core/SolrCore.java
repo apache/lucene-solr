@@ -222,7 +222,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Counter newSearcherOtherErrorsCounter;
   private final CoreContainer coreContainer;
 
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
   public Set<String> getMetricNames() {
     return metricNames;

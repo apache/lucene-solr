@@ -19,9 +19,9 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.DirectoryFactory;
@@ -58,7 +58,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
   protected final UpdateLog ulog;
 
-  protected Set<String> metricNames = new HashSet<>();
+  protected Set<String> metricNames = ConcurrentHashMap.newKeySet();
   protected MetricRegistry registry;
 
   private void parseEventListeners() {
