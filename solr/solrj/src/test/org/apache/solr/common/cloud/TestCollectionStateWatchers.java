@@ -218,7 +218,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   }
 
-  @Test
+  @Test @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11247")
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
