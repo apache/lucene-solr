@@ -280,6 +280,10 @@ Upgrading from Solr 6.x
 * V2 APIs are now available at /api, in addition to /v2 (which is now deprecated). Legacy APIs continue to remain
   available at /solr.
 
+* Solr was tested and is compatible with the final release candidate of Java 9. All startup scripts
+  detect Java 9 correctly and setup Garbage Collector logging. If the configuration file contains
+  logging options that are no longer supported with Java 9, startup will fail.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -456,6 +460,8 @@ Bug Fixes
 * SOLR-11243: Replica Placement rules are ignored if a cluster policy exists. (shalin)
 
 * SOLR-11268: AtomicUpdateProcessor complains missing UpdateLog (noble, Ishan Chattopadhyaya)
+
+* SOLR-8689: Fix bin/solr.cmd so it can run properly on Java 9 (Uwe Schindler, hossman)
 
 Optimizations
 ----------------------
