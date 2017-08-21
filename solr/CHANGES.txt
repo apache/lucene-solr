@@ -323,6 +323,9 @@ Upgrading from Solr 6.x
 * SOLR-11239: The use of maxShardsPerNode is not supported when a cluster policy is in effect or
   when a collection specific policy is specified during collection creation.
 
+* V2 APIs are now available at /api, in addition to /v2 (which is now deprecated). Legacy APIs continue to remain
+  available at /solr.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -417,6 +420,8 @@ New Features
 
 * SOLR-10939: Add support for PointsFields to {!join} query. Joined fields should
   also have docValues enabled. (yonik)
+
+* SOLR-11173 TermsComponent support for Points fields. (yonik)
 
 Bug Fixes
 ----------------------
@@ -518,6 +523,8 @@ Bug Fixes
 * SOLR-10698: StreamHandler should allow connections to be closed early (Joel Bernstein, Varun Thacker, Erick Erickson)
 
 * SOLR-11243: Replica Placement rules are ignored if a cluster policy exists. (shalin)
+
+* SOLR-11268: AtomicUpdateProcessor complains missing UpdateLog (noble, Ishan Chattopadhyaya)
 
 Optimizations
 ----------------------
@@ -730,6 +737,8 @@ Other Changes
   collection specific policy is specified during collection creation.
   (Noble Paul, shalin)
 
+* SOLR-11183: V2 APIs are now available at /api endpoint. (Ishan Chattopadhyaya)
+
 ==================  6.7.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -915,7 +924,7 @@ Other Changes
   with point fields and provides control over dynamic fields used for the raw amount and currency
   code sub-fields.  (hossman, Steve Rowe)
 
-* SOLR-10966: Add workaround for Hadoop-Common 2.7.2 incompatibility with Java 9.
+* SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
 
 ==================  6.6.1 ==================
@@ -942,6 +951,12 @@ Bug Fixes
   (Erick Erickson)
 
 * SOLR-11069: CDCR bootstrapping can get into an infinite loop when a core is reloaded (Amrit Sarkar, Erick Erickson)
+
+* SOLR-11221: SolrJmxReporter broken on core reload. This resulted in some or most metrics not being reported
+  via JMX after core reloads, depending on timing. (ab)
+
+* SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
+  (Uwe Schindler)
 
 ==================  6.6.0 ==================
 

@@ -380,7 +380,7 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
     while (iterations < MAX_SHAPE_ITERATIONS) {
       iterations++;
       int numberShapes =  random().nextInt(3) + 2;
-      GeoCompositeAreaShape collection = new GeoCompositeAreaShape();
+      GeoCompositeAreaShape collection = new GeoCompositeAreaShape(planetModel);
       for(int i=0; i<numberShapes;i++){
         GeoPolygon member = convexPolygon(planetModel, constraints);
         if (member != null){

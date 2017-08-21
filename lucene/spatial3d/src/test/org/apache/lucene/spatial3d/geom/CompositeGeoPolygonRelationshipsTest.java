@@ -833,7 +833,7 @@ public class CompositeGeoPolygonRelationshipsTest {
     points2.add(point8);
     GeoPolygon p1 = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points1);
     GeoPolygon p2 = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points2);
-    GeoCompositeMembershipShape compositeMembershipShape = new GeoCompositeMembershipShape();
+    GeoCompositeMembershipShape compositeMembershipShape = new GeoCompositeMembershipShape(PlanetModel.SPHERE);
     compositeMembershipShape.addShape(p1);
     compositeMembershipShape.addShape(p2);
     return compositeMembershipShape;

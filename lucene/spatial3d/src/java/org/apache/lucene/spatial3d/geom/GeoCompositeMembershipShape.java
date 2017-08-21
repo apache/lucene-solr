@@ -26,7 +26,15 @@ public class GeoCompositeMembershipShape extends GeoBaseCompositeMembershipShape
   /**
    * Constructor.
    */
-  public GeoCompositeMembershipShape() {
+  public GeoCompositeMembershipShape(PlanetModel planetModel) {
+    super(planetModel);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof GeoCompositeMembershipShape))
+      return false;
+    return super.equals(o);
   }
 
   @Override

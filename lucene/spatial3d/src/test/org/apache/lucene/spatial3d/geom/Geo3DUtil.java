@@ -134,12 +134,12 @@ class Geo3DUtil {
       final GeoPolygon component = fromPolygon(polygons[0]);
       if (component == null) {
         // Polygon is degenerate
-        shape = new GeoCompositePolygon();
+        shape = new GeoCompositePolygon(PlanetModel.WGS84);
       } else {
         shape = component;
       }
     } else {
-      final GeoCompositePolygon poly = new GeoCompositePolygon();
+      final GeoCompositePolygon poly = new GeoCompositePolygon(PlanetModel.WGS84);
       for (final Polygon p : polygons) {
         final GeoPolygon component = fromPolygon(p);
         if (component != null) {
