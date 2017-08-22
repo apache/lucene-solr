@@ -58,14 +58,24 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
     assertTrue(reporters.toString(), reporters.size() >= 2);
-    SolrMetricReporter reporter = reporters.get("test1");
-    assertNotNull(reporter);
-    assertTrue(reporter instanceof SolrSlf4jReporter);
-    reporter = reporters.get("test2");
-    assertNotNull(reporter);
-    assertTrue(reporter instanceof SolrSlf4jReporter);
+    SolrMetricReporter reporter1 = reporters.get("test1");
+    assertNotNull(reporter1);
+    assertTrue(reporter1 instanceof SolrSlf4jReporter);
+    SolrMetricReporter reporter2 = reporters.get("test2");
+    assertNotNull(reporter2);
+    assertTrue(reporter2 instanceof SolrSlf4jReporter);
 
     watcher.reset();
+    int cnt = 20;
+    boolean active;
+    do {
+      Thread.sleep(1000);
+      cnt--;
+      active = ((SolrSlf4jReporter)reporter1).isActive() && ((SolrSlf4jReporter)reporter2).isActive();
+    } while (!active && cnt > 0);
+    if (!active) {
+      fail("One or more reporters didn't become active in 20 seconds");
+    }
     Thread.sleep(5000);
 
     SolrDocumentList history = watcher.getHistory(-1, null);
