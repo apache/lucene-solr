@@ -76,8 +76,11 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
     try (NodeLostTrigger trigger = new NodeLostTrigger("node_lost_trigger", props, container)) {
       trigger.setProcessor(noFirstRunProcessor);
       trigger.run();
-      String lostNodeName = cluster.getJettySolrRunner(1).getNodeName();
+      String lostNodeName1 = cluster.getJettySolrRunner(1).getNodeName();
       cluster.stopJettySolrRunner(1);
+      String lostNodeName2 = cluster.getJettySolrRunner(1).getNodeName();
+      cluster.stopJettySolrRunner(1);
+      Thread.sleep(1000);
 
       AtomicBoolean fired = new AtomicBoolean(false);
       AtomicReference<TriggerEvent> eventRef = new AtomicReference<>();
@@ -106,7 +109,9 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
 
       TriggerEvent nodeLostEvent = eventRef.get();
       assertNotNull(nodeLostEvent);
-      assertEquals("", lostNodeName, nodeLostEvent.getProperty(NodeLostTrigger.NodeLostEvent.NODE_NAME));
+      List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
+      assertTrue(nodeNames + " doesn't contain " + lostNodeName1, nodeNames.contains(lostNodeName1));
+      assertTrue(nodeNames + " doesn't contain " + lostNodeName2, nodeNames.contains(lostNodeName2));
 
     }
 
@@ -137,7 +142,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
       trigger.run(); // first run should detect the lost node
       int counter = 0;
       do {
-        if (container.getZkController().getZkStateReader().getClusterState().getLiveNodes().size() == 3) {
+        if (container.getZkController().getZkStateReader().getClusterState().getLiveNodes().size() == 2) {
           break;
         }
         Thread.sleep(100);
@@ -317,7 +322,8 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
 
       TriggerEvent nodeLostEvent = eventRef.get();
       assertNotNull(nodeLostEvent);
-      assertEquals("", lostNodeName, nodeLostEvent.getProperty(NodeLostTrigger.NodeLostEvent.NODE_NAME));
+      List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
+      assertTrue(nodeNames.contains(lostNodeName));
     }
   }
 

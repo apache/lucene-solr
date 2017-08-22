@@ -232,7 +232,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     assertEquals("node_lost_trigger", doc.getFieldValue("event.source_s"));
     assertNotNull(doc.getFieldValue("event.time_l"));
     assertNotNull(doc.getFieldValue("timestamp"));
-    assertNotNull(doc.getFieldValue("event.property.nodeName_s"));
+    assertNotNull(doc.getFieldValue("event.property.nodeNames_ss"));
     assertNotNull(doc.getFieldValue("event_str"));
     assertEquals("NODELOST", doc.getFieldValue("event.type_s"));
   }

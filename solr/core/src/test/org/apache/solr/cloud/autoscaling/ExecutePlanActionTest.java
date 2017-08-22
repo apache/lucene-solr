@@ -108,7 +108,8 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       CollectionAdminRequest.MoveReplica moveReplica = new CollectionAdminRequest.MoveReplica(collectionName, replicas.get(0).getName(), survivor.getNodeName());
       List<SolrRequest> operations = Collections.singletonList(moveReplica);
       NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
-          "mock_trigger_name", TimeSource.CURRENT_TIME.getTime(), sourceNodeName);
+          "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTime()),
+          Collections.singletonList(sourceNodeName));
       ActionContext actionContext = new ActionContext(survivor.getCoreContainer(), null,
           new HashMap<>(Collections.singletonMap("operations", operations)));
       action.process(nodeLostEvent, actionContext);

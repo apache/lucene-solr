@@ -361,7 +361,8 @@ public class Policy implements MapWriter {
 
     public Suggester hint(Hint hint, Object value) {
       if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE || hint == Hint.COLL) {
-        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).add(value);
+        Collection<?> values = value instanceof Collection ? (Collection)value : Collections.singletonList(value);
+        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
       } else {
         hints.put(hint, value == null ? null : String.valueOf(value));
       }

@@ -345,8 +345,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) events.iterator().next();
     assertNotNull(nodeLostEvent);
-    assertEquals("The node added trigger was fired but for a different node",
-        nodeName, nodeLostEvent.getProperty(NodeLostTrigger.NodeLostEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(nodeName));
   }
 
   @Test
@@ -403,8 +403,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
-    assertEquals("The node added trigger was fired but for a different node",
-        newNode.getNodeName(), nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(newNode.getNodeName()));
   }
 
   @Test
@@ -432,8 +432,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
-    assertEquals("The node added trigger was fired but for a different node",
-        newNode.getNodeName(), nodeAddedEvent.getProperty(TriggerEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(newNode.getNodeName()));
 
     // reset
     actionConstructorCalled = new CountDownLatch(1);
@@ -495,8 +495,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeLostTrigger.NodeLostEvent nodeLostEvent = (NodeLostTrigger.NodeLostEvent) events.iterator().next();
     assertNotNull(nodeLostEvent);
-    assertEquals("The node lost trigger was fired but for a different node",
-        lostNodeName, nodeLostEvent.getProperty(TriggerEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)nodeLostEvent.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(lostNodeName));
 
     // reset
     actionConstructorCalled = new CountDownLatch(1);
@@ -567,8 +567,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue(triggerFired.get());
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
-    assertEquals("The node added trigger was fired but for a different node",
-        newNode.getNodeName(), nodeAddedEvent.getProperty(TriggerEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(newNode.getNodeName()));
   }
 
   public static class TestTriggerAction extends TriggerActionBase {
@@ -733,8 +733,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     triggerFiredLatch = new CountDownLatch(1);
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
-    assertEquals("The node added trigger was fired but for a different node",
-        newNode.getNodeName(), nodeAddedEvent.getProperty(NodeAddedTrigger.NodeAddedEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)nodeAddedEvent.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(newNode.getNodeName()));
     // add a second node - state of the trigger will change but it won't fire for waitFor sec.
     JettySolrRunner newNode2 = cluster.startJettySolrRunner();
     Thread.sleep(10000);
@@ -927,7 +927,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     }
     assertEquals(1, events.size());
     TriggerEvent ev = events.iterator().next();
-    assertEquals(overseerLeader, ev.getProperty(TriggerEvent.NODE_NAME));
+    List<String> nodeNames = (List<String>)ev.getProperty(TriggerEvent.NODE_NAMES);
+    assertTrue(nodeNames.contains(overseerLeader));
     assertEquals(TriggerEventType.NODELOST, ev.getEventType());
   }
 

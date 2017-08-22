@@ -109,7 +109,7 @@ public class NodeAddedTrigger extends TriggerBase {
           log.debug("Adding node from marker path: {}", n);
           nodeNameVsTimeAdded.put(n, timeSource.getTime());
         }
-        removeNodeAddedMarker(n);
+        removeMarker(n);
       });
     } catch (KeeperException.NoNodeException e) {
       // ignore
@@ -248,25 +248,34 @@ public class NodeAddedTrigger extends TriggerBase {
       });
 
       // has enough time expired to trigger events for a node?
+      List<String> nodeNames = new ArrayList<>();
+      List<Long> times = new ArrayList<>();
       for (Iterator<Map.Entry<String, Long>> it = nodeNameVsTimeAdded.entrySet().iterator(); it.hasNext(); ) {
         Map.Entry<String, Long> entry = it.next();
         String nodeName = entry.getKey();
         Long timeAdded = entry.getValue();
         long now = timeSource.getTime();
         if (TimeUnit.SECONDS.convert(now - timeAdded, TimeUnit.NANOSECONDS) >= getWaitForSecond()) {
-          // fire!
-          AutoScaling.TriggerEventProcessor processor = processorRef.get();
-          if (processor != null) {
-            log.debug("NodeAddedTrigger {} firing registered processor for node: {} added at time {} , now: {}", name, nodeName, timeAdded, now);
-            if (processor.process(new NodeAddedEvent(getEventType(), getName(), timeAdded, nodeName))) {
-              // remove from tracking set only if the fire was accepted
-              it.remove();
-              removeNodeAddedMarker(nodeName);
-            }
-          } else  {
-            it.remove();
-            removeNodeAddedMarker(nodeName);
+          nodeNames.add(nodeName);
+          times.add(timeAdded);
+        }
+      }
+      AutoScaling.TriggerEventProcessor processor = processorRef.get();
+      if (!nodeNames.isEmpty()) {
+        if (processor != null) {
+          log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}", name, nodeNames, times);
+          if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames))) {
+            // remove from tracking set only if the fire was accepted
+            nodeNames.forEach(n -> {
+              nodeNameVsTimeAdded.remove(n);
+              removeMarker(n);
+            });
           }
+        } else  {
+          nodeNames.forEach(n -> {
+            nodeNameVsTimeAdded.remove(n);
+            removeMarker(n);
+          });
         }
       }
       lastLiveNodes = new HashSet(newLiveNodes);
@@ -275,7 +284,7 @@ public class NodeAddedTrigger extends TriggerBase {
     }
   }
 
-  private void removeNodeAddedMarker(String nodeName) {
+  private void removeMarker(String nodeName) {
     String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     try {
       if (container.getZkController().getZkClient().exists(path, true)) {
@@ -298,8 +307,11 @@ public class NodeAddedTrigger extends TriggerBase {
 
   public static class NodeAddedEvent extends TriggerEvent {
 
-    public NodeAddedEvent(TriggerEventType eventType, String source, long nodeAddedTime, String nodeAdded) {
-      super(eventType, source, nodeAddedTime, Collections.singletonMap(NODE_NAME, nodeAdded));
+    public NodeAddedEvent(TriggerEventType eventType, String source, List<Long> times, List<String> nodeNames) {
+      // use the oldest time as the time of the event
+      super(eventType, source, times.get(0), null);
+      properties.put(NODE_NAMES, nodeNames);
+      properties.put(EVENT_TIMES, times);
     }
   }
 }

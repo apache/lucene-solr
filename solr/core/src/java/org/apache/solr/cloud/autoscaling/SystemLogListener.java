@@ -138,7 +138,7 @@ public class SystemLogListener extends TriggerListenerBase {
           doc.addField(prefix + k + "_ss", String.valueOf(o));
         }
       } else {
-        doc.addField(prefix + k + "_s", String.valueOf(v));
+        doc.addField(prefix + k + "_ss", String.valueOf(v));
       }
     });
   }
