@@ -152,6 +152,8 @@ Other Changes
 
 * SOLR-10628: Less verbose output from bin/solr commands. (Jason Gerlowski, janhoy) 
 
+* SOLR-11240: Raise UnInvertedField internal limit. (Toke Eskildsen)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
