@@ -28,7 +28,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class FailoverZKtest extends SolrCloudTestCase {
+public class ZkFailoverTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
