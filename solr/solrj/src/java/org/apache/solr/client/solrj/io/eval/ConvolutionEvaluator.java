@@ -17,70 +17,43 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.MathArrays;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ConvolutionEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public ConvolutionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class ConvolutionEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public ConvolutionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
-    }
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-    StreamEvaluator colEval2 = subEvaluators.get(1);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    List<Number> numbers2 = (List<Number>)colEval2.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
-    double[] column2 = new double[numbers2.size()];
-
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
-    }
-
-    for(int i=0; i<numbers2.size(); i++) {
-      column2[i] = numbers2.get(i).doubleValue();
-    }
-
-    double[] conArray = MathArrays.convolve(column1, column2);
-    List<Number> conList = new ArrayList();
-    for(double d :conArray) {
-      conList.add(d);
-    }
-
-    return conList;
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+    }
+    if(null == second){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    }
+    if(!(first instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    if(!(second instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
 
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    return Arrays.stream(
+        MathArrays.convolve(
+          ((List)first).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray(),
+          ((List)second).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray()
+        )
+    ).mapToObj(Double::new).collect(Collectors.toList());
   }
 }

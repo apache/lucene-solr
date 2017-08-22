@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -30,16 +30,16 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class EqualsEvaluatorTest extends LuceneTestCase {
+public class EqualToEvaluatorTest extends LuceneTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
   
-  public EqualsEvaluatorTest() {
+  public EqualToEvaluatorTest() {
     super();
     
     factory = new StreamFactory()
-      .withFunctionName("eq", EqualsEvaluator.class)
+      .withFunctionName("eq", EqualToEvaluator.class)
       .withFunctionName("val", RawValueEvaluator.class)
       ;
     values = new HashMap<String,Object>();

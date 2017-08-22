@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class RawValueEvaluator extends SimpleEvaluator {
+public class RawValueEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
   
   private Object value;

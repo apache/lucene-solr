@@ -19,51 +19,30 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.Locale;
 
-
 import org.apache.commons.math3.distribution.UniformRealDistribution;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class UniformDistributionEvaluator extends ComplexEvaluator implements Expressible {
+public class UniformDistributionEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
 
   private static final long serialVersionUID = 1;
 
   public UniformDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+  }
 
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
+  @Override
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
     }
-  }
+    if(null == second){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    }
 
-  public Object evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator numEval1 = subEvaluators.get(0);
-    StreamEvaluator numEval2 = subEvaluators.get(1);
-
-    Number lower = (Number)numEval1.evaluate(tuple);
-    Number upper = (Number)numEval2.evaluate(tuple);
-
+    Number lower = (Number)first;
+    Number upper = (Number)second;
+    
     return new UniformRealDistribution(lower.doubleValue(), upper.doubleValue());
-  }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
   }
 }

@@ -17,67 +17,46 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.MathArrays;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ScaleEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public ScaleEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class ScaleEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public ScaleEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
+
+    if(2 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression, containedEvaluators.size()));
+    }
+  }
+
+  @Override
+  public Object doWork(Object first, Object second) throws IOException{
     
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    if(null == first || null == second){
+      return null;
     }
-
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator numEval = subEvaluators.get(0);
-    StreamEvaluator colEval1 = subEvaluators.get(1);
-
-    Number num = (Number)numEval.evaluate(tuple);
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
-
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
+    
+    // we know these are all numbers or lists of numbers
+    if(first instanceof List<?>){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting Number as first value but found a list", toExpression(constructingFactory)));
     }
-
-    double[] scaled = MathArrays.scale(num.doubleValue(), column1);
-
-    List<Number> scaledList = new ArrayList(scaled.length);
-    for(double d : scaled) {
-      scaledList.add(d);
+    
+    double[] scaleOver;
+    if(second instanceof Number){
+      scaleOver = Arrays.asList((Number)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray();
     }
-
-    return scaledList;
-  }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    else{
+      scaleOver = ((List<?>)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray();
+    }
+      
+    return Arrays.stream(MathArrays.scale(((Number)first).doubleValue(), scaleOver)).mapToObj(Double::new).collect(Collectors.toList());    
   }
 }
