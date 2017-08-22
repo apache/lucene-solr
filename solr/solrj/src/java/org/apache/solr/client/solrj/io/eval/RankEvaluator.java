@@ -17,64 +17,38 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class RankEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class RankEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    if(1 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
     }
-
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval = subEvaluators.get(0);
-
-    List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
-    double[] values = new double[numbers.size()];
-    for(int i=0; i<numbers.size(); i++) {
-      values[i] = numbers.get(i).doubleValue();
-    }
-
-    NaturalRanking rank = new NaturalRanking();
-    double[] ranked = rank.rank(values);
-    List<Number> rankedList = new ArrayList();
-    for(int i=0; i<numbers.size(); i++) {
-      rankedList.add(ranked[i]);
-    }
-
-    return rankedList;
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+  public Object doWork(Object value){
+    if(null == value){
+      return null;
+    }
+    else if(value instanceof List){
+      NaturalRanking rank = new NaturalRanking();      
+      return Arrays.stream(rank.rank(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).mapToObj(Double::new).collect(Collectors.toList());
+    }
+    else{
+      return doWork(Arrays.asList((BigDecimal)value));
+    }
   }
 }

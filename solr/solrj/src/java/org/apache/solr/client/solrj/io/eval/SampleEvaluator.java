@@ -18,57 +18,40 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-import java.util.List;
-import java.util.ArrayList;
-
-public class SampleEvaluator extends ComplexEvaluator implements Expressible {
+public class SampleEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
 
   private static final long serialVersionUID = 1;
 
   public SampleEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (regression result and a number) but found %d",expression,subEvaluators.size()));
-    }
   }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator r = subEvaluators.get(0);
-    StreamEvaluator d = subEvaluators.get(1);
-    Number number = (Number)d.evaluate(tuple);
-    RealDistribution rd= (RealDistribution)r.evaluate(tuple);
-    double[] sample = rd.sample(number.intValue());
-    List<Number> list = new ArrayList();
-    for(double n : sample) {
-      list.add(n);
-    }
-    return list;
-  }
-
+  
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+    }
+    if(null == second){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    }
+    if(!(first instanceof RealDistribution)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a RealDistribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    if(!(second instanceof Number)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    
+    RealDistribution realDistribution = (RealDistribution)first;
+    
+    return Arrays.stream(realDistribution.sample(((Number)second).intValue())).mapToObj(item -> item).collect(Collectors.toList());    
   }
 
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
 }

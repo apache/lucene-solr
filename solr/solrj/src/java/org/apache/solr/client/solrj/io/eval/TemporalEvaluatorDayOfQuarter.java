@@ -25,24 +25,20 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * Provides a dayOfQuarter stream evaluator
+ * Provides a day stream evaluator
  */
-public class TemporalEvaluatorDayOfQuarter extends TemporalEvaluator {
-
+public class TemporalEvaluatorDayOfQuarter extends RecursiveTemporalEvaluator {
+  protected static final long serialVersionUID = 1L;
+  
   public static final String FUNCTION_NAME = "dayOfQuarter";
 
   public TemporalEvaluatorDayOfQuarter(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory);
+    super(expression, factory, FUNCTION_NAME);
   }
 
   @Override
-  public String getFunction() {
-    return FUNCTION_NAME;
-  }
-
-  @Override
-  public Object evaluateDate(TemporalAccessor aDate) {
-    return aDate.get(IsoFields.DAY_OF_QUARTER);
+  protected Object getDatePart(TemporalAccessor value) {
+    return value.get(IsoFields.DAY_OF_QUARTER);
   }
 
 }

@@ -17,32 +17,60 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class BooleanEvaluator extends ComplexEvaluator {
+public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
   
-  public BooleanEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  protected abstract Checker constructChecker(Object value) throws IOException;
+  
+  public RecursiveBooleanEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
   }
   
-  // restrict result to a Boolean
-  public abstract Boolean evaluate(Tuple tuple) throws IOException;
+  public Object normalizeInputType(Object value) throws StreamEvaluatorException {
+    if(null == value){
+      return null;
+    }
+    else{
+      return value;
+    }
+  }
   
-  public List<Object> evaluateAll(final Tuple tuple) throws IOException {
-    List<Object> results = new ArrayList<Object>();
-    for(StreamEvaluator subEvaluator : subEvaluators){
-      results.add(subEvaluator.evaluate(tuple));
+  public Object doWork(Object ... values) throws IOException {
+    if(values.length < 2){
+      String message = null;
+      if(1 == values.length){
+        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 1 was provided", constructingFactory.getFunctionName(getClass())); 
+      }
+      else{
+        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 0 were provided", constructingFactory.getFunctionName(getClass()));
+      }
+      throw new IOException(message);
     }
     
-    return results;
-  }
+    Checker checker = constructChecker(values[0]);
+    if(Arrays.stream(values).anyMatch(result -> null == result)){
+      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
+    }
+    if(Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))){
+      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of differing types [%s]", constructingFactory.getFunctionName(getClass()), Arrays.stream(values).map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
+    }
 
+    for(int idx = 1; idx < values.length; ++idx){
+      if(!checker.test(values[idx - 1], values[idx])){
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
   public interface Checker {
     default boolean isNullAllowed(){
       return false;
@@ -80,4 +108,5 @@ public abstract class BooleanEvaluator extends ComplexEvaluator {
       return value instanceof String;
     }
   }
+
 }

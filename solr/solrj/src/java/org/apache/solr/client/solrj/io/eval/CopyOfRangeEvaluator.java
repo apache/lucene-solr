@@ -17,67 +17,73 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CopyOfRangeEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public CopyOfRangeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class CopyOfRangeEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public CopyOfRangeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] vals = new double[numbers1.size()];
-
-    for(int i=0; i<vals.length; i++) {
-      vals[i] = numbers1.get(i).doubleValue();
+    
+    if(containedEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
     }
-
-    StreamEvaluator startIndexEval = subEvaluators.get(1);
-    Number startIndexNum = (Number)startIndexEval.evaluate(tuple);
-    int startIndex = startIndexNum.intValue();
-
-    StreamEvaluator endIndexEval = subEvaluators.get(2);
-    Number endIndexNum = (Number)endIndexEval.evaluate(tuple);
-    int endIndex = endIndexNum.intValue();
-
-    vals = Arrays.copyOfRange(vals, startIndex, endIndex);
-
-    List<Number> copyOf = new ArrayList(vals.length);
-
-    for(int i=0; i<vals.length; i++) {
-      copyOf.add(vals[i]);
-    }
-
-    return copyOf;
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
+  public Object doWork(Object... values) throws IOException {
+    if(Arrays.stream(values).anyMatch(item -> null == item)){
+      return null;
+    }
+    
+    List<?> sourceValues;
+    Integer startIdx;
+    Integer endIdx;
+    
+    if(values.length >= 1){
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]); 
+      
+      // default to full array
+      startIdx = 0;
+      endIdx = sourceValues.size() - 1;
+      
+      if(values.length >= 2){
+        if(values[1] instanceof Number){
+          startIdx = ((Number)values[1]).intValue();
+        }
+        else{
+          throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - if second parameter is provided then it must be a valid number but found %s instead",toExpression(constructingFactory), values[1].getClass().getSimpleName()));
+        }
+        
+        if(values.length >= 3){
+          if(values[2] instanceof Number){
+            endIdx = ((Number)values[2]).intValue();
+          }
+          else{
+            throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - if third parameter is provided then it must be a valid number but found %s instead",toExpression(constructingFactory), values[2].getClass().getSimpleName()));
+          }
+        }
+      }      
+    }
+    else{
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",toExpression(constructingFactory),containedEvaluators.size()));
+    }
 
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    if(startIdx > endIdx){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - startIdx (%d) must be less than endIdx (%d)", toExpression(constructingFactory), startIdx, endIdx));
+    }
+
+    if(endIdx >= sourceValues.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - endIdx (%d) must be less than size of source array (%d)", toExpression(constructingFactory), endIdx, sourceValues.size()));
+    }
+
+    return Arrays.stream(Arrays.copyOfRange(sourceValues.toArray(), startIdx, endIdx)).collect(Collectors.toList());
   }
+    
 }

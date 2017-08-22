@@ -18,39 +18,36 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class ConditionalEvaluator extends ComplexEvaluator {
+public class AppendEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
-  public ConditionalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public AppendEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
   }
-  
-  public List<Object> evaluateAll(final Tuple tuple) throws IOException {
-    List<Object> results = new ArrayList<Object>();
-    for(StreamEvaluator subEvaluator : subEvaluators){
-      results.add(subEvaluator.evaluate(tuple));
-    }
-    
-    return results;
-  }
 
-  public interface Checker {
-    default boolean isNullAllowed(){
-      return false;
-    }
-    boolean isCorrectType(Object value);
-    boolean test(Object left, Object right);
-  }
+  @Override
+  public Object doWork(Object ... values){
+    List<Object> newList = new ArrayList<>();
     
-  public interface BooleanChecker extends Checker {
-    default boolean isCorrectType(Object value){
-      return value instanceof Boolean;
+    for(Object value : values){
+      if(null == value){
+        // skip nulls
+        continue;
+      }
+      else if(value instanceof Collection<?>){
+        newList.addAll((Collection<?>)value);
+      }
+      else{
+        newList.add(value);
+      }
     }
-  }  
+    
+    return newList;
+  }
 }

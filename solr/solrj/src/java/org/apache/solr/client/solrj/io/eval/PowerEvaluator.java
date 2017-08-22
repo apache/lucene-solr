@@ -18,41 +18,32 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class PowerEvaluator extends NumberEvaluator {
+public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public PowerEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly two values but found %d",expression,subEvaluators.size()));
+
+    if(2 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression, containedEvaluators.size()));
     }
   }
 
   @Override
-  public Number evaluate(Tuple tuple) throws IOException {
+  public Object doWork(Object first, Object second) throws IOException{
     
-    List<BigDecimal> results = evaluateAll(tuple);
-    
-    if(results.stream().anyMatch(item -> null == item)){
+    if(null == first || null == second){
       return null;
     }
     
-    BigDecimal value = results.get(0);
-    BigDecimal exponent = results.get(1);
-    
-    double result = Math.pow(value.doubleValue(), exponent.doubleValue());
-    if(Double.isNaN(result)){
-      return result;
-    }
-    
-    return normalizeType(BigDecimal.valueOf(result));
+    BigDecimal value = (BigDecimal)first;
+    BigDecimal exponent = (BigDecimal)second;
+        
+    return Math.pow(value.doubleValue(), exponent.doubleValue());
   }
 }

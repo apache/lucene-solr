@@ -258,13 +258,13 @@ public class AddEvaluatorTest extends LuceneTestCase {
     Assert.assertEquals(6 * 123456789123456789L, result);
     
     values.clear();
-    values.put("a", 4.123456789123456);
-    values.put("b", 4.123456789123456);
-    values.put("c", 4.123456789123456);
-    values.put("d", 4.123456789123456);
+    values.put("a", 4.12345678);
+    values.put("b", 4.12345678);
+    values.put("c", 4.12345678);
+    values.put("d", 4.12345678);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(6 * 4.123456789123456, result);
+    Assert.assertEquals(6 * 4.12345678, result);
   }
   
   @Test
@@ -318,13 +318,13 @@ public class AddEvaluatorTest extends LuceneTestCase {
     Assert.assertEquals(4 * 123456789123456789L, result);
     
     values.clear();
-    values.put("a", -4.123456789123456);
-    values.put("b", -4.123456789123456);
-    values.put("c", -4.123456789123456);
-    values.put("d", -4.123456789123456);
+    values.put("a", -4.12345678);
+    values.put("b", -4.12345678);
+    values.put("c", -4.12345678);
+    values.put("d", -4.12345678);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(6 * -4.123456789123456, result);
+    Assert.assertEquals(6 * -4.12345678, result);
   }
 
 }

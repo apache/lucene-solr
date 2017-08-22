@@ -16,21 +16,10 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
-import java.util.UUID;
+import java.io.IOException;
 
-import org.apache.solr.client.solrj.io.stream.StreamContext;
+public interface ManyValueWorker extends ValueWorker {
 
-public abstract class SimpleEvaluator implements StreamEvaluator {
-  private static final long serialVersionUID = 1L;
+  Object doWork(Object ... values) throws IOException;
   
-  protected UUID nodeId = UUID.randomUUID();
-  protected StreamContext streamContext;
-
-  public void setStreamContext(StreamContext streamContext) {
-    this.streamContext = streamContext;
-  }
-  public StreamContext getStreamContext(){
-    return streamContext;
-  }
-
 }
