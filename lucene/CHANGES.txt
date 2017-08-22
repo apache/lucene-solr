@@ -15,6 +15,11 @@ Changes in Runtime Behavior
 
 ======================= Lucene 7.1.0 =======================
 
+New Features
+
+* LUCENE-7621: Add CoveringQuery, a query whose required number of matching
+  clauses can be defined per document. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -28,12 +33,21 @@ Optimizations
   than 8x greater than the cost of the lead iterator in order to use doc values.
   (Murali Krishna P via Adrien Grand)
 
+* LUCENE-7925: Collapse duplicate SHOULD or MUST clauses by summing up their
+  boosts. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
   with a different ICU JAR version than it is compiled against. Note, this is
   not recommended, lucene-analyzers-icu contains binary data structures
   specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
+
+Build
+
+* SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
+  instead of locally installing first, to workaround a double repository push of
+  *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
 
 ======================= Lucene 7.0.0 =======================
 
