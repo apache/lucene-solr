@@ -388,7 +388,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   private void assertSingleReplicationAndShardSize(String collection, int numSlices) {
     Collection<Slice> slices;
-    slices = cloudClient.getZkStateReader().getClusterState().getActiveSlices(collection);
+    slices = cloudClient.getZkStateReader().getClusterState().getCollection(collection).getActiveSlices();
     assertEquals(numSlices, slices.size());
     for (Slice slice : slices) {
       assertEquals(1, slice.getReplicas().size());
@@ -397,7 +397,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   private void assertSliceAndReplicaCount(String collection) {
     Collection<Slice> slices;
-    slices = cloudClient.getZkStateReader().getClusterState().getActiveSlices(collection);
+    slices = cloudClient.getZkStateReader().getClusterState().getCollection(collection).getActiveSlices();
     assertEquals(2, slices.size());
     for (Slice slice : slices) {
       assertEquals(2, slice.getReplicas().size());

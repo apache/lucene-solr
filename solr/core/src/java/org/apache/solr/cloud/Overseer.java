@@ -142,7 +142,7 @@ public class Overseer implements Closeable {
           //TODO consider removing 'refreshClusterState' and simply check if clusterState is null
           if (refreshClusterState) {
             try {
-              reader.updateClusterState();
+              reader.forciblyRefreshAllClusterStateSlow();
               clusterState = reader.getClusterState();
               zkStateWriter = new ZkStateWriter(reader, stats);
               refreshClusterState = false;

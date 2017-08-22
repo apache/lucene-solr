@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,16 +168,31 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private void handleSetClusterPolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     List clusterPolicy = (List) op.getCommandData();
     if (clusterPolicy == null || !(clusterPolicy instanceof List)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster policies was not found");
+      op.addError("A list of cluster policies was not found");
+      checkErr(op);
     }
-    zkSetClusterPolicy(container.getZkController().getZkStateReader(), clusterPolicy);
+
+    try {
+      zkSetClusterPolicy(container.getZkController().getZkStateReader(), clusterPolicy);
+    } catch (Exception e) {
+      log.warn("error persisting policies");
+      op.addError(e.getMessage());
+      checkErr(op);
+
+    }
     rsp.getValues().add("result", "success");
+  }
+
+  private void checkErr(CommandOperation op) {
+    if (!op.hasError()) return;
+    throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", CommandOperation.captureErrors(Collections.singletonList(op)));
   }
 
   private void handleSetClusterPreferences(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     List preferences = (List) op.getCommandData();
     if (preferences == null || !(preferences instanceof List)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "A list of cluster preferences not found");
+      op.addError("A list of cluster preferences not found");
+      checkErr(op);
     }
     zkSetPreferences(container.getZkController().getZkStateReader(), preferences);
     rsp.getValues().add("result", "success");
@@ -185,15 +201,13 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private void handleRemovePolicy(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op) throws KeeperException, InterruptedException, IOException {
     String policyName = (String) op.getCommandData();
 
-    if (policyName.trim().length() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be empty");
-    }
+    if (op.hasError()) checkErr(op);
     Map<String, Object> autoScalingConf = zkReadAutoScalingConf(container.getZkController().getZkStateReader());
     Map<String, Object> policies = (Map<String, Object>) autoScalingConf.get("policies");
     if (policies == null || !policies.containsKey(policyName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No policy exists with name: " + policyName);
+      op.addError("No policy exists with name: " + policyName);
     }
-
+    checkErr(op);
     zkSetPolicies(container.getZkController().getZkStateReader(), policyName, null);
     rsp.getValues().add("result", "success");
   }
@@ -203,11 +217,18 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     for (Map.Entry<String, Object> policy : policies.entrySet()) {
       String policyName = policy.getKey();
       if (policyName == null || policyName.trim().length() == 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The policy name cannot be null or empty");
+        op.addError("The policy name cannot be null or empty");
       }
     }
+    checkErr(op);
 
-    zkSetPolicies(container.getZkController().getZkStateReader(), null, policies);
+    try {
+      zkSetPolicies(container.getZkController().getZkStateReader(), null, policies);
+    } catch (Exception e) {
+      log.warn("error persisting policies", e);
+      op.addError(e.getMessage());
+      checkErr(op);
+    }
 
     rsp.getValues().add("result", "success");
   }

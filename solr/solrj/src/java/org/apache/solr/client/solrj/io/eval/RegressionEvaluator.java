@@ -72,6 +72,7 @@ public class RegressionEvaluator extends ComplexEvaluator implements Expressible
     map.put("intercept", regression.getIntercept());
     map.put("R", regression.getR());
     map.put("N", regression.getN());
+    map.put("RSquare", regression.getRSquare());
     map.put("regressionSumSquares", regression.getRegressionSumSquares());
     map.put("slopeConfidenceInterval", regression.getSlopeConfidenceInterval());
     map.put("interceptStdErr", regression.getInterceptStdErr());

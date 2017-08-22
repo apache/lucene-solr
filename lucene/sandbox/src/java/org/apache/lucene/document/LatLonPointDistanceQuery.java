@@ -29,12 +29,15 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
@@ -111,7 +114,7 @@ final class LatLonPointDistanceQuery extends Query {
         if (scorerSupplier == null) {
           return null;
         }
-        return scorerSupplier.get(false);
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
 
       @Override
@@ -128,82 +131,31 @@ final class LatLonPointDistanceQuery extends Query {
           return null;
         }
         LatLonPoint.checkCompatible(fieldInfo);
-        
+
         // matching docids
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-        final IntersectVisitor visitor =
-                         new IntersectVisitor() {
+        final IntersectVisitor visitor = getIntersectVisitor(result);
 
-                           DocIdSetBuilder.BulkAdder adder;
-
-                           @Override
-                           public void grow(int count) {
-                             adder = result.grow(count);
-                           }
-
-                           @Override
-                           public void visit(int docID) {
-                             adder.add(docID);
-                           }
-
-                           @Override
-                           public void visit(int docID, byte[] packedValue) {
-                             // bounding box check
-                             if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
-                                 StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
-                               // latitude out of bounding box range
-                               return;
-                             }
-
-                             if ((StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                                  StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0)
-                                 && StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon2, 0) < 0) {
-                               // longitude out of bounding box range
-                               return;
-                             }
-
-                             int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
-                             int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
-                             if (distancePredicate.test(docLatitude, docLongitude)) {
-                               adder.add(docID);
-                             }
-                           }
-                           
-                           // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
-                           // 1. check our bounding box(es) first. if the subtree is entirely outside of those, bail.
-                           // 2. check if the subtree is disjoint. it may cross the bounding box but not intersect with circle
-                           // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 4.
-                           // 4. recurse naively (subtrees crossing over circle edge)
-                           @Override
-                           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
-                                 StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0) {
-                               // latitude out of bounding box range
-                               return Relation.CELL_OUTSIDE_QUERY;
-                             }
-
-                             if ((StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                                  StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0)
-                                 && StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon2, 0) < 0) {
-                               // longitude out of bounding box range
-                               return Relation.CELL_OUTSIDE_QUERY;
-                             }
-
-                             double latMin = decodeLatitude(minPackedValue, 0);
-                             double lonMin = decodeLongitude(minPackedValue, Integer.BYTES);
-                             double latMax = decodeLatitude(maxPackedValue, 0);
-                             double lonMax = decodeLongitude(maxPackedValue, Integer.BYTES);
-
-                             return GeoUtils.relate(latMin, latMax, lonMin, lonMax, latitude, longitude, sortKey, axisLat);
-                           }
-                         };
         final Weight weight = this;
         return new ScorerSupplier() {
 
           long cost = -1;
 
           @Override
-          public Scorer get(boolean randomAccess) throws IOException {
+          public Scorer get(long leadCost) throws IOException {
+            if (values.getDocCount() == reader.maxDoc()
+                && values.getDocCount() == values.size()
+                && cost() > reader.maxDoc() / 2) {
+              // If all docs have exactly one value and the cost is greater
+              // than half the leaf size then maybe we can make things faster
+              // by computing the set of documents that do NOT match the range
+              final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+              result.set(0, reader.maxDoc());
+              int[] cost = new int[]{reader.maxDoc()};
+              values.intersect(getInverseIntersectVisitor(result, cost));
+              final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+              return new ConstantScoreScorer(weight, score(), iterator);
+            }
             values.intersect(visitor);
             return new ConstantScoreScorer(weight, score(), result.build().iterator());
           }
@@ -219,6 +171,154 @@ final class LatLonPointDistanceQuery extends Query {
         };
 
       }
+
+      /**
+       * Create a visitor that collects documents matching the range.
+       */
+      private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result) {
+        return new IntersectVisitor() {
+
+          DocIdSetBuilder.BulkAdder adder;
+
+          @Override
+          public void grow(int count) {
+            adder = result.grow(count);
+          }
+
+          @Override
+          public void visit(int docID) {
+            adder.add(docID);
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            // bounding box check
+            if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
+              // latitude out of bounding box range
+              return;
+            }
+
+            if ((StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0)
+                && StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon2, 0) < 0) {
+              // longitude out of bounding box range
+              return;
+            }
+
+            int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
+            int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
+            if (distancePredicate.test(docLatitude, docLongitude)) {
+              adder.add(docID);
+            }
+          }
+
+          // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
+          // 1. check our bounding box(es) first. if the subtree is entirely outside of those, bail.
+          // 2. check if the subtree is disjoint. it may cross the bounding box but not intersect with circle
+          // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 4.
+          // 4. recurse naively (subtrees crossing over circle edge)
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0) {
+              // latitude out of bounding box range
+              return Relation.CELL_OUTSIDE_QUERY;
+            }
+
+            if ((StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0)
+                && StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon2, 0) < 0) {
+              // longitude out of bounding box range
+              return Relation.CELL_OUTSIDE_QUERY;
+            }
+
+            double latMin = decodeLatitude(minPackedValue, 0);
+            double lonMin = decodeLongitude(minPackedValue, Integer.BYTES);
+            double latMax = decodeLatitude(maxPackedValue, 0);
+            double lonMax = decodeLongitude(maxPackedValue, Integer.BYTES);
+
+            return GeoUtils.relate(latMin, latMax, lonMin, lonMax, latitude, longitude, sortKey, axisLat);
+          }
+        };
+      }
+
+      /**
+       * Create a visitor that clears documents that do NOT match the range.
+       */
+      private IntersectVisitor getInverseIntersectVisitor(FixedBitSet result, int[] cost) {
+        return new IntersectVisitor() {
+
+          @Override
+          public void visit(int docID) {
+            result.clear(docID);
+            cost[0]--;
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            // bounding box check
+            if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
+              // latitude out of bounding box range
+              result.clear(docID);
+              cost[0]--;
+              return;
+            }
+
+            if ((StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0)
+                && StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon2, 0) < 0) {
+              // longitude out of bounding box range
+              result.clear(docID);
+              cost[0]--;
+              return;
+            }
+
+            int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
+            int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
+            if (!distancePredicate.test(docLatitude, docLongitude)) {
+              result.clear(docID);
+              cost[0]--;
+            }
+          }
+
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0) {
+              // latitude out of bounding box range
+              return Relation.CELL_INSIDE_QUERY;
+            }
+
+            if ((StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
+                StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0)
+                && StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon2, 0) < 0) {
+              // latitude out of bounding box range
+              return Relation.CELL_INSIDE_QUERY;
+            }
+
+            double latMin = decodeLatitude(minPackedValue, 0);
+            double lonMin = decodeLongitude(minPackedValue, Integer.BYTES);
+            double latMax = decodeLatitude(maxPackedValue, 0);
+            double lonMax = decodeLongitude(maxPackedValue, Integer.BYTES);
+
+            Relation relation = GeoUtils.relate(latMin, latMax, lonMin, lonMax, latitude, longitude, sortKey, axisLat);
+            switch (relation) {
+              case CELL_INSIDE_QUERY:
+                // all points match, skip this subtree
+                return Relation.CELL_OUTSIDE_QUERY;
+              case CELL_OUTSIDE_QUERY:
+                // none of the points match, clear all documents
+                return Relation.CELL_INSIDE_QUERY;
+              default:
+                return relation;
+            }
+          }
+
+        };
+      }
+
     };
   }
 

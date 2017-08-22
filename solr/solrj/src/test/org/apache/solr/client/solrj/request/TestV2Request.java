@@ -49,6 +49,7 @@ public class TestV2Request extends SolrCloudTestCase {
     assertFalse(new V2Request.Builder("/collections/a/shards").build().isPerCollectionRequest());
     assertFalse(new V2Request.Builder("/collections/a/shards/").build().isPerCollectionRequest());
     assertTrue(new V2Request.Builder("/collections/a/update").build().isPerCollectionRequest());
+    assertEquals("a", new V2Request.Builder("/collections/a/update").build().getCollection());
     assertTrue(new V2Request.Builder("/c/a/update").build().isPerCollectionRequest());
     assertTrue(new V2Request.Builder("/c/a/schema").build().isPerCollectionRequest());
     assertFalse(new V2Request.Builder("/c/a").build().isPerCollectionRequest());
@@ -80,10 +81,18 @@ public class TestV2Request extends SolrCloudTestCase {
             "}").build());
     assertSuccess(client, new V2Request.Builder("/c").build());
     assertSuccess(client, new V2Request.Builder("/c/_introspect").build());
+
+
+    assertSuccess(client, new V2Request.Builder("/c/test/config")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{'create-requesthandler' : { 'name' : '/x', 'class': 'org.apache.solr.handler.DumpRequestHandler' , 'startup' : 'lazy'}}")
+        .build());
+
     assertSuccess(client, new V2Request.Builder("/c/test").withMethod(SolrRequest.METHOD.DELETE).build());
     NamedList<Object> res = client.request(new V2Request.Builder("/c").build());
     List collections = (List) res.get("collections");
     assertEquals(0, collections.size());
+
   }
 
 }

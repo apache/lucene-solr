@@ -29,6 +29,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.LongIterator;
+import org.apache.solr.util.LongSet;
 
 public class UniqueAgg extends StrAggValueSource {
   public static String UNIQUE = "unique";
@@ -122,75 +124,6 @@ public class UniqueAgg extends StrAggValueSource {
   }
 
 
-
-  static class LongSet {
-
-    static final float LOAD_FACTOR = 0.7f;
-
-    long[] vals;
-    int cardinality;
-    int mask;
-    int threshold;
-    int zeroCount;  // 1 if a 0 was collected
-
-    /** sz must be a power of two */
-    LongSet(int sz) {
-      vals = new long[sz];
-      mask = sz - 1;
-      threshold = (int) (sz * LOAD_FACTOR);
-    }
-
-    void add(long val) {
-      if (val == 0) {
-        zeroCount = 1;
-        return;
-      }
-      if (cardinality >= threshold) {
-        rehash();
-      }
-      
-      // For floats: exponent bits start at bit 23 for single precision,
-      // and bit 52 for double precision.
-      // Many values will only have significant bits just to the right of that,
-      // and the leftmost bits will all be zero.
-
-      // For now, lets just settle to get first 8 significant mantissa bits of double or float in the lowest bits of our hash
-      // The upper bits of our hash will be irrelevant.
-      int h = (int) (val + (val >>> 44) + (val >>> 15));
-      for (int slot = h & mask; ;slot = (slot + 1) & mask) {
-        long v = vals[slot];
-        if (v == 0) {
-          vals[slot] = val;
-          cardinality++;
-          break;
-        } else if (v == val) {
-          // val is already in the set
-          break;
-        }
-      }
-    }
-
-    private void rehash() {
-      long[] oldVals = vals;
-      int newCapacity = vals.length << 1;
-      vals = new long[newCapacity];
-      mask = newCapacity - 1;
-      threshold = (int) (newCapacity * LOAD_FACTOR);
-      cardinality = 0;
-
-      for (long val : oldVals) {
-        if (val != 0) {
-          add(val);
-        }
-      }
-    }
-
-    int cardinality() {
-      return cardinality + zeroCount;
-    }
-  }
-
-
   static abstract class BaseNumericAcc extends SlotAcc {
     SchemaField sf;
     LongSet[] sets;
@@ -259,16 +192,11 @@ public class UniqueAgg extends StrAggValueSource {
       if (unique <= maxExplicit) {
         List lst = new ArrayList( Math.min(unique, maxExplicit) );
         if (set != null) {
-          if (set.zeroCount > 0) {
-            lst.add(0);
-          }
-          for (long val : set.vals) {
-            if (val != 0) {
-              lst.add(val);
-            }
+          LongIterator iter = set.iterator();
+          while (iter.hasNext()) {
+            lst.add( iter.next() );
           }
         }
-
         map.add("vals", lst);
       }
 

@@ -205,6 +205,14 @@ class GeoWideRectangle extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(topPlane, topPlanePoints, bottomPlane, eitherBound) ||
+        geoShape.intersects(bottomPlane, bottomPlanePoints, topPlane, eitherBound) ||
+        geoShape.intersects(leftPlane, leftPlanePoints, topPlane, bottomPlane) ||
+        geoShape.intersects(rightPlane, rightPlanePoints, topPlane, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -214,44 +222,6 @@ class GeoWideRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, bottomPlane)
       .addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(LRHC).addPoint(LLHC);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" comparing to "+path);
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
-      return OVERLAPS;
-    }
-
-    final boolean insideShape = path.isWithin(ULHC);
-
-    if (insideRectangle == ALL_INSIDE && insideShape) {
-      //System.err.println(" both inside each other");
-      return OVERLAPS;
-    }
-
-    if (path.intersects(topPlane, topPlanePoints, bottomPlane, eitherBound) ||
-        path.intersects(bottomPlane, bottomPlanePoints, topPlane, eitherBound) ||
-        path.intersects(leftPlane, leftPlanePoints, topPlane, bottomPlane) ||
-        path.intersects(rightPlane, rightPlanePoints, topPlane, bottomPlane)) {
-      //System.err.println(" edges intersect");
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      //System.err.println(" rectangle inside shape");
-      return CONTAINS;
-    }
-
-    //System.err.println(" disjoint");
-    return DISJOINT;
   }
 
   @Override

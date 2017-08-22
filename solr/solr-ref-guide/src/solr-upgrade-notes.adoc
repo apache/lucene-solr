@@ -1,0 +1,84 @@
+= Solr Upgrade Notes
+:page-shortname: solr-upgrade-notes
+:page-permalink: solr-upgrade-notes.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The following notes describe changes to Solr in recent releases that you should be aware of before upgrading.
+
+These notes are meant to highlight the biggest changes that may impact the largest number of implementations. It is not a comprehensive list of all changes to Solr in any release.
+
+When planning your Solr upgrade, consider the customizations you have made to your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package. That file includes all of the changes and updates that may effect your existing implementation. Detailed steps for upgrading a Solr cluster can be found in the appendix: <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+
+== Upgrading from 6.5.x
+
+If you are already using Solr 6.5, Solr 6.6 should not present any major problems.
+
+* Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
+
+* JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any mincount greater than 1.
+
+* ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
+
+== Upgrading from earlier 6.x versions
+
+* If you use historical dates, specifically on or before the year 1582, you should re-index after upgrading to this version.
+* If you use the JSON Facet API (json.facet) with `method=stream`, you must now set `sort='index asc'` to get the streaming behavior; otherwise it won't stream. Reminder: "method" is a hint that doesn't change defaults of other parameters.
+* If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use `mincount=0` or if you set the prefix, then you will now get an error as these options are incompatible with numeric faceting.
+* Solr's logging verbosity at the INFO level has been greatly reduced, and you may need to update the log configs to use the DEBUG level to see all the logging messages you used to see at INFO level before.
+* We are no longer backing up `solr.log` and `solr_gc.log` files in date-stamped copies forever. If you relied on the `solr_log_<date>` or `solr_gc_log_<date>` being in the logs folder that will no longer be the case. See the section <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for details on how log rotation works as of Solr 6.3.
+* The create/deleteCollection methods on MiniSolrCloudCluster have been deprecated. Clients should instead use the CollectionAdminRequest API. In addition, `MiniSolrCloudCluster#uploadConfigDir(File, String)` has been deprecated in favour of `#uploadConfigSet(Path, String)`.
+* The http://solr.in[`bin/solr.in.sh`] (http://solr.in[`bin/solr.in.cmd`] on Windows) is now completely commented by default. Previously, this wasn't so, which had the effect of masking existing environment variables.
+* The `\_version_` field is no longer indexed and is now defined with `indexed=false` by default, because the field has DocValues enabled.
+* The `/export` handler has been changed so it no longer returns zero (0) for numeric fields that are not in the original document. One consequence of this change is that you must be aware that some tuples will not have values if there were none in the original document.
+* Metrics-related classes in `org.apache.solr.util.stats` have been removed in favor of the http://metrics.dropwizard.io/3.1.0/[Dropwizard metrics library]. Any custom plugins using these classes should be changed to use the equivalent classes from the metrics library. As part of this, the following changes were made to the output of Overseer Status API:
+** The "totalTime" metric has been removed because it is no longer supported.
+** The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime" and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime" and so on for consistency with stats output in other parts of Solr.
+** The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond" and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr.
+* A new highlighter named UnifiedHighlighter has been added. You are encouraged to try out the UnifiedHighlighter by setting `hl.method=unified` and report feedback. It might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the original Highlighter. That said, some options aren't supported yet. It will get more features in time, especially with your input. See HighlightParams.java for a listing of highlight parameters annotated with which highlighters use them. `hl.useFastVectorHighlighter` is now considered deprecated in lieu of `hl.method=fastVector`.
+* The <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,`maxWarmingSearchers` parameter>> now defaults to 1, and more importantly commits will now block if this limit is exceeded instead of throwing an exception (a good thing). Consequently there is no longer a risk in overlapping commits. Nonetheless users should continue to avoid excessive committing. Users are advised to remove any pre-existing maxWarmingSearchers entries from their solrconfig.xml files.
+* The <<other-parsers.adoc#complex-phrase-query-parser,Complex Phrase query parser>> now supports leading wildcards. Beware of its possible heaviness, users are encouraged to use ReversedWildcardFilter in index time analysis.
+* The JMX metric "avgTimePerRequest" (and the corresponding metric in the metrics API for each handler) used to be a simple non-decaying average based on total cumulative time and the number of requests. New Codahale Metrics implementation applies exponential decay to this value, which heavily biases the average towards the last 5 minutes.
+* Index-time boosts are now deprecated. As a replacement, index-time scoring factors should be indexed in a separate field and combined with the query score using a function query. These boosts will be removed in Solr 7.0.
+* Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change the default aggregation mode has been changed to facet rather than map_reduce. There have also been changes to the SQL aggregate response and some SQL syntax changes. Consult the <<parallel-sql-interface.adoc#parallel-sql-interface,Parallel SQL Interface>> documentation for full details.
+
+== Upgrading from 5.5.x
+
+* The deprecated `SolrServer` and subclasses have been removed, use <<using-solrj.adoc#using-solrj,`SolrClient`>> instead.
+* The deprecated `<nrtMode>` configuration in <<configuring-solrconfig-xml.adoc#configuring-solrconfig-xml,`solrconfig.xml`>> has been removed. Please remove it from `solrconfig.xml`.
+* `SolrClient.shutdown()` has been removed, use {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient.close()`] instead.
+* The deprecated `zkCredientialsProvider` element in `solrcloud` section of `solr.xml` is now removed. Use the correct spelling (<<zookeeper-access-control.adoc#zookeeper-access-control,`zkCredentialsProvider`>>) instead.
+* Internal/expert - `ResultContext` was significantly changed and expanded to allow for multiple full query results (`DocLists`) per Solr request. `TransformContext` was rendered redundant and was removed. See https://issues.apache.org/jira/browse/SOLR-7957[SOLR-7957] for details.
+* Several changes have been made regarding the "<<other-schema-elements.adoc#similarity,`Similarity`>>" used in Solr, in order to provide better default behavior for new users. There are 3 key impacts of these changes on existing users who upgrade:
+** `DefaultSimilarityFactory` has been removed. If you currently have `DefaultSimilarityFactory` explicitly referenced in your `schema.xml`, edit your config to use the functionally identical `ClassicSimilarityFactory`. See https://issues.apache.org/jira/browse/SOLR-8239[SOLR-8239] for more details.
+** The implicit default Similarity used when no `<similarity/>` is configured in `schema.xml` has been changed to `SchemaSimilarityFactory`. Users who wish to preserve back-compatible behavior should either explicitly configure `ClassicSimilarityFactory`, or ensure that the `luceneMatchVersion` for the collection is less then 6.0. See https://issues.apache.org/jira/browse/SOLR-8270[SOLR-8270] + http://SOLR-8271[SOLR-8271] for details.
+** `SchemaSimilarityFactory` has been modified to use `BM25Similarity` as the default for `fieldTypes` that do not explicitly declare a Similarity. The legacy behavior of using `ClassicSimilarity` as the default will occur if the `luceneMatchVersion` for the collection is less then 6.0, or the `'defaultSimFromFieldType'` configuration option may be used to specify any default of your choosing. See https://issues.apache.org/jira/browse/SOLR-8261[SOLR-8261] + https://issues.apache.org/jira/browse/SOLR-8329[SOLR-8329] for more details.
+* If your `solrconfig.xml` file doesn't explicitly mention the `schemaFactory` to use then Solr will choose the `ManagedIndexSchemaFactory` by default. Previously it would have chosen `ClassicIndexSchemaFactory`. This means that the Schema APIs (`/<collection>/schema`) are enabled and the schema is mutable. When Solr starts your `schema.xml` file will be renamed to `managed-schema`. If you want to retain the old behaviour then please ensure that the `solrconfig.xml` explicitly uses the `ClassicIndexSchemaFactory` or your `luceneMatchVersion` in the `solrconfig.xml` is less than 6.0. See the <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> section for more details
+* `SolrIndexSearcher.QueryCommand` and `QueryResult` were moved to their own classes. If you reference them in your code, you should import them under o.a.s.search (or use your IDE's "Organize Imports").
+* The '<<request-parameters-api.adoc#request-parameters-api,`useParams`>>' attribute specified in request handler cannot be overridden from request params. See https://issues.apache.org/jira/browse/SOLR-8698[SOLR-8698] for more details.
+* When requesting stats in date fields, "sum" is now returned as a double value instead of a date. See https://issues.apache.org/jira/browse/SOLR-8671[SOLR-8671] for more details.
+* The deprecated GET methods for schema are now accessible through the <<schema-api.adoc#schema-api,bulk API>>. These methods now accept fewer request parameters, and output less information. See https://issues.apache.org/jira/browse/SOLR-8736[SOLR-8736] for more details. Some of the removed functionality will likely be restored in a future version of Solr - see https://issues.apache.org/jira/browse/SOLR-8992[SOLR-8992].
+* In the past, Solr guaranteed that retrieval of multi-valued fields would preserve the order of values. Because values may now be retrieved from column-stored fields (`docValues="true"`), in conjunction with the fact that <<docvalues.adoc#docvalues,DocValues>> do not currently preserve order, means that users should set <<defining-fields.adoc#defining-fields,`useDocValuesAsStored="false"`>> to prevent future optimizations from using the column-stored values over the row-stored values when fields have both `stored="true"` and `docValues="true"`.
+* <<working-with-dates.adoc#working-with-dates,Formatted date-times from Solr>> have some differences. If the year is more than 4 digits, there is a leading '+'. When there is a non-zero number of milliseconds, it is padded with zeros to 3 digits. Negative year (BC) dates are now possible. Parsing: It is now an error to supply a portion of the date out of its, range, like 67 seconds.
+* <<using-solrj.adoc#using-solrj,SolrJ>> no longer includes `DateUtil`. If for some reason you need to format or parse dates, simply use `Instant.format()` and `Instant.parse()`.
+* If you are using spatial4j, please upgrade to 0.6 and <<spatial-search.adoc#spatial-search,edit your `spatialContextFactory`>> to replace `com.spatial4j.core` with `org.locationtech.spatial4j` .
+
+== Upgrading from Older Versions of Solr
+
+Users upgrading from older versions are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
+
+A summary of the significant changes between Solr 5.x and Solr 6.0 can be found in the <<major-changes-from-solr-5-to-solr-6.adoc#major-changes-from-solr-5-to-solr-6,Major Changes from Solr 5 to Solr 6>> section.

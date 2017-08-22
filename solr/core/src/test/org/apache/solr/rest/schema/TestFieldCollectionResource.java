@@ -23,8 +23,8 @@ import org.junit.Test;
 
 public class TestFieldCollectionResource extends SolrRestletTestBase {
   @Test
-  public void testGetAllFields() throws Exception {
-    assertQ("/schema/fields?indent=on&wt=xml",
+  public void testXMLGetAllFields() throws Exception {
+    assertQ("/schema/fields?wt=xml",
             "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
             "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
             "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = '_version_'");
@@ -32,25 +32,25 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
 
 
   @Test
-  public void testJsonGetAllFields() throws Exception {
-    assertJQ("/schema/fields?indent=on",
+  public void testGetAllFields() throws Exception {
+    assertJQ("/schema/fields",
              "/fields/[0]/name=='HTMLstandardtok'",
              "/fields/[1]/name=='HTMLwhitetok'",
              "/fields/[2]/name=='_version_'");
   }
 
   @Test
-  public void testGetThreeFieldsDontIncludeDynamic() throws IOException {
+  public void testXMLGetThreeFieldsDontIncludeDynamic() throws IOException {
     //
-    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_,price_i",
+    assertQ("/schema/fields?wt=xml&fl=id,_version_,price_i",
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 2",
         "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
         "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'");
   }
 
   @Test
-  public void testGetThreeFieldsIncludeDynamic() throws IOException {
-    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_,price_i&includeDynamic=on",
+  public void testXMLGetThreeFieldsIncludeDynamic() throws IOException {
+    assertQ("/schema/fields?wt=xml&fl=id,_version_,price_i&includeDynamic=on",
 
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 3",
 
@@ -64,16 +64,16 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
             +"                                  and str[@name='dynamicBase']='*_i']");
   }
   @Test
-  public void testNotFoundFields() throws IOException {
-    assertQ("/schema/fields?indent=on&wt=xml&fl=not_in_there,this_one_either",
+  public void testXMLNotFoundFields() throws IOException {
+    assertQ("/schema/fields?&wt=xml&fl=not_in_there,this_one_either",
         "count(/response/arr[@name='fields']) = 1",
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 0");
   }
 
 
   @Test
-  public void testJsonGetAllFieldsIncludeDynamic() throws Exception {
-    assertJQ("/schema/fields?indent=on&includeDynamic=true",
+  public void testGetAllFieldsIncludeDynamic() throws Exception {
+    assertJQ("/schema/fields?includeDynamic=true",
              "/fields/[0]/name=='HTMLstandardtok'",
              "/fields/[1]/name=='HTMLwhitetok'",
              "/fields/[2]/name=='_version_'",

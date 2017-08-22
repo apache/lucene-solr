@@ -14,13 +14,40 @@ Changes in Runtime Behavior
 
 
 ======================= Lucene 7.1.0 =======================
-(No Changes)
+
+New Features
+
+* LUCENE-7621: Add CoveringQuery, a query whose required number of matching
+  clauses can be defined per document. (Adrien Grand)
 
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
   SortedSetDocValuesFacetCounts and others) builds its map (Robert
   Muir, Adrien Grand, Mike McCandless)
+
+* LUCENE-7655: Speed up geo-distance queries in case of dense single-valued
+  fields when most documents match. (Maciej Zasada via Adrien Grand)
+
+* LUCENE-7897: IndexOrDocValuesQuery now requires the range cost to be more
+  than 8x greater than the cost of the lead iterator in order to use doc values.
+  (Murali Krishna P via Adrien Grand)
+
+* LUCENE-7925: Collapse duplicate SHOULD or MUST clauses by summing up their
+  boosts. (Adrien Grand)
+
+Bug Fixes
+
+* LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
+  with a different ICU JAR version than it is compiled against. Note, this is
+  not recommended, lucene-analyzers-icu contains binary data structures
+  specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
+
+Build
+
+* SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
+  instead of locally installing first, to workaround a double repository push of
+  *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
 
 ======================= Lucene 7.0.0 =======================
 
@@ -138,6 +165,10 @@ Bug Fixes
 * LUCENE-7871: fix false positive match in BlockJoinSelector when children have no value, introducing 
   wrap methods accepting children as DISI. Extracting ToParentDocValues (Mikhail Khludnev)
 
+* LUCENE-7914: Add a maximum recursion level in automaton recursive
+  functions (Operations.isFinite and Operations.topsortState) to prevent
+  large automaton to overflow the stack (Robert Muir, Adrien Grand, Jim Ferenczi)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
@@ -174,6 +205,8 @@ Optimizations
 * LUCENE-7874: DisjunctionMaxQuery rewrites to a BooleanQuery when tiebreaker is set to 1. (Jim Ferenczi)
 
 Other
+
+* LUCENE-7923: Removed FST.Arc.node field (unused). (Dawid Weiss)
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 

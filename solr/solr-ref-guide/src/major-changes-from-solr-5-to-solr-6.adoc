@@ -18,7 +18,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-There are some major changes in Solr 6 to consider before starting to migrate your configurations and indexes. There are many hundreds of changes, so a thorough review of the <<upgrading-solr.adoc#upgrading-solr,Upgrading Solr>> section as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 6. This section attempts to highlight some of the major changes you should be aware of.
+There are some major changes in Solr 6 to consider before starting to migrate your configurations and indexes.
+
+There are many hundreds of changes, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> section as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 6. This section attempts to highlight some of the major changes you should be aware of.
 
 == Highlights of New Features in Solr 6
 

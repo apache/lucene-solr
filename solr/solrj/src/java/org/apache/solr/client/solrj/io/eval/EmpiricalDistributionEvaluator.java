@@ -17,14 +17,11 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Arrays;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -45,7 +42,7 @@ public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements 
     }
   }
 
-  public Tuple evaluate(Tuple tuple) throws IOException {
+  public Object evaluate(Tuple tuple) throws IOException {
 
     StreamEvaluator colEval1 = subEvaluators.get(0);
 
@@ -60,56 +57,9 @@ public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements 
     EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
     empiricalDistribution.load(column1);
 
-    Map map = new HashMap();
-    StatisticalSummary statisticalSummary = empiricalDistribution.getSampleStats();
-
-    map.put("max", statisticalSummary.getMax());
-    map.put("mean", statisticalSummary.getMean());
-    map.put("min", statisticalSummary.getMin());
-    map.put("stdev", statisticalSummary.getStandardDeviation());
-    map.put("sum", statisticalSummary.getSum());
-    map.put("N", statisticalSummary.getN());
-    map.put("var", statisticalSummary.getVariance());
-
-    return new EmpiricalDistributionTuple(empiricalDistribution, column1, map);
+    return empiricalDistribution;
   }
 
-  public static class EmpiricalDistributionTuple extends Tuple {
-
-    private EmpiricalDistribution empiricalDistribution;
-    private double[] backingArray;
-
-    public EmpiricalDistributionTuple(EmpiricalDistribution empiricalDistribution, double[] backingArray, Map map) {
-      super(map);
-      this.empiricalDistribution = empiricalDistribution;
-      this.backingArray = backingArray;
-    }
-
-    public double percentile(double d) {
-      int slot = Arrays.binarySearch(backingArray, d);
-
-      if(slot == 0) {
-        return 0.0;
-      }
-
-      if(slot < 0) {
-        if(slot == -1) {
-          return 0.0D;
-        } else {
-          //Not a direct hit
-          slot = Math.abs(slot);
-          --slot;
-          if(slot == backingArray.length) {
-            return 1.0D;
-          } else {
-            return (this.empiricalDistribution.cumulativeProbability(backingArray[slot]));
-          }
-        }
-      } else {
-        return this.empiricalDistribution.cumulativeProbability(backingArray[slot]);
-      }
-    }
-  }
 
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {

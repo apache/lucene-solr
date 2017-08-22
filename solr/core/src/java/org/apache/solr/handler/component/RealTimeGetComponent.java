@@ -84,6 +84,7 @@ import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -955,10 +956,15 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   public void processGetFingeprint(ResponseBuilder rb) throws IOException {
+    TestInjection.injectFailIndexFingerprintRequests();
+
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
-    
+
     long maxVersion = params.getLong("getFingerprint", Long.MAX_VALUE);
+    if (TestInjection.injectWrongIndexFingerprint())  {
+      maxVersion = -1;
+    }
     IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Math.abs(maxVersion));
     rb.rsp.add("fingerprint", fingerprint);
   }

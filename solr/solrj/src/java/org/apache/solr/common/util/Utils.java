@@ -285,7 +285,7 @@ public class Utils {
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, List<String> hierarchy) {
     if(root == null) return null;
-    if(!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
+    if(!isMapLike(root)) return null;
     Object obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -1;

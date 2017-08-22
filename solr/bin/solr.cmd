@@ -268,7 +268,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth
+@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -310,7 +310,8 @@ goto done
 @echo                   while reusing the same server directory set using the -d parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
-@echo                   on which example is run. The default value is server/solr.
+@echo                   on which example is run. The default value is server/solr. If passed a relative dir
+@echo                   validation with the current dir will be done before trying the default server/<dir>
 @echo.
 @echo   -t dir        Sets the solr.data.home system property, used as root for ^<instance_dir^>/data directories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
@@ -1112,14 +1113,28 @@ IF "%GC_TUNE%"=="" (
    -XX:-OmitStackTraceInFastThrow
 )
 
-IF "%GC_LOG_OPTS%"=="" (
-  set GC_LOG_OPTS=-verbose:gc ^
-   -XX:+PrintHeapAtGC ^
-   -XX:+PrintGCDetails ^
-   -XX:+PrintGCDateStamps ^
-   -XX:+PrintGCTimeStamps ^
-   -XX:+PrintTenuringDistribution ^
-   -XX:+PrintGCApplicationStoppedTime
+if !JAVA_MAJOR_VERSION! GEQ 9  (
+  IF NOT "%GC_LOG_OPTS%"=="" (
+    echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
+    GOTO :eof
+  )
+  set GC_LOG_OPTS="-Xlog:gc*:file=\"!SOLR_LOGS_DIR!\solr_gc.log\":time,uptime:filecount=9,filesize=20000"
+) else (
+  IF "%GC_LOG_OPTS%"=="" (
+    rem Set defaults for Java 8
+    set GC_LOG_OPTS=-verbose:gc ^
+     -XX:+PrintHeapAtGC ^
+     -XX:+PrintGCDetails ^
+     -XX:+PrintGCDateStamps ^
+     -XX:+PrintGCTimeStamps ^
+     -XX:+PrintTenuringDistribution ^
+     -XX:+PrintGCApplicationStoppedTime
+  )
+  if "%JAVA_VENDOR%" == "IBM J9" (
+    set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
+  ) else (
+    set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
+  )
 )
 
 IF "%verbose%"=="1" (
@@ -1206,26 +1221,20 @@ IF NOT EXIST "%SOLR_SERVER_DIR%\tmp" (
   mkdir "%SOLR_SERVER_DIR%\tmp"
 )
 
-IF "%JAVA_VENDOR%" == "IBM J9" (
-  set GCLOG_OPT="-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-) else (
-  set GCLOG_OPT="-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-)
-
 IF "%DEFAULT_CONFDIR%"=="" set "DEFAULT_CONFDIR=%SOLR_SERVER_DIR%\solr\configsets\_default\conf"
 
 IF "%FG%"=="1" (
   REM run solr in the foreground
   title "Solr-%SOLR_PORT%"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
-  "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT% ^
+  "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
     -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar "%SOLR_JETTY_CONFIG%" "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
   START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" ^
-    "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% %GCLOG_OPT% ^
+    "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configuration="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
@@ -1425,7 +1434,6 @@ if "!CREATE_PORT!"=="" (
   set "SCRIPT_ERROR=Could not find a running Solr instance on this host! Please use the -p option to specify the port."
   goto err
 )
-
 
 if "!CREATE_CONFDIR!"=="_default" (
   echo WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is
@@ -1843,8 +1851,12 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
 
   REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
-  for /f "tokens=2 delims=." %%a in ("!JAVA_VERSION_INFO!") do (
-    set JAVA_MAJOR_VERSION=%%a
+  for /f "tokens=1,2 delims=." %%a in ("!JAVA_VERSION_INFO!") do (
+    if "%%a" GEQ "9" (
+      set JAVA_MAJOR_VERSION=%%a
+    ) else (
+      set JAVA_MAJOR_VERSION=%%b
+    )
   )
 
   REM Don't look for "_{build}" if we're on IBM J9.

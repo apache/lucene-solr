@@ -53,6 +53,6 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     byte[] bytes = Utils.toJSON(clusterState);
     ClusterState loadedClusterState = ClusterState.load(-1, bytes, liveNodes);
 
-    assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getSlice("collection1", "shard1").getState());
+    assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
   }
 }

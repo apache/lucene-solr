@@ -128,6 +128,12 @@ class GeoLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(leftPlane, planePoints, rightPlane) ||
+        geoShape.intersects(rightPlane, planePoints, leftPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
@@ -136,33 +142,6 @@ class GeoLongitudeSlice extends GeoBaseBBox {
       .addIntersection(planetModel, rightPlane, leftPlane)
       .addPoint(planetModel.NORTH_POLE)
       .addPoint(planetModel.SOUTH_POLE);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE)
-      return OVERLAPS;
-
-    final boolean insideShape = path.isWithin(planetModel.NORTH_POLE);
-
-    if (insideRectangle == ALL_INSIDE && insideShape)
-      return OVERLAPS;
-
-    if (path.intersects(leftPlane, planePoints, rightPlane) ||
-        path.intersects(rightPlane, planePoints, leftPlane)) {
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      return CONTAINS;
-    }
-
-    return DISJOINT;
   }
 
   @Override

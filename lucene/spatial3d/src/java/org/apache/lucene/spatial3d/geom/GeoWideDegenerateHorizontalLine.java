@@ -166,6 +166,13 @@ class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
+    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
+    return geoShape.intersects(plane, planePoints, eitherBound);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.isWide()
@@ -176,7 +183,7 @@ class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
 
   @Override
   public int getRelationship(final GeoShape path) {
-    if (path.intersects(plane, planePoints, eitherBound)) {
+    if (intersects(path)) {
       return OVERLAPS;
     }
 

@@ -929,6 +929,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
       }
     }
+    { // we don't care if one has a warnings section in the header and the other doesn't - control vs distrib
+      if (a.getHeader() != null) {
+        a.getHeader().remove("warnings");
+      }
+      if (b.getHeader() != null) {
+        b.getHeader().remove("warnings");
+      }
+    }
     compareSolrResponses(a, b);
   }
 

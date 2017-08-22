@@ -33,7 +33,6 @@ import org.apache.lucene.util.IOUtils;
 
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
-import com.ibm.icu.lang.UScript;
 import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.RuleBasedBreakIterator;
 
@@ -108,7 +107,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
     if (tailored.isEmpty()) {
       config = new DefaultICUTokenizerConfig(cjkAsWords, myanmarAsWords);
     } else {
-      final BreakIterator breakers[] = new BreakIterator[UScript.CODE_LIMIT];
+      final BreakIterator breakers[] = new BreakIterator[1 + UCharacter.getIntPropertyMaxValue(UProperty.SCRIPT)];
       for (Map.Entry<Integer,String> entry : tailored.entrySet()) {
         int code = entry.getKey();
         String resourcePath = entry.getValue();

@@ -18,7 +18,6 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
@@ -26,6 +25,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -63,6 +63,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     } else {
       actualMin = parseDoubleFromUser(field.getName(), min);
       if (!minInclusive) {
+        if (actualMin == Double.POSITIVE_INFINITY) return new MatchNoDocsQuery();
         actualMin = DoublePoint.nextUp(actualMin);
       }
     }
@@ -71,6 +72,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     } else {
       actualMax = parseDoubleFromUser(field.getName(), max);
       if (!maxInclusive) {
+        if (actualMax == Double.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
         actualMax = DoublePoint.nextDown(actualMax);
       }
     }

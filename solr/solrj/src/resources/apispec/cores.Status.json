@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/CoreAdmin+API#CoreAdminAPI-STATUS",
+  "documentation": "https://lucene.apache.org/solr/guide/coreadmin-api.html#coreadmin-status",
   "description": "Provides status and other information about the status of each core. Individual cores can be requested by core name.",
   "methods": [
     "GET"

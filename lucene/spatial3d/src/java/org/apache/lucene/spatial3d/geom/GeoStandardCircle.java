@@ -140,6 +140,14 @@ class GeoStandardCircle extends GeoBaseCircle {
   }
 
   @Override
+  public boolean intersects(GeoShape geoShape) {
+    if (circlePlane == null) {
+      return false;
+    }
+    return geoShape.intersects(circlePlane, circlePoints);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     if (circlePlane == null) {

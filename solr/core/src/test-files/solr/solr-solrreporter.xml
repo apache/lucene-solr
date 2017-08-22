@@ -42,12 +42,12 @@
     <reporter name="defaultJmx" class="org.apache.solr.metrics.reporters.SolrJmxReporter">
       <bool name="enabled">false</bool>
     </reporter>
-    <reporter name="test" group="shard">
+    <reporter name="test" group="shard" class="org.apache.solr.metrics.reporters.solr.SolrShardReporter">
       <int name="period">5</int>
       <str name="filter">UPDATE\./update/.*requests</str>
       <str name="filter">QUERY\./select.*requests</str>
     </reporter>
-    <reporter name="test" group="cluster">
+    <reporter name="test" group="cluster" class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter">
       <str name="handler">/admin/metrics/collector</str>
       <int name="period">5</int>
       <lst name="report">

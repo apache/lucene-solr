@@ -90,7 +90,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       RandomIndexWriter writer = new RandomIndexWriter (random(), directory);
 
       Document doc = new Document();
-      doc.add(newStringField("field", "term", Field.Store.NO));
+      doc.add(newStringField("field", "term1", Field.Store.NO));
+      doc.add(newStringField("field", "term2", Field.Store.NO));
       writer.addDocument(doc);
 
       reader = writer.getReader();
@@ -99,8 +100,8 @@ public class TestConstantScoreQuery extends LuceneTestCase {
       searcher = newSearcher(reader, true, false);
       searcher.setQueryCache(null); // to assert on scorer impl
       
-      final BoostQuery csq1 = new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term ("field", "term"))), 2f);
-      final BoostQuery csq2 = new BoostQuery(new ConstantScoreQuery(csq1), 5f);
+      final BoostQuery csq1 = new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term ("field", "term1"))), 2f);
+      final BoostQuery csq2 = new BoostQuery(new ConstantScoreQuery(new ConstantScoreQuery(new TermQuery(new Term ("field", "term2")))), 5f);
       
       final BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(csq1, BooleanClause.Occur.SHOULD);

@@ -387,7 +387,7 @@ public class HttpShardHandler extends ShardHandler {
         } else {
           if (clusterState == null) {
             clusterState =  zkController.getClusterState();
-            slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
+            slices = clusterState.getCollection(cloudDescriptor.getCollectionName()).getSlicesMap();
           }
           String sliceName = rb.slices[i];
 

@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -354,7 +355,7 @@ public class HttpSolrClient extends SolrClient {
 
     if (request instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = baseUrl.replace("/solr", "/v2");
+        basePath = baseUrl.replace("/solr", "/api");
       } else {
         basePath = baseUrl + "/____v2";
       }
@@ -497,7 +498,9 @@ public class HttpSolrClient extends SolrClient {
     throw new SolrServerException("Unsupported method: " + request.getMethod());
 
   }
-  
+
+  private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
+
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
@@ -596,11 +599,9 @@ public class HttpSolrClient extends SolrClient {
       } catch (Exception e) {
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
-      if (isV2Api) {
-        Object err = rsp.get("error");
-        if (err != null) {
+      Object error = rsp == null ? null : rsp.get("error");
+      if (error != null && (isV2Api || String.valueOf(getObjectByPath(error, true, errPath)).endsWith("ExceptionWithErrObject"))) {
           throw RemoteExecutionException.create(baseUrl, rsp);
-        }
       }
       if (httpStatus != HttpStatus.SC_OK && !isV2Api) {
         NamedList<String> metadata = null;

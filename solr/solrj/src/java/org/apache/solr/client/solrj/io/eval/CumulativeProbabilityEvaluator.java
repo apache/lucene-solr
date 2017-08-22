@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.Locale;
 
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -34,20 +35,19 @@ public class CumulativeProbabilityEvaluator extends ComplexEvaluator implements 
 
   public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
+
     if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (emperical distribution and a number) but found %d",expression,subEvaluators.size()));
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (regression result and a number) but found %d",expression,subEvaluators.size()));
     }
   }
 
   public Number evaluate(Tuple tuple) throws IOException {
+    StreamEvaluator a = subEvaluators.get(0);
+    StreamEvaluator b = subEvaluators.get(1);
+    Number number1 = (Number)b.evaluate(tuple);
+    RealDistribution rd= (RealDistribution)a.evaluate(tuple);
 
-    StreamEvaluator r = subEvaluators.get(0);
-    StreamEvaluator d = subEvaluators.get(1);
-
-    EmpiricalDistributionEvaluator.EmpiricalDistributionTuple e = (EmpiricalDistributionEvaluator.EmpiricalDistributionTuple)r.evaluate(tuple);
-    Number n = (Number)d.evaluate(tuple);
-    return e.percentile(n.doubleValue());
+    return rd.cumulativeProbability(number1.doubleValue());
   }
 
   @Override

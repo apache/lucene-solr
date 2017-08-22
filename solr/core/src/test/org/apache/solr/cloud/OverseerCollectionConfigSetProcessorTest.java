@@ -237,6 +237,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     });
 
     when(clusterStateMock.getLiveNodes()).thenReturn(liveNodes);
+    Map<String, byte[]> zkClientData = new HashMap<>();
+    when(solrZkClientMock.setData(anyString(), any(), anyInt(), anyBoolean())).then(invocation -> {
+          zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
+          return null;
+        }
+    );
+    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean())).then(invocation ->
+        zkClientData.get(invocation.getArgument(0)));
     when(solrZkClientMock.create(any(), any(), any(), anyBoolean())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
       zkMap.put(key, null);
@@ -376,9 +384,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     assertEquals(numberOfSlices * numberOfReplica, coreNames.size());
     for (int i = 1; i <= numberOfSlices; i++) {
       for (int j = 1; j <= numberOfReplica; j++) {
-        String coreName = Assign.buildCoreName(COLLECTION_NAME, "shard" + i, Replica.Type.NRT, j);
-        assertTrue("Shard " + coreName + " was not created",
-            coreNames.contains(coreName));
+        String coreName = coreNames.get((i-1) * numberOfReplica + (j-1));
         
         if (dontShuffleCreateNodeSet) {
           final String expectedNodeName = nodeUrlWithoutProtocolPartForLiveNodes.get((numberOfReplica * (i - 1) + (j - 1)) % nodeUrlWithoutProtocolPartForLiveNodes.size());

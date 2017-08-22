@@ -44,7 +44,7 @@ This command will ping the core name for a response.
 
 [source,text]
 ----
-  http://localhost:8983/solr/<collection-name>admin/ping?wt=json&distrib=true&indent=true
+  http://localhost:8983/solr/<collection-name>/admin/ping?distrib=true
 ----
 
 This command will ping all replicas of the given collection name for a response

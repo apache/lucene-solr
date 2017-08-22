@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -75,7 +76,8 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
     Boolean isPresent = null; // null meaning "don't know"
     while (null == isPresent || shouldBePresent != isPresent.booleanValue()) {
-      final Collection<Slice> slices = getCommonCloudSolrClient().getZkStateReader().getClusterState().getSlices(collectionName);
+      final DocCollection docCollection = getCommonCloudSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName);
+      final Collection<Slice> slices = (docCollection != null) ? docCollection.getSlices() : null;
       if (timeout.hasTimedOut()) {
         printLayout();
         fail("checkCoreNamePresenceAndSliceCount failed:"

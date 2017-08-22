@@ -176,9 +176,11 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       Document nextDoc = lineFile.nextDoc();
       String title = nextDoc.getField("title").stringValue();
       int randomWeight = random().nextInt(100);
-      keys.add(new Input(title, randomWeight));
-      if (!mapping.containsKey(title) || mapping.get(title) < randomWeight) {
-          mapping.put(title, Long.valueOf(randomWeight));
+      int maxLen = Math.min(title.length(), 500);
+      String prefix = title.substring(0, maxLen);
+      keys.add(new Input(prefix, randomWeight));
+      if (!mapping.containsKey(prefix) || mapping.get(prefix) < randomWeight) {
+        mapping.put(prefix, Long.valueOf(randomWeight));
       }
     }
     Analyzer indexAnalyzer = new MockAnalyzer(random());
@@ -1252,10 +1254,9 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       suggester.build(new InputArrayIterator(new Input[] {
             new Input(bigString, 7)}));
       fail("did not hit expected exception");
-    } catch (StackOverflowError soe) {
-      // OK
     } catch (IllegalArgumentException iae) {
       // expected
+      assertTrue(iae.getMessage().contains("input automaton is too large"));
     }
     IOUtils.close(a, tempDir);
   }

@@ -86,6 +86,11 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.noLongitudeBound()
@@ -98,7 +103,7 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     // work with no area endpoints.  So we rely entirely on intersections.
     //System.out.println("Got here! latitude="+latitude+" path="+path);
 
-    if (path.intersects(plane, planePoints)) {
+    if (intersects(path)) {
       return OVERLAPS;
     }
 

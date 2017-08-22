@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Config+API",
+  "documentation": "https://lucene.apache.org/solr/guide/config-api.html",
   "description": "Gets the Solr configuration for a collection.",
   "methods": [
     "GET"

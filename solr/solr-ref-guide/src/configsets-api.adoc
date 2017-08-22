@@ -133,7 +133,7 @@ Fetch the names of the ConfigSets in the cluster.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=LIST&wt=json
+http://localhost:8983/solr/admin/configs?action=LIST
 ----
 
 *Output*

@@ -81,9 +81,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     try {
       solrClient.request(req);
       fail("Adding a policy with 'cores' attribute should not have succeeded.");
-    } catch (HttpSolrClient.RemoteSolrException e)  {
+    } catch (HttpSolrClient.RemoteExecutionException e)  {
+      String message = String.valueOf(Utils.getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"));
+
       // expected
-      assertTrue(e.getMessage().contains("cores is only allowed in 'cluster-policy'"));
+      assertTrue(message.contains("cores is only allowed in 'cluster-policy'"));
     }
 
     setPolicyCommand =  "{'set-policy': {" +
@@ -175,6 +177,25 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(clusterPolicy);
     assertEquals(3, clusterPolicy.size());
   }
+  public void testErrorHandling() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'nodeRole':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    try {
+      SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+      solrClient.request(req);
+      fail("expect exception");
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      String message = String.valueOf(Utils.getObjectByPath(e.getMetaData(), true, "error/details[0]/errorMessages[0]"));
+      assertTrue(message.contains("replica is required in"));
+    }
+  }
 
   @Test
   public void testReadApi() throws Exception  {
@@ -263,11 +284,43 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     assertNotNull(violations);
     assertEquals(0, violations.size());
 
+    String setEmptyClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': []" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setEmptyClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, "{set-cluster-policy : []}");
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    // lets create a collection which violates the rule replicas < 2
+    try {
+      CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
+      create.setMaxShardsPerNode(10);
+      create.process(solrClient);
+      fail();
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("'maxShardsPerNode>0' is not supported when autoScaling policies are used"));
+
+    }
+
+
     // lets create a collection which violates the rule replicas < 2
     CollectionAdminRequest.Create create = CollectionAdminRequest.Create.createCollection("readApiTestViolations", CONFIGSET_NAME, 1, 6);
-    create.setMaxShardsPerNode(10);
     CollectionAdminResponse adminResponse = create.process(solrClient);
     assertTrue(adminResponse.isSuccess());
+
+    // reset the original cluster policy
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
 
     // get the diagnostics output again
     req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/diagnostics", null);

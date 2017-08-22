@@ -103,7 +103,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           "collection", COLLECTION_NAME,
           "property", "preferredLeader");
 
-      verifyUniqueAcrossCollection(client, COLLECTION_NAME, "property.preferredleader");
+      verifyUniqueAcrossCollection(client, COLLECTION_NAME, "preferredleader");
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
@@ -170,7 +170,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           "shardUnique", "true");
 
       verifyPropertyVal(client, COLLECTION_NAME,
-          c1_s1_r1, "property.bogus1", "true");
+          c1_s1_r1, "bogus1", "true");
       verifyPropertyVal(client, COLLECTION_NAME,
           c1_s1_r2, "property.bogus1", "whatever");
 
@@ -193,7 +193,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
       lastFailMsg = "";
       ClusterState clusterState = client.getZkStateReader().getClusterState();
-      for (Slice slice : clusterState.getSlices(collectionName)) {
+      for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {
         Boolean foundLeader = false;
         Boolean foundPreferred = false;
         for (Replica replica : slice.getReplicas()) {

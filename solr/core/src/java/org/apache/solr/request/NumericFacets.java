@@ -407,7 +407,7 @@ final class NumericFacets {
 
   private static NamedList<Integer> getCountsMultiValued(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
     // If facet.mincount=0 with PointFields the only option is to get the values from DocValues
-    // not currently supported. See SOLR-10033
+    // not currently supported. See SOLR-11174
     mincount = Math.max(mincount, 1);
     final SchemaField sf = searcher.getSchema().getField(fieldName);
     final FieldType ft = sf.getType();

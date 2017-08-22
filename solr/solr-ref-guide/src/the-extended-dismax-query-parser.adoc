@@ -38,7 +38,7 @@ In addition to supporting all the DisMax query parser parameters, Extended Disma
 In addition to all the <<the-dismax-query-parser.adoc#dismax-query-parser-parameters,DisMax parameters>>, Extended DisMax includes these query parameters:
 
 `sow`::
-Split on whitespace. If set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles. Defaults to `true`, so text analysis is invoked separately for each individual whitespace-separated term.
+Split on whitespace. If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.  The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.
 
 `mm.autoRelax`::
 If `true`, the number of clauses required (<<the-dismax-query-parser.adoc#mm-minimum-should-match-parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g. stopwords filter) from some but not all <<the-dismax-query-parser.adoc#qf-query-fields-parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.

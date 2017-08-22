@@ -62,13 +62,14 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 
 public class Assign {
 
-  public static int incAndGetId(SolrZkClient zkClient, String collection) {
+  public static int incAndGetId(SolrZkClient zkClient, String collection, int defaultValue) {
     String path = "/collections/"+collection;
     try {
       if (!zkClient.exists(path, true)) {
@@ -81,7 +82,7 @@ public class Assign {
       path += "/counter";
       if (!zkClient.exists(path, true)) {
         try {
-          zkClient.create(path, NumberUtils.intToBytes(0), CreateMode.PERSISTENT, true);
+          zkClient.create(path, NumberUtils.intToBytes(defaultValue), CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException e) {
           // it's okay if another beats us creating the node
         }
@@ -112,8 +113,16 @@ public class Assign {
     }
   }
 
-  public static String assignNode(SolrZkClient client, String collection) {
-    return "core_node" + incAndGetId(client, collection);
+  public static String assignNode(SolrZkClient client, DocCollection collection) {
+    // for backward compatibility;
+    int defaultValue = defaultCounterValue(collection, false);
+    String coreNodeName = "core_node" + incAndGetId(client, collection.getName(), defaultValue);
+    while (collection.getReplica(coreNodeName) != null) {
+      // there is wee chance that, the new coreNodeName id not totally unique,
+      // but this will be guaranteed unique for new collections
+      coreNodeName = "core_node" + incAndGetId(client, collection.getName(), defaultValue);
+    }
+    return coreNodeName;
   }
 
   /**
@@ -160,15 +169,49 @@ public class Assign {
     return returnShardId;
   }
 
-  public static String buildCoreName(String collectionName, String shard, Replica.Type type, int replicaNum) {
+  private static String buildCoreName(String collectionName, String shard, Replica.Type type, int replicaNum) {
     // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
     return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
-  public static String buildCoreName(SolrZkClient zkClient, String collection, String shard, Replica.Type type) {
-    int replicaNum = incAndGetId(zkClient, collection);
-    return buildCoreName(collection, shard, type, replicaNum);
+  private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
+    if (newCollection) return 0;
+    int defaultValue = collection.getReplicas().size();
+    if (collection.getReplicationFactor() != null) {
+      // numReplicas and replicationFactor * numSlices can be not equals,
+      // in case of many addReplicas or deleteReplicas are executed
+      defaultValue = Math.max(defaultValue,
+          collection.getReplicationFactor() * collection.getSlices().size());
+    }
+    return defaultValue * 20;
   }
+
+  public static String buildCoreName(SolrZkClient zkClient, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
+    Slice slice = collection.getSlice(shard);
+    int defaultValue = defaultCounterValue(collection, newCollection);
+    int replicaNum = incAndGetId(zkClient, collection.getName(), defaultValue);
+    String coreName = buildCoreName(collection.getName(), shard, type, replicaNum);
+    while (existCoreName(coreName, slice)) {
+      replicaNum = incAndGetId(zkClient, collection.getName(), defaultValue);
+      coreName = buildCoreName(collection.getName(), shard, type, replicaNum);
+    }
+    return coreName;
+  }
+
+  public static String buildCoreName(SolrZkClient zkClient, DocCollection collection, String shard, Replica.Type type) {
+    return buildCoreName(zkClient, collection, shard, type, false);
+  }
+
+  private static boolean existCoreName(String coreName, Slice slice) {
+    if (slice == null) return false;
+    for (Replica replica : slice.getReplicas()) {
+      if (coreName.equals(replica.getStr(CORE_NAME_PROP))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
     // TODO: add smarter options that look at the current number of cores per
     // node?
@@ -207,7 +250,7 @@ public class Assign {
     String policyName = message.getStr(POLICY);
     Map autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
 
-    if (rulesMap == null && policyName == null) {
+    if (rulesMap == null && policyName == null && autoScalingJson.get(Policy.CLUSTER_POLICY) == null) {
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
       for (String aShard : shardNames) {
@@ -231,10 +274,7 @@ public class Assign {
       }
     }
 
-    if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
-      return getPositionsUsingPolicy(collectionName,
-          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
-    } else {
+    if (rulesMap != null && !rulesMap.isEmpty()) {
       List<Rule> rules = new ArrayList<>();
       for (Object map : rulesMap) rules.add(new Rule((Map) map));
       Map<String, Integer> sharVsReplicaCount = new HashMap<>();
@@ -252,6 +292,9 @@ public class Assign {
       return nodeMappings.entrySet().stream()
           .map(e -> new ReplicaPosition(e.getKey().shard, e.getKey().index, e.getKey().type, e.getValue()))
           .collect(Collectors.toList());
+    } else {
+      return getPositionsUsingPolicy(collectionName,
+          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
     }
   }
 

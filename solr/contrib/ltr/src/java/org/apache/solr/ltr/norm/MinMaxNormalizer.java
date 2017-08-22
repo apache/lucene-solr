@@ -90,8 +90,8 @@ public class MinMaxNormalizer extends Normalizer {
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
     final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
-    params.put("min", '"'+Float.toString(min)+'"');
-    params.put("max", '"'+Float.toString(max)+'"');
+    params.put("min", Float.toString(min));
+    params.put("max", Float.toString(max));
     return params;
   }
 

@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -57,9 +58,9 @@ public class CloudUtil {
     log.debug("checkSharedFSFailoverReplaced running for coreNodeName={} baseUrl={}", thisCnn, thisBaseUrl);
 
     // if we see our core node name on a different base url, unload
-    Map<String,Slice> slicesMap = zkController.getClusterState().getSlicesMap(desc.getCloudDescriptor().getCollectionName());
-    
-    if (slicesMap != null) {
+    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());    
+    if (docCollection != null && docCollection.getSlicesMap() != null) {
+      Map<String,Slice> slicesMap = docCollection.getSlicesMap();
       for (Slice slice : slicesMap.values()) {
         for (Replica replica : slice.getReplicas()) {
           

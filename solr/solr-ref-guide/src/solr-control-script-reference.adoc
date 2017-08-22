@@ -25,7 +25,7 @@ You can start and stop Solr, create and delete collections or cores, perform ope
 
 You can find the script in the `bin/` directory of your Solr installation. The `bin/solr` script makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
 
-More examples of `bin/solr` in use are available throughout the Solr Reference Guide, but particularly in the sections <<running-solr.adoc#running-solr,Running Solr>> and <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
+More examples of `bin/solr` in use are available throughout the Solr Reference Guide, but particularly in the sections <<installing-solr.adoc#starting-solr,Starting Solr>> and <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
 
 == Starting and Stopping
 
@@ -221,7 +221,7 @@ The run in-foreground option (`-f`) is not compatible with the `-e` option since
 
 === Stop
 
-The `stop` command sends a STOP request to a running Solr node, which allows it to shutdown gracefully. The command will wait up to 5 seconds for Solr to stop gracefully and then will forcefully kill the process (kill -9).
+The `stop` command sends a STOP request to a running Solr node, which allows it to shutdown gracefully. The command will wait up to 180 seconds for Solr to stop gracefully and then will forcefully kill the process (kill -9).
 
 `bin/solr stop [options]`
 
@@ -294,6 +294,23 @@ Solr process 39827 running on port 8865
     "ZooKeeper":"localhost:9865",
     "liveNodes":"2",
     "collections":"2"}}
+----
+
+=== Assert
+
+The `assert` command sanity-checks common issues with Solr installations.  These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL.  The command can either output a specified error message, or change its exit code to indicate errors.
+
+As an example:
+
+`bin/solr assert --exists /opt/bin/solr`
+
+Results in the output below:
+
+[source,plain]
+----
+
+ERROR: Directory /opt/bin/solr does not exist.
+
 ----
 
 === Healthcheck

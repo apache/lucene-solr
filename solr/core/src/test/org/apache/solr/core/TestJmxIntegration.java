@@ -18,12 +18,11 @@ package org.apache.solr.core;
 
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,7 +155,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
         numDocs > oldNumDocs);
   }
 
-  @Test @Ignore("timing problem? https://issues.apache.org/jira/browse/SOLR-2715")
+  @Test @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-2715") // timing problem?
   public void testJmxOnCoreReload() throws Exception {
 
     String coreName = h.getCore().getName();
