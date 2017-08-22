@@ -31,10 +31,10 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,7 +59,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     //
     // (test configs are setup to use existing server if any, 
     // otherwise skip JMX)
-    MBeanServer platformServer = ManagementFactory.getPlatformMBeanServer();
+    MBeanServer newMbeanServer = MBeanServerFactory.createMBeanServer();
 
     initCore("solrconfig.xml", "schema.xml");
 
@@ -91,7 +91,9 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    mbeanServer = null;
+    if (mbeanServer != null) {
+      MBeanServerFactory.releaseMBeanServer(mbeanServer);
+    }
   }
 
   @Test
