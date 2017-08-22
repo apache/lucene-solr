@@ -97,8 +97,10 @@ public class UnInvertedField extends DocTermOrds {
   long memsz;
   final AtomicLong use = new AtomicLong(); // number of uses
 
+  /* The number of documents holding the term {@code maxDocs = maxTermCounts[termNum]}. */
   int[] maxTermCounts = new int[1024];
 
+  /* termNum -> docIDs for big terms. */
   final Map<Integer,TopTerm> bigTerms = new LinkedHashMap<>();
 
   private SolrIndexSearcher.DocsEnumState deState;
@@ -111,6 +113,12 @@ public class UnInvertedField extends DocTermOrds {
     searcher = null;
   }
 
+  /**
+   * Called for each term in the field being uninverted.
+   * Collects {@link #maxTermCounts} for all bigTerms as well as storing them in {@link #bigTerms}.
+   * @param te positioned at the current term.
+   * @param termNum the ID/pointer/ordinal of the current term. Monotonically increasing between calls.
+   */
   @Override
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
 
@@ -164,10 +172,6 @@ public class UnInvertedField extends DocTermOrds {
     }
     if (maxTermCounts != null)
       sz += maxTermCounts.length * 4;
-    if (indexedTermsArray != null) {
-      // assume 8 byte references?
-      sz += 8+8+8+8+(indexedTermsArray.length<<3)+sizeOfIndexedStrings;
-    }
     memsz = sz;
     return sz;
   }
@@ -258,8 +262,8 @@ public class UnInvertedField extends DocTermOrds {
       if (termInstances > 0) {
         int code = index[doc];
 
-        if ((code & 0xff)==1) {
-          int pos = code>>>8;
+        if ((code & 0x80000000)!=0) {
+          int pos = code & 0x7fffffff;
           int whichArray = (doc >>> 16) & 0xff;
           byte[] arr = tnums[whichArray];
           int tnum = 0;
@@ -344,8 +348,8 @@ public class UnInvertedField extends DocTermOrds {
         int doc = iter.nextDoc();
         int code = index[doc];
 
-        if ((code & 0xff) == 1) {
-          int pos = code >>> 8;
+        if ((code & 0x80000000)!=0) {
+          int pos = code & 0x7fffffff;
           int whichArray = (doc >>> 16) & 0xff;
           byte[] arr = tnums[whichArray];
           int tnum = 0;
@@ -469,8 +473,8 @@ public class UnInvertedField extends DocTermOrds {
 
         int code = index[doc];
 
-        if ((code & 0xff)==1) {
-          int pos = code>>>8;
+        if ((code & 0x80000000)!=0) {
+          int pos = code & 0x7fffffff;
           int whichArray = (doc >>> 16) & 0xff;
           byte[] arr = tnums[whichArray];
           int tnum = 0;
