@@ -49,6 +49,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static MBeanServer mbeanServer = null;
+  private static MBeanServer newMbeanServer = null;
   private static JmxObjectNameFactory nameFactory = null;
   private static String registryName = null;
 
@@ -59,7 +60,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     //
     // (test configs are setup to use existing server if any, 
     // otherwise skip JMX)
-    MBeanServer newMbeanServer = MBeanServerFactory.createMBeanServer();
+    newMbeanServer = MBeanServerFactory.createMBeanServer();
 
     initCore("solrconfig.xml", "schema.xml");
 
@@ -91,9 +92,10 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (mbeanServer != null) {
-      MBeanServerFactory.releaseMBeanServer(mbeanServer);
+    if (newMbeanServer != null) {
+      MBeanServerFactory.releaseMBeanServer(newMbeanServer);
     }
+    mbeanServer = null;
   }
 
   @Test
