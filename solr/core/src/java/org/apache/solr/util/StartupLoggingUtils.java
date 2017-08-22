@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.servlet;
+package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
@@ -30,20 +30,20 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.impl.StaticLoggerBinder;
 
 /**
- * Handles dynamic modification of during startup, before CoreContainer is created
+ * Handles programmatic modification of logging during startup
  * <p>
  *   WARNING: This class should only be used during startup. For modifying log levels etc
  *   during runtime, SLF4J and LogWatcher must be used.
  * </p>
  */
-final class StartupLoggingUtils {
+public final class StartupLoggingUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final static StaticLoggerBinder binder = StaticLoggerBinder.getSingleton();
 
   /**
    * Checks whether mandatory log dir is given
    */
-  static void checkLogDir() {
+  public static void checkLogDir() {
     if (System.getProperty("solr.log.dir") == null) {
       log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
     }
@@ -55,7 +55,7 @@ final class StartupLoggingUtils {
    * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
    */
   @SuppressForbidden(reason = "Legitimate log4j access")
-  static boolean muteConsole() {
+  public static boolean muteConsole() {
     try {
       if (!isLog4jActive()) {
         logNotSupported("Could not mute logging to console.");
@@ -83,13 +83,12 @@ final class StartupLoggingUtils {
    * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
    */
   @SuppressForbidden(reason = "Legitimate log4j access")
-  static boolean changeLogLevel(String logLevel) {
+  public static boolean changeLogLevel(String logLevel) {
     try {
       if (!isLog4jActive()) {
-        logNotSupported("Could not mute logging to console.");
+        logNotSupported("Could not change log level.");
         return false;
       }
-      log.info("Log level override, property solr.log.level=" + logLevel);
       LogManager.getRootLogger().setLevel(Level.toLevel(logLevel, Level.INFO));
       return true;
     } catch (Exception e) {

@@ -150,6 +150,8 @@ Other Changes
 
 * SOLR-5129: Timeout property for waiting ZK get started. (Cao Manh Dat, Hrishikesh Gadre, Varun Thacker)
 
+* SOLR-10628: Less verbose output from bin/solr commands. (Jason Gerlowski, janhoy) 
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
