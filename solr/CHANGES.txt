@@ -668,6 +668,8 @@ Other Changes
   
 * SOLR-10803: Mark all Trie/LegacyNumeric based fields @deprecated in Solr7.  (Steve Rowe)
 
+* SOLR-10821: Ref guide documentation for Autoscaling (Noble Paul, Cassandra Targett, shalin)
+
 * SOLR-11239: A special value of -1 can be specified for 'maxShardsPerNode' to denote that
   there is no limit. The bin/solr script send maxShardsPerNode=-1 when creating collections. The
   use of maxShardsPerNode is not supported when a cluster policy is in effect or when a
