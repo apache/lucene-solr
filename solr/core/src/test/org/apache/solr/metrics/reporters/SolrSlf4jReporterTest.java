@@ -81,7 +81,11 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     SolrDocumentList history = watcher.getHistory(-1, null);
     // dot-separated names are treated like class names and collapsed
     // in regular log output, but here we get the full name
-    assertTrue(history.stream().filter(d -> "solr.node".equals(d.getFirstValue("logger"))).count() > 0);
-    assertTrue(history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() > 0);
+    if (history.stream().filter(d -> "solr.node".equals(d.getFirstValue("logger"))).count() == 0) {
+      fail("No 'solr.node' logs in: " + history.toString());
+    }
+    if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
+      fail("No 'foobar' logs in: " + history.toString());
+    }
   }
 }
