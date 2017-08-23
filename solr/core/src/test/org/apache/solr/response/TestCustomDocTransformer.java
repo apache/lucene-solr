@@ -105,7 +105,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
      * This transformer simply concatenates the values of multiple fields
      */
     @Override
-    public void transform(SolrDocument doc, int docid, float score) throws IOException {
+    public void transform(SolrDocument doc, int docid) throws IOException {
       str.setLength(0);
       for(String s : extra) {
         String v = getAsString(s, doc);

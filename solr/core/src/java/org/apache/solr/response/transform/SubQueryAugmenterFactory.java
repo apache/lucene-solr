@@ -321,7 +321,7 @@ class SubQueryAugmenter extends DocTransformer {
   public boolean needsSolrIndexSearcher() { return false; }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) {
+  public void transform(SolrDocument doc, int docid) {
 
     final SolrParams docWithDeprefixed = SolrParams.wrapDefaults(
         new DocRowParams(doc, prefix, separator), baseSubParams);
