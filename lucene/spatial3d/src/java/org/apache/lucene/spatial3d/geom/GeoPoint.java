@@ -15,13 +15,17 @@
  * limitations under the License.
  */
 package org.apache.lucene.spatial3d.geom;
-    
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * This class represents a point on the surface of a sphere or ellipsoid.
  *
  * @lucene.experimental
  */
-public class GeoPoint extends Vector {
+public class GeoPoint extends Vector implements SerializableObject {
   
   // By making lazily-evaluated variables be "volatile", we guarantee atomicity when they
   // are updated.  This is necessary if we are using these classes in a multi-thread fashion,
@@ -73,6 +77,14 @@ public class GeoPoint extends Vector {
     this(planetModel, Math.sin(lat), Math.sin(lon), Math.cos(lat), Math.cos(lon), lat, lon);
   }
   
+  /** Construct a GeoPoint from a planet model and an input stream.
+   */
+  public GeoPoint(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    // Note: this relies on left-right parameter execution order!!  Much code depends on that though and
+    // it is apparently in a java spec: https://stackoverflow.com/questions/2201688/order-of-execution-of-parameters-guarantees-in-java
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+  
   /** Construct a GeoPoint from a unit (x,y,z) vector and a magnitude.
    * @param magnitude is the desired magnitude, provided to put the point on the ellipsoid.
    * @param x is the unit x value.
@@ -113,6 +125,12 @@ public class GeoPoint extends Vector {
    */
   public GeoPoint(final double x, final double y, final double z) {
     super(x, y, z);
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, getLatitude());
+    SerializableObject.writeDouble(outputStream, getLongitude());
   }
 
   /** Compute an arc distance between two points.
@@ -190,4 +208,6 @@ public class GeoPoint extends Vector {
     }
     return "[lat="+getLatitude()+", lon="+getLongitude()+"("+super.toString()+")]";
   }
+  
+
 }

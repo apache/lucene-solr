@@ -26,4 +26,5 @@ public interface PlanetObject {
 
   /** Returns the {@link PlanetModel} provided when this shape was created. */
   PlanetModel getPlanetModel();
+  
 }
