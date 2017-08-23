@@ -189,7 +189,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     docs = solrClient.query(query).getResults();
     assertEquals(8, docs.size());
     for (SolrDocument doc : docs) {
-      assertEquals(nodeAddedName, doc.getFieldValue("event.property.nodeName_s"));
+      assertTrue(doc.getFieldValues("event.property.nodeNames_ss").contains(nodeAddedName));
     }
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
