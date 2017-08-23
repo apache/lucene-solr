@@ -39,6 +39,9 @@ Optimizations
 * LUCENE-7939: MinShouldMatchSumScorer now leverages two-phase iteration in
   order to be faster when used in conjunctions. (Adrien Grand)
 
+* LUCENE-7827: AnalyzingInfixSuggester doesn't create "textgrams" 
+  when minPrefixChar=0 (Mikhail Khludnev)
+
 Bug Fixes
 
 * LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
