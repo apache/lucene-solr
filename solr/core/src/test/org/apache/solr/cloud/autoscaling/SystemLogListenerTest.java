@@ -147,7 +147,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
     }
     cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
     cluster.waitForAllNodes(30);
-    assertTrue("Trigger was not fired even after 5 seconds", triggerFiredLatch.await(5, TimeUnit.SECONDS));
+    assertTrue("Trigger was not fired ", triggerFiredLatch.await(30, TimeUnit.SECONDS));
     assertTrue(fired.get());
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
