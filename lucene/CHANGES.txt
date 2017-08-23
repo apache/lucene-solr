@@ -36,6 +36,9 @@ Optimizations
 * LUCENE-7925: Collapse duplicate SHOULD or MUST clauses by summing up their
   boosts. (Adrien Grand)
 
+* LUCENE-7939: MinShouldMatchSumScorer now leverages two-phase iteration in
+  order to be faster when used in conjunctions. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
