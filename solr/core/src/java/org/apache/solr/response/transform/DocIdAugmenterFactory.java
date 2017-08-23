@@ -51,7 +51,7 @@ class DocIdAugmenter extends DocTransformer
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) {
+  public void transform(SolrDocument doc, int docid) {
     assert -1 <= docid;
     doc.setField( name, docid );
   }

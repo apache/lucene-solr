@@ -123,7 +123,7 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) {
+  public void transform(SolrDocument doc, int docid) {
 
     FieldType idFt = idField.getType();
     Object parentIdField = doc.getFirstValue(idField.getName());

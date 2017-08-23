@@ -107,7 +107,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score) {
+    public void transform(SolrDocument doc, int docid) {
       Object val = doc.remove(field);
       if(val==null) {
         return;
