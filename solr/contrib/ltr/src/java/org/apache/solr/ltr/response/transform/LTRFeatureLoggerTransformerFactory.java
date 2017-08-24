@@ -255,13 +255,24 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void transform(SolrDocument doc, int docid, float score)
         throws IOException {
+      implTransform(doc, docid, new Float(score));
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid)
+        throws IOException {
+      implTransform(doc, docid, 0.0f);
+    }
+
+    private void implTransform(SolrDocument doc, int docid, Float score)
+        throws IOException {
       Object fv = featureLogger.getFeatureVector(docid, scoringQuery, searcher);
       if (fv == null) { // FV for this document was not in the cache
         fv = featureLogger.makeFeatureVector(
             LTRRescorer.extractFeaturesInfo(
                 modelWeight,
                 docid,
-                (docsWereNotReranked ? new Float(score) : null),
+                (docsWereNotReranked ? score : null),
                 leafContexts));
       }
 

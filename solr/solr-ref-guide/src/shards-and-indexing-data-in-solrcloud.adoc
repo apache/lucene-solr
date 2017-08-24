@@ -59,14 +59,14 @@ If you do not specify the type of replica when it is created, it will be NRT typ
 There are three combinations of replica types that are recommended:
 
 * All NRT replicas
-* All PULL replicas
+* All TLOG replicas
 * TLOG replicas with PULL replicas
 
 ==== All NRT Replicas
 
 Use this for small to medium clusters, or even big clusters where the update (index) throughput is not too high. NRT is the only type of replica that supports soft-commits, so also use this combination when NearRealTime is needed.
 
-==== All PULL Replicas
+==== All TLOG Replicas
 
 Use this combination if NearRealTime is not needed and the number of replicas per shard is high, but you still want all replicas to be able to handle update requests.
 

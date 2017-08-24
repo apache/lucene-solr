@@ -57,6 +57,8 @@ Upgrade Notes
   If a reporter configures the group="cluster" attribute then please also configure the
   class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute.
 
+* SOLR-11254: the abstract DocTransformer class now has an abstract score-less transform method variant.
+
 New Features
 ----------------------
 
@@ -157,6 +159,8 @@ Other Changes
 * SOLR-10628: Less verbose output from bin/solr commands. (Jason Gerlowski, janhoy) 
 
 * SOLR-11240: Raise UnInvertedField internal limit. (Toke Eskildsen)
+
+* SOLR-11254: Add score-less (abstract) DocTransformer.transform method. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 

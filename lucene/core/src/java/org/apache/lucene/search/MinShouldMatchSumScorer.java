@@ -128,7 +128,12 @@ final class MinShouldMatchSumScorer extends Scorer {
 
   @Override
   public DocIdSetIterator iterator() {
-    return new DocIdSetIterator() {
+    return TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
+  }
+
+  @Override
+  public TwoPhaseIterator twoPhaseIterator() {
+    DocIdSetIterator approximation = new DocIdSetIterator() {
 
       @Override
       public int docID() {
@@ -154,6 +159,12 @@ final class MinShouldMatchSumScorer extends Scorer {
         }
 
         setDocAndFreq();
+        // It would be correct to return doNextCandidate() at this point but if you
+        // call nextDoc as opposed to advance, it probably means that you really
+        // need the next match. Returning 'doc' here would lead to a similar
+        // iteration over sub postings overall except that the decision making would
+        // happen at a higher level where more abstractions are involved and
+        // benchmarks suggested it causes a significant performance hit.
         return doNext();
       }
 
@@ -181,13 +192,37 @@ final class MinShouldMatchSumScorer extends Scorer {
         }
 
         setDocAndFreq();
-        return doNext();
+        return doNextCandidate();
       }
 
       @Override
       public long cost() {
         return cost;
       }
+    };
+    return new TwoPhaseIterator(approximation) {
+
+      @Override
+      public boolean matches() throws IOException {
+        while (freq < minShouldMatch) {
+          assert freq > 0;
+          if (freq + tailSize >= minShouldMatch) {
+            // a match on doc is still possible, try to
+            // advance scorers from the tail
+            advanceTail();
+          } else {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      @Override
+      public float matchCost() {
+        // maximum number of scorer that matches() might advance
+        return tail.length;
+      }
+
     };
   }
 
@@ -245,6 +280,18 @@ final class MinShouldMatchSumScorer extends Scorer {
         pushBackLeads();
         setDocAndFreq();
       }
+    }
+
+    return doc;
+  }
+
+  /** Move iterators to the tail until the cumulated size of lead+tail is
+   *  greater than or equal to minShouldMath */
+  private int doNextCandidate() throws IOException {
+    while (freq + tailSize < minShouldMatch) {
+      // no match on doc is possible, move to the next potential match
+      pushBackLeads();
+      setDocAndFreq();
     }
 
     return doc;
