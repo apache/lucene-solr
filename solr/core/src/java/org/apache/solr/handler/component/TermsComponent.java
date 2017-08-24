@@ -613,7 +613,7 @@ public class TermsComponent extends SearchComponent {
         continue;
       }
 
-      // Since splitTerms is already sorted, this array will also be sorted
+      // Since splitTerms is already sorted, this array will also be sorted. NOTE: this may not be true, it depends on readableToIndexed.
       Term[] terms = new Term[splitTerms.length];
       for (int i = 0; i < splitTerms.length; i++) {
         terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
