@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Bounding box including the entire world.
  *
@@ -33,6 +37,19 @@ class GeoWorld extends GeoBaseBBox {
   public GeoWorld(final PlanetModel planetModel) {
     super(planetModel);
     originPoint = new GeoPoint(planetModel.ab, 1.0, 0.0, 0.0);
+  }
+
+  /** Constructor.
+   *@param planetModel is the planet model.
+   *@param inputStream is the input stream.
+   */
+  public GeoWorld(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel);
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    // Nothing needed
   }
 
   @Override

@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,7 +67,7 @@ class GeoStandardPath extends GeoBasePath {
     Collections.addAll(points, pathPoints);
     done();
   }
-  
+
   /** Piece-wise constructor.  Use in conjunction with addPoint() and done().
    *@param planetModel is the planet model.
    *@param maxCutoffAngle is the width of the path, measured as an angle.
@@ -191,6 +195,23 @@ class GeoStandardPath extends GeoBasePath {
     endPoints.add(new SegmentEndpoint(lastSegment.end,
       lastSegment.endCutoffPlane, lastSegment.URHC, lastSegment.LRHC));
 
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoStandardPath(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readPointArray(planetModel, inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, cutoffAngle);
+    SerializableObject.writePointArray(outputStream, points);
   }
 
   @Override
