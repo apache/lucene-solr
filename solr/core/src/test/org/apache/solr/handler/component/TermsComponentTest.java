@@ -70,7 +70,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "20", "standardfilt", "snake")));
     assertNull(h.validateUpdate(adoc("id", "21", "standardfilt", "snake")));
     assertNull(h.validateUpdate(adoc("id", "22", "standardfilt", "shark")));
-    
+    assertNull(h.validateUpdate(adoc("id", "23", "standardfilt", "a,b")));
+
     assertNull(h.validateUpdate(commit()));
   }
 
@@ -94,7 +95,7 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "terms.fl","lowerfilt", "terms.upper","b",
         "terms.fl","standardfilt")
         ,"count(//lst[@name='lowerfilt']/*)=6"
-        ,"count(//lst[@name='standardfilt']/*)=4"
+        ,"count(//lst[@name='standardfilt']/*)=5"
     );
 
   }
@@ -178,19 +179,20 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     //Terms list always returns in index order
     assertQ(req("indent","true", "qt","/terms",  "terms","true",
             "terms.fl","standardfilt",
-            "terms.list","spider, snake, shark, ddddd, bad")
-        ,"count(//lst[@name='standardfilt']/*)=4"
-        ,"//lst[@name='standardfilt']/int[1][@name='ddddd'][.='4']"
-        ,"//lst[@name='standardfilt']/int[2][@name='shark'][.='2']"
-        ,"//lst[@name='standardfilt']/int[3][@name='snake'][.='3']"
-        ,"//lst[@name='standardfilt']/int[4][@name='spider'][.='1']"
+            "terms.list","spider,snake,a\\,b,shark,ddddd,bad")
+        ,"count(//lst[@name='standardfilt']/*)=5"
+        ,"//lst[@name='standardfilt']/int[1][@name='a,b'][.='1']"
+        ,"//lst[@name='standardfilt']/int[2][@name='ddddd'][.='4']"
+        ,"//lst[@name='standardfilt']/int[3][@name='shark'][.='2']"
+        ,"//lst[@name='standardfilt']/int[4][@name='snake'][.='3']"
+        ,"//lst[@name='standardfilt']/int[5][@name='spider'][.='1']"
     );
 
 
     //Test with numeric terms
     assertQ(req("indent","true", "qt","/terms",  "terms","true",
             "terms.fl","foo_i",
-            "terms.list","2, 1")
+            "terms.list","2,1")
         ,"count(//lst[@name='foo_i']/*)=2"
         ,"//lst[@name='foo_i']/int[1][@name='1'][.='2']"
         ,"//lst[@name='foo_i']/int[2][@name='2'][.='1']"
@@ -203,8 +205,8 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     //Terms list always returns in index order
     assertQ(req("indent", "true", "qt", "/terms", "terms", "true",
             "terms.fl", "standardfilt","terms.stats", "true",
-            "terms.list", "spider, snake, shark, ddddd, bad")
-        , "//lst[@name='indexstats']/long[1][@name='numDocs'][.='23']"
+            "terms.list", "spider,snake,shark,ddddd,bad")
+        , "//lst[@name='indexstats']/long[1][@name='numDocs'][.='24']"
     );
   }
 
