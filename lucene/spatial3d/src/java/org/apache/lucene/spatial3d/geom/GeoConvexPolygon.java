@@ -21,6 +21,9 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 
 /**
  * GeoConvexPolygon objects are generic building blocks of more complex structures.
@@ -296,6 +299,26 @@ class GeoConvexPolygon extends GeoBasePolygon {
       index += points.size();
     }
     return index;
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoConvexPolygon(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    super(planetModel);
+    this.points = java.util.Arrays.asList(SerializableObject.readPointArray(planetModel, inputStream));
+    this.holes = java.util.Arrays.asList(SerializableObject.readPolygonArray(planetModel, inputStream));
+    this.isInternalEdges = SerializableObject.readBitSet(inputStream);
+    done(this.isInternalEdges.get(points.size()-1));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writePointArray(outputStream, points);
+    SerializableObject.writePolygonArray(outputStream, holes);
+    SerializableObject.writeBitSet(outputStream, isInternalEdges);
   }
 
   @Override

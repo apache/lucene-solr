@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Degenerate bounding box wider than PI and limited on two sides (left lon, right lon).
  *
@@ -112,6 +116,22 @@ class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
     this.eitherBound = new EitherBound();
 
     this.edgePoints = new GeoPoint[]{centerPoint};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoWideDegenerateHorizontalLine(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, latitude);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
   }
 
   @Override

@@ -25,7 +25,7 @@ import java.io.IOException;
  *
  * @lucene.internal
  */
-public abstract class BasePlanetObject implements PlanetObject, SerializableObject {
+public abstract class BasePlanetObject implements PlanetObject {
 
   /** This is the planet model embedded in all objects derived from this
    * class. */

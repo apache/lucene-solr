@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Degenerate bounding box limited on two sides (left lon, right lon).
  * The left-right maximum extent for this shape is PI; for anything larger, use
@@ -106,6 +110,22 @@ class GeoDegenerateHorizontalLine extends GeoBaseBBox {
     this.planePoints = new GeoPoint[]{LHC, RHC};
 
     this.edgePoints = new GeoPoint[]{centerPoint};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoDegenerateHorizontalLine(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, latitude);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
   }
 
   @Override
