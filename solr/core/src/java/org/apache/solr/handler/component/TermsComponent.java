@@ -590,11 +590,13 @@ public class TermsComponent extends SearchComponent {
 
   private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList,
       boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
-    String[] splitTerms = termList.split(",");
+    List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
+    // Sort the terms once
+    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();
     }
-    // Sort the terms once
     Arrays.sort(splitTerms);
 
     IndexReaderContext topReaderContext = indexSearcher.getTopReaderContext();
