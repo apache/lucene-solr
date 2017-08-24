@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Bounding box limited on three sides (bottom lat, left lon, right lon), including
  * the north pole.
@@ -114,6 +118,22 @@ class GeoNorthRectangle extends GeoBaseBBox {
     this.rightPlanePoints = new GeoPoint[]{planetModel.NORTH_POLE, LRHC};
 
     this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoNorthRectangle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, bottomLat);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
   }
 
   @Override

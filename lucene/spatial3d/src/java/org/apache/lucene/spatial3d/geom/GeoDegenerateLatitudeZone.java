@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * This GeoBBox represents an area rectangle of one specific latitude with
  * no longitude bounds.
@@ -50,6 +54,20 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     // Compute an interior point.
     interiorPoint = new GeoPoint(planetModel, sinLatitude, 0.0, cosLatitude, 1.0);
     edgePoints = new GeoPoint[]{interiorPoint};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, latitude);
   }
 
   @Override
