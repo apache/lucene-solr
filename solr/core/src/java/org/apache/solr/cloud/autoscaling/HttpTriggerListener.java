@@ -30,7 +30,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.Utils;
@@ -73,9 +72,9 @@ public class HttpTriggerListener extends TriggerListenerBase {
   private boolean followRedirects;
 
   @Override
-  public void init(ClusterDataProvider clusterDataProvider, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(clusterDataProvider, config);
-    httpClient = clusterDataProvider.getHttpClient();
+  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
+    super.init(coreContainer, config);
+    httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
     urlTemplate = (String)config.properties.get("url");
     payloadTemplate = (String)config.properties.get("payload");
     contentType = (String)config.properties.get("contentType");

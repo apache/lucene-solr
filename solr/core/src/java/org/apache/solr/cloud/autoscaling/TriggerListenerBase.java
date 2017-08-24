@@ -19,7 +19,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
+import org.apache.solr.core.CoreContainer;
 
 /**
  * Base class for implementations of {@link TriggerListener}.
@@ -27,11 +27,11 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 public abstract class TriggerListenerBase implements TriggerListener {
 
   protected AutoScalingConfig.TriggerListenerConfig config;
-  protected ClusterDataProvider clusterDataProvider;
+  protected CoreContainer coreContainer;
 
   @Override
-  public void init(ClusterDataProvider clusterDataProvider, AutoScalingConfig.TriggerListenerConfig config) {
-    this.clusterDataProvider = clusterDataProvider;
+  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
+    this.coreContainer = coreContainer;
     this.config = config;
   }
 

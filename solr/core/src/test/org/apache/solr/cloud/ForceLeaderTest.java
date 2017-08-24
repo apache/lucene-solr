@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -231,7 +230,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
   }
 
-  protected void setReplicaState(String collection, String slice, Replica replica, Replica.State state) throws Exception {
+  protected void setReplicaState(String collection, String slice, Replica replica, Replica.State state) throws SolrServerException, IOException,
+      KeeperException, InterruptedException {
     DistributedQueue inQueue = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
 

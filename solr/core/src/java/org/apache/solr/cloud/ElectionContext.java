@@ -223,11 +223,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         ZkStateReader.CORE_NAME_PROP,
         leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
         ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
-    try {
-      Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
-    } catch (Exception e) {
-      throw new IOException("Overseer state update queue error", e);
-    }
+    Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
   }
 
   public LeaderElector getLeaderElector() {
@@ -316,11 +312,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       // clear the leader in clusterstate
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-      try {
-        Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
-      } catch (Exception e) {
-        throw new IOException("Overseer state update queue error", e);
-      }
+      Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
 
       boolean allReplicasInLine = false;
       if (!weAreReplacement) {
@@ -502,7 +494,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
   }
 
-  public void publishActiveIfRegisteredAndNotActive(SolrCore core) throws Exception {
+  public void publishActiveIfRegisteredAndNotActive(SolrCore core) throws KeeperException, InterruptedException {
       if (core.getCoreDescriptor().getCloudDescriptor().hasRegistered()) {
         ZkStateReader zkStateReader = zkController.getZkStateReader();
         zkStateReader.forceUpdateCollection(collection);

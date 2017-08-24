@@ -31,7 +31,6 @@ import java.util.StringJoiner;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -74,8 +73,8 @@ public class SystemLogListener extends TriggerListenerBase {
   private boolean enabled = true;
 
   @Override
-  public void init(ClusterDataProvider clusterDataProvider, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(clusterDataProvider, config);
+  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
+    super.init(coreContainer, config);
     collection = (String)config.properties.getOrDefault(CollectionAdminParams.COLLECTION, CollectionAdminParams.SYSTEM_COLL);
     enabled = Boolean.parseBoolean(String.valueOf(config.properties.getOrDefault("enabled", true)));
   }
@@ -86,7 +85,10 @@ public class SystemLogListener extends TriggerListenerBase {
     if (!enabled) {
       return;
     }
-    try {
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
+        .withZkHost(coreContainer.getZkController().getZkServerAddress())
+        .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
+        .build()) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(CommonParams.TYPE, DOC_TYPE);
       doc.addField(SOURCE_FIELD, SOURCE);
@@ -120,8 +122,7 @@ public class SystemLogListener extends TriggerListenerBase {
       }
       UpdateRequest req = new UpdateRequest();
       req.add(doc);
-      req.setParam(CollectionAdminParams.COLLECTION, collection);
-      clusterDataProvider.request(req);
+      cloudSolrClient.request(req, collection);
     } catch (Exception e) {
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign

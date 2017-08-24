@@ -37,7 +37,6 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -134,7 +133,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
 
-    public void createCollection(String collection, int numShards) throws Exception {
+    public void createCollection(String collection, int numShards) throws KeeperException, InterruptedException {
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
           "name", collection,
@@ -147,7 +146,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
 
     public String publishState(String collection, String coreName, String coreNodeName, String shard, Replica.State stateName, int numShards)
-        throws Exception {
+        throws KeeperException, InterruptedException, IOException {
       if (stateName == null) {
         ElectionContext ec = electionContext.remove(coreName);
         if (ec != null) {

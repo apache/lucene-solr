@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
@@ -49,30 +48,40 @@ public class ComputePlanAction extends TriggerActionBase {
   @Override
   public void process(TriggerEvent event, ActionContext context) {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
-    ClusterDataProvider cdp = context.getClusterDataProvider();
+    CoreContainer container = context.getCoreContainer();
     try {
-      AutoScalingConfig autoScalingConf = cdp.getAutoScalingConfig();
-      if (autoScalingConf.isEmpty()) {
-        log.error("Action: " + getName() + " executed but no policy is configured");
-        return;
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
+          .withZkHost(container.getZkController().getZkServerAddress())
+          .withHttpClient(container.getUpdateShardHandler().getHttpClient())
+          .build()) {
+        ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+        AutoScalingConfig autoScalingConf = zkStateReader.getAutoScalingConfig();
+        if (autoScalingConf.isEmpty()) {
+          log.error("Action: " + getName() + " executed but no policy is configured");
+          return;
+        }
+        Policy policy = autoScalingConf.getPolicy();
+        Policy.Session session = policy.createSession(new SolrClientDataProvider(cloudSolrClient));
+        Policy.Suggester suggester = getSuggester(session, event, zkStateReader);
+        while (true) {
+          SolrRequest operation = suggester.getOperation();
+          if (operation == null) break;
+          log.info("Computed Plan: {}", operation.getParams());
+          Map<String, Object> props = context.getProperties();
+          props.compute("operations", (k, v) -> {
+            List<SolrRequest> operations = (List<SolrRequest>) v;
+            if (operations == null) operations = new ArrayList<>();
+            operations.add(operation);
+            return operations;
+          });
+          session = suggester.getSession();
+          suggester = getSuggester(session, event, zkStateReader);
+        }
       }
-      Policy policy = autoScalingConf.getPolicy();
-      Policy.Session session = policy.createSession(cdp);
-      Policy.Suggester suggester = getSuggester(session, event, cdp);
-      while (true) {
-        SolrRequest operation = suggester.getOperation();
-        if (operation == null) break;
-        log.info("Computed Plan: {}", operation.getParams());
-        Map<String, Object> props = context.getProperties();
-        props.compute("operations", (k, v) -> {
-          List<SolrRequest> operations = (List<SolrRequest>) v;
-          if (operations == null) operations = new ArrayList<>();
-          operations.add(operation);
-          return operations;
-        });
-        session = suggester.getSession();
-        suggester = getSuggester(session, event, cdp);
-      }
+    } catch (KeeperException e) {
+      log.error("ZooKeeperException while processing event: " + event, e);
+    } catch (InterruptedException e) {
+      log.error("Interrupted while processing event: " + event, e);
     } catch (IOException e) {
       log.error("IOException while processing event: " + event, e);
     } catch (Exception e) {
@@ -80,7 +89,7 @@ public class ComputePlanAction extends TriggerActionBase {
     }
   }
 
-  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, ClusterDataProvider cdp) {
+  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, ZkStateReader zkStateReader) {
     Policy.Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:

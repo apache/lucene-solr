@@ -25,7 +25,6 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
@@ -44,29 +43,32 @@ public class ExecutePlanAction extends TriggerActionBase {
   @Override
   public void process(TriggerEvent event, ActionContext context) {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
-    ClusterDataProvider clusterDataProvider = context.getClusterDataProvider();
+    CoreContainer container = context.getCoreContainer();
     List<SolrRequest> operations = (List<SolrRequest>) context.getProperty("operations");
     if (operations == null || operations.isEmpty()) {
       log.info("No operations to execute for event: {}", event);
       return;
     }
-    try {
+    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
+        .withZkHost(container.getZkController().getZkServerAddress())
+        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
+        .build()) {
       for (SolrRequest operation : operations) {
         log.info("Executing operation: {}", operation.getParams());
         try {
-          SolrResponse response = clusterDataProvider.request(operation);
+          SolrResponse response = operation.process(cloudSolrClient);
           context.getProperties().compute("responses", (s, o) -> {
             List<NamedList<Object>> responses = (List<NamedList<Object>>) o;
             if (responses == null)  responses = new ArrayList<>(operations.size());
             responses.add(response.getResponse());
             return responses;
           });
-        } catch (Exception e) {
+        } catch (SolrServerException | HttpSolrClient.RemoteSolrException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
         }
       }
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected IOException while processing event: " + event, e);
     }

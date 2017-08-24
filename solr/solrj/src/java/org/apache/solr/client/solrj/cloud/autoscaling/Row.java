@@ -46,7 +46,7 @@ public class Row implements MapWriter {
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    isLive = dataProvider.getLiveNodes().contains(node);
+    isLive = dataProvider.getNodes().contains(node);
     Map<String, Object> vals = isLive ? dataProvider.getNodeValues(node, params) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);

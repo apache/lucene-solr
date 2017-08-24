@@ -20,19 +20,16 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -40,7 +37,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -56,7 +52,11 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final ClusterDataProvider clusterDataProvider;
+  private final ZkController zkController;
+
+  private final ZkStateReader zkStateReader;
+
+  private final SolrZkClient zkClient;
 
   private final ScheduledTriggers scheduledTriggers;
 
@@ -77,10 +77,12 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
   private AutoScalingConfig autoScalingConfig;
 
-  public OverseerTriggerThread(SolrResourceLoader loader, ClusterDataProvider clusterDataProvider) {
-    this.clusterDataProvider = clusterDataProvider;
-    scheduledTriggers = new ScheduledTriggers(loader, clusterDataProvider);
-    triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, clusterDataProvider);
+  public OverseerTriggerThread(ZkController zkController) {
+    this.zkController = zkController;
+    zkStateReader = zkController.getZkStateReader();
+    zkClient = zkController.getZkClient();
+    scheduledTriggers = new ScheduledTriggers(zkController);
+    triggerFactory = new AutoScaling.TriggerFactory(zkController.getCoreContainer());
   }
 
   @Override
@@ -104,8 +106,11 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
     try {
       refreshAutoScalingConf(new AutoScalingWatcher());
-    } catch (ConnectException e) {
+    } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
       log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
+    } catch (KeeperException e) {
+      log.error("A ZK error has occurred", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -196,26 +201,26 @@ public class OverseerTriggerThread implements Runnable, Closeable {
       if (cleanOldNodeLostMarkers) {
         log.debug("-- clean old nodeLost markers");
         try {
-          List<String> markers = clusterDataProvider.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+          List<String> markers = zkClient.getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, null, true);
           markers.forEach(n -> {
             removeNodeMarker(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, n);
           });
-        } catch (NoSuchElementException e) {
+        } catch (KeeperException.NoNodeException e) {
           // ignore
-        } catch (Exception e) {
+        } catch (KeeperException | InterruptedException e) {
           log.warn("Error removing old nodeLost markers", e);
         }
       }
       if (cleanOldNodeAddedMarkers) {
         log.debug("-- clean old nodeAdded markers");
         try {
-          List<String> markers = clusterDataProvider.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+          List<String> markers = zkClient.getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, null, true);
           markers.forEach(n -> {
             removeNodeMarker(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, n);
           });
-        } catch (NoSuchElementException e) {
+        } catch (KeeperException.NoNodeException e) {
           // ignore
-        } catch (Exception e) {
+        } catch (KeeperException | InterruptedException e) {
           log.warn("Error removing old nodeAdded markers", e);
         }
 
@@ -226,11 +231,11 @@ public class OverseerTriggerThread implements Runnable, Closeable {
   private void removeNodeMarker(String path, String nodeName) {
     path = path + "/" + nodeName;
     try {
-      clusterDataProvider.removeData(path, -1);
+      zkClient.delete(path, -1, true);
       log.debug("  -- deleted " + path);
-    } catch (NoSuchElementException e) {
+    } catch (KeeperException.NoNodeException e) {
       // ignore
-    } catch (Exception e) {
+    } catch (KeeperException | InterruptedException e) {
       log.warn("Error removing old marker " + path, e);
     }
   }
@@ -245,8 +250,11 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
       try {
         refreshAutoScalingConf(this);
-      } catch (ConnectException e) {
-        log.warn("ZooKeeper watch triggered for autoscaling conf, but we cannot talk to ZK: [{}]", e.getMessage());
+      } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+        log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
+      } catch (KeeperException e) {
+        log.error("A ZK error has occurred", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -258,13 +266,13 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
   }
 
-  private void refreshAutoScalingConf(Watcher watcher) throws ConnectException, InterruptedException, IOException {
+  private void refreshAutoScalingConf(Watcher watcher) throws KeeperException, InterruptedException {
     updateLock.lock();
     try {
       if (isClosed) {
         return;
       }
-      AutoScalingConfig currentConfig = clusterDataProvider.getAutoScalingConfig(watcher);
+      AutoScalingConfig currentConfig = zkStateReader.getAutoScalingConfig(watcher);
       log.debug("Refreshing {} with znode version {}", ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, currentConfig.getZkVersion());
       if (znodeVersion >= currentConfig.getZkVersion()) {
         // protect against reordered watcher fires by ensuring that we only move forward
