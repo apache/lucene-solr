@@ -41,15 +41,18 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -85,17 +88,17 @@ public class ScheduledTriggers implements Closeable {
 
   private final ActionThrottle actionThrottle;
 
-  private final SolrZkClient zkClient;
+  private final ClusterDataProvider clusterDataProvider;
+
+  private final SolrResourceLoader loader;
 
   private final Overseer.Stats queueStats;
-
-  private final CoreContainer coreContainer;
 
   private final TriggerListeners listeners;
 
   private AutoScalingConfig autoScalingConfig;
 
-  public ScheduledTriggers(ZkController zkController) {
+  public ScheduledTriggers(SolrResourceLoader loader, ClusterDataProvider clusterDataProvider) {
     // todo make the core pool size configurable
     // it is important to use more than one because a time taking trigger can starve other scheduled triggers
     // ideally we should have as many core threads as the number of triggers but firstly, we don't know beforehand
@@ -108,8 +111,8 @@ public class ScheduledTriggers implements Closeable {
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
     // todo make the wait time configurable
     actionThrottle = new ActionThrottle("action", DEFAULT_MIN_MS_BETWEEN_ACTIONS);
-    coreContainer = zkController.getCoreContainer();
-    zkClient = zkController.getZkClient();
+    this.clusterDataProvider = clusterDataProvider;
+    this.loader = loader;
     queueStats = new Overseer.Stats();
     listeners = new TriggerListeners();
   }
@@ -136,7 +139,12 @@ public class ScheduledTriggers implements Closeable {
     if (isClosed) {
       throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
     }
-    ScheduledTrigger scheduledTrigger = new ScheduledTrigger(newTrigger, zkClient, queueStats);
+    ScheduledTrigger scheduledTrigger;
+    try {
+      scheduledTrigger = new ScheduledTrigger(newTrigger, clusterDataProvider, queueStats);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "exception creating scheduled trigger", e);
+    }
     ScheduledTrigger old = scheduledTriggers.putIfAbsent(newTrigger.getName(), scheduledTrigger);
     if (old != null) {
       if (old.trigger.equals(newTrigger)) {
@@ -182,7 +190,7 @@ public class ScheduledTriggers implements Closeable {
               // let the action executor thread wait instead of the trigger thread so we use the throttle here
               actionThrottle.minimumWaitBetweenActions();
               actionThrottle.markAttemptingAction();
-              ActionContext actionContext = new ActionContext(coreContainer, newTrigger, new HashMap<>());
+              ActionContext actionContext = new ActionContext(clusterDataProvider, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
                 List<String> beforeActions = (List<String>)actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
                 beforeActions.add(action.getName());
@@ -244,23 +252,23 @@ public class ScheduledTriggers implements Closeable {
     String statePath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName;
     String eventsPath = ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH + "/" + triggerName;
     try {
-      if (zkClient.exists(statePath, true)) {
-        zkClient.delete(statePath, -1, true);
+      if (clusterDataProvider.hasData(statePath)) {
+        clusterDataProvider.removeData(statePath, -1);
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       log.warn("Failed to remove state for removed trigger " + statePath, e);
     }
     try {
-      if (zkClient.exists(eventsPath, true)) {
-        List<String> events = zkClient.getChildren(eventsPath, null, true);
+      if (clusterDataProvider.hasData(eventsPath)) {
+        List<String> events = clusterDataProvider.listData(eventsPath);
         List<Op> ops = new ArrayList<>(events.size() + 1);
         events.forEach(ev -> {
           ops.add(Op.delete(eventsPath + "/" + ev, -1));
         });
         ops.add(Op.delete(eventsPath, -1));
-        zkClient.multi(ops, true);
+        clusterDataProvider.multi(ops);
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       log.warn("Failed to remove events for removed trigger " + eventsPath, e);
     }
   }
@@ -297,9 +305,9 @@ public class ScheduledTriggers implements Closeable {
     boolean replay;
     volatile boolean isClosed;
 
-    ScheduledTrigger(AutoScaling.Trigger trigger, SolrZkClient zkClient, Overseer.Stats stats) {
+    ScheduledTrigger(AutoScaling.Trigger trigger, ClusterDataProvider clusterDataProvider, Overseer.Stats stats) throws IOException {
       this.trigger = trigger;
-      this.queue = new TriggerEventQueue(zkClient, trigger.getName(), stats);
+      this.queue = new TriggerEventQueue(clusterDataProvider, trigger.getName(), stats);
       this.replay = true;
       this.isClosed = false;
     }
@@ -426,13 +434,13 @@ public class ScheduledTriggers implements Closeable {
           if (listener == null) { // create new instance
             String clazz = config.listenerClass;
             try {
-              listener = coreContainer.getResourceLoader().newInstance(clazz, TriggerListener.class);
+              listener = loader.newInstance(clazz, TriggerListener.class);
             } catch (Exception e) {
               log.warn("Invalid TriggerListener class name '" + clazz + "', skipping...", e);
             }
             if (listener != null) {
               try {
-                listener.init(coreContainer, config);
+                listener.init(clusterDataProvider, config);
                 listenersPerName.put(config.name, listener);
               } catch (Exception e) {
                 log.warn("Error initializing TriggerListener " + config, e);

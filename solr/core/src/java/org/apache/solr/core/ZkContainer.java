@@ -227,6 +227,8 @@ public class ZkContainer {
       } catch (InterruptedException e) {
         Thread.interrupted();
         ZkContainer.log.error("", e);
+      } catch (Exception e) {
+        ZkContainer.log.error("", e);
       }
     }
   }

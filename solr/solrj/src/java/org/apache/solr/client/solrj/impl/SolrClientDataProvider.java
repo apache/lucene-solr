@@ -28,10 +28,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.Set;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -40,6 +45,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.RemoteCallback;
@@ -50,7 +56,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
+import org.apache.zookeeper.OpResult;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,16 +74,19 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CloudSolrClient solrClient;
+  private final DistributedQueueFactory queueFactory;
+  private final ZkStateReader zkStateReader;
+  private final SolrZkClient zkClient;
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
-  private Set<String> liveNodes;
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientDataProvider(CloudSolrClient solrClient) {
+  public SolrClientDataProvider(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
+    this.queueFactory = queueFactory;
     this.solrClient = solrClient;
-    ZkStateReader zkStateReader = solrClient.getZkStateReader();
+    this.zkStateReader = solrClient.getZkStateReader();
+    this.zkClient = zkStateReader.getZkClient();
     ClusterState clusterState = zkStateReader.getClusterState();
-    this.liveNodes = clusterState.getLiveNodes();
     Map<String, ClusterState.CollectionRef> all = clusterState.getCollectionStates();
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
@@ -107,16 +121,135 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   }
 
   @Override
-  public Collection<String> getNodes() {
-    return liveNodes;
+  public Collection<String> getLiveNodes() {
+    return solrClient.getZkStateReader().getClusterState().getLiveNodes();
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put("liveNodes", liveNodes);
+    ew.put("liveNodes", zkStateReader.getClusterState().getLiveNodes());
     ew.put("replicaInfo", Utils.getDeepCopy(data, 5));
     ew.put("nodeValues", nodeVsTags);
+  }
 
+  @Override
+  public Map<String, Object> getClusterProperties() {
+    return zkStateReader.getClusterProperties();
+  }
+
+  @Override
+  public ClusterState getClusterState() {
+    return zkStateReader.getClusterState();
+  }
+
+  @Override
+  public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws IOException {
+    try {
+      return zkStateReader.getAutoScalingConfig(watcher);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public boolean hasData(String path) throws IOException {
+    try {
+      return zkClient.exists(path, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public List<String> listData(String path) throws NoSuchElementException, IOException {
+    try {
+      return zkClient.getChildren(path, null, true);
+    } catch (KeeperException.NoNodeException e) {
+      throw new NoSuchElementException(path);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public VersionedData getData(String path, Watcher watcher) throws NoSuchElementException, IOException {
+    Stat stat = new Stat();
+    try {
+      byte[] bytes = zkClient.getData(path, watcher, stat, true);
+      return new VersionedData(stat.getVersion(), bytes);
+    } catch (KeeperException.NoNodeException e) {
+      throw new NoSuchElementException(path);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public void makePath(String path) throws IOException {
+    try {
+      zkClient.makePath(path, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public void createData(String path, byte[] data, CreateMode mode) throws IOException {
+    try {
+      zkClient.create(path, data, mode, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public void removeData(String path, int version) throws NoSuchElementException, IOException {
+    try {
+      zkClient.delete(path, version, true);
+    } catch (KeeperException.NoNodeException e) {
+      throw new NoSuchElementException(path);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public void setData(String path, byte[] data, int version) throws NoSuchElementException, IOException {
+    try {
+      zkClient.setData(path, data, version, true);
+    } catch (KeeperException.NoNodeException e) {
+      throw new NoSuchElementException(path);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public SolrResponse request(SolrRequest req) throws IOException {
+    try {
+      return req.process(solrClient);
+    } catch (SolrServerException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public List<OpResult> multi(Iterable<Op> ops) throws IOException {
+    try {
+      return zkClient.multi(ops, true);
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public HttpClient getHttpClient() {
+    return solrClient.getHttpClient();
+  }
+
+  @Override
+  public DistributedQueueFactory getDistributedQueueFactory() {
+    return queueFactory;
   }
 
   static class ClientSnitchCtx

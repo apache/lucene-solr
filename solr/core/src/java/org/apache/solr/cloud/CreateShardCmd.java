@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
@@ -103,7 +105,7 @@ public class CreateShardCmd implements Cmd {
             numPullReplicas);
       } else {
         List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, totalReplicas,
-            createNodeSetStr, ocmh.overseer.getZkController().getCoreContainer());
+            createNodeSetStr, ocmh.overseer.getClusterDataProvider(), ocmh.overseer.getCoreContainer());
         int i = 0;
         positions = new ArrayList<>();
         for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, numNrtReplicas,
@@ -173,8 +175,8 @@ public class CreateShardCmd implements Cmd {
   }
 
   static boolean usePolicyFramework(DocCollection collection, OverseerCollectionMessageHandler ocmh)
-      throws KeeperException, InterruptedException {
-    Map autoScalingJson = Utils.getJson(ocmh.zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-    return autoScalingJson.get(Policy.CLUSTER_POLICY) != null || collection.getPolicyName() != null;
+      throws IOException, InterruptedException {
+    AutoScalingConfig autoScalingConfig = ocmh.overseer.getClusterDataProvider().getAutoScalingConfig();
+    return !autoScalingConfig.isEmpty() || collection.getPolicyName() != null;
   }
 }

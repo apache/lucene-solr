@@ -110,7 +110,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
       NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
           "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTime()),
           Collections.singletonList(sourceNodeName));
-      ActionContext actionContext = new ActionContext(survivor.getCoreContainer(), null,
+      ActionContext actionContext = new ActionContext(survivor.getCoreContainer().getZkController().getClusterDataProvider(), null,
           new HashMap<>(Collections.singletonMap("operations", operations)));
       action.process(nodeLostEvent, actionContext);
 

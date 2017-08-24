@@ -49,22 +49,7 @@ public class PolicyHelper {
                                                           List<String> nodesList) {
     List<ReplicaPosition> positions = new ArrayList<>();
       final ClusterDataProvider delegate = cdp;
-      cdp = new ClusterDataProvider() {
-        @Override
-        public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-          return delegate.getNodeValues(node, tags);
-        }
-
-        @Override
-        public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-          return delegate.getReplicaInfo(node, keys);
-        }
-
-        @Override
-        public Collection<String> getNodes() {
-          return delegate.getNodes();
-        }
-
+      cdp = new DelegatingClusterDataProvider(delegate) {
         @Override
         public String getPolicyNameByCollection(String coll) {
           return policyMapping.get() != null && policyMapping.get().containsKey(coll) ?

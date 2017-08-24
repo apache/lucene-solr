@@ -51,10 +51,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.cloud.autoscaling.ZkDistributedQueueFactory;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -191,6 +197,8 @@ public class ZkController {
   private final SolrZkClient zkClient;
   private final ZkCmdExecutor cmdExecutor;
   public final ZkStateReader zkStateReader;
+  private ClusterDataProvider clusterDataProvider;
+  private CloudSolrClient cloudSolrClient;
 
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
@@ -435,7 +443,7 @@ public class ZkController {
     });
 
     init(registerOnReconnect);
-    
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -554,6 +562,12 @@ public class ZkController {
         IOUtils.closeQuietly(overseerElector.getContext());
         IOUtils.closeQuietly(overseer);
       } finally {
+        if (cloudSolrClient != null) {
+          IOUtils.closeQuietly(cloudSolrClient);
+        }
+        if (clusterDataProvider != null) {
+          IOUtils.closeQuietly(clusterDataProvider);
+        }
         try {
           try {
             zkStateReader.close();
@@ -586,6 +600,22 @@ public class ZkController {
    */
   public ClusterState getClusterState() {
     return zkStateReader.getClusterState();
+  }
+
+  public ClusterDataProvider getClusterDataProvider() {
+    if (clusterDataProvider != null) {
+      return clusterDataProvider;
+    }
+    synchronized(this) {
+      if (clusterDataProvider != null) {
+        return clusterDataProvider;
+      }
+      cloudSolrClient = new CloudSolrClient.Builder()
+          .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
+          .build();
+      clusterDataProvider = new SolrClientDataProvider(new ZkDistributedQueueFactory(zkClient), cloudSolrClient);
+    }
+    return clusterDataProvider;
   }
 
   /**
@@ -1290,18 +1320,18 @@ public class ZkController {
     return baseURL;
   }
 
-  public void publish(final CoreDescriptor cd, final Replica.State state) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final Replica.State state) throws Exception {
     publish(cd, state, true);
   }
 
-  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState) throws Exception {
     publish(cd, state, updateLastState, false);
   }
 
   /**
    * Publish core state to overseer.
    */
-  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
+  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws Exception {
     if (!forcePublish) {
       try (SolrCore core = cc.getCore(cd.getName())) {
         if (core == null || core.isClosed()) {
@@ -1410,7 +1440,7 @@ public class ZkController {
     return true;
   }
 
-  public void unregister(String coreName, CoreDescriptor cd) throws InterruptedException, KeeperException {
+  public void unregister(String coreName, CoreDescriptor cd) throws Exception {
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
 
@@ -1441,8 +1471,7 @@ public class ZkController {
     overseerJobQueue.offer(Utils.toJSON(m));
   }
 
-  public void createCollection(String collection) throws KeeperException,
-      InterruptedException {
+  public void createCollection(String collection) throws Exception {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, getNodeName(),
         ZkStateReader.COLLECTION_PROP, collection);
@@ -1567,6 +1596,9 @@ public class ZkController {
       Thread.currentThread().interrupt();
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (Exception e) {
+      log.error("", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
 
     if (cd.getCloudDescriptor().getShardId() == null && needsToBeAssignedShardId(cd, zkStateReader.getClusterState(), coreNodeName)) {

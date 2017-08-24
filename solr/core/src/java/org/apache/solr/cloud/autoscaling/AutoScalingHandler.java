@@ -214,7 +214,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try (CloudSolrClient build = new CloudSolrClient.Builder()
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      Policy.Session session = policy.createSession(new SolrClientDataProvider(build));
+      Policy.Session session = policy.createSession(new SolrClientDataProvider(new ZkDistributedQueueFactory(container.getZkController().getZkClient()), build));
       List<Row> sorted = session.getSorted();
       List<Clause.Violation> violations = session.getViolations();
 
@@ -638,7 +638,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try (CloudSolrClient build = new CloudSolrClient.Builder()
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      Policy.Session session = autoScalingConf.getPolicy().createSession(new SolrClientDataProvider(build));
+      Policy.Session session = autoScalingConf.getPolicy()
+          .createSession(new SolrClientDataProvider(new ZkDistributedQueueFactory(container.getZkController().getZkClient()), build));
       log.debug("Verified autoscaling configuration");
     }
   }

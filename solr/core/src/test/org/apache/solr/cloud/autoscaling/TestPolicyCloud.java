@@ -168,7 +168,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("metricsTest", "conf", 1, 1)
         .process(cluster.getSolrClient());
     DocCollection collection = getCollectionState("metricsTest");
-    SolrClientDataProvider provider = new SolrClientDataProvider(solrClient);
+    SolrClientDataProvider provider = new SolrClientDataProvider(new ZkDistributedQueueFactory(cluster.getZkClient()), solrClient);
     List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
         "metrics:solr.jvm:buffers.direct.Count");
     Map<String, Object> val = provider.getNodeValues(collection .getReplicas().get(0).getNodeName(), tags);
@@ -268,7 +268,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(cluster.getSolrClient());
     DocCollection rulesCollection = getCollectionState("policiesTest");
-    SolrClientDataProvider provider = new SolrClientDataProvider(cluster.getSolrClient());
+    SolrClientDataProvider provider = new SolrClientDataProvider(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
     Map<String, Object> val = provider.getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(
         "freedisk",
         "cores",

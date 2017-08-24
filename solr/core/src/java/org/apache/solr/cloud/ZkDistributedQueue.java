@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -43,11 +44,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A distributed queue. Optimized for single-consumer,
+ * A ZK-based distributed queue. Optimized for single-consumer,
  * multiple-producer: if there are multiple consumers on the same ZK queue,
  * the results should be correct but inefficient
  */
-public class DistributedQueue {
+public class ZkDistributedQueue implements DistributedQueue {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String PREFIX = "qn-";
@@ -92,11 +93,11 @@ public class DistributedQueue {
 
   private int watcherCount = 0;
 
-  public DistributedQueue(SolrZkClient zookeeper, String dir) {
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Overseer.Stats());
   }
 
-  public DistributedQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats) {
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats) {
     this.dir = dir;
 
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
@@ -119,6 +120,7 @@ public class DistributedQueue {
    *
    * @return data at the first element of the queue, or null.
    */
+  @Override
   public byte[] peek() throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_peek");
     try {
@@ -135,6 +137,7 @@ public class DistributedQueue {
    * @param block if true, blocks until an element enters the queue
    * @return data at the first element of the queue, or null.
    */
+  @Override
   public byte[] peek(boolean block) throws KeeperException, InterruptedException {
     return block ? peek(Long.MAX_VALUE) : peek();
   }
@@ -146,6 +149,7 @@ public class DistributedQueue {
    * @param wait max wait time in ms.
    * @return data at the first element of the queue, or null.
    */
+  @Override
   public byte[] peek(long wait) throws KeeperException, InterruptedException {
     Preconditions.checkArgument(wait > 0);
     Timer.Context time;
@@ -177,6 +181,7 @@ public class DistributedQueue {
    *
    * @return Head of the queue or null.
    */
+  @Override
   public byte[] poll() throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_poll");
     try {
@@ -191,6 +196,7 @@ public class DistributedQueue {
    *
    * @return The former head of the queue
    */
+  @Override
   public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_remove");
     try {
@@ -209,6 +215,7 @@ public class DistributedQueue {
    *
    * @return The former head of the queue
    */
+  @Override
   public byte[] take() throws KeeperException, InterruptedException {
     // Same as for element. Should refactor this.
     Timer.Context timer = stats.time(dir + "_take");
@@ -231,6 +238,7 @@ public class DistributedQueue {
    * Inserts data into queue.  If there are no other queue consumers, the offered element
    * will be immediately visible when this method returns.
    */
+  @Override
   public void offer(byte[] data) throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_offer");
     try {
@@ -326,7 +334,8 @@ public class DistributedQueue {
    * <p/>
    * Package-private to support {@link OverseerTaskQueue} specifically.
    */
-  Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
+  @Override
+  public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     List<String> foundChildren = new ArrayList<>();
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
     boolean first = true;

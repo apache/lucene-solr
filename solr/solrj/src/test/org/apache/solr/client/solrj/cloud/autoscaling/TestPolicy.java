@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -422,7 +421,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       });
 
     });
-    return new ClusterDataProvider(){
+    return new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
         return (Map<String, Object>) Utils.getObjectByPath(m,false, Arrays.asList("nodeValues", node));
@@ -434,7 +433,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
+      public Collection<String> getLiveNodes() {
         return (Collection<String>) m.get("liveNodes");
       }
 
@@ -963,7 +962,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
-    ClusterDataProvider cdp = new ClusterDataProvider() {
+    ClusterDataProvider cdp = new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
         return clusterDataProvider.getNodeValues(node, tags);
@@ -975,8 +974,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
-        return clusterDataProvider.getNodes();
+      public Collection<String> getLiveNodes() {
+        return clusterDataProvider.getLiveNodes();
       }
 
       @Override
@@ -1041,7 +1040,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "            'freedisk':918005641216}}}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
-    Policy.Session session = policy.createSession(new ClusterDataProvider() {
+    Policy.Session session = policy.createSession(new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
         return tagsMap.get(node);
@@ -1053,7 +1052,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
+      public Collection<String> getLiveNodes() {
         return replicaInfoMap.keySet();
       }
 
@@ -1099,7 +1098,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "}");
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     ClusterDataProvider clusterDataProvider = getClusterDataProvider(nodeValues, clusterState);
-    ClusterDataProvider cdp = new ClusterDataProvider() {
+    ClusterDataProvider cdp = new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
         return clusterDataProvider.getNodeValues(node, tags);
@@ -1111,8 +1110,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
-        return clusterDataProvider.getNodes();
+      public Collection<String> getLiveNodes() {
+        return clusterDataProvider.getLiveNodes();
       }
 
       @Override
@@ -1131,7 +1130,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   private ClusterDataProvider getClusterDataProvider(final Map<String, Map> nodeValues, String clusterState) {
-    return new ClusterDataProvider() {
+    return new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -1140,7 +1139,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
+      public Collection<String> getLiveNodes() {
         return nodeValues.keySet();
       }
 
@@ -1168,7 +1167,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    '127.0.0.1:50096_solr':{" +
         "      'cores':0," +
         "      'port':'50096'}}");
-    ClusterDataProvider dataProvider = new ClusterDataProvider() {
+    ClusterDataProvider dataProvider = new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -1187,7 +1186,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
+      public Collection<String> getLiveNodes() {
         return Arrays.asList( "127.0.0.1:50097_solr", "127.0.0.1:50096_solr");
       }
     };
@@ -1225,7 +1224,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:0, freedisk: 900, heap:16900, nodeRole:overseer, sysprop.rack:rack2}" +
         "}");
 
-    ClusterDataProvider dataProvider = new ClusterDataProvider() {
+    ClusterDataProvider dataProvider = new DelegatingClusterDataProvider(null) {
       @Override
       public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -1244,7 +1243,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       }
 
       @Override
-      public Collection<String> getNodes() {
+      public Collection<String> getLiveNodes() {
         return Arrays.asList("node1", "node2", "node3", "node4");
       }
     };

@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,7 +72,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   ZkNodeProps addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
-      throws KeeperException, InterruptedException {
+      throws IOException, InterruptedException {
     log.debug("addReplica() : {}", Utils.toJSONString(message));
     String collection = message.getStr(COLLECTION_PROP);
     String node = message.getStr(CoreAdminParams.NODE);
@@ -120,7 +121,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       } else {
         node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
-            ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
+            ocmh.overseer.getClusterDataProvider(), ocmh.overseer.getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
       }
     }
     log.info("Node Identified {} for creating new replica", node);
@@ -159,7 +160,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         if (coreNodeName != null) {
           props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
         }
-        Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+        try {
+          Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
+        }
       }
       params.set(CoreAdminParams.CORE_NODE_NAME,
           ocmh.waitToSeeReplicasInState(collection, Collections.singletonList(coreName)).get(coreName).getName());

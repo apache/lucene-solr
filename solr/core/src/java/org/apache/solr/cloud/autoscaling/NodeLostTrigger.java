@@ -17,29 +17,24 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.TimeSource;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,59 +44,27 @@ import org.slf4j.LoggerFactory;
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String name;
-  private final Map<String, Object> properties;
-  private final CoreContainer container;
-  private final List<TriggerAction> actions;
-  private final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef;
-  private final boolean enabled;
-  private final int waitForSecond;
-  private final TriggerEventType eventType;
   private final TimeSource timeSource;
-
-  private boolean isClosed = false;
 
   private Set<String> lastLiveNodes;
 
   private Map<String, Long> nodeNameVsTimeRemoved = new HashMap<>();
 
   public NodeLostTrigger(String name, Map<String, Object> properties,
-                         CoreContainer container) {
-    super(container.getZkController().getZkClient());
-    this.name = name;
-    this.properties = properties;
-    this.container = container;
+                         SolrResourceLoader loader,
+                         ClusterDataProvider clusterDataProvider) {
+    super(name, properties, loader, clusterDataProvider);
     this.timeSource = TimeSource.CURRENT_TIME;
-    this.processorRef = new AtomicReference<>();
-    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
-    if (o != null && !o.isEmpty()) {
-      actions = new ArrayList<>(3);
-      for (Map<String, String> map : o) {
-        TriggerAction action = container.getResourceLoader().newInstance(map.get("class"), TriggerAction.class);
-        actions.add(action);
-      }
-    } else {
-      actions = Collections.emptyList();
-    }
-    lastLiveNodes = new HashSet<>(container.getZkController().getZkStateReader().getClusterState().getLiveNodes());
+    lastLiveNodes = new HashSet<>(clusterDataProvider.getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
-    this.enabled = Boolean.parseBoolean(String.valueOf(properties.getOrDefault("enabled", "true")));
-    this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
-    this.eventType = TriggerEventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
   }
 
   @Override
   public void init() {
-    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
-    if (o != null && !o.isEmpty()) {
-      for (int i = 0; i < o.size(); i++) {
-        Map<String, String> map = o.get(i);
-        actions.get(i).init(map);
-      }
-    }
+    super.init();
     // pick up lost nodes for which marker paths were created
     try {
-      List<String> lost = container.getZkController().getZkClient().getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, null, true);
+      List<String> lost = clusterDataProvider.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       lost.forEach(n -> {
         // don't add nodes that have since came back
         if (!lastLiveNodes.contains(n)) {
@@ -110,74 +73,16 @@ public class NodeLostTrigger extends TriggerBase {
         }
         removeMarker(n);
       });
-    } catch (KeeperException.NoNodeException e) {
+    } catch (NoSuchElementException e) {
       // ignore
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       log.warn("Exception retrieving nodeLost markers", e);
     }
   }
 
   @Override
-  public void setProcessor(AutoScaling.TriggerEventProcessor processor) {
-    processorRef.set(processor);
-  }
-
-  @Override
-  public AutoScaling.TriggerEventProcessor getProcessor() {
-    return processorRef.get();
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public TriggerEventType getEventType() {
-    return eventType;
-  }
-
-  @Override
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  @Override
-  public int getWaitForSecond() {
-    return waitForSecond;
-  }
-
-  @Override
-  public Map<String, Object> getProperties() {
-    return properties;
-  }
-
-  @Override
   public List<TriggerAction> getActions() {
     return actions;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof NodeLostTrigger) {
-      NodeLostTrigger that = (NodeLostTrigger) obj;
-      return this.name.equals(that.name)
-          && this.properties.equals(that.properties);
-    }
-    return false;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, properties);
-  }
-
-  @Override
-  public void close() throws IOException {
-    synchronized (this) {
-      isClosed = true;
-      IOUtils.closeWhileHandlingException(actions);
-    }
   }
 
   @Override
@@ -226,8 +131,7 @@ public class NodeLostTrigger extends TriggerBase {
         }
       }
 
-      ZkStateReader reader = container.getZkController().getZkStateReader();
-      Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();
+      Set<String> newLiveNodes = new HashSet<>(clusterDataProvider.getLiveNodes());
       log.debug("Running NodeLostTrigger: {} with currently live nodes: {}", name, newLiveNodes);
 
       // have any nodes that we were tracking been added to the cluster?
@@ -286,20 +190,13 @@ public class NodeLostTrigger extends TriggerBase {
   private void removeMarker(String nodeName) {
     String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + nodeName;
     try {
-      if (container.getZkController().getZkClient().exists(path, true)) {
-        container.getZkController().getZkClient().delete(path, -1, true);
+      if (clusterDataProvider.hasData(path)) {
+        clusterDataProvider.removeData(path, -1);
       }
-    } catch (KeeperException.NoNodeException e) {
+    } catch (NoSuchElementException e) {
       // ignore
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       log.warn("Exception removing nodeLost marker " + nodeName, e);
-    }
-  }
-
-  @Override
-  public boolean isClosed() {
-    synchronized (this) {
-      return isClosed;
     }
   }
 

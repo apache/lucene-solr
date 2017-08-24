@@ -30,9 +30,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.autoscaling.AutoScaling;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
+import org.apache.solr.cloud.autoscaling.ZkDistributedQueueFactory;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -53,6 +59,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -88,10 +95,10 @@ public class Overseer implements Closeable {
     private final SolrZkClient zkClient;
     private final String myId;
     //queue where everybody can throw tasks
-    private final DistributedQueue stateUpdateQueue; 
+    private final ZkDistributedQueue stateUpdateQueue;
     //Internal queue where overseer stores events that have not yet been published into cloudstate
     //If Overseer dies while extracting the main queue a new overseer will start from this queue 
-    private final DistributedQueue workQueue;
+    private final ZkDistributedQueue workQueue;
     // Internal map which holds the information about running tasks.
     private final DistributedMap runningMap;
     // Internal map which holds the information about successfully completed tasks.
@@ -538,7 +545,8 @@ public class Overseer implements Closeable {
     autoscalingTriggerCreator.start();
 
     ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
-    OverseerTriggerThread trigger = new OverseerTriggerThread(zkController);
+    OverseerTriggerThread trigger = new OverseerTriggerThread(zkController.getCoreContainer().getResourceLoader(),
+        zkController.getClusterDataProvider());
     triggerThread = new OverseerThread(triggerThreadGroup, trigger, "OverseerAutoScalingTriggerThread-" + id);
 
     updaterThread.start();
@@ -554,7 +562,15 @@ public class Overseer implements Closeable {
   ZkController getZkController(){
     return zkController;
   }
-  
+
+  public CoreContainer getCoreContainer() {
+    return zkController.getCoreContainer();
+  }
+
+  public ClusterDataProvider getClusterDataProvider() {
+    return zkController.getClusterDataProvider();
+  }
+
   /**
    * For tests.
    * 
@@ -679,7 +695,7 @@ public class Overseer implements Closeable {
    * This method will create the /overseer znode in ZooKeeper if it does not exist already.
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
   public static DistributedQueue getStateUpdateQueue(final SolrZkClient zkClient) {
     return getStateUpdateQueue(zkClient, new Stats());
@@ -692,11 +708,11 @@ public class Overseer implements Closeable {
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @param zkStats  a {@link Overseer.Stats} object which tracks statistics for all zookeeper operations performed by this queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
-  static DistributedQueue getStateUpdateQueue(final SolrZkClient zkClient, Stats zkStats) {
+  static ZkDistributedQueue getStateUpdateQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
-    return new DistributedQueue(zkClient, "/overseer/queue", zkStats);
+    return new ZkDistributedQueue(zkClient, "/overseer/queue", zkStats);
   }
 
   /**
@@ -712,11 +728,11 @@ public class Overseer implements Closeable {
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @param zkStats  a {@link Overseer.Stats} object which tracks statistics for all zookeeper operations performed by this queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
-  static DistributedQueue getInternalWorkQueue(final SolrZkClient zkClient, Stats zkStats) {
+  static ZkDistributedQueue getInternalWorkQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
-    return new DistributedQueue(zkClient, "/overseer/queue-work", zkStats);
+    return new ZkDistributedQueue(zkClient, "/overseer/queue-work", zkStats);
   }
 
   /* Internal map for failed tasks, not to be used outside of the Overseer */
@@ -750,7 +766,7 @@ public class Overseer implements Closeable {
    * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
   static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient) {
     return getCollectionQueue(zkClient, new Stats());
@@ -768,7 +784,7 @@ public class Overseer implements Closeable {
    * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
   static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
@@ -788,7 +804,7 @@ public class Overseer implements Closeable {
    * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
   static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient)  {
     return getConfigSetQueue(zkClient, new Stats());
@@ -811,7 +827,7 @@ public class Overseer implements Closeable {
    * {@link OverseerConfigSetMessageHandler}.
    *
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @return a {@link DistributedQueue} object
+   * @return a {@link ZkDistributedQueue} object
    */
   static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats) {
     // For now, we use the same queue as the collection queue, but ensure

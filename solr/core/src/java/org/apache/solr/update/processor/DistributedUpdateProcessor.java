@@ -46,7 +46,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.OverseerAction;
