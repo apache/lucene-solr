@@ -422,7 +422,7 @@ public interface SerializableObject {
    * @param value is the value to write.
    */
   static void writeBoolean(final OutputStream outputStream, final boolean value) throws IOException {
-    outputStream.write(value?0:1);
+    outputStream.write(value?1:0);
   }
   
   /** Read a boolean from a stream.
