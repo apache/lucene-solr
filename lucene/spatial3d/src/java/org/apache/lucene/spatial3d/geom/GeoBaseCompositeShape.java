@@ -82,11 +82,8 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
    */
   public GeoBaseCompositeShape(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
     this(planetModel);
-    final SerializableObject[] array = SerializableObject.readHeterogeneousArray(planetModel, inputStream);
+    final T[] array = SerializableObject.readHeterogeneousArray(planetModel, inputStream, clazz);
     for (final SerializableObject member : array) {
-      if (!(clazz.isAssignableFrom(member.getClass()))) {
-        throw new IOException("Can't deserialize composite because member has wrong type: "+member.getClass().getName());
-      }
       addShape(clazz.cast(member));
     }
   }
