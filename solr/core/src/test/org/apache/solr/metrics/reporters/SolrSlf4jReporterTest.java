@@ -78,14 +78,19 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     }
     Thread.sleep(5000);
 
+    int count1 = ((SolrSlf4jReporter)reporter1).getCount();
+    assertTrue("test1 count should be greater than 0", count1 > 0);
+    int count2 = ((SolrSlf4jReporter)reporter2).getCount();
+    assertTrue("test2 count should be greater than 0", count1 > 0);
+
     SolrDocumentList history = watcher.getHistory(-1, null);
     // dot-separated names are treated like class names and collapsed
     // in regular log output, but here we get the full name
     if (history.stream().filter(d -> "solr.node".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'solr.node' logs in: " + history.toString());
+      fail("count1=" + count1 + ", count2=" + count2 + " - no 'solr.node' logs in: " + history.toString());
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'foobar' logs in: " + history.toString());
+      fail("count1=" + count1 + ", count2=" + count2 + " - no 'foobar' logs in: " + history.toString());
     }
   }
 }
