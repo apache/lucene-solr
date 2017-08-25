@@ -39,6 +39,28 @@ public interface SerializableObject {
    */
   void write(OutputStream outputStream) throws IOException;
 
+  /** Write a PlanetObject to a stream.
+   * @param outputStream is the output stream.
+   * @param object is the object to write.
+   */
+  public static void writePlanetObject(final OutputStream outputStream, final PlanetObject object) throws IOException {
+    object.getPlanetModel().write(outputStream);
+    writeObject(outputStream, object);
+  }
+  
+  /** Read a PlanetObject from a stream.
+   * @param inputStream is the input stream.
+   * @return the PlanetObject.
+   */
+  public static PlanetObject readPlanetObject(final InputStream inputStream) throws IOException {
+    final PlanetModel pm = new PlanetModel(inputStream);
+    final SerializableObject so = readObject(pm, inputStream);
+    if (!(so instanceof PlanetObject)) {
+      throw new IOException("Type of object is not expected PlanetObject: "+so.getClass().getName());
+    }
+    return (PlanetObject)so;
+  }
+  
   /** Write an object to a stream.
    * @param outputStream is the output stream.
    * @param object is the object to write.
@@ -65,6 +87,22 @@ public interface SerializableObject {
     }
   }
 
+  /** Read an object from a stream (for objects that do not need a PlanetModel).
+   * @param inputStream is the input stream.
+   * @return the deserialized object.
+   */
+  public static SerializableObject readObject(final InputStream inputStream) throws IOException {
+    // Read the class name
+    final String className = readString(inputStream);
+    try {
+      // Look for the class
+      final Class<?> clazz = Class.forName(className);
+      return readObject(inputStream, clazz);
+    } catch (ClassNotFoundException e) {
+      throw new IOException("Can't find class "+className+" for deserialization: "+e.getMessage(), e);
+    }
+  }
+  
   /** Instantiate a serializable object from a stream.
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
@@ -91,22 +129,6 @@ public interface SerializableObject {
       throw new IOException("Exception instantiating class "+clazz.getName()+": "+e.getMessage(), e);
     }
 
-  }
-  
-  /** Read an object from a stream (for objects that do not need a PlanetModel).
-   * @param inputStream is the input stream.
-   * @return the deserialized object.
-   */
-  public static SerializableObject readObject(final InputStream inputStream) throws IOException {
-    // Read the class name
-    final String className = readString(inputStream);
-    try {
-      // Look for the class
-      final Class<?> clazz = Class.forName(className);
-      return readObject(inputStream, clazz);
-    } catch (ClassNotFoundException e) {
-      throw new IOException("Can't find class "+className+" for deserialization: "+e.getMessage(), e);
-    }
   }
   
   /** Instantiate a serializable object from a stream without a planet model.
@@ -238,9 +260,9 @@ public interface SerializableObject {
    * @param clazz is the class of the objects to read.
    * @return the array.
    */
-  @SuppressWarnings("unchecked")
   static <T extends SerializableObject> T[] readHomogeneousArray(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
     final int count = readInt(inputStream);
+    @SuppressWarnings("unchecked")
     final T[] rval = (T[])Array.newInstance(clazz, count);
     for (int i = 0; i < count; i++) {
       rval[i] = clazz.cast(readObject(planetModel, inputStream, clazz));
@@ -283,9 +305,9 @@ public interface SerializableObject {
    * @param inputStream is the input stream.
    * @return the array.
    */
-  @SuppressWarnings("unchecked")
   static <T extends SerializableObject> T[] readHeterogeneousArray(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
     final int count = readInt(inputStream);
+    @SuppressWarnings("unchecked")
     final T[] rval = (T[])Array.newInstance(clazz, count);
     for (int i = 0; i < count; i++) {
       rval[i] = clazz.cast(readObject(planetModel, inputStream));

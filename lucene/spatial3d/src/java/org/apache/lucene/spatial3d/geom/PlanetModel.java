@@ -16,11 +16,15 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Holds mathematical constants associated with the model of a planet.
  * @lucene.experimental
  */
-public class PlanetModel {
+public class PlanetModel implements SerializableObject {
   
   /** Planet model corresponding to sphere. */
   public static final PlanetModel SPHERE = new PlanetModel(1.0,1.0);
@@ -93,6 +97,19 @@ public class PlanetModel {
     this.MAX_X_POLE = new GeoPoint(ab, 1.0, 0.0, 0.0, 0.0, 0.0);
     this.MIN_Y_POLE = new GeoPoint(ab, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
     this.MAX_Y_POLE = new GeoPoint(ab, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
+  }
+
+  /** Deserialization constructor.
+   * @param inputStream is the input stream.
+   */
+  public PlanetModel(final InputStream inputStream) throws IOException {
+    this(SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+  
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, ab);
+    SerializableObject.writeDouble(outputStream, c);
   }
   
   /** Find the minimum magnitude of all points on the ellipsoid.

@@ -34,10 +34,6 @@ public class RandomBinaryCodecTest extends RandomGeoShapeGenerator{
   public void testRandomShapeCodec() throws IOException{
     PlanetModel planetModel = randomPlanetModel();
     int type = randomShapeType();
-    while (type == COMPLEX_POLYGON){
-      //We need to implement equals method
-      type = randomShapeType();
-    }
 
     GeoShape shape = randomGeoShape(type, planetModel);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
