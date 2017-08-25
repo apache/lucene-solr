@@ -225,15 +225,15 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
               true,
               threadManager); // request feature weights to be created for all features
 
-          // Local transformer efi if provided
-          scoringQuery.setOriginalQuery(context.getQuery());
-
         }catch (final Exception e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "retrieving the feature store "+featureStoreName, e);
         }
       }
 
+      if (scoringQuery.getOriginalQuery() == null) {
+        scoringQuery.setOriginalQuery(context.getQuery());
+      }
       if (scoringQuery.getFeatureLogger() == null){
         scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
       }
@@ -261,7 +261,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void transform(SolrDocument doc, int docid)
         throws IOException {
-      implTransform(doc, docid, 0.0f);
+      implTransform(doc, docid, null);
     }
 
     private void implTransform(SolrDocument doc, int docid, Float score)

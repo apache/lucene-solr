@@ -105,6 +105,10 @@ Bug Fixes
 
 * SOLR-11289: fix comma handling in terms component. (yonik)
 
+* SOLR-11164, SOLR-11180, SOLR-11220: Fix NullPointerException and always-returns-zero
+  contrib/ltr OriginalScoreFeature issues in SolrCloud mode.
+  (Yuki Yano, Jonathan Gonzalez, Ryan Yacyshyn, Christine Poerschke)
+
 Optimizations
 ----------------------
 
