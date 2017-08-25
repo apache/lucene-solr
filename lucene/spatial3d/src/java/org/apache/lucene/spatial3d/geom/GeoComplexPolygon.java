@@ -1270,17 +1270,24 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
   }
-  
+
   @Override
   public boolean equals(Object o) {
-    // Way too expensive to do this the hard way, so each complex polygon will be considered unique.
-    return this == o;
+    if (!(o instanceof GeoComplexPolygon))
+      return false;
+    final GeoComplexPolygon other = (GeoComplexPolygon) o;
+    return super.equals(other) && testPointInSet == other.testPointInSet
+        && testPoint.equals(testPoint)
+        && pointsList.equals(other.pointsList);
   }
 
   @Override
   public int hashCode() {
-    // Each complex polygon is considered unique.
-    return System.identityHashCode(this);
+    int result = super.hashCode();
+    result = 31 * result + Boolean.hashCode(testPointInSet);
+    result = 31 * result + testPoint.hashCode();
+    result = 31 * result + pointsList.hashCode();
+    return result;
   }
 
   @Override
