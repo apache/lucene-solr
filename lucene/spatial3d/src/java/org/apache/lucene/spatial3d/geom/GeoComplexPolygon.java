@@ -19,6 +19,9 @@ package org.apache.lucene.spatial3d.geom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 
 /**
  * GeoComplexPolygon objects are structures designed to handle very large numbers of edges.
@@ -37,6 +40,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final Tree yTree;
   private final Tree zTree;
   
+  private final List<List<GeoPoint>> pointsList;
   private final boolean testPointInSet;
   private final GeoPoint testPoint;
   
@@ -66,6 +70,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
    */
   public GeoComplexPolygon(final PlanetModel planetModel, final List<List<GeoPoint>> pointsList, final GeoPoint testPoint, final boolean testPointInSet) {
     super(planetModel);
+    this.pointsList = pointsList;  // For serialization
     this.testPointInSet = testPointInSet;
     this.testPoint = testPoint;
     
@@ -115,6 +120,41 @@ class GeoComplexPolygon extends GeoBasePolygon {
     zTree = new ZTree(allEdges);
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoComplexPolygon(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      readPointsList(planetModel, inputStream),
+      new GeoPoint(planetModel, inputStream),
+      SerializableObject.readBoolean(inputStream));
+  }
+
+  private static List<List<GeoPoint>> readPointsList(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    final int count = SerializableObject.readInt(inputStream);
+    final List<List<GeoPoint>> array = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      array.add(java.util.Arrays.asList(SerializableObject.readPointArray(planetModel, inputStream)));
+    }
+    return array;
+  }
+  
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    writePointsList(outputStream, pointsList);
+    testPoint.write(outputStream);
+    SerializableObject.writeBoolean(outputStream, testPointInSet);
+  }
+
+  private static void writePointsList(final OutputStream outputStream, final List<List<GeoPoint>> pointsList) throws IOException {
+    SerializableObject.writeInt(outputStream, pointsList.size());
+    for (final List<GeoPoint> points : pointsList) {
+      SerializableObject.writePointArray(outputStream, points);
+    }
+  }
+  
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     // If we're right on top of the point, we know the answer.

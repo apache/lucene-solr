@@ -376,4 +376,24 @@ public interface SerializableObject {
     return l1 + l2 + l3 + l4;
   }
 
+  /** Write a boolean to a stream.
+   * @param outputStream is the output stream.
+   * @param value is the value to write.
+   */
+  static void writeBoolean(final OutputStream outputStream, final boolean value) throws IOException {
+    outputStream.write(value?0:1);
+  }
+  
+  /** Read a boolean from a stream.
+   * @param inputStream is the input stream.
+   * @return the boolean value.
+   */
+  static boolean readBoolean(final InputStream inputStream) throws IOException {
+    final int valueRead = inputStream.read();
+    if (valueRead == -1) {
+      throw new IOException("Unexpected end of input stream");
+    }
+    return (valueRead == 0)?false:true;
+  }
+  
 }
