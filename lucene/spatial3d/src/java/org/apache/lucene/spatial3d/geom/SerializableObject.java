@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.BitSet;
@@ -42,7 +43,7 @@ public interface SerializableObject {
    * @param outputStream is the output stream.
    * @param object is the object to write.
    */
-  static void writeObject(final OutputStream outputStream, final SerializableObject object) throws IOException {
+  public static void writeObject(final OutputStream outputStream, final SerializableObject object) throws IOException {
     writeString(outputStream, object.getClass().getName());
     object.write(outputStream);
   }
@@ -52,7 +53,7 @@ public interface SerializableObject {
    * @param inputStream is the input stream.
    * @return the deserialized object.
    */
-  static SerializableObject readObject(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+  public static SerializableObject readObject(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
     // Read the class name
     final String className = readString(inputStream);
     try {
@@ -96,7 +97,7 @@ public interface SerializableObject {
    * @param inputStream is the input stream.
    * @return the deserialized object.
    */
-  static SerializableObject readObject(final InputStream inputStream) throws IOException {
+  public static SerializableObject readObject(final InputStream inputStream) throws IOException {
     // Read the class name
     final String className = readString(inputStream);
     try {
@@ -173,7 +174,7 @@ public interface SerializableObject {
    * @return the array of points that was read.
    */
   static GeoPoint[] readPointArray(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    return (GeoPoint[])readHomogeneousArray(planetModel, inputStream, GeoPoint.class);
+    return readHomogeneousArray(planetModel, inputStream, GeoPoint.class);
   }
 
   /** Write a polgon array.
@@ -198,7 +199,7 @@ public interface SerializableObject {
    * @return the array of polygons that was read.
    */
   static GeoPolygon[] readPolygonArray(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    return (GeoPolygon[])readHeterogeneousArray(planetModel, inputStream);
+    return readHeterogeneousArray(planetModel, inputStream, GeoPolygon.class);
   }
 
   /** Write an array.
@@ -206,9 +207,13 @@ public interface SerializableObject {
    * @param values is the array.
    */
   static void writeHomogeneousArray(final OutputStream outputStream, final SerializableObject[] values) throws IOException {
-    writeInt(outputStream, values.length);
-    for (final SerializableObject value : values) {
-      value.write(outputStream);
+    if (values == null) {
+      writeInt(outputStream, 0);
+    } else {
+      writeInt(outputStream, values.length);
+      for (final SerializableObject value : values) {
+        value.write(outputStream);
+      }
     }
   }
 
@@ -217,9 +222,13 @@ public interface SerializableObject {
    * @param values is the array.
    */
   static void writeHomogeneousArray(final OutputStream outputStream, final List<? extends SerializableObject> values) throws IOException {
-    writeInt(outputStream, values.size());
-    for (final SerializableObject value : values) {
-      value.write(outputStream);
+    if (values == null) {
+      writeInt(outputStream, 0);
+    } else {
+      writeInt(outputStream, values.size());
+      for (final SerializableObject value : values) {
+        value.write(outputStream);
+      }
     }
   }
   
@@ -229,11 +238,12 @@ public interface SerializableObject {
    * @param clazz is the class of the objects to read.
    * @return the array.
    */
-  static SerializableObject[] readHomogeneousArray(final PlanetModel planetModel, final InputStream inputStream, final Class<?> clazz) throws IOException {
+  @SuppressWarnings("unchecked")
+  static <T extends SerializableObject> T[] readHomogeneousArray(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
     final int count = readInt(inputStream);
-    final SerializableObject[] rval = new SerializableObject[count];
+    final T[] rval = (T[])Array.newInstance(clazz, count);
     for (int i = 0; i < count; i++) {
-      rval[i] = readObject(planetModel, inputStream, clazz);
+      rval[i] = clazz.cast(readObject(planetModel, inputStream, clazz));
     }
     return rval;
   }
@@ -243,9 +253,13 @@ public interface SerializableObject {
    * @param values is the array.
    */
   static void writeHeterogeneousArray(final OutputStream outputStream, final SerializableObject[] values) throws IOException {
-    writeInt(outputStream, values.length);
-    for (final SerializableObject value : values) {
-      writeObject(outputStream, value);
+    if (values == null) {
+      writeInt(outputStream, 0);
+    } else {
+      writeInt(outputStream, values.length);
+      for (final SerializableObject value : values) {
+        writeObject(outputStream, value);
+      }
     }
   }
 
@@ -254,9 +268,13 @@ public interface SerializableObject {
    * @param values is the array.
    */
   static void writeHeterogeneousArray(final OutputStream outputStream, final List<? extends SerializableObject> values) throws IOException {
-    writeInt(outputStream, values.size());
-    for (final SerializableObject value : values) {
-      writeObject(outputStream, value);
+    if (values == null) {
+      writeInt(outputStream, 0);
+    } else {
+      writeInt(outputStream, values.size());
+      for (final SerializableObject value : values) {
+        writeObject(outputStream, value);
+      }
     }
   }
   
@@ -265,11 +283,12 @@ public interface SerializableObject {
    * @param inputStream is the input stream.
    * @return the array.
    */
-  static SerializableObject[] readHeterogeneousArray(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+  @SuppressWarnings("unchecked")
+  static <T extends SerializableObject> T[] readHeterogeneousArray(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
     final int count = readInt(inputStream);
-    final SerializableObject[] rval = new SerializableObject[count];
+    final T[] rval = (T[])Array.newInstance(clazz, count);
     for (int i = 0; i < count; i++) {
-      rval[i] = readObject(planetModel, inputStream);
+      rval[i] = clazz.cast(readObject(planetModel, inputStream));
     }
     return rval;
   }
