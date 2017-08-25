@@ -17,6 +17,9 @@
 
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.IOException;
+
 /**
  * GeoCompositeAreaShape is a set of GeoAreaShape's, treated as a unit.
  *
@@ -29,6 +32,15 @@ public class GeoCompositeAreaShape extends GeoBaseCompositeAreaShape<GeoAreaShap
    */
   public GeoCompositeAreaShape(PlanetModel planetModel) {
     super(planetModel);
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoCompositeAreaShape(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    super(planetModel, inputStream, GeoAreaShape.class);
   }
 
   @Override
