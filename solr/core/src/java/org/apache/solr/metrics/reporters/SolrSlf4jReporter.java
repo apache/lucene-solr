@@ -18,11 +18,18 @@ package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -50,6 +57,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
   private String logger = null;
   private Slf4jReporter reporter;
   private boolean active;
+  private DiagnosticMetricRegistry diagnosticMetricRegistry;
 
   /**
    * Create a SLF4J reporter for metrics managed in a named registry.
@@ -77,8 +85,10 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     } else {
       instancePrefix = instancePrefix + "." + registryName;
     }
+    MetricRegistry registry = metricManager.registry(registryName);
+    diagnosticMetricRegistry = new DiagnosticMetricRegistry(registry);
     Slf4jReporter.Builder builder = Slf4jReporter
-        .forRegistry(metricManager.registry(registryName))
+        .forRegistry(diagnosticMetricRegistry)
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS);
 
@@ -122,5 +132,44 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
   // for unit tests
   boolean isActive() {
     return active;
+  }
+
+  // for unit tests
+  int getCount() {
+    return diagnosticMetricRegistry != null ? diagnosticMetricRegistry.count : -1;
+  }
+
+  static class DiagnosticMetricRegistry extends MetricRegistry {
+    MetricRegistry delegate;
+    int count = 0;
+    DiagnosticMetricRegistry(MetricRegistry delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public SortedMap<String, Counter> getCounters(MetricFilter filter) {
+      return delegate.getCounters(filter);
+    }
+
+    @Override
+    public SortedMap<String, Histogram> getHistograms(MetricFilter filter) {
+      return delegate.getHistograms(filter);
+    }
+
+    @Override
+    public SortedMap<String, Meter> getMeters(MetricFilter filter) {
+      return delegate.getMeters(filter);
+    }
+
+    @Override
+    public SortedMap<String, Timer> getTimers(MetricFilter filter) {
+      return delegate.getTimers(filter);
+    }
+
+    @Override
+    public SortedMap<String, Gauge> getGauges(MetricFilter filter) {
+      count++;
+      return delegate.getGauges(filter);
+    }
   }
 }

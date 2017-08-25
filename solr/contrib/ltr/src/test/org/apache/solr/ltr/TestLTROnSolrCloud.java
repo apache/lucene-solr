@@ -29,6 +29,7 @@ import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
@@ -53,9 +54,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
     int numberOfShards = random().nextInt(4)+1;
     int numberOfReplicas = random().nextInt(2)+1;
-    int maxShardsPerNode = numberOfShards+random().nextInt(4)+1;
+    int maxShardsPerNode = random().nextInt(4)+1;
 
-    int numberOfNodes = numberOfShards * maxShardsPerNode;
+    int numberOfNodes = (numberOfShards*numberOfReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes, maxShardsPerNode);
 
@@ -106,21 +107,21 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     final Float original_result7_score = (Float)queryResponse.getResults().get(7).get("score");
 
     final String result0_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","64.0", "c3","2.0");
+        "powpularityS","64.0", "c3","2.0", "original","0.0");
     final String result1_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","49.0", "c3","2.0");
+        "powpularityS","49.0", "c3","2.0", "original","1.0");
     final String result2_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","36.0", "c3","2.0");
+        "powpularityS","36.0", "c3","2.0", "original","2.0");
     final String result3_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","25.0", "c3","2.0");
+        "powpularityS","25.0", "c3","2.0", "original","3.0");
     final String result4_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS","16.0", "c3","2.0");
+        "powpularityS","16.0", "c3","2.0", "original","4.0");
     final String result5_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS", "9.0", "c3","2.0");
+        "powpularityS", "9.0", "c3","2.0", "original","5.0");
     final String result6_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS", "4.0", "c3","2.0");
+        "powpularityS", "4.0", "c3","2.0", "original","6.0");
     final String result7_features= FeatureLoggerTestUtils.toFeatureVector(
-        "powpularityS", "1.0", "c3","2.0");
+        "powpularityS", "1.0", "c3","2.0", "original","7.0");
 
 
     // Test feature vectors returned (without re-ranking)
@@ -256,8 +257,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
   private void loadModelsAndFeatures() throws Exception {
     final String featureStore = "test";
-    final String[] featureNames = new String[] {"powpularityS","c3"};
-    final String jsonModelParams = "{\"weights\":{\"powpularityS\":1.0,\"c3\":1.0}}";
+    final String[] featureNames = new String[] {"powpularityS","c3", "original"};
+    final String jsonModelParams = "{\"weights\":{\"powpularityS\":1.0,\"c3\":1.0,\"original\":0.1}}";
 
     loadFeature(
             featureNames[0],
@@ -270,6 +271,12 @@ public class TestLTROnSolrCloud extends TestRerankBase {
             ValueFeature.class.getCanonicalName(),
             featureStore,
             "{\"value\":2}"
+    );
+    loadFeature(
+            featureNames[2],
+            OriginalScoreFeature.class.getCanonicalName(),
+            featureStore,
+            null
     );
 
     loadModel(
