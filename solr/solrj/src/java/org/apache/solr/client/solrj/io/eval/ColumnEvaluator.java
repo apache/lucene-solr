@@ -17,60 +17,61 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ColumnEvaluator extends SimpleEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-  private String name;
-  private String fieldName;
- ;
-  public ColumnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
-    String name = factory.getValueOperand(expression, 0);
-    String fieldName = factory.getValueOperand(expression, 1);
-    init(name, fieldName);
+public class ColumnEvaluator extends RecursiveEvaluator {
+  protected static final long serialVersionUID = 1L;
+  
+  public ColumnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+    super(expression, factory);
+    
+    init();
   }
-
-  private void init(String name, String fieldName) {
-    this.name = name;
-    this.fieldName = fieldName;
+  
+  public ColumnEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
+    super(expression, factory, ignoredNamedParameters);
+    
+    init();
   }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-    List<Tuple> tuples = (List<Tuple>)tuple.get(name);
-    List<Number> column = new ArrayList(tuples.size());
-    for(Tuple t : tuples) {
-      Object o = t.get(fieldName);
-      if(o instanceof Number) {
-        column.add((Number)o);
-      } else {
-        throw new IOException("Found non-numeric in column:"+o.toString());
-      }
+  
+  private void init() throws IOException{
+    if(2 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 parameters but found %d", toExpression(constructingFactory), containedEvaluators.size()));
     }
-    return column;
+  }
+      
+  @Override
+  public Object evaluate(Tuple tuple) throws IOException {    
+    try{
+      
+      Object firstLevel = containedEvaluators.get(0).evaluate(tuple);
+      
+      if(!(firstLevel instanceof List<?>) || 0 != ((List<?>)firstLevel).stream().filter(value -> !(value instanceof Tuple)).count()){
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a list of tuples but found %s", toExpression(constructingFactory), firstLevel.getClass().getSimpleName()));
+      }
+
+      List<Object> column = new ArrayList<>();
+      for(Object innerTuple : (List<?>)firstLevel){
+        column.add(containedEvaluators.get(1).evaluate((Tuple)innerTuple));
+      }
+
+      return normalizeOutputType(column);
+    }
+    catch(UncheckedIOException e){
+      throw e.getCause();
+    }
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+  public Object doWork(Object... values) throws IOException {
+    // Nothing to do here
+    throw new IOException("This call should never occur");
   }
 }

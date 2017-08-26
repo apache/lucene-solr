@@ -25,24 +25,20 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * Provides a month stream evaluator
+ * Provides a day stream evaluator
  */
-public class TemporalEvaluatorMonth extends TemporalEvaluator {
-
+public class TemporalEvaluatorMonth extends RecursiveTemporalEvaluator {
+  protected static final long serialVersionUID = 1L;
+  
   public static final String FUNCTION_NAME = "month";
 
   public TemporalEvaluatorMonth(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory);
+    super(expression, factory, FUNCTION_NAME);
   }
 
   @Override
-  public String getFunction() {
-    return FUNCTION_NAME;
-  }
-
-  @Override
-  public Object evaluateDate(TemporalAccessor aDate) {
-    return aDate.get(ChronoField.MONTH_OF_YEAR);
+  protected Object getDatePart(TemporalAccessor value) {
+    return value.get(ChronoField.MONTH_OF_YEAR);
   }
 
 }

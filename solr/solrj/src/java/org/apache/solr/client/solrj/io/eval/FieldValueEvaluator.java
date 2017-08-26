@@ -27,12 +27,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class FieldEvaluator extends SimpleEvaluator {
+public class FieldValueEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
   
   private String fieldName;
   
-  public FieldEvaluator(String fieldName) {
+  public FieldValueEvaluator(String fieldName) {
     if(fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1){
       fieldName = fieldName.substring(1, fieldName.length() - 1);
     }

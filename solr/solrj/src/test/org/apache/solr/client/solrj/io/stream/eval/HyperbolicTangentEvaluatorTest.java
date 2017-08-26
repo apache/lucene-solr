@@ -53,8 +53,8 @@ public class HyperbolicTangentEvaluatorTest extends LuceneTestCase {
       Assert.assertNull(result);
     }
     else{
-      Assert.assertTrue(result instanceof Double);
-      Assert.assertEquals(Math.tanh(value), result);
+      Assert.assertTrue(result instanceof Number);
+      Assert.assertEquals(Math.tanh(value), ((Number)result).doubleValue());
     }
   }
     

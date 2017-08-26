@@ -21,52 +21,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ReverseEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public ReverseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class ReverseEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public ReverseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    if(1 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
     }
-
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    List<Number> rev = new ArrayList();
-    for(int i=numbers1.size()-1; i>=0; i--) {
-      rev.add(numbers1.get(i));
-    }
-
-    return rev;
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+  public Object doWork(Object value){
+    if(null == value){
+      return null;
+    }
+    else if(value instanceof List){
+      List<?> actual = (List<?>)value;
+      
+      List<Object> reversed = new ArrayList<>();
+      for(int idx = actual.size() - 1; idx >= 0; --idx){
+        reversed.add(actual.get(idx));
+      }
+      
+      return reversed;
+    }
+    else{
+      return value;
+    }
   }
 }

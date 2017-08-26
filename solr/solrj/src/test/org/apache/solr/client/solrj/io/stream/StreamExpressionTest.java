@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -35,7 +37,7 @@ import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
 import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
@@ -1091,7 +1093,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withFunctionName("not", NotEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
         .withFunctionName("lt", LessThanEvaluator.class)
-        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("lteq", LessThanEqualToEvaluator.class)
         .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
@@ -1198,7 +1200,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .withFunctionName("not", NotEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
         .withFunctionName("lt", LessThanEvaluator.class)
-        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("lteq", LessThanEqualToEvaluator.class)
         .withFunctionName("gteq", GreaterThanEqualToEvaluator.class)
         .withFunctionName("val", RawValueEvaluator.class)
@@ -5717,17 +5719,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     List<Number> copy1 = (List<Number>)tuples.get(0).get("copy1");
-    assertTrue(copy1.size() == 10);
+    assertTrue(copy1.size() == 4);
     assertTrue(copy1.get(0).doubleValue() == 100D);
     assertTrue(copy1.get(1).doubleValue() == 500D);
     assertTrue(copy1.get(2).doubleValue() == 300D);
     assertTrue(copy1.get(3).doubleValue() == 400D);
-    assertTrue(copy1.get(4).doubleValue() == 0D);
-    assertTrue(copy1.get(5).doubleValue() == 0D);
-    assertTrue(copy1.get(6).doubleValue() == 0D);
-    assertTrue(copy1.get(7).doubleValue() == 0D);
-    assertTrue(copy1.get(8).doubleValue() == 0D);
-    assertTrue(copy1.get(9).doubleValue() == 0D);
 
     List<Number> copy2 = (List<Number>)tuples.get(0).get("copy2");
     assertTrue(copy2.size() == 4);
@@ -5993,6 +5989,17 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(8).intValue() == 9);
   }
 
+  @Test
+  public void fakeTest(){
+    NormalDistribution a = new NormalDistribution(10, 2);
+    NormalDistribution c = new NormalDistribution(100, 6);
+    double[] d = c.sample(250);
+    
+    KolmogorovSmirnovTest ks = new KolmogorovSmirnovTest();
+    double pv = ks.kolmogorovSmirnovStatistic(a, d);
+    
+    String s = "";
+  }
 
   @Test
   public void testDistributions() throws Exception {
@@ -6252,13 +6259,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     List<Number> convolution = (List<Number>)(tuples.get(0)).get("conv");
     assertTrue(convolution.size() == 7);
-    assertTrue(convolution.get(0).equals(20000D));
-    assertTrue(convolution.get(1).equals(20000D));
-    assertTrue(convolution.get(2).equals(25000D));
-    assertTrue(convolution.get(3).equals(30000D));
-    assertTrue(convolution.get(4).equals(15000D));
-    assertTrue(convolution.get(5).equals(10000D));
-    assertTrue(convolution.get(6).equals(5000D));
+    assertTrue(convolution.get(0).equals(20000L));
+    assertTrue(convolution.get(1).equals(20000L));
+    assertTrue(convolution.get(2).equals(25000L));
+    assertTrue(convolution.get(3).equals(30000L));
+    assertTrue(convolution.get(4).equals(15000L));
+    assertTrue(convolution.get(5).equals(10000L));
+    assertTrue(convolution.get(6).equals(5000L));
   }
 
 
@@ -6311,7 +6318,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
     List<Number> predictions = (List<Number>)tuple.get("pl");
-    assertList(predictions, 200.0, 400.0, 600.0, 200.0, 400.0, 800.0, 1200.0);
+    assertList(predictions, 200L, 400L, 600L, 200L, 400L, 800L, 1200L);
   }
 
 
