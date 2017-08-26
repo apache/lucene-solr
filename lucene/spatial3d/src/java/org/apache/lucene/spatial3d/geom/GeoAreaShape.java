@@ -27,9 +27,10 @@ package org.apache.lucene.spatial3d.geom;
 public interface GeoAreaShape extends GeoMembershipShape, GeoArea{
 
   /**
-   * Assess whether a shape intersects with any of the edges this shape.
-   * Note well that this method return false if the shape contains, is within
-   * or is disjoint with the given shape.
+   * Assess whether a shape intersects with any of the edges of this shape.
+   * Note well that this method must return false if the shape contains or is disjoint
+   * with the given shape.  It is permissible to return true if the shape is within the
+   * specified shape, if it is difficult to compute intersection with edges.
    *
    * @param geoShape is the shape to assess for intersection with this shape's edges.
    *
