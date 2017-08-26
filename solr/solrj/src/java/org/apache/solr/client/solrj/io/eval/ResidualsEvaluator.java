@@ -14,69 +14,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ResidualsEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public ResidualsEvaluator(StreamExpression expression,
-                            StreamFactory factory) throws IOException {
+public class ResidualsEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public ResidualsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-
-    if(3 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values (regression result and two numeric arrays) but found %d",expression,subEvaluators.size()));
-    }
   }
 
-  public List<Number> evaluate(Tuple tuple) throws IOException {
+  @Override
+  public Object doWork(Object ... values) throws IOException{
+    if(3 != values.length){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - three values expected but found %d",toExpression(constructingFactory), values.length));
+    }
+    
+    if(Arrays.stream(values).filter(value -> null == value).count() > 0){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null value found",toExpression(constructingFactory)));
+    }
 
-    StreamEvaluator r = subEvaluators.get(0);
-    StreamEvaluator a = subEvaluators.get(1);
-    StreamEvaluator b = subEvaluators.get(2);
-
-    RegressionEvaluator.RegressionTuple rt= (RegressionEvaluator.RegressionTuple)r.evaluate(tuple);
-    List<Number> listA = (List<Number>)a.evaluate(tuple);
-    List<Number> listB = (List<Number>)b.evaluate(tuple);
-    List<Number> residuals = new ArrayList();
-
-    for(int i=0; i<listA.size(); i++) {
-      double valueA = listA.get(i).doubleValue();
-      double prediction = rt.predict(valueA);
-      double valueB = listB.get(i).doubleValue();
-      double residual = valueB - prediction;
+    if(!(values[0] instanceof RegressionEvaluator.RegressionTuple)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a RegressionTuple",toExpression(constructingFactory), values[0].getClass().getSimpleName()));
+    }
+    if(!(values[1] instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list",toExpression(constructingFactory), values[1].getClass().getSimpleName()));
+    }
+    if(!(values[2] instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the third value, expecting a list",toExpression(constructingFactory), values[2].getClass().getSimpleName()));
+    }
+    if(((List<?>)values[1]).stream().filter(value -> !(value instanceof Number)).count() > 0){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a list of numbers for the second value",toExpression(constructingFactory)));
+    }
+    if(((List<?>)values[2]).stream().filter(value -> !(value instanceof Number)).count() > 0){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a list of numbers for the third value",toExpression(constructingFactory)));
+    }    
+    
+    RegressionEvaluator.RegressionTuple regressedTuple = (RegressionEvaluator.RegressionTuple)values[0];
+    List<?> l1 = (List<?>)values[1];
+    List<?> l2 = (List<?>)values[2];
+    
+    if(l2.size() < l1.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - first list (%d) has more values than the second list (%d)",toExpression(constructingFactory), l1.size(), l2.size()));      
+    }
+    
+    List<Number> residuals = new ArrayList<>();
+    for(int idx = 0; idx < l1.size(); ++idx){
+      double value1 = ((Number)l1.get(idx)).doubleValue();
+      double value2 = ((Number)l2.get(idx)).doubleValue();
+      
+      double prediction = regressedTuple.predict(value1);
+      double residual = value2 - prediction;
+      
       residuals.add(residual);
     }
-
+    
     return residuals;
   }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
+  
 }

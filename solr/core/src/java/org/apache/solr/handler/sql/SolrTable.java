@@ -36,8 +36,8 @@ import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
-import org.apache.solr.client.solrj.io.eval.BooleanEvaluator;
-import org.apache.solr.client.solrj.io.eval.EqualsEvaluator;
+import org.apache.solr.client.solrj.io.eval.RecursiveBooleanEvaluator;
+import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.GreaterThanEvaluator;
 import org.apache.solr.client.solrj.io.eval.LessThanEqualToEvaluator;
@@ -497,7 +497,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("or", OrEvaluator.class)
         .withFunctionName("not", NotEvaluator.class)
-        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
         .withFunctionName("lt", LessThanEvaluator.class)
         .withFunctionName("val", RawValueEvaluator.class)
@@ -506,7 +506,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     if(havingPredicate != null) {
-      BooleanEvaluator booleanOperation = (BooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
+      RecursiveBooleanEvaluator booleanOperation = (RecursiveBooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
       tupleStream = new HavingStream(tupleStream, booleanOperation);
     }
 
@@ -633,7 +633,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("or", OrEvaluator.class)
         .withFunctionName("not", NotEvaluator.class)
-        .withFunctionName("eq", EqualsEvaluator.class)
+        .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("val", RawValueEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
         .withFunctionName("lt", LessThanEvaluator.class)
@@ -641,7 +641,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
         .withFunctionName("gteq", GreaterThanEqualToEvaluator.class);
 
     if(havingPredicate != null) {
-      BooleanEvaluator booleanOperation = (BooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
+      RecursiveBooleanEvaluator booleanOperation = (RecursiveBooleanEvaluator)factory.constructEvaluator(StreamExpressionParser.parse(havingPredicate));
       tupleStream = new HavingStream(tupleStream, booleanOperation);
     }
 

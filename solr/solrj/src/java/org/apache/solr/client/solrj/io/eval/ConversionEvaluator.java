@@ -14,153 +14,147 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ConversionEvaluator extends ComplexEvaluator {
+public class ConversionEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+  protected static final long serialVersionUID = 1L;
 
+  private interface Converter {
+    public double convert(double value);
+  }
   enum LENGTH_CONSTANT {MILES, YARDS, FEET, INCHES, MILLIMETERS, CENTIMETERS, METERS, KILOMETERS};
-
+  
   private LENGTH_CONSTANT from;
   private LENGTH_CONSTANT to;
-  private Convert convert;
-
-  public ConversionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  
+  private Converter converter;
+  
+  public ConversionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-
-    if (3 != subEvaluators.size()) {
-      throw new EvaluatorException(new IOException(String.format(Locale.ROOT, "Invalid expression %s - expecting 3 value but found %d", expression, subEvaluators.size())));
+    
+    if(3 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 3 parameters but found %d", super.toExpression(constructingFactory), containedEvaluators.size()));
     }
-
+    
+    if(0 != containedEvaluators.subList(0, 2).stream().filter(item -> !(item instanceof RawValueEvaluator) && !(item instanceof FieldValueEvaluator)).count()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - first two parameters must be strings", super.toExpression(constructingFactory)));      
+    }
+    
+    String fromString = containedEvaluators.get(0).toExpression(factory).toString().toUpperCase(Locale.ROOT);
+    String toString = containedEvaluators.get(1).toExpression(factory).toString().toUpperCase(Locale.ROOT);
+    
     try {
-      from = LENGTH_CONSTANT.valueOf(subEvaluators.get(0).toExpression(factory).toString().toUpperCase(Locale.ROOT));
-      to = LENGTH_CONSTANT.valueOf(subEvaluators.get(1).toExpression(factory).toString().toUpperCase(Locale.ROOT));
-      this.convert = getConvert(from, to);
+      from = LENGTH_CONSTANT.valueOf(fromString);
+      to = LENGTH_CONSTANT.valueOf(toString);
+      this.converter = constructConverter(from, to);
+      
     } catch (IllegalArgumentException e) {
-      throw new EvaluatorException(e);
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - '%s' and '%s' are not both valid conversion types", super.toExpression(constructingFactory), fromString, toString));
     }
-  }
-
-  private String listParams() {
-    StringBuffer buf = new StringBuffer();
-    for(LENGTH_CONSTANT lc : LENGTH_CONSTANT.values()) {
-      if(buf.length() > 0) {
-        buf.append(", ");
-      }
-        buf.append(lc.toString());
-    }
-    return buf.toString();
+    
+    // Remove evaluators 0 and 1 because we don't actually want those used
+    containedEvaluators = containedEvaluators.subList(2, 3);
   }
 
   @Override
-  public Object evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator streamEvaluator = subEvaluators.get(2);
-    Object tupleValue = streamEvaluator.evaluate(tuple);
-
-    if (tupleValue == null) return null;
-
-    Number number = (Number)tupleValue;
-    double d = number.doubleValue();
-    return convert.convert(d);
+  public Object doWork(Object value) throws IOException{
+    
+    if(null == value){
+      return null;
+    }
+    
+    return converter.convert(((Number)value).doubleValue());
   }
-
-  private Convert getConvert(LENGTH_CONSTANT from, LENGTH_CONSTANT to) throws IOException {
+  
+  private Converter constructConverter(LENGTH_CONSTANT from, LENGTH_CONSTANT to) throws IOException {
     switch(from) {
       case INCHES:
         switch(to) {
           case MILLIMETERS:
-            return (double d) -> d*25.4;
+            return (double value) -> value * 25.4;
           case CENTIMETERS:
-            return (double d) -> d*2.54;
+            return (double value) -> value * 2.54;
           case METERS:
-            return (double d) -> d*0.0254;
+            return (double value) -> value * 0.0254;
           default:
-            throw new EvaluatorException("No conversion available from "+from+" to "+to);
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case FEET:
         switch(to) {
           case METERS:
-            return (double d) -> d * .30;
+            return (double value) -> value * .30;
+          default:
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case YARDS:
         switch(to) {
           case METERS:
-            return (double d) -> d * .91;
+            return (double value) -> value * .91;
           case KILOMETERS:
-            return (double d) -> d * 0.00091;
+            return (double value) -> value * 0.00091;
           default:
-            throw new EvaluatorException("No conversion available from "+from+" to "+to);
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case MILES:
         switch(to) {
           case KILOMETERS:
-            return (double d) -> d * 1.61;
+            return (double value) -> value * 1.61;
           default:
-            throw new EvaluatorException("No conversion available from "+from+" to "+to);
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case MILLIMETERS:
         switch (to) {
           case INCHES:
-            return (double d) -> d * 0.039;
+            return (double value) -> value * 0.039;
           default:
-            throw new EvaluatorException("No conversion available from "+from+" to "+to);
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case CENTIMETERS:
         switch(to) {
           case INCHES:
-            return (double d) -> d * 0.39;
+            return (double value) -> value * 0.39;
           default:
-            throw new EvaluatorException("No conversion available from "+from+" to "+to);
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case METERS:
         switch(to) {
           case FEET:
-            return (double d) -> d * 3.28;
+            return (double value) -> value * 3.28;
           default:
-            throw new EvaluatorException("No conversion available from "+from+" to "+to);
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       case KILOMETERS:
         switch(to) {
           case MILES:
-            return (double d) -> d * 0.62;
+            return (double value) -> value * 0.62;
           case FEET:
-            return (double d) -> d * 3280.8;
+            return (double value) -> value * 3280.8;
+          default:
+            throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
         }
       default:
-        throw new EvaluatorException("No conversion available from "+from);
+        throw new EvaluatorException(String.format(Locale.ROOT,  "No conversion available from %s to %s", from, to));
     }
   }
-
-  private interface Convert {
-    public double convert(double d);
-  }
-
+  
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-
-    for (StreamEvaluator evaluator : subEvaluators) {
+    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
+    
+    expression.addParameter(from.toString().toLowerCase(Locale.ROOT));
+    expression.addParameter(to.toString().toLowerCase(Locale.ROOT));
+    
+    for(StreamEvaluator evaluator : containedEvaluators){
       expression.addParameter(evaluator.toExpression(factory));
     }
-
     return expression;
   }
 
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(Explanation.ExpressionType.EVALUATOR)
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
 }

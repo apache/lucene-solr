@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -25,77 +26,62 @@ import java.util.Map;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class HistogramEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public HistogramEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class HistogramEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public HistogramEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+    if(containedEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
     }
-  }
-
-  public List<Tuple> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
-
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
-    }
-
-    int bins = 10;
-    if(subEvaluators.size() == 2) {
-      StreamEvaluator binsEval = subEvaluators.get(1);
-      Number binsNum = (Number) binsEval.evaluate(tuple);
-      bins = binsNum.intValue();
-    }
-
-    EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution(bins);
-    empiricalDistribution.load(column1);
-
-    List<Tuple> binList = new ArrayList();
-
-    List<SummaryStatistics> summaries = empiricalDistribution.getBinStats();
-    for(SummaryStatistics statisticalSummary : summaries) {
-      Map map = new HashMap();
-      map.put("max", statisticalSummary.getMax());
-      map.put("mean", statisticalSummary.getMean());
-      map.put("min", statisticalSummary.getMin());
-      map.put("stdev", statisticalSummary.getStandardDeviation());
-      map.put("sum", statisticalSummary.getSum());
-      map.put("N", statisticalSummary.getN());
-      map.put("var", statisticalSummary.getVariance());
-      binList.add(new Tuple(map));
-    }
-
-    return binList;
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
+  public Object doWork(Object... values) throws IOException {
+    if(Arrays.stream(values).anyMatch(item -> null == item)){
+      return null;
+    }
+    
+    List<?> sourceValues;
+    Integer bins = 10;
+    
+    if(values.length >= 1){
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]); 
+            
+      if(values.length >= 2){
+        if(values[1] instanceof Number){
+          bins = ((Number)values[1]).intValue();
+        }
+        else{
+          throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - if second parameter is provided then it must be a valid number but found %s instead",toExpression(constructingFactory), values[1].getClass().getSimpleName()));
+        }        
+      }      
+    }
+    else{
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",toExpression(constructingFactory),containedEvaluators.size()));
+    }
 
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    EmpiricalDistribution distribution = new EmpiricalDistribution(bins);
+    distribution.load(((List<?>)sourceValues).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());;
+
+    List<Map<String,Number>> histogramBins = new ArrayList<>();
+    for(SummaryStatistics binSummary : distribution.getBinStats()) {
+      Map<String,Number> map = new HashMap<>();
+      map.put("max", binSummary.getMax());
+      map.put("mean", binSummary.getMean());
+      map.put("min", binSummary.getMin());
+      map.put("stdev", binSummary.getStandardDeviation());
+      map.put("sum", binSummary.getSum());
+      map.put("N", binSummary.getN());
+      map.put("var", binSummary.getVariance());
+      histogramBins.add(map);
+    }
+    
+    return histogramBins;
   }
+    
 }

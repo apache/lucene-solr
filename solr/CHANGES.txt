@@ -43,6 +43,11 @@ Upgrade Notes
 
 * SOLR-11254: the abstract DocTransformer class now has an abstract score-less transform method variant.
 
+* SOLR-11283: all Stream Evaluators in solrj.io.eval have been refactored to have a simplier and more
+  robust structure. This simplifies and condenses the code required to implement a new Evaluator and 
+  makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
+  lists, and so forth). (Dennis Gove)
+
 New Features
 ----------------------
 

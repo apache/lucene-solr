@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,9 +68,22 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     Assert.assertEquals(2.31D, result);
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void multOneField() throws Exception{
-    factory.constructEvaluator("mult(a)");
+    StreamEvaluator evaluator = factory.constructEvaluator("mult(a)");
+    Object result;
+    
+    values.clear();
+    values.put("a", 6);
+    result = evaluator.evaluate(new Tuple(values));
+    Assert.assertTrue(result instanceof Long);
+    Assert.assertEquals(6L, result);
+    
+    values.clear();
+    values.put("a", 6.5);
+    result = evaluator.evaluate(new Tuple(values));
+    Assert.assertTrue(result instanceof Double);
+    Assert.assertEquals(6.5D, result);
   }
   
   @Test

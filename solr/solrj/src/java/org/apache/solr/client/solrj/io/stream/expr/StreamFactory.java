@@ -361,16 +361,16 @@ public class StreamFactory implements Serializable {
     
     throw new IOException(String.format(Locale.ROOT,"Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
   }
-
-  public StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
+  
+  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
     return constructEvaluator(StreamExpressionParser.parse(expressionClause));
   }
-  public StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException{
+  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException{
     String function = expression.getFunctionName();
     if(functionNames.containsKey(function)){
       Class<? extends Expressible> clazz = functionNames.get(function);
       if(Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)){
-        return (StreamEvaluator)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+        return (org.apache.solr.client.solrj.io.eval.StreamEvaluator)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
       }
     }
     

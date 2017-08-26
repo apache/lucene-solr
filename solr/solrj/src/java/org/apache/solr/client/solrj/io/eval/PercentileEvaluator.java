@@ -14,62 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.solrj.io.eval;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.io.IOException;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class PercentileEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class PercentileEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
+  }
+
+  @Override
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+    }
+    if(null == second){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    }
+    if(!(first instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a List",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    if(!(second instanceof Number)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
     
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values (array and number) but found %d",expression,subEvaluators.size()));
-    }
-  }
-
-  public Number evaluate(Tuple tuple) throws IOException {
-    StreamEvaluator colEval = subEvaluators.get(0);
-    List<Number> column = (List<Number>)colEval.evaluate(tuple);
-
-    double[] data = new double[column.size()];
-    for(int i=0; i<data.length; i++) {
-      data[i] = column.get(i).doubleValue();
-    }
-
     Percentile percentile = new Percentile();
-    percentile.setData(data);
-    StreamEvaluator numEval = subEvaluators.get(1);
-    Number num  = (Number)numEval.evaluate(tuple);
-    return percentile.evaluate(num.doubleValue());
+    percentile.setData(((List<?>)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());
+    return percentile.evaluate(((Number)second).doubleValue());    
   }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
+  
 }

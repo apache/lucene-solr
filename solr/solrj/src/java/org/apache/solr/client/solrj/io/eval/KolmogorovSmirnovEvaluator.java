@@ -17,86 +17,57 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class KolmogorovSmirnovEvaluator extends ComplexEvaluator implements Expressible {
+public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
 
   private static final long serialVersionUID = 1;
 
   public KolmogorovSmirnovEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-
-    if(subEvaluators.size() != 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
-    }
   }
-
-  public Tuple evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator se1 = subEvaluators.get(0);
-    StreamEvaluator se2 = subEvaluators.get(1);
-
+  
+  @Override
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first || (first instanceof List<?> && 0 != ((List<?>)first).stream().filter(item -> null == item).count())){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+    }
+    if(null == second || (second instanceof List<?> && 0 != ((List<?>)second).stream().filter(item -> null == item).count())){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    }
+    if(!(second instanceof List<?>) || 0 != ((List<?>)second).stream().filter(item -> !(item instanceof Number)).count()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a List of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    
     KolmogorovSmirnovTest ks = new KolmogorovSmirnovTest();
-    List<Number> sample = (List<Number>)se2.evaluate(tuple);
-    double[] data = new double[sample.size()];
+    double[] data = ((List<?>)second).stream().mapToDouble(item -> ((Number)item).doubleValue()).toArray();
+    
+    if(first instanceof RealDistribution){
+      RealDistribution realDistribution = (RealDistribution)first;
 
-    for(int i=0; i<data.length; i++) {
-      data[i] = sample.get(i).doubleValue();
-    }
-
-    Object o = se1.evaluate(tuple);
-
-    if(o instanceof RealDistribution) {
-      RealDistribution realDistribution = (RealDistribution)o;
-      double d = ks.kolmogorovSmirnovStatistic(realDistribution, data);
-      double p = ks.kolmogorovSmirnovTest(realDistribution, data);
-
-
-      Map m = new HashMap();
-      m.put("p-value", p);
-      m.put("d-statistic", d);
-      return new Tuple(m);
-    } else {
-      List<Number> sample2 = (List<Number>)o;
-      double[] data2 = new double[sample2.size()];
-      for(int i=0; i<data2.length; i++) {
-        data2[i] = sample2.get(i).doubleValue();
-      }
-
-      double d = ks.kolmogorovSmirnovStatistic(data, data2);
-      //double p = ks.(data, data2);
-      Map m = new HashMap();
-      //m.put("p-value", p);
-      m.put("d-statistic", d);
+      Map<String,Double> m = new HashMap<>();
+      m.put("p-value", ks.kolmogorovSmirnovTest(realDistribution, data));
+      m.put("d-statistic", ks.kolmogorovSmirnovStatistic(realDistribution, data));
       return new Tuple(m);
     }
-  }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    else if(first instanceof List<?> && 0 == ((List<?>)first).stream().filter(item -> !(item instanceof Number)).count()){
+      double[] data2 = ((List<?>)first).stream().mapToDouble(item -> ((Number)item).doubleValue()).toArray();
+      
+      Map<String,Double> m = new HashMap<>();
+      m.put("d-statistic", ks.kolmogorovSmirnovTest(data, data2));
+      return new Tuple(m);
+    }
+    else{
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a RealDistribution or list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
   }
 }
