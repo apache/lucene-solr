@@ -86,9 +86,10 @@ class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
 
   @Override
   public boolean intersects(GeoShape geoShape) {
-    return false;
+    // We have no way of computing this properly, so return isWithin(), as we are allowed by contract.
+    return geoShape.isWithin(this);
   }
-
+  
   @Override
   public void getBounds(Bounds bounds) {
     bounds.addPoint(this);
