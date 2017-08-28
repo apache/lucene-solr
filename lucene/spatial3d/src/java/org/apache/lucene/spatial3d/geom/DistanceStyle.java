@@ -78,6 +78,16 @@ public interface DistanceStyle {
    */
   public double computeDistance(final PlanetModel planetModel, final Plane plane, final double x, final double y, final double z, final Membership... bounds);
 
+  /** Aggregate two distances together to produce a "sum".
+   * This is usually just an addition operation, but in the case of squared distances it is more complex.
+   * @param distance1 is the first distance.
+   * @param distance2 is the second distance.
+   * @return the combined distance.
+   */
+  public default double aggregateDistances(final double distance1, final double distance2) {
+    return distance1 + distance2;
+  }
+  
   // The following methods are used to go from a distance value back to something
   // that can be used to construct a constrained shape.
   
