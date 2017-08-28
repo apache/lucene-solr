@@ -722,6 +722,20 @@ public class SimpleGeoPolygonRelationshipsTest {
     assertEquals(GeoArea.OVERLAPS,  rel);
   }
 
+  @Test
+  public void testDegeneratedPointIntersectShape(){
+    GeoBBox bBox1 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 1,0,0,1);
+    GeoBBox bBox2 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, 1,1,1,1);
+    int rel = bBox1.getRelationship(bBox2);
+    //OVERLAPS instead of WITHIN. In this case the degenerated point lies on the edge of the shape.
+    //intersects() returns true for one plane of the BBox and hence method return OVERLAPS.
+    assertEquals(GeoArea.OVERLAPS,  rel);
+    rel = bBox2.getRelationship(bBox1);
+    // The degenerated point cannot compute if it is on the edge. Uses WITHIN that is true
+    // and therefore CONTAINS
+    assertEquals(GeoArea.CONTAINS,  rel);
+  }
+
   private GeoPolygon buildConvexGeoPolygon(double lon1, double lat1,
                                            double lon2, double lat2,
                                            double lon3, double lat3,
