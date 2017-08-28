@@ -223,8 +223,8 @@ class GeoStandardPath extends GeoBasePath {
     for (PathSegment segment : segments) {
       double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
       if (distance != Double.POSITIVE_INFINITY)
-        return currentDistance + distance;
-      currentDistance += segment.fullPathDistance(distanceStyle);
+        return distanceStyle.aggregateDistances(currentDistance, distance);
+      currentDistance = distanceStyle.aggregateDistances(currentDistance, segment.fullPathDistance(distanceStyle));
     }
 
     int segmentIndex = 0;
@@ -232,9 +232,9 @@ class GeoStandardPath extends GeoBasePath {
     for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
       if (distance != Double.POSITIVE_INFINITY)
-        return currentDistance + distance;
+        return distanceStyle.aggregateDistances(currentDistance, distance);
       if (segmentIndex < segments.size())
-        currentDistance += segments.get(segmentIndex++).fullPathDistance(distanceStyle);
+        currentDistance = distanceStyle.aggregateDistances(currentDistance, segments.get(segmentIndex++).fullPathDistance(distanceStyle));
     }
 
     return Double.POSITIVE_INFINITY;
@@ -807,7 +807,7 @@ class GeoStandardPath extends GeoBasePath {
         else
           throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
       }
-      return distanceStyle.computeDistance(thePoint, x, y, z) + distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z);
+      return distanceStyle.aggregateDistances(distanceStyle.computeDistance(thePoint, x, y, z), distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z));
     }
 
     /** Compute external distance.

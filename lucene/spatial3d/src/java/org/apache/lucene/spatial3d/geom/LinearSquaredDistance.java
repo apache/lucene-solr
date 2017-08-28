@@ -52,6 +52,12 @@ public class LinearSquaredDistance implements DistanceStyle {
   }
 
   @Override
+  public double aggregateDistances(final double distance1, final double distance2) {
+    final double linearDistance = Math.sqrt(distance1) + Math.sqrt(distance2);
+    return linearDistance * linearDistance;
+  }
+
+  @Override
   public GeoPoint[] findDistancePoints(final PlanetModel planetModel, final double distanceValue, final GeoPoint startPoint, final Plane plane, final Membership... bounds) {
     throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
   }
