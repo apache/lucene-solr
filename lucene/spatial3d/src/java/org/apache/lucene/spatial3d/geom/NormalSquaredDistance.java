@@ -52,6 +52,12 @@ public class NormalSquaredDistance implements DistanceStyle {
   }
 
   @Override
+  public double aggregateDistances(final double distance1, final double distance2) {
+    final double normalDistance = Math.sqrt(distance1) + Math.sqrt(distance2);
+    return normalDistance * normalDistance;
+  }
+
+  @Override
   public GeoPoint[] findDistancePoints(final PlanetModel planetModel, final double distanceValue, final GeoPoint startPoint, final Plane plane, final Membership... bounds) {
     throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
   }
