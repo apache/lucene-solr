@@ -155,6 +155,8 @@ Other Changes
 
 * SOLR-11254: Add score-less (abstract) DocTransformer.transform method. (Christine Poerschke)
 
+* SOLR-11209: Upgrade HttpClient to 4.5.3. (Hrishikesh Gadre via Mark Miller)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
