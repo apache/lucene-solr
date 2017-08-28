@@ -31,7 +31,9 @@ import org.apache.lucene.index.IndexOptions;
  * you add the document to IndexWriter.
  */
 public class FacetField extends Field {
-  static final FieldType TYPE = new FieldType();
+  
+  /** Field type used for storing facet values: docs, freqs, and positions. */
+  public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     TYPE.freeze();
