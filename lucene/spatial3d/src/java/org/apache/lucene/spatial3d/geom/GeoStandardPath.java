@@ -808,7 +808,7 @@ class GeoStandardPath extends GeoBasePath {
           throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
       }
       return distanceStyle.aggregateDistances(distanceStyle.toAggregationForm(distanceStyle.computeDistance(thePoint, x, y, z)),
-	distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z)));
+        distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z)));
     }
 
     /** Compute external distance.
