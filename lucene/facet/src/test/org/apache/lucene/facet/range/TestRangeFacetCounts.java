@@ -18,6 +18,7 @@ package org.apache.lucene.facet.range;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,8 +29,8 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
+import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -94,6 +95,44 @@ public class TestRangeFacetCounts extends FacetTestCase {
     FacetResult result = facets.getTopChildren(10, "field");
     assertEquals("dim=field path=[] value=22 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
                  result.toString());
+    
+    r.close();
+    d.close();
+  }
+
+  public void testLongGetAllDims() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    NumericDocValuesField field = new NumericDocValuesField("field", 0L);
+    doc.add(field);
+    for(long l=0;l<100;l++) {
+      field.setLongValue(l);
+      w.addDocument(doc);
+    }
+
+    // Also add Long.MAX_VALUE
+    field.setLongValue(Long.MAX_VALUE);
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    w.close();
+
+    FacetsCollector fc = new FacetsCollector();
+    IndexSearcher s = newSearcher(r);
+    s.search(new MatchAllDocsQuery(), fc);
+
+    Facets facets = new LongRangeFacetCounts("field", fc,
+        new LongRange("less than 10", 0L, true, 10L, false),
+        new LongRange("less than or equal to 10", 0L, true, 10L, true),
+        new LongRange("over 90", 90L, false, 100L, false),
+        new LongRange("90 or above", 90L, true, 100L, false),
+        new LongRange("over 1000", 1000L, false, Long.MAX_VALUE, true));
+
+    List<FacetResult> result = facets.getAllDims(10);
+    assertEquals(1, result.size());
+    assertEquals("dim=field path=[] value=22 childCount=5\n  less than 10 (10)\n  less than or equal to 10 (11)\n  over 90 (9)\n  90 or above (10)\n  over 1000 (1)\n",
+                 result.get(0).toString());
     
     r.close();
     d.close();
