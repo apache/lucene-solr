@@ -20,6 +20,9 @@ New Features
 * LUCENE-7621: Add CoveringQuery, a query whose required number of matching
   clauses can be defined per document. (Adrien Grand)
 
+* LUCENE-7927: Add LongValueFacetCounts, to compute facet counts for individual
+  numeric values (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
