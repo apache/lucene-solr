@@ -17,6 +17,7 @@
 
 package org.apache.solr.metrics.reporters;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -34,14 +35,18 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.util.TestHarness;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testReporter() throws Exception {
+    ensureLoggingConfiguredAppropriately();
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, null, 100);
     LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
     watcher.setThreshold("INFO");
@@ -86,6 +91,12 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
       fail("No 'foobar' logs in: " + history.toString());
+    }
+  }
+
+  private static void ensureLoggingConfiguredAppropriately() throws Exception {
+    if (! log.isInfoEnabled()) {
+      fail("Test requires that log-level is at-least INFO, but INFO is disabled");
     }
   }
 }
