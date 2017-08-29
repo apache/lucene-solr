@@ -184,12 +184,6 @@ Bug Fixes
 * LUCENE-7864: IndexMergeTool is not using intermediate hard links (even
   if possible). (Dawid Weiss)
 
-* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
-  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
-  with multiple points that should match to not match. (Martijn van Groningen)
-
-* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
-
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
@@ -275,6 +269,16 @@ Other
 * LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
+
+======================= Lucene 6.6.1 =======================
+
+Bug Fixes
+
+* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
+  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
+  with multiple points that should match to not match. (Martijn van Groningen)
+
+* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
 
 ======================= Lucene 6.6.0 =======================
 
