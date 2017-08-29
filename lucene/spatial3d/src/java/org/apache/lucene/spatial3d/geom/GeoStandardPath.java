@@ -223,7 +223,7 @@ class GeoStandardPath extends GeoBasePath {
     for (PathSegment segment : segments) {
       double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
       if (distance != Double.POSITIVE_INFINITY)
-        return distanceStyle.aggregateDistances(currentDistance, distance);
+        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
       currentDistance = distanceStyle.aggregateDistances(currentDistance, segment.fullPathDistance(distanceStyle));
     }
 
@@ -232,7 +232,7 @@ class GeoStandardPath extends GeoBasePath {
     for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
       if (distance != Double.POSITIVE_INFINITY)
-        return distanceStyle.aggregateDistances(currentDistance, distance);
+        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
       if (segmentIndex < segments.size())
         currentDistance = distanceStyle.aggregateDistances(currentDistance, segments.get(segmentIndex++).fullPathDistance(distanceStyle));
     }
@@ -554,12 +554,12 @@ class GeoStandardPath extends GeoBasePath {
      *@param x is the point x.
      *@param y is the point y.
      *@param z is the point z.
-     *@return the distance metric.
+     *@return the distance metric, in aggregation form.
      */
     public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
         return Double.POSITIVE_INFINITY;
-      return distanceStyle.computeDistance(this.point, x, y, z);
+      return distanceStyle.toAggregationForm(distanceStyle.computeDistance(this.point, x, y, z));
     }
 
     /** Compute external distance.
@@ -729,13 +729,13 @@ class GeoStandardPath extends GeoBasePath {
 
     /** Compute the full distance along this path segment.
      *@param distanceStyle is the distance style.
-     *@return the distance metric.
+     *@return the distance metric, in aggregation form.
      */
     public double fullPathDistance(final DistanceStyle distanceStyle) {
       synchronized (fullDistanceCache) {
         Double dist = fullDistanceCache.get(distanceStyle);
         if (dist == null) {
-          dist = new Double(distanceStyle.computeDistance(start, end.x, end.y, end.z));
+          dist = new Double(distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z)));
           fullDistanceCache.put(distanceStyle, dist);
         }
         return dist.doubleValue();
@@ -772,7 +772,7 @@ class GeoStandardPath extends GeoBasePath {
      *@param x is the point x.
      *@param y is the point y.
      *@param z is the point z.
-     *@return the distance metric.
+     *@return the distance metric, in aggregation form.
      */
     public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
@@ -785,7 +785,7 @@ class GeoStandardPath extends GeoBasePath {
       final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
       final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
       if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION)
-        return distanceStyle.computeDistance(start, x,y,z);
+        return distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, x,y,z));
       final double normFactor = 1.0/magnitude;
       final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
       
@@ -807,7 +807,8 @@ class GeoStandardPath extends GeoBasePath {
         else
           throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
       }
-      return distanceStyle.aggregateDistances(distanceStyle.computeDistance(thePoint, x, y, z), distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z));
+      return distanceStyle.aggregateDistances(distanceStyle.toAggregationForm(distanceStyle.computeDistance(thePoint, x, y, z)),
+	distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z)));
     }
 
     /** Compute external distance.

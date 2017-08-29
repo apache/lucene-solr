@@ -52,9 +52,13 @@ public class NormalSquaredDistance implements DistanceStyle {
   }
 
   @Override
-  public double aggregateDistances(final double distance1, final double distance2) {
-    final double normalDistance = Math.sqrt(distance1) + Math.sqrt(distance2);
-    return normalDistance * normalDistance;
+  public double toAggregationForm(final double distance) {
+    return Math.sqrt(distance);
+  }
+
+  @Override
+  public double fromAggregationForm(final double aggregateDistance) {
+    return aggregateDistance * aggregateDistance;
   }
 
   @Override
