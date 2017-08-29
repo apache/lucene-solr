@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -101,8 +102,12 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
       zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
+      baseUrl = randomJetty.getBaseUrl().toString();
+      log.info("Stopping Jetty with baseUrl=" + baseUrl);
       randomJetty.stop();
       randomJetty.start(false);
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, 60);
+      log.info("Recovery complete. All replicas should be active");
       baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
@@ -159,6 +164,7 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
         try {
+          log.info("RELOADing collection=" + COLLECTION + " against baseUrl=" + baseUrl);
           rsp = solrClient.request(reload);
           fail("must have failed");
         } catch (HttpSolrClient.RemoteSolrException e) {
@@ -166,16 +172,19 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
         }
         reload.setMethod(SolrRequest.METHOD.POST);
         try {
+          log.info("RELOADing collection=" + COLLECTION + " against baseUrl=" + baseUrl + " as a POST request");
           rsp = solrClient.request(reload);
           fail("must have failed");
         } catch (HttpSolrClient.RemoteSolrException e) {
 
         }
       }
+      log.info("RELOADing collection=" + COLLECTION + " with user=harry and password=HarryIsUberCool");
       cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
           .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
       try {
+        log.info("RELOADing collection=" + COLLECTION + " with user=harry and password=Cool12345");
         cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
             .setBasicAuthCredentials("harry", "Cool12345"));
         fail("This should not succeed");
@@ -185,6 +194,8 @@ public class BasicAuthIntegrationTest extends SolrCloudTestCase {
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
+
+      log.info("Adding doc with id=4 with user=harry and password=HarryIsUberCool");
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id","4");
       UpdateRequest update = new UpdateRequest();
