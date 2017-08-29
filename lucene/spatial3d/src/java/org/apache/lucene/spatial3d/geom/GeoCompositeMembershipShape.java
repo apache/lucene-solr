@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.IOException;
+
 /**
  * GeoCompositeMembershipShape is a set of GeoMembershipShape's, treated as a unit.
  *
@@ -28,6 +31,15 @@ public class GeoCompositeMembershipShape extends GeoBaseCompositeMembershipShape
    */
   public GeoCompositeMembershipShape(PlanetModel planetModel) {
     super(planetModel);
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoCompositeMembershipShape(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    super(planetModel, inputStream, GeoMembershipShape.class);
   }
 
   @Override
