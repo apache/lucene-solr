@@ -166,6 +166,14 @@ Upgrading from Solr 6.x
   detect Java 9 correctly and setup Garbage Collector logging. If the configuration file contains
   logging options that are no longer supported with Java 9, startup will fail.
 
+* SOLR-10307: If starting Jetty without the Solr start script, you must now pass keystore and truststore
+  passwords via the env variables SOLR_SSL_KEY_STORE_PASSWORD and SOLR_SSL_TRUST_STORE_PASSWORD rather
+  than system properties.
+
+* SOLR-10379: ManagedSynonymFilterFactory has been deprecated in favor of ManagedSynonymGraphFilterFactory.
+
+* SOLR-10503: CurrencyField has been deprecated in favor of new CurrencyFieldType.
+
 New Features
 ----------------------
 * SOLR-9857, SOLR-9858: Collect aggregated metrics from nodes and shard leaders in overseer. (ab)
@@ -246,6 +254,59 @@ New Features
   also have docValues enabled. (yonik)
 
 * SOLR-11173 TermsComponent support for Points fields. (yonik)
+
+* SOLR-10849: MoreLikeThisComponent should expose setMaxDocFreqPct (maxDoc
+  frequency percentage). (Dawid Weiss)
+
+* SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs, Michael Suzuki via Mark Miller)
+
+* SOLR-10379: Add ManagedSynonymGraphFilterFactory, deprecate ManagedSynonymFilterFactory. (Steve Rowe)
+
+* SOLR-10479: Adds support for HttpShardHandlerFactory.loadBalancerRequests(MinimumAbsolute|MaximumFraction)
+  configuration. (Ramsey Haddad, Daniel Collins, Christine Poerschke)
+
+* SOLR-3702: concat(...) function query (Andrey Kudryavtsev via Mikhail Khludnev)
+
+* SOLR-10767: Add movingAvg Stream Evaluator (Joel Bernstein)
+
+* SOLR-10813: Add arraySort Stream Evaluator (Joel Bernstein)
+
+* SOLR-10696: Add cumulative probability function (Joel Bernstein)
+
+* SOLR-10765: Add anova Stream Evaluator (Joel Bernstein)
+
+* SOLR-10754: Add hist Stream Evaluator (Joel Bernstein)
+
+* SOLR-10753: Add array Stream Evaluator (Joel Bernstein)
+
+* SOLR-10747: Allow /stream handler to execute Stream Evaluators directly (Joel Bernstein)
+
+* SOLR-10743: Add sequence StreamEvaluator (Joel Bernstein)
+
+* SOLR-10684: Add finddelay Stream Evaluator (Joel Bernstein)
+
+* SOLR-10731: Add knn Streaming Expression (Joel Bernstein)
+
+* SOLR-10724: Add describe Stream Evaluator (Joel Bernstein)
+
+* SOLR-10693: Add copyOfRange Stream Evaluator (Joel Bernstein)
+
+* SOLR-10623: Add sql Streaming Expression (Joel Bernstein)
+
+* SOLR-10661: Add copyOf Stream Evaluator (Joel Bernstein)
+
+* SOLR-10663: Add distance Stream Evaluator (Joel Bernstein)
+
+* SOLR-10664: Add scale Stream Evaluator (Joel Bernstein)
+
+* SOLR-10666: Add rank transformation Stream Evaluator (Joel Bernstein)
+
+* SOLR-10662: Add length Stream Evaluator (Joel Bernstein)
+
+* SOLR-10660: Add reverse Stream Evaluator (Joel Bernstein)
+
+* SOLR-9910: Add solr/solr.cmd parameter to append jetty parameters to the start script.
+  (Mano Kovacs via Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -348,6 +409,49 @@ Bug Fixes
 
 * SOLR-8689: Fix bin/solr.cmd so it can run properly on Java 9 (Uwe Schindler, hossman)
 
+* SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
+  resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
+  (yonik)
+
+* SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
+  (Erick Erickson)
+
+* SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
+  yarn. (Hrishikesh via Mark Miller)
+
+* SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
+
+* SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
+
+* SOLR-10836: The query parsers igain, significantTerms, and tlogit (used by streaming expressions by
+  the same name) might throw a NullPointerException if the referenced field had no indexed data in some
+  shards. The fix included an optimization to use Solr's cached AtomicReader instead of re-calculating.
+  (David Smiley)
+
+* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
+
+* SOLR-10835: Add support for point fields in Export Handler (Tomás Fernández Löbbe)
+
+* SOLR-10704: REPLACENODE may cause data loss when replicationFactor is 1. (ab, shalin)
+
+* SOLR-10833: Point numeric fields should throw SolrException(BAD_REQUEST) for malformed numbers in queries.
+              Trie numeric fields should throw SolrException(BAD_REQUEST) for malformed docValues range queries.
+  (hossman, Tomás Fernández Löbbe)
+
+* SOLR-10832: Fixed VersionInfo.getMaxVersionFromIndex when using PointsField with indexed="true" (hossman)
+
+* SOLR-10763: Admin UI replication tab sometimes empty when failed replications (janhoy, Bojan Vitnik)
+
+* SOLR-10824: fix NPE ExactSharedStatsCache, fixing maxdocs skew for terms which are absent at one of shards
+when using one of Exact*StatsCache (Mikhail Khludnev)
+
+* SOLR-10963: Fix example json in MultipleAdditiveTreesModel javadocs.
+  (Stefan Langenmaier via Christine Poerschke)
+
+* SOLR-10914: RecoveryStrategy's sendPrepRecoveryCmd can get stuck for 5 minutes if leader is unloaded. (shalin)
+
+* SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
+
 Optimizations
 ----------------------
 
@@ -370,6 +474,13 @@ Optimizations
 
 * SOLR-11070: Make docValues range queries behave the same as Trie/Point fields for Double/Float Infinity cases
   (Tomás Fernández Löbbe, Andrey Kudryavtsev)
+
+* SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
+  and there are no nested facets, aggregations are computed in the first collection phase
+  so that the second phase which would normally involve calculating the domain for the bucket
+  can be skipped entirely, leading to large performance improvements. (yonik)
+
+* SOLR-10722: Speed up Solr's use of the UnifiedHighlighter be re-using FieldInfos. (David Smiley)
 
 Other Changes
 ----------------------
@@ -559,155 +670,15 @@ Other Changes
 
 * SOLR-11183: V2 APIs are now available at /api endpoint. (Ishan Chattopadhyaya)
 
-==================  6.7.0 ==================
-
-Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
-
-Versions of Major Components
----------------------
-Apache Tika 1.13
-Carrot2 3.15.0
-Velocity 1.7 and Velocity Tools 2.0
-Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.10
-Jetty 9.3.14.v20161028
-
-Detailed Change List
-----------------------
-
-Upgrade Notes
-----------------------
-
-* SOLR-10307: If starting Jetty without the Solr start script, you must now pass keystore and truststore
-  passwords via the env variables SOLR_SSL_KEY_STORE_PASSWORD and SOLR_SSL_TRUST_STORE_PASSWORD rather
-  than system properties.
-
-* SOLR-10379: ManagedSynonymFilterFactory has been deprecated in favor of ManagedSynonymGraphFilterFactory.
-
-* SOLR-10503: CurrencyField has been deprecated in favor of new CurrencyFieldType.
-
-New Features
-----------------------
-
-* SOLR-10849: MoreLikeThisComponent should expose setMaxDocFreqPct (maxDoc 
-  frequency percentage). (Dawid Weiss)
-
-* SOLR-10307: Allow Passing SSL passwords through environment variables. (Mano Kovacs, Michael Suzuki via Mark Miller)
-
-* SOLR-10379: Add ManagedSynonymGraphFilterFactory, deprecate ManagedSynonymFilterFactory. (Steve Rowe)
-
-* SOLR-10479: Adds support for HttpShardHandlerFactory.loadBalancerRequests(MinimumAbsolute|MaximumFraction)
-  configuration. (Ramsey Haddad, Daniel Collins, Christine Poerschke)
-
-* SOLR-3702: concat(...) function query (Andrey Kudryavtsev via Mikhail Khludnev)
-
-* SOLR-10767: Add movingAvg Stream Evaluator (Joel Bernstein)
-
-* SOLR-10813: Add arraySort Stream Evaluator (Joel Bernstein)
-
-* SOLR-10696: Add cumulative probability function (Joel Bernstein)
-
-* SOLR-10765: Add anova Stream Evaluator (Joel Bernstein)
-
-* SOLR-10754: Add hist Stream Evaluator (Joel Bernstein)
-
-* SOLR-10753: Add array Stream Evaluator (Joel Bernstein)
-
-* SOLR-10747: Allow /stream handler to execute Stream Evaluators directly (Joel Bernstein)
-
-* SOLR-10743: Add sequence StreamEvaluator (Joel Bernstein)
-
-* SOLR-10684: Add finddelay Stream Evaluator (Joel Bernstein)
-
-* SOLR-10731: Add knn Streaming Expression (Joel Bernstein)
-
-* SOLR-10724: Add describe Stream Evaluator (Joel Bernstein)
-
-* SOLR-10693: Add copyOfRange Stream Evaluator (Joel Bernstein)
-
-* SOLR-10623: Add sql Streaming Expression (Joel Bernstein)
-
-* SOLR-10661: Add copyOf Stream Evaluator (Joel Bernstein)
-
-* SOLR-10663: Add distance Stream Evaluator (Joel Bernstein)
-
-* SOLR-10664: Add scale Stream Evaluator (Joel Bernstein)
-
-* SOLR-10666: Add rank transformation Stream Evaluator (Joel Bernstein)
-
-* SOLR-10662: Add length Stream Evaluator (Joel Bernstein)
-
-* SOLR-10660: Add reverse Stream Evaluator (Joel Bernstein)
-
-* SOLR-9910: Add solr/solr.cmd parameter to append jetty parameters to the start script.
-  (Mano Kovacs via Mark Miller)
-
-Bug Fixes
-----------------------
-* SOLR-10723 JSON Facet API: resize() implemented incorrectly for CountSlotAcc, HllAgg.NumericAcc
-  resulting in exceptions when using a hashing faceting method and sorting by hll(numeric_field).
-  (yonik)
-
-* SOLR-10719: Creating a core.properties fails if the parent of core.properties is a symlinked dierctory
-  (Erick Erickson)
-
-* SOLR-10360: Solr HDFS snapshot export fails due to FileNotFoundException error when using MR1 instead of
-  yarn. (Hrishikesh via Mark Miller)
-
-* SOLR-10137: Ensure that ConfigSets created via API are mutable. (Hrishikesh via Mark Miller)
-
-* SOLR-10829: Fixed IndexSchema to enforce that uniqueKey can not be Points based for correctness (hossman)
-
-* SOLR-10836: The query parsers igain, significantTerms, and tlogit (used by streaming expressions by
-  the same name) might throw a NullPointerException if the referenced field had no indexed data in some
-  shards. The fix included an optimization to use Solr's cached AtomicReader instead of re-calculating.
-  (David Smiley)
-
-* SOLR-10715: /v2/ should not be an alias for /v2/collections (Cao Manh Dat)
-
-* SOLR-10835: Add support for point fields in Export Handler (Tomás Fernández Löbbe)
-
-* SOLR-10704: REPLACENODE may cause data loss when replicationFactor is 1. (ab, shalin)
-
-* SOLR-10833: Point numeric fields should throw SolrException(BAD_REQUEST) for malformed numbers in queries.
-              Trie numeric fields should throw SolrException(BAD_REQUEST) for malformed docValues range queries.
-  (hossman, Tomás Fernández Löbbe)
-
-* SOLR-10832: Fixed VersionInfo.getMaxVersionFromIndex when using PointsField with indexed="true" (hossman)
-
-* SOLR-10763: Admin UI replication tab sometimes empty when failed replications (janhoy, Bojan Vitnik)
-
-* SOLR-10824: fix NPE ExactSharedStatsCache, fixing maxdocs skew for terms which are absent at one of shards
-when using one of Exact*StatsCache (Mikhail Khludnev)
-
-* SOLR-10963: Fix example json in MultipleAdditiveTreesModel javadocs.
-  (Stefan Langenmaier via Christine Poerschke)
-
-* SOLR-10914: RecoveryStrategy's sendPrepRecoveryCmd can get stuck for 5 minutes if leader is unloaded. (shalin)
-
-* SOLR-11198: downconfig downloads empty file as folder (Erick Erickson)
-
-Optimizations
-----------------------
-* SOLR-10634: JSON Facet API: When a field/terms facet will retrieve all buckets (i.e. limit:-1)
-  and there are no nested facets, aggregations are computed in the first collection phase
-  so that the second phase which would normally involve calculating the domain for the bucket
-  can be skipped entirely, leading to large performance improvements. (yonik)
-
-* SOLR-10722: Speed up Solr's use of the UnifiedHighlighter be re-using FieldInfos. (David Smiley)
-
-Other Changes
-----------------------
-
 * SOLR-10617: JDBCStream accepts columns of type TIME, DATE & TIMESTAMP as well as CLOBs and decimal
   numeric types (James Dyer)
 
 * SOLR-10400: Replace (instanceof TrieFooField || instanceof FooPointField) constructs with
   FieldType.getNumberType() or SchemaField.getSortField() where appropriate. (hossman, Steve Rowe)
-  
-* SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in 
+
+* SOLR-10438: Assign explicit useDocValuesAsStored values to all points field types in
   schema-point.xml/TestPointFields. (hossman, Steve Rowe)
-  
+
 * LUCENE-7705: Allow CharTokenizer-derived tokenizers and KeywordTokenizer to configure the max token length.
   (Amrit Sarkar via Erick Erickson)
 
@@ -729,9 +700,9 @@ Other Changes
 * SOLR-10761: Switch trie numeric/date fields to points in data-driven-enabled example and test schemas.
   (Steve Rowe)
 
-* SOLR-10851: SolrClients should clarify expectations for solrServerUrl parameter (Jason Gerlowski 
+* SOLR-10851: SolrClients should clarify expectations for solrServerUrl parameter (Jason Gerlowski
   via Tomás Fernández Löbbe)
-  
+
 * SOLR-10891: BBoxField should support point-based number sub-fields. (Steve Rowe)
 
 * SOLR-10834: Fixed tests and test configs to stop using numeric uniqueKey fields (hossman)
