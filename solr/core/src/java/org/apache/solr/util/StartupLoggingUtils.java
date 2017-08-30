@@ -112,4 +112,18 @@ public final class StartupLoggingUtils {
     log.warn("{} Dynamic log manipulation currently only supported for Log4j. "
         + "Please consult your logging framework of choice on how to configure the appropriate logging.", msg);
   }
+
+  /**
+   * Return a string representing the current static ROOT logging level
+   * @return a string TRACE, DEBUG, WARN, ERROR or INFO representing current log level. Default is INFO
+   */
+  public static String getLogLevelString() {
+    final Logger rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+    if (rootLogger.isTraceEnabled()) return "TRACE";
+    else if (rootLogger.isDebugEnabled()) return "DEBUG";
+    else if (rootLogger.isInfoEnabled()) return "INFO";
+    else if (rootLogger.isWarnEnabled()) return "WARN";
+    else if (rootLogger.isErrorEnabled()) return "ERROR";
+    else return "INFO";
+  }
 }
