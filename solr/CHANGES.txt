@@ -153,7 +153,7 @@ when using one of Exact*StatsCache (Mikhail Khludnev)
 * SOLR-10983: Fix DOWNNODE -> queue-work explosion (Scott Blum, Joshua Humphries) Backported for potential 6.7 release
 
 * SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
-  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
+  them all to the transient lists. (Erick Erickson)
 
 Optimizations
 ----------------------
