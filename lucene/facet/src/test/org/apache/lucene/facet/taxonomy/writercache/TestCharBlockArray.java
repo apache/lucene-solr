@@ -27,11 +27,9 @@ import java.nio.file.Path;
 
 import org.apache.lucene.facet.FacetTestCase;
 
-import org.junit.Test;
-
 public class TestCharBlockArray extends FacetTestCase {
 
-  @Test public void testArray() throws Exception {
+  public void testArray() throws Exception {
     CharBlockArray array = new CharBlockArray();
     StringBuilder builder = new StringBuilder();
 
