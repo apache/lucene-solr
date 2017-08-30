@@ -96,6 +96,8 @@ Bug Fixes
   contrib/ltr OriginalScoreFeature issues in SolrCloud mode.
   (Yuki Yano, Jonathan Gonzalez, Ryan Yacyshyn, Christine Poerschke)
 
+* SOLR-11278: Stopping CDCR should cancel a running bootstrap operation. (Amrit Sarkar, shalin)
+
 Optimizations
 ----------------------
 

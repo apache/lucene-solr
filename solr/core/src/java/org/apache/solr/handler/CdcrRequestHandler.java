@@ -713,7 +713,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private static class BootstrapCallable implements Callable<Boolean>, Closeable {
+  static class BootstrapCallable implements Callable<Boolean>, Closeable {
     private final String masterUrl;
     private final SolrCore core;
     private volatile boolean closed = false;
