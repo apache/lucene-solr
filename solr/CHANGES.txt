@@ -730,7 +730,7 @@ Bug Fixes
 * SOLR-10908: CloudSolrStream.toExpression incorrectly handles fq clauses (Rohit Singh via Erick Erickson)
 
 * SOLR-11177: CoreContainer.load needs to send lazily loaded core descriptors to the proper list rather than send
-  them all to the transient lists. (Erick Erickson) (note, not in 7.0, is in 7.1)
+  them all to the transient lists. (Erick Erickson)
 
 * SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
   (Erick Erickson)
