@@ -30,12 +30,10 @@ import org.junit.Test;
 public class RandomBinaryCodecTest extends RandomGeoShapeGenerator{
 
   @Test
-  @Repeat(iterations = 100)
-  public void testRandomShapeCodec() throws IOException{
+  @Repeat(iterations = 10)
+  public void testRandomPointCodec() throws IOException{
     PlanetModel planetModel = randomPlanetModel();
-    int type = randomShapeType();
-
-    GeoShape shape = randomGeoShape(type, planetModel);
+    GeoPoint shape = randomGeoPoint(planetModel, getEmptyConstraint());
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     SerializableObject.writeObject(outputStream, shape);
     ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
@@ -43,5 +41,29 @@ public class RandomBinaryCodecTest extends RandomGeoShapeGenerator{
     assertEquals(shape, shapeCopy);
   }
 
+  @Test
+  @Repeat(iterations = 100)
+  public void testRandomPlanetObjectCodec() throws IOException{
+    PlanetModel planetModel = randomPlanetModel();
+    int type = randomShapeType();
+    GeoShape shape = randomGeoShape(type, planetModel);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    SerializableObject.writePlanetObject(outputStream, shape);
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    SerializableObject shapeCopy = SerializableObject.readPlanetObject(inputStream);
+    assertEquals(shape, shapeCopy);
+  }
 
+  @Test
+  @Repeat(iterations = 100)
+  public void testRandomShapeCodec() throws IOException{
+    PlanetModel planetModel = randomPlanetModel();
+    int type = randomShapeType();
+    GeoShape shape = randomGeoShape(type, planetModel);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    SerializableObject.writeObject(outputStream, shape);
+    ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+    SerializableObject shapeCopy = SerializableObject.readObject(planetModel, inputStream);
+    assertEquals(shape, shapeCopy);
+  }
 }
