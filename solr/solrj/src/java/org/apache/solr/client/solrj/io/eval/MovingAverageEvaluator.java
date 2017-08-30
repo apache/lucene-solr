@@ -22,63 +22,45 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class MovingAverageEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public MovingAverageEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class MovingAverageEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public MovingAverageEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
-    }
   }
 
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval = subEvaluators.get(0);
-    StreamEvaluator windowEval = subEvaluators.get(1);
-
-    int window = ((Number)windowEval.evaluate(tuple)).intValue();
-    List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
-
-    if(window > numbers.size()) {
-      throw new IOException("The window size cannot be larger then the array");
+  @Override
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
     }
-
-    List<Number> moving = new ArrayList();
-
-    DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics(window);
-    for(int i=0; i<numbers.size(); i++) {
-      descriptiveStatistics.addValue(numbers.get(i).doubleValue());
-      if(descriptiveStatistics.getN() >= window) {
-        moving.add(descriptiveStatistics.getMean());
-      }
+    if(null == second){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
-
+    if(!(first instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a List",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    if(!(second instanceof Number)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    }
+    
+    List<?> values = (List<?>)first;
+    int window = ((Number)second).intValue();
+    
+    List<Number> moving = new ArrayList<>();
+    DescriptiveStatistics slider = new DescriptiveStatistics(window);
+    for(Object value : values){
+      slider.addValue(((Number)value).doubleValue());
+      
+      if(slider.getN() >= window){
+        moving.add(slider.getMean());
+      }      
+    }
+    
     return moving;
   }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
+  
 }

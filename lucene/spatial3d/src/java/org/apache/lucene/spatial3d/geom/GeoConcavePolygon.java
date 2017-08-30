@@ -21,6 +21,9 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 
 /**
  * GeoConcavePolygon objects are generic building blocks of more complex structures.
@@ -75,7 +78,11 @@ class GeoConcavePolygon extends GeoBasePolygon {
   public GeoConcavePolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final List<GeoPolygon> holes) {
     super(planetModel);
     this.points = pointList;
-    this.holes = holes;
+    if (holes != null && holes.size() == 0) {
+      this.holes = null;
+    } else {
+      this.holes = holes;
+    }
     this.isInternalEdges = new BitSet();
     done(false);
   }
@@ -111,7 +118,11 @@ class GeoConcavePolygon extends GeoBasePolygon {
     final boolean returnEdgeInternal) {
     super(planetModel);
     this.points = pointList;
-    this.holes = holes;
+    if (holes != null && holes.size() == 0) {
+      this.holes = null;
+    } else {
+      this.holes = holes;
+    }
     this.isInternalEdges = internalEdgeFlags;
     done(returnEdgeInternal);
   }
@@ -143,7 +154,11 @@ class GeoConcavePolygon extends GeoBasePolygon {
     final List<GeoPolygon> holes) {
     super(planetModel);
     points = new ArrayList<>();
-    this.holes = holes;
+    if (holes != null && holes.size() == 0) {
+      this.holes = null;
+    } else {
+      this.holes = holes;
+    }
     isInternalEdges = new BitSet();
     points.add(new GeoPoint(planetModel, startLatitude, startLongitude));
   }
@@ -300,6 +315,31 @@ class GeoConcavePolygon extends GeoBasePolygon {
       index += points.size();
     }
     return index;
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoConcavePolygon(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    super(planetModel);
+    this.points = java.util.Arrays.asList(SerializableObject.readPointArray(planetModel, inputStream));
+    final List<GeoPolygon> holes = java.util.Arrays.asList(SerializableObject.readPolygonArray(planetModel, inputStream));
+    if (holes != null && holes.size() == 0) {
+      this.holes = null;
+    } else {
+      this.holes = holes;
+    }
+    this.isInternalEdges = SerializableObject.readBitSet(inputStream);
+    done(this.isInternalEdges.get(points.size()-1));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writePointArray(outputStream, points);
+    SerializableObject.writePolygonArray(outputStream, holes);
+    SerializableObject.writeBitSet(outputStream, isInternalEdges);
   }
 
   @Override
@@ -492,7 +532,7 @@ class GeoConcavePolygon extends GeoBasePolygon {
   public boolean equals(Object o) {
     if (!(o instanceof GeoConcavePolygon))
       return false;
-    GeoConcavePolygon other = (GeoConcavePolygon) o;
+    final GeoConcavePolygon other = (GeoConcavePolygon) o;
     if (!super.equals(other))
       return false;
     if (!other.isInternalEdges.equals(isInternalEdges))

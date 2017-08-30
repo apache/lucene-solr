@@ -107,6 +107,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
+  /** edgegrams for searching short prefixes without Prefix Query 
+   * that's  controlled by {@linkplain #minPrefixChars} */
+  protected final static String TEXTGRAMS_FIELD_NAME = "textgrams";
+
   /** Field name used for the indexed text. */
   protected final static String TEXT_FIELD_NAME = "text";
 
@@ -353,7 +357,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
       @Override
       protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-        if (fieldName.equals("textgrams") && minPrefixChars > 0) {
+        assert !(fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars == 0) 
+                : "no need \"textgrams\" when minPrefixChars="+minPrefixChars;
+        if (fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars > 0) {
           // TODO: should use an EdgeNGramTokenFilterFactory here
           TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
           return new TokenStreamComponents(components.getTokenizer(), filter);
@@ -410,7 +416,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     Document doc = new Document();
     FieldType ft = getTextFieldType();
     doc.add(new Field(TEXT_FIELD_NAME, textString, ft));
-    doc.add(new Field("textgrams", textString, ft));
+    if (minPrefixChars>0) {
+      doc.add(new Field(TEXTGRAMS_FIELD_NAME, textString, ft));
+    }
     doc.add(new StringField(EXACT_TEXT_FIELD_NAME, textString, Field.Store.NO));
     doc.add(new BinaryDocValuesField(TEXT_FIELD_NAME, text));
     doc.add(new NumericDocValuesField("weight", weight));
@@ -474,7 +482,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   protected Query getLastTokenQuery(String token) throws IOException {
     if (token.length() < minPrefixChars) {
       // The leading ngram was directly indexed:
-      return new TermQuery(new Term("textgrams", token));
+      return new TermQuery(new Term(TEXTGRAMS_FIELD_NAME, token));
     }
 
     return new PrefixQuery(new Term(TEXT_FIELD_NAME, token));

@@ -17,64 +17,51 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class AscEvaluator extends ComplexEvaluator implements Expressible {
-
+public class AscEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   private static final long serialVersionUID = 1;
 
   public AscEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
+  }
 
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+  @Override
+  public Object doWork(Object value) throws IOException {
+    if(null == value){
+      return value;
+    }
+    else if(!(value instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a List",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    }
+    
+    List<?> list = (List<?>)value;
+    
+    if(0 == list.size()){
+      return list;
     }
 
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    List<Number> asc = new ArrayList();
-    asc.addAll(numbers1);
-    Collections.sort(asc, new Comparator<Number>() {
-      @Override
-      public int compare(Number a, Number b) {
-        return new BigDecimal(a.toString()).compareTo(new BigDecimal(b.toString()));
-
+    // Validate all of same type and are comparable
+    Object checkingObject = list.get(0);
+    for(int idx = 0; idx < list.size(); ++idx){
+      Object item = list.get(0);
+      
+      if(null == item){
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found null value",toExpression(constructingFactory)));
       }
-    });
+      else if(!(item instanceof Comparable<?>)){
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found non-comparable value %s of type %s",toExpression(constructingFactory), item.toString(), item.getClass().getSimpleName()));
+      }
+      else if(!item.getClass().getCanonicalName().equals(checkingObject.getClass().getCanonicalName())){
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - value %s is of type %s but we are expeting type %s",toExpression(constructingFactory), item.toString(), item.getClass().getSimpleName(), checkingObject.getClass().getCanonicalName()));
+      }
+    }
 
-    return asc;
-  }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    return list.stream().sorted((left,right) -> ((Comparable)left).compareTo((Comparable)right)).collect(Collectors.toList());
   }
 }

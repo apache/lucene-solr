@@ -24,16 +24,16 @@ import java.util.PriorityQueue;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.eval.FieldEvaluator;
+import org.apache.solr.client.solrj.io.eval.FieldValueEvaluator;
 import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class FieldEvaluatorTest extends LuceneTestCase {
+public class FieldValueEvaluatorTest extends LuceneTestCase {
 
   Map<String, Object> values;
   
-  public FieldEvaluatorTest() {
+  public FieldValueEvaluatorTest() {
     super();
     
     values = new HashMap<String,Object>();
@@ -52,15 +52,15 @@ public class FieldEvaluatorTest extends LuceneTestCase {
     Tuple tuple = new Tuple(values);
     
     for(String fieldName : new String[]{ "a", "b", "c", "d", "e" }){
-      Assert.assertTrue(new FieldEvaluator(fieldName).evaluate(tuple) instanceof Collection);
-      Assert.assertEquals(2, ((Collection<?>)new FieldEvaluator(fieldName).evaluate(tuple)).size());
+      Assert.assertTrue(new FieldValueEvaluator(fieldName).evaluate(tuple) instanceof Collection);
+      Assert.assertEquals(2, ((Collection<?>)new FieldValueEvaluator(fieldName).evaluate(tuple)).size());
     }
     
-    Assert.assertEquals(false, ((Collection<?>)new FieldEvaluator("a").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1.1, ((Collection<?>)new FieldEvaluator("b").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1, ((Collection<?>)new FieldEvaluator("c").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1L, ((Collection<?>)new FieldEvaluator("d").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals("second", ((Collection<?>)new FieldEvaluator("e").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(false, ((Collection<?>)new FieldValueEvaluator("a").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1.1, ((Collection<?>)new FieldValueEvaluator("b").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1, ((Collection<?>)new FieldValueEvaluator("c").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1L, ((Collection<?>)new FieldValueEvaluator("d").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals("second", ((Collection<?>)new FieldValueEvaluator("e").evaluate(tuple)).toArray()[1]);
   }
   
   @Test
@@ -75,15 +75,15 @@ public class FieldEvaluatorTest extends LuceneTestCase {
     Tuple tuple = new Tuple(values);
     
     for(String fieldName : new String[]{ "a", "b", "c", "d", "e" }){
-      Assert.assertTrue(new FieldEvaluator(fieldName).evaluate(tuple) instanceof Collection);
-      Assert.assertEquals(2, ((Collection<?>)new FieldEvaluator(fieldName).evaluate(tuple)).size());
+      Assert.assertTrue(new FieldValueEvaluator(fieldName).evaluate(tuple) instanceof Collection);
+      Assert.assertEquals(2, ((Collection<?>)new FieldValueEvaluator(fieldName).evaluate(tuple)).size());
     }
     
-    Assert.assertEquals(false, ((Collection<?>)new FieldEvaluator("a").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1.1, ((Collection<?>)new FieldEvaluator("b").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1, ((Collection<?>)new FieldEvaluator("c").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1L, ((Collection<?>)new FieldEvaluator("d").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals("second", ((Collection<?>)new FieldEvaluator("e").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(false, ((Collection<?>)new FieldValueEvaluator("a").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1.1, ((Collection<?>)new FieldValueEvaluator("b").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1, ((Collection<?>)new FieldValueEvaluator("c").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1L, ((Collection<?>)new FieldValueEvaluator("d").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals("second", ((Collection<?>)new FieldValueEvaluator("e").evaluate(tuple)).toArray()[1]);
   }
   
   @SuppressWarnings("serial")
@@ -100,15 +100,15 @@ public class FieldEvaluatorTest extends LuceneTestCase {
     Tuple tuple = new Tuple(values);
     
     for(String fieldName : new String[]{ "a", "b", "c", "d", "e" }){
-      Assert.assertTrue(new FieldEvaluator(fieldName).evaluate(tuple) instanceof Collection);
-      Assert.assertEquals(2, ((Collection<?>)new FieldEvaluator(fieldName).evaluate(tuple)).size());
+      Assert.assertTrue(new FieldValueEvaluator(fieldName).evaluate(tuple) instanceof Collection);
+      Assert.assertEquals(2, ((Collection<?>)new FieldValueEvaluator(fieldName).evaluate(tuple)).size());
     }
     
     // the priority queue is doing natural ordering, so false is first
-    Assert.assertEquals(true, ((Collection<?>)new FieldEvaluator("a").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1.1, ((Collection<?>)new FieldEvaluator("b").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1, ((Collection<?>)new FieldEvaluator("c").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals(1L, ((Collection<?>)new FieldEvaluator("d").evaluate(tuple)).toArray()[1]);
-    Assert.assertEquals("second", ((Collection<?>)new FieldEvaluator("e").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(true, ((Collection<?>)new FieldValueEvaluator("a").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1.1, ((Collection<?>)new FieldValueEvaluator("b").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1, ((Collection<?>)new FieldValueEvaluator("c").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals(1L, ((Collection<?>)new FieldValueEvaluator("d").evaluate(tuple)).toArray()[1]);
+    Assert.assertEquals("second", ((Collection<?>)new FieldValueEvaluator("e").evaluate(tuple)).toArray()[1]);
   }
 }

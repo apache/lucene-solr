@@ -19,41 +19,44 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class NotEvaluator extends BooleanEvaluator {
+public class NotEvaluator extends RecursiveBooleanEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public NotEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    if(containedEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+    }
+  }
+  
+  protected Checker constructChecker(Object value) throws IOException{
+    return null;
+  }
+  
+  public Object doWork(Object ... values) throws IOException{
+    if(1 != values.length){
+      throw new IOException(String.format(Locale.ROOT, "Expecting 1 value but found %d", values.length));
+    }
+    
+    return doWork(values[0]);
+  }
+
+  public Object doWork(Object value) {
+    if(null == value){
+      return null;
+    }
+    else if(value instanceof List){
+      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue));
+    }
+    else{
+      // we know it's a boolean
+      return !((Boolean)value);
     }
   }
 
-  @Override
-  public Boolean evaluate(Tuple tuple) throws IOException {
-    
-    List<Object> results = evaluateAll(tuple);
-    
-    if(1 != results.size()){
-      String message = String.format(Locale.ROOT,"%s(...) only works with 1 value but %d were provided", constructingFactory.getFunctionName(getClass()), results.size());
-      throw new IOException(message);
-    }
-
-    Object result = results.get(0);
-    if(null == result){
-      throw new IOException(String.format(Locale.ROOT,"Unable to evaluate %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
-    }
-    if(!(result instanceof Boolean)){
-      throw new IOException(String.format(Locale.ROOT,"Unable to evaluate %s(...) of a non-boolean value [%s]", constructingFactory.getFunctionName(getClass()), results.stream().map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
-    }
-    
-    return !((Boolean)result);
-  }
 }

@@ -55,10 +55,9 @@ import org.apache.lucene.util.StringHelper;
  * int as the internal representation here cannot address
  * more than MAX_INT unique terms.  Also, typically this
  * class is used on fields with relatively few unique terms
- * vs the number of documents.  In addition, there is an
- * internal limit (16 MB) on how many bytes each chunk of
- * documents may consume.  If you trip this limit you'll hit
- * an IllegalStateException.
+ * vs the number of documents. A previous internal limit (16 MB)
+ * on how many bytes each chunk of documents may consume has been
+ * increased to 2 GB.
  *
  * Deleted documents are skipped during uninversion, and if
  * you look them up you'll get 0 ords.
@@ -69,11 +68,10 @@ import org.apache.lucene.util.StringHelper;
  * are also de-dup'd (ie if doc has same term more than once
  * in this field, you'll only get that ord back once).
  *
- * This class
- * will create its own term index internally, allowing to
- * create a wrapped TermsEnum that can handle ord.  The
- * {@link #getOrdTermsEnum} method then provides this
- * wrapped enum.
+ * This class will create its own term index internally, allowing to
+ * create a wrapped TermsEnum that can handle ord.
+ * The {@link #getOrdTermsEnum} method then provides this wrapped
+ * enum.
  *
  * The RAM consumption of this class can be high!
  *
@@ -81,7 +79,7 @@ import org.apache.lucene.util.StringHelper;
  */
 
 /*
- * Final form of the un-inverted field:
+ * The un-inverted field:
  *   Each document points to a list of term numbers that are contained in that document.
  *
  *   Term numbers are in sorted order, and are encoded as variable-length deltas from the
@@ -89,13 +87,17 @@ import org.apache.lucene.util.StringHelper;
  *   term number of 0 signals the end of the termNumber list.
  *
  *   There is a single int[maxDoc()] which either contains a pointer into a byte[] for
- *   the termNumber lists, or directly contains the termNumber list if it fits in the 4
- *   bytes of an integer.  If the first byte in the integer is 1, the next 3 bytes
- *   are a pointer into a byte[] where the termNumber list starts.
+ *   the termNumber lists, or directly contains the termNumber list if it fits as a vInt-list
+ *   in the 4 bytes of an integer. As bit 7 within each byte is used in the vInt encoding to
+ *   signal overflow into the next byte, bit 7 of the highest byte (bit 31 in the full integer)
+ *   will never be 1. If bit 31 in the integer is set, this signals a pointer and bit 0-30
+ *   is then the value of the pointer into a byte[] where the termNumber list starts.
  *
- *   There are actually 256 byte arrays, to compensate for the fact that the pointers
- *   into the byte arrays are only 3 bytes long.  The correct byte array for a document
- *   is a function of its id.
+ *   A single entry is thus either 0b0xxxxxxxx_xxxxxxxx_xxxxxxxx_xxxxxxxx holding 0-4 vInts
+ *   (low byte first) or 0b1xxxxxxxx_xxxxxxxx_xxxxxxxx_xxxxxxxx holding a 31-bit pointer.
+ *
+ *   There are 256 byte arrays, as the previous version of DocTermOrds had a pointer limit
+ *   of 24 bits / 3 bytes. The correct byte array for a document is a function of its id.
  *
  *   To save space and speed up faceting, any term that matches enough documents will
  *   not be un-inverted... it will be skipped while building the un-inverted field structure,
@@ -107,7 +109,6 @@ import org.apache.lucene.util.StringHelper;
  *   is stored, along with its corresponding term number, and this is used as an
  *   index to find the closest term and iterate until the desired number is hit (very
  *   much like Lucene's own internal term index).
- *
  */
 
 public class DocTermOrds implements Accountable {
@@ -152,6 +153,9 @@ public class DocTermOrds implements Accountable {
   protected long sizeOfIndexedStrings;
 
   /** Holds the indexed (by default every 128th) terms. */
+  // TODO: This seems like an obvious candidate for using BytesRefArray extended with binarySearch
+  // This would save heap space as well as avoid a lot of small Objects (BytesRefs).
+  // This would also increase data locality for binarySearch lookups, potentially making it faster.
   protected BytesRef[] indexedTermsArray = new BytesRef[0];
 
   /** If non-null, only terms matching this prefix were
@@ -170,7 +174,9 @@ public class DocTermOrds implements Accountable {
    * Normally, docValues should be used in preference to DocTermOrds. */
   protected boolean checkForDocValues = true;
 
+  // TODO: Why is indexedTermsArray not part of this?
   /** Returns total bytes used. */
+  @Override
   public long ramBytesUsed() {
     // can cache the mem size since it shouldn't change
     if (memsz!=0) return memsz;
@@ -180,11 +186,15 @@ public class DocTermOrds implements Accountable {
       for (byte[] arr : tnums)
         if (arr != null) sz += arr.length;
     }
+    if (indexedTermsArray != null) {
+      // assume 8 byte references?
+      sz += 8+8+8+8+(indexedTermsArray.length<<3)+sizeOfIndexedStrings;
+    }
     memsz = sz;
     return sz;
   }
 
-  /** Inverts all terms */
+  /** Inverts all terms. */
   public DocTermOrds(LeafReader reader, Bits liveDocs, String field) throws IOException {
     this(reader, liveDocs, field, null, Integer.MAX_VALUE);
   }
@@ -374,10 +384,9 @@ public class DocTermOrds implements Accountable {
           lastTerm[doc] = termNum;
           int val = index[doc];
 
-          if ((val & 0xff)==1) {
-            // index into byte array (actually the end of
-            // the doc-specific byte[] when building)
-            int pos = val >>> 8;
+          if ((val & 0x80000000) != 0) {
+            // index into byte array (actually the end of the doc-specific byte[] when building)
+            int pos = val & 0x7fffffff;
             int ilen = vIntSize(delta);
             byte[] arr = bytes[doc];
             int newend = pos+ilen;
@@ -395,7 +404,7 @@ public class DocTermOrds implements Accountable {
               bytes[doc] = newarr;
             }
             pos = writeInt(delta, arr, pos);
-            index[doc] = (pos<<8) | 1;  // update pointer to end index in byte[]
+            index[doc] = pos | 0x80000000;  // update pointer to end index in byte[]
           } else {
             // OK, this int has data in it... find the end (a zero starting byte - not
             // part of another number, hence not following a byte with the high bit set).
@@ -430,7 +439,7 @@ public class DocTermOrds implements Accountable {
                 val >>>=8;
               }
               // point at the end index in the byte[]
-              index[doc] = (endPos<<8) | 1;
+              index[doc] = endPos | 0x80000000;
               bytes[doc] = tempArr;
               tempArr = new byte[12];
             }
@@ -480,14 +489,11 @@ public class DocTermOrds implements Accountable {
           for (int doc=docbase; doc<lim; doc++) {
             //System.out.println("  pass=" + pass + " process docID=" + doc);
             int val = index[doc];
-            if ((val&0xff) == 1) {
-              int len = val >>> 8;
+            if ((val & 0x80000000) != 0) {
+              int len = val & 0x7fffffff;
               //System.out.println("    ptr pos=" + pos);
-              index[doc] = (pos<<8)|1; // change index to point to start of array
-              if ((pos & 0xff000000) != 0) {
-                // we only have 24 bits for the array index
-                throw new IllegalStateException("Too many values for UnInvertedField faceting on field "+field);
-              }
+              //index[doc] = (pos<<8)|1; // change index to point to start of array
+              index[doc] = pos | 0x80000000; // change index to point to start of array
               byte[] arr = bytes[doc];
               /*
               for(byte b : arr) {
@@ -497,19 +503,15 @@ public class DocTermOrds implements Accountable {
               bytes[doc] = null;        // IMPORTANT: allow GC to avoid OOM
               if (target.length <= pos + len) {
                 int newlen = target.length;
-                /*** we don't have to worry about the array getting too large
-                 * since the "pos" param will overflow first (only 24 bits available)
-                if ((newlen<<1) <= 0) {
-                  // overflow...
-                  newlen = Integer.MAX_VALUE;
-                  if (newlen <= pos + len) {
-                    throw new SolrException(400,"Too many terms to uninvert field!");
+                while (newlen <= pos + len) {
+                  if ((newlen<<=1) < 0) { // Double until overflow
+                    newlen = Integer.MAX_VALUE - 16; // ArrayList.MAX_ARRAY_SIZE says 8. We double that to be sure
+                    if (newlen <= pos + len) {
+                      throw new IllegalStateException(
+                          "Too many terms (> Integer.MAX_VALUE-16) to uninvert field '" + field + "'");
+                    }
                   }
-                } else {
-                  while (newlen <= pos + len) newlen<<=1;  // doubling strategy
                 }
-                ****/
-                while (newlen <= pos + len) newlen<<=1;  // doubling strategy                 
                 byte[] newtarget = new byte[newlen];
                 System.arraycopy(target, 0, newtarget, 0, pos);
                 target = newtarget;
@@ -544,23 +546,24 @@ public class DocTermOrds implements Accountable {
 
   /** Number of bytes to represent an unsigned int as a vint. */
   private static int vIntSize(int x) {
-    if ((x & (0xffffffff << (7*1))) == 0 ) {
-      return 1;
-    }
-    if ((x & (0xffffffff << (7*2))) == 0 ) {
-      return 2;
-    }
-    if ((x & (0xffffffff << (7*3))) == 0 ) {
-      return 3;
-    }
-    if ((x & (0xffffffff << (7*4))) == 0 ) {
-      return 4;
-    }
-    return 5;
+    // Tests outside of this code base shows that the previous conditional-based vIntSize is fairly slow until
+    // JITted and still about 1/3 slower after JIT than the numberOfLeadingZeros version below.
+    return BLOCK7[Integer.numberOfLeadingZeros(x)]; // Intrinsic on modern CPUs
   }
+  private final static byte[] BLOCK7 = new byte[]{
+          5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1};
 
   // todo: if we know the size of the vInt already, we could do
   // a single switch on the size
+
+  /**
+   * Write the x value as vInt at pos in arr, returning the new endPos. This requires arr to be capable of holding the
+   * bytes needed to represent x. Array length checking should be performed beforehand.
+   * @param x   the value to write as vInt.
+   * @param arr the array holding vInt-values.
+   * @param pos the position in arr where the vInt representation of x should be written.
+   * @return the new end position after writing x at pos.
+   */
   private static int writeInt(int x, byte[] arr, int pos) {
     int a;
     a = (x >>> (7*4));
@@ -830,9 +833,9 @@ public class DocTermOrds implements Accountable {
     public void setDocument(int docID) {
       tnum = 0;
       final int code = index[docID];
-      if ((code & 0xff)==1) {
+      if ((code & 0x80000000) != 0) {
         // a pointer
-        upto = code>>>8;
+        upto = code & 0x7fffffff;
         //System.out.println("    pointer!  upto=" + upto);
         int whichArray = (docID >>> 16) & 0xff;
         arr = tnums[whichArray];

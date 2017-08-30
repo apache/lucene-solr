@@ -34,12 +34,12 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class CompoundEvaluatorTest extends LuceneTestCase {
+public class RecursiveEvaluatorTest extends LuceneTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
   
-  public CompoundEvaluatorTest() {
+  public RecursiveEvaluatorTest() {
     super();
     
     factory = new StreamFactory()

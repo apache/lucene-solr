@@ -590,11 +590,13 @@ public class TermsComponent extends SearchComponent {
 
   private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList,
       boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
-    String[] splitTerms = termList.split(",");
+    List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
+    // Sort the terms once
+    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();
     }
-    // Sort the terms once
     Arrays.sort(splitTerms);
 
     IndexReaderContext topReaderContext = indexSearcher.getTopReaderContext();
@@ -613,7 +615,7 @@ public class TermsComponent extends SearchComponent {
         continue;
       }
 
-      // Since splitTerms is already sorted, this array will also be sorted
+      // Since splitTerms is already sorted, this array will also be sorted. NOTE: this may not be true, it depends on readableToIndexed.
       Term[] terms = new Term[splitTerms.length];
       for (int i = 0; i < splitTerms.length; i++) {
         terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));

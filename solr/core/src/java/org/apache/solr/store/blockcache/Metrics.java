@@ -16,8 +16,8 @@
  */
 package org.apache.solr.store.blockcache;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.codahale.metrics.MetricRegistry;
@@ -55,8 +55,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
 
   private MetricsMap metricsMap;
   private MetricRegistry registry;
-  private Set<String> metricNames = new HashSet<>();
-
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private long previous = System.nanoTime();
 
   @Override

@@ -54,7 +54,7 @@ def runAndSendGPGPassword(command, password):
       p.stdin.write('\n'.encode('UTF-8'))
 
   result = p.poll()
-  if result != 0:
+  if result is not None:
     msg = '    FAILED: %s [see log %s]' % (command, LOG)
     print(msg)
     raise RuntimeError(msg)

@@ -62,7 +62,7 @@ public class ConversionEvaluatorsTest {
       evaluator.setStreamContext(streamContext);
       assertTrue(false);
     } catch (IOException e) {
-      assertTrue(e.getCause().getCause().getMessage().contains("Invalid expression convert(inches) - expecting 3 value but found 1"));
+      assertEquals("Invalid expression convert(inches) - expecting exactly 3 parameters but found 1", e.getCause().getCause().getMessage());
     }
 
     try {

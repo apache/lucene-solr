@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Circular area with a center and radius.
  *
@@ -89,6 +93,25 @@ class GeoStandardCircle extends GeoBaseCircle {
         throw new IllegalArgumentException("Couldn't construct intersection point, probably circle too small?  Plane = "+circlePlane);
       this.edgePoints = new GeoPoint[]{recomputedIntersectionPoint};
     }
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoStandardCircle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, center.getLatitude());
+    SerializableObject.writeDouble(outputStream, center.getLongitude());
+    SerializableObject.writeDouble(outputStream, cutoffAngle);
   }
 
   @Override

@@ -32,6 +32,7 @@ import java.util.TimeZone;
 
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
@@ -39,7 +40,6 @@ import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
-import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
@@ -165,30 +165,30 @@ public class TemporalEvaluatorsTest {
   public void testAllFunctions() throws Exception {
 
     //year, month, day, dayofyear, hour, minute, quarter, week, second, epoch
-    testFunction("year(a)", "1995-12-31T23:59:59Z", 1995);
-    testFunction("month(a)","1995-12-31T23:59:59Z", 12);
-    testFunction("day(a)",  "1995-12-31T23:59:59Z", 31);
-    testFunction("dayOfYear(a)",  "1995-12-31T23:59:59Z", 365);
-    testFunction("dayOfQuarter(a)",  "1995-12-31T23:59:59Z", 92);
-    testFunction("hour(a)",   "1995-12-31T23:59:59Z", 23);
-    testFunction("minute(a)", "1995-12-31T23:59:59Z", 59);
-    testFunction("quarter(a)","1995-12-31T23:59:59Z", 4);
-    testFunction("week(a)",   "1995-12-31T23:59:59Z", 52);
-    testFunction("second(a)", "1995-12-31T23:59:58Z", 58);
+    testFunction("year(a)", "1995-12-31T23:59:59Z", 1995L);
+    testFunction("month(a)","1995-12-31T23:59:59Z", 12L);
+    testFunction("day(a)",  "1995-12-31T23:59:59Z", 31L);
+    testFunction("dayOfYear(a)",  "1995-12-31T23:59:59Z", 365L);
+    testFunction("dayOfQuarter(a)",  "1995-12-31T23:59:59Z", 92L);
+    testFunction("hour(a)",   "1995-12-31T23:59:59Z", 23L);
+    testFunction("minute(a)", "1995-12-31T23:59:59Z", 59L);
+    testFunction("quarter(a)","1995-12-31T23:59:59Z", 4L);
+    testFunction("week(a)",   "1995-12-31T23:59:59Z", 52L);
+    testFunction("second(a)", "1995-12-31T23:59:58Z", 58L);
     testFunction("epoch(a)",  "1995-12-31T23:59:59Z", 820454399000l);
 
-    testFunction("year(a)", "2017-03-17T10:30:45Z", 2017);
-    testFunction("year('a')", "2017-03-17T10:30:45Z", 2017);
-    testFunction("month(a)","2017-03-17T10:30:45Z", 3);
-    testFunction("day(a)",  "2017-03-17T10:30:45Z", 17);
-    testFunction("day('a')",  "2017-03-17T10:30:45Z", 17);
-    testFunction("dayOfYear(a)",  "2017-03-17T10:30:45Z", 76);
-    testFunction("dayOfQuarter(a)",  "2017-03-17T10:30:45Z", 76);
-    testFunction("hour(a)",   "2017-03-17T10:30:45Z", 10);
-    testFunction("minute(a)", "2017-03-17T10:30:45Z", 30);
-    testFunction("quarter(a)","2017-03-17T10:30:45Z", 1);
-    testFunction("week(a)",   "2017-03-17T10:30:45Z", 11);
-    testFunction("second(a)", "2017-03-17T10:30:45Z", 45);
+    testFunction("year(a)", "2017-03-17T10:30:45Z", 2017L);
+    testFunction("year('a')", "2017-03-17T10:30:45Z", 2017L);
+    testFunction("month(a)","2017-03-17T10:30:45Z", 3L);
+    testFunction("day(a)",  "2017-03-17T10:30:45Z", 17L);
+    testFunction("day('a')",  "2017-03-17T10:30:45Z", 17L);
+    testFunction("dayOfYear(a)",  "2017-03-17T10:30:45Z", 76L);
+    testFunction("dayOfQuarter(a)",  "2017-03-17T10:30:45Z", 76L);
+    testFunction("hour(a)",   "2017-03-17T10:30:45Z", 10L);
+    testFunction("minute(a)", "2017-03-17T10:30:45Z", 30L);
+    testFunction("quarter(a)","2017-03-17T10:30:45Z", 1L);
+    testFunction("week(a)",   "2017-03-17T10:30:45Z", 11L);
+    testFunction("second(a)", "2017-03-17T10:30:45Z", 45L);
     testFunction("epoch(a)",  "2017-03-17T10:30:45Z", 1489746645000l);
 
     testFunction("epoch(a)",  new Date(1489746645500l).toInstant().toString(), 1489746645500l);
@@ -287,7 +287,7 @@ public class TemporalEvaluatorsTest {
     values.put("a", value);
     Object result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Number);
-    assertEquals(expected, result);
+    assertEquals(expected.longValue(), result);
   }
 
   @Test

@@ -35,7 +35,8 @@ public interface GeoShape extends Membership, PlanetObject {
 
   /**
    * Assess whether a plane, within the provided bounds, intersects
-   * with the shape.  Note well that this method is allowed to return "true"
+   * with the shape's edges.  Any overlap, even a single point, is considered to be an
+   * intersection.  Note well that this method is allowed to return "true"
    * if there are internal edges of a composite shape which intersect the plane.
    * Doing this can cause getRelationship() for most GeoBBox shapes to return
    * OVERLAPS rather than the more correct CONTAINS, but that cannot be

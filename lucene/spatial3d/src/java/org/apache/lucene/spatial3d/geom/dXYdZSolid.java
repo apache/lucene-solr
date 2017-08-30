@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in X and Z.
  * This figure, in fact, represents either zero, one, or two points, so the
@@ -24,6 +28,15 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.internal
  */
 class dXYdZSolid extends BaseXYZSolid {
+
+  /** X */
+  protected final double X;
+  /** Min-Y */
+  protected final double minY;
+  /** Max-Y */
+  protected final double maxY;
+  /** Z */
+  protected final double Z;
 
   /** The points in this figure on the planet surface; also doubles for edge points */
   protected final GeoPoint[] surfacePoints;
@@ -47,12 +60,38 @@ class dXYdZSolid extends BaseXYZSolid {
     if (maxY - minY < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Y values in wrong order or identical");
 
+    this.X = X;
+    this.minY = minY;
+    this.maxY = maxY;
+    this.Z = Z;
+
     // Build the planes and intersect them.
     final Plane xPlane = new Plane(xUnitVector,-X);
     final Plane zPlane = new Plane(zUnitVector,-Z);
     final SidedPlane minYPlane = new SidedPlane(0.0,maxY,0.0,yUnitVector,-minY);
     final SidedPlane maxYPlane = new SidedPlane(0.0,minY,0.0,yUnitVector,-maxY);
     surfacePoints = xPlane.findIntersections(planetModel,zPlane,minYPlane,maxYPlane);
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public dXYdZSolid(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, X);
+    SerializableObject.writeDouble(outputStream, minY);
+    SerializableObject.writeDouble(outputStream, maxY);
+    SerializableObject.writeDouble(outputStream, Z);
   }
 
   @Override

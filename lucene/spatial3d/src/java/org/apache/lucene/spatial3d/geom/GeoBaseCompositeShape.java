@@ -20,6 +20,9 @@ package org.apache.lucene.spatial3d.geom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 
 /**
  * Base class to create a composite of GeoShapes.
@@ -69,6 +72,25 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
    */
   public T getShape(int index) {
     return shapes.get(index);
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   * @param clazz is the class of the generic.
+   */
+  public GeoBaseCompositeShape(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
+    this(planetModel);
+    final T[] array = SerializableObject.readHeterogeneousArray(planetModel, inputStream, clazz);
+    for (final SerializableObject member : array) {
+      addShape(clazz.cast(member));
+    }
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeHeterogeneousArray(outputStream, shapes);
   }
 
   @Override

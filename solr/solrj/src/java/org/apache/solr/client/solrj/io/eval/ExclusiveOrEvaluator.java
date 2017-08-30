@@ -17,33 +17,28 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ExclusiveOrEvaluator extends BooleanEvaluator {
+public class ExclusiveOrEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public ExclusiveOrEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(subEvaluators.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
+    if(containedEvaluators.size() < 2){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,containedEvaluators.size()));
     }
   }
-
-  @Override
-  public Boolean evaluate(Tuple tuple) throws IOException {
-    
-    List<Object> results = evaluateAll(tuple);
-    
-    if(results.size() < 2){
+  
+  public Object doWork(Object ... values) throws IOException {
+    if(values.length < 2){
       String message = null;
-      if(1 == results.size()){
+      if(1 == values.length){
         message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 1 was provided", constructingFactory.getFunctionName(getClass())); 
       }
       else{
@@ -52,13 +47,26 @@ public class ExclusiveOrEvaluator extends BooleanEvaluator {
       throw new IOException(message);
     }
     
-    if(results.stream().anyMatch(result -> null == result)){
+    Checker checker = constructChecker(values[0]);
+    if(Arrays.stream(values).anyMatch(result -> null == result)){
       throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
     }
-    if(results.stream().anyMatch(result -> !(result instanceof Boolean))){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of non-boolean values [%s]", constructingFactory.getFunctionName(getClass()), results.stream().map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
+    if(Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))){
+      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of differing types [%s]", constructingFactory.getFunctionName(getClass()), Arrays.stream(values).map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
     }
 
-    return 1 == results.stream().filter(result -> (boolean)result).count();
+    return 1 == Arrays.stream(values).filter(result -> (boolean)result).count();
   }
+
+  @Override
+  protected Checker constructChecker(Object value) throws IOException {
+    return new BooleanChecker(){
+      @Override
+      public boolean test(Object left, Object right) {
+        // does nothing useful
+        return false;
+      }
+    };
+  }
+
 }

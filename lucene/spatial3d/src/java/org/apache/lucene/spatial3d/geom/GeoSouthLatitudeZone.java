@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * This GeoBBox represents an area rectangle limited only in north latitude.
  *
@@ -57,6 +61,20 @@ class GeoSouthLatitudeZone extends GeoBaseBBox {
     this.topPlane = new SidedPlane(interiorPoint, planetModel, sinTopLat);
 
     this.edgePoints = new GeoPoint[]{topBoundaryPoint};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoSouthLatitudeZone(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, topLat);
   }
 
   @Override
