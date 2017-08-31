@@ -44,7 +44,6 @@ CDCR is configured to replicate from collections in the Source cluster to collec
 
 CDCR can be configured to replicate from one collection to a second collection _within the same cluster_. That is a specialized scenario not covered in this document.
 
-[glossary]
 == CDCR Glossary
 
 Terms used in this document include:

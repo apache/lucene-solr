@@ -41,7 +41,8 @@ include::meta-docs/asciidoc-syntax.adoc[leveloffset=+2]
 include::meta-docs/editing-tools.adoc[leveloffset=+2]
 
 == Modifying the Output Formats
-The Solr Reference Guide is published in two formats, HTML and PDF. Different tools are used for each.
+The Solr Reference Guide is published in two formats: HTML and PDF. Different tools are used for each.
+
 include::meta-docs/jekyll.adoc[leveloffset=+2]
 
 include::meta-docs/pdf.adoc[leveloffset=+2]
