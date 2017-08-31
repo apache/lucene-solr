@@ -308,6 +308,8 @@ New Features
 * SOLR-9910: Add solr/solr.cmd parameter to append jetty parameters to the start script.
   (Mano Kovacs via Mark Miller)
 
+* SOLR-6671: Possible to set solr.data.home property as root dir for all data (janhoy, Shawn Heisey, Mark Miller)
+
 Bug Fixes
 ----------------------
 * SOLR-9262: Connection and read timeouts are being ignored by UpdateShardHandler after SOLR-4509.
@@ -1191,8 +1193,6 @@ New Features
   work at query time, e.g. ShingleFilterFactory.  By default, and when the "sow=true" param is specified, these
   parsers' behavior remains the same: queries will be split on whitespace before sending individual terms to analysis.
   (Steve Rowe)
-
-* SOLR-6671: Possible to set solr.data.home property as root dir for all data (janhoy, Shawn Heisey, Mark Miller)
 
 Bug Fixes
 ----------------------
