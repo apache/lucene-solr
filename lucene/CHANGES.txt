@@ -58,6 +58,11 @@ Build
   instead of locally installing first, to workaround a double repository push of
   *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
 
+Other
+
+* LUCENE-7948, LUCENE-7937: Upgrade randomizedtesting to 2.5.3 (minor fixes 
+  in test filtering for IDEs). (Mike Sokolov, Dawid Weiss)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
