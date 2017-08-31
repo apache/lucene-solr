@@ -126,7 +126,7 @@ The following spatial-related fields have been deprecated:
 
 Choose one of these field types instead:
 
-* `LatLonSpatialField`
+* `LatLonPointSpatialField`
 * `SpatialRecursivePrefixTreeField`
 * `RptWithGeometrySpatialField`
 
