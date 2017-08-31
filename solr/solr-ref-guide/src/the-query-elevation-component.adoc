@@ -18,11 +18,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The https://wiki.apache.org/solr/QueryElevationComponent[Query Elevation Component] lets you configure the top results for a given query regardless of the normal Lucene scoring.
+The Query Elevation Component lets you configure the top results for a given query regardless of the normal Lucene scoring.
 
-This is sometimes called "sponsored search," "editorial boosting," or "best bets." This component matches the user query text to a configured map of top results. The text can be any string or non-string IDs, as long as it's indexed. Although this component will work with any QueryParser, it makes the most sense to use with <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,eDisMax>>.
+This is sometimes called "sponsored search", "editorial boosting", or "best bets." This component matches the user query text to a configured map of top results. The text can be any string or non-string IDs, as long as it's indexed. Although this component will work with any QueryParser, it makes the most sense to use with <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,eDisMax>>.
 
-The https://wiki.apache.org/solr/QueryElevationComponent[Query Elevation Component] is supported by distributed searching.
+The Query Elevation Component also supports distributed searching.
 
 All of the sample configuration and queries used in this section assume you are running Solr's "```techproducts```" example:
 
@@ -71,9 +71,9 @@ Path to the file that defines query elevation. This file must exist in `<instanc
 `forceElevation`::
 By default, this component respects the requested `sort` parameter: if the request asks to sort by date, it will order the results by date. If `forceElevation=true` (the default), results will first return the boosted docs, then order by date.
 
-=== elevate.xml
+=== The elevate.xml File
 
-Elevated query results are configured in an external XML file specified in the `config-file` argument. An `elevate.xml` file might look like this:
+Elevated query results can be configured in an external XML file specified in the `config-file` argument. An `elevate.xml` file might look like this:
 
 [source,xml]
 ----
@@ -92,6 +92,8 @@ Elevated query results are configured in an external XML file specified in the `
 ----
 
 In this example, the query "foo bar" would first return documents 1, 2 and 3, then whatever normally appears for the same query. For the query "ipod", it would first return "MA147LL/A", and would make sure that "IW-02" is not in the result set.
+
+If documents to be elevated are not defined in the `elevate.xml` file, they should be passed in at query time with the <<The elevateIds and excludeIds Parameters,`elevateIds` parameter>>.
 
 == Using the Query Elevation Component
 

@@ -33,16 +33,14 @@ In `schema.xml`, the definition of this field type might look like this:
 
 [source,xml]
 ----
-<fieldType name="entryRankFile" keyField="pkId" defVal="0" stored="false" indexed="false" class="solr.ExternalFileField" valType="pfloat"/>
+<fieldType name="entryRankFile" keyField="pkId" defVal="0" stored="false" indexed="false" class="solr.ExternalFileField"/>
 ----
 
 The `keyField` attribute defines the key that will be defined in the external file. It is usually the unique key for the index, but it doesn't need to be as long as the `keyField` can be used to identify documents in the index. A `defVal` defines a default value that will be used if there is no entry in the external file for a particular document.
 
-The `valType` attribute specifies the actual type of values that will be found in the file. The type specified must be either a float field type, so valid values for this attribute are `pfloat`, `float` or `tfloat`. This attribute can be omitted.
-
 === Format of the External File
 
-The file itself is located in Solr's index directory, which by default is `$SOLR_HOME/data`. The name of the file should be `external___fieldname__` or `external___fieldname__.*`. For the example above, then, the file could be named `external_entryRankFile` or `external_entryRankFile.txt`.
+The file itself is located in Solr's index directory, which by default is `$SOLR_HOME/data`. The name of the file should be `external_fieldname_` or `external_fieldname_.*`. For the example above, then, the file could be named `external_entryRankFile` or `external_entryRankFile.txt`.
 
 [TIP]
 ====
