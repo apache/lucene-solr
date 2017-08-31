@@ -1,7 +1,7 @@
 = Apache Solr Reference Guide
 :page-shortname: index
 :page-permalink: index.html
-:page-children: about-this-guide, solr-tutorial, getting-started, solr-control-script-reference, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, the-well-configured-solr-instance, managing-solr, solrcloud, legacy-scaling-and-distribution, client-apis, major-changes-from-solr-5-to-solr-6, further-assistance, solr-glossary, errata, how-to-contribute
+:page-children: about-this-guide, solr-tutorial, getting-started, solr-control-script-reference, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, the-well-configured-solr-instance, managing-solr, solrcloud, legacy-scaling-and-distribution, client-apis, further-assistance, solr-glossary, errata, how-to-contribute
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
