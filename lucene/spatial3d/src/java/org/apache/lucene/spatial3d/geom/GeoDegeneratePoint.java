@@ -25,7 +25,7 @@ import java.io.IOException;
  *
  * @lucene.internal
  */
-class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
+class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
   /** Current planet model, since we don't extend BasePlanetObject */
   protected final PlanetModel planetModel;
   /** Edge point is an area containing just this */
