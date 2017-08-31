@@ -80,12 +80,12 @@ public class BengaliNormalizer {
           if(i - 2 == 0 && s[i-1] == '\u09CD') {
             s[i - 1] = '\u09C7';
 
-            if(s[i+1] == '\u09BE') {
+            if(i + 1 < len && s[i+1] == '\u09BE') {
               len = delete(s, i+1, len);
             }
             len = delete(s, i, len);
             i --;
-          } else {
+          } else if(i - 1 >= 0 && s[i-1] == '\u09CD' ){
             len = delete(s, i, len);
             len = delete(s, i-1, len);
             i -=2;
