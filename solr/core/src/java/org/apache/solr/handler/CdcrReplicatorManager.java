@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -142,6 +143,11 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
       ExecutorUtil.shutdownAndAwaitTermination(bootstrapExecutor);
     }
     this.closeLogReaders();
+    Callable callable = core.getSolrCoreState().getCdcrBootstrapCallable();
+    if (callable != null)  {
+      CdcrRequestHandler.BootstrapCallable bootstrapCallable = (CdcrRequestHandler.BootstrapCallable) callable;
+      IOUtils.closeQuietly(bootstrapCallable);
+    }
   }
 
   List<CdcrReplicatorState> getReplicatorStates() {

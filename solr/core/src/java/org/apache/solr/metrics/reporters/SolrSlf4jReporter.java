@@ -18,18 +18,10 @@ package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
-
-import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
