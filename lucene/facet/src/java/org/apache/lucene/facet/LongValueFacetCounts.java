@@ -250,14 +250,11 @@ public class LongValueFacetCounts extends Facets {
   }
 
   private void increment(long value) {
-    /*
     if (value >= 0 && value < counts.length) {
       counts[(int) value]++;
     } else {
       hashCounts.add(value, 1);
     }
-    */
-    hashCounts.add(value, 1);
   }
 
   @Override
@@ -365,22 +362,18 @@ public class LongValueFacetCounts extends Facets {
 
     boolean countsAdded = false;
     for (int i = 0; i < upto; i++) {
-      /*
       if (countsAdded == false && hashCounts.values[i] >= counts.length) {
         countsAdded = true;
         appendCounts(labelValues);
       }
-      */
 
       labelValues.add(new LabelAndValue(Long.toString(hashCounts.values[i]),
                                         hashCounts.counts[i]));
     }
 
-    /*
     if (countsAdded == false) {
       appendCounts(labelValues);
     }
-    */
 
     return new FacetResult(field, new String[0], totCount, labelValues.toArray(new LabelAndValue[0]), labelValues.size());
   }
