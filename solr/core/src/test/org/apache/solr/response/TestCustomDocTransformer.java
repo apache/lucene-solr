@@ -202,9 +202,10 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score) throws IOException {
+    public void transform(SolrDocument doc, int docid) throws IOException {
       counter++;
     }
+
 
     @Override
     public void close(){
@@ -241,6 +242,11 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     @Override
     public void transform(SolrDocument doc, int docid, float score) throws IOException {
     }
+
+    @Override
+    public void transform(SolrDocument doc, int docid) throws IOException {
+    }
+
 
     @Override
     public void close(){
