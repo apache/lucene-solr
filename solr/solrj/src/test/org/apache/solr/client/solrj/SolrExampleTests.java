@@ -412,7 +412,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     SolrQuery query = new SolrQuery();
     query.set(CommonParams.QT, "/analysis/field");
-    query.set(AnalysisParams.FIELD_TYPE, "int");
+    query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     try {
       client.query( query );
@@ -1764,7 +1764,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
-
+    
     int numRootDocs = TestUtil.nextInt(random(), 10, 100);
     int maxDepth = TestUtil.nextInt(random(), 2, 5);
 
@@ -1777,14 +1777,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.commit();
 
     // sanity check
-    SolrQuery q = new SolrQuery("*:*");
+    SolrQuery q = new SolrQuery("q", "*:*", "indent", "true");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match",
         allDocs.size(), resp.getResults().getNumFound());
 
 
     // base check - we know there is an exact number of these root docs
-    q = new SolrQuery("level_i:0");
+    q = new SolrQuery("q","level_i:0", "indent", "true");
     q.setFields("*", "[child parentFilter=\"level_i:0\"]");
     resp = client.query(q);
     assertEquals("topLevel count does not match", numRootDocs,
@@ -1793,6 +1793,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       String docId = (String)outDoc.getFieldValue("id");
       SolrInputDocument origDoc = allDocs.get(docId);
       assertNotNull("docId not found: " + docId, origDoc);
+      assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
       assertEquals("kids mismatch", 
                    origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
       if (outDoc.hasChildDocuments()) {
@@ -1813,16 +1814,17 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       String childFilter = "level_i:" + kidLevel;
       int maxKidCount = TestUtil.nextInt(random(), 1, 37);
       
-      q = new SolrQuery("*:*");
+      q = new SolrQuery("q", "*:*", "indent", "true");
       q.setFilterQueries(parentFilter);
       q.setFields("id,[child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
-                  "\" limit=\"" + maxKidCount + "\"]");
+                  "\" limit=\"" + maxKidCount + "\"], name");
       resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
         assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
         assertEquals("kids mismatch", 
                      origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
         if (outDoc.hasChildDocuments()) {
@@ -1845,6 +1847,42 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         }
       }
     }
+    
+    // bespoke check - use child transformer twice in one query to get diff kids, with name field in between
+    {
+      q = new SolrQuery("q","level_i:0", "indent", "true");
+      // NOTE: should be impossible to have more then 7 direct kids, or more then 49 grandkids
+      q.setFields("id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
+                  "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
+      resp = client.query(q);
+      assertEquals("topLevel count does not match", numRootDocs,
+                   resp.getResults().getNumFound());
+      for (SolrDocument outDoc : resp.getResults()) {
+        String docId = (String)outDoc.getFieldValue("id");
+        SolrInputDocument origDoc = allDocs.get(docId);
+        assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
+        assertEquals("kids mismatch", 
+                     origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
+        if (outDoc.hasChildDocuments()) {
+          for (SolrDocument kid : outDoc.getChildDocuments()) {
+            String kidId = (String)kid.getFieldValue("id");
+            SolrInputDocument origChild = findDecendent(origDoc, kidId);
+            assertNotNull(docId + " doesn't have decendent " + kidId,
+                          origChild);
+          }
+          // the total number of kids should be our direct kids and our grandkids
+          int expectedKidsOut = origDoc.getChildDocuments().size();
+          for (SolrInputDocument origKid : origDoc.getChildDocuments()) {
+            if (origKid.hasChildDocuments()) {
+              expectedKidsOut += origKid.getChildDocuments().size();
+            }
+          }
+          assertEquals("total number of kids and grandkids doesn't match expected",
+                       expectedKidsOut, outDoc.getChildDocuments().size());
+        }
+      }
+    }
 
     // fully randomized
     // verifications are driven only by the results
@@ -1857,20 +1895,21 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       String childFilter = "level_i:[" + kidLevelMin + " TO " + kidLevelMax + "]";
       int maxKidCount = TestUtil.nextInt(random(), 1, 7);
       
-      q = new SolrQuery("*:*");
+      q = new SolrQuery("q","*:*", "indent", "true");
       if (random().nextBoolean()) {
         String name = names[TestUtil.nextInt(random(), 0, names.length-1)];
-        q = new SolrQuery("name:" + name);
+        q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
       q.setFields("id,[child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
-                  "\" limit=\"" + maxKidCount + "\"]");
+                  "\" limit=\"" + maxKidCount + "\"],name");
       resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
         assertNotNull("docId not found: " + docId, origDoc);
+        assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
         // we can't always assert origHasKids==outHasKids, original kids
         // might not go deep enough for childFilter...
         if (outDoc.hasChildDocuments()) {
@@ -1898,14 +1937,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     server.deleteByQuery("*:*");
 
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
-    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_ti", "5", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
-    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_ti", "50", "test_tl", "100", "test_tf", "200", "type_s", "child"));
-    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_ti", "5000", "test_tl", "100", "test_tf", "200"));
-    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_ti", "500", "test_tl", "1000", "test_tf", "2000"));
-    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_ti", "4", "test_tl", "10", "test_tf", "2000", "type_s", "parent"));
-    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_ti", "10", "test_tl", "100", "test_tf", "200", "type_s", "child"));
-    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_ti", "1", "test_tl", "100000", "test_tf", "2000", "type_s", "child"));
-    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_ti", "2", "test_tl", "100000", "test_tf", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","1", "term_s", "YYYY", "group_s", "group1", "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","2", "term_s","YYYY", "group_s", "group1", "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"));
+    docs.add( makeTestDoc("id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"));
+    docs.add( makeTestDoc("id","5", "term_s", "YYYY", "group_s", "group2", "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"));
+    docs.add( makeTestDoc("id","6", "term_s","YYYY", "group_s", "group2", "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"));
+    docs.add( makeTestDoc("id","7", "term_s", "YYYY", "group_s", "group1", "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"));
+    docs.add( makeTestDoc("id","8", "term_s","YYYY", "group_s", "group2", "test_i", "2", "test_l", "100000", "test_f", "200", "type_s", "child"));
 
     server.add(docs);
     server.commit();
@@ -1914,7 +1953,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     msParams.add("q", "*:*");
     msParams.add("fq", "{!collapse field=group_s}");
     msParams.add("defType", "edismax");
-    msParams.add("bf", "field(test_ti)");
+    msParams.add("bf", "field(test_i)");
     msParams.add("expand", "true");
     QueryResponse resp = server.query(msParams);
 

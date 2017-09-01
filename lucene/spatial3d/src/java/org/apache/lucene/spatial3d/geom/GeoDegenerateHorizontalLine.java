@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Degenerate bounding box limited on two sides (left lon, right lon).
  * The left-right maximum extent for this shape is PI; for anything larger, use
@@ -108,6 +112,22 @@ class GeoDegenerateHorizontalLine extends GeoBaseBBox {
     this.edgePoints = new GeoPoint[]{centerPoint};
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoDegenerateHorizontalLine(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, latitude);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
+  }
+
   @Override
   public GeoBBox expand(final double angle) {
     double newTopLat = latitude + angle;
@@ -155,6 +175,11 @@ class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints, leftPlane, rightPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds.addHorizontalPlane(planetModel, latitude, plane, leftPlane, rightPlane)
@@ -164,7 +189,7 @@ class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   @Override
   public int getRelationship(final GeoShape path) {
     //System.err.println("getting relationship between "+this+" and "+path);
-    if (path.intersects(plane, planePoints, leftPlane, rightPlane)) {
+    if (intersects(path)) {
       //System.err.println(" overlaps");
       return OVERLAPS;
     }

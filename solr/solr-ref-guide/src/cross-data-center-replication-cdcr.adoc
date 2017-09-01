@@ -18,47 +18,47 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Cross Data Center Replication (CDCR) allows you to create multiple SolrCloud data centers and keep them in sync in case they are needed at a future time.
+Cross Data Center Replication (CDCR) allows you to create multiple SolrCloud data centers and keep them in sync.
 
-The <<solrcloud.adoc#solrcloud,SolrCloud>> architecture is not particularly well suited for situations where a single SolrCloud cluster consists of nodes in separated data clusters connected by an expensive pipe. The root problem is that SolrCloud is designed to support <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>> by immediately forwarding updates between nodes in the cluster on a per-shard basis. "CDCR" features exist to help mitigate the risk of an entire data center outage.
+The <<solrcloud.adoc#solrcloud,SolrCloud>> architecture is designed to support <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>> (NRT) searches on a Solr collection usually consisting of multiple nodes in a single data center. "CDCR" augments this model by forwarding updates from a Solr collection in one data center to a parallel Solr collection in another data center where the network latencies are greater than the SolrCloud model was designed to accommodate.
 
 == What is CDCR?
 
-CDCR supports replicating data from one data center to multiple data centers. The initial version of the solution supports an active-passive scenario where data updates are replicated from a Source data center to one or more target data centers.
+CDCR supports replicating data from one data center to multiple data centers. The initial version of the solution supports a uni-directional scenario where data updates are replicated from a Source data center to one or more Target data centers.
 
-The target data center(s) will not propagate updates such as adds, updates, or deletes to the source data center and updates should _not_ be sent to any of the target data center(s).
+The Target data center(s) will not propagate updates such as adds, updates, or deletes to the Source data center and updates should _not_ be sent to any of the Target data center(s).
 
-Source and target data centers can serve search queries when CDCR is operating. The target data centers will have slightly stale views of the corpus due to propagation delays, but this is minimal (perhaps a few seconds).
+Source and Target data centers can serve search queries when CDCR is operating. The Target data centers will lag somewhat behind the Source cluster due to propagation delays.
 
-Data changes on the source data center are replicated to the target data center only after they are persisted to disk. The data changes can be replicated in near real-time (with a small delay) or could be scheduled to be sent in intervals to the target data center. This solution pre-supposes that the source and target data centers begin with the same documents indexed. Of course the indexes may be empty to start.
+Data changes on the Source data center are replicated to the Target data center only after they are persisted to disk. The data changes can be replicated in near real-time (with a small delay) or could be scheduled to be sent at longer intervals to the Target data center. CDCR can "bootstrap" the collection to the Target data center. Since this is a full copy of the entire index, network bandwidth should be considered. Of course both Source and Target collections may be empty to start.
 
-Each shard leader in the source data center will be responsible for replicating its updates to the corresponding leader in the target data center. When receiving updates from the source data center, shard leaders in the target data center will replicate the changes to their own replicas.
+Each shard leader in the Source data center will be responsible for replicating its updates to the corresponding leader in the Target data center. When receiving updates from the Source data center, shard leaders in the Target data center will replicate the changes to their own replicas as normal SolrCloud updates.
 
 This replication model is designed to tolerate some degradation in connectivity, accommodate limited bandwidth, and support batch updates to optimize communication.
 
-Replication supports both a new empty index and pre-built indexes. In the scenario where the replication is set up on a pre-built index, CDCR will ensure consistency of the replication of the updates, but cannot ensure consistency on the full index. Therefore any index created before CDCR was set up will have to be replicated by other means (described in the section <<Initial Startup>>) so source and target indexes are fully consistent.
+Replication supports both a new empty index and pre-built indexes. In the scenario where the replication is set up on a pre-built index in the Source cluster and nothing on the Target cluster, CDCR will replicate the _entire_ index from the Source to Target. This functionality was added in Solr 6.2.
 
-The active-passive nature of the initial implementation implies a "push" model from the source collection to the target collection. Therefore, the source configuration must be able to "see" the ZooKeeper ensemble in the target cluster. The ZooKeeper ensemble is provided configured in the Source's `solrconfig.xml` file.
+The uni-directional nature of the initial implementation implies a "push" model from the Source collection to the Target collection. Therefore, the Source configuration must be able to "see" the ZooKeeper ensemble in the Target cluster. The ZooKeeper ensemble is provided configured in the Source's `solrconfig.xml` file.
 
-CDCR is configured to replicate from collections in the source cluster to collections in the target cluster on a collection-by-collection basis. Since CDCR is configured in `solrconfig.xml` (on both source and target clusters), the settings can be tailored for the needs of each collection.
+CDCR is configured to replicate from collections in the Source cluster to collections in the Target cluster on a collection-by-collection basis. Since CDCR is configured in `solrconfig.xml` (on both Source and Target clusters), the settings can be tailored for the needs of each collection.
 
 CDCR can be configured to replicate from one collection to a second collection _within the same cluster_. That is a specialized scenario not covered in this document.
 
-[glossary]
 == CDCR Glossary
 
 Terms used in this document include:
 
 [glossary]
 Node:: A JVM instance running Solr; a server.
-Cluster:: A set of Solr nodes managed as a single unit by a ZooKeeper ensemble, hosting one or more Collections.
+Cluster:: A set of Solr nodes managed as a single unit by a ZooKeeper ensemble hosting one or more Collections.
 Data Center:: A group of networked servers hosting a Solr cluster. In this document, the terms _Cluster_ and _Data Center_ are interchangeable as we assume that each Solr cluster is hosted in a different group of networked servers.
-Shard:: A sub-index of a single logical collection. This may be spread across multiple nodes of the cluster. Each shard can have as many replicas as needed.
-Leader:: Each shard has one node identified as its leader. All the writes for documents belonging to a shard are routed through the leader.
+Shard:: A sub-index of a single logical collection. This may be spread across multiple nodes of the cluster. Each shard can have 1-N replicas.
+Leader:: Each shard has replica identified as its leader. All the writes for documents belonging to a shard are routed through the leader.
 Replica:: A copy of a shard for use in failover or load balancing. Replicas comprising a shard can either be leaders or non-leaders.
 Follower:: A convenience term for a replica that is _not_ the leader of a shard.
-Collection:: Multiple documents that make up one logical index. A cluster can have multiple collections.
-Updates Log:: An append-only log of write operations maintained by each node.
+Collection:: A logical index, consisting of one or more shards. A cluster can have multiple collections.
+Update:: An operation that changes the collection's index in any way. This could be adding a new document, deleting documents or changing a document.
+Update Log(s):: An append-only log of write operations maintained by each node.
 
 == CDCR Architecture
 
@@ -69,20 +69,20 @@ image::images/cross-data-center-replication-cdcr-/CDCR_arch.png[image,width=700,
 
 Updates and deletes are first written to the Source cluster, then forwarded to the Target cluster. The data flow sequence is:
 
-. A shard leader receives a new data update that is processed by its update processor chain.
+. A shard leader receives a new update that is processed by its update processor chain.
 . The data update is first applied to the local index.
-. Upon successful application of the data update on the local index, the data update is added to the Updates Log queue.
+. Upon successful application of the data update on the local index, the data update is added to the Update Logs queue.
 . After the data update is persisted to disk, the data update is sent to the replicas within the data center.
-. After Step 4 is successful, CDCR reads the data update from the Updates Log and pushes it to the corresponding collection in the target data center. This is necessary in order to ensure consistency between the Source and target data centers.
-. The leader on the target data center writes the data locally and forwards it to all its followers.
+. After Step 4 is successful, CDCR reads the data update from the Update Logs and pushes it to the corresponding collection in the Target data center. This is necessary in order to ensure consistency between the Source and Target data centers.
+. The leader on the Target data center writes the data locally and forwards it to all its followers.
 
-Steps 1, 2, 3 and 4 are performed synchronously by SolrCloud; Step 5 is performed asynchronously by a background thread. Given that CDCR replication is performed asynchronously, it becomes possible to push batch updates in order to minimize network communication overhead. Also, if CDCR is unable to push the update at a given time, for example, due to a degradation in connectivity, it can retry later without any impact on the source data center.
+Steps 1, 2, 3 and 4 are performed synchronously by SolrCloud; Step 5 is performed asynchronously by a background thread. Given that CDCR replication is performed asynchronously, it becomes possible to push batch updates in order to minimize network communication overhead. Also, if CDCR is unable to push the update at a given time, for example, due to a degradation in connectivity, it can retry later without any impact on the Source data center.
 
-One implication of the architecture is that the leaders in the source cluster must be able to "see" the leaders in the target cluster. Since leaders may change, this effectively means that all nodes in the source cluster must be able to "see" all Solr nodes in the target cluster so firewalls, ACL rules, etc. must be configured with care.
+One implication of the architecture is that the leaders in the Source cluster must be able to "see" the leaders in the Target cluster. Since leaders may change in both Source and Target collections, which means that all nodes in the Source cluster must be able to "see" all Solr nodes in the Target cluster so firewalls, ACL rules, etc., must be configured to allow this.
 
-The current design works most robustly if both the Source and target clusters have the same number of shards. There is no requirement that the shards in the Source and target collection have the same number of replicas.
+The current design works most robustly if both the Source and Target clusters have the same number of shards. There is no requirement that the shards in the Source and Target collection have the same number of replicas.
 
-Having different numbers of shards on the Source and target cluster is possible, but is also an "expert" configuration as that option imposes certain constraints and is not recommended. Most of the scenarios where having differing numbers of shards are contemplated are better accomplished by hosting multiple shards on each target Solr instance.
+Having different numbers of shards on the Source and Target cluster is possible, but is also an "expert" configuration as that option imposes certain constraints and is not generally recommended. Most of the scenarios where having differing numbers of shards are contemplated are better accomplished by hosting multiple shards on each Solr instance.
 
 == Major Components of CDCR
 
@@ -90,7 +90,7 @@ There are a number of key features and components in CDCR’s architecture:
 
 === CDCR Configuration
 
-In order to configure CDCR, the Source data center requires the host address of the ZooKeeper cluster associated with the target data center. The ZooKeeper host address is the only information needed by CDCR to instantiate the communication with the target Solr cluster. The CDCR configuration file on the source cluster will therefore contain a list of ZooKeeper hosts. The CDCR configuration file might also contain secondary/optional configuration, such as the number of CDC Replicator threads, batch updates related settings, etc.
+In order to configure CDCR, the Source data center requires the host address of the ZooKeeper cluster associated with the Target data center. The ZooKeeper host address is the only information needed by CDCR to instantiate the communication with the Target Solr cluster. The CDCR configuration section of `solrconfig.xml` file on the Source cluster will therefore contain a list of ZooKeeper hosts. The CDCR configuration section of `solrconfig.xml` might also contain secondary/optional configuration, such as the number of CDC Replicator threads, batch updates related settings, etc.
 
 === CDCR Initialization
 
@@ -98,84 +98,78 @@ CDCR supports incremental updates to either new or existing collections. CDCR ma
 
 * There is an initial bulk load of a corpus followed by lower volume incremental updates. In this case, one can do the initial bulk load and then enable CDCR. See the section <<Initial Startup>> for more information.
 * The index is being built up from scratch, without a significant initial bulk load. CDCR can be set up on empty collections and keep them synchronized from the start.
-* The index is always being updated at a volume too high for CDCR to keep up. This is especially possible in situations where the connection between the Source and target data centers is poor. This scenario is unsuitable for CDCR in its current form.
+* The index is always being updated at a volume too high for CDCR to keep up. This is especially possible in situations where the connection between the Source and Target data centers is poor. This scenario is unsuitable for CDCR in its current form.
 
 === Inter-Data Center Communication
 
-Communication between data centers will be achieved through HTTP and the Solr REST API using the SolrJ client. The SolrJ client will be instantiated with the ZooKeeper host of the target data center. SolrJ will manage the shard leader discovery process.
+The CDCR REST API is the primary form of end-user communication for admin commands. A SolrJ client is used internally for CDCR operations. The SolrJ client gets its configuration information from the `solrconfig.xml` file. Users of CDCR will not interact directly with the internal SolrJ implementation and will interact with CDCR exclusively through the REST API.
 
 === Updates Tracking & Pushing
 
-CDCR replicates data updates from the source to the target data center by leveraging the Updates Log.
+CDCR replicates data updates from the Source to the Target data center by leveraging the Update Logs.
 
-A background thread regularly checks the Updates Log for new entries, and then forwards them to the target data center. The thread therefore needs to keep a checkpoint in the form of a pointer to the last update successfully processed in the Updates Log. Upon acknowledgement from the target data center that updates have been successfully processed, the Updates Log pointer is updated to reflect the current checkpoint.
+A background thread regularly checks the Update Logs for new entries, and then forwards them to the Target data center. The thread therefore needs to keep a checkpoint in the form of a pointer to the last update successfully processed in the Update Logs. Upon acknowledgement from the Target data center that updates have been successfully processed, the Update Logs pointer is updated to reflect the current checkpoint.
 
 This pointer must be synchronized across all the replicas. In the case where the leader goes down and a new leader is elected, the new leader will be able to resume replication from the last update by using this synchronized pointer. The strategy to synchronize such a pointer across replicas will be explained next.
 
-If for some reason, the target data center is offline or fails to process the updates, the thread will periodically try to contact the target data center and push the updates.
+If for some reason, the Target data center is offline or fails to process the updates, the thread will periodically try to contact the Target data center and push the updates while buffering updates on the Source cluster. One implication of this is that the Source Update Logs directory should be periodically monitored as the updates will continue to accumulate amd will not be purged until the connection to the Target data center is restored.
 
 === Synchronization of Update Checkpoints
 
-A reliable synchronization of the update checkpoints between the shard leader and shard replicas is critical to avoid introducing inconsistency between the Source and target data centers. Another important requirement is that the synchronization must be performed with minimal network traffic to maximize scalability.
+A reliable synchronization of the update checkpoints between the shard leader and shard replicas is critical to avoid introducing inconsistency between the Source and Target data centers. Another important requirement is that the synchronization must be performed with minimal network traffic to maximize scalability.
 
 In order to achieve this, the strategy is to:
 
 * Uniquely identify each update operation. This unique identifier will serve as pointer.
-* Rely on two storages: an ephemeral storage on the Source shard leader, and a persistent storage on the target cluster.
+* Rely on two storages: an ephemeral storage on the Source shard leader, and a persistent storage on the Target cluster.
 
-The shard leader in the source cluster will be in charge of generating a unique identifier for each update operation, and will keep a copy of the identifier of the last processed updates in memory. The identifier will be sent to the target cluster as part of the update request. On the target data center side, the shard leader will receive the update request, store it along with the unique identifier in the Updates Log, and replicate it to the other shards.
+The shard leader in the Source cluster will be in charge of generating a unique identifier for each update operation, and will keep a copy of the identifier of the last processed updates in memory. The identifier will be sent to the Target cluster as part of the update request. On the Target data center side, the shard leader will receive the update request, store it along with the unique identifier in the Update Logs, and replicate it to the other shards.
 
-SolrCloud already provides a unique identifier for each update operation, i.e., a “version” number. This version number is generated using a time-based lmport clock which is incremented for each update operation sent. This provides an “happened-before” ordering of the update operations that will be leveraged in (1) the initialization of the update checkpoint on the source cluster, and in (2) the maintenance strategy of the Updates Log.
+SolrCloud already provides a unique identifier for each update operation, i.e., a “version” number. This version number is generated using a time-based lmport clock which is incremented for each update operation sent. This provides an “happened-before” ordering of the update operations that will be leveraged in (1) the initialization of the update checkpoint on the Source cluster, and in (2) the maintenance strategy of the Update Logs.
 
-The persistent storage on the target cluster is used only during the election of a new shard leader on the Source cluster. If a shard leader goes down on the source cluster and a new leader is elected, the new leader will contact the target cluster to retrieve the last update checkpoint and instantiate its ephemeral pointer. On such a request, the target cluster will retrieve the latest identifier received across all the shards, and send it back to the source cluster. To retrieve the latest identifier, every shard leader will look up the identifier of the first entry in its Update Logs and send it back to a coordinator. The coordinator will have to select the highest among them.
+The persistent storage on the Target cluster is used only during the election of a new shard leader on the Source cluster. If a shard leader goes down on the Source cluster and a new leader is elected, the new leader will contact the Target cluster to retrieve the last update checkpoint and instantiate its ephemeral pointer. On such a request, the Target cluster will retrieve the latest identifier received across all the shards, and send it back to the Source cluster. To retrieve the latest identifier, every shard leader will look up the identifier of the first entry in its Update Logs and send it back to a coordinator. The coordinator will have to select the highest among them.
 
-This strategy does not require any additional network traffic and ensures reliable pointer synchronization. Consistency is principally achieved by leveraging SolrCloud. The update workflow of SolrCloud ensures that every update is applied to the leader but also to any of the replicas. If the leader goes down, a new leader is elected. During the leader election, a synchronization is performed between the new leader and the other replicas. As a result, this ensures that the new leader has a consistent Update Logs with the previous leader. Having a consistent Updates Log means that:
+This strategy does not require any additional network traffic and ensures reliable pointer synchronization. Consistency is principally achieved by leveraging SolrCloud. The update workflow of SolrCloud ensures that every update is applied to the leader and also to any of the replicas. If the leader goes down, a new leader is elected. During the leader election, a synchronization is performed between the new leader and the other replicas. This ensures that the new leader has a consistent Update Logs with the previous leader. Having a consistent Update Logs means that:
 
-* On the source cluster, the update checkpoint can be reused by the new leader.
-* On the target cluster, the update checkpoint will be consistent between the previous and new leader. This ensures the correctness of the update checkpoint sent by a newly elected leader from the target cluster.
+* On the Source cluster, the update checkpoint can be reused by the new leader.
+* On the Target cluster, the update checkpoint will be consistent between the previous and new leader. This ensures the correctness of the update checkpoint sent by a newly elected leader from the Target cluster.
 
-=== Maintenance of Updates Log
+=== Maintenance of Update Logs
 
-The CDCR replication logic requires modification to the maintenance logic of the Updates Log on the source data center. Initially, the Updates Log acts as a fixed size queue, limited to 100 update entries. In the CDCR scenario, the Update Logs must act as a queue of variable size as they need to keep track of all the updates up through the last processed update by the target data center. Entries in the Update Logs are removed only when all pointers (one pointer per target data center) are after them.
+The CDCR replication logic requires modification to the maintenance logic of the Update Logs on the Source data center. Initially, the Update Logs acts as a fixed size queue, limited to 100 update entries by default. In the CDCR scenario, the Update Logs must act as a queue of variable size as they need to keep track of all the updates up through the last processed update by the Target data center. Entries in the Update Logs are removed only when all pointers (one pointer per Target data center) are after them.
 
-If the communication with one of the target data center is slow, the Updates Log on the source data center can grow to a substantial size. In such a scenario, it is necessary for the Updates Log to be able to efficiently find a given update operation given its identifier. Given that its identifier is an incremental number, it is possible to implement an efficient search strategy. Each transaction log file contains as part of its filename the version number of the first element. This is used to quickly traverse all the transaction log files and find the transaction log file containing one specific version number.
+If the communication with one of the Target data center is slow, the Update Logs on the Source data center can grow to a substantial size. In such a scenario, it is necessary for the Update Logs to be able to efficiently find a given update operation given its identifier. Given that its identifier is an incremental number, it is possible to implement an efficient search strategy. Each transaction log file contains as part of its filename the version number of the first element. This is used to quickly traverse all the transaction log files and find the transaction log file containing one specific version number.
 
-
-[[CrossDataCenterReplication_CDCR_-Monitoring]]
 === Monitoring
 
 CDCR provides the following monitoring capabilities over the replication operations:
 
-* Monitoring of the outgoing and incoming replications, with information such as the Source and target nodes, their status, etc.
+* Monitoring of the outgoing and incoming replications, with information such as the Source and Target nodes, their status, etc.
 * Statistics about the replication, with information such as operations (add/delete) per second, number of documents in the queue, etc.
 
 Information about the lifecycle and statistics will be provided on a per-shard basis by the CDC Replicator thread. The CDCR API can then aggregate this information an a collection level.
 
 === CDC Replicator
 
-The CDC Replicator is a background thread that is responsible for replicating updates from a Source data center to one or more target data centers. It is responsible in providing monitoring information on a per-shard basis. As there can be a large number of collections and shards in a cluster, we will use a fixed-size pool of CDC Replicator threads that will be shared across shards.
+The CDC Replicator is a background thread that is responsible for replicating updates from a Source data center to one or more Target data centers. It is responsible in providing monitoring information on a per-shard basis. As there can be a large number of collections and shards in a cluster, we will use a fixed-size pool of CDC Replicator threads that will be shared across shards.
 
-
-[[CrossDataCenterReplication_CDCR_-Limitations]]
-=== Limitations
+=== CDCR Limitations
 
 The current design of CDCR has some limitations. CDCR will continue to evolve over time and many of these limitations will be addressed. Among them are:
 
-* CDCR is unlikely to be satisfactory for bulk-load situations where the update rate is high, especially if the bandwidth between the Source and target clusters is restricted. In this scenario, the initial bulk load should be performed, the Source and target data centers synchronized and CDCR be utilized for incremental updates.
-* CDCR is currently only active-passive; data is pushed from the Source cluster to the target cluster. There is active work being done in this area in the 6x code line to remove this limitation.
-* CDCR works most robustly with the same number of shards in the Source and target collection. The shards in the two collections may have different numbers of replicas.
+* CDCR is unlikely to be satisfactory for bulk-load situations where the update rate is high, especially if the bandwidth between the Source and Target clusters is restricted. In this scenario, the initial bulk load should be performed, the Source and Target data centers synchronized and CDCR be utilized for incremental updates.
+* CDCR is currently only uni-directional; data is pushed from the Source cluster to the Target cluster. There is active work being done in this area to remove this limitation.
+* CDCR works most robustly with the same number of shards in the Source and Target collection. The shards in the two collections may have different numbers of replicas.
+* Running CDCR with the indexes on HDFS is not currently supported, see the https://issues.apache.org/jira/browse/SOLR-9861[Solr CDCR over HDFS] JIRA issue.
+* Configuration files `(solrconfig.xml, schema etc.)` are not automatically synchronized between the Source and Target clusters. This means that when the Source schema or `solrconfig.xml` files are changed, those changes must be replicated manually to the Target cluster. This includes adding fields by the <<schema-api.adoc#schema-api,Schema API>> or <<managed-resources.adoc#managed-resources,Managed Resources>>  as well as hand editing those files.
 
+== CDCR Configuration
 
-[[CrossDataCenterReplication_CDCR_-Configuration]]
-== Configuration
+The Source and Target configurations differ in the case of the data centers being in separate clusters. "Cluster" here means separate ZooKeeper ensembles controlling disjoint Solr instances. Whether these data centers are physically separated or not is immaterial for this discussion.
 
-The source and target configurations differ in the case of the data centers being in separate clusters. "Cluster" here means separate ZooKeeper ensembles controlling disjoint Solr instances. Whether these data centers are physically separated or not is immaterial for this discussion.
-
-
-[[CrossDataCenterReplication_CDCR_-SourceConfiguration]]
 === Source Configuration
 
-Here is a sample of a source configuration file, a section in `solrconfig.xml`. The presence of the <replica> section causes CDCR to use this cluster as the Source and should not be present in the target collections in the cluster-to-cluster case. Details about each setting are after the two examples:
+Here is a sample of a Source configuration file, a section in `solrconfig.xml`. The presence of the <replica> section causes CDCR to use this cluster as the Source and should not be present in the Target collections. Details about each setting are after the two examples:
 
 [source,xml]
 ----
@@ -211,13 +205,11 @@ Here is a sample of a source configuration file, a section in `solrconfig.xml`. 
 </updateHandler>
 ----
 
-
-[[CrossDataCenterReplication_CDCR_-TargetConfiguration]]
 === Target Configuration
 
-Here is a typical target configuration.
+Here is a typical Target configuration.
 
-Target instance must configure an update processor chain that is specific to CDCR. The update processor chain must include the *CdcrUpdateProcessorFactory*. The task of this processor is to ensure that the version numbers attached to update requests coming from a CDCR source SolrCloud are reused and not overwritten by the target. A properly configured Target configuration looks similar to this.
+Target instance must configure an update processor chain that is specific to CDCR. The update processor chain must include the *CdcrUpdateProcessorFactory*. The task of this processor is to ensure that the version numbers attached to update requests coming from a CDCR Source SolrCloud are reused and not overwritten by the Target. A properly configured Target configuration looks similar to this.
 
 [source,xml]
 ----
@@ -254,21 +246,20 @@ The configuration details, defaults and options are as follows:
 
 ==== The Replica Element
 
-CDCR can be configured to forward update requests to one or more replicas. A replica is defined with a “replica” list as follows:
-
+CDCR can be configured to forward update requests to one or more Target collections. A Target collection is defined with a “replica” list as follows:
 
 `zkHost`::
-The host address for ZooKeeper of the target SolrCloud. Usually this is a comma-separated list of addresses to each node in the target ZooKeeper ensemble. This parameter is required.
+The host address for ZooKeeper of the Target SolrCloud. Usually this is a comma-separated list of addresses to each node in the Target ZooKeeper ensemble. This parameter is required.
 
 `Source`::
 The name of the collection on the Source SolrCloud to be replicated. This parameter is required.
 
 `Target`::
-The name of the collection on the target SolrCloud to which updates will be forwarded. This parameter is required.
+The name of the collection on the Target SolrCloud to which updates will be forwarded. This parameter is required.
 
 ==== The Replicator Element
 
-The CDC Replicator is the component in charge of forwarding updates to the replicas. The replicator will monitor the update logs of the Source collection and will forward any new updates to the target collection.
+The CDC Replicator is the component in charge of forwarding updates to the replicas. The replicator will monitor the update logs of the Source collection and will forward any new updates to the Target collection.
 
 The replicator uses a fixed thread pool to forward updates to multiple replicas in parallel. If more than one replica is configured, one thread will forward a batch of updates from one replica at a time in a round-robin fashion. The replicator can be configured with a “replicator” list as follows:
 
@@ -286,58 +277,58 @@ The number of updates to send in one batch. The optimal size depends on the size
 Expert: Non-leader nodes need to synchronize their update logs with their leader node from time to time in order to clean deprecated transaction log files. By default, such a synchronization process is performed every minute. The schedule of the synchronization can be modified with a “updateLogSynchronizer” list as follows:
 
 `schedule`::
- The delay in milliseconds for synchronizing the updates log. The default is `60000`.
+ The delay in milliseconds for synchronizing the update logs. The default is `60000`.
 
 ==== The Buffer Element
 
-CDCR is configured by default to buffer any new incoming updates. When buffering updates, the updates log will store all the updates indefinitely. Replicas do not need to buffer updates, and it is recommended to disable buffer on the target SolrCloud. The buffer can be disabled at startup with a “buffer” list and the parameter “defaultState” as follows:
+When buffering updates, the update logs will store all the updates indefinitely. It is recommended to disable buffering on both the Source and Target clusters during normal operation as when buffering is enabled the Update Logs will grow without limit. Leaving buffering enabled is intended for special maintenance periods. The buffer can be disabled at startup with a “buffer” list and the parameter “defaultState” as follows:
 
 `defaultState`::
 The state of the buffer at startup. The default is `enabled`.
 
+[TIP]
+.Buffering is should be enabled only for maintenance windows
+====
+Buffering is designed to augment maintenance windows. The following points should be kept in mind:
+
+ * When buffering is enabled, the Update Logs will grow without limit; they will never be purged.
+ * During normal operation, the Update Logs will automatically accrue on the Source data center if the Target data center is unavailable; It is not necessary to enable buffering for CDCR to handle routine network disruptions.
+ ** For this reason, monitoring disk usage on the Source data center is recommended as an additional check that the Target data center is receiving updates.
+ * Buffering should _not_ be enabled on the Target data center as Update Logs would accrue without limit.
+ * If buffering is enabled then disabled, the Update Logs will be removed when their contents have been sent to the Target data center. This process may take some time.
+ ** Update Log cleanup is not triggered until a new update is sent to the Source data center.
+
+====
+
 == CDCR API
 
-The CDCR API is used to control and monitor the replication process. Control actions are performed at a collection level, i.e., by using the following base URL for API calls: `\http://localhost:8983/solr/<collection>`.
+The CDCR API is used to control and monitor the replication process. Control actions are performed at a collection level, i.e., by using the following base URL for API calls: `\http://localhost:8983/solr/<collection>/cdcr`.
 
-Monitor actions are performed at a core level, i.e., by using the following base URL for API calls: `\http://localhost:8983/solr/<collection>`.
+Monitor actions are performed at a core level, i.e., by using the following base URL for API calls: `\http://localhost:8983/solr/<core>/cdcr`.
 
 Currently, none of the CDCR API calls have parameters.
 
-
 === API Entry Points (Control)
 
-* `<collection>/cdcr?action=STATUS`: <<CrossDataCenterReplication_CDCR_-STATUS,Returns the current state>> of CDCR.
-* `<collection>/cdcr?action=START`: <<CrossDataCenterReplication_CDCR_-START,Starts CDCR>> replication
-* `<collection>/cdcr?action=STOP`: <<CrossDataCenterReplication_CDCR_-STOP,Stops CDCR>> replication.
-* `<collection>/cdcr?action=ENABLEBUFFER`: <<CrossDataCenterReplication_CDCR_-ENABLEBUFFER,Enables the buffering>> of updates.
-* `<collection>/cdcr?action=DISABLEBUFFER`: <<CrossDataCenterReplication_CDCR_-DISABLEBUFFER,Disables the buffering>> of updates.
-
+* `<collection>/cdcr?action=STATUS`: <<CDCR STATUS,Returns the current state>> of CDCR.
+* `<collection>/cdcr?action=START`: <<CDCR START,Starts CDCR>> replication
+* `<collection>/cdcr?action=STOP`: <<CDCR STOP,Stops CDCR>> replication.
+* `<collection>/cdcr?action=ENABLEBUFFER`: <<ENABLEBUFFER,Enables the buffering>> of updates.
+* `<collection>/cdcr?action=DISABLEBUFFER`: <<DISABLEBUFFER,Disables the buffering>> of updates.
 
 === API Entry Points (Monitoring)
 
-* `core/cdcr?action=QUEUES`: <<CrossDataCenterReplication_CDCR_-QUEUES,Fetches statistics about the queue>> for each replica and about the update logs.
-* `core/cdcr?action=OPS`: <<CrossDataCenterReplication_CDCR_-OPS,Fetches statistics about the replication performance>> (operations per second) for each replica.
-* `core/cdcr?action=ERRORS`: <<CrossDataCenterReplication_CDCR_-ERRORS,Fetches statistics and other information about replication errors>> for each replica.
+* `core/cdcr?action=QUEUES`: <<QUEUES,Fetches statistics about the queue>> for each replica and about the update logs.
+* `core/cdcr?action=OPS`: <<OPS,Fetches statistics about the replication performance>> (operations per second) for each replica.
+* `core/cdcr?action=ERRORS`: <<ERRORS,Fetches statistics and other information about replication errors>> for each replica.
 
 === Control Commands
 
-[[CrossDataCenterReplication_CDCR_-STATUS]]
-==== STATUS
+==== CDCR STATUS
 
 `/collection/cdcr?action=STATUS`
 
-===== Input
-
-*Query Parameters:* There are no parameters to this command.
-
-===== Output
-
-*Output Content*
-
-The current state of the CDCR, which includes the state of the replication process and the state of the buffer.
-
-[[cdcr_examples]]
-===== Examples
+===== CDCR Status Example
 
 *Input*
 
@@ -362,22 +353,15 @@ The current state of the CDCR, which includes the state of the replication proce
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-ENABLEBUFFER]]
 ==== ENABLEBUFFER
 
 `/collection/cdcr?action=ENABLEBUFFER`
 
-===== Input
+===== Enable Buffer Response
 
-*Query Parameters:* There are no parameters to this command.
+The status of the process and an indication of whether the buffer is enabled.
 
-===== Output
-
-*Output Content*
-
-The status of the process and an indication of whether the buffer is enabled
-
-===== Examples
+===== Enable Buffer Example
 
 *Input*
 
@@ -402,20 +386,15 @@ The status of the process and an indication of whether the buffer is enabled
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-DISABLEBUFFER]]
 ==== DISABLEBUFFER
 
 `/collection/cdcr?action=DISABLEBUFFER`
 
-===== Input
+===== Disable Buffer Response
 
-*Query Parameters:* There are no parameters to this command
+The status of CDCR and an indication that the buffer is disabled.
 
-===== Output
-
-*Output Content:* The status of CDCR and an indication that the buffer is disabled.
-
-===== Examples
+===== Disable Buffer Example
 
 *Input*
 
@@ -440,20 +419,15 @@ http://host:8983/solr/<collection_name>/cdcr?action=DISABLEBUFFER
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-START]]
-==== START
+==== CDCR START
 
 `/collection/cdcr?action=START`
 
-===== Input
+===== CDCR Start Response
 
-*Query Parameters:* There are no parameters for this action
+Confirmation that CDCR is started and the status of buffering
 
-===== Output
-
-*Output Content:* Confirmation that CDCR is started and the status of buffering
-
-===== Examples
+===== CDCR Start Examples
 
 *Input*
 
@@ -478,20 +452,15 @@ http://host:8983/solr/<collection_name>/cdcr?action=START
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-STOP]]
-==== STOP
+==== CDCR STOP
 
 `/collection/cdcr?action=STOP`
 
-===== Input
+===== CDCR Stop Response
 
-*Query Parameters:* There are no parameters for this command.
+The status of CDCR, including the confirmation that CDCR is stopped.
 
-===== Output
-
-*Output Content:* The status of CDCR, including the confirmation that CDCR is stopped
-
-===== Examples
+===== CDCR Stop Examples
 
 *Input*
 
@@ -517,27 +486,21 @@ http://host:8983/solr/<collection_name>/cdcr?action=START
 ----
 
 
-[[CrossDataCenterReplication_CDCR_-Monitoringcommands]]
-=== Monitoring commands
+=== CDCR Monitoring Commands
 
-[[CrossDataCenterReplication_CDCR_-QUEUES]]
 ==== QUEUES
 
 `/core/cdcr?action=QUEUES`
 
-===== Input
-
-*Query Parameters:* There are no parameters for this command
-
-===== Output
+===== QUEUES Response
 
 *Output Content*
 
-The output is composed of a list “queues” which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, the current size of the queue and the timestamp of the last update operation successfully processed is provided. The timestamp of the update operation is the original timestamp, i.e., the time this operation was processed on the Source SolrCloud. This allows an estimate the latency of the replication process.
+The output is composed of a list “queues” which contains a list of (ZooKeeper) Target hosts, themselves containing a list of Target collections. For each collection, the current size of the queue and the timestamp of the last update operation successfully processed is provided. The timestamp of the update operation is the original timestamp, i.e., the time this operation was processed on the Source SolrCloud. This allows an estimate the latency of the replication process.
 
-The “queues” object also contains information about the updates log, such as the size (in bytes) of the updates log on disk (“tlogTotalSize”), the number of transaction log files (“tlogTotalCount”) and the status of the updates log synchronizer (“updateLogSynchronizer”).
+The “queues” object also contains information about the update logs, such as the size (in bytes) of the update logs on disk (“tlogTotalSize”), the number of transaction log files (“tlogTotalCount”) and the status of the update logs synchronizer (“updateLogSynchronizer”).
 
-===== Examples
+===== QUEUES Examples
 
 *Input*
 
@@ -569,20 +532,15 @@ The “queues” object also contains information about the updates log, such as
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-OPS]]
 ==== OPS
 
 `/core/cdcr?action=OPS`
 
-===== Input
+===== OPS Response
 
-*Query Parameters:* There are no parameters for this command.
+The output is composed of `operationsPerSecond` which contains a list of (ZooKeeper) target hosts, themselves containing a list of Target collections. For each collection, the average number of processed operations per second since the start of the replication process is provided. The operations are further broken down into two groups: add and delete operations.
 
-===== Output
-
-*Output Content:* The output is composed of a list “operationsPerSecond” which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, the average number of processed operations per second since the start of the replication process is provided. The operations are further broken down into two groups: add and delete operations.
-
-===== Examples
+===== OPS Examples
 
 *Input*
 
@@ -612,20 +570,15 @@ The “queues” object also contains information about the updates log, such as
 }
 ----
 
-[[CrossDataCenterReplication_CDCR_-ERRORS]]
 ==== ERRORS
 
 `/core/cdcr?action=ERRORS`
 
-===== Input
+===== ERRORS Response
 
-*Query Parameters:* There are no parameters for this command.
+The output is composed of a list “errors” which contains a list of (ZooKeeper) target hosts, themselves containing a list of Target collections. For each collection, information about errors encountered during the replication is provided, such as the number of consecutive errors encountered by the replicator thread, the number of bad requests or internal errors since the start of the replication process, and a list of the last errors encountered ordered by timestamp.
 
-===== Output
-
-*Output Content:* The output is composed of a list “errors” which contains a list of (ZooKeeper) target hosts, themselves containing a list of target collections. For each collection, information about errors encountered during the replication is provided, such as the number of consecutive errors encountered by the replicator thread, the number of bad requests or internal errors since the start of the replication process, and a list of the last errors encountered ordered by timestamp.
-
-===== Examples
+===== ERRORS Examples
 
 *Input*
 
@@ -662,11 +615,18 @@ The “queues” object also contains information about the updates log, such as
 
 == Initial Startup
 
+.CDCR Bootstrapping
+[TIP]
+====
+Solr 6.2, added the additional functionality to allow CDCR to replicate the entire index from the Source to the Target data centers on first time startup as an alternative to the following procedure. For very large indexes, time should be allocated for this initial synchronization if this option is chosen.
+====
+
 This is a general approach for initializing CDCR in a production environment based upon an approach taken by the initial working installation of CDCR and generously contributed to illustrate a "real world" scenario.
 
-* Customer uses the CDCR approach to keep a remote disaster-recovery instance available for production backup. This is an active-passive solution.
+
+* Customer uses the CDCR approach to keep a remote disaster-recovery instance available for production backup. This is a uni-directional solution.
 * Customer has 26 clouds with 200 million assets per cloud (15GB indexes). Total document count is over 4.8 billion.
-** Source and target clouds were synched in 2-3 hour maintenance windows to establish the base index for the targets.
+** Source and Target clouds were synched in 2-3 hour maintenance windows to establish the base index for the Targets.
 
 As usual, it is good to start small. Sync a single cloud and monitor for a period of time before doing the others. You may need to adjust your settings several times before finding the right balance.
 
@@ -699,7 +659,7 @@ As usual, it is good to start small. Sync a single cloud and monitor for a perio
 ----
 +
 * Upload the modified `solrconfig.xml` to ZooKeeper on both Source and Target
-* Sync the index directories from the Source collection to target collection across to the corresponding shard nodes. `rsync` works well for this.
+* Sync the index directories from the Source collection to Target collection across to the corresponding shard nodes. `rsync` works well for this.
 +
 For example, if there are 2 shards on collection1 with 2 replicas for each shard, copy the corresponding index directories from
 +
@@ -721,14 +681,13 @@ For example, if there are 2 shards on collection1 with 2 replicas for each shard
 http://host:port/solr/<collection_name>/cdcr?action=START
 +
 * There is no need to run the /cdcr?action=START command on the Target
-* Disable the buffer on the Target
+* Disable the buffer on the Target and Source
 +
 [source,text]
 http://host:port/solr/collection_name/cdcr?action=DISABLEBUFFER
 +
 * Renable indexing
 
-[[CrossDataCenterReplication_CDCR_-Monitoring.1]]
 == Monitoring
 
 .  Network and disk space monitoring are essential. Ensure that the system has plenty of available storage to queue up changes if there is a disconnect between the Source and Target. A network outage between the two data centers can cause your disk usage to grow.
@@ -739,7 +698,7 @@ http://host:port/solr/collection_name/cdcr?action=DISABLEBUFFER
 
 == ZooKeeper Settings
 
-With CDCR, the target ZooKeepers will have connections from the Target clouds and the Source clouds. You may need to increase the `maxClientCnxns` setting in `zoo.cfg`.
+With CDCR, the Target ZooKeepers will have connections from the Target clouds and the Source clouds. You may need to increase the `maxClientCnxns` setting in `zoo.cfg`.
 
 [source,text]
 ----
@@ -761,10 +720,5 @@ When rolling in upgrades to your indexer or application, you should shutdown the
 curl http://<Source>/solr/cloud1/update -H 'Content-type:application/json' -d '[{"SKU":"ABC"}]'
 
 #check the Target
-curl "http://<Target>:8983/solr/<collection_name>/select?q=SKU:ABC&wt=json&indent=true"
+curl "http://<Target>:8983/solr/<collection_name>/select?q=SKU:ABC&indent=true"
 ----
-
-[[CrossDataCenterReplication_CDCR_-Limitations.1]]
-== Limitations
-
-* Running CDCR with the indexes on HDFS is not currently supported, see: https://issues.apache.org/jira/browse/SOLR-9861[Solr CDCR over HDFS].

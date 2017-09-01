@@ -17,15 +17,22 @@
 package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -83,6 +90,29 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAddedMBeanDiff() throws Exception {
+    String xml = h.query(req(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        CommonParams.WT,"xml"
+    ));
+
+    // Artificially convert a long value to a null, to trigger the ADD case in SolrInfoMBeanHandler.diffObject()
+    xml = xml.replaceFirst("<long\\s+(name\\s*=\\s*\"ADMIN./admin/mbeans.totalTime\"\\s*)>[^<]*</long>", "<null $1/>");
+
+    LocalSolrQueryRequest req = lrf.makeRequest(
+        CommonParams.QT,"/admin/mbeans",
+        "stats","true",
+        CommonParams.WT,"xml",
+        "diff","true");
+    req.setContentStreams(Collections.singletonList(new ContentStreamBase.StringStream(xml)));
+    xml = h.query(req);
+
+    NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
+    assertNotNull(((NamedList)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADD ADMIN./admin/mbeans.totalTime"));
+  }
+
+  @Test
   public void testXMLDiffWithExternalEntity() throws Exception {
     String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -95,5 +125,75 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
 
     assertTrue("external entity ignored properly", true);
+  }
+
+  boolean runSnapshots;
+
+  @Test
+  public void testMetricsSnapshot() throws Exception {
+    final CountDownLatch counter = new CountDownLatch(500);
+    MetricRegistry registry = new MetricRegistry();
+    Set<String> names = ConcurrentHashMap.newKeySet();
+    SolrInfoBean bean = new SolrInfoBean() {
+      @Override
+      public String getName() {
+        return "foo";
+      }
+
+      @Override
+      public String getDescription() {
+        return "foo";
+      }
+
+      @Override
+      public Category getCategory() {
+        return Category.ADMIN;
+      }
+
+      @Override
+      public Set<String> getMetricNames() {
+        return names;
+      }
+
+      @Override
+      public MetricRegistry getMetricRegistry() {
+        return registry;
+      }
+    };
+    runSnapshots = true;
+    Thread modifier = new Thread(() -> {
+      int i = 0;
+      while (runSnapshots) {
+        bean.registerMetricName("name-" + i++);
+        try {
+          Thread.sleep(31);
+        } catch (InterruptedException e) {
+          runSnapshots = false;
+          break;
+        }
+      }
+    });
+    Thread reader = new Thread(() -> {
+      while (runSnapshots) {
+        try {
+          bean.getMetricsSnapshot();
+        } catch (Exception e) {
+          runSnapshots = false;
+          e.printStackTrace();
+          fail("Exception getting metrics snapshot: " + e.toString());
+        }
+        try {
+          Thread.sleep(53);
+        } catch (InterruptedException e) {
+          runSnapshots = false;
+          break;
+        }
+        counter.countDown();
+      }
+    });
+    modifier.start();
+    reader.start();
+    counter.await(30, TimeUnit.SECONDS);
+    runSnapshots = false;
   }
 }

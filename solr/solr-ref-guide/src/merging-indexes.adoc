@@ -27,7 +27,6 @@ To merge indexes, they must meet these requirements:
 
 Optimally, the two indexes should be built using the same schema.
 
-[[MergingIndexes-UsingIndexMergeTool]]
 == Using IndexMergeTool
 
 To merge the indexes, do the following:
@@ -43,9 +42,8 @@ java -cp $SOLR/server/solr-webapp/webapp/WEB-INF/lib/lucene-core-VERSION.jar:$SO
 This will create a new index at `/path/to/newindex` that contains both index1 and index2.
 . Copy this new directory to the location of your application's solr index (move the old one aside first, of course) and start Solr.
 
-[[MergingIndexes-UsingCoreAdmin]]
 == Using CoreAdmin
 
-The `MERGEINDEXES` command of the <<coreadmin-api.adoc#CoreAdminAPI-MERGEINDEXES,CoreAdminHandler>> can be used to merge indexes into a new core – either from one or more arbitrary `indexDir` directories or by merging from one or more existing `srcCore` core names.
+The `MERGEINDEXES` command of the <<coreadmin-api.adoc#coreadmin-mergeindexes,CoreAdminHandler>> can be used to merge indexes into a new core – either from one or more arbitrary `indexDir` directories or by merging from one or more existing `srcCore` core names.
 
-See the <<coreadmin-api.adoc#CoreAdminAPI-MERGEINDEXES,CoreAdminHandler>> section for details.
+See the <<coreadmin-api.adoc#coreadmin-mergeindexes,CoreAdminHandler>> section for details.

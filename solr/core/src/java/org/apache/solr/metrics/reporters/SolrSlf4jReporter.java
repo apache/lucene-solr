@@ -18,14 +18,12 @@ package org.apache.solr.metrics.reporters;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.Slf4jReporter;
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,15 +40,15 @@ import org.slf4j.LoggerFactory;
  *   metrics group, eg. <code>solr.jvm</code></li>
  * </ul>
  */
-public class SolrSlf4jReporter extends SolrMetricReporter {
+public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
 
   @SuppressWarnings("unused") // we need this to pass validate-source-patterns
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String instancePrefix = null;
   private String logger = null;
-  private List<String> filters = new ArrayList<>();
   private Slf4jReporter reporter;
+  private boolean active;
 
   /**
    * Create a SLF4J reporter for metrics managed in a named registry.
@@ -66,25 +64,6 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
   public void setPrefix(String prefix) {
     this.instancePrefix = prefix;
   }
-
-  /**
-   * Report only metrics with names matching any of the prefix filters.
-   * @param filters list of 0 or more prefixes. If the list is empty then
-   *                all names will match.
-   */
-  public void setFilter(List<String> filters) {
-    if (filters == null || filters.isEmpty()) {
-      return;
-    }
-    this.filters.addAll(filters);
-  }
-
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
-  }
-
 
   public void setLogger(String logger) {
     this.logger = logger;
@@ -102,12 +81,7 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
         .convertRatesTo(TimeUnit.SECONDS)
         .convertDurationsTo(TimeUnit.MILLISECONDS);
 
-    MetricFilter filter;
-    if (!filters.isEmpty()) {
-      filter = new SolrMetricManager.PrefixFilter(filters);
-    } else {
-      filter = MetricFilter.ALL;
-    }
+    final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
     if (logger == null || logger.isEmpty()) {
       // construct logger name from Group
@@ -126,6 +100,7 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     builder = builder.outputTo(LoggerFactory.getLogger(logger));
     reporter = builder.build();
     reporter.start(period, TimeUnit.SECONDS);
+    active = true;
   }
 
   @Override
@@ -140,5 +115,11 @@ public class SolrSlf4jReporter extends SolrMetricReporter {
     if (reporter != null) {
       reporter.close();
     }
+    active = false;
+  }
+
+  // for unit tests
+  boolean isActive() {
+    return active;
   }
 }

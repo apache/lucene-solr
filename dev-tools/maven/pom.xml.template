@@ -277,6 +277,7 @@
               <tests.postingsformat>${tests.postingsformat}</tests.postingsformat>
               <tests.timezone>${tests.timezone}</tests.timezone>
               <tests.verbose>${tests.verbose}</tests.verbose>
+              <java.security.egd>file:/dev/./urandom</java.security.egd>
             </systemPropertyVariables>
           </configuration>
         </plugin>

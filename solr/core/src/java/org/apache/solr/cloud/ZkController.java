@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +60,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.BeforeReconnect;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
@@ -94,8 +94,11 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -939,7 +942,8 @@ public class ZkController {
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
         boolean joinAtHead = false;
-        Replica replica = zkStateReader.getClusterState().getReplica(collection, coreZkNodeName);
+        final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+        Replica replica = (docCollection == null) ? null : docCollection.getReplica(coreZkNodeName);
         if (replica != null) {
           joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
         }
@@ -985,13 +989,13 @@ public class ZkController {
         if (isTlogReplicaAndNotLeader) {
           String commitVersion = ReplicateFromLeader.getCommitVersion(core);
           if (commitVersion != null) {
-            ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
+            ulog.copyOverOldUpdates(Long.parseLong(commitVersion), true);
           }
         }
         // we will call register again after zk expiration and on reload
         if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
-          Slice slice = getClusterState().getSlice(collection, shardId);
+          Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
@@ -1300,8 +1304,11 @@ public class ZkController {
         props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       }
       try (SolrCore core = cc.getCore(cd.getName())) {
+        if (core != null && state == Replica.State.ACTIVE) {
+          ensureRegisteredSearcher(core);
+        }
         if (core != null && core.getDirectoryFactory().isSharedStorage()) {
-          if (core != null && core.getDirectoryFactory().isSharedStorage()) {
+          if (core.getDirectoryFactory().isSharedStorage()) {
             props.put("dataDir", core.getDataDir());
             UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
             if (ulog != null) {
@@ -1313,7 +1320,7 @@ public class ZkController {
         // The core had failed to initialize (in a previous request, not this one), hence nothing to do here.
         log.info("The core '{}' had failed to initialize before.", cd.getName());
       }
-      
+
       ZkNodeProps m = new ZkNodeProps(props);
       
       if (updateLastState) {
@@ -1348,7 +1355,8 @@ public class ZkController {
       assert false : "No collection was specified [" + collection + "]";
       return;
     }
-    Replica replica = zkStateReader.getClusterState().getReplica(collection, coreNodeName);
+    final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+    Replica replica = (docCollection == null) ? null : docCollection.getReplica(coreNodeName);
     
     if (replica == null || replica.getType() != Type.PULL) {
       ElectionContext context = electionContexts.remove(new ContextKey(collection, coreNodeName));
@@ -1402,10 +1410,10 @@ public class ZkController {
     int retryCount = 320;
     log.debug("look for our core node name");
     while (retryCount-- > 0) {
-      Map<String, Slice> slicesMap = zkStateReader.getClusterState()
-          .getSlicesMap(descriptor.getCloudDescriptor().getCollectionName());
-      if (slicesMap != null) {
-
+      final DocCollection docCollection = zkStateReader.getClusterState()
+          .getCollectionOrNull(descriptor.getCloudDescriptor().getCollectionName());
+      if (docCollection != null && docCollection.getSlicesMap() != null) {
+        final Map<String, Slice> slicesMap = docCollection.getSlicesMap();
         for (Slice slice : slicesMap.values()) {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this
@@ -1605,9 +1613,10 @@ public class ZkController {
         log.info("Replica " + myCoreNodeName +
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
 
-        try (HttpSolrClient client = new Builder(leaderBaseUrl).build()) {
-          client.setConnectionTimeout(15000);
-          client.setSoTimeout(120000);
+        try (HttpSolrClient client = new Builder(leaderBaseUrl)
+            .withConnectionTimeout(15000)
+            .withSocketTimeout(120000)
+            .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);
           prepCmd.setNodeName(getNodeName());
@@ -2183,10 +2192,7 @@ public class ZkController {
       DocCollection collection = clusterState.getCollectionOrNull(desc
           .getCloudDescriptor().getCollectionName());
       if (collection != null) {
-        boolean autoAddReplicas = ClusterStateUtil.isAutoAddReplicas(getZkStateReader(), collection.getName());
-        if (autoAddReplicas) {
-          CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
-        }
+        CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
       }
     }
   }
@@ -2513,5 +2519,53 @@ public class ZkController {
     } catch (Exception e) {
       log.warn("Could not publish node as down: " + e.getMessage());
     } 
+  }
+
+  /**
+   * Ensures that a searcher is registered for the given core and if not, waits until one is registered
+   */
+  private static void ensureRegisteredSearcher(SolrCore core) throws InterruptedException {
+    if (!core.getSolrConfig().useColdSearcher) {
+      RefCounted<SolrIndexSearcher> registeredSearcher = core.getRegisteredSearcher();
+      if (registeredSearcher != null) {
+        log.debug("Found a registered searcher: {} for core: {}", registeredSearcher.get(), core);
+        registeredSearcher.decref();
+      } else  {
+        Future[] waitSearcher = new Future[1];
+        log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
+        final RTimer timer = new RTimer();
+        RefCounted<SolrIndexSearcher> searcher = null;
+        try {
+          searcher = core.getSearcher(false, true, waitSearcher, true);
+          boolean success = true;
+          if (waitSearcher[0] != null)  {
+            log.debug("Waiting for first searcher of core {}, id: {} to be registered", core.getName(), core);
+            try {
+              waitSearcher[0].get();
+            } catch (ExecutionException e) {
+              log.warn("Wait for a searcher to be registered for core " + core.getName() + ",id: " + core + " failed due to: " + e, e);
+              success = false;
+            }
+          }
+          if (success)  {
+            if (searcher == null) {
+              // should never happen
+              log.debug("Did not find a searcher even after the future callback for core: {}, id: {}!!!", core.getName(), core);
+            } else  {
+              log.info("Found a registered searcher: {}, took: {} ms for core: {}, id: {}", searcher.get(), timer.getTime(), core.getName(), core);
+            }
+          }
+        } finally {
+          if (searcher != null) {
+            searcher.decref();
+          }
+        }
+      }
+      RefCounted<SolrIndexSearcher> newestSearcher = core.getNewestSearcher(false);
+      if (newestSearcher != null) {
+        log.debug("Found newest searcher: {} for core: {}, id: {}", newestSearcher.get(), core.getName(), core);
+        newestSearcher.decref();
+      }
+    }
   }
 }

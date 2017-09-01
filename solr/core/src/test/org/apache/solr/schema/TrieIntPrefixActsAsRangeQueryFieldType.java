@@ -22,7 +22,11 @@ import org.apache.solr.search.QParser;
 /**
  * Custom field type that overrides the prefix query behavior to map "X*" to [X TO Integer.MAX_VALUE].
  * * This is used for testing overridden prefix query for custom fields in TestOverriddenPrefixQueryForCustomFieldType
+ *
+ * @see IntPointPrefixActsAsRangeQueryFieldType
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TrieIntPrefixActsAsRangeQueryFieldType extends TrieIntField {
 
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {

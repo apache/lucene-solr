@@ -1158,10 +1158,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected void copyAndSwitchToNewTlog(CommitUpdateCommand cuc) {
     synchronized (this) {
-      if (tlog == null) return;
+      if (tlog == null && prevTlog == null && prevMapLog2 == null && logs.isEmpty()) {
+        return;
+      }
       preCommit(cuc);
       try {
-        copyOverOldUpdates(cuc.getVersion());
+        copyOverOldUpdates(cuc.getVersion(), false);
       } finally {
         postCommit(cuc);
       }
@@ -1171,8 +1173,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * Copy over updates from prevTlog or last tlog (in tlog folder) to a new tlog
    * @param commitVersion any updates that have version larger than the commitVersion will be copied over
+   * @param omitCommitted if a tlog is already committed then don't read it
    */
-  public void copyOverOldUpdates(long commitVersion) {
+  public void copyOverOldUpdates(long commitVersion, boolean omitCommitted) {
     TransactionLog oldTlog = prevTlog;
     if (oldTlog == null && !logs.isEmpty()) {
       oldTlog = logs.getFirst();
@@ -1182,9 +1185,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     try {
-      if (oldTlog.endsWithCommit()) {
-        return;
-      }
+      if (omitCommitted && oldTlog.endsWithCommit()) return;
     } catch (IOException e) {
       log.warn("Exception reading log", e);
       return;

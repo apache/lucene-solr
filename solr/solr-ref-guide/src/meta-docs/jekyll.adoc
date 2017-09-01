@@ -1,0 +1,88 @@
+= Making Changes to HTML Version
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Solr Ref Guide uses Jekyll to build the HTML version of the site.
+
+== What is Jekyll?
+
+Jekyll is a static site generator, meaning that it takes some set of documents and produces HTML pages. It allows for templating of the pages, so each page has the same look and feel without having to code headers, footers, logos, etc., into every page.
+
+Jekyll is an open source project written in Ruby, online at https://jekyllrb.com/.
+
+== Jekyll-Asciidoctor Plugin
+We use a plugin for Jekyll from the Asciidoctor project to integrate Jekyll with Asciidoc formatted content. The source for the plugin is available at https://github.com/asciidoctor/jekyll-asciidoc.
+
+This plugin allows us to use Asciidoctor-style variables with Jekyll, instead of having to maintain two sets of the same variables (one for HTML version and another for PDF version).
+
+== Jekyll Basics
+
+The following sections describe the main features of Jekyll that you will encounter while working with the Solr Ref Guide.
+
+=== _config.yml
+
+The `_config.yml` is a global configuration file that drives many of the options used when building the site (particularly in our use of Jekyll).
+
+We have templatized `_config.yml` so in our use of Jekyll you will find it as `solr-ref-guide/_config.yml.template`. This allows us to define some variables during the build, and use common Lucene/Solr build parameters (such as versions, etc.).
+
+=== Front Matter
+
+Front matter for Jekyll is like a header that defines the title of the page, and any other variables that may be helpful or even required when rendering the page.
+
+Every document that will be converted to HTML *must* include at least the page title at the top of the page.
+
+Many guides to Jekyll also say that defining the layout in the front matter is required. However, since we only have one layout for all pages, we have defined this as a default.
+
+The Solr Ref Guide uses the front matter to define some custom attributes on a per page basis:
+
+* `page-shortname` - uniquely identifying the page
+* `page-permalink` - permanent URL of a page,
+* `page-children` - ordered list of child pages, this is used to build the site navigation menu that appears to the left of each page's content (and to order the pages in the PDF)
+
+There are also some optional custom attributes that can be defined in pages to affect the Table of Contents presentation in jekyll:
+
+* `page-toclevels` - changes how "deep" the TOC will be in terms of nested section/sub-section titles (default = 2)
+* `page-tocclass` - changes the CSS class applied to the TOC, default = "normal", resulting in the class name `toc-normal`. The other option is "right", to put the TOC on the right side of the page.
+* `page-toc` - if this is false, then no TOCs will be generated for the page at all.
+
+NOTE: The special macro `{section-toc}` can be used anywhere in a page to create an "In this Section" TOC covering only the sub-headings in the same section.  `:page-toc: false` will also prevent this macro from working, so if you want no "top level" TOC, but you do want section TOCs, use `:page-toclevels: 0`
+
+=== Layouts
+
+Layouts define the "look and feel" of each page.
+
+Jekyll uses Liquid for page templates.
+
+For our implementation of Jekyll, layouts are found in `solr-ref-guide/src/_layouts`
+
+=== Includes
+
+Include files are usually small files that are pulled into a layout when a page is being built. They are Liquid templates that define an area of the page. This allows flexibility across layouts - all pages can have the same header without duplicating code, but different pages could have different menu options.
+
+Include files that we use define the top navigation, the page header, the page footer, and tables of contents.
+
+For our implementation of Jekyll, include files are found in `solr-ref-guide/src/_includes`.
+
+=== Data Files
+
+Data files include data such as lists, that should be included in each page. The left-hand navigation is an example of a data file.
+
+For our implementation of Jekyll, data files are found in `solr-ref-guide/src/_data`.
+
+== Building the HTML Site
+
+An Ant target `build-site` will build the full HTML site. This target builds the navigation for the left-hand menu, and converts all `.adoc` files to `.html`, including navigation and inter-document links.

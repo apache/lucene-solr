@@ -26,10 +26,9 @@ The roles can be used with any of the authentication plugins or with a custom au
 
 Once defined through the API, roles are stored in `security.json`.
 
-[[Rule-BasedAuthorizationPlugin-EnabletheAuthorizationPlugin]]
 == Enable the Authorization Plugin
 
-The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#AuthenticationandAuthorizationPlugins-EnablePluginswithsecurity.json,Enable Plugins with security.json>>.
+The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
 
 This file has two parts, the `authentication` part and the `authorization` part. The `authentication` part stores information about the class being used for authentication.
 
@@ -61,14 +60,12 @@ There are several things defined in this example:
 * The 'admin' role has been defined, and it has permission to edit security settings.
 * The 'solr' user has been defined to the 'admin' role.
 
-[[Rule-BasedAuthorizationPlugin-PermissionAttributes]]
 == Permission Attributes
 
 Each role is comprised of one or more permissions which define what the user is allowed to do. Each permission is made up of several attributes that define the allowed activity. There are some pre-defined permissions which cannot be modified.
 
 The permissions are consulted in order they appear in `security.json`. The first permission that matches is applied for each user, so the strictest permissions should be at the top of the list. Permissions order can be controlled with a parameter of the Authorization API, as described below.
 
-[[Rule-BasedAuthorizationPlugin-PredefinedPermissions]]
 === Predefined Permissions
 
 There are several permissions that are pre-defined. These have fixed default values, which cannot be modified, and new attributes cannot be added. To use these attributes, simply define a role that includes this permission, and then assign a user to that role.
@@ -107,19 +104,16 @@ The pre-defined permissions are:
 ** OVERSEERSTATUS
 ** CLUSTERSTATUS
 ** REQUESTSTATUS
-* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-UpdateRequestHandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
-* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-SearchHandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#updaterequesthandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
+* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
 * *all*: Any requests coming to Solr.
 
-[[Rule-BasedAuthorizationPlugin-AuthorizationAPI]]
 == Authorization API
 
-[[Rule-BasedAuthorizationPlugin-APIEndpoint]]
-=== API Endpoint
+=== Authorization API Endpoint
 
 `/admin/authorization`: takes a set of commands to create permissions, map permissions to roles, and map roles to users.
 
-[[Rule-BasedAuthorizationPlugin-ManagePermissions]]
 === Manage Permissions
 
 Three commands control managing permissions:
@@ -195,7 +189,6 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
   "set-permission": {"name": "read", "role":"guest"}
 }' http://localhost:8983/solr/admin/authorization
 
-[[Rule-BasedAuthorizationPlugin-UpdateorDeletePermissions]]
 === Update or Delete Permissions
 
 Permissions can be accessed using their index in the list. Use the `/admin/authorization` API to see the existing permissions and their indices.
@@ -216,7 +209,6 @@ curl --user solr:SolrRocks -H 'Content-type:application/json' -d '{
 }' http://localhost:8983/solr/admin/authorization
 
 
-[[Rule-BasedAuthorizationPlugin-MapRolestoUsers]]
 === Map Roles to Users
 
 A single command allows roles to be mapped to users:

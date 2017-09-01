@@ -614,8 +614,8 @@ public class DocValuesTest extends SolrTestCaseJ4 {
           long minSortable = toSortableLong.get(i).apply(minVal);
           long maxSortable = toSortableLong.get(i).apply(maxVal);
           
-          if((minInclusive && minSortable<=valSortable || !minInclusive && minSortable<valSortable) &&
-              (maxInclusive && maxSortable>=valSortable || !maxInclusive && maxSortable>valSortable)) {
+          if((minInclusive && minSortable<=valSortable || !minInclusive && minSortable<valSortable || (min.equals("*") && val == negativeInfinity[i])) &&
+              (maxInclusive && maxSortable>=valSortable || !maxInclusive && maxSortable>valSortable || (max.equals("*") && val == positiveInfinity[i]))) {
             counter++;
             tests.add("//result/doc["+counter+"]/str[@name='id'][.="+(k+1)+"]");
             tests.add("//result/doc["+counter+"]/float[@name='score'][.=1.0]");

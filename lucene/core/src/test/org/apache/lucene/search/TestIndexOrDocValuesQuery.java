@@ -64,7 +64,7 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
     // The term query is more selective, so the IndexOrDocValuesQuery should use doc values
     final Query q1 = new BooleanQuery.Builder()
         .add(new TermQuery(new Term("f1", "foo")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 2), NumericDocValuesField.newRangeQuery("f2", 2L, 2L)), Occur.MUST)
+        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 2), NumericDocValuesField.newSlowRangeQuery("f2", 2L, 2L)), Occur.MUST)
         .build();
 
     final Weight w1 = searcher.createNormalizedWeight(q1, random().nextBoolean());
@@ -74,7 +74,7 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
     // The term query is less selective, so the IndexOrDocValuesQuery should use points
     final Query q2 = new BooleanQuery.Builder()
         .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 42), NumericDocValuesField.newRangeQuery("f2", 42L, 42L)), Occur.MUST)
+        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 42), NumericDocValuesField.newSlowRangeQuery("f2", 42L, 42L)), Occur.MUST)
         .build();
 
     final Weight w2 = searcher.createNormalizedWeight(q2, random().nextBoolean());

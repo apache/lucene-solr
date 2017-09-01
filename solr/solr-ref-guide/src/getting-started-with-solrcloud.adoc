@@ -33,10 +33,8 @@ In this section you will learn how to start a SolrCloud cluster using startup sc
 This tutorial assumes that you're already familiar with the basics of using Solr. If you need a refresher, please see the <<getting-started.adoc#getting-started,Getting Started section>> to get a grounding in Solr concepts. If you load documents as part of that exercise, you should start over with a fresh Solr installation for these SolrCloud tutorials.
 ====
 
-[[GettingStartedwithSolrCloud-SolrCloudExample]]
 == SolrCloud Example
 
-[[GettingStartedwithSolrCloud-InteractiveStartup]]
 === Interactive Startup
 
 The `bin/solr` script makes it easy to get started with SolrCloud as it walks you through the process of launching Solr nodes in cloud mode and adding a collection. To get started, simply do:
@@ -89,7 +87,9 @@ Next, the script prompts you for the number of shards to distribute the collecti
 
 Next, the script will prompt you for the number of replicas to create for each shard.  <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Replication>> is covered in more detail later in the guide, so if you're unsure, then use the default of 2 so that you can see how replication is handled in SolrCloud.
 
-Lastly, the script will prompt you for the name of a configuration directory for your collection. You can choose *basic_configs*, *data_driven_schema_configs*, or *sample_techproducts_configs*. The configuration directories are pulled from `server/solr/configsets/` so you can review them beforehand if you wish. The *data_driven_schema_configs* configuration (the default) is useful when you're still designing a schema for your documents and need some flexiblity as you experiment with Solr.
+Lastly, the script will prompt you for the name of a configuration directory for your collection. You can choose *_default*, or *sample_techproducts_configs*. The configuration directories are pulled from `server/solr/configsets/` so you can review them beforehand if you wish. The *_default* configuration is useful when you're still designing a schema for your documents and need some flexiblity as you experiment with Solr, since it has schemaless functionality. However, after creating your collection, the schemaless functionality can be disabled in order to lock down the schema (so that documents indexed after doing so will not alter the schema) or to configure the schema by yourself. This can be done as follows (assuming your collection name is `mycollection`):
+
+`curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'`
 
 At this point, you should have a new collection created in your local SolrCloud cluster. To verify this, you can run the status command:
 
@@ -118,7 +118,6 @@ To stop Solr in SolrCloud mode, you would use the `bin/solr` script and issue th
 bin/solr stop -all
 ----
 
-[[GettingStartedwithSolrCloud-Startingwith-noprompt]]
 === Starting with -noprompt
 
 You can also get SolrCloud started with all the defaults instead of the interactive session using the following command:
@@ -128,7 +127,6 @@ You can also get SolrCloud started with all the defaults instead of the interact
 bin/solr -e cloud -noprompt
 ----
 
-[[GettingStartedwithSolrCloud-RestartingNodes]]
 === Restarting Nodes
 
 You can restart your SolrCloud nodes using the `bin/solr` script. For instance, to restart node1 running on port 8983 (with an embedded ZooKeeper server), you would do:
@@ -147,7 +145,6 @@ bin/solr restart -c -p 7574 -z localhost:9983 -s example/cloud/node2/solr
 
 Notice that you need to specify the ZooKeeper address (`-z localhost:9983`) when starting node2 so that it can join the cluster with node1.
 
-[[GettingStartedwithSolrCloud-Addinganodetoacluster]]
 === Adding a node to a cluster
 
 Adding a node to an existing cluster is a bit advanced and involves a little more understanding of Solr. Once you startup a SolrCloud cluster using the startup scripts, you can add a new node to it by:

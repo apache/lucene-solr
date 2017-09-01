@@ -1,4 +1,4 @@
-= The Extended DisMax Query Parser
+= The Extended DisMax (eDismax) Query Parser
 :page-shortname: the-extended-dismax-query-parser
 :page-permalink: the-extended-dismax-query-parser.html
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -33,76 +33,52 @@ In addition to supporting all the DisMax query parser parameters, Extended Disma
 * supports pure negative nested queries: queries such as `+foo (-foo)` will match all documents.
 * lets you specify which fields the end user is allowed to query, and to disallow direct fielded searches.
 
-[[TheExtendedDisMaxQueryParser-ExtendedDisMaxParameters]]
 == Extended DisMax Parameters
 
-In addition to all the <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-DisMaxParameters,DisMax parameters>>, Extended DisMax includes these query parameters:
+In addition to all the <<the-dismax-query-parser.adoc#dismax-query-parser-parameters,DisMax parameters>>, Extended DisMax includes these query parameters:
 
-[[TheExtendedDisMaxQueryParser-ThesowParameter]]
-=== The sow Parameter
+`sow`::
+Split on whitespace. If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.  The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.
 
-Split on whitespace: if set to `false`, whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g. multi-word synonyms and shingles. Defaults to `true`: text analysis is invoked separately for each individual whitespace-separated term.
+`mm.autoRelax`::
+If `true`, the number of clauses required (<<the-dismax-query-parser.adoc#mm-minimum-should-match-parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g. stopwords filter) from some but not all <<the-dismax-query-parser.adoc#qf-query-fields-parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.
++
+Note that relaxing `mm` may cause undesired side effects, such as hurting the precision of the search, depending on the nature of your index content.
 
-[[TheExtendedDisMaxQueryParser-Themm.autoRelaxParameter]]
-=== The mm.autoRelax Parameter
+`boost`::
+A multivalued list of strings parsed as queries with scores multiplied by the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the `BoostQParserPlugin`.
 
-If true, the number of clauses required (<<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Themm_MinimumShouldMatch_Parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g. stopwords filter) from some but not all <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Theqf_QueryFields_Parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.
-
-Note that relaxing mm may cause undesired side effects, hurting the precision of the search, depending on the nature of your index content.
-
-[[TheExtendedDisMaxQueryParser-TheboostParameter]]
-=== The boost Parameter
-
-A multivalued list of strings parsed as queries with scores multiplied by the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the `BoostQParserPlugin`
-
-[[TheExtendedDisMaxQueryParser-ThelowercaseOperatorsParameter]]
-=== The lowercaseOperators Parameter
-
+`lowercaseOperators`::
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
 Defaults to `false`.
 
-[[TheExtendedDisMaxQueryParser-ThepsParameter]]
-=== The ps Parameter
+`ps`::
+Phrase Slop. The default amount of slop - distance between terms - on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting). See also the section <<Using 'Slop'>> below.
 
-Default amount of slop on phrase queries built with `pf`, `pf2` and/or `pf3` fields (affects boosting).
+`pf2`::
 
-[[TheExtendedDisMaxQueryParser-Thepf2Parameter]]
-=== The pf2 Parameter
+A multivalued list of fields with optional weights. Similar to `pf`, but based on _pairs_ of word shingles.
 
-A multivalued list of fields with optional weights, based on pairs of word shingles.
-
-[[TheExtendedDisMaxQueryParser-Theps2Parameter]]
-=== The ps2 Parameter
-
+`ps2`::
 This is similar to `ps` but overrides the slop factor used for `pf2`. If not specified, `ps` is used.
 
-[[TheExtendedDisMaxQueryParser-Thepf3Parameter]]
-=== The pf3 Parameter
+`pf3`::
+A multivalued list of fields with optional weights, based on triplets of word shingles. Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of each _triplet_ of word shingles.
 
-A multivalued list of fields with optional weights, based on triplets of word shingles. Similar to `pf`, except that instead of building a phrase per field out of all the words in the input, it builds a set of phrases for each field out of each triplet of word shingles.
-
-[[TheExtendedDisMaxQueryParser-Theps3Parameter]]
-=== The ps3 Parameter
-
+`ps3`::
 This is similar to `ps` but overrides the slop factor used for `pf3`. If not specified, `ps` is used.
 
-[[TheExtendedDisMaxQueryParser-ThestopwordsParameter]]
-=== The stopwords Parameter
+`stopwords`::
+A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query. If this is set to `false`, then the `StopFilterFactory` in the query analyzer is ignored.
 
-A Boolean parameter indicating if the `StopFilterFactory` configured in the query analyzer should be respected when parsing the query: if it is false, then the `StopFilterFactory` in the query analyzer is ignored.
-
-[[TheExtendedDisMaxQueryParser-TheufParameter]]
-=== The uf Parameter
-
+`uf`::
 Specifies which schema fields the end user is allowed to explicitly query. This parameter supports wildcards. The default is to allow all fields, equivalent to `uf=\*`. To allow only title field, use `uf=title`. To allow title and all fields ending with '_s', use `uf=title,*_s`. To allow all fields except title, use `uf=*,-title`. To disallow all fielded searches, use `uf=-*`.
 
-[[TheExtendedDisMaxQueryParser-Fieldaliasingusingper-fieldqfoverrides]]
-=== Field aliasing using per-field qf overrides
+=== Field Aliasing using Per-Field qf Overrides
 
 Per-field overrides of the `qf` parameter may be specified to provide 1-to-many aliasing from field names specified in the query string, to field names used in the underlying query. By default, no aliasing is used and field names specified in the query string are treated as literal field names in the index.
 
-[[TheExtendedDisMaxQueryParser-ExamplesofQueriesSubmittedtotheExtendedDisMaxQueryParser]]
-== Examples of Queries Submitted to the Extended DisMax Query Parser
+== Examples of eDismax Queries
 
 All of the sample URLs in this section assume you are running Solr's "```techproducts```" example:
 
@@ -158,14 +134,12 @@ qf=title text last_name first_name
 f.name.qf=last_name first_name
 ----
 
-[[TheExtendedDisMaxQueryParser-Usingnegativeboost]]
-== Using negative boost
+== Using Negative Boost
 
 Negative query boosts have been supported at the "Query" object level for a long time (resulting in negative scores for matching documents). Now the QueryParsers have been updated to handle this too.
 
 
-[[TheExtendedDisMaxQueryParser-Using_slop_]]
-== Using 'slop'
+== Using 'Slop'
 
 `Dismax` and `Edismax` can run queries against all query fields, and also run a query in the form of a phrase against the phrase fields. (This will work only for boosting documents, not actually for matching.) However, that phrase query can have a 'slop,' which is the distance between the terms of the query while still considering it a phrase match. For example:
 
@@ -223,8 +197,7 @@ A document that contains "Hans Anderson" will match, but a document that contain
 Finally, in addition to the phrase fields (`pf`) parameter, `edismax` also supports the `pf2` and `pf3` parameters, for fields over which to create bigram and trigram phrase queries. The phrase slop for these parameters' queries can be specified using the `ps2` and `ps3` parameters, respectively. If you use `pf2`/`pf3` but `ps2`/`ps3`, then the phrase slop for these parameters' queries will be taken from the `ps` parameter, if any.
 
 
-[[TheExtendedDisMaxQueryParser-Usingthe_magicfields__val_and_query_]]
-== Using the "magic fields" \_val_ and \_query_
+== Using the "Magic Fields" \_val_ and \_query_
 
 The Solr Query Parser's use of `\_val_` and `\_query_` differs from the Lucene Query Parser in the following ways:
 
@@ -257,9 +230,4 @@ createdate:[1976-03-06T23:59:59.999Z TO 1976-03-06T23:59:59.999Z+1YEAR]
 createdate:[1976-03-06T23:59:59.999Z/YEAR TO 1976-03-06T23:59:59.999Z]
 ----
 
-[IMPORTANT]
-====
-
-`TO` must be uppercase, or Solr will report a 'Range Group' error.
-
-====
+IMPORTANT: `TO` must be uppercase, or Solr will report a 'Range Group' error.

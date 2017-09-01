@@ -1,7 +1,7 @@
 = SolrCloud
 :page-shortname: solrcloud
 :page-permalink: solrcloud.html
-:page-children: getting-started-with-solrcloud, how-solrcloud-works, solrcloud-configuration-and-parameters, rule-based-replica-placement, cross-data-center-replication-cdcr
+:page-children: getting-started-with-solrcloud, how-solrcloud-works, solrcloud-configuration-and-parameters, rule-based-replica-placement, cross-data-center-replication-cdcr, solrcloud-autoscaling
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -45,3 +45,4 @@ In this section, we'll cover everything you need to know about using Solr in Sol
 ** <<configsets-api.adoc#configsets-api,ConfigSets API>>
 * <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>>
 * <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication (CDCR)>>
+* <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Autoscaling>>

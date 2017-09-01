@@ -26,14 +26,14 @@ import org.junit.Test;
  *
  * @since solr 1.5
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10847")
+@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-11173")
 public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void test() throws Exception {
     
     del("*:*");
-    index(id, 18, "b_t", "snake spider shark snail slug seal", "foo_i", "1");
+    index(id, 18, "b_t", "snake a,b spider shark snail slug seal", "foo_i", "1");
     index(id, 19, "b_t", "snake spider shark snail slug", "foo_i", "2");
     index(id, 20, "b_t", "snake spider shark snail", "foo_i", "3");
     index(id, 21, "b_t", "snake spider shark", "foo_i", "2");
@@ -53,10 +53,10 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.sort", "index");
     query("qt", "/terms", "shards.qt", "/terms", "terms.limit", 5, "terms", "true", "terms.fl", "b_t", "terms.prefix", "s", "terms.lower", "s", "terms.upper", "sn", "terms.sort", "index");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.sort", "index");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake, zebra, ant, bad");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.list", "2, 3, 1");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2, 3, 1");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake, zebra", "terms.ttf", "true");
-    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake, ant, zebra", "terms.ttf", "true");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra,ant,bad");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.list", "2,3,1");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i", "terms.stats", "true","terms.list", "2,3,1");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra", "terms.ttf", "true");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake,ant,zebra", "terms.ttf", "true");
   }
 }

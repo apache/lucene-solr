@@ -85,7 +85,9 @@
       <artifact name="hadoop-hdfs" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
     <dependency org="org.mortbay.jetty" name="jetty" rev="${/org.mortbay.jetty/jetty}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="org.mortbay.jetty" name="jetty-util" rev="${/org.mortbay.jetty/jetty-util}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.mortbay.jetty" name="jetty-sslengine" rev="${/org.mortbay.jetty/jetty-sslengine}" conf="test.DfsMiniCluster"/>
     <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster"/>
     <dependency org="com.sun.jersey" name="jersey-server" rev="${/com.sun.jersey/jersey-server}" conf="test.DfsMiniCluster"/>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="test.DfsMiniCluster"/>
@@ -143,6 +145,7 @@
     <dependency org="org.apache.calcite" name="calcite-core" rev="${/org.apache.calcite/calcite-core}" conf="compile"/>
     <dependency org="org.apache.calcite" name="calcite-linq4j" rev="${/org.apache.calcite/calcite-linq4j}" conf="compile"/>
     <dependency org="org.apache.calcite.avatica" name="avatica-core" rev="${/org.apache.calcite.avatica/avatica-core}" conf="compile"/>
+    <dependency org="org.apache.commons" name="commons-lang3" rev="${/org.apache.commons/commons-lang3}" conf="compile"/>
     <dependency org="net.hydromatic" name="eigenbase-properties" rev="${/net.hydromatic/eigenbase-properties}" conf="compile"/>
     <dependency org="org.codehaus.janino" name="janino" rev="${/org.codehaus.janino/janino}" conf="compile"/>
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>

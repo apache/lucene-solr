@@ -17,66 +17,49 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.inference.OneWayAnova;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class AnovaEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public AnovaEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class AnovaEvaluator extends RecursiveNumericListEvaluator implements ManyValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public AnovaEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(subEvaluators.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
+    if(containedEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
     }
   }
 
-  public Tuple evaluate(Tuple tuple) throws IOException {
-
-    List<double[]> list = new ArrayList();
-    for(StreamEvaluator subEvaluator : subEvaluators) {
-      List<Number> nums = (List<Number>)subEvaluator.evaluate(tuple);
-      double[] darray = new double[nums.size()];
-      for(int i=0; i< nums.size(); i++) {
-        darray[i]=nums.get(i).doubleValue();
-      }
-      list.add(darray);
-    }
-
+  @Override
+  public Object doWork(Object... values) throws IOException {
+    
+    // at this point we know every incoming value is an array of BigDecimals
+    
+    List<double[]> anovaInput = Arrays.stream(values)
+        // for each List, convert to double[]
+        .map(value -> ((List<BigDecimal>)value).stream().mapToDouble(BigDecimal::doubleValue).toArray())
+        // turn into List<double[]>
+        .collect(Collectors.toList());
+    
     OneWayAnova anova = new OneWayAnova();
-    double p = anova.anovaPValue(list);
-    double f = anova.anovaFValue(list);
-    Map m = new HashMap();
+    double p = anova.anovaPValue(anovaInput);
+    double f = anova.anovaFValue(anovaInput);
+    Map<String,Number> m = new HashMap<>();
     m.put("p-value", p);
     m.put("f-ratio", f);
     return new Tuple(m);
   }
+  
 
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
 }

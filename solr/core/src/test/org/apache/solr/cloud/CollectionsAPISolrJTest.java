@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -69,14 +70,15 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
-    for (int i=0; i<4; i++) {
-      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
+    for (String coreName : coresStatus.keySet()) {
+      NamedList<Integer> status = coresStatus.get(coreName);
       assertEquals(0, (int)status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
+    // Use of _default configset should generate a warning for data-driven functionality in production use
+    assertTrue(response.getWarning() != null && response.getWarning().contains("NOT RECOMMENDED for production use"));
 
     response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
@@ -96,8 +98,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
-    for (int i=0; i<4; i++) {
-      NamedList<Integer> status = coresStatus.get(Assign.buildCoreName(collectionName, "shard" + (i/2+1), Replica.Type.NRT, (i%2+1)));
+    for (String coreName : coresStatus.keySet()) {
+      NamedList<Integer> status = coresStatus.get(coreName);
       assertEquals(0, (int)status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
@@ -166,9 +168,18 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.NRT, 1)).get("status"));
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.TLOG, 1)).get("status"));
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName,  "shardC", Replica.Type.PULL, 1)).get("status"));
+    int replicaTlog = 0;
+    int replicaNrt = 0;
+    int replicaPull = 0;
+    for (String coreName : coresStatus.keySet()) {
+      assertEquals(0, (int) coresStatus.get(coreName).get("status"));
+      if (coreName.contains("shardC_replica_t")) replicaTlog++;
+      else if (coreName.contains("shardC_replica_n")) replicaNrt++;
+      else replicaPull++;
+    }
+    assertEquals(1, replicaNrt);
+    assertEquals(1, replicaTlog);
+    assertEquals(1, replicaPull);
 
     response = CollectionAdminRequest.deleteShard(collectionName, "shardC").process(cluster.getSolrClient());
 
@@ -206,8 +217,15 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName, "shard1_0" , Replica.Type.NRT, 1)).get("status"));
-    assertEquals(0, (int) coresStatus.get(Assign.buildCoreName(collectionName, "shard1_1" , Replica.Type.NRT, 1)).get("status"));
+    int shard10 = 0;
+    int shard11 = 0;
+    for (String coreName : coresStatus.keySet()) {
+      assertEquals(0, (int) coresStatus.get(coreName).get("status"));
+      if (coreName.contains("_shard1_0")) shard10++;
+      else shard11++;
+    }
+    assertEquals(1, shard10);
+    assertEquals(1, shard11);
 
     waitForState("Expected all shards to be active and parent shard to be removed", collectionName, (n, c) -> {
       if (c.getSlice("shard1").getState() == Slice.State.ACTIVE)
@@ -252,7 +270,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     DocCollection testCollection = getCollectionState(collectionName);
 
-    Replica replica1 = testCollection.getReplica("core_node1");
+    Replica replica1 = testCollection.getReplicas().iterator().next();
     CoreStatus coreStatus = getCoreStatus(replica1);
 
     assertEquals(Paths.get(coreStatus.getDataDirectory()).toString(), dataDir.toString());
@@ -266,7 +284,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
 
-    String newReplicaName = Assign.assignNode(getCollectionState(collectionName));
     ArrayList<String> nodeList
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
@@ -275,23 +292,30 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(node)
         .process(cluster.getSolrClient());
-
+    Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-
-    waitForState("Expected to see replica " + newReplicaName + " on node " + node, collectionName, (n, c) -> {
-      Replica r = c.getSlice("shard1").getReplica(newReplicaName);
-      return r != null && r.getNodeName().equals(node);
-    });
+    assertTrue(newReplica.getNodeName().equals(node));
 
     // Test DELETEREPLICA
-    response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplicaName)
+    response = CollectionAdminRequest.deleteReplica(collectionName, "shard1", newReplica.getName())
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
-    waitForState("Expected replica " + newReplicaName + " to vanish from cluster state", collectionName,
-        (n, c) -> c.getSlice("shard1").getReplica(newReplicaName) == null);
+    waitForState("Expected replica " + newReplica.getName() + " to vanish from cluster state", collectionName,
+        (n, c) -> c.getSlice("shard1").getReplica(newReplica.getName()) == null);
 
+  }
+
+  private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
+    String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
+    Optional<Replica> optional = docCollection.getReplicas().stream()
+        .filter(replica -> replicaName.equals(replica.getCoreName()))
+        .findAny();
+    if (optional.isPresent()) {
+      return optional.get();
+    }
+    throw new AssertionError("Can not find " + replicaName + " from " + docCollection);
   }
 
   @Test
@@ -345,14 +369,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
 
     waitForState("Expecting property 'preferredleader' to appear on replica " + replica.getName(), collection,
-        (n, c) -> "true".equals(c.getReplica(replica.getName()).getStr("property.preferredleader")));
+        (n, c) -> "true".equals(c.getReplica(replica.getName()).getProperty("preferredleader")));
 
     response = CollectionAdminRequest.deleteReplicaProperty(collection, "shard1", replica.getName(), "property.preferredleader")
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
     waitForState("Expecting property 'preferredleader' to be removed from replica " + replica.getName(), collection,
-        (n, c) -> c.getReplica(replica.getName()).getStr("property.preferredleader") == null);
+        (n, c) -> c.getReplica(replica.getName()).getProperty("preferredleader") == null);
 
   }
 
@@ -372,7 +396,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       for (Slice slice : c) {
         int count = 0;
         for (Replica replica : slice) {
-          if ("true".equals(replica.getStr("property.preferredleader")))
+          if ("true".equals(replica.getProperty("preferredleader")))
             count += 1;
         }
         if (count != 1)

@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
@@ -176,7 +177,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   class SingleValuedOrdAcc extends OrdAcc {
     SortedDocValues topLevel;
     SortedDocValues[] subDvs;
-    MultiDocValues.OrdinalMap ordMap;
+    OrdinalMap ordMap;
     LongValues toGlobal;
     SortedDocValues subDv;
 

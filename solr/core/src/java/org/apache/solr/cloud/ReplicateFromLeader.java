@@ -89,7 +89,6 @@ public class ReplicateFromLeader {
           if (pollSuccess) {
             String commitVersion = getCommitVersion(core);
             if (commitVersion == null) return;
-            if (Long.parseLong(commitVersion) == lastVersion) return;
             UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());

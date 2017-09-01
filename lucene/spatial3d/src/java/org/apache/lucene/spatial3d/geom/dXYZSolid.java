@@ -16,12 +16,27 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in X.
  *
  * @lucene.internal
  */
 class dXYZSolid extends BaseXYZSolid {
+
+  /** X */
+  protected final double X;
+  /** Min-Y */
+  protected final double minY;
+  /** Max-Y */
+  protected final double maxY;
+  /** Min-Z */
+  protected final double minZ;
+  /** Max-Z */
+  protected final double maxZ;
 
   /** X plane */
   protected final Plane xPlane;
@@ -67,6 +82,12 @@ class dXYZSolid extends BaseXYZSolid {
     if (maxZ - minZ < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Z values in wrong order or identical");
 
+    this.X = X;
+    this.minY = minY;
+    this.maxY = maxY;
+    this.minZ = minZ;
+    this.maxZ = maxZ;
+    
     final double worldMinX = planetModel.getMinimumXValue();
     final double worldMaxX = planetModel.getMaximumXValue();
     
@@ -124,6 +145,29 @@ class dXYZSolid extends BaseXYZSolid {
     }
 
     this.edgePoints = glueTogether(XminY,XmaxY,XminZ,XmaxZ,xEdges);
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public dXYZSolid(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, X);
+    SerializableObject.writeDouble(outputStream, minY);
+    SerializableObject.writeDouble(outputStream, maxY);
+    SerializableObject.writeDouble(outputStream, minZ);
+    SerializableObject.writeDouble(outputStream, maxZ);
   }
 
   @Override

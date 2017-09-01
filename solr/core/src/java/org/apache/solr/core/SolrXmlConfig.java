@@ -59,6 +59,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SolrXmlConfig {
 
   public final static String SOLR_XML_FILE = "solr.xml";
+  public final static String SOLR_DATA_HOME = "solr.data.home";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -240,6 +241,9 @@ public class SolrXmlConfig {
         case "collectionsHandler":
           builder.setCollectionsAdminHandlerClass(value);
           break;
+        case "healthCheckHandler":
+          builder.setHealthCheckHandlerClass(value);
+          break;
         case "infoHandler":
           builder.setInfoHandlerClass(value);
           break;
@@ -248,6 +252,9 @@ public class SolrXmlConfig {
           break;
         case "coreRootDirectory":
           builder.setCoreRootDirectory(value);
+          break;
+        case "solrDataHome":
+          builder.setSolrDataHome(value);
           break;
         case "managementPath":
           builder.setManagementPath(value);

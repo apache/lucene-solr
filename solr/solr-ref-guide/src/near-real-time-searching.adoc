@@ -26,7 +26,6 @@ With NRT, you can modify a `commit` command to be a *soft commit*, which avoids 
 
 However, pay special attention to cache and autowarm settings as they can have a significant impact on NRT performance.
 
-[[NearRealTimeSearching-CommitsandOptimizing]]
 == Commits and Optimizing
 
 A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure. The current transaction log is closed and a new one is opened. See the "transaction log" discussion below for data loss issues.
@@ -45,7 +44,6 @@ The number of milliseconds to wait before pushing documents to the index. It wor
 
 Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
 
-[[NearRealTimeSearching-TransactionLogs]]
 === Transaction Logs (tlogs)
 
 Transaction logs are a "rolling window" of at least the last `N` (default 100) documents indexed. Tlogs are configured in solrconfig.xml, including the value of `N`. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
@@ -54,7 +52,6 @@ When tlogs are enabled, documents being added to the index are written to the tl
 
 When Solr is shut down gracefully (i.e. using the `bin/solr stop` command and the like) Solr will close the tlog file and index segments so no replay will be necessary on startup.
 
-[[NearRealTimeSearching-AutoCommits]]
 === AutoCommits
 
 An autocommit also uses the parameters `maxDocs` and `maxTime`. However it's useful in many strategies to use both a hard `autocommit` and `autosoftcommit` to achieve more flexible commits.
@@ -72,7 +69,6 @@ For example:
 
 It's better to use `maxTime` rather than `maxDocs` to modify an `autoSoftCommit`, especially when indexing a large number of documents through the commit operation. It's also better to turn off `autoSoftCommit` for bulk indexing.
 
-[[NearRealTimeSearching-OptionalAttributesforcommitandoptimize]]
 === Optional Attributes for commit and optimize
 
 `waitSearcher`::
@@ -99,10 +95,9 @@ Example of `commit` and `optimize` with optional attributes:
 <optimize waitSearcher="false"/>
 ----
 
-[[NearRealTimeSearching-PassingcommitandcommitWithinparametersaspartoftheURL]]
 === Passing commit and commitWithin Parameters as Part of the URL
 
-Update handlers can also get `commit`-related parameters as part of the update URL. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
+Update handlers can also get `commit`-related parameters as part of the update URL, if the `stream.body` feature is enabled. This example adds a small test document and causes an explicit commit to happen immediately afterwards:
 
 [source,text]
 ----
@@ -132,8 +127,9 @@ curl http://localhost:8983/solr/my_collection/update?commitWithin=10000
   -H "Content-Type: text/xml" --data-binary '<add><doc><field name="id">testdoc</field></doc></add>'
 ----
 
-[[NearRealTimeSearching-ChangingdefaultcommitWithinBehavior]]
-=== Changing default commitWithin Behavior
+WARNING: While the `stream.body` feature is great for development and testing, it should normally not be enabled in production systems, as it lets a user with READ permissions post data that may alter the system state. The feature is disabled by default. See <<requestdispatcher-in-solrconfig.adoc#requestparsers-element,RequestDispatcher in SolrConfig>> for details.
+
+=== Changing Default commitWithin Behavior
 
 The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 

@@ -16,8 +16,8 @@
  */
 package org.apache.solr.highlight;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
@@ -35,7 +35,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
 {
   protected Counter numRequests;
   protected SolrParams defaults;
-  protected Set<String> metricNames = new HashSet<>(1);
+  protected Set<String> metricNames = ConcurrentHashMap.newKeySet(1);
   protected MetricRegistry registry;
 
   public void init(NamedList args) {

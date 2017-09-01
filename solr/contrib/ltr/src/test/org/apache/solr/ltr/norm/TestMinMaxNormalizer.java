@@ -40,7 +40,7 @@ public class TestMinMaxNormalizer {
     final MinMaxNormalizer mmn = (MinMaxNormalizer)n;
     assertEquals(mmn.getMin(), expectedMin, 0.0);
     assertEquals(mmn.getMax(), expectedMax, 0.0);
-    assertEquals("{min=\""+expectedMin+"\", max=\""+expectedMax+"\"}", mmn.paramsToMap().toString());
+    assertEquals("{min="+expectedMin+", max="+expectedMax+"}", mmn.paramsToMap().toString());
     return n;
   }
 
@@ -117,5 +117,20 @@ public class TestMinMaxNormalizer {
     assertEquals((value - 5f) / (10f - 5f), n.normalize(value), 0.0001);
     value = 5;
     assertEquals((value - 5f) / (10f - 5f), n.normalize(value), 0.0001);
+  }
+
+  @Test
+  public void testParamsToMap() {
+    final MinMaxNormalizer n1 = new MinMaxNormalizer();
+    n1.setMin(5.0f);
+    n1.setMax(10.0f);
+
+    final Map<String,Object> params = n1.paramsToMap();
+    final MinMaxNormalizer n2 = (MinMaxNormalizer) Normalizer.getInstance(
+        new SolrResourceLoader(),
+        MinMaxNormalizer.class.getName(),
+        params);
+    assertEquals(n1.getMin(), n2.getMin(), 1e-6);
+    assertEquals(n1.getMax(), n2.getMax(), 1e-6);
   }
 }

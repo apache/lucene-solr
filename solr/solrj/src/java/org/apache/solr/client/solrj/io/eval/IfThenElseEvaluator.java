@@ -17,43 +17,32 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class IfThenElseEvaluator extends ConditionalEvaluator {
+public class IfThenElseEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public IfThenElseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(3 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression,subEvaluators.size()));
+    if(3 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression, containedEvaluators.size()));
     }
-    
-    if(!(subEvaluators.get(0) instanceof BooleanEvaluator)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a boolean as the first parameter but found %s",expression,subEvaluators.get(0).getClass().getSimpleName()));
-    }
-
   }
 
   @Override
-  public Object evaluate(Tuple tuple) throws IOException {
-    
-    List<Object> results = evaluateAll(tuple);
-    
-    if(3 != results.size()){
-      String message = String.format(Locale.ROOT,"%s(...) only works with 3 values but %s were provided", constructingFactory.getFunctionName(getClass()), results.size());
-      throw new IOException(message);
+  public Object doWork(Object... values) throws IOException {
+    if(3 != values.length){
+      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 3 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
     }
     
-    if(!(results.get(0) instanceof Boolean)){
-      throw new IOException(String.format(Locale.ROOT,"$s(...) only works with a boolean as the first parameter but found %s",results.get(0).getClass().getSimpleName()));
+    if(!(values[0] instanceof Boolean)){
+      throw new IOException(String.format(Locale.ROOT,"$s(...) only works with a boolean as the first parameter but found %s",values[0].getClass().getSimpleName()));
     }
-  
-    return (boolean)results.get(0) ? results.get(1) : results.get(2);
+    
+    return (boolean)values[0] ? values[1] : values[2];
   }
 }

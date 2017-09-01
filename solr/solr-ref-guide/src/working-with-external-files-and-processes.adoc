@@ -18,7 +18,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-[[WorkingwithExternalFilesandProcesses-TheExternalFileFieldType]]
 == The ExternalFileField Type
 
 The `ExternalFileField` type makes it possible to specify the values for a field in a file outside the Solr index. For such a field, the file contains mappings from a key field to the field value. Another way to think of this is that, instead of specifying the field in documents as they are indexed, Solr finds values for this field in the external file.
@@ -34,17 +33,14 @@ In `schema.xml`, the definition of this field type might look like this:
 
 [source,xml]
 ----
-<fieldType name="entryRankFile" keyField="pkId" defVal="0" stored="false" indexed="false" class="solr.ExternalFileField" valType="pfloat"/>
+<fieldType name="entryRankFile" keyField="pkId" defVal="0" stored="false" indexed="false" class="solr.ExternalFileField"/>
 ----
 
 The `keyField` attribute defines the key that will be defined in the external file. It is usually the unique key for the index, but it doesn't need to be as long as the `keyField` can be used to identify documents in the index. A `defVal` defines a default value that will be used if there is no entry in the external file for a particular document.
 
-The `valType` attribute specifies the actual type of values that will be found in the file. The type specified must be either a float field type, so valid values for this attribute are `pfloat`, `float` or `tfloat`. This attribute can be omitted.
-
-[[WorkingwithExternalFilesandProcesses-FormatoftheExternalFile]]
 === Format of the External File
 
-The file itself is located in Solr's index directory, which by default is `$SOLR_HOME/data`. The name of the file should be `external___fieldname__` or `external___fieldname__.*`. For the example above, then, the file could be named `external_entryRankFile` or `external_entryRankFile.txt`.
+The file itself is located in Solr's index directory, which by default is `$SOLR_HOME/data`. The name of the file should be `external_fieldname_` or `external_fieldname_.*`. For the example above, then, the file could be named `external_entryRankFile` or `external_entryRankFile.txt`.
 
 [TIP]
 ====
@@ -62,10 +58,9 @@ doc40=42
 
 The keys listed in this file do not need to be unique. The file does not need to be sorted, but Solr will be able to perform the lookup faster if it is.
 
-[[WorkingwithExternalFilesandProcesses-ReloadinganExternalFile]]
 === Reloading an External File
 
-It's possible to define an event listener to reload an external file when either a searcher is reloaded or when a new searcher is started. See the section <<query-settings-in-solrconfig.adoc#QuerySettingsinSolrConfig-Query-RelatedListeners,Query-Related Listeners>> for more information, but a sample definition in `solrconfig.xml` might look like this:
+It's possible to define an event listener to reload an external file when either a searcher is reloaded or when a new searcher is started. See the section <<query-settings-in-solrconfig.adoc#query-related-listeners,Query-Related Listeners>> for more information, but a sample definition in `solrconfig.xml` might look like this:
 
 [source,xml]
 ----
@@ -73,15 +68,14 @@ It's possible to define an event listener to reload an external file when either
 <listener event="firstSearcher" class="org.apache.solr.schema.ExternalFileFieldReloader"/>
 ----
 
-[[WorkingwithExternalFilesandProcesses-ThePreAnalyzedFieldType]]
 == The PreAnalyzedField Type
 
 The `PreAnalyzedField` type provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing applied in Solr. This is useful if user wants to submit field content that was already processed by some existing external text processing pipeline (e.g., it has been tokenized, annotated, stemmed, synonyms inserted, etc.), while using all the rich attributes that Lucene's TokenStream provides (per-token attributes).
 
 The serialization format is pluggable using implementations of PreAnalyzedParser interface. There are two out-of-the-box implementations:
 
-* <<WorkingwithExternalFilesandProcesses-JsonPreAnalyzedParser,JsonPreAnalyzedParser>>: as the name suggests, it parses content that uses JSON to represent field's content. This is the default parser to use if the field type is not configured otherwise.
-* <<WorkingwithExternalFilesandProcesses-SimplePreAnalyzedParser,SimplePreAnalyzedParser>>: uses a simple strict plain text format, which in some situations may be easier to create than JSON.
+* <<JsonPreAnalyzedParser>>: as the name suggests, it parses content that uses JSON to represent field's content. This is the default parser to use if the field type is not configured otherwise.
+* <<SimplePreAnalyzedParser>>: uses a simple strict plain text format, which in some situations may be easier to create than JSON.
 
 There is only one configuration parameter, `parserImpl`. The value of this parameter should be a fully qualified class name of a class that implements PreAnalyzedParser interface. The default value of this parameter is `org.apache.solr.schema.JsonPreAnalyzedParser`.
 
@@ -97,7 +91,6 @@ By default, the query-time analyzer for fields of this type will be the same as 
 </fieldType>
 ----
 
-[[WorkingwithExternalFilesandProcesses-JsonPreAnalyzedParser]]
 === JsonPreAnalyzedParser
 
 This is the default serialization format used by PreAnalyzedField type. It uses a top-level JSON map with the following keys:
@@ -115,8 +108,7 @@ This is the default serialization format used by PreAnalyzedField type. It uses 
 
 Any other top-level key is silently ignored.
 
-[[WorkingwithExternalFilesandProcesses-Tokenstreamserialization]]
-==== Token stream serialization
+==== Token Stream Serialization
 
 The token stream is expressed as a JSON list of JSON maps. The map for each token consists of the following keys and values:
 
@@ -136,8 +128,7 @@ The token stream is expressed as a JSON list of JSON maps. The map for each toke
 
 Any other key is silently ignored.
 
-[[WorkingwithExternalFilesandProcesses-Example]]
-==== Example
+==== JsonPreAnalyzedParser Example
 
 [source,json]
 ----
@@ -152,13 +143,11 @@ Any other key is silently ignored.
 }
 ----
 
-[[WorkingwithExternalFilesandProcesses-SimplePreAnalyzedParser]]
 === SimplePreAnalyzedParser
 
 The fully qualified class name to use when specifying this format via the `parserImpl` configuration parameter is `org.apache.solr.schema.SimplePreAnalyzedParser`.
 
-[[WorkingwithExternalFilesandProcesses-Syntax]]
-==== Syntax
+==== SimplePreAnalyzedParser Syntax
 
 The serialization format supported by this parser is as follows:
 
@@ -192,8 +181,7 @@ Special characters in "text" values can be escaped using the escape character `\
 
 Please note that Unicode sequences (e.g. `\u0001`) are not supported.
 
-[[WorkingwithExternalFilesandProcesses-Supportedattributenames]]
-==== Supported attribute names
+==== Supported Attributes
 
 The following token attributes are supported, and identified with short symbolic names:
 
@@ -212,8 +200,7 @@ The following token attributes are supported, and identified with short symbolic
 
 Token positions are tracked and implicitly added to the token stream - the start and end offsets consider only the term text and whitespace, and exclude the space taken by token attributes.
 
-[[WorkingwithExternalFilesandProcesses-Exampletokenstreams]]
-==== Example token streams
+==== Example Token Streams
 
 // TODO: in cwiki each of these examples was in it's own "panel" ... do we want something like that here?
 // TODO: these examples match what was in cwiki, but I'm honestly not sure if the formatting there was correct to start?

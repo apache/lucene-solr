@@ -20,7 +20,7 @@ import org.junit.Test;
 
 public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
   @Test
-  public void testGetAllCopyFields() throws Exception {
+  public void testXMLGetAllCopyFields() throws Exception {
     assertQ("/schema/copyfields?indent=on&wt=xml",
         "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='src_sub_no_ast_i']"
             +"                                      and str[@name='dest'][.='title']]",
@@ -79,8 +79,8 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testJsonGetAllCopyFields() throws Exception {
-    assertJQ("/schema/copyfields?indent=on&wt=json",
+  public void testGetAllCopyFields() throws Exception {
+    assertJQ("/schema/copyfields",
              "/copyFields/[1]=={'source':'src_sub_no_ast_i','dest':'title'}",
              "/copyFields/[7]=={'source':'title','dest':'dest_sub_no_ast_s'}",
 
@@ -102,7 +102,7 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
 
   @Test
   public void testRestrictSource() throws Exception {
-    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=title,*_i,*_src_sub_i,src_sub_no_ast_i",
+    assertQ("/schema/copyfields/?wt=xml&source.fl=title,*_i,*_src_sub_i,src_sub_no_ast_i",
         "count(/response/arr[@name='copyFields']/lst) = 16", // 4 + 4 + 4 + 4
         "count(/response/arr[@name='copyFields']/lst/str[@name='source'][.='title']) = 4",
         "count(/response/arr[@name='copyFields']/lst/str[@name='source'][.='*_i']) = 4",
@@ -112,7 +112,7 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
 
   @Test
   public void testRestrictDest() throws Exception {
-    assertQ("/schema/copyfields/?indent=on&wt=xml&dest.fl=title,*_s,*_dest_sub_s,dest_sub_no_ast_s",
+    assertQ("/schema/copyfields/?wt=xml&dest.fl=title,*_s,*_dest_sub_s,dest_sub_no_ast_s",
         "count(/response/arr[@name='copyFields']/lst) = 16", // 3 + 4 + 4 + 5
         "count(/response/arr[@name='copyFields']/lst/str[@name='dest'][.='title']) = 3",
         "count(/response/arr[@name='copyFields']/lst/str[@name='dest'][.='*_s']) = 4",
@@ -122,7 +122,7 @@ public class TestCopyFieldCollectionResource extends SolrRestletTestBase {
 
   @Test
   public void testRestrictSourceAndDest() throws Exception {
-    assertQ("/schema/copyfields/?indent=on&wt=xml&source.fl=title,*_i&dest.fl=title,dest_sub_no_ast_s",
+    assertQ("/schema/copyfields/?wt=xml&source.fl=title,*_i&dest.fl=title,dest_sub_no_ast_s",
         "count(/response/arr[@name='copyFields']/lst) = 3",
 
         "/response/arr[@name='copyFields']/lst[    str[@name='source'][.='title']"

@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 
+import org.apache.solr.common.params.CommonParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -181,33 +182,33 @@ public class TestJsonRequest extends SolrTestCaseHS {
     //
     // with body
     //
-    client.testJQ(params("stream.body", "{query:'cat_s:A'}", "stream.contentType", "application/json")
+    client.testJQ(params(CommonParams.STREAM_BODY, "{query:'cat_s:A'}", "stream.contentType", "application/json")
         , "response/numFound==2"
     );
 
     // test body in conjunction with query params
-    client.testJQ(params("stream.body", "{query:'cat_s:A'}", "stream.contentType", "application/json", "json.filter", "'where_s:NY'")
+    client.testJQ(params(CommonParams.STREAM_BODY, "{query:'cat_s:A'}", "stream.contentType", "application/json", "json.filter", "'where_s:NY'")
         , "response/numFound==1"
     );
 
     // test that json body in params come "after" (will overwrite)
-    client.testJQ(params("stream.body", "{query:'*:*', filter:'where_s:NY'}", "stream.contentType", "application/json", "json","{query:'cat_s:A'}")
+    client.testJQ(params(CommonParams.STREAM_BODY, "{query:'*:*', filter:'where_s:NY'}", "stream.contentType", "application/json", "json","{query:'cat_s:A'}")
         , "response/numFound==1"
     );
 
     // test that json.x params come after body
-    client.testJQ(params("stream.body", "{query:'*:*', filter:'where_s:NY'}", "stream.contentType", "application/json", "json.query","'cat_s:A'")
+    client.testJQ(params(CommonParams.STREAM_BODY, "{query:'*:*', filter:'where_s:NY'}", "stream.contentType", "application/json", "json.query","'cat_s:A'")
         , "response/numFound==1"
     );
 
 
     // test facet with json body
-    client.testJQ(params("stream.body", "{query:'*:*', facet:{x:'unique(where_s)'}}", "stream.contentType", "application/json")
+    client.testJQ(params(CommonParams.STREAM_BODY, "{query:'*:*', facet:{x:'unique(where_s)'}}", "stream.contentType", "application/json")
         , "facets=={count:6,x:2}"
     );
 
     // test facet with json body, insert additional facets via query parameter
-    client.testJQ(params("stream.body", "{query:'*:*', facet:{x:'unique(where_s)'}}", "stream.contentType", "application/json", "json.facet.y","{terms:{field:where_s}}", "json.facet.z","'unique(where_s)'")
+    client.testJQ(params(CommonParams.STREAM_BODY, "{query:'*:*', facet:{x:'unique(where_s)'}}", "stream.contentType", "application/json", "json.facet.y","{terms:{field:where_s}}", "json.facet.z","'unique(where_s)'")
         , "facets=={count:6,x:2, y:{buckets:[{val:NJ,count:3},{val:NY,count:2}]}, z:2}"
     );
 

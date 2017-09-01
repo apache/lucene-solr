@@ -33,6 +33,7 @@ import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.Insanity;
@@ -77,6 +78,10 @@ public class OrdFieldSource extends ValueSource {
     if (o instanceof SolrIndexSearcher) {
       SolrIndexSearcher is = (SolrIndexSearcher) o;
       SchemaField sf = is.getSchema().getFieldOrNull(field);
+      if (sf != null && sf.getType().isPointField()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
+            "ord() is not supported over Points based field " + field);
+      }
       if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumberType() != null) {
         // it's a single-valued numeric field: we must currently create insanity :(
         List<LeafReaderContext> leaves = is.getIndexReader().leaves();

@@ -119,6 +119,10 @@ class DocumentsWriterFlushQueue {
           synchronized (this) {
             // finally remove the published ticket from the queue
             final FlushTicket poll = queue.poll();
+
+            // we hold the purgeLock so no other thread should have polled:
+            assert poll == head;
+            
             ticketCount.decrementAndGet();
             assert poll == head;
           }

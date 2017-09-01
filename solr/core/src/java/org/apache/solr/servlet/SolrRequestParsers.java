@@ -84,6 +84,7 @@ public class SolrRequestParsers
   private final HashMap<String, SolrRequestParser> parsers =
       new HashMap<>();
   private final boolean enableRemoteStreams;
+  private final boolean enableStreamBody;
   private StandardRequestParser standard;
   private boolean handleSelect = true;
   private boolean addHttpRequestToContext;
@@ -101,8 +102,9 @@ public class SolrRequestParsers
     final int multipartUploadLimitKB, formUploadLimitKB;
     if( globalConfig == null ) {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE; 
-      enableRemoteStreams = true;
-      handleSelect = true;
+      enableRemoteStreams = false;
+      enableStreamBody = false;
+      handleSelect = false;
       addHttpRequestToContext = false;
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
@@ -110,6 +112,7 @@ public class SolrRequestParsers
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
       
       enableRemoteStreams = globalConfig.isEnableRemoteStreams();
+      enableStreamBody = globalConfig.isEnableStreamBody();
   
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
@@ -121,9 +124,10 @@ public class SolrRequestParsers
   
   private SolrRequestParsers() {
     enableRemoteStreams = false;
+    enableStreamBody = false;
     handleSelect = false;
     addHttpRequestToContext = false;
-    init(2048, 2048);
+    init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
   private void init( int multipartUploadLimitKB, int formUploadLimitKB) {       
@@ -202,7 +206,7 @@ public class SolrRequestParsers
     strs = params.getParams( CommonParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled." );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -216,6 +220,9 @@ public class SolrRequestParsers
     // Check for streams in the request parameters
     strs = params.getParams( CommonParams.STREAM_BODY );
     if( strs != null ) {
+      if( !enableStreamBody ) {
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Stream Body is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
+      }
       for( final String body : strs ) {
         ContentStreamBase stream = new ContentStreamBase.StringStream( body );
         if( contentType != null ) {

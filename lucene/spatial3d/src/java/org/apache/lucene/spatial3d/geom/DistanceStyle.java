@@ -78,6 +78,40 @@ public interface DistanceStyle {
    */
   public double computeDistance(final PlanetModel planetModel, final Plane plane, final double x, final double y, final double z, final Membership... bounds);
 
+  /** Convert a distance to a form meant for aggregation.
+   * This is meant to be used in conjunction with aggregateDistances() and fromAggregationForm().
+   * Distances should be converted to aggregation form before aggregation is attempted,
+   * and they should be converted back from aggregation form to yield a final result.
+   * @param distance is an output of computeDistance().
+   * @return the distance, converted to aggregation form.
+   */
+  public default double toAggregationForm(final double distance) {
+    return distance;
+  }
+  
+  /** Aggregate two distances together to produce a "sum".
+   * This is usually just an addition operation, but in the case of squared distances it is more complex.
+   * Distances should be converted to aggregation form before aggregation is attempted,
+   * and they should be converted back from aggregation form to yield a final result.
+   * @param distance1 is the first aggregation form distance.
+   * @param distance2 is the second aggregation form distance.
+   * @return the combined aggregation form distance.
+   */
+  public default double aggregateDistances(final double distance1, final double distance2) {
+    return distance1 + distance2;
+  }
+  
+  /** Convert an aggregation form distance value back to an actual distance.
+   * This is meant to be used in conjunctiion with toAggregationForm() and aggregateDistances().
+   * Distances should be converted to aggregation form before aggregation is attempted,
+   * and they should be converted back from aggregation form to yield a final result.
+   * @param aggregateDistance is the aggregate form of the distance.
+   * @return the combined distance.
+   */
+  public default double fromAggregationForm(final double aggregateDistance) {
+    return aggregateDistance;
+  }
+  
   // The following methods are used to go from a distance value back to something
   // that can be used to construct a constrained shape.
   

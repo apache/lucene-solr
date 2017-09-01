@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.common.cloud.ReplicaPosition;
@@ -85,6 +86,7 @@ public class CreateCollectionCmd implements Cmd {
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
+    boolean usePolicyFramework = usePolicyFramework(ocmh.zkStateReader, message);
 
     String configName = getConfigName(collectionName, message);
     if (configName == null) {
@@ -118,7 +120,10 @@ public class CreateCollectionCmd implements Cmd {
       }
 
       int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);
-
+      if (usePolicyFramework && message.getStr(MAX_SHARDS_PER_NODE) != null && maxShardsPerNode > 0) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'maxShardsPerNode>0' is not supported when autoScaling policies are used");
+      }
+      if (maxShardsPerNode == -1 || usePolicyFramework) maxShardsPerNode = Integer.MAX_VALUE;
       if (numNrtReplicas + numTlogReplicas <= 0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
       }
@@ -149,7 +154,9 @@ public class CreateCollectionCmd implements Cmd {
               + "). It's unusual to run two replica of the same slice on the same Solr-instance.");
         }
 
-        int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
+        int maxShardsAllowedToCreate = maxShardsPerNode == Integer.MAX_VALUE ?
+            Integer.MAX_VALUE :
+            maxShardsPerNode * nodeList.size();
         int requestedShardsToCreate = numSlices * totalNumReplicas;
         if (maxShardsAllowedToCreate < requestedShardsToCreate) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
@@ -211,7 +218,8 @@ public class CreateCollectionCmd implements Cmd {
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
-        String coreName = Assign.buildCoreName(collectionName, replicaPosition.shard, replicaPosition.type, replicaPosition.index + 1);
+        String coreName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), zkStateReader.getClusterState().getCollection(collectionName),
+            replicaPosition.shard, replicaPosition.type, true);
         log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
             , coreName, replicaPosition.shard, collectionName, nodeName));
 
@@ -284,6 +292,15 @@ public class CreateCollectionCmd implements Cmd {
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
       } else {
         log.debug("Finished create command on all shards for collection: {}", collectionName);
+
+        // Emit a warning about production use of data driven functionality
+        boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
+            message.getStr(COLL_CONF).equals(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
+        if (defaultConfigSetUsed) {
+          results.add("warning", "Using _default configset. Data driven schema functionality"
+              + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"
+              + " curl http://{host:port}/solr/" + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
+        }
       }
     } catch (SolrException ex) {
       throw ex;
@@ -474,4 +491,15 @@ public class CreateCollectionCmd implements Cmd {
           "Could not find configName for collection " + collection + " found:" + configNames);
     }
   }
+
+  public static boolean usePolicyFramework(ZkStateReader zkStateReader, ZkNodeProps message) {
+    Map autoScalingJson = Collections.emptyMap();
+    try {
+      autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    } catch (Exception e) {
+      return false;
+    }
+    return autoScalingJson.get(Policy.CLUSTER_POLICY) != null || message.getStr(Policy.POLICY) != null;
+  }
+
 }

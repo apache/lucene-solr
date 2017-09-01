@@ -24,15 +24,13 @@ This feature is enabled by default and works similarly in both SolrCloud and sta
 
 When using this API, `solrconfig.xml` is not changed. Instead, all edited configuration is stored in a file called `configoverlay.json`. The values in `configoverlay.json` override the values in `solrconfig.xml`.
 
-[[ConfigAPI-APIEntryPoints]]
-== API Entry Points
+== Config API Entry Points
 
 * `/config`: retrieve or modify the config. GET to retrieve and POST for executing commands
 * `/config/overlay`: retrieve the details in the `configoverlay.json` alone
 * `/config/params` : allows creating parameter sets that can override or take the place of parameters defined in `solrconfig.xml`. See the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> section for more details.
 
-[[ConfigAPI-Retrievingtheconfig]]
-== Retrieving the config
+== Retrieving the Config
 
 All configuration items, can be retrieved by sending a GET request to the `/config` endpoint - the results will be the effective configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`:
 
@@ -55,18 +53,16 @@ To further restrict returned results to a single component within a top level se
 curl http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/select
 ----
 
-[[ConfigAPI-Commandstomodifytheconfig]]
-== Commands to modify the config
+== Commands to Modify the Config
 
 This API uses specific commands to tell Solr what property or type of property to add to `configoverlay.json`. The commands are passed as part of the data sent with the request.
 
 The config commands are categorized into 3 different sections which manipulate various data structures in `solrconfig.xml`. Each of these is described below.
 
-* <<ConfigAPI-CommandsforCommonProperties,Common Properties>>
-* <<ConfigAPI-CommandsforCustomHandlersandLocalComponents,Components>>
-* <<ConfigAPI-CommandsforUser-DefinedProperties,User-defined properties>>
+* <<Commands for Common Properties,Common Properties>>
+* <<Commands for Custom Handlers and Local Components,Components>>
+* <<Commands for User-Defined Properties,User-defined properties>>
 
-[[ConfigAPI-CommandsforCommonProperties]]
 === Commands for Common Properties
 
 The common properties are those that are frequently need to be customized in a Solr instance. They are manipulated with two commands:
@@ -117,9 +113,9 @@ The properties that are configured with these commands are predefined and listed
 * `requestDispatcher.requestParsers.multipartUploadLimitInKB`
 * `requestDispatcher.requestParsers.formdataUploadLimitInKB`
 * `requestDispatcher.requestParsers.enableRemoteStreaming`
+* `requestDispatcher.requestParsers.enableStreamBody`
 * `requestDispatcher.requestParsers.addHttpRequestToContext`
 
-[[ConfigAPI-CommandsforCustomHandlersandLocalComponents]]
 === Commands for Custom Handlers and Local Components
 
 Custom request handlers, search components, and other types of localized Solr components (such as custom query parsers, update processors, etc.) can be added, updated and deleted with specific commands for the component being modified.
@@ -132,7 +128,6 @@ Settings removed from `configoverlay.json` are not removed from `solrconfig.xml`
 
 The full list of available commands follows below:
 
-[[ConfigAPI-GeneralPurposeCommands]]
 ==== General Purpose Commands
 
 These commands are the most commonly used:
@@ -150,7 +145,6 @@ These commands are the most commonly used:
 * `update-queryresponsewriter`
 * `delete-queryresponsewriter`
 
-[[ConfigAPI-AdvancedCommands]]
 ==== Advanced Commands
 
 These commands allow registering more advanced customizations to Solr:
@@ -178,9 +172,8 @@ These commands allow registering more advanced customizations to Solr:
 * `update-runtimelib`
 * `delete-runtimelib`
 
-See the section <<ConfigAPI-CreatingandUpdatingRequestHandlers,Creating and Updating Request Handlers>> below for examples of using these commands.
+See the section <<Creating and Updating Request Handlers>> below for examples of using these commands.
 
-[[ConfigAPI-Whatabout_updateRequestProcessorChain_]]
 ==== What about updateRequestProcessorChain?
 
 The Config API does not let you create or edit `updateRequestProcessorChain` elements. However, it is possible to create `updateProcessor` entries and can use them by name to create a chain.
@@ -197,7 +190,6 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
 
 You can use this directly in your request by adding a parameter in the `updateRequestProcessorChain` for the specific update processor called `processor=firstFld`.
 
-[[ConfigAPI-CommandsforUser-DefinedProperties]]
 === Commands for User-Defined Properties
 
 Solr lets users templatize the `solrconfig.xml` using the place holder format `${variable_name:default_val}`. You could set the values using system properties, for example, `-Dvariable_name= my_customvalue`. The same can be achieved during runtime using these commands:
@@ -207,11 +199,10 @@ Solr lets users templatize the `solrconfig.xml` using the place holder format `$
 
 The structure of the request is similar to the structure of requests using other commands, in the format of `"command":{"variable_name":"property_value"}`. You can add more than one variable at a time if necessary.
 
-For more information about user-defined properties, see the section <<configuring-solrconfig-xml.adoc#Configuringsolrconfig.xml-Userdefinedpropertiesfromcore.properties,User defined properties from core.properties>>.
+For more information about user-defined properties, see the section <<configuring-solrconfig-xml.adoc#user-defined-properties-in-core-properties,User defined properties in core.properties>>.
 
-See also the section <<ConfigAPI-CreatingandUpdatingUser-DefinedProperties,Creating and Updating User-Defined Properties>> below for examples of how to use this type of command.
+See also the section <<Creating and Updating User-Defined Properties>> below for examples of how to use this type of command.
 
-[[ConfigAPI-HowtoMapsolrconfig.xmlPropertiestoJSON]]
 == How to Map solrconfig.xml Properties to JSON
 
 By using this API, you will be generating JSON representations of properties defined in `solrconfig.xml`. To understand how properties should be represented with the API, let's take a look at a few examples.
@@ -223,8 +214,7 @@ Here is what a request handler looks like in `solrconfig.xml`:
 <requestHandler name="/query" class="solr.SearchHandler">
   <lst name="defaults">
     <str name="echoParams">explicit</str>
-    <str name="wt">json</str>
-    <str name="indent">true</str>
+    <int name="rows">10</str>
   </lst>
 </requestHandler>
 ----
@@ -239,8 +229,7 @@ The same request handler defined with the Config API would look like this:
     "class":"solr.SearchHandler",
     "defaults":{
       "echoParams":"explicit",
-      "wt":"json",
-      "indent":true
+      "rows": 10
     }
   }
 }
@@ -363,15 +352,12 @@ Define the same properties with the Config API:
 }
 ----
 
-[[ConfigAPI-NameComponentsfortheConfigAPI]]
 === Name Components for the Config API
 
 The Config API always allows changing the configuration of any component by name. However, some configurations such as `listener` or `initParams` do not require a name in `solrconfig.xml`. In order to be able to `update` and `delete` of the same item in `configoverlay.json`, the name attribute becomes mandatory.
 
-[[ConfigAPI-Examples]]
-== Examples
+== Config API Examples
 
-[[ConfigAPI-CreatingandUpdatingCommonProperties]]
 === Creating and Updating Common Properties
 
 This change sets the `query.filterCache.autowarmCount` to 1000 items and unsets the `query.filterCache.size`.
@@ -402,7 +388,6 @@ And you should get a response like this:
           "size":25}}}}}
 ----
 
-[[ConfigAPI-CreatingandUpdatingRequestHandlers]]
 === Creating and Updating Request Handlers
 
 To create a request handler, we can use the `add-requesthandler` command:
@@ -413,7 +398,7 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
   "add-requesthandler" : {
     "name": "/mypath",
     "class":"solr.DumpRequestHandler",
-    "defaults":{ "x":"y" ,"a":"b", "wt":"json", "indent":true },
+    "defaults":{ "x":"y" ,"a":"b", "rows":10 },
     "useParams":"x"
   }
 }'
@@ -435,7 +420,7 @@ And you should see the following as output:
     "indent":"true",
     "a":"b",
     "x":"y",
-    "wt":"json"},
+    "rows":"10"},
   "context":{
     "webapp":"/solr",
     "path":"/mypath",
@@ -450,7 +435,7 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
   "update-requesthandler": {
     "name": "/mypath",
     "class":"solr.DumpRequestHandler",
-    "defaults": {"x":"new value for X", "wt":"json", "indent":true},
+    "defaults": {"x":"new value for X", "rows":"20"},
     "useParams":"x"
   }
 }'
@@ -470,7 +455,6 @@ curl http://localhost:8983/solr/techproducts/config -H 'Content-type:application
 }'
 ----
 
-[[ConfigAPI-CreatingandUpdatingUser-DefinedProperties]]
 === Creating and Updating User-Defined Properties
 
 This command sets a user property.
@@ -506,14 +490,12 @@ To unset the variable, issue a command like this:
 curl http://localhost:8983/solr/techproducts/config -H'Content-type:application/json' -d '{"unset-user-property" : "variable_name"}'
 ----
 
-[[ConfigAPI-HowItWorks]]
-== How It Works
+== How the Config API Works
 
 Every core watches the ZooKeeper directory for the configset being used with that core. In standalone mode, however, there is no watch (because ZooKeeper is not running). If there are multiple cores in the same node using the same configset, only one ZooKeeper watch is used. For instance, if the configset 'myconf' is used by a core, the node would watch `/configs/myconf`. Every write operation performed through the API would 'touch' the directory (sets an empty byte[] to trigger watches) and all watchers are notified. Every core would check if the Schema file, `solrconfig.xml` or `configoverlay.json` is modified by comparing the `znode` versions and if modified, the core is reloaded.
 
 If `params.json` is modified, the params object is just updated without a core reload (see the section <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> for more information about `params.json`).
 
-[[ConfigAPI-EmptyCommand]]
 === Empty Command
 
 If an empty command is sent to the `/config` endpoint, the watch is triggered on all cores using this configset. For example:
@@ -527,7 +509,6 @@ Directly editing any files without 'touching' the directory *will not* make it v
 
 It is possible for components to watch for the configset 'touch' events by registering a listener using `SolrCore#registerConfListener()` .
 
-[[ConfigAPI-ListeningtoconfigChanges]]
 === Listening to config Changes
 
 Any component can register a listener using:

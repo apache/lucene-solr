@@ -1,7 +1,7 @@
 = Apache Solr Reference Guide
 :page-shortname: index
 :page-permalink: index.html
-:page-children: about-this-guide, getting-started, upgrading-solr, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, the-well-configured-solr-instance, managing-solr, solrcloud, legacy-scaling-and-distribution, client-apis, major-changes-from-solr-5-to-solr-6, upgrading-a-solr-cluster, further-assistance, solr-glossary, errata
+:page-children: about-this-guide, solr-tutorial, getting-started, solr-control-script-reference, using-the-solr-administration-user-interface, documents-fields-and-schema-design, understanding-analyzers-tokenizers-and-filters, indexing-and-basic-data-operations, searching, the-well-configured-solr-instance, managing-solr, solrcloud, legacy-scaling-and-distribution, client-apis, further-assistance, solr-glossary, errata, how-to-contribute
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -19,11 +19,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This reference guide describes Apache Solr, the open source solution for search. You can download Apache Solr from the Solr website at http://lucene.apache.org/solr/.
+[.lead]
+This reference guide describes Apache Solr, the open source solution for search.
 
-This Guide contains the following sections:
+Solr builds on Lucene, an open source Java library that provides indexing and search technology, as well as spellchecking, hit highlighting and advanced analysis/tokenization capabilities. Both Solr and Lucene are managed by the Apache Software Foundation (http://www.apache.org/[www.apache.org)]. You can download Apache Solr from the Solr website at http://lucene.apache.org/solr/.
+
+This Guide contains the following main sections:
 
 *<<getting-started.adoc#getting-started,Getting Started>>*: This section guides you through the installation and setup of Solr.
+
+*<<solr-control-script-reference#solr-control-script-reference,Solr Control Script Reference>>*: This section provides information about all of the options available to the `bin/solr` / `bin\solr.cmd` scripts, which can start and stop Solr, configure authentication, and create or remove collections and cores.
 
 *<<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>*: This section introduces the Solr Web-based user interface. From your browser you can view configuration files, submit queries, view logfile settings and Java environment settings, and monitor and control distributed configurations.
 

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics.reporters;
 
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
@@ -49,6 +50,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
 
   private static int jmxPort;
+  private static String PREFIX;
 
   private String domain;
 
@@ -64,6 +66,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     jmxPort = getNextAvailablePort();
     assertFalse(jmxPort == -1);
     LocateRegistry.createRegistry(jmxPort);
+    PREFIX = getSimpleClassName() + "-";
   }
 
   @Before
@@ -72,7 +75,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     final SolrCore core = h.getCore();
     domain = core.getName();
-    rootName = TestUtil.randomSimpleString(random(), 5, 10);
+    rootName = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
 
     coreMetricManager = core.getCoreMetricManager();
     metricManager = core.getCoreContainer().getMetricManager();
@@ -95,7 +98,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private PluginInfo createReporterPluginInfo(String rootName, boolean enabled) {
     Random random = random();
     String className = SolrJmxReporter.class.getName();
-    String reporterName = TestUtil.randomSimpleString(random, 5, 10);
+    String reporterName = PREFIX + TestUtil.randomSimpleString(random, 5, 10);
 
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, className);
@@ -106,7 +109,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     boolean shouldOverrideDomain = random.nextBoolean();
     if (shouldOverrideDomain) {
-      domain = TestUtil.randomSimpleString(random);
+      domain = PREFIX + TestUtil.randomSimpleString(random);
       attrs.put("domain", domain);
     }
 
@@ -129,7 +132,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     Random random = random();
 
     Map<String, Counter> registered = new HashMap<>();
-    String scope = SolrMetricTestUtils.getRandomScope(random, true);
+    String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
 
     int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
@@ -150,7 +153,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   public void testReloadCore() throws Exception {
     Random random = random();
 
-    String scope = SolrMetricTestUtils.getRandomScope(random, true);
+    String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
@@ -172,14 +175,49 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
             rootName.equals(o.getObjectName().getDomain())).count());
   }
 
+  private static boolean stopped = false;
+
+  @Test
+  public void testClosedCore() throws Exception {
+    Set<ObjectInstance> objects = mBeanServer.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+    assertEquals("Unexpected number of indexDir beans: " + objects.toString(), 1, objects.size());
+    final ObjectInstance inst = objects.iterator().next();
+    stopped = false;
+    try {
+      Thread t = new Thread() {
+        public void run() {
+          while (!stopped) {
+            try {
+              Object value = mBeanServer.getAttribute(inst.getObjectName(), "Value");
+              assertNotNull(value);
+            } catch (InstanceNotFoundException x) {
+              // no longer present
+              break;
+            } catch (Exception e) {
+              fail("Unexpected error retrieving attribute: " + e.toString());
+            }
+          }
+        }
+      };
+      t.start();
+      Thread.sleep(500);
+      h.getCoreContainer().unload(h.getCore().getName());
+      Thread.sleep(2000);
+      objects = mBeanServer.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+      assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
+    } finally {
+      stopped = true;
+    }
+  }
+
   @Test
   public void testEnabled() throws Exception {
-    String root1 = TestUtil.randomSimpleString(random(), 5, 10);
+    String root1 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
     PluginInfo pluginInfo1 = createReporterPluginInfo(root1, true);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
         pluginInfo1, coreMetricManager.getTag());
 
-    String root2 = TestUtil.randomSimpleString(random(), 5, 10);
+    String root2 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
     assertFalse(root2.equals(root1));
     PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
     metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
@@ -189,7 +227,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     assertTrue(reporters.containsKey(pluginInfo1.name + "@" + coreMetricManager.getTag()));
     assertTrue(reporters.containsKey(pluginInfo2.name + "@" + coreMetricManager.getTag()));
 
-    String scope = SolrMetricTestUtils.getRandomScope(random(), true);
+    String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random(), true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random(), true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random(), true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);

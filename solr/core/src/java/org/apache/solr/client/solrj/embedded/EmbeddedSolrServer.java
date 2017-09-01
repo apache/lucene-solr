@@ -74,7 +74,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * Create an EmbeddedSolrServer using a NodeConfig
    *
    * @param nodeConfig      the configuration
-   * @param defaultCoreName the core to route requests to be default
+   * @param defaultCoreName the core to route requests to by default
    */
   public EmbeddedSolrServer(NodeConfig nodeConfig, String defaultCoreName) {
     this(load(new CoreContainer(nodeConfig)), defaultCoreName);
@@ -99,7 +99,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * {@link #close()} is called.
    *
    * @param coreContainer the core container
-   * @param coreName      the core to route requests to be default
+   * @param coreName      the core to route requests to by default
    */
   public EmbeddedSolrServer(CoreContainer coreContainer, String coreName) {
     if (coreContainer == null) {
@@ -127,6 +127,7 @@ public class EmbeddedSolrServer extends SolrClient {
     if (handler != null) {
       try {
         SolrQueryRequest req = _parser.buildRequestFrom(null, request.getParams(), request.getContentStreams());
+        req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
         checkForExceptions(resp);

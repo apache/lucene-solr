@@ -18,7 +18,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-There are some major changes in Solr 6 to consider before starting to migrate your configurations and indexes. There are many hundreds of changes, so a thorough review of the <<upgrading-solr.adoc#upgrading-solr,Upgrading Solr>> section as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 6. This section attempts to highlight some of the major changes you should be aware of.
+There are some major changes in Solr 6 to consider before starting to migrate your configurations and indexes.
+
+There are many hundreds of changes, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> section as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 6. This section attempts to highlight some of the major changes you should be aware of.
 
 == Highlights of New Features in Solr 6
 
@@ -46,9 +48,9 @@ Built on streaming expressions, new in Solr 6 is a <<parallel-sql-interface.adoc
 
 Replication across data centers is now possible with <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>>. Using an active-passive model, a SolrCloud cluster can be replicated to another data center, and monitored with a new API.
 
-=== Graph Query Parser
+=== Graph QueryParser
 
-A new <<other-parsers.adoc#OtherParsers-GraphQueryParser,`graph` query parser>> makes it possible to to graph traversal queries of Directed (Cyclic) Graphs modelled using Solr documents.
+A new <<other-parsers.adoc#graph-query-parser,`graph` query parser>> makes it possible to to graph traversal queries of Directed (Cyclic) Graphs modelled using Solr documents.
 
 [[major-5-6-docvalues]]
 === DocValues

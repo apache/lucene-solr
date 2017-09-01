@@ -80,9 +80,9 @@ public class TestDocValuesQueries extends LuceneTestCase {
         final Query q1 = LongPoint.newRangeQuery("idx", min, max);
         final Query q2;
         if (sortedNumeric) {
-          q2 = SortedNumericDocValuesField.newRangeQuery("dv", min, max);
+          q2 = SortedNumericDocValuesField.newSlowRangeQuery("dv", min, max);
         } else {
-          q2 = NumericDocValuesField.newRangeQuery("dv", min, max);
+          q2 = NumericDocValuesField.newSlowRangeQuery("dv", min, max);
         }
         assertSameMatches(searcher, q1, q2, false);
       }
@@ -141,12 +141,12 @@ public class TestDocValuesQueries extends LuceneTestCase {
         final Query q1 = LongPoint.newRangeQuery("idx", min, max);
         final Query q2;
         if (sortedSet) {
-          q2 = SortedSetDocValuesField.newRangeQuery("dv",
+          q2 = SortedSetDocValuesField.newSlowRangeQuery("dv",
               min == Long.MIN_VALUE && random().nextBoolean() ? null : new BytesRef(encodedMin),
               max == Long.MAX_VALUE && random().nextBoolean() ? null : new BytesRef(encodedMax),
               includeMin, includeMax);
         } else {
-          q2 = SortedDocValuesField.newRangeQuery("dv",
+          q2 = SortedDocValuesField.newSlowRangeQuery("dv",
               min == Long.MIN_VALUE && random().nextBoolean() ? null : new BytesRef(encodedMin),
               max == Long.MAX_VALUE && random().nextBoolean() ? null : new BytesRef(encodedMax),
               includeMin, includeMax);
@@ -185,34 +185,34 @@ public class TestDocValuesQueries extends LuceneTestCase {
   }
 
   public void testEquals() {
-    Query q1 = SortedNumericDocValuesField.newRangeQuery("foo", 3, 5);
-    QueryUtils.checkEqual(q1, SortedNumericDocValuesField.newRangeQuery("foo", 3, 5));
-    QueryUtils.checkUnequal(q1, SortedNumericDocValuesField.newRangeQuery("foo", 3, 6));
-    QueryUtils.checkUnequal(q1, SortedNumericDocValuesField.newRangeQuery("foo", 4, 5));
-    QueryUtils.checkUnequal(q1, SortedNumericDocValuesField.newRangeQuery("bar", 3, 5));
+    Query q1 = SortedNumericDocValuesField.newSlowRangeQuery("foo", 3, 5);
+    QueryUtils.checkEqual(q1, SortedNumericDocValuesField.newSlowRangeQuery("foo", 3, 5));
+    QueryUtils.checkUnequal(q1, SortedNumericDocValuesField.newSlowRangeQuery("foo", 3, 6));
+    QueryUtils.checkUnequal(q1, SortedNumericDocValuesField.newSlowRangeQuery("foo", 4, 5));
+    QueryUtils.checkUnequal(q1, SortedNumericDocValuesField.newSlowRangeQuery("bar", 3, 5));
 
-    Query q2 = SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true);
-    QueryUtils.checkEqual(q2, SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true));
-    QueryUtils.checkUnequal(q2, SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("baz"), new BytesRef("baz"), true, true));
-    QueryUtils.checkUnequal(q2, SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), new BytesRef("bar"), true, true));
-    QueryUtils.checkUnequal(q2, SortedSetDocValuesField.newRangeQuery("quux", new BytesRef("bar"), new BytesRef("baz"), true, true));
+    Query q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true);
+    QueryUtils.checkEqual(q2, SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true));
+    QueryUtils.checkUnequal(q2, SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("baz"), new BytesRef("baz"), true, true));
+    QueryUtils.checkUnequal(q2, SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("bar"), true, true));
+    QueryUtils.checkUnequal(q2, SortedSetDocValuesField.newSlowRangeQuery("quux", new BytesRef("bar"), new BytesRef("baz"), true, true));
   }
 
   public void testToString() {
-    Query q1 = SortedNumericDocValuesField.newRangeQuery("foo", 3, 5);
+    Query q1 = SortedNumericDocValuesField.newSlowRangeQuery("foo", 3, 5);
     assertEquals("foo:[3 TO 5]", q1.toString());
     assertEquals("[3 TO 5]", q1.toString("foo"));
     assertEquals("foo:[3 TO 5]", q1.toString("bar"));
 
-    Query q2 = SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true);
+    Query q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true);
     assertEquals("foo:[[62 61 72] TO [62 61 7a]]", q2.toString());
-    q2 = SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), false, true);
+    q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), false, true);
     assertEquals("foo:{[62 61 72] TO [62 61 7a]]", q2.toString());
-    q2 = SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), false, false);
+    q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), false, false);
     assertEquals("foo:{[62 61 72] TO [62 61 7a]}", q2.toString());
-    q2 = SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("bar"), null, true, true);
+    q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), null, true, true);
     assertEquals("foo:[[62 61 72] TO *}", q2.toString());
-    q2 = SortedSetDocValuesField.newRangeQuery("foo", null, new BytesRef("baz"), true, true);
+    q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", null, new BytesRef("baz"), true, true);
     assertEquals("foo:{* TO [62 61 7a]]", q2.toString());
     assertEquals("{* TO [62 61 7a]]", q2.toString("foo"));
     assertEquals("foo:{* TO [62 61 7a]]", q2.toString("bar"));
@@ -226,10 +226,10 @@ public class TestDocValuesQueries extends LuceneTestCase {
     iw.close();
     IndexSearcher searcher = newSearcher(reader);
     for (Query query : Arrays.asList(
-        NumericDocValuesField.newRangeQuery("foo", 2, 4),
-        SortedNumericDocValuesField.newRangeQuery("foo", 2, 4),
-        SortedDocValuesField.newRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()),
-        SortedSetDocValuesField.newRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()))) {
+        NumericDocValuesField.newSlowRangeQuery("foo", 2, 4),
+        SortedNumericDocValuesField.newSlowRangeQuery("foo", 2, 4),
+        SortedDocValuesField.newSlowRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()),
+        SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()))) {
       Weight w = searcher.createNormalizedWeight(query, random().nextBoolean());
       assertNull(w.scorer(searcher.getIndexReader().leaves().get(0)));
     }
@@ -255,12 +255,12 @@ public class TestDocValuesQueries extends LuceneTestCase {
     final long lo = NumericUtils.doubleToSortableLong(8.701032080293731E-226);
     final long hi = NumericUtils.doubleToSortableLong(2.0801416404385346E-41);
     
-    Query query = SortedNumericDocValuesField.newRangeQuery("dv", lo, hi);
+    Query query = SortedNumericDocValuesField.newSlowRangeQuery("dv", lo, hi);
     // TODO: assert expected matches
     searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
 
     // swap order, should still work
-    query = SortedNumericDocValuesField.newRangeQuery("dv", hi, lo);
+    query = SortedNumericDocValuesField.newSlowRangeQuery("dv", hi, lo);
     // TODO: assert expected matches
     searcher.search(query, searcher.reader.maxDoc(), Sort.INDEXORDER);
     

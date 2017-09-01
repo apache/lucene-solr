@@ -22,12 +22,10 @@ The Terms Component provides access to the indexed terms in a field and the numb
 
 In a sense, this search component provides fast field-faceting over the whole index, not restricted by the base query or any filters. The document frequencies returned are the number of documents that match the term, including any documents that have been marked for deletion but not yet removed from the index.
 
-[[TheTermsComponent-ConfiguringtheTermsComponent]]
 == Configuring the Terms Component
 
 By default, the Terms Component is already configured in `solrconfig.xml` for each collection.
 
-[[TheTermsComponent-DefiningtheTermsComponent]]
 === Defining the Terms Component
 
 Defining the Terms search component is straightforward: simply give it a name and use the class `solr.TermsComponent`.
@@ -39,7 +37,6 @@ Defining the Terms search component is straightforward: simply give it a name an
 
 This makes the component available for use, but by itself will not be useable until included with a request handler.
 
-[[TheTermsComponent-UsingtheTermsComponentinaRequestHandler]]
 === Using the Terms Component in a Request Handler
 
 The terms component is included with the `/terms` request handler, which is among Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
@@ -48,7 +45,6 @@ Note that the defaults for this request handler set the parameter "terms" to tru
 
 You could add this component to another handler if you wanted to, and pass "terms=true" in the HTTP request in order to get terms back. If it is only defined in a separate handler, you must use that handler when querying in order to get terms and not regular documents as results.
 
-[[TheTermsComponent-TermsComponentParameters]]
 === Terms Component Parameters
 
 The parameters below allow you to control what terms are returned. You can also configure any of these with the request handler if you'd like to set them permanently. Or, you can add them to the query request. These parameters are:
@@ -159,12 +155,10 @@ The response to a terms request is a list of the terms and their document freque
 
 You may also be interested in the {solr-javadocs}/solr-core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
 
-[[TheTermsComponent-Examples]]
-== Examples
+== Terms Component Examples
 
 All of the following sample queries work with Solr's "`bin/solr -e techproducts`" example.
 
-[[TheTermsComponent-GetTop10Terms]]
 === Get Top 10 Terms
 
 This query requests the first ten terms in the name field: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name`
@@ -195,8 +189,6 @@ Results:
 </response>
 ----
 
-
-[[TheTermsComponent-GetFirst10TermsStartingwithLetter_a_]]
 === Get First 10 Terms Starting with Letter 'a'
 
 This query requests the first ten terms in the name field, in index order (instead of the top 10 results by document count): `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.lower=a&terms.sort=index`
@@ -227,7 +219,6 @@ Results:
 </response>
 ----
 
-[[TheTermsComponent-SolrJinvocation]]
 === SolrJ Invocation
 
 [source,java]
@@ -245,7 +236,6 @@ Results:
     List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
 ----
 
-[[TheTermsComponent-UsingtheTermsComponentforanAuto-SuggestFeature]]
 == Using the Terms Component for an Auto-Suggest Feature
 
 If the <<suggester.adoc#suggester,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
@@ -270,7 +260,7 @@ Result:
 </response>
 ----
 
-You can use the parameter `omitHeader=true` to omit the response header from the query response, like in this example, which also returns the response in JSON format: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&indent=true&wt=json&omitHeader=true`
+You can use the parameter `omitHeader=true` to omit the response header from the query response, like in this example, which also returns the response in JSON format: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&omitHeader=true`
 
 Result:
 
@@ -288,7 +278,6 @@ Result:
 }
 ----
 
-[[TheTermsComponent-DistributedSearchSupport]]
 == Distributed Search Support
 
 The TermsComponent also supports distributed indexes. For the `/terms` request handler, you must provide the following two parameters:

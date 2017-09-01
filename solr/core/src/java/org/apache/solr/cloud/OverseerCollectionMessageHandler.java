@@ -419,20 +419,25 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
     TimeOut timeout = new TimeOut(timeoutms, TimeUnit.MILLISECONDS);
-    boolean deleted = false;
-    while (! timeout.hasTimedOut()) {
-      Thread.sleep(100);
-      DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
-      if(docCollection != null) {
+    // TODO: remove this workaround for SOLR-9440
+    zkStateReader.registerCore(collectionName);
+    try {
+      while (! timeout.hasTimedOut()) {
+        Thread.sleep(100);
+        DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
+        if (docCollection == null) { // someone already deleted the collection
+          return true;
+        }
         Slice slice = docCollection.getSlice(shard);
         if(slice == null || slice.getReplica(replicaName) == null) {
-          deleted =  true;
+          return true;
         }
       }
-      // Return true if either someone already deleted the collection/slice/replica.
-      if (docCollection == null || deleted) break;
+      // replica still exists after the timeout
+      return false;
+    } finally {
+      zkStateReader.unregisterCore(collectionName);
     }
-    return deleted;
   }
 
   void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws KeeperException, InterruptedException {
@@ -503,9 +508,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(url).build()) {
-      client.setConnectionTimeout(30000);
-      client.setSoTimeout(120000);
+    try (HttpSolrClient client = new HttpSolrClient.Builder(url)
+        .withConnectionTimeout(30000)
+        .withSocketTimeout(120000)
+        .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
@@ -516,10 +522,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   String waitForCoreNodeName(String collectionName, String msgNodeName, String msgCore) {
     int retryCount = 320;
     while (retryCount-- > 0) {
-      Map<String,Slice> slicesMap = zkStateReader.getClusterState()
-          .getSlicesMap(collectionName);
-      if (slicesMap != null) {
-
+      final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+      if (docCollection != null && docCollection.getSlicesMap() != null) {
+        Map<String,Slice> slicesMap = docCollection.getSlicesMap();
         for (Slice slice : slicesMap.values()) {
           for (Replica replica : slice.getReplicas()) {
             // TODO: for really large clusters, we could 'index' on this

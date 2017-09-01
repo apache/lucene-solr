@@ -22,10 +22,9 @@ Solr logs are a key way to know what's happening in the system. There are severa
 
 [IMPORTANT]
 ====
-In addition to the logging options described below, there is a way to configure which request parameters (such as parameters sent as part of queries) are logged with an additional request parameter called `logParamsList`. See the section on <<common-query-parameters.adoc#CommonQueryParameters-ThelogParamsListParameter,Common Query Parameters>> for more information.
+In addition to the logging options described below, there is a way to configure which request parameters (such as parameters sent as part of queries) are logged with an additional request parameter called `logParamsList`. See the section on <<common-query-parameters.adoc#logparamslist-parameter,Common Query Parameters>> for more information.
 ====
 
-[[ConfiguringLogging-TemporaryLoggingSettings]]
 == Temporary Logging Settings
 
 You can control the amount of logging output in Solr by using the Admin Web interface. Select the *LOGGING* link. Note that this page only lets you change settings in the running system and is not saved for the next run. (For more information about the Admin Web interface, see <<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>.)
@@ -59,7 +58,6 @@ Log levels settings are as follows:
 
 Multiple settings at one time are allowed.
 
-[[ConfiguringLogging-LoglevelAPI]]
 === Log level API
 
 There is also a way of sending REST commands to the logging endpoint to do the same. Example:
@@ -67,10 +65,9 @@ There is also a way of sending REST commands to the logging endpoint to do the s
 [source,bash]
 ----
 # Set the root logger to level WARN
-curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=root:WARN&wt=json"
+curl -s http://localhost:8983/solr/admin/info/logging --data-binary "set=root:WARN"
 ----
 
-[[ConfiguringLogging-ChoosingLogLevelatStartup]]
 == Choosing Log Level at Startup
 
 You can temporarily choose a different logging level as you start Solr. There are two ways:
@@ -87,7 +84,6 @@ bin/solr start -f -v
 bin/solr start -f -q
 ----
 
-[[ConfiguringLogging-PermanentLoggingSettings]]
 == Permanent Logging Settings
 
 Solr uses http://logging.apache.org/log4j/1.2/[Log4J version 1.2] for logging which is configured using `server/resources/log4j.properties`. Take a moment to inspect the contents of the `log4j.properties` file so that you are familiar with its structure. By default, Solr log messages will be written to `SOLR_LOGS_DIR/solr.log`.
@@ -109,7 +105,6 @@ On every startup of Solr, the start script will clean up old logs and rotate the
 
 You can disable the automatic log rotation at startup by changing the setting `SOLR_LOG_PRESTART_ROTATION` found in `bin/solr.in.sh` or `bin/solr.in.cmd` to false.
 
-[[ConfiguringLogging-LoggingSlowQueries]]
 == Logging Slow Queries
 
 For high-volume search applications, logging every query can generate a large amount of logs and, depending on the volume, potentially impact performance. If you mine these logs for additional insights into your application, then logging every query request may be useful.

@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api1",
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#list",
   "description": "Lists all collections, with details on shards and replicas in each collection.",
   "methods": [
     "GET"

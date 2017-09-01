@@ -22,8 +22,7 @@ Every update request received by Solr is run through a chain of plugins known as
 
 This can be useful, for example, to add a field to the document being indexed; to change the value of a particular field; or to drop an update if the incoming document doesn't fulfill certain criteria. In fact, a surprisingly large number of features in Solr are implemented as Update Processors and therefore it is necessary to understand how such plugins work and where are they configured.
 
-[[UpdateRequestProcessors-AnatomyandLifecycle]]
-== Anatomy and Lifecycle
+== URP Anatomy and Lifecycle
 
 An Update Request Processor is created as part of a {solr-javadocs}/solr-core/org/apache/solr/update/processor/UpdateRequestProcessorChain.html[chain] of one or more update processors. Solr creates a default update request processor chain comprising of a few update request processors which enable essential Solr features. This default chain is used to process every update request unless a user chooses to configure and specify a different custom update request processor chain.
 
@@ -38,14 +37,12 @@ When an update request is received by Solr, it looks up the update chain to be u
 
 NOTE: A single update request may contain a batch of multiple new documents or deletes and therefore the corresponding processXXX methods of an UpdateRequestProcessor will be invoked multiple times for every individual update. However, it is guaranteed that a single thread will serially invoke these methods.
 
-[[UpdateRequestProcessors-Configuration]]
-== Configuration
+== Update Request Processor Configuration
 
 Update request processors chains can be created by either creating the whole chain directly in `solrconfig.xml` or by creating individual update processors in `solrconfig.xml` and then dynamically creating the chain at run-time by specifying all processors via request parameters.
 
 However, before we understand how to configure update processor chains, we must learn about the default update processor chain because it provides essential features which are needed in most custom request processor chains as well.
 
-[[UpdateRequestProcessors-DefaultUpdateRequestProcessorChain]]
 === Default Update Request Processor Chain
 
 In case no update processor chains are configured in `solrconfig.xml`, Solr will automatically create a default update processor chain which will be used for all update requests. This default update processor chain consists of the following processors (in order):
@@ -56,7 +53,6 @@ In case no update processor chains are configured in `solrconfig.xml`, Solr will
 
 Each of these perform an essential function and as such any custom chain usually contain all of these processors. The `RunUpdateProcessorFactory` is usually the last update processor in any custom chain.
 
-[[UpdateRequestProcessors-CustomUpdateRequestProcessorChain]]
 === Custom Update Request Processor Chain
 
 The following example demonstrates how a custom chain can be configured inside `solrconfig.xml`.
@@ -85,7 +81,6 @@ In the above example, a new update processor chain named "dedupe" is created wit
 Do not forget to add `RunUpdateProcessorFactory` at the end of any chains you define in `solrconfig.xml`. Otherwise update requests processed by that chain will not actually affect the indexed data.
 ====
 
-[[UpdateRequestProcessors-ConfiguringIndividualProcessorsasTop-LevelPlugins]]
 === Configuring Individual Processors as Top-Level Plugins
 
 Update request processors can also be configured independent of a chain in `solrconfig.xml`.
@@ -113,7 +108,6 @@ In this case, an instance of `SignatureUpdateProcessorFactory` is configured wit
 </updateProcessorChain>
 ----
 
-[[UpdateRequestProcessors-UpdateProcessorsinSolrCloud]]
 == Update Processors in SolrCloud
 
 In a single node, stand-alone Solr, each update is run through all the update processors in a chain exactly once. But the behavior of update request processors in SolrCloud deserves special consideration.
@@ -148,20 +142,18 @@ However executing a processor only on the forwarding nodes is a great way of dis
 .Custom update chain post-processors may never be invoked on a recovering replica
 [WARNING]
 ====
-While a replica is in <<read-and-write-side-fault-tolerance.adoc#ReadandWriteSideFaultTolerance-WriteSideFaultTolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
+While a replica is in <<read-and-write-side-fault-tolerance.adoc#write-side-fault-tolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
 ====
 
-=== Atomic Updates
+=== Atomic Update Processor Factory
 
 If the `AtomicUpdateProcessorFactory` is in the update chain before the `DistributedUpdateProcessor`, the incoming document to the chain will be a partial document.
 
 Because `DistributedUpdateProcessor` is responsible for processing <<updating-parts-of-documents.adoc#updating-parts-of-documents,Atomic Updates>> into full documents on the leader node, this means that pre-processors which are executed only on the forwarding nodes can only operate on the partial document. If you have a processor which must process a full document then the only choice is to specify it as a post-processor.
 
 
-[[UpdateRequestProcessors-UsingCustomChains]]
 == Using Custom Chains
 
-[[UpdateRequestProcessors-update.chainRequestParameter]]
 === update.chain Request Parameter
 
 The `update.chain` parameter can be used in any update request to choose a custom chain which has been configured in `solrconfig.xml`. For example, in order to choose the "dedupe" chain described in a previous section, one can issue the following request:
@@ -187,7 +179,6 @@ curl "http://localhost:8983/solr/gettingstarted/update/json?update.chain=dedupe&
 The above should dedupe the two identical documents and index only one of them.
 
 
-[[UpdateRequestProcessors-Processor_Post-ProcessorRequestParameters]]
 === Processor & Post-Processor Request Parameters
 
 We can dynamically construct a custom update request processor chain using the `processor` and `post-processor` request parameters. Multiple processors can be specified as a comma-separated value for these two parameters. For example:
@@ -232,7 +223,6 @@ curl "http://localhost:8983/solr/gettingstarted/update/json?processor=remove_bla
 
 In the first example, Solr will dynamically create a chain which has "signature" and "remove_blanks" as pre-processors to be executed only on the forwarding node where as in the second example, "remove_blanks" will be executed as a pre-processor and "signature" will be executed on the leader and replicas as a post-processor.
 
-[[UpdateRequestProcessors-ConfiguringaCustomChainasaDefault]]
 === Configuring a Custom Chain as a Default
 
 We can also specify a custom chain to be used by default for all requests sent to specific update handlers instead of specifying the names in request parameters for each request.
@@ -263,12 +253,10 @@ Alternately, one can achieve a similar effect using the "defaults" as shown in t
 </requestHandler>
 ----
 
-[[UpdateRequestProcessors-UpdateRequestProcessorFactories]]
 == Update Request Processor Factories
 
 What follows are brief descriptions of the currently available update request processors. An `UpdateRequestProcessorFactory` can be integrated into an update chain in `solrconfig.xml` as necessary. You are strongly urged to examine the Javadocs for these classes; these descriptions are abridged snippets taken for the most part from the Javadocs.
 
-[[UpdateRequestProcessors-GeneralUseUpdateProcessorFactories]]
 === General Use UpdateProcessorFactories
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/AddSchemaFieldsUpdateProcessorFactory.html[AddSchemaFieldsUpdateProcessorFactory]:: This processor will dynamically add fields to the schema if an input document contains one or more fields that don't match any field or dynamic field in the schema.
@@ -300,7 +288,6 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/UUIDUpdateProcessorFactory.html[UUIDUpdateProcessorFactory]:: An update processor that adds a newly generated UUID value to any document being added that does not already have a value in the specified field.
 
-[[UpdateRequestProcessors-FieldMutatingUpdateProcessorFactoryDerivedFactories]]
 === FieldMutatingUpdateProcessorFactory Derived Factories
 
 These factories all provide functionality to _modify_ fields in a document as they're being indexed. When using any of these factories, please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/FieldMutatingUpdateProcessorFactory.html[FieldMutatingUpdateProcessorFactory javadocs] for details on the common options they all support for configuring which fields are modified.
@@ -349,7 +336,6 @@ These factories all provide functionality to _modify_ fields in a document as th
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/UniqFieldsUpdateProcessorFactory.html[UniqFieldsUpdateProcessorFactory]:: Removes duplicate values found in fields matching the specified conditions.
 
-[[UpdateRequestProcessors-UpdateProcessorFactoriesThatCanBeLoadedasPlugins]]
 === Update Processor Factories That Can Be Loaded as Plugins
 
 These processors are included in Solr releases as "contribs", and require additional jars loaded at runtime. See the README files associated with each contrib for details:
@@ -364,7 +350,6 @@ The {solr-javadocs}/solr-uima/index.html[`uima`] contrib provides::
 
 {solr-javadocs}/solr-uima/org/apache/solr/uima/processor/UIMAUpdateRequestProcessorFactory.html[UIMAUpdateRequestProcessorFactory]::: Update document(s) to be indexed with UIMA extracted information.
 
-[[UpdateRequestProcessors-UpdateProcessorFactoriesYouShouldNotModifyorRemove]]
 === Update Processor Factories You Should _Not_ Modify or Remove
 
 These are listed for completeness, but are part of the Solr infrastructure, particularly SolrCloud. Other than insuring you do _not_ remove them when modifying the update request handlers (or any copies you make), you will rarely, if ever, need to change these.
@@ -377,11 +362,9 @@ These are listed for completeness, but are part of the Solr infrastructure, part
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/RunUpdateProcessorFactory.html[RunUpdateProcessorFactory]:: Executes the update commands using the underlying UpdateHandler. Almost all processor chains should end with an instance of `RunUpdateProcessorFactory` unless the user is explicitly executing the update commands in an alternative custom `UpdateRequestProcessorFactory`.
 
-[[UpdateRequestProcessors-UpdateProcessorsThatCanBeUsedatRuntime]]
 === Update Processors That Can Be Used at Runtime
 These Update processors do not need any configuration is your `solrconfig.xml` . They are automatically initialized when their name is added to the `processor` parameter. Multiple processors can be used by appending multiple processor names (comma separated)
 
-[[UpdateRequestProcessors-TemplateUpdateProcessorFactory]]
 ==== TemplateUpdateProcessorFactory
 
 The `TemplateUpdateProcessorFactory` can be used to add new fields to documents based on a template pattern.
@@ -415,3 +398,13 @@ The above parameters convert a normal `update` operation on
 * `field2` to an atomic `set` operation
 * `field3` to an atomic `inc` operation
 * `field4` to an atomic `remove` operation
+
+==== UUIDUpdateProcessorFactory
+
+Name of the processor is `uuid` . Use it to add a UUID to a field
+example:
+
+[source,bash]
+----
+processor=uuid&uuid.fieldName=somefield_name
+----

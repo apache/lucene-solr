@@ -20,8 +20,6 @@ import java.util.UUID;
 import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -47,36 +45,55 @@ import org.apache.solr.schema.SchemaField;
  * &lt;/processor&gt;
  * </pre>
  *
+ *
  * <p>
- * If field name is omitted in processor configuration,
+ * You can also incoke the processor with request handler param(s)
+ * as <code>uuid.fieldname</code> with <code>processor=uuid</code>
+ *
+ * curl -X POST -H Content-Type: application/json
+ * http://localhost:8983/solr/test/update/json/docs?processor=uuid;ampersand;uuid.fieldName=id;ampersand;commit=true
+ * --data-binary {"id":"1","title": "titleA"}
+ *
+ * NOTE: The param(s) provided in request handler will override / supersede processor's config.
+ *
+ * If field name is omitted in processor configuration and not provided in request handler param(s),
  * then  @{link org.apache.solr.schema.IndexSchema#getUniqueKeyField()}
  * is used as field and a new <code>UUID</code> will be generated
  * and added as the value of that field. The field type of the uniqueKeyField
  * must be anything which accepts a string or UUID value.
+ *
+ *
+ *
  * @see UUID
  */
 public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+
+  private static final String PREFIX_PARAM = "uuid.";
+  public static final String NAME = "uuid";
+  private static final String FIELD_PARAM = "fieldName";
+
 
   protected String fieldName = null;
 
   @SuppressWarnings("unchecked")
   public void init(NamedList args) {
 
-    Object obj = args.remove("fieldName");
+    Object obj = args.remove(FIELD_PARAM);
     if (null != obj) {
       fieldName = obj.toString();
-    }
-
-    if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR,
-          "Unexpected init param(s): '" +
-              args.getName(0) + "'");
     }
   }
 
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next ) {
+    String fieldName = this.fieldName;
+
+    String fname = req.getParams().get(PREFIX_PARAM+FIELD_PARAM);
+    if (!StringUtils.isEmpty(fname)) {
+      fieldName = fname;
+    }
+
     if (StringUtils.isEmpty(fieldName)) {
       SchemaField schemaField = req.getSchema().getUniqueKeyField();
       fieldName = schemaField.getName();

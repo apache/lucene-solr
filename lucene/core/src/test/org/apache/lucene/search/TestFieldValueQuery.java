@@ -59,8 +59,8 @@ public class TestFieldValueQuery extends LuceneTestCase {
       final IndexSearcher searcher = newSearcher(reader);
       iw.close();
 
-      assertSameMatches(searcher, new TermQuery(new Term("has_value", "yes")), new FieldValueQuery("dv1"), false);
-      assertSameMatches(searcher, new TermQuery(new Term("has_value", "yes")), new FieldValueQuery("dv2"), false);
+      assertSameMatches(searcher, new TermQuery(new Term("has_value", "yes")), new DocValuesFieldExistsQuery("dv1"), false);
+      assertSameMatches(searcher, new TermQuery(new Term("has_value", "yes")), new DocValuesFieldExistsQuery("dv2"), false);
 
       reader.close();
       dir.close();
@@ -99,12 +99,12 @@ public class TestFieldValueQuery extends LuceneTestCase {
 
       BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
       bq1.add(new TermQuery(new Term("f", "yes")), Occur.MUST);
-      bq1.add(new FieldValueQuery("dv1"), Occur.FILTER);
+      bq1.add(new DocValuesFieldExistsQuery("dv1"), Occur.FILTER);
       assertSameMatches(searcher, ref.build(), bq1.build(), true);
 
       BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
       bq2.add(new TermQuery(new Term("f", "yes")), Occur.MUST);
-      bq2.add(new FieldValueQuery("dv2"), Occur.FILTER);
+      bq2.add(new DocValuesFieldExistsQuery("dv2"), Occur.FILTER);
       assertSameMatches(searcher, ref.build(), bq2.build(), true);
 
       reader.close();
@@ -141,10 +141,10 @@ public class TestFieldValueQuery extends LuceneTestCase {
       final float boost = random().nextFloat() * 10;
       final Query ref = new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term("has_value", "yes"))), boost);
 
-      final Query q1 = new BoostQuery(new FieldValueQuery("dv1"), boost);
+      final Query q1 = new BoostQuery(new DocValuesFieldExistsQuery("dv1"), boost);
       assertSameMatches(searcher, ref, q1, true);
 
-      final Query q2 = new BoostQuery(new FieldValueQuery("dv2"), boost);
+      final Query q2 = new BoostQuery(new DocValuesFieldExistsQuery("dv2"), boost);
       assertSameMatches(searcher, ref, q2, true);
 
       reader.close();
@@ -160,7 +160,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(0, searcher.search(new FieldValueQuery("f"), 1).totalHits);
+    assertEquals(0, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
     reader.close();
     dir.close();
   }
@@ -175,7 +175,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new FieldValueQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
     reader.close();
     dir.close();
   }
@@ -193,7 +193,7 @@ public class TestFieldValueQuery extends LuceneTestCase {
     final IndexReader reader = iw.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     iw.close();
-    assertEquals(1, searcher.search(new FieldValueQuery("f"), 1).totalHits);
+    assertEquals(1, searcher.search(new DocValuesFieldExistsQuery("f"), 1).totalHits);
     reader.close();
     dir.close();
   }

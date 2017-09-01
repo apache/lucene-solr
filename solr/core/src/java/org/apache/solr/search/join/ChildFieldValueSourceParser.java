@@ -65,7 +65,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
 
       @Override
       public String value(int slot) {
-        return byteRefs.value(slot).utf8ToString();
+        final BytesRef value = byteRefs.value(slot);
+        return value!=null ? value.utf8ToString() : null;
       }
 
       @Override

@@ -26,7 +26,6 @@ A _search component_ is a feature of search, such as highlighting or faceting. T
 
 These are often referred to as "requestHandler" and "searchComponent", which is how they are defined in `solrconfig.xml`.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-RequestHandlers]]
 == Request Handlers
 
 Every request handler is defined with a name and a class. The name of the request handler is referenced with the request to Solr, typically as a path. For example, if Solr is installed at ` http://localhost:8983/solr/ `and you have a collection named "```gettingstarted```", you can make a request using URLs like this:
@@ -44,7 +43,6 @@ Request handlers can also process requests for nested paths of their names, for 
 
 It is also possible to configure defaults for request handlers with a section called `initParams`. These defaults can be used when you want to have common properties that will be used by each separate handler. For example, if you intend to create several request handlers that will all request the same list of fields in the response, you can configure an `initParams` section with your list of fields. For more information about `initParams`, see the section <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams in SolrConfig>>.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-SearchHandlers]]
 === SearchHandlers
 
 The primary request handler defined with Solr by default is the "SearchHandler", which handles search queries. The request handler is defined, and then a list of defaults for the handler are defined with a `defaults` list.
@@ -67,7 +65,7 @@ All of the parameters described in the section  <<searching.adoc#searching,Searc
 
 Besides `defaults`, there are other options for the SearchHandler, which are:
 
-* `appends`: This allows definition of parameters that are added to the user query. These might be <<common-query-parameters.adoc#CommonQueryParameters-Thefq_FilterQuery_Parameter,filter queries>>, or other query rules that should be added to each query. There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
+* `appends`: This allows definition of parameters that are added to the user query. These might be <<common-query-parameters.adoc#fq-filter-query-parameter,filter queries>>, or other query rules that should be added to each query. There is no mechanism in Solr to allow a client to override these additions, so you should be absolutely sure you always want these parameters applied to queries.
 +
 [source,xml]
 ----
@@ -91,33 +89,28 @@ In this example, the filter query "inStock:true" will always be added to every q
 +
 In this example, facet fields have been defined which limits the facets that will be returned by Solr. If the client requests facets, the facets defined with a configuration like this are the only facets they will see.
 
-The final section of a request handler definition is `components`, which defines a list of search components that can be used with a request handler. They are only registered with the request handler. How to define a search component is discussed further on in the section on <<RequestHandlersandSearchComponentsinSolrConfig-SearchComponents,Search Components>>. The `components` element can only be used with a request handler that is a SearchHandler.
+The final section of a request handler definition is `components`, which defines a list of search components that can be used with a request handler. They are only registered with the request handler. How to define a search component is discussed further on in the section on <<Search Components>> below. The `components` element can only be used with a request handler that is a SearchHandler.
 
 The `solrconfig.xml` file includes many other examples of SearchHandlers that can be used or modified as needed.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-UpdateRequestHandlers]]
 === UpdateRequestHandlers
 
 The UpdateRequestHandlers are request handlers which process updates to the index.
 
 In this guide, we've covered these handlers in detail in the section <<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,Uploading Data with Index Handlers>>.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-ShardHandlers]]
 === ShardHandlers
 
 It is possible to configure a request handler to search across shards of a cluster, used with distributed search. More information about distributed search and how to configure the shardHandler is in the section <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-ImplicitRequestHandlers]]
 === Implicit Request Handlers
 
 Solr includes many out-of-the-box request handlers that are not configured in `solrconfig.xml`, and so are referred to as "implicit" - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-SearchComponents]]
 == Search Components
 
 Search components define the logic that is used by the SearchHandler to perform queries for users.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-DefaultComponents]]
 === Default Components
 
 There are several default search components that work with all SearchHandlers without any additional configuration. If no components are defined (with the exception of `first-components` and `last-components` - see below), these are executed by default, in the following order:
@@ -132,13 +125,12 @@ There are several default search components that work with all SearchHandlers wi
 |mlt |`solr.MoreLikeThisComponent` |Described in the section <<morelikethis.adoc#morelikethis,MoreLikeThis>>.
 |highlight |`solr.HighlightComponent` |Described in the section <<highlighting.adoc#highlighting,Highlighting>>.
 |stats |`solr.StatsComponent` |Described in the section <<the-stats-component.adoc#the-stats-component,The Stats Component>>.
-|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#CommonQueryParameters-ThedebugParameter,Common Query Parameters>>.
+|debug |`solr.DebugComponent` |Described in the section on <<common-query-parameters.adoc#debug-parameter,Common Query Parameters>>.
 |expand |`solr.ExpandComponent` |Described in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
 |===
 
 If you register a new search component with one of these default names, the newly defined component will be used instead of the default.
 
-[[RequestHandlersandSearchComponentsinSolrConfig-First-ComponentsandLast-Components]]
 === First-Components and Last-Components
 
 It's possible to define some components as being used before (with `first-components`) or after (with `last-components`) the default components listed above.
@@ -158,7 +150,6 @@ It's possible to define some components as being used before (with `first-compon
 </arr>
 ----
 
-[[RequestHandlersandSearchComponentsinSolrConfig-Components]]
 === Components
 
 If you define `components`, the default components (see above) will not be executed, and `first-components` and `last-components` are disallowed:
@@ -172,7 +163,6 @@ If you define `components`, the default components (see above) will not be execu
 </arr>
 ----
 
-[[RequestHandlersandSearchComponentsinSolrConfig-OtherUsefulComponents]]
 === Other Useful Components
 
 Many of the other useful components are described in sections of this Guide for the features they support. These are:

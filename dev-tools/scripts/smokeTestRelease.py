@@ -644,10 +644,14 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       textFiles.append('BUILD')
 
   for fileName in textFiles:
-    fileName += '.txt'
-    if fileName not in l:
-      raise RuntimeError('file "%s" is missing from artifact %s' % (fileName, artifact))
-    l.remove(fileName)
+    fileNameTxt = fileName + '.txt'
+    fileNameMd = fileName + '.md'
+    if fileNameTxt in l:
+      l.remove(fileNameTxt)
+    elif fileNameMd in l:
+      l.remove(fileNameMd)
+    else:
+      raise RuntimeError('file "%s".[txt|md] is missing from artifact %s' % (fileName, artifact))
 
   if project == 'lucene':
     if LUCENE_NOTICE is None:
@@ -854,11 +858,11 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('<result name="response" numFound="3" start="0">') == -1:
+    if s.find('"numFound":3,"start":0') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
-    s = load('http://localhost:8983/v2/cores')
-    if s.find('"responseHeader":{"status":0') == -1:
+    s = load('http://localhost:8983/api/cores')
+    if s.find('"status":0,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query api v2 on solr example instance failed')
   finally:

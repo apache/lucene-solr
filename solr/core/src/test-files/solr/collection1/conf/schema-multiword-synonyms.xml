@@ -19,7 +19,7 @@
 <schema name="test-multi-word-synonyms" version="1.6">
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
 
   <fieldType name="text" class="solr.TextField" positionIncrementGap="100">

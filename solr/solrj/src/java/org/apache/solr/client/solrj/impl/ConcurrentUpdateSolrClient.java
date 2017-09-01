@@ -129,6 +129,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.threadCount = builder.threadCount;
     this.runners = new LinkedList<>();
     this.streamDeletes = builder.streamDeletes;
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -703,6 +705,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
   
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.connectionTimeout = timeout;
   }
@@ -710,7 +716,10 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
    * not for indexing.
+   * 
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
    */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     this.soTimeout = timeout;
   }
@@ -761,9 +770,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   /**
    * Constructs {@link ConcurrentUpdateSolrClient} instances from provided configuration.
    */
-  public static class Builder {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
-    protected HttpClient httpClient;
     protected int queueSize;
     protected int threadCount;
     protected ExecutorService executorService;
@@ -792,14 +800,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
-    }
-
-    /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
     }
     
     /**
@@ -858,6 +858,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       }
       
       return new ConcurrentUpdateSolrClient(this);
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }

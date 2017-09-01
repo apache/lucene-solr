@@ -25,6 +25,7 @@ import org.apache.solr.SolrTestCaseJ4;
 
 import org.junit.BeforeClass;
 
+@Deprecated
 public class TestTrieFacet extends SolrTestCaseJ4 {
 
   final static int MIN_VALUE = 20;

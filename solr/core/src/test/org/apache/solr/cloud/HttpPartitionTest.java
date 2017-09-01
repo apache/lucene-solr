@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -96,11 +97,11 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     CloudSolrClient client = new CloudSolrClient.Builder()
         .withZkHost(zkServer.getZkAddress())
         .sendDirectUpdatesToAnyShardReplica()
+        .withConnectionTimeout(30000)
+        .withSocketTimeout(60000)
         .build();
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    client.getLbClient().setConnectionTimeout(30000);
-    client.getLbClient().setSoTimeout(60000);
     return client;
   }
 
@@ -219,6 +220,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 1);
 
     // Now introduce a network partition between the leader and 1 replica, so a minRf of 2 is still achieved
+    log.info("partitioning replica :  " + notLeaders.get(0));
     SocketProxy proxy0 = getProxyForReplica(notLeaders.get(0));
 
     proxy0.close();
@@ -233,11 +235,12 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     ZkStateReader zkr = cloudClient.getZkStateReader();
     zkr.forceUpdateCollection(testCollectionName);; // force the state to be fresh
     ClusterState cs = zkr.getClusterState();
-    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
+    Collection<Slice> slices = cs.getCollection(testCollectionName).getActiveSlices();
     Slice slice = slices.iterator().next();
     Replica partitionedReplica = slice.getReplica(notLeaders.get(0).getName());
     assertEquals("The partitioned replica did not get marked down",
         Replica.State.DOWN.toString(), partitionedReplica.getStr(ZkStateReader.STATE_PROP));
+    log.info("un-partitioning replica :  " + notLeaders.get(0));
 
     proxy0.reopen();
 
@@ -522,7 +525,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     ZkStateReader zkr = cloudClient.getZkStateReader();
     ClusterState cs = zkr.getClusterState();
     assertNotNull(cs);
-    for (Slice shard : cs.getActiveSlices(testCollectionName)) {
+    for (Slice shard : cs.getCollection(testCollectionName).getActiveSlices()) {
       if (shard.getName().equals(shardId)) {
         for (Replica replica : shard.getReplicas()) {
           final Replica.State state = replica.getState();
@@ -629,14 +632,15 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     ZkStateReader zkr = cloudClient.getZkStateReader();
     zkr.forceUpdateCollection(testCollectionName);
     ClusterState cs = zkr.getClusterState();
-    Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
     boolean allReplicasUp = false;
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
     while (waitMs < maxWaitMs && !allReplicasUp) {
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
-      Slice shard = cs.getSlice(testCollectionName, shardId);
+      final DocCollection docCollection = cs.getCollectionOrNull(testCollectionName);
+      assertNotNull(docCollection);
+      Slice shard = docCollection.getSlice(shardId);
       assertNotNull("No Slice for "+shardId, shard);
       allReplicasUp = true; // assume true
 

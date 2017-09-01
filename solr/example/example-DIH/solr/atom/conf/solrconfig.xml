@@ -16,17 +16,17 @@
  limitations under the License.
 -->
 
-<!-- 
- This is a DEMO configuration, highlighting elements 
+<!--
+ This is a DEMO configuration, highlighting elements
  specifically needed to get this example running
  such as libraries and request handler specifics.
 
  It uses defaults or does not define most of production-level settings
  such as various caches or auto-commit policies.
 
- See Solr Reference Guide and other examples for 
+ See Solr Reference Guide and other examples for
  more details on a well configured solrconfig.xml
- https://cwiki.apache.org/confluence/display/solr/The+Well-Configured+Solr+Instance
+ https://lucene.apache.org/solr/guide/the-well-configured-solr-instance.html
 -->
 <config>
 
@@ -36,7 +36,7 @@
     that you fully re-index after changing this setting as it can
     affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>7.0.0</luceneMatchVersion>
+  <luceneMatchVersion>8.0.0</luceneMatchVersion>
 
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-dataimporthandler-.*\.jar"/>
 
@@ -44,6 +44,9 @@
     <lst name="defaults">
       <str name="echoParams">explicit</str>
       <str name="df">text</str>
+       <!-- Change from JSON to XML format (the default prior to Solr 7.0)
+          <str name="wt">xml</str> 
+         -->
     </lst>
   </requestHandler>
 

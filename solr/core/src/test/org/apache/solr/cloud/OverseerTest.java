@@ -205,7 +205,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
 
     private String getShardId(String collection, String coreNodeName) {
-      Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
+      DocCollection dc = zkStateReader.getClusterState().getCollectionOrNull(collection);
+      if (dc == null) return null;
+      Map<String,Slice> slices = dc.getSlicesMap();
       if (slices != null) {
         for (Slice slice : slices.values()) {
           for (Replica replica : slice.getReplicas()) {
@@ -291,10 +293,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
       for (int i = 0; i < numShards; i++) {
         assertNotNull("shard got no id?", zkController.publishState(COLLECTION, "core" + (i+1), "node" + (i+1), "shard"+((i%3)+1), Replica.State.ACTIVE, 3));
       }
-      final Map<String,Replica> rmap = reader.getClusterState().getSlice(COLLECTION, "shard1").getReplicasMap();
+      final Map<String,Replica> rmap = reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap();
       assertEquals(rmap.toString(), 2, rmap.size());
-      assertEquals(rmap.toString(), 2, reader.getClusterState().getSlice(COLLECTION, "shard2").getReplicasMap().size());
-      assertEquals(rmap.toString(), 2, reader.getClusterState().getSlice(COLLECTION, "shard3").getReplicasMap().size());
+      assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
+      assertEquals(rmap.toString(), 2, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
 
       //make sure leaders are in cloud state
       assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
@@ -343,9 +345,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
             "node" + (i+1), "shard"+((i%3)+1) , Replica.State.ACTIVE, 3));
       }
 
-      assertEquals(1, reader.getClusterState().getSlice(COLLECTION, "shard1").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getSlice(COLLECTION, "shard2").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getSlice(COLLECTION, "shard3").getReplicasMap().size());
+      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
+      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard2").getReplicasMap().size());
+      assertEquals(1, reader.getClusterState().getCollection(COLLECTION).getSlice("shard3").getReplicasMap().size());
       
       //make sure leaders are in cloud state
       assertNotNull(reader.getLeaderUrl(COLLECTION, "shard1", 15000));
@@ -364,9 +366,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
             "core" + (i + 1), "node" + (i + 1),"shard"+((i%3)+1), Replica.State.ACTIVE, 3));
       }
 
-      assertEquals(1, reader.getClusterState().getSlice("collection2", "shard1").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getSlice("collection2", "shard2").getReplicasMap().size());
-      assertEquals(1, reader.getClusterState().getSlice("collection2", "shard3").getReplicasMap().size());
+      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard1").getReplicasMap().size());
+      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard2").getReplicasMap().size());
+      assertEquals(1, reader.getClusterState().getCollection("collection2").getSlice("shard3").getReplicasMap().size());
       
       //make sure leaders are in cloud state
       assertNotNull(reader.getLeaderUrl("collection2", "shard1", 15000));
@@ -439,6 +441,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.CORE_NAME_PROP, "core1",
+          ZkStateReader.CORE_NODE_NAME_PROP, "core_node1",
           ZkStateReader.ROLES_PROP, "",
           ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
       
@@ -474,7 +477,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private void verifyShardLeader(ZkStateReader reader, String collection, String shard, String expectedCore) throws InterruptedException, KeeperException {
     int maxIterations = 200;
     while(maxIterations-->0) {
-      ZkNodeProps props =  reader.getClusterState().getLeader(collection, shard);
+      ZkNodeProps props =  reader.getClusterState().getCollection(collection).getLeader(shard);
       if(props!=null) {
         if(expectedCore.equals(props.getStr(ZkStateReader.CORE_NAME_PROP))) {
           return;
@@ -482,8 +485,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
       Thread.sleep(200);
     }
-    
-    assertEquals("Unexpected shard leader coll:" + collection + " shard:" + shard, expectedCore, (reader.getClusterState().getLeader(collection, shard)!=null)?reader.getClusterState().getLeader(collection, shard).getStr(ZkStateReader.CORE_NAME_PROP):null);
+    DocCollection docCollection = reader.getClusterState().getCollection(collection);
+    assertEquals("Unexpected shard leader coll:" + collection + " shard:" + shard, expectedCore,
+        (docCollection.getLeader(shard)!=null)?docCollection.getLeader(shard).getStr(ZkStateReader.CORE_NAME_PROP):null);
   }
 
   @Test
@@ -553,7 +557,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertEquals("Live nodes count does not match", 1, reader
           .getClusterState().getLiveNodes().size());
       assertEquals(shard+" replica count does not match", 1, reader.getClusterState()
-          .getSlice(COLLECTION, shard).getReplicasMap().size());
+          .getCollection(COLLECTION).getSlice(shard).getReplicasMap().size());
       version = getClusterStateVersion(zkClient);
       mockController.publishState(COLLECTION, core, core_node, "shard1", null, numShards);
       while (version == getClusterStateVersion(zkClient));
@@ -1004,12 +1008,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
       queue.offer(Utils.toJSON(m));
       
       for(int i=0;i<100;i++) {
-        Slice s = reader.getClusterState().getSlice(COLLECTION, "shard1");
+        DocCollection dc = reader.getClusterState().getCollectionOrNull(COLLECTION);
+        Slice s = dc == null? null : dc.getSlice("shard1");
         if(s!=null && s.getReplicasMap().size()==3) break;
         Thread.sleep(100);
       }
-      assertNotNull(reader.getClusterState().getSlice(COLLECTION, "shard1"));
-      assertEquals(3, reader.getClusterState().getSlice(COLLECTION, "shard1").getReplicasMap().size());
+      assertNotNull(reader.getClusterState().getCollection(COLLECTION).getSlice("shard1"));
+      assertEquals(3, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
     } finally {
       close(overseerClient);
       close(zkClient);
@@ -1059,6 +1064,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.NODE_NAME_PROP, "node1",
           ZkStateReader.COLLECTION_PROP, "c1",
           ZkStateReader.CORE_NAME_PROP, "core1",
+          ZkStateReader.CORE_NODE_NAME_PROP, "core_node1",
           ZkStateReader.ROLES_PROP, "",
           ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
 
@@ -1114,6 +1120,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           "collection", "test",
           ZkStateReader.SHARD_ID_PROP, "x",
           ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
+          ZkStateReader.CORE_NODE_NAME_PROP, "core_node1",
           ZkStateReader.NODE_NAME_PROP, "node1",
           ZkStateReader.CORE_NAME_PROP, "core1",
           ZkStateReader.STATE_PROP, Replica.State.DOWN.toString()
@@ -1227,6 +1234,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               ZkStateReader.NODE_NAME_PROP, "node"+N,
               ZkStateReader.COLLECTION_PROP, COLLECTION,
               ZkStateReader.CORE_NAME_PROP, "core"+N,
+              ZkStateReader.CORE_NODE_NAME_PROP, "core_node"+N,
               ZkStateReader.ROLES_PROP, "",
               ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
 
@@ -1278,7 +1286,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           {
             int iterationsLeft = 100;
             while (iterationsLeft-- > 0) {
-              final Slice slice = zkStateReader.getClusterState().getSlice(COLLECTION, "shard"+ss);
+              final Slice slice = zkStateReader.getClusterState().getCollection(COLLECTION).getSlice("shard"+ss);
               if (null == slice || null == slice.getReplicasMap().get("core_node"+N)) {
                 break;
               }

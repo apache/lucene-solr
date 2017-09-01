@@ -66,7 +66,12 @@ public class SliceMutator {
       log.error("Invalid Collection/Slice {}/{} ", coll, slice);
       return ZkStateWriter.NO_OP;
     }
-    String coreNodeName = Assign.assignNode(collection);
+    String coreNodeName;
+    if (message.getStr(ZkStateReader.CORE_NODE_NAME_PROP) != null) {
+      coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+    } else {
+      coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection);
+    }
     Replica replica = new Replica(coreNodeName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),

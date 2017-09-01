@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -199,6 +200,8 @@ public class HttpSolrClient extends SolrClient {
     
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
   }
 
   public Set<String> getQueryParams() {
@@ -352,7 +355,7 @@ public class HttpSolrClient extends SolrClient {
 
     if (request instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = baseUrl.replace("/solr", "/v2");
+        basePath = baseUrl.replace("/solr", "/api");
       } else {
         basePath = baseUrl + "/____v2";
       }
@@ -495,7 +498,9 @@ public class HttpSolrClient extends SolrClient {
     throw new SolrServerException("Unsupported method: " + request.getMethod());
 
   }
-  
+
+  private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
+
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
@@ -594,11 +599,9 @@ public class HttpSolrClient extends SolrClient {
       } catch (Exception e) {
         throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
-      if (isV2Api) {
-        Object err = rsp.get("error");
-        if (err != null) {
+      Object error = rsp == null ? null : rsp.get("error");
+      if (error != null && (isV2Api || String.valueOf(getObjectByPath(error, true, errPath)).endsWith("ExceptionWithErrObject"))) {
           throw RemoteExecutionException.create(baseUrl, rsp);
-        }
       }
       if (httpStatus != HttpStatus.SC_OK && !isV2Api) {
         NamedList<String> metadata = null;
@@ -713,7 +716,10 @@ public class HttpSolrClient extends SolrClient {
    * 
    * @param timeout
    *          Timeout in milliseconds
-   **/
+   *          
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.connectionTimeout = timeout;
   }
@@ -724,7 +730,10 @@ public class HttpSolrClient extends SolrClient {
    * 
    * @param timeout
    *          Timeout in milliseconds
-   **/
+   *          
+s   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     this.soTimeout = timeout;
   }
@@ -819,10 +828,8 @@ public class HttpSolrClient extends SolrClient {
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    */
-  public static class Builder {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
-    protected HttpClient httpClient;
-    protected ResponseParser responseParser;
     protected boolean compression;
     protected ModifiableSolrParams invariantParams = new ModifiableSolrParams();
 
@@ -885,22 +892,6 @@ public class HttpSolrClient extends SolrClient {
     }
 
     /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
-    }
-
-    /**
-     * Provides a {@link ResponseParser} for created clients to use when handling requests.
-     */
-    public Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
-
-    /**
      * Chooses whether created {@link HttpSolrClient}s use compression by default.
      */
     public Builder allowCompression(boolean compression) {
@@ -945,6 +936,11 @@ public class HttpSolrClient extends SolrClient {
       } else {
         return new DelegationTokenHttpSolrClient(this);
       }
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }

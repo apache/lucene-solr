@@ -808,14 +808,17 @@ class ReadersAndUpdates {
     return true;
   }
 
-  /** Returns a reader for merge, with the latest doc values updates and deletions. */
-  synchronized SegmentReader getReaderForMerge(IOContext context) throws IOException {
-
+  synchronized public void setIsMerging() {
     // This ensures any newly resolved doc value updates while we are merging are
     // saved for re-applying after this segment is done merging:
-    isMerging = true;
+    if (isMerging == false) {
+      isMerging = true;
+      assert mergingDVUpdates.isEmpty();
+    }
+  }
 
-    assert mergingDVUpdates.isEmpty();
+  /** Returns a reader for merge, with the latest doc values updates and deletions. */
+  synchronized SegmentReader getReaderForMerge(IOContext context) throws IOException {
 
     // We must carry over any still-pending DV updates because they were not
     // successfully written, e.g. because there was a hole in the delGens,

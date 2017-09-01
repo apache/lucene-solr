@@ -1,11 +1,11 @@
 {
-  "documentation":"https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-modifycoll",
+  "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#modifycollection",
   "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
   "type": "object",
   "properties":{
     "rule": {
       "type": "array",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+      "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
       "description": "Modifies the rules for where replicas should be located in a cluster.",
       "items": {
         "type": "string"
@@ -13,7 +13,7 @@
     },
     "snitch": {
       "type": "array",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Rule-based+Replica+Placement",
+      "documentation": "https://lucene.apache.org/solr/guide/rule-based-replica-placement.html",
       "description": "Details of the snitch provider",
       "items": {
         "type": "string"
@@ -21,7 +21,7 @@
     },
     "autoAddReplicas": {
       "type": "boolean",
-      "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://cwiki.apache.org/confluence/display/solr/Running+Solr+on+HDFS for more details on settings and overrides."
+      "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://lucene.apache.org/solr/guide/running-solr-on-hdfs.html for more details on settings and overrides."
     },
     "replicationFactor": {
       "type": "integer",

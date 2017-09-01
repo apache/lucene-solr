@@ -105,12 +105,8 @@ public class GetStream extends TupleStream implements Expressible {
     Object o = lets.get(name);
     List l = null;
     if(o instanceof List) {
-        l = (List)o;
-      if(l.get(0) instanceof Tuple) {
-        tupleIterator = l.iterator();
-      } else {
-        throw new IOException("Get was not passed a list of tuples:"+o.getClass());
-      }
+      l = (List)o;
+      tupleIterator = l.iterator();
     }
   }
 

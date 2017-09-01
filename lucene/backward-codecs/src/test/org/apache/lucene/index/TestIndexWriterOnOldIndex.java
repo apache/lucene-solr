@@ -29,14 +29,15 @@ import org.apache.lucene.util.Version;
 public class TestIndexWriterOnOldIndex extends LuceneTestCase {
 
   public void testOpenModeAndCreatedVersion() throws IOException {
-    InputStream resource = getClass().getResourceAsStream("index.single-empty-doc.630.zip");
+    assumeTrue("Reenable when 7.0 is released", false);
+    InputStream resource = getClass().getResourceAsStream("unsupported.index.single-empty-doc.7.0.0.zip");
     assertNotNull(resource);
     Path path = createTempDir();
     TestUtil.unzip(resource, path);
     Directory dir = newFSDirectory(path);
     for (OpenMode openMode : OpenMode.values()) {
       Directory tmpDir = newDirectory(dir);
-      assertEquals(6 /** 6.3.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
+      assertEquals(7 /** 7.0.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
       IndexWriter w = new IndexWriter(tmpDir, newIndexWriterConfig().setOpenMode(openMode));
       w.commit();
       w.close();
@@ -45,7 +46,7 @@ public class TestIndexWriterOnOldIndex extends LuceneTestCase {
           assertEquals(Version.LATEST.major, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
           break;
         default:
-          assertEquals(6 /** 6.3.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
+          assertEquals(7 /** 7.0.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
       }
       tmpDir.close();
     }

@@ -29,6 +29,11 @@
 
   <codecFactory class="solr.SchemaCodecFactory"/>
 
+  <requestDispatcher>
+    <!-- Tests rely on stream.body -->
+    <requestParsers enableStreamBody="true" />
+  </requestDispatcher>
+  
   <query>
     <filterCache
         enabled="${filterCache.enabled:false}"

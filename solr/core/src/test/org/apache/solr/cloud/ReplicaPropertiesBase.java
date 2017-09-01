@@ -57,11 +57,12 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     Replica replica = null;
     for (int idx = 0; idx < 300; ++idx) {
       clusterState = client.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(collectionName, replicaName);
+      final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+      replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }
-      if (StringUtils.isBlank(replica.getStr(property))) return;
+      if (StringUtils.isBlank(replica.getProperty(property))) return;
       Thread.sleep(100);
     }
     fail("Property " + property + " not set correctly for collection/replica pair: " +
@@ -82,15 +83,16 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
       clusterState = client.getZkStateReader().getClusterState();
-      replica = clusterState.getReplica(collectionName, replicaName);
+      final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
+      replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
       if (replica == null) {
         fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
       }
-      if (StringUtils.equals(val, replica.getStr(property))) return;
+      if (StringUtils.equals(val, replica.getProperty(property))) return;
       Thread.sleep(100);
     }
 
-    fail("Property '" + property + "' with value " + replica.getStr(property) +
+    fail("Property '" + property + "' with value " + replica.getProperty(property) +
         " not set correctly for collection/replica pair: " + collectionName + "/" + replicaName + " property map is " +
         replica.getProperties().toString() + ".");
 
@@ -129,7 +131,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
         int propCount = 0;
         for (Replica replica : slice.getReplicas()) {
           uniqueNodes.add(replica.getNodeName());
-          String propVal = replica.getStr(property);
+          String propVal = replica.getProperty(property);
           if (StringUtils.isNotBlank(propVal)) {
             ++propCount;
             if (counts.containsKey(replica.getNodeName()) == false) {

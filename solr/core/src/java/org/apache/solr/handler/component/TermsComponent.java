@@ -30,10 +30,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -45,7 +47,9 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.search.PointMerger;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
 
@@ -124,10 +128,8 @@ public class TermsComponent extends SearchComponent {
       return;
     }
 
-    int limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
-    if (limit < 0) {
-      limit = Integer.MAX_VALUE;
-    }
+    int _limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
+    final int limit = _limit < 0 ? Integer.MAX_VALUE : _limit;
 
     String lowerStr = params.get(TermsParams.TERMS_LOWER);
     String upperStr = params.get(TermsParams.TERMS_UPPER);
@@ -136,10 +138,9 @@ public class TermsComponent extends SearchComponent {
     boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(
         params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
     int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1);
-    int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT);
-    if (freqmax<0) {
-      freqmax = Integer.MAX_VALUE;
-    }
+    int _freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT);
+    final int freqmax = _freqmax < 0 ? Integer.MAX_VALUE : _freqmax;
+
     String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
     String regexp = params.get(TermsParams.TERMS_REGEXP_STR);
     Pattern pattern = regexp != null ? Pattern.compile(regexp, resolveRegexpFlags(params)) : null;
@@ -151,13 +152,76 @@ public class TermsComponent extends SearchComponent {
 
     for (String field : fields) {
       NamedList<Integer> fieldTerms = new NamedList<>();
-      termsResult.add(field, fieldTerms);
 
       Terms terms = indexReader.terms(field);
       if (terms == null) {
-        // field does not exist
+        // field does not exist in terms index.  Check points.
+        SchemaField sf = rb.req.getSchema().getFieldOrNull(field);
+        if (sf != null && sf.getType().isPointField()) {
+          if (lowerStr!=null || upperStr!=null || prefix!=null || regexp!=null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                String.format(Locale.ROOT, "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ", TermsParams.TERMS_LOWER, TermsParams.TERMS_UPPER, TermsParams.TERMS_PREFIX_STR, TermsParams.TERMS_REGEXP_STR));
+          }
+
+          if (sort) {
+            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+            MutableValue mv = valueIterator.getMutableValue();
+            BoundedTreeSet<CountPair<MutableValue, Integer>> queue = (sort ? new BoundedTreeSet<>(limit) : null);
+
+            for (; ; ) {
+              long count = valueIterator.getNextCount();
+              if (count < 0) break;
+              if (count < freqmin || count > freqmax) continue;
+              if (queue.size() < limit || queue.last().val < count || (queue.last().val == count && queue.last().key.compareTo(mv) < 0)) {
+                queue.add(new CountPair<>(mv.duplicate(), (int) count));
+              }
+            }
+
+            for (CountPair<MutableValue, Integer> item : queue) {
+              fieldTerms.add(item.key.toString(), item.val);
+            }
+            termsResult.add(field, fieldTerms);
+            continue;
+          }
+
+          if (!sort) {
+            /***
+            // streaming solution that is deferred until writing the response
+            // TODO: we can't use the streaming solution until XML writer supports PushWriter!
+            termsResult.add(field, (MapWriter) ew -> {
+              PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+              MutableValue mv = valueIterator.getMutableValue();
+              int num = 0;
+              for(;;) {
+                long count = valueIterator.getNextCount();
+                if (count < 0) break;
+                if (count < freqmin || count > freqmax) continue;
+                if (++num > limit) break;
+                ew.put(mv.toString(), (int)count); // match the numeric type of terms
+              }
+            });
+             ***/
+
+            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+            MutableValue mv = valueIterator.getMutableValue();
+            int num = 0;
+            for(;;) {
+              long count = valueIterator.getNextCount();
+              if (count < 0) break;
+              if (count < freqmin || count > freqmax) continue;
+              if (++num > limit) break;
+              fieldTerms.add(mv.toString(), (int)count); // match the numeric type of terms
+            }
+
+            termsResult.add(field, fieldTerms);
+            continue;
+          }
+        }
+
+        termsResult.add(field, fieldTerms);  // add empty
         continue;
       }
+      termsResult.add(field, fieldTerms);
 
       FieldType ft = raw ? null : rb.req.getSchema().getFieldTypeNoEx(field);
       if (ft==null) ft = new StrField();
@@ -526,18 +590,32 @@ public class TermsComponent extends SearchComponent {
 
   private static void fetchTerms(SolrIndexSearcher indexSearcher, String[] fields, String termList,
       boolean includeTotalTermFreq, NamedList<Object> result) throws IOException {
-    String[] splitTerms = termList.split(",");
+    List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
+    // Sort the terms once
+    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();
     }
-    // Sort the terms once
     Arrays.sort(splitTerms);
 
     IndexReaderContext topReaderContext = indexSearcher.getTopReaderContext();
     for (String field : fields) {
-      FieldType fieldType = indexSearcher.getSchema().getField(field).getType();
+      SchemaField sf = indexSearcher.getSchema().getField(field);
+      FieldType fieldType = sf.getType();
 
-      // Since splitTerms is already sorted, this array will also be sorted
+      if (fieldType.isPointField()) {
+        NamedList<Object> termsMap = new SimpleOrderedMap<>();
+        for (String term : splitTerms) {
+          Query q = fieldType.getFieldQuery(null, sf, term);
+          int count = indexSearcher.getDocSet(q).size();
+          termsMap.add(term, count);
+        }
+        result.add(field, termsMap);
+        continue;
+      }
+
+      // Since splitTerms is already sorted, this array will also be sorted. NOTE: this may not be true, it depends on readableToIndexed.
       Term[] terms = new Term[splitTerms.length];
       for (int i = 0; i < splitTerms.length; i++) {
         terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));

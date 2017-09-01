@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Schema+API#SchemaAPI-ListCopyFields",
+  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#list-copy-fields",
   "description": "Lists all copy fields.",
   "methods": [
     "GET"

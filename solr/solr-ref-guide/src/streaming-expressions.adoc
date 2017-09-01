@@ -46,7 +46,6 @@ Streams from outside systems can be joined with streams originating from Solr an
 Both streaming expressions and the streaming API are considered experimental, and the APIs are subject to change.
 ====
 
-[[StreamingExpressions-StreamLanguageBasics]]
 == Stream Language Basics
 
 Streaming Expressions are comprised of streaming functions which work with a Solr collection. They emit a stream of tuples (key/value Maps).
@@ -55,7 +54,6 @@ Many of the provided streaming functions are designed to work with entire result
 
 Some streaming functions act as stream sources to originate the stream flow. Other streaming functions act as stream decorators to wrap other stream functions and perform operations on the stream of tuples. Many streams functions can be parallelized across a worker collection. This can be particularly powerful for relational algebra functions.
 
-[[StreamingExpressions-StreamingRequestsandResponses]]
 === Streaming Requests and Responses
 
 Solr has a `/stream` request handler that takes streaming expression requests and returns the tuples as a JSON stream. This request handler is implicitly defined, meaning there is nothing that has to be defined in `solrconfig.xml` - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
@@ -112,7 +110,6 @@ StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collecti
 ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, group(search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), by=\"a_s asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
 ----
 
-[[StreamingExpressions-DataRequirements]]
 === Data Requirements
 
 Because streaming expressions relies on the `/export` handler, many of the field and field type requirements to use `/export` are also requirements for `/stream`, particularly for `sort` and `fl` parameters. Please see the section <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>> for details.

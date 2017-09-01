@@ -206,9 +206,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
     CloseableHttpClient myHttpClient = HttpClientUtil.createClient(null);
     try {
-      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, s);
-      client.setConnectionTimeout(500);
-      client.setSoTimeout(500);
+      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, 500, 500, s);
       client.setAliveCheckInterval(500);
   
       // Kill a server and test again
@@ -222,7 +220,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       // Start the killed server once again
       solr[1].startJetty();
       // Wait for the alive check to complete
-      waitForServer(30, client, 3, "solr1");
+      waitForServer(30, client, 3, solr[1].name);
     } finally {
       HttpClientUtil.close(myHttpClient);
     }

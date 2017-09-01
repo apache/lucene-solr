@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.junit.After;
 
@@ -39,14 +38,5 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     BM25Similarity sim = getSimilarity("text", BM25Similarity.class);
     assertEquals(0.75F, sim.getB(), 0.0F);
-  }
-  
-  public void testClassic() throws Exception {
-    // any value below 6.0 should have this behavior
-    System.setProperty("tests.luceneMatchVersion", "5.3");
-    initCore("solrconfig-basic.xml","schema-tiny.xml");
-    ClassicSimilarity sim = getSimilarity("text", ClassicSimilarity.class);
-    assertEquals(true, sim.getDiscountOverlaps());
-    System.clearProperty("tests.luceneMatchVersion");
   }
 }

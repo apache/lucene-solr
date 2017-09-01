@@ -98,7 +98,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
     // now query each replica and check for consistency
-    assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getSlice(COLLECTION_NAME, "shard1"));
+    assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("shard1"));
 
     // sanity check that documents still exist
     QueryResponse response = solrClient.query(new SolrQuery("*:*"));

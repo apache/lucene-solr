@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
@@ -302,17 +303,17 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     assertEquals(2, responses.size());
 
 
-    responses = suggester.lookup(term, (Map) null, 1, false, false);
+    responses = suggester.lookup(term, (Map<BytesRef, BooleanClause.Occur>) null, 1, false, false);
     assertEquals(1, responses.size());
 
-    responses = suggester.lookup(term, (Map) null, 2, false, false);
+    responses = suggester.lookup(term, (Map<BytesRef, BooleanClause.Occur>) null, 2, false, false);
     assertEquals(2, responses.size());
 
 
-    responses = suggester.lookup(term, (Set) null, 1, false, false);
+    responses = suggester.lookup(term, (Set<BytesRef>) null, 1, false, false);
     assertEquals(1, responses.size());
 
-    responses = suggester.lookup(term, (Set) null, 2, false, false);
+    responses = suggester.lookup(term, (Set<BytesRef>) null, 2, false, false);
     assertEquals(2, responses.size());
 
 

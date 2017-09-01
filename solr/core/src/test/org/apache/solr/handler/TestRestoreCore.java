@@ -71,9 +71,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port, context);
-      HttpSolrClient client = getHttpSolrClient(baseUrl);
-      client.setConnectionTimeout(15000);
-      client.setSoTimeout(60000);
+      HttpSolrClient client = getHttpSolrClient(baseUrl, 15000, 60000);
       return client;
     }
     catch (Exception ex) {
@@ -224,7 +222,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   public static boolean fetchRestoreStatus (String baseUrl, String coreName) throws IOException {
     String masterUrl = baseUrl + "/" + coreName +
-        ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_RESTORE_STATUS;
+        ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
     InputStream stream = null;

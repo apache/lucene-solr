@@ -542,19 +542,21 @@ public class RegExp {
         a = MinimizationOperations.minimize(a, maxDeterminizedStates);
         break;
       case REGEXP_REPEAT_MIN:
-        a = Operations.repeat(
-          exp1.toAutomatonInternal(automata, automaton_provider,
-            maxDeterminizedStates),
-          min);
+        a = exp1.toAutomatonInternal(automata, automaton_provider, maxDeterminizedStates);
+        int minNumStates = (a.getNumStates() - 1) * min;
+        if (minNumStates > maxDeterminizedStates) {
+          throw new TooComplexToDeterminizeException(a, minNumStates);
+        }
+        a = Operations.repeat(a, min);
         a = MinimizationOperations.minimize(a, maxDeterminizedStates);
         break;
       case REGEXP_REPEAT_MINMAX:
-        a = Operations.repeat(
-          exp1.toAutomatonInternal(automata, automaton_provider,
-            maxDeterminizedStates),
-          min,
-          max);
-        a = MinimizationOperations.minimize(a, maxDeterminizedStates);
+        a = exp1.toAutomatonInternal(automata, automaton_provider, maxDeterminizedStates);
+        int minMaxNumStates = (a.getNumStates() - 1) * max;
+        if (minMaxNumStates > maxDeterminizedStates) {
+          throw new TooComplexToDeterminizeException(a, minMaxNumStates);
+        }
+        a = Operations.repeat(a, min, max);
         break;
       case REGEXP_COMPLEMENT:
         a = Operations.complement(

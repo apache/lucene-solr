@@ -22,7 +22,6 @@ The `requestDispatcher` element of `solrconfig.xml` controls the way the Solr HT
 
 Included are parameters for defining if it should handle `/select` urls (for Solr 1.1 compatibility), if it will support remote streaming, the maximum size of file uploads and how it will respond to HTTP cache headers in requests.
 
-[[RequestDispatcherinSolrConfig-handleSelectElement]]
 == handleSelect Element
 
 [IMPORTANT]
@@ -41,12 +40,13 @@ In recent versions of Solr, a `/select` requestHandler is defined by default, so
 </requestDispatcher>
 ----
 
-[[RequestDispatcherinSolrConfig-requestParsersElement]]
 == requestParsers Element
 
 The `<requestParsers>` sub-element controls values related to parsing requests. This is an empty XML element that doesn't have any content, only attributes.
 
 The attribute `enableRemoteStreaming` controls whether remote streaming of content is allowed. If omitted or set to `false` (the default), streaming will not be allowed. Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
+
+The attribute `enableStreamBody` controls whether streaming content from the HTTP parameter `stream.body` is allowed. If omitted or set to `false` (the default), streaming will not be allowed. Setting it to `true` lets you pass data in the `stream.body` parameter.
 
 If you enable remote streaming, be sure that you have authentication enabled. Otherwise, someone could potentially gain access to your content by accessing arbitrary URLs. It's also a good idea to place Solr behind a firewall to prevent it from being accessed from untrusted clients.
 
@@ -59,12 +59,22 @@ The attribute `addHttpRequestToContext` can be used to indicate that the origina
 [source,xml]
 ----
 <requestParsers enableRemoteStreaming="false"
+                enableStreamBody="false"
                 multipartUploadLimitInKB="2048"
                 formdataUploadLimitInKB="2048"
                 addHttpRequestToContext="false" />
 ----
 
-[[RequestDispatcherinSolrConfig-httpCachingElement]]
+The below command is an example of how to enable RemoteStreaming and BodyStreaming through <<config-api.adoc#creating-and-updating-common-properties,Config API>>:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d'{
+    "set-property" : {"requestDispatcher.requestParsers.enableRemoteStreaming":true},
+    "set-property" : {"requestDispatcher.requestParsers.enableStreamBody":true}
+}'
+----
+
 == httpCaching Element
 
 The `<httpCaching>` element controls HTTP cache control headers. Do not confuse these settings with Solr's internal cache configuration. This element controls caching of HTTP responses as defined by the W3C HTTP specifications.
@@ -89,7 +99,6 @@ This value of this attribute is sent as the value of the `ETag` header. Changing
 </httpCaching>
 ----
 
-[[RequestDispatcherinSolrConfig-cacheControlElement]]
 === cacheControl Element
 
 In addition to these attributes, `<httpCaching>` accepts one child element: `<cacheControl>`. The content of this element will be sent as the value of the Cache-Control header on HTTP responses. This header is used to modify the default caching behavior of the requesting client. The possible values for the Cache-Control header are defined by the HTTP 1.1 specification in http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9[Section 14.9].

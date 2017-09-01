@@ -24,7 +24,6 @@ The fragments are included in a special section of the query response (the `high
 
 Highlighting is extremely configurable, perhaps more than any other part of Solr. There are many parameters each for fragment sizing, formatting, ordering, backup/alternate behavior, and more options that are hard to categorize. Nonetheless, highlighting is very simple to use.
 
-[[Highlighting-Usage]]
 == Usage
 
 === Common Highlighter Parameters
@@ -36,7 +35,7 @@ Use this parameter to enable or disable highlighting. The default is `false`. If
 `hl.method`::
 The highlighting implementation to use. Acceptable values are: `unified`, `original`, `fastVector`. The default is `original`.
 +
-See the <<Highlighting-ChoosingaHighlighter,Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
+See the <<Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
 
 `hl.fl`::
 Specifies a list of fields to highlight. Accepts a comma- or space-delimited list of fields for which Solr should generate highlighted snippets.
@@ -92,7 +91,6 @@ The default is `51200` characters.
 
 There are more parameters supported as well depending on the highlighter (via `hl.method`) chosen.
 
-[[Highlighting-HighlightingintheQueryResponse]]
 === Highlighting in the Query Response
 
 In the response to a query, Solr includes highlighting data in a section separate from the documents. It is up to a client to determine how to process this response and display the highlights to users.
@@ -102,7 +100,7 @@ Using the example documents included with Solr, we can see how this might work:
 In response to a query such as:
 
 [source,text]
-http://localhost:8983/solr/gettingstarted/select?hl=on&q=apple&wt=json&hl.fl=manu&fl=id,name,manu,cat
+http://localhost:8983/solr/gettingstarted/select?hl=on&q=apple&hl.fl=manu&fl=id,name,manu,cat
 
 we get a response such as this (truncated slightly for space):
 
@@ -136,7 +134,6 @@ Note the two sections `docs` and `highlighting`. The `docs` section contains the
 
 The `highlighting` section includes the ID of each document, and the field that contains the highlighted portion. In this example, we used the `hl.fl` parameter to say we wanted query terms highlighted in the "manu" field. When there is a match to the query term in that field, it will be included for each document ID in the list.
 
-[[Highlighting-ChoosingaHighlighter]]
 == Choosing a Highlighter
 
 Solr provides a `HighlightComponent` (a `SearchComponent`) and it's in the default list of components for search handlers. It offers a somewhat unified API over multiple actual highlighting implementations (or simply "highlighters") that do the business of highlighting.
@@ -173,7 +170,6 @@ The Unified Highlighter is exclusively configured via search parameters. In cont
 
 In addition to further information below, more information can be found in the {solr-javadocs}/solr-core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
 
-[[Highlighting-SchemaOptionsandPerformanceConsiderations]]
 === Schema Options and Performance Considerations
 
 Fundamental to the internals of highlighting are detecting the _offsets_ of the individual words that match the query. Some of the highlighters can run the stored text through the analysis chain defined in the schema, some can look them up from _postings_, and some can look them up from _term vectors._ These choices have different trade-offs:
@@ -198,7 +194,6 @@ This is definitely the fastest option for highlighting wildcard queries on large
 +
 This adds substantial weight to the index – similar in size to the compressed stored text. If you are using the Unified Highlighter then this is not a recommended configuration since it's slower and heavier than postings with light term vectors. However, this could make sense if full term vectors are already needed for another use-case.
 
-[[Highlighting-TheUnifiedHighlighter]]
 == The Unified Highlighter
 
 The Unified Highlighter supports these following additional parameters to the ones listed earlier:
@@ -243,7 +238,6 @@ Indicates which character to break the text on. Use only if you have defined `hl
 This is useful when the text has already been manipulated in advance to have a special delineation character at desired highlight passage boundaries. This character will still appear in the text as the last character of a passage.
 
 
-[[Highlighting-TheOriginalHighlighter]]
 == The Original Highlighter
 
 The Original Highlighter supports these following additional parameters to the ones listed earlier:
@@ -314,7 +308,6 @@ If this may happen and you know you don't need them for highlighting (i.e. your 
 
 The Original Highlighter has a plugin architecture that enables new functionality to be registered in `solrconfig.xml`. The "```techproducts```" configset shows most of these settings explicitly. You can use it as a guide to provide your own components to include a `SolrFormatter`, `SolrEncoder`, and `SolrFragmenter.`
 
-[[Highlighting-TheFastVectorHighlighter]]
 == The FastVector Highlighter
 
 The FastVector Highlighter (FVH) can be used in conjunction with the Original Highlighter if not all fields should be highlighted with the FVH. In such a mode, set `hl.method=original` and `f.yourTermVecField.hl.method=fastVector` for all fields that should use the FVH. One annoyance to keep in mind is that the Original Highlighter uses `hl.simple.pre` whereas the FVH (and other highlighters) use `hl.tag.pre`.
@@ -349,15 +342,12 @@ The maximum number of phrases to analyze when searching for the highest-scoring 
 `hl.multiValuedSeparatorChar`::
 Text to use to separate one value from the next for a multi-valued field. The default is " " (a space).
 
-
-[[Highlighting-UsingBoundaryScannerswiththeFastVectorHighlighter]]
 === Using Boundary Scanners with the FastVector Highlighter
 
 The FastVector Highlighter will occasionally truncate highlighted words. To prevent this, implement a boundary scanner in `solrconfig.xml`, then use the `hl.boundaryScanner` parameter to specify the boundary scanner for highlighting.
 
 Solr supports two boundary scanners: `breakIterator` and `simple`.
 
-[[Highlighting-ThebreakIteratorBoundaryScanner]]
 ==== The breakIterator Boundary Scanner
 
 The `breakIterator` boundary scanner offers excellent performance right out of the box by taking locale and boundary type into account. In most cases you will want to use the `breakIterator` boundary scanner. To implement the `breakIterator` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the type, language, and country values as appropriate to your application:
@@ -375,7 +365,6 @@ The `breakIterator` boundary scanner offers excellent performance right out of t
 
 Possible values for the `hl.bs.type` parameter are WORD, LINE, SENTENCE, and CHARACTER.
 
-[[Highlighting-ThesimpleBoundaryScanner]]
 ==== The simple Boundary Scanner
 
 The `simple` boundary scanner scans term boundaries for a specified maximum character value (`hl.bs.maxScan`) and for common delimiters such as punctuation marks (`hl.bs.chars`). The `simple` boundary scanner may be useful for some custom To implement the `simple` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the values as appropriate to your application:

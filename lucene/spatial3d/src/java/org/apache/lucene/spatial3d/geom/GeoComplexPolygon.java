@@ -19,6 +19,9 @@ package org.apache.lucene.spatial3d.geom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 
 /**
  * GeoComplexPolygon objects are structures designed to handle very large numbers of edges.
@@ -37,6 +40,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final Tree yTree;
   private final Tree zTree;
   
+  private final List<List<GeoPoint>> pointsList;
   private final boolean testPointInSet;
   private final GeoPoint testPoint;
   
@@ -66,6 +70,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
    */
   public GeoComplexPolygon(final PlanetModel planetModel, final List<List<GeoPoint>> pointsList, final GeoPoint testPoint, final boolean testPointInSet) {
     super(planetModel);
+    this.pointsList = pointsList;  // For serialization
     this.testPointInSet = testPointInSet;
     this.testPoint = testPoint;
     
@@ -115,6 +120,41 @@ class GeoComplexPolygon extends GeoBasePolygon {
     zTree = new ZTree(allEdges);
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoComplexPolygon(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      readPointsList(planetModel, inputStream),
+      new GeoPoint(planetModel, inputStream),
+      SerializableObject.readBoolean(inputStream));
+  }
+
+  private static List<List<GeoPoint>> readPointsList(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    final int count = SerializableObject.readInt(inputStream);
+    final List<List<GeoPoint>> array = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      array.add(java.util.Arrays.asList(SerializableObject.readPointArray(planetModel, inputStream)));
+    }
+    return array;
+  }
+  
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    writePointsList(outputStream, pointsList);
+    testPoint.write(outputStream);
+    SerializableObject.writeBoolean(outputStream, testPointInSet);
+  }
+
+  private static void writePointsList(final OutputStream outputStream, final List<List<GeoPoint>> pointsList) throws IOException {
+    SerializableObject.writeInt(outputStream, pointsList.size());
+    for (final List<GeoPoint> points : pointsList) {
+      SerializableObject.writePointArray(outputStream, points);
+    }
+  }
+  
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     // If we're right on top of the point, we know the answer.
@@ -369,6 +409,32 @@ class GeoComplexPolygon extends GeoBasePolygon {
     return true;
   }
 
+  @Override
+  public boolean intersects(GeoShape geoShape) {
+    // Create the intersector
+    final EdgeIterator intersector = new IntersectorShapeIterator(geoShape);
+    // First, compute the bounds for the the plane
+    final XYZBounds xyzBounds = new XYZBounds();
+    geoShape.getBounds(xyzBounds);
+
+    // Figure out which tree likely works best
+    final double xDelta = xyzBounds.getMaximumX() - xyzBounds.getMinimumX();
+    final double yDelta = xyzBounds.getMaximumY() - xyzBounds.getMinimumY();
+    final double zDelta = xyzBounds.getMaximumZ() - xyzBounds.getMinimumZ();
+    // Select the smallest range
+    if (xDelta <= yDelta && xDelta <= zDelta) {
+      // Drill down in x
+      return !xTree.traverse(intersector, xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+    } else if (yDelta <= xDelta && yDelta <= zDelta) {
+      // Drill down in y
+      return !yTree.traverse(intersector, xyzBounds.getMinimumY(), xyzBounds.getMaximumY());
+    } else if (zDelta <= xDelta && zDelta <= yDelta) {
+      // Drill down in z
+      return !zTree.traverse(intersector, xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+    }
+    return true;
+  }
+
 
   @Override
   public void getBounds(Bounds bounds) {
@@ -492,7 +558,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         if (left != null && left.traverse(edgeIterator, minValue, maxValue) == false) {
           return false;
         }
-        if (right != null && minValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
+        if (right != null && maxValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
           return false;
         }
       }
@@ -691,7 +757,24 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
 
   }
-  
+
+
+  /** Assess whether edge intersects the provided shape.
+   */
+  private class IntersectorShapeIterator implements EdgeIterator {
+
+    private final GeoShape shape;
+
+    public IntersectorShapeIterator(final GeoShape shape) {
+      this.shape = shape;
+    }
+
+    @Override
+    public boolean matches(final Edge edge) {
+      return !shape.intersects(edge.plane, edge.notablePoints, edge.startPlane, edge.endPlane);
+    }
+  }
+
   /** Count the number of verifiable edge crossings.
    */
   private class LinearCrossingEdgeIterator implements EdgeIterator {
@@ -1187,17 +1270,24 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
   }
-  
+
   @Override
   public boolean equals(Object o) {
-    // Way too expensive to do this the hard way, so each complex polygon will be considered unique.
-    return this == o;
+    if (!(o instanceof GeoComplexPolygon))
+      return false;
+    final GeoComplexPolygon other = (GeoComplexPolygon) o;
+    return super.equals(other) && testPointInSet == other.testPointInSet
+        && testPoint.equals(testPoint)
+        && pointsList.equals(other.pointsList);
   }
 
   @Override
   public int hashCode() {
-    // Each complex polygon is considered unique.
-    return System.identityHashCode(this);
+    int result = super.hashCode();
+    result = 31 * result + Boolean.hashCode(testPointInSet);
+    result = 31 * result + testPoint.hashCode();
+    result = 31 * result + pointsList.hashCode();
+    return result;
   }
 
   @Override

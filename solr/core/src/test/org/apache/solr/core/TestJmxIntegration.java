@@ -18,12 +18,11 @@ package org.apache.solr.core;
 
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.apache.solr.metrics.reporters.JmxObjectNameFactory;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +31,10 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,6 +49,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static MBeanServer mbeanServer = null;
+  private static MBeanServer newMbeanServer = null;
   private static JmxObjectNameFactory nameFactory = null;
   private static String registryName = null;
 
@@ -60,7 +60,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     //
     // (test configs are setup to use existing server if any, 
     // otherwise skip JMX)
-    MBeanServer platformServer = ManagementFactory.getPlatformMBeanServer();
+    newMbeanServer = MBeanServerFactory.createMBeanServer();
 
     initCore("solrconfig.xml", "schema.xml");
 
@@ -92,6 +92,9 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
+    if (newMbeanServer != null) {
+      MBeanServerFactory.releaseMBeanServer(newMbeanServer);
+    }
     mbeanServer = null;
   }
 
@@ -156,7 +159,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
         numDocs > oldNumDocs);
   }
 
-  @Test @Ignore("timing problem? https://issues.apache.org/jira/browse/SOLR-2715")
+  @Test @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-2715") // timing problem?
   public void testJmxOnCoreReload() throws Exception {
 
     String coreName = h.getCore().getName();

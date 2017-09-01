@@ -56,6 +56,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
+
   public BasicDistributedZk2Test() {
     super();
     // we need DVs on point fields to compute stats & facets

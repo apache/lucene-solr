@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,7 +67,7 @@ class GeoStandardPath extends GeoBasePath {
     Collections.addAll(points, pathPoints);
     done();
   }
-  
+
   /** Piece-wise constructor.  Use in conjunction with addPoint() and done().
    *@param planetModel is the planet model.
    *@param maxCutoffAngle is the width of the path, measured as an angle.
@@ -193,6 +197,23 @@ class GeoStandardPath extends GeoBasePath {
 
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoStandardPath(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readPointArray(planetModel, inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, cutoffAngle);
+    SerializableObject.writePointArray(outputStream, points);
+  }
+
   @Override
   protected double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     // Algorithm:
@@ -202,8 +223,8 @@ class GeoStandardPath extends GeoBasePath {
     for (PathSegment segment : segments) {
       double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
       if (distance != Double.POSITIVE_INFINITY)
-        return currentDistance + distance;
-      currentDistance += segment.fullPathDistance(distanceStyle);
+        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
+      currentDistance = distanceStyle.aggregateDistances(currentDistance, segment.fullPathDistance(distanceStyle));
     }
 
     int segmentIndex = 0;
@@ -211,9 +232,9 @@ class GeoStandardPath extends GeoBasePath {
     for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
       if (distance != Double.POSITIVE_INFINITY)
-        return currentDistance + distance;
+        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
       if (segmentIndex < segments.size())
-        currentDistance += segments.get(segmentIndex++).fullPathDistance(distanceStyle);
+        currentDistance = distanceStyle.aggregateDistances(currentDistance, segments.get(segmentIndex++).fullPathDistance(distanceStyle));
     }
 
     return Double.POSITIVE_INFINITY;
@@ -281,6 +302,23 @@ class GeoStandardPath extends GeoBasePath {
 
     for (final PathSegment pathSegment : segments) {
       if (pathSegment.intersects(planetModel, plane, notablePoints, bounds)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  @Override
+  public boolean intersects(GeoShape geoShape) {
+    for (final SegmentEndpoint pathPoint : endPoints) {
+      if (pathPoint.intersects(geoShape)) {
+        return true;
+      }
+    }
+
+    for (final PathSegment pathSegment : segments) {
+      if (pathSegment.intersects(geoShape)) {
         return true;
       }
     }
@@ -516,12 +554,12 @@ class GeoStandardPath extends GeoBasePath {
      *@param x is the point x.
      *@param y is the point y.
      *@param z is the point z.
-     *@return the distance metric.
+     *@return the distance metric, in aggregation form.
      */
     public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
         return Double.POSITIVE_INFINITY;
-      return distanceStyle.computeDistance(this.point, x, y, z);
+      return distanceStyle.toAggregationForm(distanceStyle.computeDistance(this.point, x, y, z));
     }
 
     /** Compute external distance.
@@ -547,6 +585,17 @@ class GeoStandardPath extends GeoBasePath {
       if (circlePlane == null)
         return false;
       return circlePlane.intersects(planetModel, p, notablePoints, this.notablePoints, bounds, this.cutoffPlanes);
+    }
+
+    /** Determine if this endpoint intersects a GeoShape.
+     *@param geoShape is the GeoShape.
+     *@return true if there is shape intersect this endpoint.
+     */
+    public boolean intersects(final GeoShape geoShape) {
+      //System.err.println("  looking for intersection between plane "+p+" and circle "+circlePlane+" on proper side of "+cutoffPlanes+" within "+bounds);
+      if (circlePlane == null)
+        return false;
+      return geoShape.intersects(circlePlane, this.notablePoints, this.cutoffPlanes);
     }
 
     /** Get the bounds for a segment endpoint.
@@ -680,13 +729,13 @@ class GeoStandardPath extends GeoBasePath {
 
     /** Compute the full distance along this path segment.
      *@param distanceStyle is the distance style.
-     *@return the distance metric.
+     *@return the distance metric, in aggregation form.
      */
     public double fullPathDistance(final DistanceStyle distanceStyle) {
       synchronized (fullDistanceCache) {
         Double dist = fullDistanceCache.get(distanceStyle);
         if (dist == null) {
-          dist = new Double(distanceStyle.computeDistance(start, end.x, end.y, end.z));
+          dist = new Double(distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z)));
           fullDistanceCache.put(distanceStyle, dist);
         }
         return dist.doubleValue();
@@ -723,7 +772,7 @@ class GeoStandardPath extends GeoBasePath {
      *@param x is the point x.
      *@param y is the point y.
      *@param z is the point z.
-     *@return the distance metric.
+     *@return the distance metric, in aggregation form.
      */
     public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
@@ -736,7 +785,7 @@ class GeoStandardPath extends GeoBasePath {
       final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
       final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
       if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION)
-        return distanceStyle.computeDistance(start, x,y,z);
+        return distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, x,y,z));
       final double normFactor = 1.0/magnitude;
       final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
       
@@ -758,7 +807,8 @@ class GeoStandardPath extends GeoBasePath {
         else
           throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
       }
-      return distanceStyle.computeDistance(thePoint, x, y, z) + distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z);
+      return distanceStyle.aggregateDistances(distanceStyle.toAggregationForm(distanceStyle.computeDistance(thePoint, x, y, z)),
+        distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z)));
     }
 
     /** Compute external distance.
@@ -797,6 +847,15 @@ class GeoStandardPath extends GeoBasePath {
     public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
       return upperConnectingPlane.intersects(planetModel, p, notablePoints, upperConnectingPlanePoints, bounds, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
           lowerConnectingPlane.intersects(planetModel, p, notablePoints, lowerConnectingPlanePoints, bounds, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
+    }
+
+    /** Determine if this endpoint intersects a specified GeoShape.
+     *@param geoShape is the GeoShape.
+     *@return true if there GeoShape intersects this endpoint.
+     */
+    public boolean intersects(final GeoShape geoShape) {
+      return geoShape.intersects(upperConnectingPlane, upperConnectingPlanePoints, lowerConnectingPlane, startCutoffPlane, endCutoffPlane) ||
+          geoShape.intersects(lowerConnectingPlane, lowerConnectingPlanePoints, upperConnectingPlane, startCutoffPlane, endCutoffPlane);
     }
 
     /** Get the bounds for a segment endpoint.

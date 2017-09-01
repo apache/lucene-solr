@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.Map;
 
+import com.codahale.metrics.Counter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -36,8 +37,13 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     initCore("solrconfig.xml", "schema.xml");
     // manually register some metrics in solr.jvm and solr.jetty - TestHarness doesn't init them
-    h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "foo");
-    h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo");
+    Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "foo");
+    c.inc();
+    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo");
+    c.inc(2);
+    // test escapes
+    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo:bar");
+    c.inc(3);
   }
 
   @Test
@@ -189,6 +195,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPropertyFilter() throws Exception {
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -222,5 +230,81 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
       assertNotNull(map.get("inserts"));
       assertNotNull(map.get("size"));
     });
+  }
+
+  @Test
+  public void testKeyMetrics() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    String key1 = "solr.core.collection1:CACHE.core.fieldCache";
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, key1), resp);
+    NamedList values = resp.getValues();
+    Object val = values.findRecursive("metrics", key1);
+    assertNotNull(val);
+    assertTrue(val instanceof Map);
+    assertTrue(((Map)val).size() >= 2);
+
+    String key2 = "solr.core.collection1:CACHE.core.fieldCache:entries_count";
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, key2), resp);
+    values = resp.getValues();
+    val = values.findRecursive("metrics", key2);
+    assertNotNull(val);
+    assertTrue(val instanceof Number);
+
+    String key3 = "solr.jetty:foo\\:bar";
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, key3), resp);
+    values = resp.getValues();
+    val = values.findRecursive("metrics", key3);
+    assertNotNull(val);
+    assertTrue(val instanceof Number);
+    assertEquals(3, ((Number)val).intValue());
+
+    // test multiple keys
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, key1, MetricsHandler.KEY_PARAM, key2, MetricsHandler.KEY_PARAM, key3), resp);
+    values = resp.getValues();
+    val = values.findRecursive("metrics", key1);
+    assertNotNull(val);
+    val = values.findRecursive("metrics", key2);
+    assertNotNull(val);
+    val = values.findRecursive("metrics", key3);
+    assertNotNull(val);
+
+    // test errors
+
+    // invalid keys
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, "foo", MetricsHandler.KEY_PARAM, "foo:bar:baz:xyz"), resp);
+    values = resp.getValues();
+    NamedList metrics = (NamedList)values.get("metrics");
+    assertEquals(0, metrics.size());
+    assertNotNull(values.findRecursive("errors", "foo"));
+    assertNotNull(values.findRecursive("errors", "foo:bar:baz:xyz"));
+
+    // unknown registry
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, "foo:bar:baz"), resp);
+    values = resp.getValues();
+    metrics = (NamedList)values.get("metrics");
+    assertEquals(0, metrics.size());
+    assertNotNull(values.findRecursive("errors", "foo:bar:baz"));
+
+    // unknown metric
+    resp = new SolrQueryResponse();
+    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
+        MetricsHandler.KEY_PARAM, "solr.jetty:unknown:baz"), resp);
+    values = resp.getValues();
+    metrics = (NamedList)values.get("metrics");
+    assertEquals(0, metrics.size());
+    assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
   }
 }

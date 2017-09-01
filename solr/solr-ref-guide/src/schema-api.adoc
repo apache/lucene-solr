@@ -52,7 +52,7 @@ The base address for the API is `\http://<host>:<port>/solr/<collection_name>`. 
 bin/solr -e cloud -noprompt
 ----
 
-== API Entry Points
+== Schema API Entry Points
 
 * `/schema`: <<Retrieve the Entire Schema,retrieve>> the schema, or <<Modify the Schema,modify>> the schema to add, remove, or replace fields, dynamic fields, copy fields, or field types
 * `/schema/fields`: <<List Fields,retrieve information>> about all defined fields or a specific named field
@@ -408,21 +408,19 @@ The query parameters should be added to the API request after '?'.
 `wt`::
 Defines the format of the response. The options are *json*, *xml* or *schema.xml*. If not specified, JSON will be returned by default.
 
-[[SchemaAPI-OUTPUT]]
 ==== Retrieve Schema Response
 
 *Output Content*
 
 The output will include all fields, field types, dynamic rules and copy field rules, in the format requested (JSON or XML). The schema name and version are also included.
 
-[[SchemaAPI-EXAMPLES]]
 ==== Retrieve Schema Examples
 
 Get the entire schema in JSON.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema
 ----
 
 [source,json]
@@ -611,7 +609,7 @@ Get a list of all fields.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/fields
 ----
 
 The sample output below has been truncated to only show a few fields.
@@ -684,7 +682,7 @@ Get a list of all dynamic field declarations:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields
 ----
 
 The sample output below has been truncated.
@@ -767,7 +765,7 @@ Get a list of all field types.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes
 ----
 
 The sample output below has been truncated to show a few different field types from different parts of the list.
@@ -805,7 +803,7 @@ The sample output below has been truncated to show a few different field types f
             "sortMissingLast": true
         },
         {
-            "class": "solr.TrieFloatField",
+            "class": "solr.FloatPointField",
             "dynamicFields": [
                 "*_fs",
                 "*_f"
@@ -816,7 +814,6 @@ The sample output below has been truncated to show a few different field types f
             ],
             "name": "float",
             "positionIncrementGap": "0",
-            "precisionStep": "0"
         }]
 }
 ----
@@ -855,7 +852,7 @@ Get a list of all copyFields.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/copyfields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/copyfields
 ----
 
 The sample output below has been truncated to the first few copy definitions.
@@ -916,7 +913,7 @@ Get the schema name.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/name?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/name
 ----
 
 [source,json]
@@ -956,7 +953,7 @@ Get the schema version
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/version?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/version
 ----
 
 [source,json]
@@ -997,7 +994,7 @@ List the uniqueKey.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/uniquekey?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/uniquekey
 ----
 
 [source,json]
@@ -1037,7 +1034,7 @@ Get the similarity implementation.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/similarity?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/similarity
 ----
 
 [source,json]

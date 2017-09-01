@@ -138,7 +138,7 @@
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
         'properties', 'mdtext',
-        'template', 'adoc',
+        'template', 'adoc', 'json',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -210,14 +210,14 @@
           ++lineNumber;
           if (underSourceHeader) { // This line is either a single source line, or the boundary of a code block
             inCodeBlock = blockBoundaryPattern.matcher(it).matches();
-            if ( ! blockTitlePattern.matcher(it).matches()) { // Keep underSourceHeader=true
+            if ( ! blockTitlePattern.matcher(it).matches()) {
               underSourceHeader = false;
             }
           } else {
             if (inCodeBlock) {
               inCodeBlock = ! blockBoundaryPattern.matcher(it).matches();
             } else {
-              underSourceHeader = sourceHeaderPattern.matcher(it).matches();
+              underSourceHeader = sourceHeaderPattern.matcher(it).lookingAt();
               if ( ! underSourceHeader) {
                 def unescapedSymbolMatcher = unescapedSymbolPattern.matcher(it);
                 if (unescapedSymbolMatcher.find()) {

@@ -195,6 +195,10 @@ public class CloudSolrClient extends SolrClient {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
   }
 
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setSoTimeout(int timeout) {
     lbClient.setSoTimeout(timeout);
   }
@@ -264,13 +268,28 @@ public class CloudSolrClient extends SolrClient {
     }
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
-    if(builder.lbClientBuilder != null) builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
+    if(builder.lbClientBuilder != null) {
+      propagateLBClientConfigOptions(builder);
+      builder.loadBalancedSolrClient = builder.lbClientBuilder.build();
+    }
     if(builder.loadBalancedSolrClient != null) builder.httpClient = builder.loadBalancedSolrClient.getHttpClient();
     this.myClient = (builder.httpClient == null) ? HttpClientUtil.createClient(null) : builder.httpClient;
-    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(myClient);
+    if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, myClient);
     this.lbClient = builder.loadBalancedSolrClient;
     this.updatesToLeaders = builder.shardLeadersOnly;
     this.directUpdatesToLeadersOnly = builder.directUpdatesToLeadersOnly;
+  }
+  
+  private void propagateLBClientConfigOptions(Builder builder) {
+    final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
+    
+    if (builder.connectionTimeoutMillis != null) {
+      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis);
+    }
+    
+    if (builder.socketTimeoutMillis != null) {
+      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
+    }
   }
 
   /**Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -767,10 +786,10 @@ public class CloudSolrClient extends SolrClient {
 
   @Override
   public NamedList<Object> request(SolrRequest request, String collection) throws SolrServerException, IOException {
-    SolrParams reqParams = request.getParams();
-
-    if (collection == null)
-      collection = (reqParams != null) ? reqParams.get("collection", getDefaultCollection()) : getDefaultCollection();
+    if (collection == null) {
+      collection = request.getCollection();
+      if (collection == null) collection = defaultCollection;
+    }
     return requestWithRetryOnStaleState(request, 0, collection);
   }
 
@@ -1110,7 +1129,7 @@ public class CloudSolrClient extends SolrClient {
     // validate collections
     for (String collectionName : rawCollectionsList) {
       if (stateProvider.getState(collectionName) == null) {
-        String alias = stateProvider.getAlias(collection);
+        String alias = stateProvider.getAlias(collectionName);
         if (alias != null) {
           List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
           collectionNames.addAll(aliasList);
@@ -1292,6 +1311,10 @@ public class CloudSolrClient extends SolrClient {
     return results;
   }
   
+  /**
+   * @deprecated since 7.0  Use {@link Builder} methods instead. 
+   */
+  @Deprecated
   public void setConnectionTimeout(int timeout) {
     this.lbClient.setConnectionTimeout(timeout); 
   }
@@ -1325,10 +1348,16 @@ public class CloudSolrClient extends SolrClient {
     return true;
   }
 
-  private static LBHttpSolrClient createLBHttpSolrClient(HttpClient httpClient) {
-    final LBHttpSolrClient lbClient = new LBHttpSolrClient.Builder()
-        .withHttpClient(httpClient)
-        .build();
+  private static LBHttpSolrClient createLBHttpSolrClient(Builder cloudSolrClientBuilder, HttpClient httpClient) {
+    final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
+    lbBuilder.withHttpClient(httpClient);
+    if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
+      lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
+    }
+    if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
+      lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
+    }
+    final LBHttpSolrClient lbClient = lbBuilder.build();
     lbClient.setRequestWriter(new BinaryRequestWriter());
     lbClient.setParser(new BinaryResponseParser());
     
@@ -1338,10 +1367,9 @@ public class CloudSolrClient extends SolrClient {
   /**
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
-  public static class Builder {
+  public static class Builder extends SolrClientBuilder<Builder> {
     protected Collection<String> zkHosts;
     protected List<String> solrUrls;
-    protected HttpClient httpClient;
     protected String zkChroot;
     protected LBHttpSolrClient loadBalancedSolrClient;
     protected LBHttpSolrClient.Builder lbClientBuilder;
@@ -1404,15 +1432,6 @@ public class CloudSolrClient extends SolrClient {
       this.lbClientBuilder = lbHttpSolrClientBuilder;
       return this;
     }
-
-    /**
-     * Provides a {@link HttpClient} for the builder to use when creating clients.
-     */
-    public Builder withHttpClient(HttpClient httpClient) {
-      this.httpClient = httpClient;
-      return this;
-    }
-
 
     /**
      * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
@@ -1483,7 +1502,7 @@ public class CloudSolrClient extends SolrClient {
       this.stateProvider = stateProvider;
       return this;
     }
-
+    
     /**
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */
@@ -1504,6 +1523,11 @@ public class CloudSolrClient extends SolrClient {
         }
       }
       return new CloudSolrClient(this);
+    }
+
+    @Override
+    public Builder getThis() {
+      return this;
     }
   }
 }

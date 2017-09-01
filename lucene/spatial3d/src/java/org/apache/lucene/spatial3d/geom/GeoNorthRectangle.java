@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Bounding box limited on three sides (bottom lat, left lon, right lon), including
  * the north pole.
@@ -116,6 +120,22 @@ class GeoNorthRectangle extends GeoBaseBBox {
     this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoNorthRectangle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, bottomLat);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
+  }
+
   @Override
   public GeoBBox expand(final double angle) {
     final double newTopLat = Math.PI * 0.5;
@@ -175,6 +195,14 @@ class GeoNorthRectangle extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return
+        geoShape.intersects(bottomPlane, bottomPlanePoints, leftPlane, rightPlane) ||
+            geoShape.intersects(leftPlane, leftPlanePoints, rightPlane, bottomPlane) ||
+            geoShape.intersects(rightPlane, rightPlanePoints, leftPlane, bottomPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
@@ -183,43 +211,6 @@ class GeoNorthRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane, leftPlane)
       .addIntersection(planetModel, rightPlane, leftPlane, bottomPlane)
       .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
-  }
-
-  @Override
-  public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" getrelationship with "+path);
-    final int insideRectangle = isShapeInsideBBox(path);
-    if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
-      return OVERLAPS;
-    }
-
-    final boolean insideShape = path.isWithin(planetModel.NORTH_POLE);
-
-    if (insideRectangle == ALL_INSIDE && insideShape) {
-      //System.err.println(" inside of each other");
-      return OVERLAPS;
-    }
-
-    if (
-        path.intersects(bottomPlane, bottomPlanePoints, leftPlane, rightPlane) ||
-            path.intersects(leftPlane, leftPlanePoints, bottomPlane, rightPlane) ||
-            path.intersects(rightPlane, rightPlanePoints, leftPlane, bottomPlane)) {
-      //System.err.println(" edges intersect");
-      return OVERLAPS;
-    }
-
-    if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside rectangle");
-      return WITHIN;
-    }
-
-    if (insideShape) {
-      //System.err.println(" shape contains rectangle");
-      return CONTAINS;
-    }
-    //System.err.println(" disjoint");
-    return DISJOINT;
   }
 
   @Override

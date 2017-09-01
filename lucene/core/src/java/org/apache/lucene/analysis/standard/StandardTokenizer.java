@@ -40,56 +40,25 @@ public final class StandardTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
   private StandardTokenizerImpl scanner;
 
-  // TODO: how can we remove these old types?!
   /** Alpha/numeric token type */
-  public static final int ALPHANUM          = 0;
-  /** @deprecated (3.1) */
-  @Deprecated
-  public static final int APOSTROPHE        = 1;
-  /** @deprecated (3.1) */
-  @Deprecated
-  public static final int ACRONYM           = 2;
-  /** @deprecated (3.1) */
-  @Deprecated
-  public static final int COMPANY           = 3;
-  /** Email token type */
-  public static final int EMAIL             = 4;
-  /** @deprecated (3.1) */
-  @Deprecated
-  public static final int HOST              = 5;
+  public static final int ALPHANUM = 0;
   /** Numeric token type */
-  public static final int NUM               = 6;
-  /** @deprecated (3.1) */
-  @Deprecated
-  public static final int CJ                = 7;
-
-  /** @deprecated (3.1) */
-  @Deprecated
-  public static final int ACRONYM_DEP       = 8;
-
+  public static final int NUM = 1;
   /** Southeast Asian token type */
-  public static final int SOUTHEAST_ASIAN = 9;
-  /** Idiographic token type */
-  public static final int IDEOGRAPHIC = 10;
+  public static final int SOUTHEAST_ASIAN = 2;
+  /** Ideographic token type */
+  public static final int IDEOGRAPHIC = 3;
   /** Hiragana token type */
-  public static final int HIRAGANA = 11;
+  public static final int HIRAGANA = 4;
   /** Katakana token type */
-  public static final int KATAKANA = 12;
-
+  public static final int KATAKANA = 5;
   /** Hangul token type */
-  public static final int HANGUL = 13;
+  public static final int HANGUL = 6;
   
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
     "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
-    "<EMAIL>",
-    "<HOST>",
     "<NUM>",
-    "<CJ>",
-    "<ACRONYM_DEP>",
     "<SOUTHEAST_ASIAN>",
     "<IDEOGRAPHIC>",
     "<HIRAGANA>",

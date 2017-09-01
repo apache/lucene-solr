@@ -106,7 +106,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @Test
   public void testDownconfig() throws Exception {
-    Path tmp = createTempDir("downConfigNewPlace");
+    Path tmp = Paths.get(createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
 
     // First we need a configset on ZK to bring down. 
     
@@ -126,6 +126,28 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     int res = downTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(downTool.getOptions()), args));
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
+
+    // Insure that empty files don't become directories (SOLR-11198)
+
+    Path emptyFile = Paths.get(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Files.createFile(emptyFile);
+
+    // Now copy it up and back and insure it's still a file in the new place
+    copyConfigUp(tmp.getParent(), "myconfset", "downconfig2");
+    Path tmp2 = createTempDir("downConfigNewPlace2");
+    downTool = new SolrCLI.ConfigSetDownloadTool();
+    args = new String[]{
+        "-confname", "downconfig2",
+        "-confdir", tmp2.toAbsolutePath().toString(),
+        "-zkHost", zkAddr,
+    };
+
+    res = downTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(downTool.getOptions()), args));
+    assertEquals("Download should have succeeded.", 0, res);
+    verifyZkLocalPathsMatch(Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
+    // And insure the empty file is a text file
+    Path destEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    assertTrue("Empty files should NOT be copied down as directories", destEmpty.toFile().isFile());
 
   }
 
@@ -373,6 +395,58 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     content = new String(zkClient.getData("/cp9/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
+    // Copy an individual empty file up and back down and insure it's still a file
+    Path emptyFile = Paths.get(tmp.toAbsolutePath().toString(), "conf", "stopwords", "emptyfile");
+    Files.createFile(emptyFile);
+
+    args = new String[]{
+        "-src", "file:" + emptyFile.toAbsolutePath().toString(),
+        "-dst", "zk:/cp7/conf/stopwords/emptyfile",
+        "-recurse", "false",
+        "-zkHost", zkAddr,
+    };
+
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    Path tmp2 = createTempDir("cp9");
+    Path emptyDest = Paths.get(tmp2.toAbsolutePath().toString(), "emptyfile");
+    args = new String[]{
+        "-src", "zk:/cp7/conf/stopwords/emptyfile",
+        "-dst", "file:" + emptyDest.toAbsolutePath().toString(),
+        "-recurse", "false",
+        "-zkHost", zkAddr,
+    };
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    assertTrue("Empty files should NOT be copied down as directories", emptyDest.toFile().isFile());
+
+    // Now with recursive copy
+
+    args = new String[]{
+        "-src", "file:" + emptyFile.getParent().getParent().toString(),
+        "-dst", "zk:/cp10",
+        "-recurse", "true",
+        "-zkHost", zkAddr,
+    };
+
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    // Now copy it all back and make sure empty file is still a file when recursively copying.
+    tmp2 = createTempDir("cp10");
+    args = new String[]{
+        "-src", "zk:/cp10",
+        "-dst", "file:" + tmp2.toAbsolutePath().toString(),
+        "-recurse", "true",
+        "-zkHost", zkAddr,
+    };
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
+    assertEquals("Copy should have succeeded.", 0, res);
+
+    Path locEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
+    assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
   }
 
   @Test

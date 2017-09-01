@@ -17,112 +17,38 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Arrays;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class EmpiricalDistributionEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public EmpiricalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class EmpiricalDistributionEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public EmpiricalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
+    if(1 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly one value but found %d",expression,containedEvaluators.size()));
     }
   }
+  
+  @Override
+  public Object doWork(Object value) throws IOException {
 
-  public Tuple evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval1 = subEvaluators.get(0);
-
-    List<Number> numbers1 = (List<Number>)colEval1.evaluate(tuple);
-    double[] column1 = new double[numbers1.size()];
-
-    for(int i=0; i<numbers1.size(); i++) {
-      column1[i] = numbers1.get(i).doubleValue();
+    if(!(value instanceof List<?>)){
+      throw new StreamEvaluatorException("List value expected but found type %s for value %s", value.getClass().getName(), value.toString());
     }
 
-    Arrays.sort(column1);
     EmpiricalDistribution empiricalDistribution = new EmpiricalDistribution();
-    empiricalDistribution.load(column1);
+    
+    double[] backingValues = ((List<?>)value).stream().mapToDouble(innerValue -> ((BigDecimal)innerValue).doubleValue()).sorted().toArray();
+    empiricalDistribution.load(backingValues);
 
-    Map map = new HashMap();
-    StatisticalSummary statisticalSummary = empiricalDistribution.getSampleStats();
-
-    map.put("max", statisticalSummary.getMax());
-    map.put("mean", statisticalSummary.getMean());
-    map.put("min", statisticalSummary.getMin());
-    map.put("stdev", statisticalSummary.getStandardDeviation());
-    map.put("sum", statisticalSummary.getSum());
-    map.put("N", statisticalSummary.getN());
-    map.put("var", statisticalSummary.getVariance());
-
-    return new EmpiricalDistributionTuple(empiricalDistribution, column1, map);
-  }
-
-  public static class EmpiricalDistributionTuple extends Tuple {
-
-    private EmpiricalDistribution empiricalDistribution;
-    private double[] backingArray;
-
-    public EmpiricalDistributionTuple(EmpiricalDistribution empiricalDistribution, double[] backingArray, Map map) {
-      super(map);
-      this.empiricalDistribution = empiricalDistribution;
-      this.backingArray = backingArray;
-    }
-
-    public double percentile(double d) {
-      int slot = Arrays.binarySearch(backingArray, d);
-
-      if(slot == 0) {
-        return 0.0;
-      }
-
-      if(slot < 0) {
-        if(slot == -1) {
-          return 0.0D;
-        } else {
-          //Not a direct hit
-          slot = Math.abs(slot);
-          --slot;
-          if(slot == backingArray.length) {
-            return 1.0D;
-          } else {
-            return (this.empiricalDistribution.cumulativeProbability(backingArray[slot]));
-          }
-        }
-      } else {
-        return this.empiricalDistribution.cumulativeProbability(backingArray[slot]);
-      }
-    }
-  }
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+    return empiricalDistribution;
   }
 }
+

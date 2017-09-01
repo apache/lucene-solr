@@ -20,15 +20,14 @@
 
 Once you have indexed the content you need in your Solr index, you will want to start thinking about your strategy for dealing with changes to those documents. Solr supports three approaches to updating documents that have only partially changed.
 
-The first is __<<UpdatingPartsofDocuments-AtomicUpdates,atomic updates>>__. This approach allows changing only one or more fields of a document without having to re-index the entire document.
+The first is _<<Atomic Updates,atomic updates>>_. This approach allows changing only one or more fields of a document without having to re-index the entire document.
 
-The second approach is known as __<<UpdatingPartsofDocuments-In-PlaceUpdates,in-place updates>>__. This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
+The second approach is known as _<<In-Place Updates,in-place updates>>_. This approach is similar to atomic updates (is a subset of atomic updates in some sense), but can be used only for updating single valued non-indexed and non-stored docValue-based numeric fields.
 
-The third approach is known as _<<UpdatingPartsofDocuments-OptimisticConcurrency,optimistic concurrency>>_ or __optimistic locking__. It is a feature of many NoSQL databases, and allows conditional updating a document based on its version. This approach includes semantics and rules for how to deal with version matches or mis-matches.
+The third approach is known as _<<Optimistic Concurrency,optimistic concurrency>>_ or _optimistic locking_. It is a feature of many NoSQL databases, and allows conditional updating a document based on its version. This approach includes semantics and rules for how to deal with version matches or mis-matches.
 
 Atomic Updates (and in-place updates) and Optimistic Concurrency may be used as independent strategies for managing changes to documents, or they may be combined: you can use optimistic concurrency to conditionally apply an atomic update.
 
-[[UpdatingPartsofDocuments-AtomicUpdates]]
 == Atomic Updates
 
 Solr supports several modifiers that atomically update values of a document. This allows updating only specific fields, which can help speed indexing processes in an environment where speed of index additions is critical to the application.
@@ -52,7 +51,6 @@ Removes all occurrences of the specified regex from a multiValued field. May be 
 `inc`::
 Increments a numeric value by a specific amount. Must be specified as a single numeric value.
 
-[[UpdatingPartsofDocuments-FieldStorage]]
 === Field Storage
 
 The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"`. Atomic updates are applied to the document represented by the existing stored field values. All data in copyField destinations fields must originate from ONLY copyField sources.
@@ -61,8 +59,7 @@ If `<copyField/>` destinations are configured as stored, then Solr will attempt 
 
 There are other kinds of derived fields that must also be set so they aren't stored. Some spatial field types use derived fields. Examples of this are solr.BBoxField and solr.LatLonType. CurrencyFieldType also uses derived fields.  These types create additional fields which are normally specified by a dynamic field definition. That dynamic field definition must be not stored, or indexing will fail.
 
-[[UpdatingPartsofDocuments-Example]]
-=== Example
+=== Example Updating Part of a Document
 
 If the following document exists in our collection:
 
@@ -102,7 +99,6 @@ The resulting document in our collection will be:
 }
 ----
 
-[[UpdatingPartsofDocuments-In-PlaceUpdates]]
 == In-Place Updates
 
 In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is re-indexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not re-indexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences, there is no functional difference between atomic updates and in-place updates.
@@ -121,8 +117,7 @@ Set or replace the field value(s) with the specified value(s). May be specified 
 `inc`::
 Increments a numeric value by a specific amount. Must be specified as a single numeric value.
 
-[[UpdatingPartsofDocuments-Example.1]]
-=== Example
+=== In-Place Update Example
 
 If the price and popularity fields are defined in the schema as:
 
@@ -169,17 +164,16 @@ The resulting document in our collection will be:
 }
 ----
 
-[[UpdatingPartsofDocuments-OptimisticConcurrency]]
 == Optimistic Concurrency
 
 Optimistic Concurrency is a feature of Solr that can be used by client applications which update/replace documents to ensure that the document they are replacing/updating has not been concurrently modified by another client application. This feature works by requiring a `\_version_` field on all documents in the index, and comparing that to a `\_version_` specified as part of the update command. By default, Solr's Schema includes a `\_version_` field, and this field is automatically added to each new document.
 
 In general, using optimistic concurrency involves the following work flow:
 
-1.  A client reads a document. In Solr, one might retrieve the document with the `/get` handler to be sure to have the latest version.
-2.  A client changes the document locally.
-3.  The client resubmits the changed document to Solr, for example, perhaps with the `/update` handler.
-4.  If there is a version conflict (HTTP error code 409), the client starts the process over.
+. A client reads a document. In Solr, one might retrieve the document with the `/get` handler to be sure to have the latest version.
+. A client changes the document locally.
+. The client resubmits the changed document to Solr, for example, perhaps with the `/update` handler.
+. If there is a version conflict (HTTP error code 409), the client starts the process over.
 
 When the client resubmits a changed document to Solr, the `\_version_` can be included with the update to invoke optimistic concurrency control. Specific semantics are used to define when the document should be updated or when to report a conflict.
 
@@ -233,7 +227,6 @@ $ curl 'http://localhost:8983/solr/techproducts/query?q=*:*&fl=id,_version_'
 
 For more information, please also see https://www.youtube.com/watch?v=WYVM6Wz-XTw[Yonik Seeley's presentation on NoSQL features in Solr 4] from Apache Lucene EuroCon 2012.
 
-[[UpdatingPartsofDocuments-DocumentCentricVersioningConstraints]]
 == Document Centric Versioning Constraints
 
 Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field. However, In some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version. In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
@@ -252,9 +245,7 @@ Once configured, this update processor will reject (HTTP error code 409) any att
 .versionField vs `\_version_`
 [IMPORTANT]
 ====
-
 The `\_version_` field used by Solr for its normal optimistic concurrency also has important semantics in how updates are distributed to replicas in SolrCloud, and *MUST* be assigned internally by Solr. Users can not re-purpose that field and specify it as the `versionField` for use in the `DocBasedVersionConstraintsProcessorFactory` configuration.
-
 ====
 
 `DocBasedVersionConstraintsProcessorFactory` supports two additional configuration params which are optional:

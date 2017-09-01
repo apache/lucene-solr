@@ -83,15 +83,16 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   public void testBasics() throws Exception {
 
+    ModifiableSolrParams params = new ModifiableSolrParams()
+        .add("processor", "atomic")
+        .add("atomic.cat", "add")
+        .add("atomic.title", "set")
+        .add("atomic.count_i", "set")
+        .add("atomic.name_s", "set")
+        .add("atomic.multiDefault", "set")
+        .add("commit", "true");
     AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(h.getCore(),
-        new ModifiableSolrParams()
-            .add("processor", "atomic")
-            .add("atomic.cat", "add")
-            .add("atomic.title", "set")
-            .add("atomic.count_i", "set")
-            .add("atomic.name_s", "set")
-            .add("atomic.multiDefault", "set")
-            .add("commit","true")
+        params
     ));
 
     cmd.solrDoc = new SolrInputDocument();
@@ -102,11 +103,10 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     cmd.solrDoc.addField("name_s", "Virat");
     cmd.solrDoc.addField("multiDefault", "Delhi");
 
-    AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
-    factory.inform(h.getCore());
-    factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-        new DistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
-            new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
+    UpdateRequestProcessor chain = h.getCore()
+        .getUpdateProcessorChain(params)
+        .createProcessor(cmd.getReq(), new SolrQueryResponse());
+    chain.processAdd(cmd);
 
     assertU(commit());
 
@@ -134,16 +134,15 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
         req("q", "multiDefault:Delhi")
         , "//result[@numFound=1]");
 
-    cmd = new AddUpdateCommand(new LocalSolrQueryRequest(h.getCore(),
-        new ModifiableSolrParams()
-            .add("processor", "atomic")
-            .add("atomic.cat", "add")
-            .add("atomic.title", "set")
-            .add("atomic.count_i", "inc")
-            .add("atomic.name_s", "remove")
-            .add("atomic.multiDefault", "removeregex")
-            .add("commit","true")
-    ));
+    params = new ModifiableSolrParams()
+        .add("processor", "atomic")
+        .add("atomic.cat", "add")
+        .add("atomic.title", "set")
+        .add("atomic.count_i", "inc")
+        .add("atomic.name_s", "remove")
+        .add("atomic.multiDefault", "removeregex")
+        .add("commit", "true");
+    cmd = new AddUpdateCommand(new LocalSolrQueryRequest(h.getCore(), params));
 
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("id", 1);
@@ -152,12 +151,8 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     cmd.solrDoc.addField("count_i", 20);
     cmd.solrDoc.addField("name_s", "Virat");
     cmd.solrDoc.addField("multiDefault", ".elh.");
-
-    factory = new AtomicUpdateProcessorFactory();
-    factory.inform(h.getCore());
-    factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-        new DistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
-            new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
+    chain = h.getCore().getUpdateProcessorChain(params).createProcessor(cmd.getReq(), new SolrQueryResponse());
+    chain.processAdd(cmd);
 
     assertU(commit());
 
@@ -199,6 +194,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10734")
   public void testMultipleThreads() throws Exception {
     clearIndex();
     String[] strings = new String[5];
@@ -209,7 +205,10 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     List<Thread> threads = new ArrayList<>(100);
     int finalCount = 0; //int_i
 
-    for (int i = 0; i < 100; i++) {
+    AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
+    factory.inform(h.getCore());
+
+    for (int i = 0; i < 10; i++) {
       int index = random().nextInt(5);
       Thread t = new Thread() {
         @Override
@@ -229,8 +228,6 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           cmd.solrDoc.addField("int_i", index);
 
           try {
-            AtomicUpdateProcessorFactory factory = new AtomicUpdateProcessorFactory();
-            factory.inform(h.getCore());
             factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
                 new DistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
                     new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
@@ -238,14 +235,12 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           }
         }
       };
-      t.run();
       threads.add(t);
+      t.start();
       finalCount += index; //int_i
     }
 
-    for (Thread thread: threads) {
-      thread.join();
-    }
+    for (Thread thread: threads) thread.join();
 
     assertU(commit());
 

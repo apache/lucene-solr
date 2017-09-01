@@ -238,8 +238,8 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
           "ConjunctionScorer\n" +
           "    MUST ConstantScoreScorer\n" +
           "    MUST MinShouldMatchSumScorer\n" +
-          "            SHOULD TermScorer body:web\n" +
           "            SHOULD TermScorer body:crawler\n" +
+          "            SHOULD TermScorer body:web\n" +
           "            SHOULD TermScorer body:nutch",
               summary);
     }

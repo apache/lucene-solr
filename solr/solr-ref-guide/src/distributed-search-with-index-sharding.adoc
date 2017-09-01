@@ -26,14 +26,12 @@ Everything on this page is specific to legacy setup of distributed search. Users
 
 Update reorders (i.e., replica A may see update X then Y, and replica B may see update Y then X). *deleteByQuery* also handles reorders the same way, to ensure replicas are consistent. All replicas of a shard are consistent, even if the updates arrive in a different order on different replicas.
 
-[[DistributedSearchwithIndexSharding-DistributingDocumentsacrossShards]]
 == Distributing Documents across Shards
 
 When not using SolrCloud, it is up to you to get all your documents indexed on each shard of your server farm. Solr supports distributed indexing (routing) in its true form only in the SolrCloud mode.
 
 In the legacy distributed mode, Solr does not calculate universal term/doc frequencies. For most large-scale implementations, it is not likely to matter that Solr calculates TF/IDF at the shard level. However, if your collection is heavily skewed in its distribution across servers, you may find misleading relevancy results in your searches. In general, it is probably best to randomly distribute documents to your shards.
 
-[[DistributedSearchwithIndexSharding-ExecutingDistributedSearcheswiththeshardsParameter]]
 == Executing Distributed Searches with the shards Parameter
 
 If a query request includes the `shards` parameter, the Solr server distributes the request across all the shards listed as arguments to the parameter. The `shards` parameter uses this syntax:
@@ -63,7 +61,6 @@ The following components support distributed search:
 * The *Stats* component, which returns simple statistics for numeric fields within the DocSet.
 * The *Debug* component, which helps with debugging.
 
-[[DistributedSearchwithIndexSharding-LimitationstoDistributedSearch]]
 == Limitations to Distributed Search
 
 Distributed searching in Solr has the following limitations:
@@ -78,12 +75,10 @@ Distributed searching in Solr has the following limitations:
 
 Formerly a limitation was that TF/IDF relevancy computations only used shard-local statistics. This is still the case by default. If your data isn't randomly distributed, or if you want more exact statistics, then remember to configure the ExactStatsCache.
 
-[[DistributedSearchwithIndexSharding-AvoidingDistributedDeadlock]]
-== Avoiding Distributed Deadlock
+== Avoiding Distributed Deadlock with Distributed Search
 
 Like in SolrCloud mode, inter-shard requests could lead to a distributed deadlock. It can be avoided by following the instructions in the section  <<distributed-requests.adoc#distributed-requests,Distributed Requests>>.
 
-[[DistributedSearchwithIndexSharding-TestingIndexShardingonTwoLocalServers]]
 == Testing Index Sharding on Two Local Servers
 
 For simple functional testing, it's easiest to just set up two local Solr servers on different ports. (In a production environment, of course, these servers would be deployed on separate machines.)

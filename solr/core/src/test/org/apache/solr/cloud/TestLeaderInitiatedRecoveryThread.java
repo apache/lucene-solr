@@ -57,7 +57,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
       }
     }
     assertNotNull(notLeader);
-    Replica replica = cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, notLeader.coreNodeName);
+    Replica replica = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(notLeader.coreNodeName);
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(replica);
     
     MockCoreDescriptor cd = new MockCoreDescriptor() {
@@ -175,7 +175,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
 
     timeOut = new TimeOut(30, TimeUnit.SECONDS);
     while (!timeOut.hasTimedOut()) {
-      Replica r = cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, replica.getName());
+      Replica r = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(replica.getName());
       if (r.getState() == Replica.State.DOWN) {
         break;
       }
@@ -183,7 +183,7 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
     }
 
     assertNull(zkController.getLeaderInitiatedRecoveryState(DEFAULT_COLLECTION, SHARD1, replica.getName()));
-    assertEquals(Replica.State.DOWN, cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, replica.getName()).getState());
+    assertEquals(Replica.State.DOWN, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getReplica(replica.getName()).getState());
 
     /*
     6. Test that non-leader cannot set LIR nodes

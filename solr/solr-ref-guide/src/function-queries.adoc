@@ -25,14 +25,13 @@ Function queries are supported by the <<the-dismax-query-parser.adoc#the-dismax-
 
 Function queries use _functions_. The functions can be a constant (numeric or string literal), a field, another function or a parameter substitution argument. You can use these functions to modify the ranking of results for users. These could be used to change the ranking of results based on a user's location, or some other calculation.
 
-[[FunctionQueries-UsingFunctionQuery]]
 == Using Function Query
 
 Functions must be expressed as function calls (for example, `sum(a,b)` instead of simply `a+b`).
 
 There are several ways of using function queries in a Solr query:
 
-* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#OtherParsers-FunctionQueryParser,`func`>> or <<other-parsers.adoc#OtherParsers-FunctionRangeQueryParser,`frange`>> . For example:
+* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>> . For example:
 +
 [source,text]
 ----
@@ -61,7 +60,7 @@ the output would be:
 <float name="score">0.343</float>
 ...
 ----
-* Use in a parameter that is explicitly for specifying functions, such as the EDisMax query parser's <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,`boost`>> param, or DisMax query parser's <<the-dismax-query-parser.adoc#TheDisMaxQueryParser-Thebf_BoostFunctions_Parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
+* Use in a parameter that is explicitly for specifying functions, such as the EDisMax query parser's <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,`boost`>> param, or DisMax query parser's <<the-dismax-query-parser.adoc#bf-boost-functions-parameter,`bf` (boost function) parameter>>. (Note that the `bf` parameter actually takes a list of function queries separated by white space and each with an optional boost. Make sure you eliminate any internal white space in single function queries when using `bf`). For example:
 +
 [source,text]
 ----
@@ -76,7 +75,6 @@ q=_val_:mynumericfield _val_:"recip(rord(myfield),1,2,3)"
 
 Only functions with fast random access are recommended.
 
-[[FunctionQueries-AvailableFunctions]]
 == Available Functions
 
 The table below summarizes the functions available for function queries.
@@ -89,7 +87,7 @@ Returns the absolute value of the specified value or function.
 * `abs(x)` `abs(-5)`
 
 === childfield(field) Function
-Returns the value of the given field for one of the matched child docs when searching by <<other-parsers.adoc#OtherParsers-BlockJoinParentQueryParser,{!parent}>>. It can be used only in `sort` parameter.
+Returns the value of the given field for one of the matched child docs when searching by <<other-parsers.adoc#block-join-parent-query-parser,{!parent}>>. It can be used only in `sort` parameter.
 
 *Syntax Examples*
 
@@ -149,7 +147,6 @@ You can quote the term if it's more complex, or do parameter substitution for th
 * `docfreq(text,'solr')`
 * `...&defType=func` `&q=docfreq(text,$myterm)&myterm=solr`
 
-[[FunctionQueries-field]]
 === field Function
 Returns the numeric docValues or indexed value of the field with the specified name. In its simplest (single argument) form, this function can only be used on single valued fields, and can be called using the name of the field as a string, or for most conventional field names simply use the field name by itself with out using the `field(...)` syntax.
 
@@ -232,7 +229,7 @@ If the value of `x` does not fall between `min` and `max`, then either the value
 === max Function
 Returns the maximum numeric value of multiple nested functions or constants, which are specified as arguments: `max(x,y,...)`. The `max` function can also be useful for "bottoming out" another function or field at some specified constant.
 
-Use the `field(myfield,max)` syntax for <<FunctionQueries-field,selecting the maximum value of a single multivalued field>>.
+Use the `field(myfield,max)` syntax for <<field Function,selecting the maximum value of a single multivalued field>>.
 
 *Syntax Example*
 
@@ -248,7 +245,7 @@ Returns the number of documents in the index, including those that are marked as
 === min Function
 Returns the minimum numeric value of multiple nested functions of constants, which are specified as arguments: `min(x,y,...)`. The `min` function can also be useful for providing an "upper bound" on a function using a constant.
 
-Use the `field(myfield,min)` <<FunctionQueries-field,syntax for selecting the minimum value of a single multivalued field>>.
+Use the `field(myfield,min)` <<field Function,syntax for selecting the minimum value of a single multivalued field>>.
 
 *Syntax Example*
 
@@ -502,8 +499,6 @@ Returns `true` if any member of the field exists.
 *Syntax Example*
 * `if(lt(ms(mydatefield),315569259747),0.8,1)` translates to this pseudocode: `if mydatefield < 315569259747 then 0.8 else 1`
 
-
-[[FunctionQueries-ExampleFunctionQueries]]
 == Example Function Queries
 
 To give you a better understanding of how function queries can be used in Solr, suppose an index stores the dimensions in meters x,y,z of some hypothetical boxes with arbitrary names stored in field `boxname`. Suppose we want to search for box matching name `findbox` but ranked according to volumes of boxes. The query parameters would be:
@@ -521,7 +516,6 @@ Suppose that you also have a field storing the weight of the box as `weight`. To
 http://localhost:8983/solr/collection_name/select?q=boxname:findbox _val_:"div(weight,product(x,y,z))"&fl=boxname x y z weight score
 ----
 
-[[FunctionQueries-SortByFunction]]
 == Sort By Function
 
 You can sort your query results by the output of a function. For example, to sort results by distance, you could enter:

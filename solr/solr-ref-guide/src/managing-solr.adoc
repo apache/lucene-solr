@@ -1,7 +1,7 @@
 = Managing Solr
 :page-shortname: managing-solr
 :page-permalink: managing-solr.html
-:page-children: taking-solr-to-production, securing-solr, running-solr-on-hdfs, making-and-restoring-backups, configuring-logging, using-jmx-with-solr, mbean-request-handler, performance-statistics-reference, metrics-reporting, v2-api
+:page-children: securing-solr, running-solr-on-hdfs, making-and-restoring-backups, configuring-logging, using-jmx-with-solr, mbean-request-handler, performance-statistics-reference, metrics-reporting, v2-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -20,8 +20,6 @@
 // under the License.
 
 This section describes how to run Solr and how to look at Solr when it is running. It contains the following sections:
-
-<<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>: Describes how to install Solr as a service on Linux for production environments.
 
 <<securing-solr.adoc#securing-solr,Securing Solr>>: How to use the Basic and Kerberos authentication and rule-based authorization plugins for Solr, and how to enable SSL.
 

@@ -34,8 +34,8 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -407,7 +407,7 @@ public final class JoinUtil {
 
 
   /**
-   * Delegates to {@link #createJoinQuery(String, Query, Query, IndexSearcher, ScoreMode, MultiDocValues.OrdinalMap, int, int)},
+   * Delegates to {@link #createJoinQuery(String, Query, Query, IndexSearcher, ScoreMode, OrdinalMap, int, int)},
    * but disables the min and max filtering.
    *
    * @param joinField   The {@link SortedDocValues} field containing the join values
@@ -425,7 +425,7 @@ public final class JoinUtil {
                                       Query toQuery,
                                       IndexSearcher searcher,
                                       ScoreMode scoreMode,
-                                      MultiDocValues.OrdinalMap ordinalMap) throws IOException {
+                                      OrdinalMap ordinalMap) throws IOException {
     return createJoinQuery(joinField, fromQuery, toQuery, searcher, scoreMode, ordinalMap, 0, Integer.MAX_VALUE);
   }
 
@@ -464,7 +464,7 @@ public final class JoinUtil {
                                       Query toQuery,
                                       IndexSearcher searcher,
                                       ScoreMode scoreMode,
-                                      MultiDocValues.OrdinalMap ordinalMap,
+                                      OrdinalMap ordinalMap,
                                       int min,
                                       int max) throws IOException {
     int numSegments = searcher.getIndexReader().leaves().size();

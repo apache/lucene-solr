@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Config+API",
+  "documentation": "https://lucene.apache.org/solr/guide/config-api.html",
   "description": "The Config API enables manipulating various aspects of your solrconfig.xml using REST-like API calls. All properties set with this API update a file called configoverlay.json, but not the solrconfig.xml file itself.",
   "methods": [
     "POST"
@@ -12,13 +12,13 @@
   "commands": {
     "set-property:": {
       "type": "object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Config+API#ConfigAPI-Commandstomodifytheconfig",
+      "documentation": "https://lucene.apache.org/solr/guide/config-api.html#commands-to-modify-the-config",
       "description": "Sets one or more of several pre-defined properties. These properties set cache sizes and classes, commit rules, JMX settings, and request dispatcher settings. See the documentation for the list of properties that are supported. If a property is set that already exists, it will be overwritten.",
       "additionalProperties": true
     },
     "unset-property": {
       "type":"array",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Config+API#ConfigAPI-Commandstomodifytheconfig",
+      "documentation": "https://lucene.apache.org/solr/guide/config-api.html#commands-to-modify-the-config",
       "description": "Removes one or more of several pre-defined properties. These properties set cache sizes and classes, commit rules, JMX settings, and request dispatcher settings. See the documentation for the list of properties that are supported. The value of the property does not need to be defined with the list of properties, only the name of the property.",
       "items": {
         "type": "string"

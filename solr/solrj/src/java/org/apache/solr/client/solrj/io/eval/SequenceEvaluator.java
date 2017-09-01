@@ -22,58 +22,35 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.util.MathArrays;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class SequenceEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public SequenceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class SequenceEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public SequenceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(3 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression,subEvaluators.size()));
+    if(3 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression, containedEvaluators.size()));
     }
-
-  }
-
-  public List<Number> evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator sizeEval = subEvaluators.get(0);
-    StreamEvaluator startEval = subEvaluators.get(1);
-    StreamEvaluator strideEval = subEvaluators.get(2);
-
-    Number sizeNum = (Number)sizeEval.evaluate(tuple);
-    Number startNum = (Number)startEval.evaluate(tuple);
-    Number strideNum = (Number)strideEval.evaluate(tuple);
-
-    int[] sequence = MathArrays.sequence(sizeNum.intValue(), startNum.intValue(), strideNum.intValue());
-    List<Number> numbers = new ArrayList(sequence.length);
-    for(int i : sequence) {
-      numbers.add(i);
-    }
-
-    return numbers;
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
+  public Object doWork(Object... values) throws IOException {
+    if(3 != values.length){
+      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 3 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
+    }
+    
+    Number sizeNum = (Number)values[0];
+    Number startNum = (Number)values[1];
+    Number strideNum = (Number)values[2];
+    
+    List<Number> sequence = new ArrayList<>(sizeNum.intValue());
+    for(int number : MathArrays.sequence(sizeNum.intValue(), startNum.intValue(), strideNum.intValue())){
+      sequence.add(number);
+    }
+    
+    return sequence;
   }
 }

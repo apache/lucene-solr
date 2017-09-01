@@ -18,7 +18,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using configurations such as "basic_configs", "techproducts", and "example/files".
+The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using configurations such as "_default", "techproducts", and "example/files".
 
 Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion), and must be registered in `solrconfig.xml` like this:
 
@@ -42,7 +42,6 @@ The above example shows the optional initialization and custom tool parameters u
 
 == Configuration & Usage
 
-[[VelocityResponseWriter-VelocityResponseWriterinitializationparameters]]
 === VelocityResponseWriter Initialization Parameters
 
 `template.base.dir`::
@@ -66,7 +65,6 @@ External "tools" can be specified as list of string name/value (tool name / clas
 +
 A custom registered tool can override the built-in context objects with the same name, except for `$request`, `$response`, `$page`, and `$debug` (these tools are designed to not be overridden).
 
-[[VelocityResponseWriter-VelocityResponseWriterrequestparameters]]
 === VelocityResponseWriter Request Parameters
 
 `v.template`::
@@ -102,7 +100,6 @@ Resource bundles can be added by providing a JAR file visible by the SolrResourc
 `v.template._template_name_`:: When the "params" resource loader is enabled, templates can be specified as part of the Solr request.
 
 
-[[VelocityResponseWriter-VelocityResponseWritercontextobjects]]
 === VelocityResponseWriter Context Objects
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed

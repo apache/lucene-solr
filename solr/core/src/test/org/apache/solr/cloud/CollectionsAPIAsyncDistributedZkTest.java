@@ -125,7 +125,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     //cloudClient watch might take a couple of seconds to reflect it
-    Slice shard1 = client.getZkStateReader().getClusterState().getSlice(collection, "shard1");
+    Slice shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
     int count = 0;
     while (shard1.getReplicas().size() != 2) {
       if (count++ > 1000) {
@@ -163,7 +163,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       }
     }
 
-    shard1 = client.getZkStateReader().getClusterState().getSlice(collection, "shard1");
+    shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
     String replicaName = shard1.getReplicas().iterator().next().getName();
     state = CollectionAdminRequest.deleteReplica(collection, "shard1", replicaName)
       .processAndWait(client, MAX_TIMEOUT_SECONDS);

@@ -80,7 +80,9 @@ import org.slf4j.LoggerFactory;
  *
  * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
+ * @deprecated Trie fields are deprecated as of Solr 7.0
  */
+@Deprecated
 public class TrieField extends NumericFieldType {
   public static final int DEFAULT_PRECISION_STEP = 8;
 
@@ -686,6 +688,7 @@ public class TrieField extends NumericFieldType {
 
 }
 
+@Deprecated
 class TrieDateFieldSource extends LongFieldSource {
 
   public TrieDateFieldSource(String field) {

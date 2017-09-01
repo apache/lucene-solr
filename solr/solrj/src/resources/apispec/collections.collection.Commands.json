@@ -1,5 +1,5 @@
 {
-  "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API",
+  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
   "description": "Several collection-level operations are supported with this endpoint: modify collection attributes; reload a collection; migrate documents to a different collection; rebalance collection leaders; balance properties across shards; and add or delete a replica property.",
   "methods": [
     "POST"
@@ -19,7 +19,7 @@
     },
     "migrate-docs":{
       "type":"object",
-      "documentation":"https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api12",
+      "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#migrate",
       "description": "Moves documents with a given routing key to another collection. The source collection will continue to have the same documents, but will start re-routing write requests to the new collection. This command only works on collections using the 'compositeId' type of document routing.",
       "properties":{
         "target":{
@@ -44,7 +44,7 @@
     },
     "balance-shard-unique":{
       "type":"object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-BalanceSliceUnique",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#balanceshardunique",
       "description": "Insures a property is distributed equally across all physical nodes of a collection. If the property already exists on a replica, effort is made to leave it there. However, if it does not exist on any repica, a shard will be chosen and the property added.",
       "properties":{
         "property":{
@@ -65,7 +65,7 @@
     },
     "rebalance-leaders" :{
       "type":"object",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-RebalanceLeaders",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#rebalanceleaders",
       "description": "Reassign leaders in a collection according to the preferredLeader property across active nodes. This command should be run after the preferredLeader property has been set with the balance-shards or add-replica-property commands.",
       "properties":{
         "maxAtOnce":{
@@ -80,7 +80,7 @@
       }
     },
     "add-replica-property": {
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-AddReplicaProp",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#addreplicaprop",
       "description": "Assign an arbitrary property to a particular replica and give it the value specified. If the property already exists, it will be overwritten with the new value.",
       "type": "object",
       "properties": {
@@ -115,7 +115,7 @@
     },
     "delete-replica-property": {
       "description": "Deletes an arbitrary property from a particular replica",
-      "documentation": "https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-DeleteReplicaProp",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#deletereplicaprop",
       "type": "object",
       "properties": {
         "shard": {

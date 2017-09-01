@@ -441,7 +441,7 @@ public class GeoPolygonTest {
 
     PlanetModel pm = new PlanetModel(0.7563871189161702, 1.2436128810838298);
     // Build the polygon
-    GeoCompositeMembershipShape c = new GeoCompositeMembershipShape();
+    GeoCompositeMembershipShape c = new GeoCompositeMembershipShape(pm);
     List<GeoPoint> points1 = new ArrayList<>();
     points1.add(new GeoPoint(pm, 0.014071770744627236, 0.011030818292803128));
     points1.add(new GeoPoint(pm, 0.006772117088906782, -0.0012531892445234592));
@@ -500,7 +500,7 @@ shape:
     */
     PlanetModel pm = new PlanetModel(0.8568069516722363, 1.1431930483277637);
     // Build the polygon
-    GeoCompositeMembershipShape c = new GeoCompositeMembershipShape();
+    GeoCompositeMembershipShape c = new GeoCompositeMembershipShape(pm);
     List<GeoPoint> points1 = new ArrayList<>();
     points1.add(new GeoPoint(pm, 1.1577814487635816, 1.6283601832010004));
     points1.add(new GeoPoint(pm, 0.6664570999069251, 2.0855825542851574));
@@ -626,7 +626,7 @@ shape:
     points.add(p1);
 
     final BitSet internal = new BitSet();
-    final GeoCompositePolygon rval = new GeoCompositePolygon();
+    final GeoCompositePolygon rval = new GeoCompositePolygon(PlanetModel.WGS84);
     final GeoPolygonFactory.MutableBoolean mutableBoolean = new GeoPolygonFactory.MutableBoolean();
     
     boolean result = GeoPolygonFactory.buildPolygonShape(rval, mutableBoolean, PlanetModel.WGS84, points, internal, 0, 1,
@@ -975,7 +975,7 @@ shape:
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).getShape(0);
     GeoPolygon polygonConcave = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points);
     assertEquals(polygon,polygonConcave);
   }
@@ -994,7 +994,7 @@ shape:
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
     GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
 
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).getShape(0);
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConcavePolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
     assertEquals(polygon,polygon2);
   }
@@ -1006,7 +1006,7 @@ shape:
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, 0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.5, 0));
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points)).getShape(0);
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points);
     assertEquals(polygon,polygon2);
   }
@@ -1025,7 +1025,7 @@ shape:
     hole_points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
     GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE,hole_points);
 
-    GeoPolygon polygon = (GeoPolygon)((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).shapes.get(0);
+    GeoPolygon polygon = ((GeoCompositePolygon)GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points,Collections.singletonList(hole))).getShape(0);
     GeoPolygon polygon2 = GeoPolygonFactory.makeGeoConvexPolygon(PlanetModel.SPHERE,points,Collections.singletonList(hole));
     assertEquals(polygon,polygon2);
   }

@@ -23,7 +23,6 @@ The Dataimport screen shows the configuration of the DataImportHandler (DIH) and
 .The Dataimport Screen
 image::images/dataimport-screen/dataimport.png[image,width=485,height=250]
 
-
 This screen also lets you adjust various options to control how the data is imported to Solr, and view the data import configuration file that controls the import.
 
 For more information about data importing with DIH, see the section on <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>.

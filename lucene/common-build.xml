@@ -80,7 +80,7 @@
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
 
-  <property name="ivy.bootstrap.version" value="2.3.0" />
+  <property name="ivy.bootstrap.version" value="2.3.0" /> <!-- UPGRADE NOTE: update disallowed.ivy.jars regex in ivy-availability-check -->
   <property name="ivy.default.configuration" value="*"/>
 
   <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
@@ -416,10 +416,33 @@
   <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
+    <path id="disallowed.ivy.jars">
+      <fileset dir="${ivy_install_path}">
+        <filename regex="ivy-2\.[012].*\.jar"/> <!-- TODO: Update this regex to disallow Ivy versions -->
+      </fileset>
+    </path>
+    <loadresource property="disallowed.ivy.jars.list">
+      <string value="${toString:disallowed.ivy.jars}"/>
+      <filterchain><tokenfilter><replacestring from="jar:" to="jar, "/></tokenfilter></filterchain>
+    </loadresource>
+    <condition property="disallowed.ivy.jar.found">
+      <resourcecount when="greater" count="0">
+        <path refid="disallowed.ivy.jars"/>
+      </resourcecount>
+    </condition>
+    <antcall target="-ivy-fail-disallowed-ivy-version"/>
+
     <condition property="ivy.available">
       <typefound uri="antlib:org.apache.ivy.ant" name="configure" />
     </condition>
     <antcall target="ivy-fail" />
+  </target>
+
+  <target name="-ivy-fail-disallowed-ivy-version" if="disallowed.ivy.jar.found">
+    <sequential>
+      <echo message="Please delete the following disallowed Ivy jar(s): ${disallowed.ivy.jars.list}"/>
+      <fail>Found disallowed Ivy jar(s): ${disallowed.ivy.jars.list}</fail>
+    </sequential>
   </target>
 
   <target name="ivy-fail" unless="ivy.available">
@@ -559,10 +582,6 @@
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <parent-poms/>
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
-      <artifact:install file="@{jar.file}">
-        <artifact-attachments/>
-        <pom refid="maven.project"/>
-      </artifact:install>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
         <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}">
@@ -570,6 +589,10 @@
         </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
+      <artifact:install file="@{jar.file}">
+        <artifact-attachments/>
+        <pom refid="maven.project"/>
+      </artifact:install>
     </sequential>
   </macrodef>
   
@@ -1061,6 +1084,9 @@
             <sysproperty key="jdk.map.althashing.threshold" value="0"/>
 
             <sysproperty key="tests.src.home" value="${user.dir}" />
+
+            <!-- replaces default random source to the nonblocking variant -->
+            <sysproperty key="java.security.egd" value="file:/dev/./urandom"/>
 
             <!-- Only pass these to the test JVMs if defined in ANT. -->
             <syspropertyset>

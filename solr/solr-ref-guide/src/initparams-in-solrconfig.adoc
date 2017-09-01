@@ -29,7 +29,7 @@ For example, if you want several of your search handlers to return the same list
 
 The properties and configuration of an `<initParams>` section mirror the properties and configuration of a request handler. It can include sections for defaults, appends, and invariants, the same as any request handler.
 
-For example, here is one of the `<initParams>` sections defined by default in the `data_driven_config` example:
+For example, here is one of the `<initParams>` sections defined by default in the `_default` example:
 
 [source,xml]
 ----
@@ -55,8 +55,7 @@ For example, if an `<initParams>` section has the name "myParams", you can call 
 [source,xml]
 <requestHandler name="/dump1" class="DumpRequestHandler" initParams="myParams"/>
 
-[[InitParamsinSolrConfig-Wildcards]]
-== Wildcards
+== Wildcards in initParams
 
 An `<initParams>` section can support wildcards to define nested paths that should use the parameters defined. A single asterisk (\*) denotes that a nested path one level deeper should use the parameters. Double asterisks (**) denote all nested paths no matter how deep should use the parameters.
 

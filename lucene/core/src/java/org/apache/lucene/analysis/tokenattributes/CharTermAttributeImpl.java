@@ -71,6 +71,9 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
 
   @Override
   public final CharTermAttribute setLength(int length) {
+    if (length < 0) {
+      throw new IllegalArgumentException("length " + length + " must not be negative");
+    }
     if (length > termBuffer.length)
       throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
     termLength = length;

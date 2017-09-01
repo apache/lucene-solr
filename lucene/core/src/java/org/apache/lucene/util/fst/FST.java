@@ -54,7 +54,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 /** Represents an finite state machine (FST), using a
  *  compact byte[] format.
  *  <p> The format is similar to what's used by Morfologik
- *  (http://sourceforge.net/projects/morfologik).
+ *  (https://github.com/morfologik/morfologik-stemming).
  *  
  *  <p> See the {@link org.apache.lucene.util.fst package
  *      documentation} for some simple examples.
@@ -161,10 +161,6 @@ public final class FST<T> implements Accountable {
     public int label;
     public T output;
 
-    // From node (ord or address); currently only used when
-    // building an FST w/ willPackFST=true:
-    long node;
-
     /** To node (ord or address) */
     public long target;
 
@@ -193,7 +189,6 @@ public final class FST<T> implements Accountable {
 
     /** Returns this */
     public Arc<T> copyFrom(Arc<T> other) {
-      node = other.node;
       label = other.label;
       target = other.target;
       flags = other.flags;
@@ -224,7 +219,6 @@ public final class FST<T> implements Accountable {
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
-      b.append("node=" + node);
       b.append(" target=" + target);
       b.append(" label=0x" + Integer.toHexString(label));
       if (flag(BIT_FINAL_ARC)) {
@@ -770,7 +764,6 @@ public final class FST<T> implements Accountable {
       return arc;
     } else {
       in.setPosition(follow.target);
-      arc.node = follow.target;
       final byte b = in.readByte();
       if (b == ARCS_AS_FIXED_ARRAY) {
         // array: jump straight to end
@@ -842,7 +835,6 @@ public final class FST<T> implements Accountable {
       if (follow.target <= 0) {
         arc.flags |= BIT_LAST_ARC;
       } else {
-        arc.node = follow.target;
         // NOTE: nextArc is a node (not an address!) in this case:
         arc.nextArc = follow.target;
       }
@@ -860,7 +852,6 @@ public final class FST<T> implements Accountable {
     //System.out.println("  readFirstRealTargtArc address="
     //+ address);
     //System.out.println("   flags=" + arc.flags);
-    arc.node = node;
 
     if (in.readByte() == ARCS_AS_FIXED_ARRAY) {
       //System.out.println("  fixedArray");
@@ -1035,7 +1026,6 @@ public final class FST<T> implements Accountable {
       assert cachedArc.label == result.label;
       assert cachedArc.nextArc == result.nextArc;
       assert cachedArc.nextFinalOutput.equals(result.nextFinalOutput);
-      assert cachedArc.node == result.node;
       assert cachedArc.numArcs == result.numArcs;
       assert cachedArc.output.equals(result.output);
       assert cachedArc.posArcsStart == result.posArcsStart;
@@ -1066,7 +1056,6 @@ public final class FST<T> implements Accountable {
           arc.flags = 0;
           // NOTE: nextArc is a node (not an address!) in this case:
           arc.nextArc = follow.target;
-          arc.node = follow.target;
         }
         arc.output = follow.nextFinalOutput;
         arc.label = END_LABEL;
@@ -1097,8 +1086,6 @@ public final class FST<T> implements Accountable {
     }
 
     in.setPosition(follow.target);
-
-    arc.node = follow.target;
 
     // System.out.println("fta label=" + (char) labelToMatch);
 

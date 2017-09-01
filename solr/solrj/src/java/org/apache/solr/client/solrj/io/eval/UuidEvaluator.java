@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
@@ -29,18 +26,18 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class UuidEvaluator extends SimpleEvaluator {
-  protected static final long serialVersionUID = 1L;
-
-  public UuidEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
-    // no parameters are used
+public class UuidEvaluator extends SourceEvaluator {
+  private static final long serialVersionUID = 1L;
+  
+  public UuidEvaluator(StreamExpression expression, StreamFactory factory) {
+    
   }
-
+  
   @Override
-  public UUID evaluate(Tuple tuple) throws IOException {
+  public Object evaluate(Tuple tuple) throws IOException {
     return UUID.randomUUID();
   }
-
+  
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     return new StreamExpression(factory.getFunctionName(getClass()));

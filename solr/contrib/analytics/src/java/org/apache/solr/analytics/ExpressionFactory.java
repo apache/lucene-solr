@@ -449,7 +449,7 @@ public class ExpressionFactory {
       }
     } else if (fieldType instanceof TrieIntField) {
       if (multivalued) {
-        aField = new IntMultiField(fieldName);
+        aField = new IntMultiTrieField(fieldName);
       } else {
         aField = new IntField(fieldName);
       }
@@ -461,7 +461,7 @@ public class ExpressionFactory {
       }
     } else if (fieldType instanceof TrieLongField) {
       if (multivalued) {
-        aField = new LongMultiField(fieldName);
+        aField = new LongMultiTrieField(fieldName);
       } else {
         aField = new LongField(fieldName);
       }
@@ -473,7 +473,7 @@ public class ExpressionFactory {
       }
     } else if (fieldType instanceof TrieFloatField) {
       if (multivalued) {
-        aField = new FloatMultiField(fieldName);
+        aField = new FloatMultiTrieField(fieldName);
       } else {
         aField = new FloatField(fieldName);
       }
@@ -485,7 +485,7 @@ public class ExpressionFactory {
       }
     } else if (fieldType instanceof TrieDoubleField) {
       if (multivalued) {
-        aField = new DoubleMultiField(fieldName);
+        aField = new DoubleMultiTrieField(fieldName);
       } else {
         aField = new DoubleField(fieldName);
       }
@@ -497,7 +497,7 @@ public class ExpressionFactory {
       }
     } else if (fieldType instanceof TrieDateField) {
       if (multivalued) {
-        aField = new DateMultiField(fieldName);
+        aField = new DateMultiTrieField(fieldName);
       } else {
         aField = new DateField(fieldName);
       }

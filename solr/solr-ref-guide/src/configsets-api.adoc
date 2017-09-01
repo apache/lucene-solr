@@ -1,6 +1,7 @@
 = ConfigSets API
 :page-shortname: configsets-api
 :page-permalink: configsets-api.html
+:page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -24,45 +25,40 @@ To use a ConfigSet created with this API as the configuration for a collection, 
 
 This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Config Sets>>.
 
-[[ConfigSetsAPI-APIEntryPoints]]
-== API Entry Points
+== ConfigSets API Entry Points
 
 The base URL for all API calls is `\http://<hostname>:<port>/solr`.
 
-* `/admin/configs?action=CREATE`: <<ConfigSetsAPI-create,create>> a ConfigSet, based on an existing ConfigSet
-* `/admin/configs?action=DELETE`: <<ConfigSetsAPI-delete,delete>> a ConfigSet
-* `/admin/configs?action=LIST`: <<ConfigSetsAPI-list,list>> all ConfigSets
-* `/admin/configs?action=UPLOAD`: <<ConfigSetsAPI-upload,upload>> a ConfigSet
+* `/admin/configs?action=CREATE`: <<configsets-create,create>> a ConfigSet, based on an existing ConfigSet
+* `/admin/configs?action=DELETE`: <<configsets-delete,delete>> a ConfigSet
+* `/admin/configs?action=LIST`: <<configsets-list,list>> all ConfigSets
+* `/admin/configs?action=UPLOAD`: <<configsets-upload,upload>> a ConfigSet
 
-[[ConfigSetsAPI-createCreateaConfigSet]]
-
-[[ConfigSetsAPI-create]]
+[[configsets-create]]
 == Create a ConfigSet
 
 `/admin/configs?action=CREATE&name=_name_&baseConfigSet=_baseConfigSet_`
 
 Create a ConfigSet, based on an existing ConfigSet.
 
-[[ConfigSetsAPI-Input]]
-=== Input
+=== Create ConfigSet Parameters
 
 The following parameters are supported when creating a ConfigSet.
 
-name:: The ConfigSet to be created. This parameter is required.
+name::
+The ConfigSet to be created. This parameter is required.
 
-baseConfigSet::  The ConfigSet to copy as a base. This parameter is required.
+baseConfigSet::
+The ConfigSet to copy as a base. This parameter is required.
 
-configSetProp._name_=_value_:: Any ConfigSet property from base to override.
+configSetProp._name_=_value_::
+Any ConfigSet property from base to override.
 
-[[ConfigSetsAPI-Output]]
-=== Output
+=== Create ConfigSet Response
 
-*Output Content*
+The response will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
 
-The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
-
-[[ConfigSetsAPI-Examples]]
-=== Examples
+=== Create ConfigSet Examples
 
 *Input*
 
@@ -85,31 +81,23 @@ http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConf
 </response>
 ----
 
-[[ConfigSetsAPI-deleteDeleteaConfigSet]]
-
-[[ConfigSetsAPI-delete]]
+[[configsets-delete]]
 == Delete a ConfigSet
 
 `/admin/configs?action=DELETE&name=_name_`
 
 Delete a ConfigSet
 
-[[ConfigSetsAPI-Input.1]]
-=== Input
+=== Delete ConfigSet Parameters
 
-*Query Parameters*
+name::
+The ConfigSet to be deleted. This parameter is required.
 
-name:: The ConfigSet to be deleted. This parameter is required.
-
-[[ConfigSetsAPI-Output.1]]
-=== Output
-
-*Output Content*
+=== Delete ConfigSet Response
 
 The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
 
-[[ConfigSetsAPI-Examples.1]]
-=== Examples
+=== Delete ConfigSet Examples
 
 *Input*
 
@@ -132,21 +120,20 @@ http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet
 </response>
 ----
 
-[[ConfigSetsAPI-list]]
+[[configsets-list]]
 == List ConfigSets
 
 `/admin/configs?action=LIST`
 
 Fetch the names of the ConfigSets in the cluster.
 
-[[ConfigSetsAPI-Examples.2]]
-=== Examples
+=== List ConfigSet Examples
 
 *Input*
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=LIST&wt=json
+http://localhost:8983/solr/admin/configs?action=LIST
 ----
 
 *Output*
@@ -161,7 +148,7 @@ http://localhost:8983/solr/admin/configs?action=LIST&wt=json
     "myConfig2"]}
 ----
 
-[[ConfigSetsAPI-upload]]
+[[configsets-upload]]
 == Upload a ConfigSet
 
 `/admin/configs?action=UPLOAD&name=_name_`
@@ -173,26 +160,31 @@ Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is up
  * XSLT transformer (tr parameter) cannot be used at request processing time.
  * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.
 
-[[ConfigSetsAPI-Input.3]]
-=== Input
+=== Upload ConfigSet Parameters
 
-name:: The ConfigSet to be created when the upload is complete. This parameter is required.
+name::
+The ConfigSet to be created when the upload is complete. This parameter is required.
 
 The body of the request should contain a zipped config set.
 
-[[ConfigSetsAPI-Output.3]]
-=== Output
-
-*Output Content*
+=== Upload ConfigSet Response
 
 The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
 
-[[ConfigSetsAPI-Examples.3]]
-=== Examples
+=== Upload ConfigSet Examples
 
-Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet, overriding the immutable property to false.
+Create a config set named 'myConfigSet' from the zipped file myconfigset.zip. The zip file must be created from within the conf directory (i.e. the solrconfig.xml must be the top level entry in the zip file). Here is an example on how to create the zip file and upload it.
 
 [source,text]
 ----
-curl -X POST -d @myconfigset.zip http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet --header "Content-Type:text/xml"
+$ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
+
+$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+----
+
+The same can be achieved using a unix pipe, without creating an intermediate zip file, as follows:
+
+[source,text]
+----
+$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl -X POST --header "Content-Type:application/octet-stream" --data-binary @- "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
 ----

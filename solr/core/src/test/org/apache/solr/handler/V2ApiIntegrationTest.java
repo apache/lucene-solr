@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -138,9 +139,15 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     String tempDir = createTempDir().toFile().getPath();
+    Map<String, Object> backupPayload = new HashMap<>();
+    Map<String, Object> backupParams = new HashMap<>();
+    backupPayload.put("backup-collection", backupParams);
+    backupParams.put("name", "backup_test");
+    backupParams.put("collection", COLL_NAME);
+    backupParams.put("location", tempDir);
     client.request(new V2Request.Builder("/c")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{backup-collection:{name: backup_test, collection: "+COLL_NAME+" , location: '"+tempDir+"' }}")
+        .withPayload(Utils.toJSONString(backupPayload))
         .build());
   }
 

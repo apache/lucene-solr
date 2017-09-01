@@ -126,7 +126,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       urlMap.put(nodeKey, jettyURL.toString());
     }
     ClusterState clusterState = zkStateReader.getClusterState();
-    for (Slice slice : clusterState.getSlices(COLLECTION_NAME)) {
+    for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
       Replica leader = slice.getLeader();
       assertNotNull("slice has null leader: " + slice.toString(), leader);

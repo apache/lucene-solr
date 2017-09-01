@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Degenerate longitude slice.
  *
@@ -55,6 +59,20 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
     this.boundingPlane = new SidedPlane(interiorPoint, -sinLongitude, cosLongitude);
     this.edgePoints = new GeoPoint[]{interiorPoint};
     this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoDegenerateLongitudeSlice(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, longitude);
   }
 
   @Override
@@ -97,6 +115,11 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
+  public boolean intersects(final GeoShape geoShape) {
+    return geoShape.intersects(plane, planePoints, boundingPlane);
+  }
+
+  @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
@@ -107,7 +130,7 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   @Override
   public int getRelationship(final GeoShape path) {
     // Look for intersections.
-    if (path.intersects(plane, planePoints, boundingPlane))
+    if (intersects(path))
       return OVERLAPS;
 
     if (path.isWithin(interiorPoint))

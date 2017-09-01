@@ -16,12 +16,23 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in all dimensions
  *
  * @lucene.internal
  */
 class dXdYdZSolid extends BaseXYZSolid {
+
+  /** X */
+  protected final double X;
+  /** Y */
+  protected final double Y;
+  /** Z */
+  protected final double Z;
 
   /** On surface? */
   protected final boolean isOnSurface;
@@ -51,6 +62,11 @@ class dXdYdZSolid extends BaseXYZSolid {
     final double Y,
     final double Z) {
     super(planetModel);
+      
+    this.X = X;
+    this.Y = Y;
+    this.Z = Z;
+
     isOnSurface = planetModel.pointOnSurface(X,Y,Z);
     if (isOnSurface) {
       thePoint = new GeoPoint(X,Y,Z);
@@ -59,6 +75,25 @@ class dXdYdZSolid extends BaseXYZSolid {
       thePoint = null;
       edgePoints = nullPoints;
     }
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public dXdYdZSolid(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, 
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, X);
+    SerializableObject.writeDouble(outputStream, Y);
+    SerializableObject.writeDouble(outputStream, Z);
   }
 
   @Override

@@ -295,7 +295,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -338,7 +338,8 @@ function print_usage() {
     echo "                  while reusing the same server directory set using the -d parameter. If set, the"
     echo "                  specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
     echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
-    echo "                  on which example is run. The default value is server/solr."
+    echo "                  on which example is run. The default value is server/solr. If passed relative dir,"
+    echo "                  validation with current dir will be done, before trying default server/<dir>"
     echo ""
     echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store data (index)."
     echo "                  If not set, Solr uses solr.solr.home for config and data."
@@ -379,11 +380,13 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "healthcheck" ]; then
     echo ""
-    echo "Usage: solr healthcheck [-c collection] [-z zkHost]"
+    echo "Usage: solr healthcheck [-c collection] [-z zkHost] [-V]"
     echo ""
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
     echo "  -z <zkHost>      Zookeeper connection string; default is localhost:9983"
+    echo ""
+    echo "  -V               Enable more verbose output"
     echo ""
   elif [ "$CMD" == "status" ]; then
     echo ""
@@ -393,7 +396,7 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "create" ]; then
     echo ""
-    echo "Usage: solr create [-c name] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port]"
+    echo "Usage: solr create [-c name] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port] [-V]"
     echo ""
     echo "  Create a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
     echo "  mode (collection). In other words, this action detects which mode Solr is running in, and then takes"
@@ -407,7 +410,7 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "delete" ]; then
     echo ""
-    echo "Usage: solr delete [-c name] [-deleteConfig true|false] [-p port]"
+    echo "Usage: solr delete [-c name] [-deleteConfig true|false] [-p port] [-V]"
     echo ""
     echo "  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
     echo "  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
@@ -422,9 +425,11 @@ function print_usage() {
     echo "                            If not specified, the script will search the local system for a running"
     echo "                            Solr instance and will use the port of the first server it finds."
     echo ""
+    echo "  -V                      Enables more verbose output."
+    echo ""
   elif [ "$CMD" == "create_core" ]; then
     echo ""
-    echo "Usage: solr create_core [-c core] [-d confdir] [-p port]"
+    echo "Usage: solr create_core [-c core] [-d confdir] [-p port] [-V]"
     echo ""
     echo "  -c <core>     Name of core to create"
     echo ""
@@ -443,9 +448,11 @@ function print_usage() {
     echo "                  If not specified, the script will search the local system for a running"
     echo "                  Solr instance and will use the port of the first server it finds."
     echo ""
+    echo "  -V            Enable more verbose output."
+    echo ""
   elif [ "$CMD" == "create_collection" ]; then
     echo ""
-    echo "Usage: solr create_collection [-c collection] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port]"
+    echo "Usage: solr create_collection [-c collection] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port] [-V]"
     echo ""
     echo "  -c <collection>         Name of collection to create"
     echo ""
@@ -477,27 +484,31 @@ function print_usage() {
     echo "                            If not specified, the script will search the local system for a running"
     echo "                            Solr instance and will use the port of the first server it finds."
     echo ""
+    echo "  -V                      Enable more verbose output."
+    echo ""
   elif [ "$CMD" == "zk" ]; then
     print_short_zk_usage ""
     echo "         Be sure to check the Solr logs in case of errors."
     echo ""
-    echo "             -z zkHost Optional Zookeeper connection string for all commands. If specified it"
+    echo "             -z zkHost  Optional Zookeeper connection string for all commands. If specified it"
     echo "                        overrides the 'ZK_HOST=...'' defined in solr.in.sh."
+    echo ""
+    echo "             -V        Enable more verbose output."
     echo ""
     echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
     echo ""
     echo "         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)"
     echo ""
-    echo "             -n configName   Name of the configset in Zookeeper that will be the destination of"
+    echo "             -n configName    Name of the configset in Zookeeper that will be the destination of"
     echo "                             'upconfig' and the source for 'downconfig'."
     echo ""
-    echo "             -d confdir      The local directory the configuration will be uploaded from for"
+    echo "             -d confdir      The local directory the configuration will be uploaded from for"
     echo "                             'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of"
     echo "                             ...solr/server/solr/configsets' then the configs will be copied from/to"
     echo "                             that directory. Otherwise it is interpreted as a simple local path."
     echo ""
     echo "         cp copies files or folders to/from Zookeeper or Zokeeper -> Zookeeper"
-    echo "             -r   Recursively copy <src> to <dst>. Command will fail if <src> has children and "
+    echo "             -r    Recursively copy <src> to <dst>. Command will fail if <src> has children and "
     echo "                        -r is not specified. Optional"
     echo ""
     echo "             <src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node"
@@ -527,9 +538,9 @@ function print_usage() {
     echo "             Wildcards are supported when copying from local, trailing only and must be quoted."
     echo ""
     echo "         rm deletes files or folders on Zookeeper"
-    echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
+    echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
     echo "                    has children and -r is not specified. Optional"
-    echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
+    echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
     echo ""
     echo "         mv moves (renames) znodes on Zookeeper"
     echo "             <src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional."
@@ -553,22 +564,25 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "auth" ]; then
     echo ""
-    echo "Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>]"
-    echo "       solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>]"
-    echo "       solr auth disable [-updateIncludeFileOnly <true|false>]"
+    echo "Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]"
+    echo "       solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]"
+    echo "       solr auth enable -type kerberos -config \"<kerberos configs>\" [-updateIncludeFileOnly <true|false>] [-V]"
+    echo "       solr auth disable [-updateIncludeFileOnly <true|false>] [-V]"
     echo ""
-    echo "  -type <type>                           The authentication mechanism to enable. Defaults to 'basicAuth'."
+    echo "  -type <type>                           The authentication mechanism (basicAuth or kerberos) to enable. Defaults to 'basicAuth'."
     echo ""
-    echo "  -credentials <user:pass>               The username and password of the initial user"
+    echo "  -credentials <user:pass>               The username and password of the initial user. Applicable for basicAuth only."
     echo "                                         Note: only one of -prompt or -credentials must be provided"
     echo ""
-    echo "  -prompt <true|false>                   Prompts the user to provide the credentials"
+    echo "  -config \"<configs>\"                    Configuration parameters (Solr startup parameters). Required and applicable only for Kerberos"
+    echo ""
+    echo "  -prompt <true|false>                   Prompts the user to provide the credentials. Applicable for basicAuth only."
     echo "                                         Note: only one of -prompt or -credentials must be provided"
     echo ""
     echo "  -blockUnknown <true|false>             When true, this blocks out access to unauthenticated users. When not provided,"
     echo "                                         this defaults to false (i.e. unauthenticated users can access all endpoints, except the"
     echo "                                         operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference"
-    echo "                                         guide for Basic Authentication for more details."
+    echo "                                         guide for Basic Authentication for more details. Applicable for basicAuth only."
     echo ""
     echo "  -updateIncludeFileOnly <true|false>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
     echo "                                         authentication (i.e. don't update security.json)"
@@ -579,6 +593,8 @@ function print_usage() {
     echo ""
     echo "  -s <dir>                               Specify the Solr home directory. This is where any credentials or authentication"
     echo "                                         configuration files (e.g. basicAuth.conf) would be placed."
+    echo ""
+    echo "  -V                                     Enable more verbose output."
     echo ""
   fi
 } # end print_usage
@@ -807,6 +823,8 @@ fi
 # run a healthcheck and exit if requested
 if [ "$SCRIPT_CMD" == "healthcheck" ]; then
 
+  VERBOSE=""
+
   if [ $# -gt 0 ]; then
     while true; do  
       case "$1" in
@@ -829,6 +847,10 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
           -help|-usage)
               print_usage "$SCRIPT_CMD"           
               exit 0
+          ;;
+          -V|--verbose)
+              VERBOSE="-verbose"
+              shift
           ;;
           --)
               shift
@@ -856,7 +878,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     exit 1  
   fi
     
-  run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION"
+  run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
     
   exit $?
 fi
@@ -867,6 +889,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   CREATE_NUM_SHARDS=1
   CREATE_REPFACT=1
   FORCE=false
+  VERBOSE=""
 
   if [ $# -gt 0 ]; then
     while true; do
@@ -918,6 +941,10 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
               fi
               CREATE_PORT="$2"
               shift 2
+          ;;
+          -V|--verbose)
+              VERBOSE="-verbose"
+              shift
           ;;
           -force)
               FORCE=true
@@ -975,6 +1002,14 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     exit 1
   fi
 
+  if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
+    echo "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is"
+    echo "         NOT RECOMMENDED for production use."
+    echo
+    echo "         To turn it off:"
+    echo "            curl http://$SOLR_TOOL_HOST:$CREATE_PORT/solr/$CREATE_NAME/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'"
+  fi
+
   if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
     echo "WARNING: Creating cores as the root user can cause Solr to fail and is not advisable. Exiting."
     echo "         If you started Solr as root (not advisable either), force core creation by adding argument -force"
@@ -982,19 +1017,23 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
   if [ "$SCRIPT_CMD" == "create_core" ]; then
     run_tool create_core -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
-      -confdir "$CREATE_CONFDIR" -configsetsDir "$SOLR_TIP/server/solr/configsets"
+      -confdir "$CREATE_CONFDIR" -configsetsDir "$SOLR_TIP/server/solr/configsets" \
+      $VERBOSE
     exit $?
   else
     run_tool "$SCRIPT_CMD" -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
       -shards "$CREATE_NUM_SHARDS" -replicationFactor "$CREATE_REPFACT" \
       -confname "$CREATE_CONFNAME" -confdir "$CREATE_CONFDIR" \
-      -configsetsDir "$SOLR_TIP/server/solr/configsets"
+      -configsetsDir "$SOLR_TIP/server/solr/configsets" \
+      $VERBOSE
     exit $?
   fi
 fi
 
 # delete a core or collection
 if [[ "$SCRIPT_CMD" == "delete" ]]; then
+
+  VERBOSE=""
 
   if [ $# -gt 0 ]; then
     while true; do
@@ -1022,6 +1061,10 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
               fi
               DELETE_CONFIG="$2"
               shift 2
+          ;;
+          -V|--verbose)
+              VERBOSE="-verbose"
+              shift
           ;;
           -help|-usage)
               print_usage "$SCRIPT_CMD"
@@ -1071,7 +1114,8 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
   fi
 
   run_tool delete -name "$DELETE_NAME" -deleteConfig "$DELETE_CONFIG" \
-    -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$DELETE_PORT/solr"
+    -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$DELETE_PORT/solr" \
+    $VERBOSE
   exit $?
 fi
 
@@ -1080,6 +1124,8 @@ ZK_RECURSE=false
 # It's a little clumsy to have the parsing go round and round for upconfig and downconfig, but that's
 # necessary for back-compat
 if [[ "$SCRIPT_CMD" == "zk" ]]; then
+
+  VERBOSE=""
 
   if [ $# -gt 0 ]; then
     while true; do
@@ -1115,6 +1161,10 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
         ;;
         -r)
             ZK_RECURSE="true"
+            shift
+        ;;
+        -V|--verbose)
+            VERBOSE="-verbose"
             shift
         ;;
         -help|-usage|-h)
@@ -1180,34 +1230,34 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   case "$ZK_OP" in
     upconfig)
-      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets"
+      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets" $VERBOSE
     ;;
     downconfig)
-      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST"
+      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" $VERBOSE
     ;;
     rm)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to remove must be specified when using the 'rm' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE"
+      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE
     ;;
     mv)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST"
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" $VERBOSE
     ;;
     cp)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE"
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE
     ;;
     ls)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" -zkHost "$ZK_HOST"
+      run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" -zkHost "$ZK_HOST" $VERBOSE
     ;;
     mkroot)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'mkroot' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST"
+      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST" $VERBOSE
     ;;
     *)
       print_short_zk_usage "Unrecognized Zookeeper operation $ZK_OP"
@@ -1218,6 +1268,9 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 fi
 
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
+
+  VERBOSE=""
+
   declare -a AUTH_PARAMS
   if [ $# -gt 0 ]; then
     while true; do
@@ -1242,6 +1295,11 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-credentials" "$AUTH_CREDENTIALS")
             shift 2
         ;;
+        -config)
+            AUTH_CONFIG="`echo $2| base64`"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-config" "$AUTH_CONFIG")
+            shift 2
+        ;;
         -solrIncludeFile)
             SOLR_INCLUDE="$2"
             shift 2
@@ -1259,6 +1317,10 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-updateIncludeFileOnly" "$2")
             shift
             break
+        ;;
+        -V|--verbose)
+            VERBOSE="-verbose"
+            shift
         ;;
         -d|-dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
@@ -1312,14 +1374,15 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
+
   if [ -z "$SOLR_HOME" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
-  else
-    if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+  elif [[ $SOLR_HOME != /* ]]; then
+    if [[ -d "`pwd`/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd)/$SOLR_HOME"
+    elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
       SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
       SOLR_PID_DIR="$SOLR_HOME"
-    elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
-      SOLR_HOME="$(pwd)/$SOLR_HOME"
     fi
   fi
 
@@ -1340,7 +1403,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME"
+  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1658,12 +1721,12 @@ fi
 
 if [ -z "$SOLR_HOME" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
-else
-  if [[ $SOLR_HOME != /* ]] && [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+elif [[ $SOLR_HOME != /* ]]; then
+  if [[ -d "`pwd`/$SOLR_HOME" ]]; then
+    SOLR_HOME="$(pwd)/$SOLR_HOME"
+  elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
     SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
     SOLR_PID_DIR="$SOLR_HOME"
-  elif [[ $SOLR_HOME != /* ]] && [[ -d "`pwd`/$SOLR_HOME" ]]; then
-    SOLR_HOME="$(pwd)/$SOLR_HOME"
   fi
 fi
 

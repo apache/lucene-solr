@@ -22,8 +22,7 @@ Content streams are bulk data passed with a request to Solr.
 
 When Solr RequestHandlers are accessed using path based URLs, the `SolrQueryRequest` object containing the parameters of the request may also contain a list of ContentStreams containing bulk data for the request. (The name SolrQueryRequest is a bit misleading: it is involved in all requests, regardless of whether it is a query request or an update request.)
 
-[[ContentStreams-StreamSources]]
-== Stream Sources
+== Content Stream Sources
 
 Currently request handlers can get content streams in a variety of ways:
 
@@ -34,7 +33,6 @@ Currently request handlers can get content streams in a variety of ways:
 
 By default, curl sends a `contentType="application/x-www-form-urlencoded"` header. If you need to test a SolrContentHeader content stream, you will need to set the content type with curl's `-H` flag.
 
-[[ContentStreams-RemoteStreaming]]
 == RemoteStreaming
 
 Remote streaming lets you send the contents of a URL as a stream to a given SolrRequestHandler. You could use remote streaming to send a remote or local file to an update plugin.
@@ -65,10 +63,9 @@ curl -d '
 
 [IMPORTANT]
 ====
-If `enableRemoteStreaming="true"` is used, be aware that this allows _anyone_ to send a request to any URL or local file. If <<ContentStreams-DebuggingRequests,DumpRequestHandler>> is enabled, it will allow anyone to view any file on your system.
+If `enableRemoteStreaming="true"` is used, be aware that this allows _anyone_ to send a request to any URL or local file. If the <<Debugging Requests,DumpRequestHandler>> is enabled, it will allow anyone to view any file on your system.
 ====
 
-[[ContentStreams-DebuggingRequests]]
 == Debugging Requests
 
 The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>) simply outputs the contents of the SolrQueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.

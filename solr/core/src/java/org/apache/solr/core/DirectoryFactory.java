@@ -55,8 +55,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
 
   protected static final String INDEX_W_TIMESTAMP_REGEX = "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
 
-  public static final String DATA_HOME = "solr.data.home";
-
   // May be set by sub classes as data root, in which case getDataHome will use it as base
   protected Path dataHomePath;
 
@@ -394,6 +392,9 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   public void initCoreContainer(CoreContainer cc) {
     this.coreContainer = cc;
+    if (cc != null && cc.getConfig() != null) {
+      this.dataHomePath = cc.getConfig().getSolrDataHome();
+    }
   }
   
   // special hack to work with FilterDirectory

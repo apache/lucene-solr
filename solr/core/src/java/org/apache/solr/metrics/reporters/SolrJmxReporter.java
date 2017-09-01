@@ -16,26 +16,20 @@
  */
 package org.apache.solr.metrics.reporters;
 
-import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
-import javax.management.ObjectInstance;
-import javax.management.ObjectName;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.MetricRegistryListener;
-import org.apache.solr.metrics.MetricsMap;
+
+import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
+import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * <p>NOTE: {@link JmxReporter} that this class uses exports only newly added metrics (it doesn't
  * process already existing metrics in a registry)</p>
  */
-public class SolrJmxReporter extends SolrMetricReporter {
+public class SolrJmxReporter extends FilteringSolrMetricReporter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,12 +50,11 @@ public class SolrJmxReporter extends SolrMetricReporter {
   private String agentId;
   private String serviceUrl;
   private String rootName;
-  private List<String> filters = new ArrayList<>();
 
-  private JmxReporter reporter;
   private MetricRegistry registry;
   private MBeanServer mBeanServer;
-  private MetricsMapListener listener;
+  private JmxMetricsReporter reporter;
+  private boolean started;
 
   /**
    * Creates a new instance of {@link SolrJmxReporter}.
@@ -103,28 +96,18 @@ public class SolrJmxReporter extends SolrMetricReporter {
     }
     JmxObjectNameFactory jmxObjectNameFactory = new JmxObjectNameFactory(pluginInfo.name, fullDomain);
     registry = metricManager.registry(registryName);
-    // filter out MetricsMap gauges - we have a better way of handling them
-    MetricFilter mmFilter = (name, metric) -> !(metric instanceof MetricsMap);
-    MetricFilter filter;
-    if (filters.isEmpty()) {
-      filter = mmFilter;
-    } else {
-      // apply also prefix filters
-      SolrMetricManager.PrefixFilter prefixFilter = new SolrMetricManager.PrefixFilter(filters);
-      filter = new SolrMetricManager.AndFilter(prefixFilter, mmFilter);
-    }
 
-    reporter = JmxReporter.forRegistry(registry)
+    final MetricFilter filter = newMetricFilter();
+    String tag = Integer.toHexString(this.hashCode());
+    reporter = JmxMetricsReporter.forRegistry(registry)
                           .registerWith(mBeanServer)
                           .inDomain(fullDomain)
                           .filter(filter)
                           .createsObjectNamesWith(jmxObjectNameFactory)
+                          .withTag(tag)
                           .build();
     reporter.start();
-    // workaround for inability to register custom MBeans (to be available in metrics 4.0?)
-    listener = new MetricsMapListener(mBeanServer, jmxObjectNameFactory);
-    registry.addListener(listener);
-
+    started = true;
     log.info("JMX monitoring for '" + fullDomain + "' (registry '" + registryName + "') enabled at server: " + mBeanServer);
   }
 
@@ -133,14 +116,11 @@ public class SolrJmxReporter extends SolrMetricReporter {
    */
   @Override
   public synchronized void close() {
+    log.info("Closing reporter " + this + " for registry " + registryName + " / " + registry);
+    started = false;
     if (reporter != null) {
       reporter.close();
       reporter = null;
-    }
-    if (listener != null && registry != null) {
-      registry.removeListener(listener);
-      listener.close();
-      listener = null;
     }
   }
 
@@ -223,24 +203,6 @@ public class SolrJmxReporter extends SolrMetricReporter {
   }
 
   /**
-   * Report only metrics with names matching any of the prefix filters.
-   * @param filters list of 0 or more prefixes. If the list is empty then
-   *                all names will match.
-   */
-  public void setFilter(List<String> filters) {
-    if (filters == null || filters.isEmpty()) {
-      return;
-    }
-    this.filters.addAll(filters);
-  }
-
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
-  }
-
-  /**
    * Return the reporter's MBeanServer.
    *
    * @return the reporter's MBeanServer
@@ -251,70 +213,23 @@ public class SolrJmxReporter extends SolrMetricReporter {
 
   /**
    * For unit tests.
-   * @return true if this reporter is actively reporting metrics to JMX.
+   * @return true if this reporter is going to report metrics to JMX.
    */
   public boolean isActive() {
     return reporter != null;
+  }
+
+  /**
+   * For unit tests.
+   * @return true if this reporter has been started and is reporting metrics to JMX.
+   */
+  public boolean isStarted() {
+    return started;
   }
 
   @Override
   public String toString() {
     return String.format(Locale.ENGLISH, "[%s@%s: rootName = %s, domain = %s, service url = %s, agent id = %s]",
         getClass().getName(), Integer.toHexString(hashCode()), rootName, domain, serviceUrl, agentId);
-  }
-
-  private static class MetricsMapListener extends MetricRegistryListener.Base {
-    MBeanServer server;
-    JmxObjectNameFactory nameFactory;
-    // keep the names so that we can unregister them on core close
-    Set<ObjectName> registered = new HashSet<>();
-
-    MetricsMapListener(MBeanServer server, JmxObjectNameFactory nameFactory) {
-      this.server = server;
-      this.nameFactory = nameFactory;
-    }
-
-    @Override
-    public void onGaugeAdded(String name, Gauge<?> gauge) {
-      if (!(gauge instanceof MetricsMap)) {
-        return;
-      }
-      synchronized (server) {
-        try {
-          ObjectName objectName = nameFactory.createName("gauges", nameFactory.getDomain(), name);
-          log.debug("REGISTER " + objectName);
-          if (registered.contains(objectName) || server.isRegistered(objectName)) {
-            log.debug("-unregistering old instance of " + objectName);
-            try {
-              server.unregisterMBean(objectName);
-            } catch (InstanceNotFoundException e) {
-              // ignore
-            }
-          }
-          // some MBean servers re-write object name to include additional properties
-          ObjectInstance instance = server.registerMBean(gauge, objectName);
-          if (instance != null) {
-            registered.add(instance.getObjectName());
-          }
-        } catch (Exception e) {
-          log.warn("bean registration error", e);
-        }
-      }
-    }
-
-    public void close() {
-      synchronized (server) {
-        for (ObjectName name : registered) {
-          try {
-            if (server.isRegistered(name)) {
-              server.unregisterMBean(name);
-            }
-          } catch (Exception e) {
-            log.debug("bean unregistration error", e);
-          }
-        }
-        registered.clear();
-      }
-    }
   }
 }

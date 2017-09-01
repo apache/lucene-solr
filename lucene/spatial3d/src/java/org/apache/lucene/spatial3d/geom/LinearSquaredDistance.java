@@ -52,6 +52,16 @@ public class LinearSquaredDistance implements DistanceStyle {
   }
 
   @Override
+  public double toAggregationForm(final double distance) {
+    return Math.sqrt(distance);
+  }
+
+  @Override
+  public double fromAggregationForm(final double aggregateDistance) {
+    return aggregateDistance * aggregateDistance;
+  }
+
+  @Override
   public GeoPoint[] findDistancePoints(final PlanetModel planetModel, final double distanceValue, final GeoPoint startPoint, final Plane plane, final Membership... bounds) {
     throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
   }

@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -160,8 +161,10 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     // data dirs should be in zk, SOLR-8913
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    Slice slice = clusterState.getSlice(DELETE_DATA_DIR_COLLECTION, "shard1");
-    assertNotNull(clusterState.getSlices(DELETE_DATA_DIR_COLLECTION).toString(), slice);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(DELETE_DATA_DIR_COLLECTION);
+    assertNotNull("Could not find :"+DELETE_DATA_DIR_COLLECTION, docCollection);
+    Slice slice = docCollection.getSlice("shard1");
+    assertNotNull(docCollection.getSlices().toString(), slice);
     Collection<Replica> replicas = slice.getReplicas();
     for (Replica replica : replicas) {
       assertNotNull(replica.getProperties().toString(), replica.get("dataDir"));
@@ -180,7 +183,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrClient client : clients) {
-      try (HttpSolrClient c = getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
+      try (HttpSolrClient c = getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION, 30000)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));
@@ -192,7 +195,6 @@ public class StressHdfsTest extends BasicDistributedZkTest {
           c.commit(true, true, true);
         }
         
-        c.setConnectionTimeout(30000);
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");

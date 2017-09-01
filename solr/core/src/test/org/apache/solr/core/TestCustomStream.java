@@ -74,10 +74,10 @@ public class TestCustomStream extends AbstractFullDistribZkTestBase {
         "}";
 
     RestTestHarness client = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-    TestSolrConfigHandler.runConfigCommand(client,"/config?wt=json",payload);
+    TestSolrConfigHandler.runConfigCommand(client,"/config",payload);
     TestSolrConfigHandler.testForResponseElement(client,
         null,
-        "/config/overlay?wt=json",
+        "/config/overlay",
         null,
         Arrays.asList("overlay", "expressible", "hello", "class"),
         "org.apache.solr.core.HelloStream",10);

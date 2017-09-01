@@ -26,7 +26,6 @@ The figure below shows a Solr configuration using index replication. The master 
 image::images/index-replication/worddav2b7e14725d898b4104cdd9c502fc77cd.png[image,width=159,height=235]
 
 
-[[IndexReplication-IndexReplicationinSolr]]
 == Index Replication in Solr
 
 Solr includes a Java implementation of index replication that works over HTTP:
@@ -46,7 +45,6 @@ Although there is no explicit concept of "master/slave" nodes in a <<solrcloud.a
 When using SolrCloud, the `ReplicationHandler` must be available via the `/replication` path. Solr does this implicitly unless overridden explicitly in your `solrconfig.xml`, but if you wish to override the default behavior, make certain that you do not explicitly set any of the "master" or "slave" configuration options mentioned below, or they will interfere with normal SolrCloud operation.
 ====
 
-[[IndexReplication-ReplicationTerminology]]
 == Replication Terminology
 
 The table below defines the key terms associated with Solr replication.
@@ -79,15 +77,13 @@ Snapshot::
 A directory containing hard links to the data files of an index. Snapshots are distributed from the master nodes when the slaves pull them, "smart copying" any segments the slave node does not have in snapshot directory that contains the hard links to the most recent index data files.
 
 
-[[IndexReplication-ConfiguringtheReplicationHandler]]
 == Configuring the ReplicationHandler
 
 In addition to `ReplicationHandler` configuration options specific to the master/slave roles, there are a few special configuration options that are generally supported (even when using SolrCloud).
 
 * `maxNumberOfBackups` an integer value dictating the maximum number of backups this node will keep on disk as it receives `backup` commands.
-* Similar to most other request handlers in Solr you may configure a set of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#RequestHandlersandSearchComponentsinSolrConfig-SearchHandlers,defaults, invariants, and/or appends>> parameters corresponding with any request parameters supported by the `ReplicationHandler` when <<IndexReplication-HTTPAPICommandsfortheReplicationHandler,processing commands>>.
+* Similar to most other request handlers in Solr you may configure a set of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,defaults, invariants, and/or appends>> parameters corresponding with any request parameters supported by the `ReplicationHandler` when <<HTTP API Commands for the ReplicationHandler,processing commands>>.
 
-[[IndexReplication-ConfiguringtheReplicationRequestHandleronaMasterServer]]
 === Configuring the Replication RequestHandler on a Master Server
 
 Before running a replication, you should set the following parameters on initialization of the handler:
@@ -125,7 +121,6 @@ The example below shows a possible 'master' configuration for the `ReplicationHa
 </requestHandler>
 ----
 
-[[IndexReplication-Replicatingsolrconfig.xml]]
 ==== Replicating solrconfig.xml
 
 In the configuration file on the master server, include a line like the following:
@@ -139,7 +134,6 @@ This ensures that the local configuration `solrconfig_slave.xml` will be saved a
 
 On the master server, the file name of the slave configuration file can be anything, as long as the name is correctly identified in the `confFiles` string; then it will be saved as whatever file name appears after the colon ':'.
 
-[[IndexReplication-ConfiguringtheReplicationRequestHandleronaSlaveServer]]
 === Configuring the Replication RequestHandler on a Slave Server
 
 The code below shows how to configure a ReplicationHandler on a slave.
@@ -188,7 +182,6 @@ The code below shows how to configure a ReplicationHandler on a slave.
 </requestHandler>
 ----
 
-[[IndexReplication-SettingUpaRepeaterwiththeReplicationHandler]]
 == Setting Up a Repeater with the ReplicationHandler
 
 A master may be able to serve only so many slaves without affecting performance. Some organizations have deployed slave servers across multiple data centers. If each slave downloads the index from a remote data center, the resulting download may consume too much network bandwidth. To avoid performance degradation in cases like this, you can configure one or more slaves as repeaters. A repeater is simply a node that acts as both a master and a slave.
@@ -213,7 +206,6 @@ Here is an example of a ReplicationHandler configuration for a repeater:
 </requestHandler>
 ----
 
-[[IndexReplication-CommitandOptimizeOperations]]
 == Commit and Optimize Operations
 
 When a commit or optimize operation is performed on the master, the RequestHandler reads the list of file names which are associated with each commit point. This relies on the `replicateAfter` parameter in the configuration to decide which types of events should trigger replication.
@@ -233,7 +225,6 @@ The `replicateAfter` parameter can accept multiple arguments. For example:
 <str name="replicateAfter">optimize</str>
 ----
 
-[[IndexReplication-SlaveReplication]]
 == Slave Replication
 
 The master is totally unaware of the slaves.
@@ -246,7 +237,6 @@ The slave continuously keeps polling the master (depending on the `pollInterval`
 * After the download completes, all the new files are moved to the live index directory and the file's timestamp is same as its counterpart on the master.
 * A commit command is issued on the slave by the Slave's ReplicationHandler and the new index is loaded.
 
-[[IndexReplication-ReplicatingConfigurationFiles]]
 === Replicating Configuration Files
 
 To replicate configuration files, list them using using the `confFiles` parameter. Only files found in the `conf` directory of the master's Solr instance will be replicated.
@@ -259,7 +249,6 @@ As a precaution when replicating configuration files, Solr copies configuration 
 
 If a replication involved downloading of at least one configuration file, the ReplicationHandler issues a core-reload command instead of a commit command.
 
-[[IndexReplication-ResolvingCorruptionIssuesonSlaveServers]]
 === Resolving Corruption Issues on Slave Servers
 
 If documents are added to the slave, then the slave is no longer in sync with its master. However, the slave will not undertake any action to put itself in sync, until the master has new index data.
@@ -268,7 +257,6 @@ When a commit operation takes place on the master, the index version of the mast
 
 To correct this problem, the slave then copies all the index files from master to a new index directory and asks the core to load the fresh index from the new directory.
 
-[[IndexReplication-HTTPAPICommandsfortheReplicationHandler]]
 == HTTP API Commands for the ReplicationHandler
 
 You can use the HTTP commands below to control the ReplicationHandler's operations.
@@ -355,7 +343,6 @@ There are two supported parameters:
 * `location`: Location where the snapshot is created.
 
 
-[[IndexReplication-DistributionandOptimization]]
 == Distribution and Optimization
 
 Optimizing an index is not something most users should generally worry about - but in particular users should be aware of the impacts of optimizing an index when using the `ReplicationHandler`.

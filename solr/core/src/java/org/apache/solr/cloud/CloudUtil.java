@@ -27,10 +27,12 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -56,18 +58,19 @@ public class CloudUtil {
     log.debug("checkSharedFSFailoverReplaced running for coreNodeName={} baseUrl={}", thisCnn, thisBaseUrl);
 
     // if we see our core node name on a different base url, unload
-    Map<String,Slice> slicesMap = zkController.getClusterState().getSlicesMap(desc.getCloudDescriptor().getCollectionName());
-    
-    if (slicesMap != null) {
+    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());    
+    if (docCollection != null && docCollection.getSlicesMap() != null) {
+      Map<String,Slice> slicesMap = docCollection.getSlicesMap();
       for (Slice slice : slicesMap.values()) {
         for (Replica replica : slice.getReplicas()) {
           
           String cnn = replica.getName();
           String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          boolean isSharedFs = replica.getStr(CoreAdminParams.DATA_DIR) != null;
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
           
           if (thisCnn != null && thisCnn.equals(cnn)
-              && !thisBaseUrl.equals(baseUrl)) {
+              && !thisBaseUrl.equals(baseUrl) && isSharedFs) {
             if (cc.getLoadedCoreNames().contains(desc.getName())) {
               cc.unload(desc.getName());
             }

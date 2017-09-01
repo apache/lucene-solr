@@ -17,6 +17,8 @@
 package org.apache.lucene.analysis.icu.segmentation;
 
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.lang.UScript;
 import com.ibm.icu.text.BreakIterator;
 
@@ -38,7 +40,7 @@ import com.ibm.icu.text.BreakIterator;
  */
 final class CompositeBreakIterator {
   private final ICUTokenizerConfig config;
-  private final BreakIteratorWrapper wordBreakers[] = new BreakIteratorWrapper[UScript.CODE_LIMIT];
+  private final BreakIteratorWrapper wordBreakers[] = new BreakIteratorWrapper[1 + UCharacter.getIntPropertyMaxValue(UProperty.SCRIPT)];
 
   private BreakIteratorWrapper rbbi;
   private final ScriptIterator scriptIterator;

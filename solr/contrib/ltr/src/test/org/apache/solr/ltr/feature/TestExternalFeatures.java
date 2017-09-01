@@ -139,9 +139,9 @@ public class TestExternalFeatures extends TestRerankBase {
 
     final String docs0fvalias_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
         "occurrences","0.0",
-        "originalScore","0.0");
+        "originalScore","1.0");
     final String docs0fvalias_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
-        "originalScore","0.0");
+        "originalScore","1.0");
 
     final String docs0fvalias_default_csv = chooseDefaultFeatureVector(docs0fvalias_dense_csv, docs0fvalias_sparse_csv);
 
@@ -159,9 +159,9 @@ public class TestExternalFeatures extends TestRerankBase {
 
     final String docs0fvalias_dense_csv = FeatureLoggerTestUtils.toFeatureVector(
         "occurrences","0.0",
-        "originalScore","0.0");
+        "originalScore","1.0");
     final String docs0fvalias_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
-        "originalScore","0.0");
+        "originalScore","1.0");
 
     final String docs0fvalias_default_csv = chooseDefaultFeatureVector(docs0fvalias_dense_csv, docs0fvalias_sparse_csv);
 

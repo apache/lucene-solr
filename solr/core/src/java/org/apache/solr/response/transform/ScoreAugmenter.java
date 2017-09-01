@@ -44,4 +44,9 @@ public class ScoreAugmenter extends DocTransformer {
         doc.setField( name, score );
     }
   }
+
+  @Override
+  public void transform(SolrDocument doc, int docid) {
+    transform(doc, docid, 0.0f);
+  }
 }
