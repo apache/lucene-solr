@@ -53,7 +53,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
 
   @Test
   public void testLocalJsonRequest() throws Exception {
-    doJsonRequest(Client.localClient);
+    doJsonRequest(Client.localClient, false);
   }
 
   @Test
@@ -62,11 +62,10 @@ public class TestJsonRequest extends SolrTestCaseHS {
     initServers();
     Client client = servers.getClient( random().nextInt() );
     client.queryDefaults().set( "shards", servers.getShards() );
-    doJsonRequest(client);
+    doJsonRequest(client, true);
   }
 
-
-  public static void doJsonRequest(Client client) throws Exception {
+  public static void doJsonRequest(Client client, boolean isDistrib) throws Exception {
     client.deleteByQuery("*:*", null);
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
@@ -217,6 +216,178 @@ public class TestJsonRequest extends SolrTestCaseHS {
         , "debug/json=={query:'cat_s:A', filter:'where_s:NY'}"
     );
 
+    // test query dsl
+    client.testJQ( params("json", "{'query':'{!lucene}id:1'}")
+        , "response/numFound==1"
+    );
+
+    client.testJQ( params("json", "{" +
+            "  'query': {" +
+            "    'bool' : {" +
+            "      'should' : [" +
+            "        {'lucene' : {'query' : 'id:1'}}," +
+            "        'id:2'" +
+            "      ]" +
+            "    }" +
+            "  }" +
+            "}")
+        , "response/numFound==2"
+    );
+
+    client.testJQ( params("json", "{" +
+            "  'query': {" +
+            "    'bool' : {" +
+            "      'should' : [" +
+            "        'id:1'," +
+            "        'id:2'" +
+            "      ]" +
+            "    }" +
+            "  }" +
+            "}")
+        , "response/numFound==2"
+    );
+
+    client.testJQ( params("json", "{   " +
+            " query : {" +
+            "  boost : {" +
+            "   query : {" +
+            "    lucene : {      " +
+            "     df : cat_s,      " +
+            "     query : A     " +
+            "    }" +
+            "   },   " +
+            "   b : 1.5 " +
+            "  }  " +
+            " } " +
+            "}")
+        , "response/numFound==2"
+    );
+
+    client.testJQ( params("json","{ " +
+            " query : {" +
+            "  bool : {" +
+            "   must : {" +
+            "    lucene : {" +
+            "     q.op : AND," +
+            "     df : cat_s," +
+            "     query : A" +
+            "    }" +
+            "   }" +
+            "   must_not : {lucene : {query:'id: 1'}}" +
+            "  }" +
+            " }" +
+            "}")
+        , "response/numFound==1"
+    );
+
+    client.testJQ( params("json","{ " +
+            " query : {" +
+            "  bool : {" +
+            "   must : {" +
+            "    lucene : {" +
+            "     q.op : AND," +
+            "     df : cat_s," +
+            "     query : A" +
+            "    }" +
+            "   }" +
+            "   must_not : [{lucene : {query:'id: 1'}}]" +
+            "  }" +
+            " }" +
+            "}")
+        , "response/numFound==1"
+    );
+
+    client.testJQ( params("json","{ " +
+            " query : {" +
+            "  bool : {" +
+            "   must : '{!lucene q.op=AND df=cat_s}A'" +
+            "   must_not : '{!lucene v=\\'id:1\\'}'" +
+            "  }" +
+            " }" +
+            "}")
+        , "response/numFound==1"
+    );
+
+
+    client.testJQ( params("json","{" +
+            " query : '*:*'," +
+            " filter : {" +
+            "  collapse : {" +
+            "   field : cat_s" +
+            "  } " +
+            " } " +
+            "}")
+        , isDistrib ? "" : "response/numFound==2"
+    );
+
+    client.testJQ( params("json","{" +
+            " query : {" +
+            "  edismax : {" +
+            "   query : 'A'," +
+            "   qf : 'cat_s'," +
+            "   bq : {" +
+            "    edismax : {" +
+            "     query : 'NJ'" +
+            "     qf : 'where_s'" +
+            "    }" +
+            "   }" +
+            "  }" +
+            " }, " +
+            " fields : id" +
+            "}")
+        , "response/numFound==2", isDistrib? "" : "response/docs==[{id:'4'},{id:'1'}]"
+    );
+
+    client.testJQ( params("json","{" +
+            " query : {" +
+            "  edismax : {" +
+            "   query : 'A'," +
+            "   qf : 'cat_s'," +
+            "   bq : {" +
+            "    edismax : {" +
+            "     query : 'NY'" +
+            "     qf : 'where_s'" +
+            "    }" +
+            "   }" +
+            "  }" +
+            " }, " +
+            " fields : id" +
+            "}")
+        , "response/numFound==2", isDistrib? "" : "response/docs==[{id:'1'},{id:'4'}]"
+    );
+
+    client.testJQ( params("json","{" +
+            " query : {" +
+            "  dismax : {" +
+            "   query : 'A NJ'" +
+            "   qf : 'cat_s^0.1 where_s^100'" +
+            "  } " +
+            " }, " +
+            " filter : '-id:2'," +
+            " fields : id" +
+            "}")
+        , "response/numFound==3", isDistrib? "" : "response/docs==[{id:'4'},{id:'5'},{id:'1'}]"
+    );
+
+    client.testJQ( params("json","{" +
+            " query : {" +
+            "  dismax : {" +
+            "   query : 'A NJ'" +
+            "   qf : ['cat_s^100', 'where_s^0.1']" +
+            "  } " +
+            " }, " +
+            " filter : '-id:2'," +
+            " fields : id" +
+            "}")
+        , "response/numFound==3", isDistrib? "" :  "response/docs==[{id:'4'},{id:'1'},{id:'5'}]"
+    );
+
+    try {
+      client.testJQ(params("json", "{query:{'lucene':'id:1'}}"));
+      fail();
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("id:1"));
+    }
 
     try {
       // test failure on unknown parameter
