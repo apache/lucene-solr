@@ -95,6 +95,7 @@ public abstract class DocTransformer implements Closeable {
     return null;
   }
 
+  @Override
   public void close(){
   }
   

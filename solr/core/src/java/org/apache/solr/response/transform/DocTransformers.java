@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.response.ResultContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,11 +98,7 @@ public class DocTransformers extends DocTransformer
   @Override
   public void close() {
     for( DocTransformer a : children ) {
-      try {
-        a.close();
-      } catch (Exception e){
-        log.warn("ignored exception closing transformer {}", a.getName(), e);
-      }
+      IOUtils.closeQuietly(a);
     }
   }
 }
