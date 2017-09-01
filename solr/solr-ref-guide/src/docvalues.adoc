@@ -44,16 +44,18 @@ If you have already indexed data into your Solr index, you will need to complete
 
 DocValues are only available for specific field types. The types chosen determine the underlying Lucene docValue type that will be used. The available Solr field types are:
 
-* `StrField` and `UUIDField`.
-** If the field is single-valued (i.e., multi-valued is false), Lucene will use the SORTED type.
-** If the field is multi-valued, Lucene will use the SORTED_SET type.
-* Any `Trie*` numeric fields, date fields and `EnumFieldType`.
-** If the field is single-valued (i.e., multi-valued is false), Lucene will use the NUMERIC type.
-** If the field is multi-valued, Lucene will use the SORTED_SET type.
-* Boolean fields
-* Int|Long|Float|Double|Date PointField
-** If the field is single-valued (i.e., multi-valued is false), Lucene will use the NUMERIC type.
-** If the field is multi-valued, Lucene will use the SORTED_NUMERIC type.
+* `StrField` and `UUIDField`:
+** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `SORTED` type.
+** If the field is multi-valued, Lucene will use the `SORTED_SET` type.
+* `BoolField`:
+** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `SORTED` type.
+** If the field is multi-valued, Lucene will use the `SORTED_BINARY` type.
+* Any `*PointField` Numeric or Date fields, `EnumFieldType`, and `CurrencyFieldType`:
+** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `NUMERIC` type.
+** If the field is multi-valued, Lucene will use the `SORTED_NUMERIC` type.
+* Any of the deprecated `Trie*` Numeric or Date fields, `EnumField` and `CurrencyField`:
+** If the field is single-valued (i.e., multi-valued is false), Lucene will use the `NUMERIC` type.
+** If the field is multi-valued, Lucene will use the `SORTED_SET` type.
 
 These Lucene types are related to how the {lucene-javadocs}/core/org/apache/lucene/index/DocValuesType.html[values are sorted and stored].
 
@@ -86,4 +88,4 @@ In cases where the query is returning _only_ docValues fields performance may im
 When retrieving fields from their docValues form (using the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>, <<streaming-expressions.adoc#streaming-expressions,streaming expressions>> or if the field is requested in the `fl` parameter), two important differences between regular stored fields and docValues fields must be understood:
 
 1.  Order is _not_ preserved. For simply retrieving stored fields, the insertion order is the return order. For docValues, it is the _sorted_ order.
-2.  Multiple identical entries are collapsed into a single value. Thus if I insert values 4, 5, 2, 4, 1, my return will be 1, 2, 4, 5.
+2.  For field types using `SORTED_SET`, multiple identical entries are collapsed into a single value. Thus if I insert values 4, 5, 2, 4, 1, my return will be 1, 2, 4, 5.

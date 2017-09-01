@@ -350,11 +350,13 @@ This can even be used to cache individual clauses of complex filter queries. In 
 
 === Specifying Dates and Times
 
-Queries against fields using the `TrieDateField` type (typically range queries) should use the <<working-with-dates.adoc#working-with-dates,appropriate date syntax>>:
+Queries against date based fields must use the <<working-with-dates.adoc#working-with-dates,appropriate date formating>>.  Queries for exact date values will require quoting or escaping since `:` is the parser syntax used to denote a field query:
 
-* `timestamp:[* TO NOW]`
+* `createdate:1976-03-06T23\:59\:59.999Z`
+* `createdate:"1976-03-06T23:59:59.999Z"`
 * `createdate:[1976-03-06T23:59:59.999Z TO *]`
 * `createdate:[1995-12-31T23:59:59.999Z TO 2007-03-06T00:00:00Z]`
+* `timestamp:[* TO NOW]`
 * `pubdate:[NOW-1YEAR/DAY TO NOW/DAY+1DAY]`
 * `createdate:[1976-03-06T23:59:59.999Z TO 1976-03-06T23:59:59.999Z+1YEAR]`
 * `createdate:[1976-03-06T23:59:59.999Z/YEAR TO 1976-03-06T23:59:59.999Z]`

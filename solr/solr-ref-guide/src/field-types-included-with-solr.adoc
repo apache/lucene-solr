@@ -37,9 +37,9 @@ The following table lists the field types that are available in Solr. The `org.a
 
 |DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
 
-|DatePointField |Date field. Represents a point in time with millisecond precision. See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>>. This class functions similarly to TrieDateField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>> for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|DoublePointField |Double field (64-bit IEEE floating point). This class functions similarly to TrieDoubleField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |ExternalFileField |Pulls values from a file on disk. See the section <<working-with-external-files-and-processes.adoc#working-with-external-files-and-processes,Working with External Files and Processes>> for more information.
 
@@ -47,17 +47,17 @@ The following table lists the field types that are available in Solr. The `org.a
 
 |EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section <<working-with-enum-fields.adoc#working-with-enum-fields,Working with Enum Fields>> for more information.
 
-|FloatPointField |Floating point field (32-bit IEEE floating point). This class functions similarly to TrieFloatField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|FloatPointField |Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |ICUCollationField |Supports Unicode collation for sorting and range queries. See the section <<language-analysis.adoc#unicode-collation,Unicode Collation>> for more information.
 
-|IntPointField |Integer field (32-bit signed integer). This class functions similarly to TrieIntField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|IntPointField |Integer field (32-bit signed integer). This class encodes int values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
 
 |LatLonType |*Deprecated*. Consider using the LatLonPointSpatialField instead. A single-valued latitude/longitude coordinate pair. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
 
-|LongPointField |Long field (64-bit signed integer). This class functions similarly to TrieLongField, but using a "Dimensional Points" based data structure instead of indexed terms, and doesn't require configuration of a precision step. For single valued fields, `docValues="true"` must be used to enable sorting.
+|LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
 
