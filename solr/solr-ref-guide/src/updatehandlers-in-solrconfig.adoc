@@ -121,7 +121,7 @@ Realtime Get currently relies on the update log feature, which is enabled by def
 </updateLog>
 ----
 
-Three additional expert-level configuration settings affect indexing performance and how far a replica can fall behind on updates before it must enter into full recovery - see the section on <<read-and-write-side-fault-tolerance.adoc#write-side-fault-tolerance,write side fault tolerance>> for more information:
+Three additional expert-level configuration settings affect indexing performance and how far a replica can fall behind on updates before it must enter into full recovery - see the section on <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,write side fault tolerance>> for more information:
 
 `numRecordsToKeep`::
 The number of update records to keep per log. The default is `100`.
