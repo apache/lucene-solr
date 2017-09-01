@@ -51,21 +51,16 @@ for document in response['response']['docs']:
 
 == Python with JSON
 
-JSON is a more robust response format, but you will need to add a Python package in order to use it. At a command line, install the simplejson package like this:
+JSON is a more robust response format, and Python has support for it in its standard library since version 2.6.
 
-[source,bash]
-----
-sudo easy_install simplejson
-----
-
-Once that is done, making a query is nearly the same as before. However, notice that the wt query parameter is now json (which is also the default if not wt parameter is specified), and the response is now digested by `simplejson.load()`.
+Making a query is nearly the same as before. However, notice that the wt query parameter is now json (which is also the default if not wt parameter is specified), and the response is now digested by `json.load()`.
 
 [source,python]
 ----
 from urllib2 import *
-import simplejson
+import json
 connection = urlopen('http://localhost:8983/solr/collection_name/select?q=cheese&wt=json')
-response = simplejson.load(connection)
+response = json.load(connection)
 print response['response']['numFound'], "documents found."
 
 # Print the name of each document.
