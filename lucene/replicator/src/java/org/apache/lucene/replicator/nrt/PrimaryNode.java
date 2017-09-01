@@ -113,14 +113,6 @@ public abstract class PrimaryNode extends Node {
       setCurrentInfos(Collections.<String>emptySet());
       message("init: infos version=" + curInfos.getVersion());
 
-      IndexSearcher s = mgr.acquire();
-      try {
-        // TODO: this is test code specific!!
-        message("init: marker count: " + s.count(new TermQuery(new Term("marker", "marker"))));
-      } finally {
-        mgr.release(s);
-      }
-
     } catch (Throwable t) {
       message("init: exception");
       t.printStackTrace(printStream);
@@ -231,8 +223,6 @@ public abstract class PrimaryNode extends Node {
     try {
       searcher = mgr.acquire();
       infos = ((StandardDirectoryReader) searcher.getIndexReader()).getSegmentInfos();
-      // TODO: this is test code specific!!
-      message("setCurrentInfos: marker count: " + searcher.count(new TermQuery(new Term("marker", "marker"))) + " version=" + infos.getVersion() + " searcher=" + searcher);
     } finally {
       if (searcher != null) {
         mgr.release(searcher);

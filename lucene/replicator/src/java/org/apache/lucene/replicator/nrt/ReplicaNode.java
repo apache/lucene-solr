@@ -287,15 +287,6 @@ public abstract class ReplicaNode extends Node {
       // Finally, we are open for business, since our index now "agrees" with the primary:
       mgr = new SegmentInfosSearcherManager(dir, this, infos, searcherFactory);
 
-      IndexSearcher searcher = mgr.acquire();
-      try {
-        // TODO: this is test specific:
-        int hitCount = searcher.count(new TermQuery(new Term("marker", "marker")));
-        message("top: marker count=" + hitCount + " version=" + ((DirectoryReader) searcher.getIndexReader()).getVersion());
-      } finally {
-        mgr.release(searcher);
-      }
-
       // Must commit after init mgr:
       if (doCommit) {
         // Very important to commit what we just sync'd over, because we removed the pre-existing commit point above if we had to
