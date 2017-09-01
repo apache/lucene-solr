@@ -81,6 +81,8 @@ New Features
 
 * SOLR-11215: Make a metric accessible through a single param. (ab)
 
+* SOLR-11244: Query DSL for Solr (Cao Manh Dat)
+
 Bug Fixes
 ----------------------
 
