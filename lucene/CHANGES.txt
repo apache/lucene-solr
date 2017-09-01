@@ -63,6 +63,9 @@ Other
 * LUCENE-7948, LUCENE-7937: Upgrade randomizedtesting to 2.5.3 (minor fixes 
   in test filtering for IDEs). (Mike Sokolov, Dawid Weiss)
 
+* LUCENE-7933: LongBitSet now validates the numBits parameter (Won
+  Jonghoon, Mike McCandless)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
