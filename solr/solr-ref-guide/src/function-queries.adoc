@@ -254,7 +254,7 @@ Use the `field(myfield,min)` <<field Function,syntax for selecting the minimum v
 === ms Function
 Returns milliseconds of difference between its arguments. Dates are relative to the Unix or POSIX time epoch, midnight, January 1, 1970 UTC.
 
-Arguments may be the name of an indexed `TrieDateField`, or date math based on a <<working-with-dates.adoc#working-with-dates,constant date or `NOW`>>.
+Arguments may be the name of a `DatePointField`, `TrieDateField`, or date math based on a <<working-with-dates.adoc#working-with-dates,constant date or `NOW`>>.
 
 * `ms()`: Equivalent to `ms(NOW)`, number of milliseconds since the epoch.
 * `ms(a):` Returns the number of milliseconds since the epoch that the argument represents.
