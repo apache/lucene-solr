@@ -1,4 +1,4 @@
-package com.infuy.elpais.searchengine.search;
+package org.apache.lucene.analysis.es;
 
 /*
  * This algorithm is updated based on code located at:
