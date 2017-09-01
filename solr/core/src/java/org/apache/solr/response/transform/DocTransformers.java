@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,8 +24,6 @@ import java.util.List;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.response.ResultContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Transform a document before it gets sent out
@@ -35,9 +32,6 @@ import org.slf4j.LoggerFactory;
  */
 public class DocTransformers extends DocTransformer
 {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   final List<DocTransformer> children = new ArrayList<>();
 
   @Override
