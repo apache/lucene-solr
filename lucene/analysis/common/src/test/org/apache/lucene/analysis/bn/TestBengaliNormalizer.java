@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.util.TestUtil;
 
 import java.io.IOException;
 
@@ -71,6 +72,22 @@ public class TestBengaliNormalizer extends BaseTokenStreamTestCase {
     check("কণা", "কনা");
     check("শরীর", "সরির");
     check("বাড়ি", "বারি");
+  }
+
+  /** creates random strings in the bengali block and ensures the normalizer doesn't trip up on them */
+  public void testRandom() throws IOException {
+    BengaliNormalizer normalizer = new BengaliNormalizer();
+    for (int i = 0; i < 100000; i++) {
+      String randomBengali = TestUtil.randomSimpleStringRange(random(), '\u0980', '\u09FF', 7);
+      try {
+        int newLen = normalizer.normalize(randomBengali.toCharArray(), randomBengali.length());
+        assertTrue(newLen >= 0); // should not return negative length
+        assertTrue(newLen <= randomBengali.length()); // should not increase length of string
+      } catch (Exception e) {
+        System.err.println("normalizer failed on input: '" + randomBengali + "' (" + escape(randomBengali) + ")");
+        throw e;
+      }
+    }
   }
 
   private void check(String input, String output) throws IOException {

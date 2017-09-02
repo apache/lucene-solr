@@ -96,10 +96,10 @@ public final class BengaliAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Creates
-   * {@link TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link DecimalDigitFilter}, {@link IndicNormalizationFilter},
    *         {@link BengaliNormalizationFilter}, {@link SetKeywordMarkerFilter}
