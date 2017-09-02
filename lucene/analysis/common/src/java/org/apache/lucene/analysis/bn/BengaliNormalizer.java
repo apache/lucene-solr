@@ -104,7 +104,7 @@ public class BengaliNormalizer {
             len = delete(s, i, len);
             len = delete(s, i-1, len);
             i -=2;
-          } else {
+          } else if(i - 2 >= 0){
             s[i - 1] = s[i - 2];
             len = delete(s, i, len);
             i --;
