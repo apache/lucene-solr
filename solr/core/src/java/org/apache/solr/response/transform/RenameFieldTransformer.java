@@ -44,7 +44,7 @@ public class RenameFieldTransformer extends DocTransformer
   }
 
   @Override
-  public void transform(SolrDocument doc, int docid, float score) {
+  public void transform(SolrDocument doc, int docid) {
     Object v = (copy)?doc.get(from) : doc.remove( from );
     if( v != null ) {
       doc.setField(to, v);

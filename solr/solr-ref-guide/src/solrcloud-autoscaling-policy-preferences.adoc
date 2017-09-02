@@ -61,7 +61,9 @@ See the section <<solrcloud-autoscaling-api.adoc#create-and-modify-cluster-prefe
 The following shows the default cluster preferences. This is applied automatically by Solr when no explicit cluster preferences have been set using the <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>.
 
 [source,json]
-[{"minimize":"cores"}]
+[
+  {"minimize":"cores"}
+]
 
 ==== Minimize Cores; Maximize Free Disk
 In this example, we want to minimize the number of Solr cores and in case of a tie, maximize the amount of free disk space on each node.

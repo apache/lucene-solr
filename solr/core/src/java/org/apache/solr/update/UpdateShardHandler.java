@@ -17,8 +17,8 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
@@ -66,7 +66,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
-  private final Set<String> metricNames = new HashSet<>();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {

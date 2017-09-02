@@ -19,7 +19,6 @@ package org.apache.solr.store.hdfs;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
   private String hostname;
   private final ConcurrentMap<HdfsDirectory,ConcurrentMap<FileStatus,BlockLocation[]>> cache;
 
-  private final Set<String> metricNames = new HashSet<>();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   public HdfsLocalityReporter() {

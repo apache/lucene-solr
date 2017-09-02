@@ -427,4 +427,57 @@ public class TestBooleanRewrites extends LuceneTestCase {
       assertEquals(expectedScore, actualScore, expectedScore / 100); // error under 1%
     }
   }
+
+  public void testDeduplicateShouldClauses() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    Query query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .build();
+    Query expected = new BoostQuery(new TermQuery(new Term("foo", "bar")), 2);
+    assertEquals(expected, searcher.rewrite(query));
+
+    query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new BoostQuery(new TermQuery(new Term("foo", "bar")), 2), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .build();
+    expected = new BooleanQuery.Builder()
+        .add(new BoostQuery(new TermQuery(new Term("foo", "bar")), 3), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .build();
+    assertEquals(expected, searcher.rewrite(query));
+
+    query = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(2)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .build();
+    expected = query;
+    assertEquals(expected, searcher.rewrite(query));
+  }
+
+  public void testDeduplicateMustClauses() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    Query query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+        .build();
+    Query expected = new BoostQuery(new TermQuery(new Term("foo", "bar")), 2);
+    assertEquals(expected, searcher.rewrite(query));
+
+    query = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.MUST)
+        .add(new BoostQuery(new TermQuery(new Term("foo", "bar")), 2), Occur.MUST)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.MUST)
+        .build();
+    expected = new BooleanQuery.Builder()
+        .add(new BoostQuery(new TermQuery(new Term("foo", "bar")), 3), Occur.MUST)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.MUST)
+        .build();
+    assertEquals(expected, searcher.rewrite(query));
+  }
 }

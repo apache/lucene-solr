@@ -66,7 +66,7 @@ Defines how merging segments is done.
 
 The default in Solr is to use a `TieredMergePolicy`, which merges segments of approximately equal size, subject to an allowed number of segments per tier.
 
-Other policies available are the `LogByteSizeMergePolicy` and `LogDocMergePolicy`. For more information on these policies, please see {lucene-javadocs}/core/org/apache/lucene/index/MergePolicy.html[the MergePolicy javadocs].
+Other policies available are the `LogByteSizeMergePolicy`, `LogDocMergePolicy`, and `UninvertDocValuesMergePolicy`. For more information on these policies, please see {lucene-javadocs}/core/org/apache/lucene/index/MergePolicy.html[the MergePolicy javadocs].
 
 [source,xml]
 ----

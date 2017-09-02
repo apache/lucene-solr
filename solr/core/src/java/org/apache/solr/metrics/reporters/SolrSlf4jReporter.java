@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.Slf4jReporter;
-
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -49,6 +48,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
   private String instancePrefix = null;
   private String logger = null;
   private Slf4jReporter reporter;
+  private boolean active;
 
   /**
    * Create a SLF4J reporter for metrics managed in a named registry.
@@ -100,6 +100,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     builder = builder.outputTo(LoggerFactory.getLogger(logger));
     reporter = builder.build();
     reporter.start(period, TimeUnit.SECONDS);
+    active = true;
   }
 
   @Override
@@ -114,5 +115,11 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     if (reporter != null) {
       reporter.close();
     }
+    active = false;
+  }
+
+  // for unit tests
+  boolean isActive() {
+    return active;
   }
 }

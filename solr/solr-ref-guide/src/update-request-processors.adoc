@@ -142,7 +142,7 @@ However executing a processor only on the forwarding nodes is a great way of dis
 .Custom update chain post-processors may never be invoked on a recovering replica
 [WARNING]
 ====
-While a replica is in <<read-and-write-side-fault-tolerance.adoc#write-side-fault-tolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
+While a replica is in <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,recovery>>, inbound update requests are buffered to the transaction log. After recovery has completed successfully, those buffered update requests are replayed. As of this writing, however, custom update chain post-processors are never invoked for buffered update requests. See https://issues.apache.org/jira/browse/SOLR-8030[SOLR-8030]. To work around this problem until SOLR-8030 has been fixed, *avoid specifying post-processors in custom update chains*.
 ====
 
 === Atomic Update Processor Factory

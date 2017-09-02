@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.eval.SourceEvaluator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -30,13 +31,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.eval.*;
-
 import org.apache.solr.common.SolrException;
 import org.apache.lucene.analysis.*;
 import org.apache.solr.core.SolrCore;
 
-public class AnalyzeEvaluator extends SimpleEvaluator {
+public class AnalyzeEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
 
   private String fieldName;

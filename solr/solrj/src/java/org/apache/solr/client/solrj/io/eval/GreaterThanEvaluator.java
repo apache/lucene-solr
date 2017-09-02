@@ -18,59 +18,23 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class GreaterThanEvaluator extends BooleanEvaluator {
+public class GreaterThanEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public GreaterThanEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(subEvaluators.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,subEvaluators.size()));
+    if(containedEvaluators.size() < 2){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,containedEvaluators.size()));
     }
-  }
-
-  @Override
-  public Boolean evaluate(Tuple tuple) throws IOException {
-    
-    List<Object> results = evaluateAll(tuple);
-    
-    if(results.size() < 2){
-      String message = null;
-      if(1 == results.size()){
-        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 1 was provided", constructingFactory.getFunctionName(getClass())); 
-      }
-      else{
-        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 0 were provided", constructingFactory.getFunctionName(getClass()));
-      }
-      throw new IOException(message);
-    }
-    
-    Checker checker = constructChecker(results.get(0));
-    if(results.stream().anyMatch(result -> null == result)){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
-    }
-    if(results.stream().anyMatch(result -> !checker.isCorrectType(result))){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of differing types [%s]", constructingFactory.getFunctionName(getClass()), results.stream().map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
-    }
-
-    for(int idx = 1; idx < results.size(); ++idx){
-      if(!checker.test(results.get(idx - 1), results.get(idx))){
-        return false;
-      }
-    }
-    
-    return true;
   }
   
-  private Checker constructChecker(Object fromValue) throws IOException{
+  protected Checker constructChecker(Object fromValue) throws IOException{
     if(null == fromValue){
       throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
     }
@@ -93,4 +57,5 @@ public class GreaterThanEvaluator extends BooleanEvaluator {
     
     throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) for values of type '%s'", constructingFactory.getFunctionName(getClass()), fromValue.getClass().getSimpleName()));
   }
+
 }

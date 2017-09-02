@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 
 public class EvaluatorException extends IOException {
+  private static final long serialVersionUID = 1L;
+
   public EvaluatorException(Throwable t) {
     super(t);
   }

@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * Bounding box wider than PI but limited on three sides (top lat,
  * left lon, right lon).
@@ -64,6 +68,10 @@ class GeoWideSouthRectangle extends GeoBaseBBox {
   /**
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
    * Horizontal angle must be greater than or equal to PI.
+   * @param planetModel is the planet model.
+   * @param topLat is the top latitude.
+   * @param leftLon is the left longitude.
+   * @param rightLon is the right longitude.
    */
   public GeoWideSouthRectangle(final PlanetModel planetModel, final double topLat, final double leftLon, double rightLon) {
     super(planetModel);
@@ -120,6 +128,22 @@ class GeoWideSouthRectangle extends GeoBaseBBox {
     this.eitherBound = new EitherBound();
     
     this.edgePoints = new GeoPoint[]{planetModel.SOUTH_POLE};
+  }
+
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   */
+  public GeoWideSouthRectangle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  }
+
+  @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    SerializableObject.writeDouble(outputStream, topLat);
+    SerializableObject.writeDouble(outputStream, leftLon);
+    SerializableObject.writeDouble(outputStream, rightLon);
   }
 
   @Override

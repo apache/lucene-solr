@@ -19,57 +19,57 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.List;
 import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class ModuloEvaluator extends NumberEvaluator {
+public class ModuloEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public ModuloEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    
-    if(2 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression,subEvaluators.size()));
+
+    if(2 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression, containedEvaluators.size()));
     }
   }
 
+  // override to give a slightly better error message than the default
   @Override
-  public Number evaluate(Tuple tuple) throws IOException {
-    
-    List<BigDecimal> results = evaluateAll(tuple);
-    
-    // we're still doing these checks because if we ever add an array-flatten evaluator, 
-    // two found in the constructor could become != 2
-    if(2 != results.size()){
+  public Object doWork(Object ... values) throws IOException{
+    if(2 != values.length){
       String message = null;
-      if(1 == results.size()){
+      if(1 == values.length){
         message = String.format(Locale.ROOT,"%s(...) only works with a 2 values (numerator,denominator) but 1 was provided", constructingFactory.getFunctionName(getClass())); 
       }
       else{
-        message = String.format(Locale.ROOT,"%s(...) only works with a 2 values (numerator,denominator) but %d were provided", constructingFactory.getFunctionName(getClass()), results.size());
+        message = String.format(Locale.ROOT,"%s(...) only works with a 2 values (numerator,denominator) but %d were provided", constructingFactory.getFunctionName(getClass()), values.length);
       }
       throw new IOException(message);
     }
     
-    BigDecimal numerator = results.get(0);
-    BigDecimal denominator = results.get(1);
-    
-    if(null == numerator){
+    return doWork(values[0], values[1]);
+  }
+
+
+  @Override
+  public Object doWork(Object first, Object second) throws IOException{
+    if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Unable to %s(...) with a null numerator", constructingFactory.getFunctionName(getClass())));
     }
     
-    if(null == denominator){
+    if(null == second){
       throw new IOException(String.format(Locale.ROOT,"Unable to %s(...) with a null denominator", constructingFactory.getFunctionName(getClass())));
     }
+    
+    BigDecimal numerator = (BigDecimal)first;
+    BigDecimal denominator = (BigDecimal)second;
     
     if(0 == denominator.compareTo(BigDecimal.ZERO)){
       throw new IOException(String.format(Locale.ROOT,"Unable to %s(...) with a 0 denominator", constructingFactory.getFunctionName(getClass())));
     }
     
-    return normalizeType(numerator.remainder(denominator, MathContext.DECIMAL64));
+    return numerator.remainder(denominator, MathContext.DECIMAL64);
   }
 }

@@ -127,6 +127,7 @@ public class EmbeddedSolrServer extends SolrClient {
     if (handler != null) {
       try {
         SolrQueryRequest req = _parser.buildRequestFrom(null, request.getParams(), request.getContentStreams());
+        req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
         checkForExceptions(resp);

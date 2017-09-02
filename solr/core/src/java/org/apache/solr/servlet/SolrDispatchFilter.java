@@ -73,6 +73,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.SolrFileCleaningTracker;
+import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,6 +160,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     String logLevel = System.getProperty(SOLR_LOG_LEVEL);
     if (logLevel != null) {
+      log.info("Log level override, property solr.log.level=" + logLevel);
       StartupLoggingUtils.changeLogLevel(logLevel);
     }
 
@@ -277,7 +279,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
+      startUpZkTimeOut *= 1000;
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut)) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);

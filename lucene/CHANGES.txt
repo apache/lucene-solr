@@ -15,6 +15,14 @@ Changes in Runtime Behavior
 
 ======================= Lucene 7.1.0 =======================
 
+New Features
+
+* LUCENE-7621: Add CoveringQuery, a query whose required number of matching
+  clauses can be defined per document. (Adrien Grand)
+
+* LUCENE-7927: Add LongValueFacetCounts, to compute facet counts for individual
+  numeric values (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -28,12 +36,35 @@ Optimizations
   than 8x greater than the cost of the lead iterator in order to use doc values.
   (Murali Krishna P via Adrien Grand)
 
+* LUCENE-7925: Collapse duplicate SHOULD or MUST clauses by summing up their
+  boosts. (Adrien Grand)
+
+* LUCENE-7939: MinShouldMatchSumScorer now leverages two-phase iteration in
+  order to be faster when used in conjunctions. (Adrien Grand)
+
+* LUCENE-7827: AnalyzingInfixSuggester doesn't create "textgrams" 
+  when minPrefixChar=0 (Mikhail Khludnev)
+
 Bug Fixes
 
 * LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
   with a different ICU JAR version than it is compiled against. Note, this is
   not recommended, lucene-analyzers-icu contains binary data structures
   specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
+
+Build
+
+* SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
+  instead of locally installing first, to workaround a double repository push of
+  *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+
+Other
+
+* LUCENE-7948, LUCENE-7937: Upgrade randomizedtesting to 2.5.3 (minor fixes 
+  in test filtering for IDEs). (Mike Sokolov, Dawid Weiss)
+
+* LUCENE-7933: LongBitSet now validates the numBits parameter (Won
+  Jonghoon, Mike McCandless)
 
 ======================= Lucene 7.0.0 =======================
 
@@ -63,6 +94,9 @@ New Features
 * LUCENE-7823: Pure query based naive bayes classifier using BM25 scores (Tommaso Teofili)
 
 * LUCENE-7838: Knn classifier based on fuzzified term queries (Tommaso Teofili)
+
+* LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
+  (Juan Pedro via Adrien Grand)
 
 API Changes
 
@@ -155,6 +189,9 @@ Bug Fixes
   functions (Operations.isFinite and Operations.topsortState) to prevent
   large automaton to overflow the stack (Robert Muir, Adrien Grand, Jim Ferenczi)
 
+* LUCENE-7864: IndexMergeTool is not using intermediate hard links (even
+  if possible). (Dawid Weiss)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
@@ -165,6 +202,8 @@ Improvements
 
 * LUCENE-7901: Original Highlighter now eagerly throws an exception if you
   provide components that are null. (Jason Gerlowski, David Smiley)
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
 
 Optimizations
 
@@ -189,6 +228,10 @@ Optimizations
   the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
 
 * LUCENE-7874: DisjunctionMaxQuery rewrites to a BooleanQuery when tiebreaker is set to 1. (Jim Ferenczi)
+
+* LUCENE-7828: Speed up range queries on range fields by improving how we
+  compute the relation between the query and inner nodes of the BKD tree.
+  (Adrien Grand)
 
 Other
 
@@ -227,27 +270,7 @@ Other
 * LUCENE-7773: Remove unused/deprecated token types from StandardTokenizer.
   (Ahmet Arslan via Steve Rowe)
 
-======================= Lucene 6.7.0 =======================
-
-New Features
-
-* LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
-  (Juan Pedro via Adrien Grand)
-
-Bug Fixes
-
-* LUCENE-7864: IndexMergeTool is not using intermediate hard links (even 
-  if possible). (Dawid Weiss)
-
-* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
-  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
-  with multiple points that should match to not match. (Martijn van Groningen)
-
-* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
-
-Other
-
-* LUCENE-7800: Remove code that potentially rethrows checked exceptions 
+* LUCENE-7800: Remove code that potentially rethrows checked exceptions
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
   Uwe Schindler, Dawid Weiss)
 
@@ -255,15 +278,15 @@ Other
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
 
-Improvements
+======================= Lucene 6.6.1 =======================
 
-* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
+Bug Fixes
 
-Optimizations
+* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
+  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
+  with multiple points that should match to not match. (Martijn van Groningen)
 
-* LUCENE-7828: Speed up range queries on range fields by improving how we
-  compute the relation between the query and inner nodes of the BKD tree.
-  (Adrien Grand)
+* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
 
 ======================= Lucene 6.6.0 =======================
 

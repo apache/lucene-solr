@@ -17,6 +17,9 @@
 
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.InputStream;
+import java.io.IOException;
+
 /**
  * Base class to create a composite of GeoMembershipShapes
  *
@@ -33,6 +36,16 @@ abstract class GeoBaseCompositeMembershipShape<T extends GeoMembershipShape>
     super(planetModel);
   }
 
+  /**
+   * Constructor for deserialization.
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
+   * @param clazz is the class of the generic.
+   */
+  GeoBaseCompositeMembershipShape(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
+    super(planetModel, inputStream, clazz);
+  }
+  
   @Override
   public double computeOutsideDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
     return computeOutsideDistance(distanceStyle, point.x, point.y, point.z);

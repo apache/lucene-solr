@@ -107,7 +107,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score) {
+    public void transform(SolrDocument doc, int docid) {
       if( context != null && context.getQuery() != null ) {
         try {
           Explanation exp = context.getSearcher().explain(context.getQuery(), docid);

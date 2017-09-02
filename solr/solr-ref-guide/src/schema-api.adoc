@@ -803,7 +803,7 @@ The sample output below has been truncated to show a few different field types f
             "sortMissingLast": true
         },
         {
-            "class": "solr.TrieFloatField",
+            "class": "solr.FloatPointField",
             "dynamicFields": [
                 "*_fs",
                 "*_f"
@@ -814,7 +814,6 @@ The sample output below has been truncated to show a few different field types f
             ],
             "name": "float",
             "positionIncrementGap": "0",
-            "precisionStep": "0"
         }]
 }
 ----

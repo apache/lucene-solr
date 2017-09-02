@@ -46,9 +46,9 @@ Note that the `types` and `fields` sections are optional, meaning you are free t
 
 == Choosing Appropriate Numeric Types
 
-For general numeric needs, consider using one of the` IntPointField`, `LongPointField`, `FloatPointField`, or `DoublePointField` classes, depending on the specific values you expect. These "Dimensional Point" based numeric classes use specially encoded data structures to support efficient range queries regardless of the size of the ranges used. Enable <<docvalues.adoc#docvalues,DocValues>> on these fields as needed for sorting and/or faceting.
+For general numeric needs, consider using one of the `IntPointField`, `LongPointField`, `FloatPointField`, or `DoublePointField` classes, depending on the specific values you expect. These "Dimensional Point" based numeric classes use specially encoded data structures to support efficient range queries regardless of the size of the ranges used. Enable <<docvalues.adoc#docvalues,DocValues>> on these fields as needed for sorting and/or faceting.
 
-Some Solr features may not yet work with "Dimensional Points", in which case you may want to consider the equivalent `TrieIntField`, `TrieLongField`, `TrieFloatField`, and `TrieDoubleField` classes. Configure a `precisionStep="0"` if you wish to minimize index size, but if you expect users to make frequent range queries on numeric types, use the default `precisionStep` (by not specifying it) or specify it as `precisionStep="8"` (which is the default). This offers faster speed for range queries at the expense of increasing index size.
+Some Solr features may not yet work with "Dimensional Points", in which case you may want to consider the equivalent `TrieIntField`, `TrieLongField`, `TrieFloatField`, and `TrieDoubleField` classes. These field types are deprecated and are likely to be removed in a future major Solr release, but they can still be used if necessary. Configure a `precisionStep="0"` if you wish to minimize index size, but if you expect users to make frequent range queries on numeric types, use the default `precisionStep` (by not specifying it) or specify it as `precisionStep="8"` (which is the default). This offers faster speed for range queries at the expense of increasing index size.
 
 == Working With Text
 

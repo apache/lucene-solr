@@ -136,6 +136,59 @@ public class TestDocTermOrds extends LuceneTestCase {
     dir.close();
   }
 
+  /* UnInvertedField had a reference block limitation of 2^24. This unit test triggered it.
+   *
+   * With the current code, the test verifies that the old limit no longer applies.
+   * New limit is 2^31, which is not very realistic to unit-test. */
+  @SuppressWarnings({"ConstantConditions", "PointlessBooleanExpression"})
+  @Nightly
+  public void testTriggerUnInvertLimit() throws IOException {
+    final boolean SHOULD_TRIGGER = false; // Set this to true to use the test with the old implementation
+
+    // Ensure enough terms inside of a single UnInvert-pass-structure to trigger the limit
+    final int REF_LIMIT = (int) Math.pow(2, 24); // Maximum number of references within a single pass-structure
+    final int DOCS = (1<<16)-1;                  // The number of documents within a single pass (simplified)
+    final int TERMS = REF_LIMIT/DOCS;            // Each document must have this many references aka terms hit limit
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    Document doc = new Document();
+    Field field = newTextField("field", "", Field.Store.NO);
+    doc.add(field);
+
+    StringBuilder sb = new StringBuilder(TERMS*(Integer.toString(TERMS).length()+1));
+    for (int i = 0 ; i < TERMS ; i++) {
+      sb.append(" ").append(Integer.toString(i));
+    }
+    field.setStringValue(sb.toString());
+
+    for (int i = 0 ; i < DOCS ; i++) {
+      w.addDocument(doc);
+    }
+    //System.out.println("\n Finished adding " + DOCS + " documents of " + TERMS + " unique terms");
+    final IndexReader r = w.getReader();
+    w.close();
+    
+    try {
+      final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+      TestUtil.checkReader(ar);
+      final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field"); // bigTerms turned off
+      if (SHOULD_TRIGGER) {
+        fail("DocTermOrds should have failed with a \"Too many values for UnInvertedField\" message");
+      }
+    } catch (IllegalStateException e) {
+      if (!SHOULD_TRIGGER) {
+        fail("DocTermsOrd should not have failed with this implementation, but got exception " +
+            e.getClass().getSimpleName() + " with message " + e.getMessage());
+      }
+      // This is (hopefully) "Too many values for UnInvertedField faceting on field field", so all is as expected
+    } finally {
+      r.close();
+      dir.close();
+    }
+  }
+
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
 

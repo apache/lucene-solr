@@ -265,7 +265,7 @@ public class RealTimeGetComponent extends SearchComponent
                  throw new SolrException(ErrorCode.INVALID_STATE, "Expected ADD or UPDATE_INPLACE. Got: " + oper);
                }
                if (transformer!=null) {
-                 transformer.transform(doc, -1, 0); // unknown docID
+                 transformer.transform(doc, -1); // unknown docID
                }
               docList.add(doc);
               break;
@@ -314,7 +314,7 @@ public class RealTimeGetComponent extends SearchComponent
            resultContext = new RTGResultContext(rsp.getReturnFields(), searcherInfo.getSearcher(), req);
            transformer.setContext(resultContext);
          }
-         transformer.transform(doc, docid, 0);
+         transformer.transform(doc, docid);
        }
        docList.add(doc);
      }

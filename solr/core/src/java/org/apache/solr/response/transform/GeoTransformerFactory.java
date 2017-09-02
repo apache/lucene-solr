@@ -131,7 +131,7 @@ public class GeoTransformerFactory extends TransformerFactory
         }
 
         @Override
-        public void transform(SolrDocument doc, int docid, float score) throws IOException {
+        public void transform(SolrDocument doc, int docid) throws IOException {
           int leafOrd = ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
           LeafReaderContext ctx = context.getSearcher().getTopReaderContext().leaves().get(leafOrd);
           ShapeValues values = shapes.getValues(ctx);
@@ -148,7 +148,7 @@ public class GeoTransformerFactory extends TransformerFactory
     return new DocTransformer() {
       
       @Override
-      public void transform(SolrDocument doc, int docid, float score) throws IOException {
+      public void transform(SolrDocument doc, int docid) throws IOException {
         Object val = doc.remove(updater.field);
         if(val!=null) {
           updater.setValue(doc, val);

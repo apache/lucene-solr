@@ -21,33 +21,25 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAccessor;
-import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * Provides a epoch stream evaluator
+ * Provides a day stream evaluator
  */
-public class TemporalEvaluatorEpoch extends TemporalEvaluator {
-
+public class TemporalEvaluatorEpoch extends RecursiveTemporalEvaluator {
+  protected static final long serialVersionUID = 1L;
+  
   public static final String FUNCTION_NAME = "epoch";
 
   public TemporalEvaluatorEpoch(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory);
+    super(expression, factory, FUNCTION_NAME);
   }
 
   @Override
-  public String getFunction() {
-    return FUNCTION_NAME;
-  }
-
-  @Override
-  public Object evaluateDate(TemporalAccessor aDate) throws IOException {
-    if (aDate instanceof LocalDateTime) {
-      return ((LocalDateTime)aDate).atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
-    }
-    throw new IOException(String.format(Locale.ROOT, "Unsupported function '%s' called on %s", FUNCTION_NAME, aDate.toString()));
+  protected Object getDatePart(TemporalAccessor value) {
+    return ((LocalDateTime)value).atZone(ZoneOffset.UTC).toInstant().toEpochMilli();    
   }
 
 }

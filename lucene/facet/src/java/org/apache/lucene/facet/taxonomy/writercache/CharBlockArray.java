@@ -65,6 +65,9 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
   }
 
   private void addBlock() {
+    if (blockSize * (long) (blocks.size() + 1) > Integer.MAX_VALUE) {
+      throw new IllegalStateException("cannot store more than 2 GB in CharBlockArray");
+    }
     this.current = new Block(this.blockSize);
     this.blocks.add(this.current);
   }

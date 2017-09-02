@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.OutputStream;
+import java.io.IOException;
+
 /**
  * All Geo3D shapes can derive from this base class, which furnishes
  * some common code
@@ -41,6 +44,11 @@ public abstract class BasePlanetObject implements PlanetObject {
   }
   
   @Override
+  public void write(final OutputStream outputStream) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+  
+  @Override
   public int hashCode() {
     return planetModel.hashCode();
   }
@@ -51,6 +59,8 @@ public abstract class BasePlanetObject implements PlanetObject {
       return false;
     return planetModel.equals(((BasePlanetObject)o).planetModel);
   }
+  
+  
 }
 
 

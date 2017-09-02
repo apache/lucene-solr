@@ -25,24 +25,20 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * Provides a second stream evaluator
+ * Provides a day stream evaluator
  */
-public class TemporalEvaluatorSecond extends TemporalEvaluator {
-
+public class TemporalEvaluatorSecond extends RecursiveTemporalEvaluator {
+  protected static final long serialVersionUID = 1L;
+  
   public static final String FUNCTION_NAME = "second";
 
   public TemporalEvaluatorSecond(StreamExpression expression, StreamFactory factory) throws IOException {
-    super(expression, factory);
+    super(expression, factory, FUNCTION_NAME);
   }
 
   @Override
-  public String getFunction() {
-    return FUNCTION_NAME;
-  }
-
-  @Override
-  public Object evaluateDate(TemporalAccessor aDate) {
-    return aDate.get(ChronoField.SECOND_OF_MINUTE);
+  protected Object getDatePart(TemporalAccessor value) {
+    return value.get(ChronoField.SECOND_OF_MINUTE);
   }
 
 }

@@ -22,8 +22,9 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public interface PlanetObject {
+public interface PlanetObject extends SerializableObject {
 
   /** Returns the {@link PlanetModel} provided when this shape was created. */
   PlanetModel getPlanetModel();
+  
 }

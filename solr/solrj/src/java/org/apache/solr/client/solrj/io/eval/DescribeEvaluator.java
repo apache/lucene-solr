@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -24,40 +25,32 @@ import java.util.Map;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class DescribeEvaluator extends ComplexEvaluator implements Expressible {
-
-  private static final long serialVersionUID = 1;
-
-  public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+public class DescribeEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+  protected static final long serialVersionUID = 1L;
+  
+  public DescribeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one column but found %d",expression,subEvaluators.size()));
+    if(1 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly one value but found %d",expression,containedEvaluators.size()));
     }
-
   }
-
-  public Tuple evaluate(Tuple tuple) throws IOException {
-
-    StreamEvaluator colEval = subEvaluators.get(0);
-
-    List<Number> numbers = (List<Number>)colEval.evaluate(tuple);
-    DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
-
-    for(Number n : numbers) {
-      descriptiveStatistics.addValue(n.doubleValue());
+  
+  @Override
+  public Object doWork(Object value) throws IOException {
+    
+    if(!(value instanceof List<?>)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a numeric list but found %s", toExpression(constructingFactory), value.getClass().getSimpleName()));
     }
+    
+    // we know each value is a BigDecimal or a list of BigDecimals
+    DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics();
+    ((List<?>)value).stream().mapToDouble(innerValue -> ((BigDecimal)innerValue).doubleValue()).forEach(innerValue -> descriptiveStatistics.addValue(innerValue));
 
-
-    Map map = new HashMap();
-
+    Map<String,Number> map = new HashMap<>();
     map.put("max", descriptiveStatistics.getMax());
     map.put("mean", descriptiveStatistics.getMean());
     map.put("min", descriptiveStatistics.getMin());
@@ -72,21 +65,5 @@ public class DescribeEvaluator extends ComplexEvaluator implements Expressible {
     map.put("sumsq", descriptiveStatistics.getSumsq());
 
     return new Tuple(map);
-  }
-
-
-  @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
-    StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
-    return expression;
-  }
-
-  @Override
-  public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(nodeId.toString())
-        .withExpressionType(ExpressionType.EVALUATOR)
-        .withFunctionName(factory.getFunctionName(getClass()))
-        .withImplementingClass(getClass().getName())
-        .withExpression(toExpression(factory).toString());
-  }
+  }  
 }

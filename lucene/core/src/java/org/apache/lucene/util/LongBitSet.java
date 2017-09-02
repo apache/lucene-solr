@@ -55,9 +55,15 @@ public final class LongBitSet {
       return new LongBitSet(arr, (long)arr.length << 6);
     }
   }
+
+  /** The maximum {@code numBits} supported. */
+  public static final long MAX_NUM_BITS = 64 * (long) ArrayUtil.MAX_ARRAY_LENGTH;
   
-  /** returns the number of 64 bit words it would take to hold numBits */
+  /** Returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(long numBits) {
+    if (numBits < 0 || numBits > MAX_NUM_BITS) {
+      throw new IllegalArgumentException("numBits must be 0 .. " + MAX_NUM_BITS + "; got: " + numBits);
+    }
     return (int)((numBits - 1) >> 6) + 1; // I.e.: get the word-offset of the last bit and add one (make sure to use >> so 0 returns 0!)
   }
   

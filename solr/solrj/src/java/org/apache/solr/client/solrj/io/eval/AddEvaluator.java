@@ -18,41 +18,59 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class AddEvaluator extends NumberEvaluator {
+public class AddEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public AddEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
     
-    if(subEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least 1 value but found %d",expression,subEvaluators.size()));
+    if(containedEvaluators.size() < 1){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
     }
   }
 
   @Override
-  public Number evaluate(Tuple tuple) throws IOException {
-    
-    List<BigDecimal> results = evaluateAll(tuple);
-    
-    if(results.stream().anyMatch(item -> null == item)){
+  public Object doWork(Object... values) throws IOException {
+    if(Arrays.stream(values).anyMatch(item -> null == item)){
       return null;
     }
     
-    BigDecimal result = null;
-    if(results.size() > 0){
-      result = results.get(0);
-      for(int idx = 1; idx < results.size(); ++idx){
-        result = result.add(results.get(idx));
-      }
+    if(0 == values.length){
+      return null;
     }
     
-    return normalizeType(result);
+    BigDecimal result = BigDecimal.ZERO;
+    for(Object value : values){
+      result = add(result, value);
+    }
+    
+    return result;
   }
+  
+  private BigDecimal add(BigDecimal left, Object right) throws IOException{
+    if(null == left || null == right){
+      return null;
+    }
+    else if(right instanceof BigDecimal){
+      return left.add((BigDecimal)right);
+    }
+    else if(right instanceof Number){
+      return add(left, new BigDecimal(right.toString()));
+    }
+    else if(right instanceof List){
+      return add(left, doWork(((List<?>)right).toArray()));
+    }
+    else{
+      throw new StreamEvaluatorException("Numeric value expected but found type %s for value %s", right.getClass().getName(), right.toString());
+    }
+
+  }
+  
 }

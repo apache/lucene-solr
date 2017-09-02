@@ -18,41 +18,35 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CeilingEvaluator extends NumberEvaluator {
+public class CeilingEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-
+  
   public CeilingEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-
-    if(1 != subEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one value but found %d",expression,subEvaluators.size()));
+    
+    if(1 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
     }
   }
 
   @Override
-  public Number evaluate(Tuple tuple) throws IOException {
-
-    List<BigDecimal> results = evaluateAll(tuple);
-
-    // we're still doing these checks because if we ever add an array-flatten evaluator,
-    // one found in the constructor could become != 1
-    if(1 != results.size()){
-      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with a 1 value but %d were provided", constructingFactory.getFunctionName(getClass()), results.size()));
-    }
-
-    if(null == results.get(0)){
+  public Object doWork(Object value){
+    if(null == value){
       return null;
     }
-
-    return normalizeType(results.get(0).setScale(0, RoundingMode.CEILING));
+    else if(value instanceof List){
+      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
+    }
+    else{
+      // we know it's a BigDecimal
+      return Math.ceil(((BigDecimal)value).doubleValue());
+    }
   }
-
 }
