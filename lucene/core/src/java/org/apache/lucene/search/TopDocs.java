@@ -129,9 +129,9 @@ public class TopDocs {
       ScoreDoc firstScoreDoc = shardHits[first.shardIndex][first.hitIndex];
       ScoreDoc secondScoreDoc = shardHits[second.shardIndex][second.hitIndex];
       if (firstScoreDoc.score < secondScoreDoc.score) {
-        return false;
-      } else if (firstScoreDoc.score > secondScoreDoc.score) {
         return true;
+      } else if (firstScoreDoc.score > secondScoreDoc.score) {
+        return false;
       } else {
         return tieBreakLessThan(first, firstScoreDoc, second, secondScoreDoc);
       }
