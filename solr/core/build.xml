@@ -83,6 +83,11 @@
                      byline="true"
                      match="public QueryParser\(QueryParserTokenManager "
                      replace="protected QueryParser(QueryParserTokenManager "/>
+      <!-- change an exception used for signaling to be static -->
+      <replaceregexp file="src/java/org/apache/solr/parser/QueryParser.java"
+                     byline="true"
+                     match="final private LookaheadSuccess jj_ls ="
+                     replace="static final private LookaheadSuccess jj_ls =" />
       <replace token="StringBuffer" value="StringBuilder" encoding="UTF-8">
          <fileset dir="src/java/org/apache/solr/parser" includes="ParseException.java TokenMgrError.java"/>
       </replace>
