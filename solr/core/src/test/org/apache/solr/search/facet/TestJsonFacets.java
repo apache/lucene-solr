@@ -1019,8 +1019,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ",sum1:0.0," +
             " sumsq1:0.0," +
             " avg1:0.0," +   // TODO: undesirable. omit?
-            " min1:'NaN'," + // TODO: undesirable. omit?
-            " max1:'NaN'," +
+            // " min1:'NaN'," +
+            // " max1:'NaN'," +
             " numwhere:0," +
             " unique_num_i:0," +
             " unique_num_d:0," +
