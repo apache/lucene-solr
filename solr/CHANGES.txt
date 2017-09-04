@@ -183,6 +183,10 @@ Other Changes
 
 * SOLR-11209: Upgrade HttpClient to 4.5.3. (Hrishikesh Gadre via Mark Miller)
 
+* SOLR-11322: JSON Facet API: instead of returning NaN, min & max aggregations omit
+  the value for any bucket with no values in the numeric field. (yonik)
+
+
 ==================  7.0.0 ==================
 
 Versions of Major Components

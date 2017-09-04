@@ -137,6 +137,16 @@ public class MinMaxAgg extends SimpleAggValueSource {
         result[slotNum] = val;
       }
     }
+
+    @Override
+    public Object getValue(int slot) {
+      double val = result[slot];
+      if (Double.isNaN(val)) {
+        return null;
+      } else {
+        return val;
+      }
+    }
   }
 
 
