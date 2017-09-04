@@ -239,6 +239,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11278")
   public void testBootstrapWithContinousIndexingOnSourceCluster() throws Exception {
     // start the target first so that we know its zkhost
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
