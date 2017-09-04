@@ -28,6 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
+import org.apache.solr.search.function.FieldNameValueSource;
 
 public class MinMaxAgg extends SimpleAggValueSource {
   final int minmax; // a multiplier to reverse the normal order of compare if this is max instead of min (i.e. max will be -1)
@@ -41,9 +42,16 @@ public class MinMaxAgg extends SimpleAggValueSource {
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
     ValueSource vs = getArg();
 
+    SchemaField sf = null;
+
+    if (vs instanceof FieldNameValueSource) {
+      String field = ((FieldNameValueSource)vs).getFieldName();
+      sf = fcontext.qcontext.searcher().getSchema().getField(field);
+
+      vs = sf.getType().getValueSource(sf, null); // temporary implementation to make existing code work
+    }
+
     if (vs instanceof StrFieldSource) {
-      String field = ((StrFieldSource) vs).getField();
-      SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
         if (sf.hasDocValues()) {
           // dv
