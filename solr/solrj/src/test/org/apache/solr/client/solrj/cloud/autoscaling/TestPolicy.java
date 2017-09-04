@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -39,6 +38,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.junit.Test;
@@ -469,9 +469,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy policy = new Policy(policies);
     Policy.Suggester suggester = policy.createSession(getClusterDataProvider(nodeValues, clusterState))
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.REPLICATYPE, Replica.Type.PULL)
-        .hint(Hint.SHARD, "shard1");
+        .hint(Hint.COLL_SHARD, new Pair("newColl", "shard1"))
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL);
     SolrRequest op = suggester.getOperation();
     assertNotNull(op);
     assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
@@ -479,9 +478,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     suggester = suggester.getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.REPLICATYPE, Replica.Type.PULL)
-        .hint(Hint.SHARD, "shard2");
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.PULL);
     op = suggester.getOperation();
     assertNotNull(op);
     assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
@@ -489,9 +487,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     suggester = suggester.getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
-        .hint(Hint.SHARD, "shard1");
+        .hint(Hint.COLL_SHARD, new Pair("newColl", "shard1"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
     op = suggester.getOperation();
     assertNotNull(op);
     assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
@@ -499,9 +496,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     suggester = suggester.getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
-        .hint(Hint.SHARD, "shard2");
+        .hint(Hint.COLL_SHARD, new Pair("newColl", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
     op = suggester.getOperation();
     assertNotNull(op);
     assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
@@ -509,9 +505,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     suggester = suggester.getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
-        .hint(Hint.SHARD, "shard2");
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
     op = suggester.getOperation();
     assertNull("No node should qualify for this" ,op);
 
@@ -670,10 +665,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy policy = new Policy(policies);
     Policy.Suggester suggester = policy.createSession(getClusterDataProvider(nodeValues, clusterState))
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.COLL, "newColl2")
         .hint(Hint.REPLICATYPE, Replica.Type.PULL)
-        .hint(Hint.SHARD, "shard1");
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard1"));
     SolrRequest op;
     int countOp = 0;
     int countNewCollOp = 0;
@@ -681,10 +675,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
     while ((op = suggester.getOperation()) != null) {
       countOp++;
       suggester = suggester.getSession().getSuggester(ADDREPLICA)
-          .hint(Hint.COLL, "newColl")
-          .hint(Hint.COLL, "newColl2")
           .hint(Hint.REPLICATYPE, Replica.Type.PULL)
-          .hint(Hint.SHARD, "shard1");
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard1"));
       assertEquals(Replica.Type.PULL.name(),  op.getParams().get("type"));
       String collection =  op.getParams().get("collection");
       assertTrue("Collection for replica is not as expected " + collection, collection.equals("newColl") || collection.equals("newColl2"));
@@ -701,18 +694,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
     countNewColl2Op = 0;
     suggester = suggester.getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.COLL, "newColl2")
-        .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
-        .hint(Hint.SHARD, "shard2");
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard2"))
+        .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
     while ((op = suggester.getOperation()) != null) {
       countOp++;
       suggester = suggester.getSession()
           .getSuggester(ADDREPLICA)
-          .hint(Hint.COLL, "newColl")
-          .hint(Hint.COLL, "newColl2")
-          .hint(Hint.REPLICATYPE, Replica.Type.TLOG)
-          .hint(Hint.SHARD, "shard2");
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard2"))
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl2", "shard2"))
+          .hint(Hint.REPLICATYPE, Replica.Type.TLOG);
       assertEquals(Replica.Type.TLOG.name(),  op.getParams().get("type"));
       String collection =  op.getParams().get("collection");
       assertTrue("Collection for replica is not as expected " + collection, collection.equals("newColl") || collection.equals("newColl2"));
@@ -816,8 +807,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(violations.stream().anyMatch(violation -> (violation.getClause().replica.getOperand() == Operand.LESS_THAN && "node".equals(violation.getClause().tag.getName()))));
 
     Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "gettingstarted")
-        .hint(Hint.SHARD, "r1");
+        .hint(Hint.COLL_SHARD, new Pair<>("gettingstarted","r1"));
     SolrParams operation = suggester.getOperation().getParams();
     assertEquals("node2", operation.get("node"));
 
@@ -934,8 +924,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     for (int i = 0; i < 3; i++) {
       Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
       SolrRequest op = suggester
-          .hint(Hint.COLL, "newColl")
-          .hint(Hint.SHARD, "shard1")
+          .hint(Hint.COLL_SHARD, new Pair<>("newColl","shard1"))
           .getOperation();
       assertNotNull(op);
       assertEquals("node3", op.getParams().get("node"));
@@ -987,16 +976,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy.Session session = policy.createSession(cdp);
     Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
     SolrRequest op = suggester
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1")
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
         .getOperation();
     assertNotNull(op);
     assertEquals("node3", op.getParams().get("node"));
     suggester = suggester
         .getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1");
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"));
     op = suggester.getOperation();
     assertNotNull(op);
     assertEquals("node3", op.getParams().get("node"));
@@ -1004,8 +991,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester = suggester
         .getSession()
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "shard1");
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"));
     op = suggester.getOperation();
     assertNotNull(op);
     assertEquals("node2", op.getParams().get("node"));
@@ -1124,8 +1110,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     CollectionAdminRequest.AddReplica op = (CollectionAdminRequest.AddReplica) session
         .getSuggester(ADDREPLICA)
-        .hint(Hint.COLL, "newColl")
-        .hint(Hint.SHARD, "s1").getOperation();
+        .hint(Hint.COLL_SHARD, new Pair<>("newColl", "s1")).getOperation();
     assertNotNull(op);
     assertEquals("node2", op.getNode());
   }

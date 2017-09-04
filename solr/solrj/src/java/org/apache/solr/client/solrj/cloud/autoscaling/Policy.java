@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
@@ -360,7 +362,8 @@ public class Policy implements MapWriter {
     }
 
     public Suggester hint(Hint hint, Object value) {
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE || hint == Hint.COLL) {
+      hint.validator.accept(value);
+      if (hint.multiValued) {
         Collection<?> values = value instanceof Collection ? (Collection)value : Collections.singletonList(value);
         ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
       } else {
@@ -374,22 +377,20 @@ public class Policy implements MapWriter {
 
     public SolrRequest getOperation() {
       if (!isInitialized) {
-        Set<String> collections = (Set<String>) hints.get(Hint.COLL);
-        String shard = (String) hints.get(Hint.SHARD);
-        if (collections != null) {
-          for (String coll : collections) {
+        Set<String> collections = (Set<String>) hints.getOrDefault(Hint.COLL, Collections.emptySet());
+        Set<Pair<String, String>> s = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
+        if (!collections.isEmpty() || !s.isEmpty()) {
+          HashSet<Pair<String, String>> shards = new HashSet<>(s);
+          collections.stream().forEach(c -> shards.add(new Pair<>(c, null)));
+          for (Pair<String, String> shard : shards) {
             // if this is not a known collection from the existing clusterstate,
             // then add it
-            if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(coll))) {
-              session.addClausesForCollection(session.dataProvider, coll);
+            if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(shard.first()))) {
+              session.addClausesForCollection(session.dataProvider, shard.first());
             }
             for (Row row : session.matrix) {
-              if (!row.collectionVsShardVsReplicas.containsKey(coll))
-                row.collectionVsShardVsReplicas.put(coll, new HashMap<>());
-              if (shard != null) {
-                Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.get(coll);
-                if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
-              }
+              Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.computeIfAbsent(shard.first(), it -> new HashMap<>());
+              if (shard.second() != null) shardInfo.computeIfAbsent(shard.second(), it -> new ArrayList<>());
             }
           }
           Collections.sort(session.expandedClauses);
@@ -462,7 +463,7 @@ public class Policy implements MapWriter {
       for (Map.Entry<String, Map<String, List<ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
         if (!isAllowed(e.getKey(), Hint.COLL)) continue;
         for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
-          if (!isAllowed(e.getKey(), Hint.SHARD)) continue;//todo fix
+          if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
           if(shard.getValue() == null || shard.getValue().isEmpty()) continue;
           replicaList.add(new Pair<>(shard.getValue().get(0), r));
         }
@@ -490,7 +491,7 @@ public class Policy implements MapWriter {
 
     protected boolean isAllowed(Object v, Hint hint) {
       Object hintVal = hints.get(hint);
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE || hint == Hint.COLL) {
+      if (hint.multiValued) {
         Set set = (Set) hintVal;
         return set == null || set.contains(v);
       } else {
@@ -499,7 +500,47 @@ public class Policy implements MapWriter {
     }
 
     public enum Hint {
-      COLL, SHARD, SRC_NODE, TARGET_NODE, REPLICATYPE
+      COLL(true),
+      // collection shard pair
+      // this should be a Pair<String, String> , (collection,shard)
+      COLL_SHARD(true, v -> {
+        Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
+        for (Object o : c) {
+          if (!(o instanceof Pair)) {
+            throw new RuntimeException("SHARD hint must use a Pair");
+          }
+          Pair p = (Pair) o;
+          if (p.first() == null || p.second() == null) {
+            throw new RuntimeException("Both collection and shard must not be null");
+          }
+        }
+
+      }),
+      SRC_NODE(true),
+      TARGET_NODE(true),
+      REPLICATYPE(false, o -> {
+        if (!(o instanceof Replica.Type)) {
+          throw new RuntimeException("REPLICATYPE hint must use a ReplicaType");
+        }
+      });
+
+      public final boolean multiValued;
+      public final Consumer<Object> validator;
+
+      Hint(boolean multiValued) {
+        this(multiValued, v -> {
+          Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
+          for (Object o : c) {
+            if (!(o instanceof String)) throw new RuntimeException("hint must be of type String");
+          }
+        });
+      }
+
+      Hint(boolean multiValued, Consumer<Object> c) {
+        this.multiValued = multiValued;
+        this.validator = c;
+      }
+
     }
 
 
