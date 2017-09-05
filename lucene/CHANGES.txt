@@ -185,6 +185,9 @@ Bug Fixes
 * LUCENE-7864: IndexMergeTool is not using intermediate hard links (even
   if possible). (Dawid Weiss)
 
+* LUCENE-7956: Fixed potential stack overflow error in ICUNormalizer2CharFilter.
+  (Adrien Grand)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
