@@ -42,6 +42,9 @@ Bug Fixes
   not recommended, lucene-analyzers-icu contains binary data structures
   specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
 
+* LUCENE-7891: Lucene's taxonomy facets now uses a non-buggy LRU cache
+  by default.  (Jan-Willem van den Broek via Mike McCandless)
+
 Build
 
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
