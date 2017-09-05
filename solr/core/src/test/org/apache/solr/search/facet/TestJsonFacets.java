@@ -695,10 +695,28 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
         )
         , "facets=={count:6 " +
-            ",f1:{ buckets:[{val:-1,count:2,a:-5},{val:3,count:2,a:-5},{val:-5,count:1,a:2},{val:2,count:1,a:2},{val:0,count:2,a:3}, ] } " +
-            ",f2:{ buckets:[{val:0,count:2,a:7},{val:3,count:2,a:3},{val:-5,count:1,a:2},{val:2,count:1,a:2},{val:-1,count:2,a:-5}, ] } " +
+            ",f1:{ buckets:[{val:-1,count:2,a:-5},{val:3,count:2,a:-5},{val:-5,count:1,a:2},{val:2,count:1,a:2},{val:0,count:2,a:3} ] } " +
+            ",f2:{ buckets:[{val:0,count:2,a:7},{val:3,count:2,a:3},{val:-5,count:1,a:2},{val:2,count:1,a:2},{val:-1,count:2,a:-5} ] } " +
             "}"
     );
+
+
+    // Same thing for dates
+    // test min/max of string field
+    if (date.equals("date_dt") || date.equals("date_dtd")) {  // supports only single valued currently...
+      client.testJQ(params(p, "q", "*:*"
+          , "json.facet", "{" +
+              " f3:{${terms}  type:field, field:${num_is}, facet:{a:'min(${date})'}, sort:'a desc' }" +
+              ",f4:{${terms}  type:field, field:${num_is}, facet:{a:'max(${date})'}, sort:'a asc' }" +
+              "}"
+          )
+          , "facets=={count:6 " +
+              ",f3:{ buckets:[{val:-1,count:2,a:'2002-02-02T02:02:02Z'},{val:3,count:2,a:'2002-02-02T02:02:02Z'},{val:0,count:2,a:'2001-02-03T01:02:03Z'},{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'} ] } " +
+              ",f4:{ buckets:[{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'},{val:-1,count:2,a:'2002-03-01T03:02:01Z'},{val:0,count:2,a:'2003-03-03T03:03:03Z'},{val:3,count:2,a:'2003-03-03T03:03:03Z'} ] } " +
+              "}"
+      );
+    }
+
 
     // percentiles 0,10,50,90,100
     // catA: 2.0 2.2 3.0 3.8 4.0
