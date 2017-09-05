@@ -871,6 +871,8 @@ Other Changes
 
 * SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
+  
+* SOLR-11324: Clean up mention of trie fields in documentation and source comments. (Steve Rowe)
 
 ==================  6.6.1 ==================
 
