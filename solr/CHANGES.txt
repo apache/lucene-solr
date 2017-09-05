@@ -102,6 +102,8 @@ Bug Fixes
 
 * SOLR-11293: Potential data loss in TLOG replicas after replication failures (noble)
 
+* SOLR-10101: TestLazyCores hangs (Erick Erickson)
+
 Optimizations
 ----------------------
 
