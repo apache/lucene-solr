@@ -796,7 +796,7 @@ Other Changes
 * SOLR-10494: Make default response format JSON (wt=json), and also indent text responses formats
   (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)
 
-* SOLR-10760: Remove trie field types and fields from example schemas. (Steve Rowe)
+* SOLR-10760,SOLR-11315: Remove trie field types and fields from example schemas. (Steve Rowe)
 
 * SOLR-11056: Add random range query test that compares results across Trie*, *Point and DocValue-only fields
   (Tomás Fernández Löbbe)
