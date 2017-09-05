@@ -23,6 +23,8 @@ New Features
 * LUCENE-7927: Add LongValueFacetCounts, to compute facet counts for individual
   numeric values (Mike McCandless)
 
+* LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
