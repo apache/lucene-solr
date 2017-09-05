@@ -110,7 +110,7 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
         break;
       }
 
-      final int lastCodePoint = Character.codePointBefore(tmpBuffer.getBuffer(), tmpBuffer.getLength());
+      final int lastCodePoint = Character.codePointBefore(tmpBuffer.getBuffer(), tmpBuffer.getLength(), 0);
       if (normalizer.isInert(lastCodePoint)) {
         // we require an inert char so that we can normalize content before and
         // after this character independently
