@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -70,8 +71,9 @@ public class MinMaxAgg extends SimpleAggValueSource {
           return new DFuncAcc(vs, fcontext, numSlots);
         case INTEGER:
         case LONG:
-        case DATE:
           return new LFuncAcc(vs, fcontext, numSlots);
+        case DATE:
+          return new DateFuncAcc(vs, fcontext, numSlots);
       }
     }
 
@@ -185,7 +187,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
     @Override
     public Object getValue(int slot) {
       long val = result[slot];
-      if (val == 0 && exists.get(slot)) {
+      if (val == 0 && !exists.get(slot)) {
         return null;
       } else {
         return val;
@@ -219,6 +221,31 @@ public class MinMaxAgg extends SimpleAggValueSource {
       exists.clear(0, exists.length());
     }
 
+  }
+
+  class DateFuncAcc extends LongFuncSlotAcc {
+    private static final long MISSING = Long.MIN_VALUE;
+    public DateFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+      super(values, fcontext, numSlots, MISSING);
+    }
+
+    @Override
+    public void collect(int doc, int slotNum) throws IOException {
+      long val = values.longVal(doc);
+      if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
+
+      long currVal = result[slotNum];
+      if (Long.compare(val, currVal) * minmax < 0 || currVal == MISSING) {
+        result[slotNum] =  val;
+      }
+    }
+
+    // let compare be the default for now (since we can't yet correctly handle sortMissingLast
+
+    @Override
+    public Object getValue(int slot) {
+      return result[slot] == MISSING ? null : new Date(result[slot]);
+    }
   }
 
 

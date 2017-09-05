@@ -68,6 +68,9 @@ New Features
 * SOLR-11317: JSON Facet API: min/max aggregations on numeric fields are now typed better so int/long
   fields return an appropriate integral type rather than a double. (yonik)
 
+* SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
+  (yonik)
+
 
 Bug Fixes
 ----------------------
