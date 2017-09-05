@@ -25,7 +25,9 @@ import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
 import org.apache.solr.search.function.FieldNameValueSource;
@@ -48,29 +50,39 @@ public class MinMaxAgg extends SimpleAggValueSource {
       String field = ((FieldNameValueSource)vs).getFieldName();
       sf = fcontext.qcontext.searcher().getSchema().getField(field);
 
-      vs = sf.getType().getValueSource(sf, null); // temporary implementation to make existing code work
+      if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+        vs = null;
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "min/max aggregations can't be used on multi-valued field " + field);
+      } else {
+        vs = sf.getType().getValueSource(sf, null);
+      }
     }
 
     if (vs instanceof StrFieldSource) {
-      if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-        if (sf.hasDocValues()) {
-          // dv
-        } else {
-          // uif
-        }
-      } else {
-        return new SingleValuedOrdAcc(fcontext, sf, numSlots);
+      return new SingleValuedOrdAcc(fcontext, sf, numSlots);
+    }
+
+    // Since functions don't currently have types, we rely on the type of the field
+    if (sf != null && sf.getType().getNumberType() != null) {
+      switch (sf.getType().getNumberType()) {
+        case FLOAT:
+        case DOUBLE:
+          return new DFuncAcc(vs, fcontext, numSlots);
+        case INTEGER:
+        case LONG:
+        case DATE:
+          return new LFuncAcc(vs, fcontext, numSlots);
       }
     }
 
     // numeric functions
-    return new ValSlotAcc(vs, fcontext, numSlots);
+    return new DFuncAcc(vs, fcontext, numSlots);
   }
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    if (prototype instanceof Number)
-      return new NumericMerger();
+    if (prototype instanceof Double)
+      return new NumericMerger(); // still use NumericMerger to handle NaN?
     else if (prototype instanceof Comparable) {
       return new ComparableMerger();
     } else {
@@ -122,8 +134,8 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
   }
 
-  class ValSlotAcc extends DoubleFuncSlotAcc {
-    public ValSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+  class DFuncAcc extends DoubleFuncSlotAcc {
+    public DFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, Double.NaN);
     }
 
@@ -147,6 +159,66 @@ public class MinMaxAgg extends SimpleAggValueSource {
         return val;
       }
     }
+  }
+
+  class LFuncAcc extends LongFuncSlotAcc {
+    FixedBitSet exists;
+    public LFuncAcc(ValueSource values, FacetContext fcontext, int numSlots) {
+      super(values, fcontext, numSlots, 0);
+      exists = new FixedBitSet(numSlots);
+    }
+
+    @Override
+    public void collect(int doc, int slotNum) throws IOException {
+      long val = values.longVal(doc);
+      if (val == 0 && !values.exists(doc)) return; // depend on fact that non existing values return 0 for func query
+
+      long currVal = result[slotNum];
+      if (currVal == 0 && !exists.get(slotNum)) {
+        exists.set(slotNum);
+        result[slotNum] = val;
+      } else if (Long.compare(val, currVal) * minmax < 0) {
+        result[slotNum] =  val;
+      }
+    }
+
+    @Override
+    public Object getValue(int slot) {
+      long val = result[slot];
+      if (val == 0 && exists.get(slot)) {
+        return null;
+      } else {
+        return val;
+      }
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      exists = resizer.resize(exists);
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      long a = result[slotA];
+      long b = result[slotB];
+      boolean ea = a != 0 || exists.get(slotA);
+      boolean eb = b != 0 || exists.get(slotB);
+
+      if (ea != eb) {
+        if (ea) return 1;  // a exists and b doesn't TODO: we need context to be able to sort missing last!  SOLR-10618
+        if (eb) return -1; // b exists and a is missing
+      }
+
+      return Long.compare(a, b);
+    }
+
+    @Override
+    public void reset() {
+      super.reset();
+      exists.clear(0, exists.length());
+    }
+
   }
 
 
