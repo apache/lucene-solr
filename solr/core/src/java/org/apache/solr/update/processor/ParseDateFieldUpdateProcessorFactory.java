@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * The default selection behavior is to mutate both those fields that don't match
- * a schema field, as well as those fields that match a schema field with a field 
- * type that uses class solr.TrieDateField.
+ * a schema field, as well as those fields that match a schema field with a date
+ * field type.
  * </p>
  * <p>
  * If all values are parseable as dates (or are already Date), then the field will

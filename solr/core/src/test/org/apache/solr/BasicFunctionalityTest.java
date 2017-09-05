@@ -869,7 +869,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // testing everything from query level is hard because
     // time marches on ... and there is no easy way to reach into the
-    // bowels of TrieDateField and muck with the definition of "now"
+    // bowels of DatePointField and muck with the definition of "now"
     //    ...
     // BUT: we can test that crazy combinations of "NOW" all work correctly,
     // assuming the test doesn't take too long to run...
