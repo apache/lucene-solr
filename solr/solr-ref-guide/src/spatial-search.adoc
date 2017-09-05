@@ -354,9 +354,10 @@ The `BBoxField` field type indexes a single rectangle (bounding box) per documen
 [source,xml]
 ----
 <field name="bbox" type="bbox" />
+
 <fieldType name="bbox" class="solr.BBoxField"
-        geo="true" units="kilometers" numberType="_bbox_coord" storeSubFields="false"/>
-<fieldType name="_bbox_coord" class="solr.TrieDoubleField" precisionStep="8" docValues="true" stored="false"/>
+           geo="true" distanceUnits="kilometers" numberType="pdouble" />
+<fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
 ----
 
 BBoxField is actually based off of 4 instances of another field type referred to by numberType. It also uses a boolean to flag a dateline cross. Assuming you want to use the relevancy feature, docValues is required. Some of the attributes are in common with the RPT field like geo, units, worldBounds, and spatialContextFactory because they share some of the same spatial infrastructure.
