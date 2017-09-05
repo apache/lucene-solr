@@ -20,12 +20,14 @@ package org.apache.lucene.analysis.icu;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.util.TestUtil;
 
@@ -417,5 +419,24 @@ public class TestICUNormalizer2CharFilter extends BaseTokenStreamTestCase {
       checkAnalysisConsistency(random(), a, false, text);
     }
     a.close();
+  }
+
+  // https://issues.apache.org/jira/browse/LUCENE-7956
+  public void testVeryLargeInputOfNonInertChars() throws Exception {
+    char[] text = new char[1000000];
+    Arrays.fill(text, 'a');
+    try (Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new KeywordTokenizer());
+      }
+
+      @Override
+      protected Reader initReader(String fieldName, Reader reader) {
+        return new ICUNormalizer2CharFilter(reader, Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
+      }
+    }) {
+      checkAnalysisConsistency(random(), a, false, new String(text));
+    }
   }
 }
