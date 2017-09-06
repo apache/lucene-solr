@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -249,6 +250,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("copyOfRange", CopyOfRangeEvaluator.class)
         .withFunctionName("copyOf", CopyOfEvaluator.class)
         .withFunctionName("cov", CovarianceEvaluator.class)
+        .withFunctionName("corr", CorrelationEvaluator.class)
         .withFunctionName("describe", DescribeEvaluator.class)
         .withFunctionName("distance", EuclideanDistanceEvaluator.class)
         .withFunctionName("empiricalDistribution", EmpiricalDistributionEvaluator.class)
@@ -281,9 +283,18 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("ebeDivide", EBEDivideEvaluator.class)
         .withFunctionName("dotProduct", DotProductEvaluator.class)
         .withFunctionName("cosineSimilarity", CosineSimilarityEvaluator.class)
+        .withFunctionName("freqTable", FrequencyTableEvaluator.class)
+        .withFunctionName("uniformIntegerDistribution", UniformIntegerDistributionEvaluator.class)
+        .withFunctionName("binomialDistribution", BinomialDistributionEvaluator.class)
+        .withFunctionName("poissonDistribution", PoissonDistributionEvaluator.class)
+        .withFunctionName("enumeratedDistribution", EnumeratedDistributionEvaluator.class)
+        .withFunctionName("probability", ProbabilityEvaluator.class)
 
         // Boolean Stream Evaluators
-        .withFunctionName("and", AndEvaluator.class)
+
+
+
+                .withFunctionName("and", AndEvaluator.class)
         .withFunctionName("eor", ExclusiveOrEvaluator.class)
         .withFunctionName("eq", EqualToEvaluator.class)
         .withFunctionName("gt", GreaterThanEvaluator.class)
@@ -331,7 +342,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("cbrt", CubedRootEvaluator.class)
         .withFunctionName("coalesce", CoalesceEvaluator.class)
         .withFunctionName("uuid", UuidEvaluator.class)
-        .withFunctionName("corr", CorrelationEvaluator.class)
 
         // Conditional Stream Evaluators
         .withFunctionName("if", IfThenElseEvaluator.class)

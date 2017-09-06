@@ -20,22 +20,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
+import org.apache.commons.math3.stat.Frequency;
+
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class HistogramEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+public class FrequencyTableEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public HistogramEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public FrequencyTableEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
-    
+
     if(containedEvaluators.size() < 1){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
     }
@@ -46,45 +49,38 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
     if(Arrays.stream(values).anyMatch(item -> null == item)){
       return null;
     }
-    
+
     List<?> sourceValues;
-    Integer bins = 10;
-    
-    if(values.length >= 1){
-      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]); 
-            
-      if(values.length >= 2){
-        if(values[1] instanceof Number){
-          bins = ((Number)values[1]).intValue();
-        }
-        else{
-          throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - if second parameter is provided then it must be a valid number but found %s instead",toExpression(constructingFactory), values[1].getClass().getSimpleName()));
-        }        
-      }      
+
+    if(values.length == 1){
+      sourceValues = values[0] instanceof List<?> ? (List<?>)values[0] : Arrays.asList(values[0]);
     }
-    else{
+    else
+    {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",toExpression(constructingFactory),containedEvaluators.size()));
     }
 
-    EmpiricalDistribution distribution = new EmpiricalDistribution(bins);
-    distribution.load(((List<?>)sourceValues).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());;
+    Frequency frequency = new Frequency();
+
+    for(Object o : sourceValues) {
+      Number number = (Number)o;
+      frequency.addValue(number.longValue());
+    }
 
     List<Tuple> histogramBins = new ArrayList<>();
-    for(SummaryStatistics binSummary : distribution.getBinStats()) {
+
+    Iterator iterator = frequency.valuesIterator();
+
+    while(iterator.hasNext()){
+      Long value = (Long)iterator.next();
       Map<String,Number> map = new HashMap<>();
-      map.put("max", binSummary.getMax());
-      map.put("mean", binSummary.getMean());
-      map.put("min", binSummary.getMin());
-      map.put("stdev", binSummary.getStandardDeviation());
-      map.put("sum", binSummary.getSum());
-      map.put("N", binSummary.getN());
-      map.put("var", binSummary.getVariance());
-      map.put("cumProb", distribution.cumulativeProbability(binSummary.getMean()));
-      map.put("prob", distribution.probability(binSummary.getMin(), binSummary.getMax()));
+      map.put("value", value.longValue());
+      map.put("count", frequency.getCount(value));
+      map.put("cumFreq", frequency.getCumFreq(value));
+      map.put("cumPct", frequency.getCumPct(value));
+      map.put("pct", frequency.getPct(value));
       histogramBins.add(new Tuple(map));
     }
-    
     return histogramBins;
   }
-    
 }
