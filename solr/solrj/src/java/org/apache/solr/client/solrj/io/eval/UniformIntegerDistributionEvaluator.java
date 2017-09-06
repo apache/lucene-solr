@@ -19,15 +19,15 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.distribution.IntegerDistribution;
+import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CumulativeProbabilityEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
-  protected static final long serialVersionUID = 1L;
-  
-  public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+public class UniformIntegerDistributionEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+
+  private static final long serialVersionUID = 1;
+
+  public UniformIntegerDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
@@ -39,21 +39,10 @@ public class CumulativeProbabilityEvaluator extends RecursiveObjectEvaluator imp
     if(null == second){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
-    if(!(first instanceof RealDistribution) && !(first instanceof IntegerDistribution)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a real or integer Distribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
-    if(!(second instanceof Number)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
 
-    if(first instanceof  RealDistribution) {
-      RealDistribution rd = (RealDistribution) first;
-      Number predictOver = (Number) second;
-      return rd.cumulativeProbability(predictOver.doubleValue());
-    } else {
-      IntegerDistribution id = (IntegerDistribution) first;
-      Number predictOver = (Number) second;
-      return id.cumulativeProbability(predictOver.intValue());
-    }
+    Number lower = (Number)first;
+    Number upper = (Number)second;
+
+    return new UniformIntegerDistribution(lower.intValue(), upper.intValue());
   }
 }
