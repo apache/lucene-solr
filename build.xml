@@ -461,7 +461,7 @@
         <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
       </filterset>
     </copy>
-    <copy overwrite="false" todir="" encoding="UTF-8">
+    <copy overwrite="false" todir="eclipse-build" encoding="UTF-8">
       <fileset dir="dev-tools/eclipse" includes="*.launch"/>
       <filterset>
         <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
@@ -502,7 +502,7 @@
   <target name="clean-eclipse" description="Removes all Eclipse configuration files">
     <delete dir=".settings" failonerror="true"/>
     <delete failonerror="true">
-      <fileset dir="." includes=".classpath,.project,*.launch"/>
+      <fileset dir="." includes=".classpath,.project"/>
     </delete>
     <delete dir="eclipse-build" failonerror="true"/>
   </target>
