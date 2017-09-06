@@ -1190,6 +1190,27 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testBoolQuery() throws Exception {
+      assertQueryEquals("bool",
+          "{!bool must='{!lucene}foo_s:a' must='{!lucene}foo_s:b'}",
+          "{!bool must='{!lucene}foo_s:b' must='{!lucene}foo_s:a'}");
+    assertQueryEquals("bool",
+        "{!bool must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' " +
+            "must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' filter='{!lucene}foo_s:e'}",
+        "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
+            "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
+    try {
+      assertQueryEquals
+          ("bool"
+              , "{!bool must='{!lucene}foo_s:a'}"
+              , "{!bool should='{!lucene}foo_s:a'}"
+          );
+      fail("queries should not have been equal");
+    } catch(AssertionFailedError e) {
+      assertTrue("queries were not equal, as expected", true);
+    }
+  }
+
   // Override req to add df param
   public static SolrQueryRequest req(String... q) {
     return SolrTestCaseJ4.req(q, "df", "text");

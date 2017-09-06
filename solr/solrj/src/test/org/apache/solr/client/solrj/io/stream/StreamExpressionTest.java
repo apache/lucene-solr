@@ -6064,6 +6064,130 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testEBESubtract() throws Exception {
+    String cexpr = "ebeSubtract(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 6);
+    assertTrue(out.get(0).intValue() == 1);
+    assertTrue(out.get(1).intValue() == 2);
+    assertTrue(out.get(2).intValue() == 3);
+    assertTrue(out.get(3).intValue() == 4);
+    assertTrue(out.get(4).intValue() == 5);
+    assertTrue(out.get(5).intValue() == 6);
+  }
+
+
+  @Test
+  public void testEBEMultiply() throws Exception {
+    String cexpr = "ebeMultiply(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 6);
+    assertTrue(out.get(0).intValue() == 2);
+    assertTrue(out.get(1).intValue() == 8);
+    assertTrue(out.get(2).intValue() == 18);
+    assertTrue(out.get(3).intValue() == 32);
+    assertTrue(out.get(4).intValue() == 50);
+    assertTrue(out.get(5).intValue() == 72);
+  }
+
+
+  @Test
+  public void testEBEAdd() throws Exception {
+    String cexpr = "ebeAdd(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 6);
+    assertTrue(out.get(0).intValue() == 3);
+    assertTrue(out.get(1).intValue() == 6);
+    assertTrue(out.get(2).intValue() == 9);
+    assertTrue(out.get(3).intValue() == 12);
+    assertTrue(out.get(4).intValue() == 15);
+    assertTrue(out.get(5).intValue() == 18);
+  }
+
+
+  @Test
+  public void testEBEDivide() throws Exception {
+    String cexpr = "ebeDivide(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 6);
+    assertTrue(out.get(0).intValue() == 2);
+    assertTrue(out.get(1).intValue() == 2);
+    assertTrue(out.get(2).intValue() == 2);
+    assertTrue(out.get(3).intValue() == 2);
+    assertTrue(out.get(4).intValue() == 2);
+    assertTrue(out.get(5).intValue() == 2);
+  }
+
+  @Test
+  public void testCosineSimilarity() throws Exception {
+    String cexpr = "cosineSimilarity(array(2,4,6,8),array(1,1,3,4))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number cs = (Number)tuples.get(0).get("return-value");
+    assertTrue(cs.doubleValue() == 0.9838197164968291);
+  }
+
+
+
+  @Test
+  public void testDotProduct() throws Exception {
+    String cexpr = "dotProduct(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number dotProduct = (Number)tuples.get(0).get("return-value");
+    assertTrue(dotProduct.doubleValue()== 182);
+  }
 
 
   @Test

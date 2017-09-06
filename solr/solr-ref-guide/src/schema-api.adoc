@@ -94,14 +94,14 @@ The `add-field` command adds a new field definition to your schema. If a field w
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API. These request attributes are described in detail in the section <<defining-fields.adoc#defining-fields,Defining Fields>>.
 
-For example, to define a new stored field named "sell-by", of type "tdate", you would POST the following request:
+For example, to define a new stored field named "sell-by", of type "pdate", you would POST the following request:
 
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field":{
      "name":"sell-by",
-     "type":"tdate",
+     "type":"pdate",
      "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
@@ -803,7 +803,7 @@ The sample output below has been truncated to show a few different field types f
             "sortMissingLast": true
         },
         {
-            "class": "solr.TrieFloatField",
+            "class": "solr.FloatPointField",
             "dynamicFields": [
                 "*_fs",
                 "*_f"
@@ -814,7 +814,6 @@ The sample output below has been truncated to show a few different field types f
             ],
             "name": "float",
             "positionIncrementGap": "0",
-            "precisionStep": "0"
         }]
 }
 ----

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Objects;
 
+import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 
 import com.ibm.icu.text.Normalizer2;
@@ -61,7 +62,7 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
   ICUNormalizer2CharFilter(Reader in, Normalizer2 normalizer, int bufferSize) {
     super(in);
     this.normalizer = Objects.requireNonNull(normalizer);
-    this.tmpBuffer = new char[bufferSize];
+    this.tmpBuffer = CharacterUtils.newCharacterBuffer(bufferSize);
   }
 
   @Override
@@ -94,23 +95,31 @@ public final class ICUNormalizer2CharFilter extends BaseCharFilter {
     return -1;
   }
 
-  private final char[] tmpBuffer;
+  private final CharacterUtils.CharacterBuffer tmpBuffer;
 
-  private int readInputToBuffer() throws IOException {
-    final int len = input.read(tmpBuffer);
-    if (len == -1) {
-      inputFinished = true;
-      return 0;
+  private void readInputToBuffer() throws IOException {
+    while (true) {
+      // CharacterUtils.fill is supplementary char aware
+      final boolean hasRemainingChars = CharacterUtils.fill(tmpBuffer, input);
+
+      assert tmpBuffer.getOffset() == 0;
+      inputBuffer.append(tmpBuffer.getBuffer(), 0, tmpBuffer.getLength());
+
+      if (hasRemainingChars == false) {
+        inputFinished = true;
+        break;
+      }
+
+      final int lastCodePoint = Character.codePointBefore(tmpBuffer.getBuffer(), tmpBuffer.getLength(), 0);
+      if (normalizer.isInert(lastCodePoint)) {
+        // we require an inert char so that we can normalize content before and
+        // after this character independently
+        break;
+      }
     }
-    inputBuffer.append(tmpBuffer, 0, len);
 
     // if checkedInputBoundary was at the end of a buffer, we need to check that char again
     checkedInputBoundary = Math.max(checkedInputBoundary - 1, 0);
-    // this loop depends on 'isInert' (changes under normalization) but looks only at characters.
-    // so we treat all surrogates as non-inert for simplicity
-    if (normalizer.isInert(tmpBuffer[len - 1]) && !Character.isSurrogate(tmpBuffer[len-1])) {
-      return len;
-    } else return len + readInputToBuffer();
   }
 
   private int readAndNormalizeFromInput() {

@@ -278,7 +278,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       q = qParser.getQuery();
       assertEquals(26, ((TermInSetQuery)q).getTermData().size());
 
-      // large numeric filter query should use TermsQuery (for trie fields)
+      // large numeric filter query should use TermsQuery
       qParser = QParser.getParser("foo_ti:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);

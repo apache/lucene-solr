@@ -495,11 +495,15 @@ public class FacetStream extends TupleStream implements Expressible  {
         for(Metric metric : _metrics) {
           String identifier = metric.getIdentifier();
           if(!identifier.startsWith("count(")) {
-            double d = (double)bucket.get("facet_"+m);
+            Number d = ((Number)bucket.get("facet_"+m));
             if(metric.outputLong) {
-              t.put(identifier, Math.round(d));
+              if (d instanceof Long || d instanceof Integer) {
+                t.put(identifier, d.longValue());
+              } else {
+                t.put(identifier, Math.round(d.doubleValue()));
+              }
             } else {
-              t.put(identifier, d);
+              t.put(identifier, d.doubleValue());
             }
             ++m;
           } else {

@@ -23,6 +23,8 @@ New Features
 * LUCENE-7927: Add LongValueFacetCounts, to compute facet counts for individual
   numeric values (Mike McCandless)
 
+* LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -52,11 +54,22 @@ Bug Fixes
   not recommended, lucene-analyzers-icu contains binary data structures
   specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
 
+* LUCENE-7891: Lucene's taxonomy facets now uses a non-buggy LRU cache
+  by default.  (Jan-Willem van den Broek via Mike McCandless)
+
 Build
 
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
   instead of locally installing first, to workaround a double repository push of
   *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+
+Other
+
+* LUCENE-7948, LUCENE-7937: Upgrade randomizedtesting to 2.5.3 (minor fixes 
+  in test filtering for IDEs). (Mike Sokolov, Dawid Weiss)
+
+* LUCENE-7933: LongBitSet now validates the numBits parameter (Won
+  Jonghoon, Mike McCandless)
 
 ======================= Lucene 7.0.0 =======================
 
@@ -183,6 +196,9 @@ Bug Fixes
 
 * LUCENE-7864: IndexMergeTool is not using intermediate hard links (even
   if possible). (Dawid Weiss)
+
+* LUCENE-7956: Fixed potential stack overflow error in ICUNormalizer2CharFilter.
+  (Adrien Grand)
 
 Improvements
 

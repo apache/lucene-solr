@@ -30,11 +30,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.StandardDirectoryReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMOutputStream;
@@ -112,14 +110,6 @@ public abstract class PrimaryNode extends Node {
       mgr = new SearcherManager(writer, true, true, searcherFactory);
       setCurrentInfos(Collections.<String>emptySet());
       message("init: infos version=" + curInfos.getVersion());
-
-      IndexSearcher s = mgr.acquire();
-      try {
-        // TODO: this is test code specific!!
-        message("init: marker count: " + s.count(new TermQuery(new Term("marker", "marker"))));
-      } finally {
-        mgr.release(s);
-      }
 
     } catch (Throwable t) {
       message("init: exception");
@@ -231,8 +221,6 @@ public abstract class PrimaryNode extends Node {
     try {
       searcher = mgr.acquire();
       infos = ((StandardDirectoryReader) searcher.getIndexReader()).getSegmentInfos();
-      // TODO: this is test code specific!!
-      message("setCurrentInfos: marker count: " + searcher.count(new TermQuery(new Term("marker", "marker"))) + " version=" + infos.getVersion() + " searcher=" + searcher);
     } finally {
       if (searcher != null) {
         mgr.release(searcher);
