@@ -52,8 +52,9 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
-    return Arrays.asList(new Object[][]{
-        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}
+    return Arrays.asList(new Object[][] {
+        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"},
+        {"pointvector"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}, {"llpN_dv"}
     });
   }
 
@@ -157,7 +158,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @Test
   public void checkResultFormat() throws Exception {
     //Check input and output format is the same
-    String IN = "89.9,-130";//lat,lon
+    String IN = "40.299599,-74.082728";//lat,lon
     String OUT = IN;//IDENTICAL!
 
     assertU(adoc("id", "11", fieldName, IN));
@@ -167,6 +168,10 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
             "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
             "fq", "{!bbox sfield=" + fieldName + " pt=" + IN + " d=9}"),
         "//result/doc/*[@name='" + fieldName + "']//text()='" + OUT + "'");
+
+    assertQ(req(
+        "fl", "id," + fieldName, "q", "*:*", "rows", "1000"),
+    "//result/doc/*[@name='" + fieldName + "']//text()='" + OUT + "'");
   }
 
   @Test
