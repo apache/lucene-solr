@@ -94,14 +94,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                       " +apache +solr");
   }
 
-  @Deprecated
-  public void testQueryLucenePlusSort() throws Exception {
-    assertQueryEquals("lucenePlusSort", 
-                      "apache solr", "apache  solr", "apache solr ; score desc");
-    assertQueryEquals("lucenePlusSort", 
-                      "+apache +solr", "apache AND solr", " +apache +solr; score desc");
-  }
-
   public void testQueryPrefix() throws Exception {
     SolrQueryRequest req = req("myField","foo_s");
     try {

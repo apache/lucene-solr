@@ -489,9 +489,6 @@
 
   <queryParser name="foo" class="FooQParserPlugin"/>
 
-  <!-- deprecated parser, delete once class is deleted in Solr 8.0 -->
-  <queryParser name="lucenePlusSort" class="solr.OldLuceneQParserPlugin"/>
-  
   <updateRequestProcessorChain name="dedupe">
     <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
       <bool name="enabled">false</bool>
