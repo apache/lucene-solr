@@ -18,6 +18,7 @@ parent.iml
 /.classpath
 /.settings
 /.caches
+/*.launch
 /prj.el
 /bin
 /bin.*
@@ -25,3 +26,4 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
+solr/server/solr/coreconfigs
