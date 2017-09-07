@@ -163,11 +163,6 @@ fi
 SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
-
-if [ -n "$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH" ]; then
-  SOLR_SSL_OPTS+=" -Dhadoop.security.credential.provider.path=$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH"
-fi
-
 if [ -z "$SOLR_SSL_ENABLED" ]; then
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
@@ -177,7 +172,6 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https")
-  SOLR_JETTY_CONFIG+=("--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
