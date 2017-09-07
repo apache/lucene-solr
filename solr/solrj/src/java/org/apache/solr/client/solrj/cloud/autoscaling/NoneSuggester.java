@@ -19,7 +19,9 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import org.apache.solr.client.solrj.SolrRequest;
 
-public class NoneSuggester extends Policy.Suggester{
+public class NoneSuggester extends Policy.Suggester {
+  public static final NoneSuggester INSTANCE = new NoneSuggester();
+
   @Override
   SolrRequest init() {
     return null;

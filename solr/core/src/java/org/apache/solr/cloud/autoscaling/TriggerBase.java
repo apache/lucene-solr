@@ -16,14 +16,25 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -37,16 +48,126 @@ import org.slf4j.LoggerFactory;
 public abstract class TriggerBase implements AutoScaling.Trigger {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  protected final String name;
+  protected final Map<String, Object> properties = new HashMap<>();
+  protected final TriggerEventType eventType;
+  protected final int waitForSecond;
   protected SolrZkClient zkClient;
   protected Map<String,Object> lastState;
+  protected final List<TriggerAction> actions;
+  protected final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef = new AtomicReference<>();
+  protected final boolean enabled;
+  protected boolean isClosed;
 
-
-  protected TriggerBase(SolrZkClient zkClient) {
+  protected TriggerBase(TriggerEventType eventType, String name, Map<String, Object> properties, SolrResourceLoader loader, SolrZkClient zkClient) {
+    this.eventType = eventType;
+    this.name = name;
     this.zkClient = zkClient;
+    if (properties != null) {
+      this.properties.putAll(properties);
+    }
+    this.enabled = Boolean.parseBoolean(String.valueOf(this.properties.getOrDefault("enabled", "true")));
+    this.waitForSecond = ((Number) this.properties.getOrDefault("waitFor", -1L)).intValue();
+    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
+    if (o != null && !o.isEmpty()) {
+      actions = new ArrayList<>(3);
+      for (Map<String, String> map : o) {
+        TriggerAction action = loader.newInstance(map.get("class"), TriggerAction.class);
+        actions.add(action);
+      }
+    } else {
+      actions = Collections.emptyList();
+    }
     try {
-      zkClient.makePath(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, false, true);
+      if (!zkClient.exists(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, true)) {
+        zkClient.makePath(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, false, true);
+      }
     } catch (KeeperException | InterruptedException e) {
       LOG.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+    }
+  }
+
+  @Override
+  public void init() {
+    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
+    if (o != null && !o.isEmpty()) {
+      for (int i = 0; i < o.size(); i++) {
+        Map<String, String> map = o.get(i);
+        actions.get(i).init(map);
+      }
+    }
+  }
+
+  @Override
+  public void setProcessor(AutoScaling.TriggerEventProcessor processor) {
+    processorRef.set(processor);
+  }
+
+  @Override
+  public AutoScaling.TriggerEventProcessor getProcessor() {
+    return processorRef.get();
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public TriggerEventType getEventType() {
+    return eventType;
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  @Override
+  public int getWaitForSecond() {
+    return waitForSecond;
+  }
+
+  @Override
+  public Map<String, Object> getProperties() {
+    return properties;
+  }
+
+  @Override
+  public List<TriggerAction> getActions() {
+    return actions;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+    if (obj.getClass().equals(this.getClass())) {
+      TriggerBase that = (TriggerBase) obj;
+      return this.name.equals(that.name)
+          && this.properties.equals(that.properties);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, properties);
+  }
+
+  @Override
+  public void close() throws IOException {
+    synchronized (this) {
+      isClosed = true;
+      IOUtils.closeWhileHandlingException(actions);
+    }
+  }
+
+  @Override
+  public boolean isClosed() {
+    synchronized (this) {
+      return isClosed;
     }
   }
 

@@ -20,15 +20,20 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
@@ -101,6 +106,35 @@ public class ComputePlanAction extends TriggerActionBase {
         suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
             .hint(Policy.Suggester.Hint.SRC_NODE, event.getProperty(TriggerEvent.NODE_NAMES));
         log.debug("Created suggester with srcNode: {}", event.getProperty(TriggerEvent.NODE_NAMES));
+        break;
+      case SEARCHRATE:
+        Map<String, Map<String, Double>> hotShards = (Map<String, Map<String, Double>>)event.getProperty(AutoScalingParams.SHARD);
+        Map<String, Double> hotCollections = (Map<String, Double>)event.getProperty(AutoScalingParams.COLLECTION);
+        List<ReplicaInfo> hotReplicas = (List<ReplicaInfo>)event.getProperty(AutoScalingParams.REPLICA);
+        Map<String, Double> hotNodes = (Map<String, Double>)event.getProperty(AutoScalingParams.NODE);
+
+        if (hotShards.isEmpty() && hotCollections.isEmpty() && hotReplicas.isEmpty()) {
+          // node -> MOVEREPLICA
+          if (hotNodes.isEmpty()) {
+            log.warn("Neither hot replicas / collection nor nodes are reported in event: " + event);
+            return NoneSuggester.INSTANCE;
+          }
+          suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA);
+          for (String node : hotNodes.keySet()) {
+            suggester = suggester.hint(Policy.Suggester.Hint.SRC_NODE, node);
+          }
+        } else {
+          // collection || shard || replica -> ADDREPLICA
+          suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
+          Set<String> collections = new HashSet<>();
+          // XXX improve this when AddReplicaSuggester supports coll_shard hint
+          hotReplicas.forEach(r -> collections.add(r.getCollection()));
+          hotShards.forEach((coll, shards) -> collections.add(coll));
+          hotCollections.forEach((coll, rate) -> collections.add(coll));
+          for (String coll : collections) {
+            suggester = suggester.hint(Policy.Suggester.Hint.COLL, coll);
+          }
+        }
         break;
       default:
         throw new UnsupportedOperationException("No support for events other than nodeAdded and nodeLost, received: " + event.getEventType());

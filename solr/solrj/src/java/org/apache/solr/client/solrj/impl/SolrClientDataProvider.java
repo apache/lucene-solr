@@ -64,15 +64,14 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
 
   private final CloudSolrClient solrClient;
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
-  private Set<String> liveNodes;
+  private ClusterState clusterState;
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
   public SolrClientDataProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
     ZkStateReader zkStateReader = solrClient.getZkStateReader();
-    ClusterState clusterState = zkStateReader.getClusterState();
-    this.liveNodes = clusterState.getLiveNodes();
+    clusterState = zkStateReader.getClusterState();
     Map<String, ClusterState.CollectionRef> all = clusterState.getCollectionStates();
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
@@ -81,9 +80,19 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
         Map<String, Map<String, List<ReplicaInfo>>> nodeData = data.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
         Map<String, List<ReplicaInfo>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
         List<ReplicaInfo> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
-        replicas.add(new ReplicaInfo(replica.getName(), collName, shard, replica.getType(), new HashMap<>()));
+        replicas.add(new ReplicaInfo(replica.getName(), collName, shard, replica.getType(), replica.getProperties()));
       });
     });
+  }
+
+  @Override
+  public Collection<String> getNodes() {
+    return clusterState.getLiveNodes();
+  }
+
+  @Override
+  public ClusterState getClusterState() {
+    return clusterState;
   }
 
   @Override
@@ -107,13 +116,8 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   }
 
   @Override
-  public Collection<String> getNodes() {
-    return liveNodes;
-  }
-
-  @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    ew.put("liveNodes", liveNodes);
+    ew.put("clusterState", clusterState);
     ew.put("replicaInfo", Utils.getDeepCopy(data, 5));
     ew.put("nodeValues", nodeVsTags);
 

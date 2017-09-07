@@ -203,7 +203,7 @@ public class Policy implements MapWriter {
     }
 
     Session(ClusterDataProvider dataProvider) {
-      this.nodes = new ArrayList<>(dataProvider.getNodes());
+      this.nodes = new ArrayList<>(dataProvider.getClusterState().getLiveNodes());
       this.dataProvider = dataProvider;
       for (String node : nodes) {
         collections.addAll(dataProvider.getReplicaInfo(node, Collections.emptyList()).keySet());

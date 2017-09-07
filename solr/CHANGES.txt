@@ -98,6 +98,8 @@ New Features
 
 * SOLR-11244: Query DSL for Solr (Cao Manh Dat)
 
+* SOLR-11072: Implement trigger for searchRate event type. (ab)
+
 Bug Fixes
 ----------------------
 
