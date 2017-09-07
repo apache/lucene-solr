@@ -52,4 +52,15 @@ public class SysPropSSLCredentialProviderTest {
       assertThat(sut.getCredential(set.getKey()), is(pw));
     }
   }
+
+
+  @Test
+  public void testGetCredentialsWithoutSetup() throws Exception {
+    SysPropSSLCredentialProvider sut = new SysPropSSLCredentialProvider();
+    // assuming not to fail
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_CLIENT_KEY_STORE_PASSWORD);
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD);
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_CLIENT_TRUST_STORE_PASSWORD);
+  }
 }

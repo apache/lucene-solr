@@ -49,4 +49,13 @@ public class EnvSSLCredentialProviderTest {
     }
   }
 
+  @Test
+  public void testGetCredentialsWithEnvVars() throws Exception {
+    EnvSSLCredentialProvider sut = new EnvSSLCredentialProvider();
+    // assuming not to fail
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_CLIENT_KEY_STORE_PASSWORD);
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD);
+    sut.getCredential(SSLCredentialProvider.CredentialType.SSL_CLIENT_TRUST_STORE_PASSWORD);
+  }
 }
