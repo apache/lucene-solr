@@ -44,6 +44,10 @@ public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
 
   private Map<String, String> envVars;
 
+  public EnvSSLCredentialProvider() {
+    this.envVars = System.getenv();
+  }
+
   protected EnumMap<CredentialType, String> getCredentialKeyMap() {
     return Maps.newEnumMap(ImmutableMap.of(
         SSL_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_KEY_STORE_PASSWORD,
