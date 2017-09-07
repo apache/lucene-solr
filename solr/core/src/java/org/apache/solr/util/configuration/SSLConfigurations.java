@@ -18,7 +18,7 @@
 package org.apache.solr.util.configuration;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
+import java.util.List;
 
 import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
@@ -28,48 +28,102 @@ import org.slf4j.LoggerFactory;
  * Dedicated object to handle Solr configurations
  */
 public class SSLConfigurations {
-  private final Map<String, String> envVars;
-
+  public static final String DEFAULT_STORE_PASSWORD = "secret";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static class SysProps {
-    public static final String SSL_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
-    public static final String SSL_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
-  }
+  protected final List<SSLCredentialProvider> credentialProviders;
 
-  public static class EnvVars {
-    public static final String SOLR_SSL_CLIENT_KEY_STORE_PASSWORD = "SOLR_SSL_CLIENT_KEY_STORE_PASSWORD";
-    public static final String SOLR_SSL_KEY_STORE_PASSWORD = "SOLR_SSL_KEY_STORE_PASSWORD";
-    public static final String SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD = "SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD";
-    public static final String SOLR_SSL_TRUST_STORE_PASSWORD = "SOLR_SSL_TRUST_STORE_PASSWORD";
+  public static class SysProps {
+    public static final String SSL_KEY_STORE_PASSWORD = "solr.jetty.keystore.password";
+    public static final String SSL_TRUST_STORE_PASSWORD = "solr.jetty.truststore.password";
+    public static final String SSL_CLIENT_KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
+    public static final String SSL_CLIENT_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
   }
 
   /**
-   * @param envVars Map of environment variables to use
+   * @param sslCredentialProviderFactory Credential provider factory to use for providers
    */
-  public SSLConfigurations(Map<String, String> envVars) {
-    this.envVars = envVars;
+  public SSLConfigurations(SSLCredentialProviderFactory sslCredentialProviderFactory) {
+    credentialProviders = sslCredentialProviderFactory.getProviders();
   }
 
-  /** Initiates javax.net.ssl.* system properties from the proper sources. */
+  /**
+   * @param credentialProviders Explicit list of credential providers to use
+   */
+  public SSLConfigurations(List<SSLCredentialProvider> credentialProviders) {
+    this.credentialProviders = credentialProviders;
+  }
+
+  /**
+   * Initiates javax.net.ssl.* system properties from the proper sources.
+   */
   public void init() {
 
-    String clientKeystorePassword = envVars.get(EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD);
-    String keystorePassword = envVars.get(EnvVars.SOLR_SSL_KEY_STORE_PASSWORD);
+    String clientKeystorePassword = getClientKeyStorePassword();
+    String keystorePassword = getKeyStorePassword();
 
-    String clientTruststorePassword = envVars.get(EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD);
-    String truststorePassword = envVars.get(EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD);
+    String clientTruststorePassword = getClientTrustStorePassword();
+    String truststorePassword = getTrustStorePassword();
 
-    if (isEmpty(System.getProperty(SysProps.SSL_KEY_STORE_PASSWORD))
+    if (isEmpty(System.getProperty(SysProps.SSL_CLIENT_KEY_STORE_PASSWORD))
         && !(isEmpty(clientKeystorePassword) && isEmpty(keystorePassword))) {
-      log.debug("Setting {} based on env var", SysProps.SSL_KEY_STORE_PASSWORD);
-      System.setProperty(SysProps.SSL_KEY_STORE_PASSWORD, clientKeystorePassword != null ? clientKeystorePassword : keystorePassword);
+      log.info("Setting {}", SysProps.SSL_CLIENT_KEY_STORE_PASSWORD);
+      System.setProperty(SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, clientKeystorePassword != null ? clientKeystorePassword : keystorePassword);
     }
-    if (isEmpty(System.getProperty(SysProps.SSL_TRUST_STORE_PASSWORD))
+    if (isEmpty(System.getProperty(SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD))
         && !(isEmpty(clientTruststorePassword) && isEmpty(truststorePassword))) {
-      log.debug("Setting {} based on env var", SysProps.SSL_TRUST_STORE_PASSWORD);
-      System.setProperty(SysProps.SSL_TRUST_STORE_PASSWORD, clientTruststorePassword != null ? clientTruststorePassword : truststorePassword);
+      log.info("Setting {}", SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
+      System.setProperty(SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD, clientTruststorePassword != null ? clientTruststorePassword : truststorePassword);
     }
+
+  }
+
+  /**
+   * @return password for keystore used for SSL connections
+   */
+  public String getKeyStorePassword() {
+    String keyStorePassword = getPassword(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);
+    if (isEmpty(keyStorePassword)) {
+      log.warn("No keystore password found, using default.");
+      keyStorePassword = DEFAULT_STORE_PASSWORD; // default value
+    }
+    return keyStorePassword;
+  }
+
+  /**
+   * @return password for truststore used for SSL connections
+   */
+  public String getTrustStorePassword() {
+    String trustStorePassword = getPassword(SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD);
+    if (isEmpty(trustStorePassword)) {
+      log.warn("No truststore password found, using default.");
+      trustStorePassword = DEFAULT_STORE_PASSWORD; // default value
+    }
+    return trustStorePassword;
+  }
+
+  /**
+   * @return password for keystore used for SSL client connections
+   */
+  public String getClientKeyStorePassword() {
+    String keyStorePassword = getPassword(SSLCredentialProvider.CredentialType.SSL_CLIENT_KEY_STORE_PASSWORD);
+    return keyStorePassword;
+  }
+
+  /**
+   * @return password for truststore used for SSL client connections
+   */
+  public String getClientTrustStorePassword() {
+    String trustStorePassword = getPassword(SSLCredentialProvider.CredentialType.SSL_CLIENT_TRUST_STORE_PASSWORD);
+    return trustStorePassword;
+  }
+
+  protected String getPassword(SSLCredentialProvider.CredentialType type) {
+    for(SSLCredentialProvider provider: credentialProviders){
+      String credential = provider.getCredential(type);
+      if(credential != null) return credential;
+    }
+    return null;
   }
 
   private boolean isEmpty(String str) {

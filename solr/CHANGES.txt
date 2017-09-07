@@ -89,6 +89,8 @@ New Features
 * SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
   (yonik)
 
+* SOLR-10783 Add support for Hadoop Credential Provider as SSL/TLS store password source.
+  (Mano Kovacs via Mark Miller)
 
 Bug Fixes
 ----------------------
