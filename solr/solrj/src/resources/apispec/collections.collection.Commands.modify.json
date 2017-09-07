@@ -19,6 +19,11 @@
         "type": "string"
       }
     },
+    "policy": {
+      "type": "string",
+      "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-policy-preferences.html",
+      "description": "Name of the collection-level policy"
+    },
     "autoAddReplicas": {
       "type": "boolean",
       "description": "When set to true, enables auto addition of replicas on shared file systems (such as HDFS). See https://lucene.apache.org/solr/guide/running-solr-on-hdfs.html for more details on settings and overrides."
