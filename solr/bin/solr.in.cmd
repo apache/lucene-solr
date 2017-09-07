@@ -116,6 +116,17 @@ REM set SOLR_SSL_CLIENT_TRUST_STORE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
+REM Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
+REM enables usage of credential store.
+REM Credential provider should store the following keys:
+REM * solr.jetty.keystore.password
+REM * solr.jetty.truststore.password
+REM Set the two below if you want to set specific store passwords for HTTP client
+REM * javax.net.ssl.keyStorePassword
+REM * javax.net.ssl.trustStorePassword
+REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
+REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory
