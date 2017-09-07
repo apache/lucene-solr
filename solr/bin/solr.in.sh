@@ -133,17 +133,6 @@
 #SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 #SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
-# Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
-# enables usage of credential store.
-# Credential provider should store the following keys:
-# * solr.jetty.keystore.password
-# * solr.jetty.truststore.password
-# Set the two below if you want to set specific store passwords for HTTP client
-# * javax.net.ssl.keyStorePassword
-# * javax.net.ssl.trustStorePassword
-# More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
-#SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-
 # Settings for authentication
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 #SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
