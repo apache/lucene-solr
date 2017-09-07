@@ -595,7 +595,20 @@
       </artifact:install>
     </sequential>
   </macrodef>
-  
+
+  <macrodef name="m2-install" description="Installs a Maven artifact into the local repository">
+    <element name="parent-poms" optional="yes"/>
+    <attribute name="pom.xml"/>
+    <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
+    <sequential>
+      <parent-poms/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:install file="@{jar.file}">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </macrodef>
+
   <!-- validate maven dependencies -->
   <macrodef name="m2-validate-dependencies">
       <attribute name="pom.xml"/>
@@ -1710,6 +1723,44 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
                   classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>
+    </sequential>
+  </target>
+
+  <target name="-install-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </target>
+
+  <target name="-install-src-java-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
+        <pom refid="maven.project"/>
+      </artifact:install>
     </sequential>
   </target>
 
