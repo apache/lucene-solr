@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -126,13 +128,27 @@ public class ComputePlanAction extends TriggerActionBase {
         } else {
           // collection || shard || replica -> ADDREPLICA
           suggester = session.getSuggester(CollectionParams.CollectionAction.ADDREPLICA);
-          Set<String> collections = new HashSet<>();
-          // XXX improve this when AddReplicaSuggester supports coll_shard hint
-          hotReplicas.forEach(r -> collections.add(r.getCollection()));
-          hotShards.forEach((coll, shards) -> collections.add(coll));
-          hotCollections.forEach((coll, rate) -> collections.add(coll));
-          for (String coll : collections) {
-            suggester = suggester.hint(Policy.Suggester.Hint.COLL, coll);
+          Map<String, Set<String>> collShards = new HashMap<>();
+          // AddReplicaSuggester needs a list of Pair(coll, shard)
+          hotReplicas.forEach(r -> collShards.computeIfAbsent(r.getCollection(), c -> new HashSet<>()).add(r.getShard()));
+          hotShards.forEach((coll, shards) -> collShards.computeIfAbsent(coll, c -> new HashSet<>()).addAll(shards.keySet()));
+          // if we only have hotCollections then use warmShards to pick ones to replicate
+          Map<String, String> warmShards = (Map<String, String>)event.getProperty(AutoScalingParams.WARM_SHARD);
+          hotCollections.forEach((coll, rate) -> {
+            Set<String> shards = collShards.get(coll);
+            if (shards == null || shards.isEmpty()) {
+              String warmShard = warmShards.get(coll);
+              if (warmShard == null) {
+                log.warn("Got hot collection '" + coll + "' but no warm shard! Ignoring...");
+                return;
+              }
+              collShards.computeIfAbsent(coll, s -> new HashSet<>()).add(warmShard);
+            }
+          });
+          for (Map.Entry<String, Set<String>> e : collShards.entrySet()) {
+            for (String shard : e.getValue()) {
+              suggester = suggester.hint(Policy.Suggester.Hint.COLL_SHARD, new Pair<>(e.getKey(), shard));
+            }
           }
         }
         break;

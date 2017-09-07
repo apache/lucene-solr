@@ -41,6 +41,7 @@ public interface AutoScalingParams {
   String SHARD = "shard";
   String REPLICA = "replica";
   String NODE = "node";
+  String WARM_SHARD = "warmShard";
   String HANDLER = "handler";
   String RATE = "rate";
   String REMOVE_LISTENERS = "removeListeners";

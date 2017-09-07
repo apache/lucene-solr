@@ -204,8 +204,10 @@ public class SearchRateTrigger extends TriggerBase {
         .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue().get()));
 
     Map<String, Map<String, Double>> hotShards = new HashMap<>();
+    Map<String, String> warmShards = new HashMap<>();
     List<ReplicaInfo> hotReplicas = new ArrayList<>();
     collectionRates.forEach((coll, shardRates) -> {
+      final Object[] warmShard = new Object[2];
       shardRates.forEach((sh, replicaRates) -> {
         double shardRate = replicaRates.stream()
             .map(r -> {
@@ -216,6 +218,14 @@ public class SearchRateTrigger extends TriggerBase {
               return r;
             })
             .mapToDouble(r -> (Double)r.getVariable(AutoScalingParams.RATE)).sum();
+        if (warmShard[0] == null) {
+          warmShard[0] = sh;
+          warmShard[1] = shardRate;
+        }
+        if (shardRate > (double)warmShard[1]) {
+          warmShard[0] = sh;
+          warmShard[1] = shardRate;
+        }
         if (waitForElapsed(coll + "." + sh, now, lastShardEvent) &&
             (shardRate > rate) &&
             (collection.equals(Policy.ANY) || collection.equals(coll)) &&
@@ -223,11 +233,12 @@ public class SearchRateTrigger extends TriggerBase {
           hotShards.computeIfAbsent(coll, s -> new HashMap<>()).put(sh, shardRate);
         }
       });
+      warmShards.put(coll, (String)warmShard[0]);
     });
 
     Map<String, Double> hotCollections = new HashMap<>();
-    collectionRates.forEach((coll, shardRates) -> {
-      double total = shardRates.entrySet().stream()
+    collectionRates.forEach((coll, shRates) -> {
+      double total = shRates.entrySet().stream()
           .mapToDouble(e -> e.getValue().stream()
               .mapToDouble(r -> (Double)r.getVariable(AutoScalingParams.RATE)).sum()).sum();
       if (waitForElapsed(coll, now, lastCollectionEvent) &&
@@ -243,7 +254,7 @@ public class SearchRateTrigger extends TriggerBase {
 
     // generate event
 
-    if (processor.process(new SearchRateEvent(getName(), now, hotNodes, hotCollections, hotShards, hotReplicas))) {
+    if (processor.process(new SearchRateEvent(getName(), now, hotNodes, hotCollections, hotShards, hotReplicas, warmShards))) {
       // update lastEvent times
       hotNodes.keySet().forEach(node -> lastNodeEvent.put(node, now));
       hotCollections.keySet().forEach(coll -> lastCollectionEvent.put(coll, now));
@@ -266,12 +277,14 @@ public class SearchRateTrigger extends TriggerBase {
   public static class SearchRateEvent extends TriggerEvent {
     public SearchRateEvent(String source, long eventTime, Map<String, Double> hotNodes,
                            Map<String, Double> hotCollections,
-                           Map<String, Map<String, Double>> hotShards, List<ReplicaInfo> hotReplicas) {
+                           Map<String, Map<String, Double>> hotShards, List<ReplicaInfo> hotReplicas,
+                           Map<String, String> warmShards) {
       super(TriggerEventType.SEARCHRATE, source, eventTime, null);
       properties.put(AutoScalingParams.COLLECTION, hotCollections);
       properties.put(AutoScalingParams.SHARD, hotShards);
       properties.put(AutoScalingParams.REPLICA, hotReplicas);
       properties.put(AutoScalingParams.NODE, hotNodes);
+      properties.put(AutoScalingParams.WARM_SHARD, warmShards);
     }
   }
 }
