@@ -18,11 +18,13 @@
 package org.apache.lucene.spatial.spatial4j;
 
 import org.apache.lucene.spatial3d.geom.GeoArea;
+import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoAreaShape;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.LatLonBounds;
 import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
@@ -60,10 +62,34 @@ public class Geo3dAreaShape<T extends GeoAreaShape> implements Shape {
         case GeoArea.OVERLAPS: return SpatialRelation.INTERSECTS;
         case GeoArea.CONTAINS: return SpatialRelation.WITHIN;
         case GeoArea.WITHIN: return SpatialRelation.CONTAINS;
-
       }
     }
+    else if (other instanceof Rectangle) {
+      //added because world bounds is not a Geo3dShape. In theory
+      //should only get here is this case
+      return relate((Rectangle) other);
+    }
     throw new RuntimeException("Unimplemented shape relationship determination: " + other.getClass());
+  }
+
+  protected SpatialRelation relate(Rectangle r) {
+    // Construct the right kind of GeoArea first
+    GeoArea geoArea = GeoAreaFactory.makeGeoArea(shape.getPlanetModel(),
+        r.getMaxY() * DistanceUtils.DEGREES_TO_RADIANS,
+        r.getMinY() * DistanceUtils.DEGREES_TO_RADIANS,
+        r.getMinX() * DistanceUtils.DEGREES_TO_RADIANS,
+        r.getMaxX() * DistanceUtils.DEGREES_TO_RADIANS);
+    int relationship = geoArea.getRelationship(shape);
+    if (relationship == GeoArea.WITHIN)
+      return SpatialRelation.WITHIN;
+    else if (relationship == GeoArea.CONTAINS)
+      return SpatialRelation.CONTAINS;
+    else if (relationship == GeoArea.OVERLAPS)
+      return SpatialRelation.INTERSECTS;
+    else if (relationship == GeoArea.DISJOINT)
+      return SpatialRelation.DISJOINT;
+    else
+      throw new RuntimeException("Unknown relationship returned: "+relationship);
   }
 
   @Override
