@@ -14,25 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
+/** 
+ * TODO
+ */
 package org.apache.solr.util.configuration.providers;
 
-import java.util.EnumMap;
 
-/**
- * System property based SSL configuration provider
- */
-public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider {
-  @Override
-  protected EnumMap<CredentialType, String> getCredentialKeyMap() {
-    return DEFAULT_CREDENTIAL_KEY_MAP;
-  }
-
-  protected String getCredential(String syspropKey) {
-    if (System.getProperty(syspropKey) != null) {
-      return System.getProperty(syspropKey);
-    } else {
-      return null;
-    }
-  }
-}

@@ -125,6 +125,10 @@
     <forall-analyzers target="-dist-maven"/>
   </target>
 
+  <target name="-install-to-maven-local-repo">
+    <forall-analyzers target="-install-to-maven-local-repo"/>
+  </target>
+
   <target name="-validate-maven-dependencies">
     <forall-analyzers target="-validate-maven-dependencies"/>
   </target>

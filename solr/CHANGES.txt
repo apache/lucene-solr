@@ -89,8 +89,6 @@ New Features
 * SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
   (yonik)
 
-* SOLR-10783 Add support for Hadoop Credential Provider as SSL/TLS store password source.
-  (Mano Kovacs via Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -140,6 +138,8 @@ Optimizations
 * SOLR-11124: MoveReplicaCmd should skip deleting old replica in case of its node is not live (Cao Manh Dat)
 
 * SOLR-11242: QueryParser: re-use the LookaheadSuccess exception. (Michael Braun via David Smiley)
+
+* SOLR-11314: FastCharStream: re-use the READ_PAST_EOF exception. (Michael Braun via David Smiley)
 
 Other Changes
 ----------------------

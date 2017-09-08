@@ -22,4 +22,34 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public interface GeoPath extends GeoDistanceShape {
+
+  // The following methods compute distances along the path from the shape to a point
+  // that doesn't need to be inside the shape.  The perpendicular distance from the path
+  // itself to the point is not included in the calculation.
+
+  /**
+   * Compute the nearest path distance to the GeoPoint.
+   * The path distance will not include the distance from the path itself to the
+   * point, but just the distance along the path to the nearest point on the path.
+   *
+   * @param distanceStyle is the distance style.
+   * @param point is the point to compute the distance to.
+   * @return the distance to the nearest path point.
+   */
+  public default double computeNearestDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
+    return computeNearestDistance(distanceStyle, point.x, point.y, point.z);
+  }
+
+  /**
+   * Compute the nearest path distance to the GeoPoint.
+   * The path distance will not include the distance from the path itself to the
+   * point, but just the distance along the path to the nearest point on the path.
+   *
+   * @param x is the point's unit x coordinate (using U.S. convention).
+   * @param y is the point's unit y coordinate (using U.S. convention).
+   * @param z is the point's unit z coordinate (using U.S. convention).
+   * @return the distance to the nearest path point.
+   */
+  public double computeNearestDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
+
 }
