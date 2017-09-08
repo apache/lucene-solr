@@ -21,8 +21,6 @@ import java.util.Map;
 
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.distance.CartesianDistCalc;
-import org.locationtech.spatial4j.distance.GeodesicSphereDistCalc;
 
 /**
  * Geo3d implementation of {@link SpatialContextFactory}
@@ -38,7 +36,7 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
   /**
    * The planet model
    */
-  public PlanetModel planetModel;
+  public PlanetModel planetModel = DEFAULT_PLANET_MODEL;;
 
   /**
    * Empty Constructor.
@@ -46,6 +44,7 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
   public Geo3dSpatialContextFactory() {
     this.binaryCodecClass = Geo3dBinaryCodec.class;
     this.shapeFactoryClass = Geo3dShapeFactory.class;
+    this.distCalc = new Geo3dDistanceCalculator(planetModel);
   }
 
   @Override
@@ -65,31 +64,14 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
         throw new RuntimeException("Unknown planet model: " + planetModel);
       }
     }
-    else{
-      this.planetModel = DEFAULT_PLANET_MODEL;
-    }
   }
 
   @Override
   protected void initCalculator() {
     String calcStr = this.args.get("distCalculator");
-    if(calcStr != null) {
-      if(calcStr.equalsIgnoreCase("haversine")) {
-        this.distCalc = new GeodesicSphereDistCalc.Haversine();
-      } else if(calcStr.equalsIgnoreCase("lawOfCosines")) {
-        this.distCalc = new GeodesicSphereDistCalc.LawOfCosines();
-      } else if(calcStr.equalsIgnoreCase("vincentySphere")) {
-        this.distCalc = new GeodesicSphereDistCalc.Vincenty();
-      } else if(calcStr.equalsIgnoreCase("cartesian")) {
-        this.distCalc = new CartesianDistCalc();
-      } else if(calcStr.equalsIgnoreCase("cartesian^2")) {
-        this.distCalc = new CartesianDistCalc(true);
-      } else {
-          throw new RuntimeException("Unknown calculator: " + calcStr);
-      }
-    }
-    else {
+    if (calcStr == null || calcStr.equals("geo3d")) {
       this.distCalc = new Geo3dDistanceCalculator(planetModel);
     }
+    super.initCalculator(); // some other distance calculator
   }
 }

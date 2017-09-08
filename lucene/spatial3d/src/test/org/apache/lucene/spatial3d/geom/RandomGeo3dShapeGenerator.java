@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 
-package org.apache.lucene.spatial.spatial4j;
+package org.apache.lucene.spatial3d.geom;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,31 +23,20 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.lucene.spatial3d.geom.GeoArea;
-import org.apache.lucene.spatial3d.geom.GeoAreaShape;
-import org.apache.lucene.spatial3d.geom.GeoBBox;
-import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoCircle;
-import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
-import org.apache.lucene.spatial3d.geom.GeoCompositeAreaShape;
-import org.apache.lucene.spatial3d.geom.GeoCompositeMembershipShape;
-import org.apache.lucene.spatial3d.geom.GeoPath;
-import org.apache.lucene.spatial3d.geom.GeoPathFactory;
-import org.apache.lucene.spatial3d.geom.GeoPoint;
-import org.apache.lucene.spatial3d.geom.GeoPointShape;
-import org.apache.lucene.spatial3d.geom.GeoPointShapeFactory;
-import org.apache.lucene.spatial3d.geom.GeoPolygon;
-import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
 
 /**
- * Class for generating random Geo3dShapes.
+ * Class for generating random Geo3dShapes. They can be generated under
+ * given constraints which are expressed as a shape and a relationship.
+ *
+ * note that convexity for polygons is defined as polygons that contains
+ * antipodal points, otherwise they are convex. Internally they can be
+ * created using GeoConvexPolygons and GeoConcavePolygons.
+ *
  */
-public class RandomGeoShapeGenerator extends LuceneTestCase {
+public class RandomGeo3dShapeGenerator extends LuceneTestCase {
 
   /* Max num of iterations to find right shape under given constrains */
   final private static int MAX_SHAPE_ITERATIONS = 50;
@@ -63,8 +52,22 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
   final protected static int CIRCLE = 5;
   final protected static int RECTANGLE = 6;
   final protected static int PATH = 7;
-  final protected static int COLLECTION = 8;
-  final protected static int POINT = 9;
+  final protected static int POINT = 8;
+  final protected static int COLLECTION = 9;
+
+  /* Helper shapes for generating constraints whch are just three sided polygons */
+  final protected static int CONVEX_SIMPLE_POLYGON = 500;
+  final protected static int CONCAVE_SIMPLE_POLYGON = 501;
+
+
+  /**
+   * Method that returns empty Constraints object..
+   *
+   * @return an empty Constraints object
+   */
+  public Constraints getEmptyConstraint(){
+    return new Constraints();
+  }
 
   /**
    * Method that returns a random generated a random Shape code from all
@@ -76,6 +79,55 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
     return random().nextInt(10);
   }
 
+  /**
+   * Method that returns a random generated a random Shape code from all
+   * convex supported shapes.
+   *
+   * @return a random generated convex shape code
+   */
+  public int randomConvexShapeType(){
+    int shapeType = randomShapeType();
+    while (isConcave(shapeType)){
+      shapeType = randomShapeType();
+    }
+    return shapeType;
+  }
+
+  /**
+   * Method that returns a random generated a random Shape code from all
+   * concave supported shapes.
+   *
+   * @return a random generated concave shape code
+   */
+  public int randomConcaveShapeType(){
+    int shapeType = randomShapeType();
+    while (!isConcave(shapeType)){
+      shapeType = randomShapeType();
+    }
+    return shapeType;
+  }
+
+  /**
+   * Method that returns a random generated GeoAreaShape code from all
+   * supported GeoAreaShapes.
+   *
+   * We are removing Collections because it is difficult to create shapes
+   * with properties in some cases.
+   *
+   * @return a random generated polygon code
+   */
+  public int randomGeoAreaShapeType(){
+    return random().nextInt(8);
+  }
+
+  /**
+   * Check if a shape code represents a concave shape
+   *
+   * @return true if the shape represented by the code is concave
+   */
+  public boolean isConcave(int shapeType){
+    return (shapeType == CONCAVE_POLYGON);
+  }
 
   /**
    * Method that returns a random generated Planet model from the supported
@@ -83,7 +135,27 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
    *
    * @return a random generated Planet model
    */
-  public String randomPlanetModel() {
+  public PlanetModel randomPlanetModel() {
+    final int shapeType = random().nextInt(2);
+    switch (shapeType) {
+      case 0: {
+        return PlanetModel.SPHERE;
+      }
+      case 1: {
+        return PlanetModel.WGS84;
+      }
+      default:
+        throw new IllegalStateException("Unexpected planet model");
+    }
+  }
+
+  /**
+   * Method that returns a random generated Planet model as string from the supported
+   * Planet models. currently SPHERE and WGS84
+   *
+   * @return a random generated Planet model
+   */
+  public String randomStringPlanetModel() {
     final int shapeType = random().nextInt(2);
     switch (shapeType) {
       case 0: {
@@ -95,6 +167,34 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
       default:
         throw new IllegalStateException("Unexpected planet model");
     }
+  }
+
+  /**
+   * Method that returns a random generated GeoPoint under given constraints. Returns
+   * NULL if it cannot find a point under the given constraints.
+   *
+   * @param planetModel The planet model.
+   * @param constraints The given constraints.
+   * @return The random generated GeoPoint.
+   */
+  public GeoPoint randomGeoPoint(PlanetModel planetModel, Constraints constraints) {
+    int iterations = 0;
+    while (iterations < MAX_POINT_ITERATIONS) {
+      double lat = randomDouble();
+      if (Math.PI/2 - Math.abs(lat)  <0){
+        continue;
+      }
+      double lon =  randomDouble();
+      if (Math.PI - Math.abs(lat)   <0){
+        continue;
+      }
+      iterations++;
+      GeoPoint point = new GeoPoint(planetModel, lat, lon);
+      if (constraints.isWithin(point)) {
+        return point;
+      }
+    }
+    return null;
   }
 
   /**
@@ -122,7 +222,22 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
    * @return The random generated GeoAreaShape.
    */
   public GeoAreaShape randomGeoAreaShape(int shapeType, PlanetModel planetModel, Constraints constraints){
-    return randomGeoShape(shapeType, planetModel, constraints);
+    return (GeoAreaShape)randomGeoShape(shapeType, planetModel, constraints);
+  }
+
+  /**
+   * Method that returns a random generated GeoShape.
+   *
+   * @param shapeType The shape code.
+   * @param planetModel The planet model.
+   * @return The random generated GeoShape.
+   */
+  public GeoShape randomGeoShape(int shapeType, PlanetModel planetModel){
+    GeoShape geoShape = null;
+    while (geoShape == null){
+      geoShape = randomGeoShape(shapeType,planetModel,new Constraints());
+    }
+    return geoShape;
   }
 
   /**
@@ -134,7 +249,7 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
    * @param constraints The given constraints.
    * @return The random generated GeoShape.
    */
-  public GeoAreaShape randomGeoShape(int shapeType, PlanetModel planetModel, Constraints constraints){
+  public GeoShape randomGeoShape(int shapeType, PlanetModel planetModel, Constraints constraints){
     switch (shapeType) {
       case CONVEX_POLYGON: {
         return convexPolygon(planetModel, constraints);
@@ -166,18 +281,24 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
       case POINT: {
         return point(planetModel, constraints);
       }
+      case CONVEX_SIMPLE_POLYGON: {
+        return simpleConvexPolygon(planetModel, constraints);
+      }
+      case CONCAVE_SIMPLE_POLYGON: {
+        return concaveSimplePolygon(planetModel, constraints);
+      }
       default:
         throw new IllegalStateException("Unexpected shape type");
     }
   }
 
   /**
-   * Method that returns a random generated a GeoCircle under given constraints. Returns
+   * Method that returns a random generated a GeoPointShape under given constraints. Returns
    * NULL if it cannot build the GeoCircle under the given constraints.
    *
    * @param planetModel The planet model.
    * @param constraints The given constraints.
-   * @return The random generated GeoCircle.
+   * @return The random generated GeoPointShape.
    */
   private GeoPointShape point(PlanetModel planetModel , Constraints constraints) {
     int iterations=0;
@@ -320,7 +441,7 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
           collection.addShape(member);
         }
       }
-      if (collection.size() ==0){
+      if (collection.shapes.size() ==0){
         continue;
       }
       return collection;
@@ -556,6 +677,63 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
   }
 
   /**
+   * Method that returns a random generated a concave square GeoPolygon under given constraints. Returns
+   * NULL if it cannot build the concave GeoPolygon under the given constraints. This shape is an utility
+   * to build constraints.
+   *
+   * @param planetModel The planet model.
+   * @param constraints The given constraints.
+   * @return The random generated GeoPolygon.
+   */
+  private GeoPolygon simpleConvexPolygon(PlanetModel planetModel, Constraints constraints) {
+    int iterations = 0;
+    while (iterations < MAX_SHAPE_ITERATIONS) {
+      iterations++;
+      List<GeoPoint> points = points(3,planetModel,constraints);
+      points = orderPoints(points);
+      try {
+        GeoPolygon polygon =  GeoPolygonFactory.makeGeoConvexPolygon(planetModel, points);
+        if(!constraints.valid(polygon) || isConcave(planetModel,polygon)){
+          continue;
+        }
+        return polygon;
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Method that returns a random generated a convex square GeoPolygon under given constraints. Returns
+   * NULL if it cannot build the convex GeoPolygon under the given constraints. This shape is an utility
+   * to build constraints.
+   *
+   * @param planetModel The planet model.
+   * @param constraints The given constraints.
+   * @return The random generated GeoPolygon.
+   */
+  private GeoPolygon concaveSimplePolygon(PlanetModel planetModel, Constraints constraints) {
+    int iterations = 0;
+    while (iterations < MAX_SHAPE_ITERATIONS) {
+      iterations++;
+      List<GeoPoint> points = points(3, planetModel, constraints);
+      points = orderPoints(points);
+      Collections.reverse(points);
+      try {
+        GeoPolygon polygon =  GeoPolygonFactory.makeGeoConcavePolygon(planetModel, points);
+        if(!constraints.valid(polygon) || isConvex(planetModel, polygon)){
+          continue;
+        }
+        return polygon;
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Method that returns a random list of generated GeoPoints under given constraints. If it cannot
    * find a point it will add a point that might not comply with the constraints.
    *
@@ -574,34 +752,6 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
       geoPoints.add(point);
     }
     return  geoPoints;
-  }
-
-  /**
-   * Method that returns a random generated GeoPoint under given constraints. Returns
-   * NULL if it cannot find a point under the given constraints.
-   *
-   * @param planetModel The planet model.
-   * @param constraints The given constraints.
-   * @return The random generated GeoPoint.
-   */
-  private GeoPoint randomGeoPoint(PlanetModel planetModel, Constraints constraints) {
-    int iterations = 0;
-    while (iterations < MAX_POINT_ITERATIONS) {
-      double lat = randomDouble();
-      if (Math.PI/2 - Math.abs(lat)  <0){
-        continue;
-      }
-      double lon =  randomDouble();
-      if (Math.PI - Math.abs(lat)   <0){
-        continue;
-      }
-      iterations++;
-      GeoPoint point = new GeoPoint(planetModel, lat, lon);
-      if (constraints.isWithin(point)) {
-        return point;
-      }
-    }
-    return null;
   }
 
   /**
@@ -780,7 +930,7 @@ public class RandomGeoShapeGenerator extends LuceneTestCase {
       //For GeoCompositeMembershipShape we only consider the first shape to help
       // converging
       if (relationship == GeoArea.WITHIN && shape instanceof GeoCompositeMembershipShape) {
-        shape = (((GeoCompositeMembershipShape) shape).getShape(0));
+        shape = (((GeoCompositeMembershipShape) shape).shapes.get(0));
       }
       switch (relationship) {
         case GeoArea.DISJOINT:

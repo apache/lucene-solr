@@ -23,7 +23,7 @@ import org.junit.Test;
 /**
  * Random test to check relationship between GeoAreaShapes and GeoShapes.
  */
-public class RandomGeoShapeRelationshipTest extends RandomGeoShapeGenerator {
+public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
 
 
   /**
@@ -38,6 +38,9 @@ public class RandomGeoShapeRelationshipTest extends RandomGeoShapeGenerator {
     int referenceShapeType = CONVEX_POLYGON;
     PlanetModel planetModel = randomPlanetModel();
     int shapeType = randomShapeType();
+    while (shapeType == POINT) {
+      shapeType = randomShapeType();
+    }
     GeoAreaShape shape = null;
     GeoPoint point = null;
     while (point == null) {
@@ -178,7 +181,7 @@ public class RandomGeoShapeRelationshipTest extends RandomGeoShapeGenerator {
       geoAreaShapeType = randomGeoAreaShapeType();
     }
     int shapeType = randomShapeType();
-    if (isConcave(geoAreaShapeType)){
+    if (isConcave(geoAreaShapeType) || shapeType == POINT){
       shapeType = randomConcaveShapeType();
     }
     if (isConcave(shapeType)){
@@ -217,7 +220,9 @@ public class RandomGeoShapeRelationshipTest extends RandomGeoShapeGenerator {
     PlanetModel planetModel = randomPlanetModel();
     int geoAreaShapeType = randomGeoAreaShapeType();
     int shapeType = randomShapeType();
-
+    while (shapeType == POINT) {
+      shapeType = randomShapeType();
+    }
     GeoShape shape = null;
     GeoAreaShape geoAreaShape = null;
     while (shape == null) {

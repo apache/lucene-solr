@@ -29,6 +29,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial3d.geom.GeoAreaShape;
+import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -40,10 +41,10 @@ public class Geo3dAreaRptTest extends RandomSpatialOpStrategyTestCase {
 
   SpatialContext ctx;
   Geo3dSpatialContextFactory factory;
-  RandomGeoShapeGenerator shapeGenerator = new RandomGeoShapeGenerator();
+  RandomGeo3dShapeGenerator shapeGenerator = new RandomGeo3dShapeGenerator();
 
   private void setupGeohashGrid() {
-    String planetModel = shapeGenerator.randomPlanetModel();
+    String planetModel = shapeGenerator.randomStringPlanetModel();
     factory = new Geo3dSpatialContextFactory();
     Map<String, String>  args = new HashMap<>();
     args.put("planetModel", planetModel);
