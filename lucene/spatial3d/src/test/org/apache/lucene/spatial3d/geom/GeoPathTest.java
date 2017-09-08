@@ -56,8 +56,10 @@ public class GeoPathTest {
     p.done();
     gp = new GeoPoint(PlanetModel.SPHERE, 0.05, 0.15);
     assertEquals(0.15 + 0.05, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
+    assertEquals(0.15, p.computeNearestDistance(DistanceStyle.ARC,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.12);
     assertEquals(0.12, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
+    assertEquals(0.12, p.computeNearestDistance(DistanceStyle.ARC,gp), 0.000001);
 
     // Now try a vertical path, and make sure distances are as expected
     p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
