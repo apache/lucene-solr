@@ -183,6 +183,7 @@ Other Changes
 * SOLR-11322: JSON Facet API: instead of returning NaN, min & max aggregations omit
   the value for any bucket with no values in the numeric field. (yonik)
 
+* SOLR-10990: Breakup QueryComponent.process method for readability. (Christine Poerschke)
 
 * SOLR-11132: Refactor common getSortField logic in various FieldTypes (Jason Gerlowski, hossman)
 
