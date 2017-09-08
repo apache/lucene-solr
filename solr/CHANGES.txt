@@ -139,6 +139,8 @@ Optimizations
 
 * SOLR-11242: QueryParser: re-use the LookaheadSuccess exception. (Michael Braun via David Smiley)
 
+* SOLR-11314: FastCharStream: re-use the READ_PAST_EOF exception. (Michael Braun via David Smiley)
+
 Other Changes
 ----------------------
 
