@@ -5514,7 +5514,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
 
-    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), tuple(corr=corr(c,d)))";
+    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), " +
+                       "tuple(corr=corr(c,d), scorr=spearmansCorr(array(500, 50, 50, 50),d), kcorr=kendallsCorr(array(500, 50, 50, 50),d), d=d))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5528,6 +5529,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getDouble("corr").equals(-1.0D));
+    assertTrue(tuples.get(0).getDouble("scorr").equals(-1.0D));
+    assertTrue(tuples.get(0).getDouble("kcorr").equals(-1.0D));
   }
 
 
