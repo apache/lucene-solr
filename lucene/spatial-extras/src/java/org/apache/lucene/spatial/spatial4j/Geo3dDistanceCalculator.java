@@ -46,7 +46,7 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
     if (from instanceof Geo3dPointShape && to instanceof Geo3dPointShape) {
       GeoPointShape pointShape1 = ((Geo3dPointShape) from).shape;
       GeoPointShape pointShape2 = ((Geo3dPointShape) to).shape;
-      return planetModel.surfaceDistance(pointShape1.getCenter(), pointShape2.getCenter());
+      return planetModel.surfaceDistance(pointShape1.getCenter(), pointShape2.getCenter()) * DistanceUtils.RADIANS_TO_DEGREES;
     }
     throw new IllegalArgumentException("Invalid class type " + from.getClass().getName() + "and " + to.getClass().getName());
   }
@@ -58,7 +58,7 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
       GeoPoint point = new GeoPoint(planetModel,
           toY * DistanceUtils.DEGREES_TO_RADIANS,
           toX * DistanceUtils.DEGREES_TO_RADIANS);
-      return planetModel.surfaceDistance(pointShape.getCenter(),point);
+      return planetModel.surfaceDistance(pointShape.getCenter(),point) * DistanceUtils.RADIANS_TO_DEGREES;
     }
     throw new IllegalArgumentException("Invalid class type " + from.getClass().getName());
   }
