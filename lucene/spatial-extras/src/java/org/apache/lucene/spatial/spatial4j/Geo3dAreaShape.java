@@ -118,4 +118,17 @@ public class Geo3dAreaShape<T extends GeoAreaShape> implements Shape {
   public SpatialContext getContext() {
     return spatialcontext;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Geo3dAreaShape<?>))
+      return false;
+    final Geo3dAreaShape<?> other = (Geo3dAreaShape<?>) o;
+    return (other.shape.equals(shape));
+  }
+
+  @Override
+  public int hashCode() {
+    return shape.hashCode();
+  }
 }
