@@ -190,6 +190,10 @@ Bug Fixes
 * LUCENE-7956: Fixed potential stack overflow error in ICUNormalizer2CharFilter.
   (Adrien Grand)
 
+* LUCENE-7963: Remove useless getAttribute() in DefaultIndexingChain that
+  causes performance drop, introduced by LUCENE-7626.  (Daniel Mitterdorfer
+  via Uwe Schindler)
+
 Improvements
 
 * LUCENE-7489: Better storage of sparse doc-values fields with the default
