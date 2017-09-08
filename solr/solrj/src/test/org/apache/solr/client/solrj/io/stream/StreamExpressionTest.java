@@ -5608,7 +5608,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
 
-    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), tuple(colc=c, cold=d, cov=cov(c,d), dist=distance(c,d)))";
+    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), " +
+                   "tuple(colc=c, cold=d, cov=cov(c,d), dist=distance(c,d), " +
+                         "mdist=manhattanDistance(c,d), edist=earthMoversDistance(c, d), cdist=canberraDistance(c,d)," +
+                         "chdist=chebyshevDistance(c,d)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5623,7 +5626,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getDouble("cov").equals(-625.0D));
     assertTrue(tuples.get(0).getDouble("dist").equals(264.5751311064591D));
-
+    assertTrue(tuples.get(0).getDouble("mdist").equals(500.0D));
+    assertTrue(tuples.get(0).getDouble("cdist").equals(4.0D));
+    assertTrue(tuples.get(0).getDouble("chdist").equals(200.0D));
+    assertTrue(tuples.get(0).getDouble("edist").equals(1400.0D));
   }
 
 
