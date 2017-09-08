@@ -20,6 +20,7 @@ package org.apache.lucene.spatial.spatial4j;
 import java.util.Map;
 
 import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 
 /**
@@ -36,7 +37,7 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
   /**
    * The planet model
    */
-  public PlanetModel planetModel = DEFAULT_PLANET_MODEL;;
+  public PlanetModel planetModel;
 
   /**
    * Empty Constructor.
@@ -44,7 +45,17 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
   public Geo3dSpatialContextFactory() {
     this.binaryCodecClass = Geo3dBinaryCodec.class;
     this.shapeFactoryClass = Geo3dShapeFactory.class;
-    this.distCalc = new Geo3dDistanceCalculator(planetModel);
+  }
+
+  @Override
+  public SpatialContext newSpatialContext() {
+    if (planetModel == null) {
+      planetModel = DEFAULT_PLANET_MODEL;
+    }
+    if (distCalc == null) {
+      this.distCalc = new Geo3dDistanceCalculator(planetModel);
+    }
+    return new SpatialContext(this);
   }
 
   @Override
@@ -64,14 +75,22 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
         throw new RuntimeException("Unknown planet model: " + planetModel);
       }
     }
+    else {
+      this.planetModel = DEFAULT_PLANET_MODEL;
+    }
   }
 
   @Override
   protected void initCalculator() {
     String calcStr = this.args.get("distCalculator");
-    if (calcStr == null || calcStr.equals("geo3d")) {
+    if (calcStr == null) {
+      return;
+    }
+    else if (calcStr.equals("geo3d")) {
       this.distCalc = new Geo3dDistanceCalculator(planetModel);
     }
-    super.initCalculator(); // some other distance calculator
+    else {
+      super.initCalculator(); // some other distance calculator
+    }
   }
 }
