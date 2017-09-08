@@ -62,5 +62,8 @@
   <target name="-dist-maven"/>
 
   <!-- nothing to do -->
+  <target name="-install-to-maven-local-repo"/>
+
+  <!-- nothing to do -->
   <target name="-validate-maven-dependencies"/>
 </project>

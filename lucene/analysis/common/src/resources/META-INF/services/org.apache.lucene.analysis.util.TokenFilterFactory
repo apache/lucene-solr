@@ -17,6 +17,8 @@ org.apache.lucene.analysis.tr.ApostropheFilterFactory
 org.apache.lucene.analysis.ar.ArabicNormalizationFilterFactory
 org.apache.lucene.analysis.ar.ArabicStemFilterFactory
 org.apache.lucene.analysis.bg.BulgarianStemFilterFactory
+org.apache.lucene.analysis.bn.BengaliNormalizationFilterFactory
+org.apache.lucene.analysis.bn.BengaliStemFilterFactory
 org.apache.lucene.analysis.br.BrazilianStemFilterFactory
 org.apache.lucene.analysis.cjk.CJKBigramFilterFactory
 org.apache.lucene.analysis.cjk.CJKWidthFilterFactory

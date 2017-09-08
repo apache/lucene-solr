@@ -27,7 +27,7 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
     },
     "add-field" : {
         "name":"initial_release_date",
-        "type":"tdate",
+        "type":"pdate",
         "stored":true
     }
 }'
@@ -83,7 +83,7 @@ FAQ:
   Why override the schema of the _name_ and _initial_release_date_ fields?
 
      Without overriding those field types, the _name_ field would have been guessed as a multi-valued string field type
-     and _initial_release_date_ would have been guessed as a multi-valued tdate type.  It makes more sense with this
+     and _initial_release_date_ would have been guessed as a multi-valued pdate type.  It makes more sense with this
      particular data set domain to have the movie name be a single valued general full-text searchable field,
      and for the release date also to be single valued.
 
@@ -109,7 +109,7 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
     },
     "add-field" : {
         "name":"initial_release_date",
-        "type":"tdate",
+        "type":"pdate",
         "stored":true
     }
 }'

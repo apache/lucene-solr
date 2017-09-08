@@ -14,24 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
-
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
-
-/**
- * Parse Solr's variant of Lucene QueryParser syntax, including the
- * deprecated sort specification after the query.
- * <br>Example: <code>{!lucenePlusSort}myfield:foo +bar -baz;price asc</code>
- *
- * @deprecated This class should have been removed a long time ago, it will be removed in Solr 8.0
+ 
+/** 
+ * TODO
  */
-@Deprecated
-public class OldLuceneQParserPlugin extends QParserPlugin {
-  public static final String NAME = "lucenePlusSort";
+package org.apache.solr.util.configuration.providers;
 
-  @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new OldLuceneQParser(qstr, localParams, params, req);
-  }
-}
+

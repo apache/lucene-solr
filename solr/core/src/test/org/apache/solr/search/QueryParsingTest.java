@@ -43,7 +43,6 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("df", "text");
 
     final String[] parsersTested = new String[] {
-      OldLuceneQParserPlugin.NAME,
       LuceneQParserPlugin.NAME,
       DisMaxQParserPlugin.NAME,
       ExtendedDismaxQParserPlugin.NAME

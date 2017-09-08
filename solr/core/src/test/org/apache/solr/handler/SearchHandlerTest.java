@@ -63,14 +63,14 @@ public class SearchHandlerTest extends AbstractSolrTestCase {
     );
     
     // Using legacy ';' param
-    assertQ(req("q", "title:test; val_s1 desc", "defType","lucenePlusSort")
+    assertQ(req("q", "title:test", "sort","val_s1 desc")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/str[@name='id'][.='12']"
             ,"//result/doc[2]/str[@name='id'][.='11']"
             ,"//result/doc[3]/str[@name='id'][.='10']"
             );
 
-    assertQ(req("q", "title:test; val_s1 asc", "defType","lucenePlusSort")
+    assertQ(req("q", "title:test", "sort", "val_s1 asc")
             ,"//*[@numFound='3']"
             ,"//result/doc[1]/str[@name='id'][.='10']"
             ,"//result/doc[2]/str[@name='id'][.='11']"

@@ -20,7 +20,7 @@
 
 == Date Formatting
 
-Solr's date fields (`TrieDateField`, `DatePointField` and `DateRangeField`) represent "dates" as a point in time with millisecond precision. The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601]. For those familiar with Java 8, Solr uses https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
+Solr's date fields (`DatePointField`, `DateRangeField` and the deprecated `TrieDateField`) represent "dates" as a point in time with millisecond precision. The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601]. For those familiar with Java 8, Solr uses https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
 
 `YYYY-MM-DDThh:mm:ssZ`
 
@@ -68,7 +68,7 @@ Solr's `DateRangeField` supports the same point in time date syntax described ab
 * `[2014 TO 2014-12-01]` – From the start of 2014 till the end of the first day of December.
 * `[* TO 2014-12-01]` – From the earliest representable time thru till the end of the day on 2014-12-01.
 
-Limitations: The range syntax doesn't support embedded date math. If you specify a date instance supported by TrieDateField with date math truncating it, like `NOW/DAY`, you still get the first millisecond of that day, not the entire day's range. Exclusive ranges (using `{` & `}`) work in _queries_ but not for _indexing_ ranges.
+Limitations: The range syntax doesn't support embedded date math. If you specify a date instance supported by DatePointField with date math truncating it, like `NOW/DAY`, you still get the first millisecond of that day, not the entire day's range. Exclusive ranges (using `{` & `}`) work in _queries_ but not for _indexing_ ranges.
 
 == Date Math
 
@@ -154,7 +154,7 @@ http://localhost:8983/solr/my_collection/select?q=*:*&facet.range=my_date_field&
 
 == More DateRangeField Details
 
-`DateRangeField` is almost a drop-in replacement for places where `TrieDateField` is used. The only difference is that Solr's XML or SolrJ response formats will expose the stored data as a String instead of a Date. The underlying index data for this field will be a bit larger. Queries that align to units of time a second on up should be faster than TrieDateField, especially if it's in UTC. But the main point of DateRangeField as its name suggests is to allow indexing date ranges. To do that, simply supply strings in the format shown above. It also supports specifying 3 different relational predicates between the indexed data, and the query range: `Intersects` (default), `Contains`, `Within`. You can specify the predicate by querying using the `op` local-params parameter like so:
+`DateRangeField` is almost a drop-in replacement for places where `DatePointField` is used. The only difference is that Solr's XML or SolrJ response formats will expose the stored data as a String instead of a Date. The underlying index data for this field will be a bit larger. Queries that align to units of time a second on up should be faster than TrieDateField, especially if it's in UTC. But the main point of DateRangeField as its name suggests is to allow indexing date ranges. To do that, simply supply strings in the format shown above. It also supports specifying 3 different relational predicates between the indexed data, and the query range: `Intersects` (default), `Contains`, `Within`. You can specify the predicate by querying using the `op` local-params parameter like so:
 
 [source,text]
 ----

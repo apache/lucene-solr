@@ -1,7 +1,7 @@
 = How SolrCloud Works
 :page-shortname: how-solrcloud-works
 :page-permalink: how-solrcloud-works.html
-:page-children: shards-and-indexing-data-in-solrcloud, distributed-requests, read-and-write-side-fault-tolerance
+:page-children: shards-and-indexing-data-in-solrcloud, distributed-requests
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,7 +23,6 @@ The following sections cover provide general information about how various SolrC
 
 * <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Shards and Indexing Data in SolrCloud>>
 * <<distributed-requests.adoc#distributed-requests,Distributed Requests>>
-* <<read-and-write-side-fault-tolerance.adoc#read-and-write-side-fault-tolerance,Read and Write Side Fault Tolerance>>
 
 If you are already familiar with SolrCloud concepts and basic functionality, you can skip to the section covering <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>.
 

@@ -709,7 +709,21 @@
       <contrib-crawl target="-dist-maven"/>
     </sequential>
   </target>
-  
+
+  <target name="-install-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <m2-install pom.xml="${filtered.pom.templates.dir}/solr/pom.xml"/>    <!-- Solr parent POM -->
+      <subant target="-install-to-maven-local-repo" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="core" includes="build.xml"/>
+        <fileset dir="solrj" includes="build.xml"/>
+        <fileset dir="test-framework" includes="build.xml"/>
+        <fileset dir="webapp" includes="build.xml"/>
+      </subant>
+      <contrib-crawl target="-install-to-maven-local-repo"/>
+    </sequential>
+  </target>
+
   <target name="generate-maven-artifacts" depends="-unpack-solr-tgz">
     <ant dir=".." target="resolve" inheritall="false"/>
     <antcall target="-filter-pom-templates" inheritall="false"/>

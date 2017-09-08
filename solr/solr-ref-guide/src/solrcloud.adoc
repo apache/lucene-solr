@@ -1,7 +1,7 @@
 = SolrCloud
 :page-shortname: solrcloud
 :page-permalink: solrcloud.html
-:page-children: getting-started-with-solrcloud, how-solrcloud-works, solrcloud-configuration-and-parameters, rule-based-replica-placement, cross-data-center-replication-cdcr, solrcloud-autoscaling
+:page-children: getting-started-with-solrcloud, how-solrcloud-works, solrcloud-resilience, solrcloud-configuration-and-parameters, rule-based-replica-placement, cross-data-center-replication-cdcr, solrcloud-autoscaling
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -33,7 +33,9 @@ In this section, we'll cover everything you need to know about using Solr in Sol
 * <<how-solrcloud-works.adoc#how-solrcloud-works,How SolrCloud Works>>
 ** <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Shards and Indexing Data in SolrCloud>>
 ** <<distributed-requests.adoc#distributed-requests,Distributed Requests>>
-** <<read-and-write-side-fault-tolerance.adoc#read-and-write-side-fault-tolerance,Read and Write Side Fault Tolerance>>
+* <<solrcloud-resilience.adoc#solrcloud-resilience,SolrCloud Resilience>>
+** <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,SolrCloud Recoveries and Write Tolerance>>
+** <<solrcloud-query-routing-and-read-tolerance.adoc#solrcloud-query-routing-and-read-tolerance,SolrCloud Query Routing And Read Tolerance>>
 * <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>
 ** <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>>
 ** <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,Using ZooKeeper to Manage Configuration Files>>

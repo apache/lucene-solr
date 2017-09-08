@@ -30,7 +30,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -66,7 +65,6 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11293")
 public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -222,6 +220,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 1);
 
     // Now introduce a network partition between the leader and 1 replica, so a minRf of 2 is still achieved
+    log.info("partitioning replica :  " + notLeaders.get(0));
     SocketProxy proxy0 = getProxyForReplica(notLeaders.get(0));
 
     proxy0.close();
@@ -241,6 +240,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     Replica partitionedReplica = slice.getReplica(notLeaders.get(0).getName());
     assertEquals("The partitioned replica did not get marked down",
         Replica.State.DOWN.toString(), partitionedReplica.getStr(ZkStateReader.STATE_PROP));
+    log.info("un-partitioning replica :  " + notLeaders.get(0));
 
     proxy0.reopen();
 

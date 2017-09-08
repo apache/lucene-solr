@@ -62,7 +62,7 @@ The field type `class` determines most of the behavior of a field type, but opti
 
 [source,xml]
 ----
-<fieldType name="date" class="solr.TrieDateField"
+<fieldType name="date" class="solr.DatePointField"
            sortMissingLast="true" omitNorms="true"/>
 ----
 
