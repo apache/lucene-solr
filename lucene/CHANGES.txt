@@ -57,6 +57,10 @@ Bug Fixes
 * LUCENE-7891: Lucene's taxonomy facets now uses a non-buggy LRU cache
   by default.  (Jan-Willem van den Broek via Mike McCandless)
 
+* LUCENE-7959: Improve NativeFSLockFactory's exception message if it cannot create
+  write.lock for an empty index due to bad permissions/read-only filesystem/etc.
+  (Erick Erickson, Shawn Heisey, Robert Muir)
+
 Build
 
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
