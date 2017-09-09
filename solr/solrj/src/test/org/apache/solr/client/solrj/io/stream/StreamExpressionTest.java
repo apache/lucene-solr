@@ -6073,6 +6073,40 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testSumDifference() throws Exception {
+    String cexpr = "sumDifference(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    double sd = tuples.get(0).getDouble("return-value");
+    assertEquals(sd, 21.0D, 0.0);
+  }
+
+  @Test
+  public void testMeanDifference() throws Exception {
+    String cexpr = "meanDifference(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    double sd = tuples.get(0).getDouble("return-value");
+    assertEquals(sd, 3.5, 0.0);
+  }
+
+
   @Test
   public void testEBESubtract() throws Exception {
     String cexpr = "ebeSubtract(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";

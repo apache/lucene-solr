@@ -294,6 +294,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("poissonDistribution", PoissonDistributionEvaluator.class)
         .withFunctionName("enumeratedDistribution", EnumeratedDistributionEvaluator.class)
         .withFunctionName("probability", ProbabilityEvaluator.class)
+        .withFunctionName("sumDifference", SumDifferenceEvaluator.class)
+        .withFunctionName("meanDifference", MeanDifferenceEvaluator.class)
 
         // Boolean Stream Evaluators
 
