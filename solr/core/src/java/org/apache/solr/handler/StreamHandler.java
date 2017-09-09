@@ -250,8 +250,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("copyOf", CopyOfEvaluator.class)
         .withFunctionName("cov", CovarianceEvaluator.class)
         .withFunctionName("corr", CorrelationEvaluator.class)
+        .withFunctionName("kendallsCorr", KendallsCorrelationEvaluator.class)
+        .withFunctionName("spearmansCorr", SpearmansCorrelationEvaluator.class)
         .withFunctionName("describe", DescribeEvaluator.class)
         .withFunctionName("distance", EuclideanDistanceEvaluator.class)
+        .withFunctionName("manhattanDistance", ManhattanDistanceEvaluator.class)
+        .withFunctionName("earthMoversDistance", EarthMoversDistanceEvaluator.class)
+        .withFunctionName("canberraDistance", CanberraDistanceEvaluator.class)
+        .withFunctionName("chebyshevDistance", ChebyshevDistanceEvaluator.class)
         .withFunctionName("empiricalDistribution", EmpiricalDistributionEvaluator.class)
         .withFunctionName("finddelay", FindDelayEvaluator.class)
         .withFunctionName("hist", HistogramEvaluator.class)
@@ -288,6 +294,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("poissonDistribution", PoissonDistributionEvaluator.class)
         .withFunctionName("enumeratedDistribution", EnumeratedDistributionEvaluator.class)
         .withFunctionName("probability", ProbabilityEvaluator.class)
+        .withFunctionName("sumDifference", SumDifferenceEvaluator.class)
+        .withFunctionName("meanDifference", MeanDifferenceEvaluator.class)
 
         // Boolean Stream Evaluators
 
