@@ -259,10 +259,11 @@ class GeoDegeneratePath extends GeoBasePath {
     // Well, sort of.  We can detect intersections also due to overlap of segments with each other.
     // But that's an edge case and we won't be optimizing for it.
     //System.err.println(" Looking for intersection of plane "+plane+" with path "+this);
-    for (final SegmentEndpoint pathPoint : endPoints) {
-      if (pathPoint.intersects(planetModel, plane, notablePoints, bounds)) {
-        return true;
-      }
+    
+    // Since the endpoints are included in the path segments, we only need to do this if there are
+    // no path segments
+    if (endPoints.size() == 1) {
+      return endPoints.get(0).intersects(planetModel, plane, notablePoints, bounds);
     }
 
     for (final PathSegment pathSegment : segments) {
@@ -276,10 +277,10 @@ class GeoDegeneratePath extends GeoBasePath {
 
   @Override
   public boolean intersects(GeoShape geoShape) {
-    for (final SegmentEndpoint pathPoint : endPoints) {
-      if (pathPoint.intersects(geoShape)) {
-        return true;
-      }
+    // Since the endpoints are included in the path segments, we only need to do this if there are
+    // no path segments
+    if (endPoints.size() == 1) {
+      return endPoints.get(0).intersects(geoShape);
     }
 
     for (final PathSegment pathSegment : segments) {
@@ -300,8 +301,8 @@ class GeoDegeneratePath extends GeoBasePath {
     for (PathSegment pathSegment : segments) {
       pathSegment.getBounds(planetModel, bounds);
     }
-    for (SegmentEndpoint pathPoint : endPoints) {
-      pathPoint.getBounds(planetModel, bounds);
+    if (endPoints.size() == 1) {
+      endPoints.get(0).getBounds(planetModel, bounds);
     }
   }
 
