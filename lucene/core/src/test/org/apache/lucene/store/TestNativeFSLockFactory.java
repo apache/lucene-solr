@@ -18,9 +18,17 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.util.Set;
 
+import org.apache.lucene.mockfile.FilterFileSystemProvider;
+import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
@@ -88,5 +96,39 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
       
       IOUtils.closeWhileHandlingException(lock);
     }
+  }
+
+  /** MockFileSystem that throws AccessDeniedException on creating test.lock */
+  static class MockBadPermissionsFileSystem extends FilterFileSystemProvider {
+    public MockBadPermissionsFileSystem(FileSystem delegateInstance) {
+      super("mockbadpermissions://", delegateInstance);
+    }
+
+    @Override
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+      if (path.getFileName().toString().equals("test.lock")) {
+        throw new AccessDeniedException(path.toString(), null, "fake access denied");
+      }
+      return super.newByteChannel(path, options, attrs);
+    }
+  }
+
+  public void testBadPermissions() throws IOException {
+    // create a mock filesystem that will throw exc on creating test.lock
+    Path tmpDir = createTempDir();
+    tmpDir = FilterPath.unwrap(tmpDir).toRealPath();
+    FileSystem mock = new MockBadPermissionsFileSystem(tmpDir.getFileSystem()).getFileSystem(null);
+    Path mockPath = mock.getPath(tmpDir.toString());
+
+    // we should get an IOException (typically NoSuchFileException but no guarantee) with
+    // our fake AccessDenied added as suppressed.
+    Directory dir = getDirectory(mockPath.resolve("indexDir"));
+    IOException expected = expectThrows(IOException.class, () -> {
+      dir.obtainLock("test.lock");
+    });
+    AccessDeniedException suppressed = (AccessDeniedException) expected.getSuppressed()[0];
+    assertTrue(suppressed.getMessage().contains("fake access denied"));
+
+    dir.close();
   }
 }
