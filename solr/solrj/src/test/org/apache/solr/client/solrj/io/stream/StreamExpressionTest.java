@@ -5776,7 +5776,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
 
-    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy=copyOfRange(c, 1, 3)))";
+    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy=copyOfRange(c, 1, 3), copy2=copyOfRange(c, 2, 4), l=length(c)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5793,6 +5793,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(copy1.size() == 2);
     assertTrue(copy1.get(0).doubleValue() == 500D);
     assertTrue(copy1.get(1).doubleValue() == 300D);
+
+    List<Number> copy2 = (List<Number>)tuples.get(0).get("copy2");
+    assertTrue(copy2.size() == 2);
+    assertTrue(copy2.get(0).doubleValue() == 300D);
+    assertTrue(copy2.get(1).doubleValue() == 400D);
+
+    long l = tuples.get(0).getLong("l");
+    assertTrue(l == 4);
+
   }
 
 

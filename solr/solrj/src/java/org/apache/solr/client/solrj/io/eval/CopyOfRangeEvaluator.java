@@ -79,8 +79,8 @@ public class CopyOfRangeEvaluator extends RecursiveNumericEvaluator implements M
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - startIdx (%d) must be less than endIdx (%d)", toExpression(constructingFactory), startIdx, endIdx));
     }
 
-    if(endIdx >= sourceValues.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - endIdx (%d) must be less than size of source array (%d)", toExpression(constructingFactory), endIdx, sourceValues.size()));
+    if(endIdx > sourceValues.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - endIdx (%d) must not be greater then size of source array (%d)", toExpression(constructingFactory), endIdx, sourceValues.size()));
     }
 
     return Arrays.stream(Arrays.copyOfRange(sourceValues.toArray(), startIdx, endIdx)).collect(Collectors.toList());
