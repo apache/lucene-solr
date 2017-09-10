@@ -736,6 +736,21 @@ public class SimpleGeoPolygonRelationshipsTest {
     assertEquals(GeoArea.CONTAINS,  rel);
   }
 
+  @Test
+  public void testDegeneratePathShape(){
+    GeoPoint point1 = new GeoPoint(PlanetModel.SPHERE, 0, 0);
+    GeoPoint point2 = new GeoPoint(PlanetModel.SPHERE, 0, 1);
+    GeoPoint[] pointPath1 = new GeoPoint[] {point1, point2};
+    GeoPath path1 = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 0, pointPath1);
+    GeoPath path2 = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 1, pointPath1);
+    int rel = path1.getRelationship(path2);
+    //if an end point is inside the shape it will always return intersects
+    assertEquals(GeoArea.CONTAINS, rel); //should be contains?
+    rel = path2.getRelationship(path1);
+    assertEquals(GeoArea.WITHIN, rel);
+  }
+
+
   private GeoPolygon buildConvexGeoPolygon(double lon1, double lat1,
                                            double lon2, double lat2,
                                            double lon3, double lat3,
