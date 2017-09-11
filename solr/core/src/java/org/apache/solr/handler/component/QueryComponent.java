@@ -357,14 +357,14 @@ public class QueryComponent extends SearchComponent
       cmd.setSegmentTerminateEarly(false); // not supported, silently ignore any segmentTerminateEarly flag
       try {
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
-          doProcessGroupedDistributedSearchFirstPhase(rb, result);
+          doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
           return;
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
-          doProcessGroupedDistributedSearchSecondPhase(rb, result);
+          doProcessGroupedDistributedSearchSecondPhase(rb, cmd, result);
           return;
         }
 
-        doProcessGroupedSearch(rb, result);
+        doProcessGroupedSearch(rb, cmd, result);
         return;
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -372,7 +372,7 @@ public class QueryComponent extends SearchComponent
     }
 
     // normal search result
-    doProcessUngroupedSearch(rb, result);
+    doProcessUngroupedSearch(rb, cmd, result);
   }
 
   protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
@@ -1248,7 +1248,7 @@ public class QueryComponent extends SearchComponent
     return true;
   }
 
-  private void doProcessGroupedDistributedSearchFirstPhase(ResponseBuilder rb, QueryResult result) throws IOException {
+  private void doProcessGroupedDistributedSearchFirstPhase(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1258,8 +1258,6 @@ public class QueryComponent extends SearchComponent
 
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
-
-    QueryCommand cmd = rb.getQueryCommand();
 
     CommandHandler.Builder topsGroupsActionBuilder = new CommandHandler.Builder()
         .setQueryCommand(cmd)
@@ -1286,7 +1284,7 @@ public class QueryComponent extends SearchComponent
     rb.setResult(result);
   }
 
-  private void doProcessGroupedDistributedSearchSecondPhase(ResponseBuilder rb, QueryResult result) throws IOException, SyntaxError {
+  private void doProcessGroupedDistributedSearchSecondPhase(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1299,7 +1297,6 @@ public class QueryComponent extends SearchComponent
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
 
-    QueryCommand cmd = rb.getQueryCommand();
     boolean needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
     CommandHandler.Builder secondPhaseBuilder = new CommandHandler.Builder()
@@ -1358,7 +1355,7 @@ public class QueryComponent extends SearchComponent
     rb.setResult(result);
   }
 
-  private void doProcessGroupedSearch(ResponseBuilder rb, QueryResult result) throws IOException, SyntaxError {
+  private void doProcessGroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1369,8 +1366,6 @@ public class QueryComponent extends SearchComponent
     SolrParams params = req.getParams();
 
     SolrIndexSearcher searcher = req.getSearcher();
-
-    QueryCommand cmd = rb.getQueryCommand();
 
     int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
     boolean cacheSecondPassSearch = maxDocsPercentageToCache >= 1 && maxDocsPercentageToCache <= 100;
@@ -1430,14 +1425,12 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryResult result) throws IOException {
+  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
 
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
-
-    QueryCommand cmd = rb.getQueryCommand();
 
     searcher.search(result, cmd);
     rb.setResult(result);
