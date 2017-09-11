@@ -240,7 +240,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
    */
   class Geo3dLineStringBuilder extends Geo3dPointBuilder<LineStringBuilder> implements LineStringBuilder {
 
-    double distance = 1e-10;
+    double distance = 0;
 
     public Geo3dLineStringBuilder() {
     }
