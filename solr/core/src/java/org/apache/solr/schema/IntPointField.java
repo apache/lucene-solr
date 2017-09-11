@@ -132,20 +132,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    return getSortField(field, SortField.Type.INT, top, Integer.MIN_VALUE, Integer.MAX_VALUE);
   }
 
   @Override

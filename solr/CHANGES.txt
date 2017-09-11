@@ -111,6 +111,8 @@ Bug Fixes
 
 * SOLR-10101: TestLazyCores hangs (Erick Erickson)
 
+* SOLR-11332: Fix sorting on 'enum' fieldTypes that use sortMissingFirst or sortMissingLast (hossman)
+
 Optimizations
 ----------------------
 
@@ -179,6 +181,8 @@ Other Changes
 * SOLR-11322: JSON Facet API: instead of returning NaN, min & max aggregations omit
   the value for any bucket with no values in the numeric field. (yonik)
 
+
+* SOLR-11132: Refactor common getSortField logic in various FieldTypes (Jason Gerlowski, hossman)
 
 ==================  7.0.0 ==================
 
