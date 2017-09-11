@@ -5514,7 +5514,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
 
-    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), tuple(corr=corr(c,d)))";
+    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), " +
+                       "tuple(corr=corr(c,d), scorr=spearmansCorr(array(500, 50, 50, 50),d), kcorr=kendallsCorr(array(500, 50, 50, 50),d), d=d))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5528,6 +5529,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getDouble("corr").equals(-1.0D));
+    assertTrue(tuples.get(0).getDouble("scorr").equals(-1.0D));
+    assertTrue(tuples.get(0).getDouble("kcorr").equals(-1.0D));
   }
 
 
@@ -5605,7 +5608,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
 
-    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), tuple(colc=c, cold=d, cov=cov(c,d), dist=distance(c,d)))";
+    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), " +
+                   "tuple(colc=c, cold=d, cov=cov(c,d), dist=distance(c,d), " +
+                         "mdist=manhattanDistance(c,d), edist=earthMoversDistance(c, d), cdist=canberraDistance(c,d)," +
+                         "chdist=chebyshevDistance(c,d)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5620,7 +5626,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getDouble("cov").equals(-625.0D));
     assertTrue(tuples.get(0).getDouble("dist").equals(264.5751311064591D));
-
+    assertTrue(tuples.get(0).getDouble("mdist").equals(500.0D));
+    assertTrue(tuples.get(0).getDouble("cdist").equals(4.0D));
+    assertTrue(tuples.get(0).getDouble("chdist").equals(200.0D));
+    assertTrue(tuples.get(0).getDouble("edist").equals(1400.0D));
   }
 
 
@@ -5767,7 +5776,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         "field=\"test_dt\", " +
         "count(*), sum(price_f), max(price_f), min(price_f))";
 
-    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy=copyOfRange(c, 1, 3)))";
+    String cexpr = "let(a="+expr+", c=col(a, max(price_f)), tuple(copy=copyOfRange(c, 1, 3), copy2=copyOfRange(c, 2, 4), l=length(c)))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5784,6 +5793,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(copy1.size() == 2);
     assertTrue(copy1.get(0).doubleValue() == 500D);
     assertTrue(copy1.get(1).doubleValue() == 300D);
+
+    List<Number> copy2 = (List<Number>)tuples.get(0).get("copy2");
+    assertTrue(copy2.size() == 2);
+    assertTrue(copy2.get(0).doubleValue() == 300D);
+    assertTrue(copy2.get(1).doubleValue() == 400D);
+
+    long l = tuples.get(0).getLong("l");
+    assertTrue(l == 4);
+
   }
 
 
@@ -6063,6 +6081,40 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(pvalue3.doubleValue() > .05D);
     }
   }
+
+
+  @Test
+  public void testSumDifference() throws Exception {
+    String cexpr = "sumDifference(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    double sd = tuples.get(0).getDouble("return-value");
+    assertEquals(sd, 21.0D, 0.0);
+  }
+
+  @Test
+  public void testMeanDifference() throws Exception {
+    String cexpr = "meanDifference(array(2,4,6,8,10,12),array(1,2,3,4,5,6))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    double sd = tuples.get(0).getDouble("return-value");
+    assertEquals(sd, 3.5, 0.0);
+  }
+
 
   @Test
   public void testEBESubtract() throws Exception {

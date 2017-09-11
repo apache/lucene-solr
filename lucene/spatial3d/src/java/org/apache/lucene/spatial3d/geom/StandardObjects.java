@@ -73,6 +73,7 @@ class StandardObjects {
    classRegsitry.put(XYdZSolid.class, 33);
    classRegsitry.put(StandardXYZSolid.class, 34);
    classRegsitry.put(PlanetModel.class, 35);
+   classRegsitry.put(GeoDegeneratePath.class, 36);
 
    for (Class<?> clazz : classRegsitry.keySet()){
      codeRegsitry.put(classRegsitry.get(clazz), clazz);
