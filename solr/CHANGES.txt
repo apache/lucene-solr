@@ -129,6 +129,8 @@ Bug Fixes
 
 * SOLR-10101: TestLazyCores hangs (Erick Erickson)
 
+* SOLR-11332: Fix sorting on 'enum' fieldTypes that use sortMissingFirst or sortMissingLast (hossman)
+
 Optimizations
 ----------------------
 
@@ -198,6 +200,8 @@ Other Changes
   the value for any bucket with no values in the numeric field. (yonik)
 
 * SOLR-10990: Breakup QueryComponent.process method for readability. (Christine Poerschke)
+
+* SOLR-11132: Refactor common getSortField logic in various FieldTypes (Jason Gerlowski, hossman)
 
 ==================  7.0.0 ==================
 
