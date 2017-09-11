@@ -29,6 +29,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
+import org.apache.lucene.spatial.spatial4j.Geo3dSpatialContextFactory;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -37,13 +38,40 @@ import org.locationtech.spatial4j.shape.Shape;
 
 public class QueryEqualsHashCodeTest extends LuceneTestCase {
 
-  private final SpatialContext ctx = SpatialContext.GEO;
+  private SpatialContext ctx= null;
 
   private SpatialOperation predicate;
 
   @Test
   public void testEqualsHashCode() {
+    ctx = SpatialContext.GEO;
+    switch (random().nextInt(4)) {//0-3
+      case 0: predicate = SpatialOperation.Contains; break;
+      case 1: predicate = SpatialOperation.IsWithin; break;
 
+      default: predicate = SpatialOperation.Intersects; break;
+    }
+    final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx,10);
+    final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx,10);
+
+    Collection<SpatialStrategy> strategies = new ArrayList<>();
+    RecursivePrefixTreeStrategy recursive_geohash = new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash");
+    strategies.add(recursive_geohash);
+    strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
+    strategies.add(PointVectorStrategy.newInstance(ctx, "pointvector"));
+    strategies.add(BBoxStrategy.newInstance(ctx, "bbox"));
+    final SerializedDVStrategy serialized = new SerializedDVStrategy(ctx, "serialized");
+    strategies.add(serialized);
+    strategies.add(new CompositeSpatialStrategy("composite", recursive_geohash, serialized));
+    for (SpatialStrategy strategy : strategies) {
+      testEqualsHashcode(strategy);
+    }
+  }
+
+  @Test
+  public void testEqualsHashCodeGeo3d() {
+
+    ctx = new Geo3dSpatialContextFactory().newSpatialContext();
     switch (random().nextInt(4)) {//0-3
       case 0: predicate = SpatialOperation.Contains; break;
       case 1: predicate = SpatialOperation.IsWithin; break;

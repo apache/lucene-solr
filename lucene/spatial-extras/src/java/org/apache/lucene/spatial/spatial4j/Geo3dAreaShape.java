@@ -22,6 +22,7 @@ import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoAreaShape;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.LatLonBounds;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -65,9 +66,10 @@ public class Geo3dAreaShape<T extends GeoAreaShape> implements Shape {
       }
     }
     else if (other instanceof Rectangle) {
-      //added because world bounds is not a Geo3dShape. In theory
-      //should only get here is this case
       return relate((Rectangle) other);
+    }
+    else if (other instanceof Point) {
+      return relate((Point) other);
     }
     throw new RuntimeException("Unimplemented shape relationship determination: " + other.getClass());
   }
@@ -90,6 +92,14 @@ public class Geo3dAreaShape<T extends GeoAreaShape> implements Shape {
       return SpatialRelation.DISJOINT;
     else
       throw new RuntimeException("Unknown relationship returned: "+relationship);
+  }
+
+  protected SpatialRelation relate(Point p) {
+    GeoPoint point = new GeoPoint(shape.getPlanetModel(), p.getY()* DistanceUtils.DEGREES_TO_RADIANS, p.getX()* DistanceUtils.DEGREES_TO_RADIANS);
+    if (shape.isWithin(point)) {
+      return SpatialRelation.CONTAINS;
+    }
+    return SpatialRelation.DISJOINT;
   }
 
   @Override
@@ -150,7 +160,7 @@ public class Geo3dAreaShape<T extends GeoAreaShape> implements Shape {
     if (!(o instanceof Geo3dAreaShape<?>))
       return false;
     final Geo3dAreaShape<?> other = (Geo3dAreaShape<?>) o;
-    return (other.shape.equals(shape));
+    return (other.spatialcontext.equals(spatialcontext) && other.shape.equals(shape));
   }
 
   @Override
