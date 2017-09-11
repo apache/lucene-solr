@@ -3331,7 +3331,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     int numVals = 10 * RANDOM_MULTIPLIER;
     // Restrict values to float range; otherwise conversion to float will cause truncation -> undefined results
-    List<Double> values = getRandomList(10, false, () -> {
+    List<Double> values = getRandomList(numVals, false, () -> {
       Float f = Float.NaN;
       while (f.isNaN()) {
         f = Float.intBitsToFloat(random().nextInt());
