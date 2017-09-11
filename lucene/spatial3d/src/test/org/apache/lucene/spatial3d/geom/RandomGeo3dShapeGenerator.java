@@ -150,26 +150,6 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
   }
 
   /**
-   * Method that returns a random generated Planet model as string from the supported
-   * Planet models. currently SPHERE and WGS84
-   *
-   * @return a random generated Planet model
-   */
-  public String randomStringPlanetModel() {
-    final int shapeType = random().nextInt(2);
-    switch (shapeType) {
-      case 0: {
-        return "sphere";
-      }
-      case 1: {
-        return "wgs84";
-      }
-      default:
-        throw new IllegalStateException("Unexpected planet model");
-    }
-  }
-
-  /**
    * Method that returns a random generated GeoPoint under given constraints. Returns
    * NULL if it cannot find a point under the given constraints.
    *

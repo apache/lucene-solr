@@ -29,6 +29,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial3d.geom.GeoAreaShape;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -44,11 +45,9 @@ public class Geo3dAreaRptTest extends RandomSpatialOpStrategyTestCase {
   RandomGeo3dShapeGenerator shapeGenerator = new RandomGeo3dShapeGenerator();
 
   private void setupGeohashGrid() {
-    String planetModel = shapeGenerator.randomStringPlanetModel();
+    PlanetModel planetModel = shapeGenerator.randomPlanetModel();
     factory = new Geo3dSpatialContextFactory();
-    Map<String, String>  args = new HashMap<>();
-    args.put("planetModel", planetModel);
-    factory.init(args, ClassLoader.getSystemClassLoader());
+    factory.planetModel = planetModel;
     ctx = factory.newSpatialContext();
     this.grid = new GeohashPrefixTree(ctx, 2);//A fairly shallow grid
     this.rptStrategy = newRPT();
@@ -95,9 +94,6 @@ public class Geo3dAreaRptTest extends RandomSpatialOpStrategyTestCase {
   @Test
   public void testWKT() throws Exception {
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
-    Map<String, String>  args = new HashMap<>();
-    //Let default planet model;
-    factory.init(args, ClassLoader.getSystemClassLoader());
     SpatialContext ctx = factory.newSpatialContext();
     String wkt = "POLYGON ((20.0 -60.4, 20.1 -60.4, 20.1 -60.3, 20.0  -60.3,20.0 -60.4))";
     Shape s = ctx.getFormats().getWktReader().read(wkt);
