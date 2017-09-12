@@ -271,9 +271,9 @@ public class TestSort extends SolrTestCaseJ4 {
 
         if (r.nextBoolean()) sfields.add( new SortField(null, SortField.Type.SCORE));
         // hit both use-cases of sort-missing-last
-        sfields.add( Sorting.getStringSortField("f", reverse, sortMissingLast, sortMissingFirst) );
+        sfields.add( getStringSortField("f", reverse, sortMissingLast, sortMissingFirst) );
         if (secondary) {
-          sfields.add( Sorting.getStringSortField("f2", reverse2, sortMissingLast2, sortMissingFirst2) );
+          sfields.add( getStringSortField("f2", reverse2, sortMissingLast2, sortMissingFirst2) );
         }
         if (r.nextBoolean()) sfields.add( new SortField(null, SortField.Type.SCORE));
 
@@ -355,5 +355,20 @@ public class TestSort extends SolrTestCaseJ4 {
     return new BitDocIdSet(obs);
   }  
   
-
+  private static SortField getStringSortField(String fieldName, boolean reverse, boolean nullLast, boolean nullFirst) {
+    SortField sortField = new SortField(fieldName, SortField.Type.STRING, reverse);
+    
+    // 4 cases:
+    // missingFirst / forward: default lucene behavior
+    // missingFirst / reverse: set sortMissingLast
+    // missingLast  / forward: set sortMissingLast
+    // missingLast  / reverse: default lucene behavior
+    
+    if (nullFirst && reverse) {
+      sortField.setMissingValue(SortField.STRING_LAST);
+    } else if (nullLast && !reverse) {
+      sortField.setMissingValue(SortField.STRING_LAST);
+    }
+    return sortField;
+  }
 }

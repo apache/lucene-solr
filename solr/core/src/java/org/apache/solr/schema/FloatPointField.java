@@ -134,20 +134,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.FLOAT, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    return getSortField(field, SortField.Type.FLOAT, top, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
   }
 
   @Override

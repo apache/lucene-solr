@@ -134,20 +134,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.DOUBLE, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    return getSortField(field, SortField.Type.DOUBLE, top, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
   }
 
   @Override
