@@ -31,6 +31,10 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelation
 
   public Geo3dShapeWGS84ModelRectRelationTest() {
     super(PlanetModel.WGS84);
+    Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
+    factory.planetModel = PlanetModel.WGS84;
+    //factory.distCalc = new GeodesicSphereDistCalc.Haversine();
+    this.ctx = factory.newSpatialContext();
   }
 
   @Test

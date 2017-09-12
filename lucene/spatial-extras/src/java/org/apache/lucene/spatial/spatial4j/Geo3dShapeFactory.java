@@ -145,7 +145,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
         minY * DistanceUtils.DEGREES_TO_RADIANS,
         minX * DistanceUtils.DEGREES_TO_RADIANS,
         maxX * DistanceUtils.DEGREES_TO_RADIANS);
-    return new Geo3dRectangleShape(bBox, context);
+    return new Geo3dRectangleShape(bBox, context, minX, maxX, minY, maxY);
   }
 
   @Override
@@ -259,7 +259,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
     @Override
     public Shape build() {
       GeoPath path = GeoPathFactory.makeGeoPath(planetModel, distance, points.toArray(new GeoPoint[points.size()]));
-      return new Geo3dAreaShape<>(path, context);
+      return new Geo3dShape<>(path, context);
     }
   }
 
@@ -294,12 +294,12 @@ public class Geo3dShapeFactory implements ShapeFactory {
         holes = new ArrayList<>();
         for (HoleBuilder holeBuilder : holeBuilders) {
           PolygonBuilder polygonBuilder = holeBuilder.endHole();
-          Geo3dAreaShape<GeoPolygon> polygon = (Geo3dAreaShape<GeoPolygon>)polygonBuilder.build();
+          Geo3dShape<GeoPolygon> polygon = (Geo3dShape<GeoPolygon>)polygonBuilder.build();
           holes.add(polygon.shape);
         }
       }
       GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, points, holes);
-      return new Geo3dAreaShape<>(polygon, context);
+      return new Geo3dShape<>(polygon, context);
     }
 
     @Override
@@ -332,7 +332,7 @@ public class Geo3dShapeFactory implements ShapeFactory {
         GeoPointShape pointShape = GeoPointShapeFactory.makeGeoPointShape(planetModel, point.getLatitude(), point.getLongitude());
         areaShape.addShape(pointShape);
       }
-      return new Geo3dAreaShape<>(areaShape, context);
+      return new Geo3dShape<>(areaShape, context);
     }
   }
 
@@ -363,10 +363,10 @@ public class Geo3dShapeFactory implements ShapeFactory {
     public Shape build() {
       GeoCompositeAreaShape areaShape = new GeoCompositeAreaShape(planetModel);
       for (LineStringBuilder builder : builders) {
-        Geo3dAreaShape<GeoPolygon>  shape = (Geo3dAreaShape<GeoPolygon>)builder.build();
+        Geo3dShape<GeoPolygon> shape = (Geo3dShape<GeoPolygon>)builder.build();
         areaShape.addShape(shape.shape);
       }
-      return new Geo3dAreaShape<>(areaShape, context);
+      return new Geo3dShape<>(areaShape, context);
     }
   }
 
@@ -395,10 +395,10 @@ public class Geo3dShapeFactory implements ShapeFactory {
     public Shape build() {
       GeoCompositeAreaShape areaShape = new GeoCompositeAreaShape(planetModel);
       for (PolygonBuilder builder : builders) {
-        Geo3dAreaShape<GeoPolygon>  shape = (Geo3dAreaShape<GeoPolygon>)builder.build();
+        Geo3dShape<GeoPolygon> shape = (Geo3dShape<GeoPolygon>)builder.build();
         areaShape.addShape(shape.shape);
       }
-      return new Geo3dAreaShape<>(areaShape, context);
+      return new Geo3dShape<>(areaShape, context);
     }
   }
 
@@ -414,14 +414,14 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
     @Override
     public MultiShapeBuilder<T> add(T shape) {
-      Geo3dAreaShape<?>  areaShape = (Geo3dAreaShape<?>)shape;
+      Geo3dShape<?> areaShape = (Geo3dShape<?>)shape;
       composite.addShape(areaShape.shape);
       return this;
     }
 
     @Override
     public Shape build() {
-      return new Geo3dAreaShape<>(composite, context);
+      return new Geo3dShape<>(composite, context);
     }
   }
 }

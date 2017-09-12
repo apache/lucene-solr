@@ -30,32 +30,49 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
- * Specialization of a {@link Geo3dAreaShape} which represents a {@link Rectangle}. This
+ * Specialization of a {@link Geo3dShape} which represents a {@link Rectangle}. This
  * class is used for geohashing.
  *
  * @lucene.experimental
  */
-public class Geo3dRectangleShape extends Geo3dAreaShape<GeoBBox> implements Rectangle {
+public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangle {
 
-  //bounds object to return the max and min latitude and longitude
-  private volatile  LatLonBounds bounds; // lazy initialized
+  private double minX;
+  private double maxX;
+  private double minY;
+  private double maxY;
+
+  public Geo3dRectangleShape(final GeoBBox shape,
+                             final SpatialContext spatialcontext,
+                             double minX,
+                             double maxX,
+                             double minY,
+                             double maxY) {
+    super(shape, spatialcontext);
+    this.minX = minX;
+    this.maxX = maxX;
+    this.minY = minY;
+    this.maxY = maxY;
+  }
 
   public Geo3dRectangleShape(final GeoBBox shape, final SpatialContext spatialcontext) {
     super(shape, spatialcontext);
+    setBounds();
   }
 
+
+
   /**
-   * Get the bounds from the wrapped GeoBBox.
+   * Set the bounds from the wrapped GeoBBox.
    * @return The bounds
    */
-  private LatLonBounds getBounds() {
-    LatLonBounds bounds  = this.bounds;//volatile read once
-    if (bounds == null) {
-      bounds = new LatLonBounds();
-      shape.getBounds(bounds);
-      this.bounds = bounds;
-    }
-    return bounds;
+  private void setBounds() {
+    LatLonBounds bounds = new LatLonBounds();
+    shape.getBounds(bounds);
+    minX = bounds.checkNoLongitudeBound() ? -180.0 : bounds.getLeftLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    minY = bounds.checkNoBottomLatitudeBound() ? -90.0 : bounds.getMinLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    maxX = bounds.checkNoLongitudeBound() ? 180.0 : bounds.getRightLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    maxY = bounds.checkNoTopLatitudeBound() ? 90.0 : bounds.getMaxLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
   }
 
   @Override
@@ -82,7 +99,6 @@ public class Geo3dRectangleShape extends Geo3dAreaShape<GeoBBox> implements Rect
         maxX * DistanceUtils.DEGREES_TO_RADIANS);
     center = null;
     boundingBox = null;
-    bounds = null;
   }
 
   @Override
@@ -92,12 +108,11 @@ public class Geo3dRectangleShape extends Geo3dAreaShape<GeoBBox> implements Rect
 
   @Override
   public double getWidth() {
-    double maxX = getMaxX();
-    double minX = getMinX();
-    if (minX <0 && maxX >0){
-      return Math.PI + maxX - minX;
+    double result = getMaxX() -getMinX();
+    if (result < 0){
+      result += 360;
     }
-    return maxX - minX;
+    return result;
   }
 
   @Override
@@ -107,26 +122,22 @@ public class Geo3dRectangleShape extends Geo3dAreaShape<GeoBBox> implements Rect
 
   @Override
   public double getMinX() {
-    LatLonBounds bounds = getBounds();
-    return bounds.checkNoLongitudeBound() ? -180.0 : bounds.getLeftLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    return minX;
   }
 
   @Override
   public double getMinY() {
-    LatLonBounds bounds = getBounds();
-    return bounds.checkNoBottomLatitudeBound() ? -90.0 : bounds.getMinLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    return minY;
   }
 
   @Override
   public double getMaxX() {
-    LatLonBounds bounds = getBounds();
-    return bounds.checkNoLongitudeBound() ? 180.0 : bounds.getRightLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    return maxX;
   }
 
   @Override
   public double getMaxY() {
-    LatLonBounds bounds = getBounds();
-    return bounds.checkNoTopLatitudeBound() ? 90.0 : bounds.getMaxLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    return maxY;
   }
 
   @Override

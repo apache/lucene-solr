@@ -26,11 +26,11 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Specialization of a {@link Geo3dAreaShape} which represents a {@link Point}.
+ * Specialization of a {@link Geo3dShape} which represents a {@link Point}.
  *
  * @lucene.experimental
  */
-public class Geo3dPointShape extends Geo3dAreaShape<GeoPointShape> implements Point {
+public class Geo3dPointShape extends Geo3dShape<GeoPointShape> implements Point {
 
   public Geo3dPointShape(final GeoPointShape shape, final SpatialContext spatialcontext) {
     super(shape, spatialcontext);

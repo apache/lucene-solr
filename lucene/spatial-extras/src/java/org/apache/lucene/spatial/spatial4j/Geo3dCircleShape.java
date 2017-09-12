@@ -26,11 +26,11 @@ import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 
 /**
- * Specialization of a {@link Geo3dAreaShape} which represents a {@link Circle}.
+ * Specialization of a {@link Geo3dShape} which represents a {@link Circle}.
  *
  * @lucene.experimental
  */
-public class Geo3dCircleShape extends Geo3dAreaShape<GeoCircle> implements Circle {
+public class Geo3dCircleShape extends Geo3dShape<GeoCircle> implements Circle {
 
   public Geo3dCircleShape(final GeoCircle shape, final SpatialContext spatialcontext) {
     super(shape, spatialcontext);
