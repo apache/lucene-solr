@@ -125,7 +125,12 @@ public class Geo3dShapeFactory implements ShapeFactory {
 
   @Override
   public Point pointXYZ(double x, double y, double z) {
-    throw new UnsupportedOperationException();
+    GeoPoint point = new GeoPoint(x, y, z);
+    GeoPointShape pointShape = GeoPointShapeFactory.makeGeoPointShape(planetModel,
+        point.getLatitude(),
+        point.getLongitude());
+    return new Geo3dPointShape(pointShape, context);
+    //throw new UnsupportedOperationException();
   }
 
   @Override

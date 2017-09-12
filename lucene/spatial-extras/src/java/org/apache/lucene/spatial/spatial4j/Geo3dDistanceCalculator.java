@@ -20,6 +20,7 @@ package org.apache.lucene.spatial.spatial4j;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPointShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.Vector;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -70,7 +71,22 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
 
   @Override
   public Point pointOnBearing(Point from, double distDEG, double bearingDEG, SpatialContext ctx, Point reuse) {
-    throw new UnsupportedOperationException();
+    double dist = DistanceUtils.DEGREES_TO_RADIANS * distDEG;
+    double bearing = DistanceUtils.DEGREES_TO_RADIANS * bearingDEG;
+    Geo3dPointShape geoFrom = (Geo3dPointShape) from;
+    GeoPoint point = (GeoPoint)geoFrom.shape;
+
+    GeoPoint north = planetModel.NORTH_POLE;
+    Vector east = new Vector(north, point);
+    Vector northEast = new Vector(point, east);
+    double xDir = northEast.x * Math.cos(bearing) + east.x * Math.sin(bearing);
+    double yDir = northEast.y * Math.cos(bearing) + east.y * Math.sin(bearing);
+    double zDir = northEast.z * Math.cos(bearing) + east.z * Math.sin(bearing);
+
+    double pX = point.x * Math.cos(dist) + xDir * Math.sin(dist);
+    double pY = point.y * Math.cos(dist) + yDir * Math.sin(dist);
+    double pZ = point.z * Math.cos(dist) + zDir * Math.sin(dist);
+    return ctx.getShapeFactory().pointXYZ(pX, pY, pZ);
   }
 
   @Override
