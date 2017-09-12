@@ -56,50 +56,54 @@ public class Geo3dShape<T extends GeoAreaShape> implements Shape {
 
   @Override
   public SpatialRelation relate(Shape other) {
+    int relationship;
     if (other instanceof Geo3dShape<?>){
-      int relationship = shape.getRelationship(((Geo3dShape<?>)other).shape);
-      switch(relationship){
-        case GeoArea.DISJOINT: return SpatialRelation.DISJOINT;
-        case GeoArea.OVERLAPS: return (other instanceof Point ? SpatialRelation.CONTAINS : SpatialRelation.INTERSECTS);
-        case GeoArea.CONTAINS: return (other instanceof Point ? SpatialRelation.CONTAINS : SpatialRelation.WITHIN);
-        case GeoArea.WITHIN: return SpatialRelation.CONTAINS;
-      }
+      relationship = relate((Geo3dShape<?>) other);
     }
     else if (other instanceof Rectangle) {
-      return relate((Rectangle) other);
+      relationship = relate((Rectangle) other);
     }
     else if (other instanceof Point) {
-      return relate((Point) other);
+      relationship =  relate((Point) other);
     }
-    throw new RuntimeException("Unimplemented shape relationship determination: " + other.getClass());
+    else {
+      throw new RuntimeException("Unimplemented shape relationship determination: " + other.getClass());
+    }
+
+    switch(relationship){
+      case GeoArea.DISJOINT: return SpatialRelation.DISJOINT;
+      case GeoArea.OVERLAPS: return (other instanceof Point ? SpatialRelation.CONTAINS : SpatialRelation.INTERSECTS);
+      case GeoArea.CONTAINS: return (other instanceof Point ? SpatialRelation.CONTAINS : SpatialRelation.WITHIN);
+      case GeoArea.WITHIN: return SpatialRelation.CONTAINS;
+    }
+
+    throw new RuntimeException("Undetermined shape relationship: " + relationship);
   }
 
-  protected SpatialRelation relate(Rectangle r) {
+  private int relate(Geo3dShape<?> s) {
+    return shape.getRelationship(s.shape);
+  }
+
+  private int relate(Rectangle r) {
     // Construct the right kind of GeoArea first
     GeoArea geoArea = GeoAreaFactory.makeGeoArea(shape.getPlanetModel(),
         r.getMaxY() * DistanceUtils.DEGREES_TO_RADIANS,
         r.getMinY() * DistanceUtils.DEGREES_TO_RADIANS,
         r.getMinX() * DistanceUtils.DEGREES_TO_RADIANS,
         r.getMaxX() * DistanceUtils.DEGREES_TO_RADIANS);
-    int relationship = geoArea.getRelationship(shape);
-    if (relationship == GeoArea.WITHIN)
-      return SpatialRelation.WITHIN;
-    else if (relationship == GeoArea.CONTAINS)
-      return SpatialRelation.CONTAINS;
-    else if (relationship == GeoArea.OVERLAPS)
-      return SpatialRelation.INTERSECTS;
-    else if (relationship == GeoArea.DISJOINT)
-      return SpatialRelation.DISJOINT;
-    else
-      throw new RuntimeException("Unknown relationship returned: "+relationship);
+
+    return geoArea.getRelationship(shape);
   }
 
-  protected SpatialRelation relate(Point p) {
-    GeoPoint point = new GeoPoint(shape.getPlanetModel(), p.getY()* DistanceUtils.DEGREES_TO_RADIANS, p.getX()* DistanceUtils.DEGREES_TO_RADIANS);
+  private int relate(Point p) {
+    GeoPoint point = new GeoPoint(shape.getPlanetModel(),
+        p.getY()* DistanceUtils.DEGREES_TO_RADIANS,
+        p.getX()* DistanceUtils.DEGREES_TO_RADIANS);
+
     if (shape.isWithin(point)) {
-      return SpatialRelation.CONTAINS;
+      return GeoArea.WITHIN;
     }
-    return SpatialRelation.DISJOINT;
+    return GeoArea.DISJOINT;
   }
 
   @Override

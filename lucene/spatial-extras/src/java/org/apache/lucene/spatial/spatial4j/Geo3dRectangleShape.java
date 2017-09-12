@@ -30,8 +30,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
- * Specialization of a {@link Geo3dShape} which represents a {@link Rectangle}. This
- * class is used for geohashing.
+ * Specialization of a {@link Geo3dShape} which represents a {@link Rectangle}.
  *
  * @lucene.experimental
  */
@@ -57,7 +56,7 @@ public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangl
 
   public Geo3dRectangleShape(final GeoBBox shape, final SpatialContext spatialcontext) {
     super(shape, spatialcontext);
-    setBounds();
+    setBoundsFromshape();
   }
 
 
@@ -66,7 +65,7 @@ public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangl
    * Set the bounds from the wrapped GeoBBox.
    * @return The bounds
    */
-  private void setBounds() {
+  private void setBoundsFromshape() {
     LatLonBounds bounds = new LatLonBounds();
     shape.getBounds(bounds);
     minX = bounds.checkNoLongitudeBound() ? -180.0 : bounds.getLeftLongitude() * DistanceUtils.RADIANS_TO_DEGREES;

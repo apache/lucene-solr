@@ -71,6 +71,16 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
 
   @Override
   public Point pointOnBearing(Point from, double distDEG, double bearingDEG, SpatialContext ctx, Point reuse) {
+    // direct geodetic problem solved using vectors
+    // Implemented using algorithm in http://www.movable-type.co.uk/scripts/latlong-vectors.html
+    // only works on the sphere.
+
+    //N = {0,0,1} – vector representing north pole
+    //d̂e = N×a – east vector at a
+    //dn = a×de – north vector at a
+    //d = dn·cosθ + de·sinθ – direction vector in dir’n of θ
+    //b = a·cosδ + d·sinδ
+
     double dist = DistanceUtils.DEGREES_TO_RADIANS * distDEG;
     double bearing = DistanceUtils.DEGREES_TO_RADIANS * bearingDEG;
     Geo3dPointShape geoFrom = (Geo3dPointShape) from;
@@ -86,7 +96,9 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
     double pX = point.x * Math.cos(dist) + xDir * Math.sin(dist);
     double pY = point.y * Math.cos(dist) + yDir * Math.sin(dist);
     double pZ = point.z * Math.cos(dist) + zDir * Math.sin(dist);
-    return ctx.getShapeFactory().pointXYZ(pX, pY, pZ);
+    GeoPoint newPoint = planetModel.createSurfacePoint(pX ,pY, pZ);
+    return ctx.getShapeFactory().pointXY(newPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES,
+                                         newPoint.getLatitude()  * DistanceUtils.RADIANS_TO_DEGREES);
   }
 
   @Override
