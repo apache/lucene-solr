@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.Sorting;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** <code>TextField</code> is the basic type for configurable text analysis.
@@ -108,8 +107,8 @@ public class TextField extends FieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     /* :TODO: maybe warn if isTokenized(), but doesn't use LimitTokenCountFilter in its chain? */
-    field.checkSortability();
-    return Sorting.getTextSortField(field.getName(), reverse, field.sortMissingLast(), field.sortMissingFirst());
+    return getSortedSetSortField(field, SortedSetSelector.Type.MIN, reverse,
+                                 SortField.STRING_FIRST, SortField.STRING_LAST);
   }
   
   @Override

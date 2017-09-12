@@ -190,20 +190,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Long.MIN_VALUE : Long.MAX_VALUE;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Long.MAX_VALUE : Long.MIN_VALUE;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.LONG, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    return getSortField(field, SortField.Type.LONG, top, Long.MIN_VALUE, Long.MAX_VALUE);
   }
 
   @Override

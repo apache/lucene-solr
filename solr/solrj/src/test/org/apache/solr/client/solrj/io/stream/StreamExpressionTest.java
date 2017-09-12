@@ -5858,6 +5858,35 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testPrimes() throws Exception {
+    String cexpr = "primes(10, 0)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    List<Number> asort = (List<Number>)tuple.get("return-value");
+    assertEquals(asort.size(), 10);
+    assertEquals(asort.get(0).intValue(), 2);
+    assertEquals(asort.get(1).intValue(), 3);
+    assertEquals(asort.get(2).intValue(), 5);
+    assertEquals(asort.get(3).intValue(), 7);
+    assertEquals(asort.get(4).intValue(), 11);
+    assertEquals(asort.get(5).intValue(), 13);
+    assertEquals(asort.get(6).intValue(), 17);
+    assertEquals(asort.get(7).intValue(), 19);
+    assertEquals(asort.get(8).intValue(), 23);
+    assertEquals(asort.get(9).intValue(), 29);
+  }
+
+  @Test
   public void testAscend() throws Exception {
     String cexpr = "asc(array(11.5, 12.3, 4, 3, 1, 0))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
