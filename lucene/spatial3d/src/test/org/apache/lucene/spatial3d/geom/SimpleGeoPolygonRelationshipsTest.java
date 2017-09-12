@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Check relationship between polygon and GeoShapes of basic polygons. Normally we construct
@@ -734,6 +735,14 @@ public class SimpleGeoPolygonRelationshipsTest {
     // The degenerated point cannot compute if it is on the edge. Uses WITHIN that is true
     // and therefore CONTAINS
     assertEquals(GeoArea.CONTAINS,  rel);
+  }
+
+  @Test
+  public void testDegeneratedPointInPole(){
+    GeoBBox bBox1 = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, Math.PI*0.5, Math.PI*0.5, 0, 0);
+    GeoPoint point = new GeoPoint(PlanetModel.SPHERE, Math.PI*0.5,  Math.PI);
+    System.out.println("bbox1 = "+bBox1+"; point = "+point);
+    assertTrue(bBox1.isWithin(point));
   }
 
   @Test
