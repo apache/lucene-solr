@@ -29,7 +29,10 @@ import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.junit.Test;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
 
@@ -73,5 +76,20 @@ public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelatio
     // thus the bounding box must intersect too
     assertTrue(geo3dShape.getBoundingBox().relate(rect).intersects());
 
+  }
+
+  @Test
+  public void pointBearingTest(){
+    double radius = 136;
+    double distance = 135.97;
+    double bearing = 188;
+    Point p = ctx.getShapeFactory().pointXY(35, 85);
+    Circle circle = ctx.getShapeFactory().circle(p, radius);
+    Point bPoint = ctx.getDistCalc().pointOnBearing(p, distance, bearing, ctx, (Point) null);
+
+    double d = ctx.getDistCalc().distance(p, bPoint);
+    assertEquals(d, distance, 10-8);
+
+    assertEquals(circle.relate(bPoint), SpatialRelation.CONTAINS);
   }
 }
