@@ -131,6 +131,8 @@ Bug Fixes
 
 * SOLR-11332: Fix sorting on 'enum' fieldTypes that use sortMissingFirst or sortMissingLast (hossman)
 
+* SOLR-11348: Fix the DIH database example (James Dyer)
+
 Optimizations
 ----------------------
 

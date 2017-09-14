@@ -174,13 +174,13 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
   public GeoPoint randomGeoPoint(PlanetModel planetModel, Constraints constraints) {
     int iterations = 0;
     while (iterations < MAX_POINT_ITERATIONS) {
-      double lat = randomDouble();
-      if (Math.PI/2 - Math.abs(lat)  <0){
-        continue;
+      double lat = randomDouble() * Math.PI/2;
+      if (random().nextBoolean()) {
+        lat = (-1)*lat;
       }
-      double lon =  randomDouble();
-      if (Math.PI - Math.abs(lat)   <0){
-        continue;
+      double lon =  randomDouble() * Math.PI;
+      if (random().nextBoolean()) {
+        lon = (-1)*lon;
       }
       iterations++;
       GeoPoint point = new GeoPoint(planetModel, lat, lon);
@@ -810,13 +810,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
    * @return the cutoff angle.
    */
   private double randomCutoffAngle() {
-    while(true) {
-      double radius = randomDouble();
-      if (radius <0 || radius > Math.PI){
-        continue;
-      }
-      return radius;
-    }
+    return randomDouble() * Math.PI;
   }
 
   /**
