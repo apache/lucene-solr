@@ -119,20 +119,20 @@ class GeoDegeneratePath extends GeoBasePath {
       if (i == 0) {
         // Starting endpoint
         final SegmentEndpoint startEndpoint = new SegmentEndpoint(currentSegment.start,
-          new SidedPlane(currentSegment.startCutoffPlane));
+          currentSegment.startCutoffPlane);
         endPoints.add(startEndpoint);
         this.edgePoints = new GeoPoint[]{currentSegment.start};
         continue;
       }
       
       endPoints.add(new SegmentEndpoint(currentSegment.start,
-        new SidedPlane(segments.get(i-1).endCutoffPlane),
-        new SidedPlane(currentSegment.startCutoffPlane)));
+        segments.get(i-1).endCutoffPlane,
+        currentSegment.startCutoffPlane));
     }
     // Do final endpoint
     final PathSegment lastSegment = segments.get(segments.size()-1);
     endPoints.add(new SegmentEndpoint(lastSegment.end,
-      new SidedPlane(lastSegment.endCutoffPlane)));
+      lastSegment.endCutoffPlane));
 
   }
 
