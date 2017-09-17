@@ -80,7 +80,7 @@ public abstract class LTRScoringModel {
   protected final List<Feature> features;
   private final List<Feature> allFeatures;
   private final Map<String,Object> params;
-  private final List<Normalizer> norms;
+  protected final List<Normalizer> norms;
 
   public static LTRScoringModel getInstance(SolrResourceLoader solrResourceLoader,
       String className, String name, List<Feature> features,
@@ -123,6 +123,8 @@ public abstract class LTRScoringModel {
    * {@link ModelException} if they do not make sense.
    */
   protected void validate() throws ModelException {
+    final List<Feature> features = getFeatures();
+    final List<Normalizer> norms = getNorms();
     if (features.isEmpty()) {
       throw new ModelException("no features declared for model "+name);
     }

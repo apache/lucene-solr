@@ -50,7 +50,7 @@ The above create collection command will associate a policy named `policy1` with
 
 Note that the collection-specific policy is applied *in addition to* the cluster policy, i.e., it is not an override but an augmentation. Therefore the collection will follow all conditions laid out in the cluster preferences, cluster policy, and the policy named `policy1`.
 
-You can learn more about collection-specific policies in the section  <<solrcloud-autoscaling-policy-preferences.adoc#defining-collection-specific-policies,Defining Collection-Specific Policies>>.
+You can learn more about collection-specific policies in the section  <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy,Defining Collection-Specific Policies>>.
 
 == Autoscaling APIs
 

@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -68,7 +69,7 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
     EmpiricalDistribution distribution = new EmpiricalDistribution(bins);
     distribution.load(((List<?>)sourceValues).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());;
 
-    List<Map<String,Number>> histogramBins = new ArrayList<>();
+    List<Tuple> histogramBins = new ArrayList<>();
     for(SummaryStatistics binSummary : distribution.getBinStats()) {
       Map<String,Number> map = new HashMap<>();
       map.put("max", binSummary.getMax());
@@ -78,7 +79,9 @@ public class HistogramEvaluator extends RecursiveNumericEvaluator implements Man
       map.put("sum", binSummary.getSum());
       map.put("N", binSummary.getN());
       map.put("var", binSummary.getVariance());
-      histogramBins.add(map);
+      map.put("cumProb", distribution.cumulativeProbability(binSummary.getMean()));
+      map.put("prob", distribution.probability(binSummary.getMin(), binSummary.getMax()));
+      histogramBins.add(new Tuple(map));
     }
     
     return histogramBins;

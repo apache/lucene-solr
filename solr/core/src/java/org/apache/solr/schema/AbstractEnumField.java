@@ -250,11 +250,12 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-    final Object missingValue = Integer.MIN_VALUE;
-    SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    SortField result = getSortField(field, SortField.Type.INT, top, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    if (null == result.getMissingValue()) {
+      // special case default behavior: assume missing values are "below" all enum values
+      result.setMissingValue(Integer.MIN_VALUE);
+    }
+    return result;
   }
 
   @Override

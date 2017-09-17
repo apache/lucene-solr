@@ -113,24 +113,26 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     Map<String, List<String[]>> fieldName2tokensArray = new LinkedHashMap<>();
     Map<String, Float> fieldName2boost = new LinkedHashMap<>();
     Terms classes = MultiFields.getTerms(indexReader, classFieldName);
-    TermsEnum classesEnum = classes.iterator();
-    BytesRef c;
+    if (classes != null) {
+      TermsEnum classesEnum = classes.iterator();
+      BytesRef c;
 
-    analyzeSeedDocument(inputDocument, fieldName2tokensArray, fieldName2boost);
+      analyzeSeedDocument(inputDocument, fieldName2tokensArray, fieldName2boost);
 
-    int docsWithClassSize = countDocsWithClass();
-    while ((c = classesEnum.next()) != null) {
-      double classScore = 0;
-      Term term = new Term(this.classFieldName, c);
-      for (String fieldName : textFieldNames) {
-        List<String[]> tokensArrays = fieldName2tokensArray.get(fieldName);
-        double fieldScore = 0;
-        for (String[] fieldTokensArray : tokensArrays) {
-          fieldScore += calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(fieldTokensArray, fieldName, term, docsWithClassSize) * fieldName2boost.get(fieldName);
+      int docsWithClassSize = countDocsWithClass();
+      while ((c = classesEnum.next()) != null) {
+        double classScore = 0;
+        Term term = new Term(this.classFieldName, c);
+        for (String fieldName : textFieldNames) {
+          List<String[]> tokensArrays = fieldName2tokensArray.get(fieldName);
+          double fieldScore = 0;
+          for (String[] fieldTokensArray : tokensArrays) {
+            fieldScore += calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(fieldTokensArray, fieldName, term, docsWithClassSize) * fieldName2boost.get(fieldName);
+          }
+          classScore += fieldScore;
         }
-        classScore += fieldScore;
+        assignedClasses.add(new ClassificationResult<>(term.bytes(), classScore));
       }
-      assignedClasses.add(new ClassificationResult<>(term.bytes(), classScore));
     }
     return normClassificationResults(assignedClasses);
   }

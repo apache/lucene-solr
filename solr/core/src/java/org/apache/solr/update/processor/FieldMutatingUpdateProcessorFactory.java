@@ -79,7 +79,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  * In the ExampleFieldMutatingUpdateProcessorFactory configured below, 
  * fields will be mutated if the name starts with "foo" <i>or</i> "bar"; 
  * <b>unless</b> the field name contains the substring "SKIP" <i>or</i> 
- * the fieldType is (or subclasses) TrieDateField.  Meaning a field named
+ * the fieldType is (or subclasses) DatePointField.  Meaning a field named
  * "foo_SKIP" is guaranteed not to be selected, but a field named "bar_smith" 
  * that uses StrField will be selected.
  * </p>
@@ -92,7 +92,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  *     &lt;str name="fieldRegex"&gt;.*SKIP.*&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="exclude"&gt;
- *     &lt;str name="typeClass"&gt;solr.TrieDateField&lt;/str&gt;
+ *     &lt;str name="typeClass"&gt;solr.DatePointField&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
  * 

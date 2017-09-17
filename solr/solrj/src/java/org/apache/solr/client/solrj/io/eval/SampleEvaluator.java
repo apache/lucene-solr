@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -42,16 +43,19 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements TwoValu
     if(null == second){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
-    if(!(first instanceof RealDistribution)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a RealDistribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if(!(first instanceof RealDistribution) && !(first instanceof IntegerDistribution)){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a Real or Integer Distribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
     if(!(second instanceof Number)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
-    
-    RealDistribution realDistribution = (RealDistribution)first;
-    
-    return Arrays.stream(realDistribution.sample(((Number)second).intValue())).mapToObj(item -> item).collect(Collectors.toList());    
-  }
 
+    if(first instanceof RealDistribution) {
+      RealDistribution realDistribution = (RealDistribution) first;
+      return Arrays.stream(realDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
+    } else {
+      IntegerDistribution integerDistribution = (IntegerDistribution) first;
+      return Arrays.stream(integerDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
+    }
+  }
 }

@@ -33,6 +33,9 @@ public class GeoPathFactory {
    * @return a GeoPath corresponding to what was specified.
    */
   public static GeoPath makeGeoPath(final PlanetModel planetModel, final double maxCutoffAngle, final GeoPoint[] pathPoints) {
+    if (maxCutoffAngle < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+      return new GeoDegeneratePath(planetModel, pathPoints);
+    }
     return new GeoStandardPath(planetModel, maxCutoffAngle, pathPoints);
   }
 

@@ -27,18 +27,18 @@ import org.junit.Test;
 /**
  * Test to check Serialization
  */
-public class RandomBinaryCodecTest extends RandomGeoShapeGenerator{
+public class RandomBinaryCodecTest extends RandomGeo3dShapeGenerator {
 
   @Test
   @Repeat(iterations = 10)
   public void testRandomPointCodec() throws IOException{
     PlanetModel planetModel = randomPlanetModel();
-    GeoPoint shape = randomGeoPoint(planetModel, getEmptyConstraint());
+    GeoPoint shape = randomGeoPoint(planetModel);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     SerializableObject.writeObject(outputStream, shape);
     ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     SerializableObject shapeCopy = SerializableObject.readObject(planetModel, inputStream);
-    assertEquals(shape, shapeCopy);
+    assertEquals(shape.toString(), shape, shapeCopy);
   }
 
   @Test
@@ -51,7 +51,7 @@ public class RandomBinaryCodecTest extends RandomGeoShapeGenerator{
     SerializableObject.writePlanetObject(outputStream, shape);
     ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     SerializableObject shapeCopy = SerializableObject.readPlanetObject(inputStream);
-    assertEquals(shape, shapeCopy);
+    assertEquals(shape.toString(), shape, shapeCopy);
   }
 
   @Test
@@ -64,6 +64,6 @@ public class RandomBinaryCodecTest extends RandomGeoShapeGenerator{
     SerializableObject.writeObject(outputStream, shape);
     ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     SerializableObject shapeCopy = SerializableObject.readObject(planetModel, inputStream);
-    assertEquals(shape, shapeCopy);
+    assertEquals(shape.toString(), shape, shapeCopy);
   }
 }

@@ -188,6 +188,7 @@ Place all replicas in nodes with freedisk more than 500GB when possible. Here we
 [source,json]
 {"replica": 0, "freedisk": "<500", "strict" : false}
 
+[[collection-specific-policy]]
 == Defining Collection-Specific Policies
 
 By default, the cluster policy, if it exists, is used automatically for all collections in the cluster. However, we can create named policies which can be attached to a collection at the time of its creation by specifying the policy name along with a `policy` parameter.
