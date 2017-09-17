@@ -51,6 +51,10 @@ Bug Fixes
   write.lock for an empty index due to bad permissions/read-only filesystem/etc.
   (Erick Erickson, Shawn Heisey, Robert Muir)
 
+* LUCENE-7968: AnalyzingSuggester would sometimes order suggestions incorrectly,
+  it did not properly break ties on the surface forms when both the weights and
+  the analyzed forms were equal. (Robert Muir)
+
 Build
 
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
