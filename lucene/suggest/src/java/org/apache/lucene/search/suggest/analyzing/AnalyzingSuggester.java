@@ -390,9 +390,11 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       } else {
         scratchA.offset = readerA.getPosition();
         scratchB.offset = readerB.getPosition();
-        scratchA.length = a.length - scratchA.offset;
-        scratchB.length = b.length - scratchB.offset;
+        scratchA.length = readerA.length() - readerA.getPosition();
+        scratchB.length = readerB.length() - readerB.getPosition();
       }
+      assert scratchA.isValid();
+      assert scratchB.isValid();
    
       return scratchA.compareTo(scratchB);
     }
