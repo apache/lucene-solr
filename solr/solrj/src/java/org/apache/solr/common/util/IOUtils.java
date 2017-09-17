@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public class IOUtils {
         closeable.close();
       }
     } catch (Exception e) {
-      LOG.error("Error while closing", e);
+      SolrException.log(LOG, "Error while closing "+closeable.getClass());
     }
   }
 }
