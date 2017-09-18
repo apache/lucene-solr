@@ -17,17 +17,23 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -43,7 +49,14 @@ import org.slf4j.LoggerFactory;
 public class NodeLostTrigger extends TriggerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final String name;
+  private final Map<String, Object> properties;
   private final CoreContainer container;
+  private final List<TriggerAction> actions;
+  private final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef;
+  private final boolean enabled;
+  private final int waitForSecond;
+  private final TriggerEventType eventType;
   private final TimeSource timeSource;
 
   private boolean isClosed = false;
@@ -54,11 +67,27 @@ public class NodeLostTrigger extends TriggerBase {
 
   public NodeLostTrigger(String name, Map<String, Object> properties,
                          CoreContainer container) {
-    super(TriggerEventType.NODELOST, name, properties, container.getResourceLoader(), container.getZkController().getZkClient());
+    super(container.getZkController().getZkClient());
+    this.name = name;
+    this.properties = properties;
     this.container = container;
     this.timeSource = TimeSource.CURRENT_TIME;
+    this.processorRef = new AtomicReference<>();
+    List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
+    if (o != null && !o.isEmpty()) {
+      actions = new ArrayList<>(3);
+      for (Map<String, String> map : o) {
+        TriggerAction action = container.getResourceLoader().newInstance(map.get("class"), TriggerAction.class);
+        actions.add(action);
+      }
+    } else {
+      actions = Collections.emptyList();
+    }
     lastLiveNodes = new HashSet<>(container.getZkController().getZkStateReader().getClusterState().getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
+    this.enabled = Boolean.parseBoolean(String.valueOf(properties.getOrDefault("enabled", "true")));
+    this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
+    this.eventType = TriggerEventType.valueOf(properties.get("event").toString().toUpperCase(Locale.ROOT));
   }
 
   @Override
@@ -85,6 +114,69 @@ public class NodeLostTrigger extends TriggerBase {
       // ignore
     } catch (KeeperException | InterruptedException e) {
       log.warn("Exception retrieving nodeLost markers", e);
+    }
+  }
+
+  @Override
+  public void setProcessor(AutoScaling.TriggerEventProcessor processor) {
+    processorRef.set(processor);
+  }
+
+  @Override
+  public AutoScaling.TriggerEventProcessor getProcessor() {
+    return processorRef.get();
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public TriggerEventType getEventType() {
+    return eventType;
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  @Override
+  public int getWaitForSecond() {
+    return waitForSecond;
+  }
+
+  @Override
+  public Map<String, Object> getProperties() {
+    return properties;
+  }
+
+  @Override
+  public List<TriggerAction> getActions() {
+    return actions;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof NodeLostTrigger) {
+      NodeLostTrigger that = (NodeLostTrigger) obj;
+      return this.name.equals(that.name)
+          && this.properties.equals(that.properties);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, properties);
+  }
+
+  @Override
+  public void close() throws IOException {
+    synchronized (this) {
+      isClosed = true;
+      IOUtils.closeWhileHandlingException(actions);
     }
   }
 
@@ -201,6 +293,13 @@ public class NodeLostTrigger extends TriggerBase {
       // ignore
     } catch (KeeperException | InterruptedException e) {
       log.warn("Exception removing nodeLost marker " + nodeName, e);
+    }
+  }
+
+  @Override
+  public boolean isClosed() {
+    synchronized (this) {
+      return isClosed;
     }
   }
 

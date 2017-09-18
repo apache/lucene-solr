@@ -69,7 +69,7 @@ Upgrade Notes
 * SOLR-11254: the abstract DocTransformer class now has an abstract score-less transform method variant.
 
 * SOLR-11283: all Stream Evaluators in solrj.io.eval have been refactored to have a simplier and more
-  robust structure. This simplifies and condenses the code required to implement a new Evaluator and 
+  robust structure. This simplifies and condenses the code required to implement a new Evaluator and
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
@@ -97,8 +97,6 @@ New Features
 * SOLR-11215: Make a metric accessible through a single param. (ab)
 
 * SOLR-11244: Query DSL for Solr (Cao Manh Dat)
-
-* SOLR-11072: Implement trigger for searchRate event type. (ab)
 
 * SOLR-11317: JSON Facet API: min/max aggregations on numeric fields are now typed better so int/long
   fields return an appropriate integral type rather than a double. (yonik)

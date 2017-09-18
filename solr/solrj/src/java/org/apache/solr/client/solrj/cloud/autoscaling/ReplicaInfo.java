@@ -36,7 +36,6 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = type;
-    this.core = (String)vals.get("core");
   }
 
   @Override
@@ -55,34 +54,11 @@ public class ReplicaInfo implements MapWriter {
     return core;
   }
 
-  public String getName() {
-    return name;
-  }
-
   public String getCollection() {
     return collection;
   }
 
   public String getShard() {
     return shard;
-  }
-
-  public Map<String, Object> getVariables() {
-    return variables;
-  }
-
-  public Object getVariable(String name) {
-    return variables != null ? variables.get(name) : null;
-  }
-
-  @Override
-  public String toString() {
-    return "ReplicaInfo{" +
-        "name='" + name + '\'' +
-        ", collection='" + collection + '\'' +
-        ", shard='" + shard + '\'' +
-        ", type=" + type +
-        ", variables=" + variables +
-        '}';
   }
 }

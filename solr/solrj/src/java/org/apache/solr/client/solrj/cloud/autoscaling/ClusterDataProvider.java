@@ -23,8 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.common.cloud.ClusterState;
-
 public interface ClusterDataProvider extends Closeable {
   /**Get the value of each tag for a given node
    *
@@ -43,8 +41,6 @@ public interface ClusterDataProvider extends Closeable {
   Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
 
   Collection<String> getNodes();
-
-  ClusterState getClusterState();
 
   /**Get the collection-specific policy
    */
