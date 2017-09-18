@@ -49,9 +49,7 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
-import org.apache.solr.search.SolrReturnFields;
 
 /**
  * This streams SolrDocuments from a DocList and applies transformer
@@ -66,9 +64,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   private final DocTransformer transformer;
   private final DocIterator docIterator;
 
-  private final Set<String> fnames; // returnFields.getLuceneFieldNames(). Maybe null. Not empty.
-  private final boolean onlyPseudoFields;
-  private final Set<String> dvFieldsToReturn; // maybe null. Not empty.
+  private final RetrieveFieldsOptimizer retrieveFieldsOptimizer;
 
   private int idx = -1;
 
@@ -77,61 +73,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     this.docs = rctx.getDocList();
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
-    fnames = rctx.getReturnFields().getLuceneFieldNames();
-    //TODO move onlyPseudoFields calc to ReturnFields
-    onlyPseudoFields = (fnames == null && !rctx.getReturnFields().wantsAllFields() && !rctx.getReturnFields().hasPatternMatching())
-        || (fnames != null && fnames.size() == 1 && SolrReturnFields.SCORE.equals(fnames.iterator().next()));
-
-    // add non-stored DV fields that may have been requested
     docFetcher = rctx.getSearcher().getDocFetcher();
-    dvFieldsToReturn = calcDocValueFieldsForReturn(docFetcher, rctx.getReturnFields());
 
+    retrieveFieldsOptimizer = RetrieveFieldsOptimizer.create(docFetcher, rctx.getReturnFields());
+    retrieveFieldsOptimizer.optimize(docFetcher);
     if (transformer != null) transformer.setContext(rctx);
-  }
-
-  // TODO move to ReturnFields ?  Or SolrDocumentFetcher ?
-  public static Set<String> calcDocValueFieldsForReturn(SolrDocumentFetcher docFetcher, ReturnFields returnFields) {
-    Set<String> result = null;
-    if (returnFields.wantsAllFields()) {
-      // check whether there are no additional fields
-      Set<String> fieldNames = returnFields.getLuceneFieldNames(true);
-      if (fieldNames == null) {
-        result = docFetcher.getNonStoredDVs(true);
-      } else {
-        result = new HashSet<>(docFetcher.getNonStoredDVs(true)); // copy
-        // add all requested fields that may be useDocValuesAsStored=false
-        for (String fl : fieldNames) {
-          if (docFetcher.getNonStoredDVs(false).contains(fl)) {
-            result.add(fl);
-          }
-        }
-      }
-    } else {
-      if (returnFields.hasPatternMatching()) {
-        for (String s : docFetcher.getNonStoredDVs(true)) {
-          if (returnFields.wantsField(s)) {
-            if (null == result) {
-              result = new HashSet<>();
-            }
-            result.add(s);
-          }
-        }
-      } else {
-        Set<String> fnames = returnFields.getLuceneFieldNames();
-        if (fnames == null) {
-          return null;
-        }
-        result = new HashSet<>(fnames); // copy
-        // here we get all non-stored dv fields because even if a user has set
-        // useDocValuesAsStored=false in schema, he may have requested a field
-        // explicitly using the fl parameter
-        result.retainAll(docFetcher.getNonStoredDVs(false));
-      }
-    }
-    if (result != null && result.isEmpty()) {
-      return null;
-    }
-    return result;
   }
 
   public int currentIndex() {
@@ -147,21 +93,22 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     idx++;
     SolrDocument sdoc = null;
 
-    if (onlyPseudoFields) {
-      // no need to get stored fields of the document, see SOLR-5968
-      sdoc = new SolrDocument();
-    } else {
-      try {
-        Document doc = docFetcher.doc(id, fnames);
-        sdoc = convertLuceneDocToSolrDoc(doc, rctx.getSearcher().getSchema()); // make sure to use the schema from the searcher and not the request (cross-core)
-
-        // decorate the document with non-stored docValues fields
-        if (dvFieldsToReturn != null) {
-          docFetcher.decorateDocValueFields(sdoc, id, dvFieldsToReturn);
-        }
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + id, e);
+    try {
+      if (retrieveFieldsOptimizer.returnStoredFields()) {
+        Document doc = docFetcher.doc(id, retrieveFieldsOptimizer.getStoredFields());
+        // make sure to use the schema from the searcher and not the request (cross-core)
+        sdoc = convertLuceneDocToSolrDoc(doc, rctx.getSearcher().getSchema());
+      } else {
+        // no need to get stored fields of the document, see SOLR-5968
+        sdoc = new SolrDocument();
       }
+
+      // decorate the document with non-stored docValues fields
+      if (retrieveFieldsOptimizer.returnDVFields()) {
+        docFetcher.decorateDocValueFields(sdoc, id, retrieveFieldsOptimizer.getDvFields());
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading document with docId " + id, e);
     }
 
     if (transformer != null) {
