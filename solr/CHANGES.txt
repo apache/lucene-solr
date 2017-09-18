@@ -69,7 +69,7 @@ Upgrade Notes
 * SOLR-11254: the abstract DocTransformer class now has an abstract score-less transform method variant.
 
 * SOLR-11283: all Stream Evaluators in solrj.io.eval have been refactored to have a simplier and more
-  robust structure. This simplifies and condenses the code required to implement a new Evaluator and
+  robust structure. This simplifies and condenses the code required to implement a new Evaluator and 
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
@@ -99,6 +99,13 @@ New Features
 * SOLR-11244: Query DSL for Solr (Cao Manh Dat)
 
 * SOLR-11072: Implement trigger for searchRate event type. (ab)
+
+* SOLR-11317: JSON Facet API: min/max aggregations on numeric fields are now typed better so int/long
+  fields return an appropriate integral type rather than a double. (yonik)
+
+* SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
+  (yonik)
+
 
 Bug Fixes
 ----------------------
@@ -142,6 +149,12 @@ Bug Fixes
 
 * SOLR-11293: Potential data loss in TLOG replicas after replication failures (noble)
 
+* SOLR-10101: TestLazyCores hangs (Erick Erickson)
+
+* SOLR-11332: Fix sorting on 'enum' fieldTypes that use sortMissingFirst or sortMissingLast (hossman)
+
+* SOLR-11348: Fix the DIH database example (James Dyer)
+
 Optimizations
 ----------------------
 
@@ -153,6 +166,10 @@ Optimizations
 * SOLR-11124: MoveReplicaCmd should skip deleting old replica in case of its node is not live (Cao Manh Dat)
 
 * SOLR-10769: Allow nodeAdded / nodeLost events to report multiple nodes in one event. (ab)
+
+* SOLR-11242: QueryParser: re-use the LookaheadSuccess exception. (Michael Braun via David Smiley)
+
+* SOLR-11314: FastCharStream: re-use the READ_PAST_EOF exception. (Michael Braun via David Smiley)
 
 Other Changes
 ----------------------
@@ -215,6 +232,15 @@ Other Changes
 * SOLR-11254: Add score-less (abstract) DocTransformer.transform method. (Christine Poerschke)
 
 * SOLR-11209: Upgrade HttpClient to 4.5.3. (Hrishikesh Gadre via Mark Miller)
+
+* SOLR-11322: JSON Facet API: instead of returning NaN, min & max aggregations omit
+  the value for any bucket with no values in the numeric field. (yonik)
+
+* SOLR-10990: Breakup QueryComponent.process method for readability. (Christine Poerschke)
+
+* SOLR-11132: Refactor common getSortField logic in various FieldTypes (Jason Gerlowski, hossman)
+
+* SOLR-11351: Make LTRScoringModel model more extensible. (Christine Poerschke)
 
 ==================  7.0.0 ==================
 
@@ -848,7 +874,7 @@ Other Changes
 * SOLR-10494: Make default response format JSON (wt=json), and also indent text responses formats
   (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)
 
-* SOLR-10760: Remove trie field types and fields from example schemas. (Steve Rowe)
+* SOLR-10760,SOLR-11315,SOLR-11313: Remove trie field types and fields from example schemas. (Steve Rowe)
 
 * SOLR-11056: Add random range query test that compares results across Trie*, *Point and DocValue-only fields
   (Tomás Fernández Löbbe)
@@ -941,6 +967,8 @@ Other Changes
 
 * SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
+
+* SOLR-11324: Clean up mention of trie fields in documentation and source comments. (Steve Rowe)
 
 ==================  6.6.1 ==================
 

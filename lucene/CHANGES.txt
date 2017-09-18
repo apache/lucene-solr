@@ -23,6 +23,8 @@ New Features
 * LUCENE-7927: Add LongValueFacetCounts, to compute facet counts for individual
   numeric values (Mike McCandless)
 
+* LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -51,6 +53,17 @@ Bug Fixes
   with a different ICU JAR version than it is compiled against. Note, this is
   not recommended, lucene-analyzers-icu contains binary data structures
   specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
+
+* LUCENE-7891: Lucene's taxonomy facets now uses a non-buggy LRU cache
+  by default.  (Jan-Willem van den Broek via Mike McCandless)
+
+* LUCENE-7959: Improve NativeFSLockFactory's exception message if it cannot create
+  write.lock for an empty index due to bad permissions/read-only filesystem/etc.
+  (Erick Erickson, Shawn Heisey, Robert Muir)
+
+* LUCENE-7968: AnalyzingSuggester would sometimes order suggestions incorrectly,
+  it did not properly break ties on the surface forms when both the weights and
+  the analyzed forms were equal. (Robert Muir)
 
 Build
 
@@ -191,6 +204,13 @@ Bug Fixes
 
 * LUCENE-7864: IndexMergeTool is not using intermediate hard links (even
   if possible). (Dawid Weiss)
+
+* LUCENE-7956: Fixed potential stack overflow error in ICUNormalizer2CharFilter.
+  (Adrien Grand)
+
+* LUCENE-7963: Remove useless getAttribute() in DefaultIndexingChain that
+  causes performance drop, introduced by LUCENE-7626.  (Daniel Mitterdorfer
+  via Uwe Schindler)
 
 Improvements
 

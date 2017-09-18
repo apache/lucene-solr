@@ -18,12 +18,22 @@
 <schema name="tiny" version="1.1">
   <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+  
   <!-- Test EnumField and EnumFieldType -->
   <field name="severity" type="severityType" indexed="${solr.tests.EnumFieldTest.indexed}" stored="true" multiValued="false" docValues="${solr.tests.numeric.dv}"/>
+  <!-- NOTE: because these test sortMissingLast/sortMissingFirst, we force indexed="true" so we don't get
+       random errors on schema init about inconsistent properties -->
+  <field name="severity_missingLast" type="severityType" indexed="true" stored="true" multiValued="false" docValues="${solr.tests.numeric.dv}" sortMissingLast="true"/>
+  <field name="severity_missingFirst" type="severityType" indexed="true" stored="true" multiValued="false" docValues="${solr.tests.numeric.dv}" sortMissingFirst="true"/>
+  
   <field name="severity_mv" type="severityType" indexed="${solr.tests.EnumFieldTest.indexed}" stored="true" multiValued="true" docValues="${solr.tests.numeric.dv}"/>
   <field name="text" type="text" indexed="true" stored="true" multiValued="true"/>
+  
   <uniqueKey>id</uniqueKey>
 
+  <copyField source="severity" dest="severity_missingLast" />
+  <copyField source="severity" dest="severity_missingFirst" />
+  
   <fieldType name="text" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>

@@ -3330,7 +3330,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
   private void doTestDoublePointFunctionQuery(String field) throws Exception {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     int numVals = 10 * RANDOM_MULTIPLIER;
-    List<Double> values = getRandomDoubles(numVals, false);
+    // Restrict values to float range; otherwise conversion to float will cause truncation -> undefined results
+    List<Double> values = getRandomList(numVals, false, () -> {
+      Float f = Float.NaN;
+      while (f.isNaN()) {
+        f = Float.intBitsToFloat(random().nextInt());
+      }
+      return f.doubleValue();
+    });
     String assertNumFound = "//*[@numFound='" + numVals + "']";
     String[] idAscXpathChecks = new String[numVals + 1];
     String[] idAscNegXpathChecks = new String[numVals + 1];

@@ -30,10 +30,10 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     schemaString = "schema-distributed-missing-sort.xml";
   }
   
-  String sint1_ml = "one_i1_ml";    // TrieIntField, sortMissingLast=true, multiValued=false
-  String sint1_mf = "two_i1_mf";    // TrieIntField, sortMissingFirst=true, multiValued=false
-  String long1_ml = "three_l1_ml";  // TrieLongField, sortMissingLast=true, multiValued=false
-  String long1_mf = "four_l1_mf";   // TrieLongField, sortMissingFirst=true, multiValued=false
+  String sint1_ml = "one_i1_ml";    // int field, sortMissingLast=true, multiValued=false
+  String sint1_mf = "two_i1_mf";    // int field, sortMissingFirst=true, multiValued=false
+  String long1_ml = "three_l1_ml";  // long field, sortMissingLast=true, multiValued=false
+  String long1_mf = "four_l1_mf";   // long field, sortMissingFirst=true, multiValued=false
   String string1_ml = "five_s1_ml"; // StringField, sortMissingLast=true, multiValued=false
   String string1_mf = "six_s1_mf";  // StringField, sortMissingFirst=true, multiValued=false
 

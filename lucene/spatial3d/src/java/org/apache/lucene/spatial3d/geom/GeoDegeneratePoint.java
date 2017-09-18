@@ -125,7 +125,7 @@ class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return x == this.x && y == this.y && z == this.z;
+    return this.isIdentical(x, y, z);
   }
 
   @Override

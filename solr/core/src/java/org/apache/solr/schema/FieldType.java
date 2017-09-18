@@ -48,6 +48,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.TermInSetQuery;
@@ -69,7 +70,6 @@ import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.Sorting;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -662,8 +662,68 @@ public abstract class FieldType extends FieldProperties {
    * Returns the SortField instance that should be used to sort fields
    * of this type.
    * @see SchemaField#checkSortability
+   * @see #getSortField(SchemaField,SortField.Type,boolean,Object,Object)
    */
   public abstract SortField getSortField(SchemaField field, boolean top);
+
+  /**
+   * <p>A Helper utility method for use by subclasses.</p>
+   * <p>This method deals with:</p>
+   * <ul>
+   *  <li>{@link SchemaField#checkSortability}</li>
+   *  <li>Creating a {@link SortField} on <code>field</code> with the specified 
+   *      <code>reverse</code> &amp; <code>sortType</code></li>
+   *  <li>Setting the {@link SortField#setMissingValue} to <code>missingLow</code> or <code>missingHigh</code>
+   *      as appropriate based on the value of <code>reverse</code> and the 
+   *      <code>sortMissingFirst</code> &amp; <code>sortMissingLast</code> properties of the 
+   *      <code>field</code></li>
+   * </ul>
+   *
+   * @param field The SchemaField to sort on.  May use <code>sortMissingFirst</code> or <code>sortMissingLast</code> or neither.
+   * @param sortType The sort Type of the underlying values in the <code>field</code>
+   * @param reverse True if natural order of the <code>sortType</code> should be reversed
+   * @param missingLow The <code>missingValue</code> to be used if the other params indicate that docs w/o values should sort as "low" as possible.
+   * @param missingHigh The <code>missingValue</code> to be used if the other params indicate that docs w/o values should sort as "high" as possible.
+   * @see #getSortedSetSortField
+   */
+  protected static SortField getSortField(SchemaField field, SortField.Type sortType, boolean reverse,
+                                          Object missingLow, Object missingHigh) {
+    field.checkSortability();
+
+    SortField sf = new SortField(field.getName(), sortType, reverse);
+    applySetMissingValue(field, sf, missingLow, missingHigh);
+    
+    return sf;
+  }
+
+  /**
+   * Same as {@link #getSortField} but using {@link SortedSetSortField}
+   */
+  protected static SortField getSortedSetSortField(SchemaField field, SortedSetSelector.Type selector,
+                                                   boolean reverse, Object missingLow, Object missingHigh) {
+                                                   
+    field.checkSortability();
+
+    SortField sf = new SortedSetSortField(field.getName(), reverse, selector);
+    applySetMissingValue(field, sf, missingLow, missingHigh);
+    
+    return sf;
+  }
+  
+  /** 
+   * @see #getSortField 
+   * @see #getSortedSetSortField 
+   */
+  private static void applySetMissingValue(SchemaField field, SortField sortField, 
+                                           Object missingLow, Object missingHigh) {
+    final boolean reverse = sortField.getReverse();
+    
+    if (field.sortMissingLast()) {
+      sortField.setMissingValue(reverse ? missingLow : missingHigh);
+    } else if (field.sortMissingFirst()) {
+      sortField.setMissingValue(reverse ? missingHigh : missingLow);
+    }
+  }
 
   /**
    * Utility usable by subclasses when they want to get basic String sorting
@@ -671,8 +731,7 @@ public abstract class FieldType extends FieldProperties {
    * @see SchemaField#checkSortability
    */
   protected SortField getStringSort(SchemaField field, boolean reverse) {
-    field.checkSortability();
-    return Sorting.getStringSortField(field.name, reverse, field.sortMissingLast(),field.sortMissingFirst());
+    return getSortField(field, SortField.Type.STRING, reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
 
   /** called to get the default value source (normally, from the

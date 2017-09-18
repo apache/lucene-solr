@@ -230,15 +230,15 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
           random().nextBytes(randBytes);
           val = new BytesRef(randBytes);
         } else if (fieldName.contains("int")) {
-          val = random().nextInt();                         // TrieIntField
+          val = random().nextInt();
         } else if (fieldName.contains("long")) {
-          val = random().nextLong();                        // TrieLongField
+          val = random().nextLong();
         } else if (fieldName.contains("float")) {
-          val = random().nextFloat() * random().nextInt();  // TrieFloatField
+          val = random().nextFloat() * random().nextInt();
         } else if (fieldName.contains("double")) {
-          val = random().nextDouble() * random().nextInt(); // TrieDoubleField
+          val = random().nextDouble() * random().nextInt();
         } else if (fieldName.contains("date")) {
-          val = random().nextLong();                        // TrieDateField
+          val = random().nextLong();
         } else if (fieldName.startsWith("currency")) {
           val = random().nextDouble();
         } else if (fieldName.startsWith("uuid")) {
