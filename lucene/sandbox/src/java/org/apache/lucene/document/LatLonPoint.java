@@ -77,7 +77,8 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 // to the field is not actually what gets indexed. Float would be 1E-5 error vs 1E-7, but it might be
 // a better tradeoff? then it would be completely transparent to the user and lucene would be "lossless".
 public class LatLonPoint extends Field {
-
+  /** LatLonPoint is encoded as integer values so number of bytes is 4 */
+  public static final int BYTES = Integer.BYTES;
   /**
    * Type for an indexed LatLonPoint
    * <p>

@@ -25,6 +25,9 @@ New Features
 
 * LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
 
+* LUCENE-7392: Add point based LatLonBoundingBox as new RangeField Type.
+  (Nick Knize)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
