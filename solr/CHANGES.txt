@@ -209,6 +209,8 @@ Other Changes
 
 * SOLR-11351: Make LTRScoringModel model more extensible. (Christine Poerschke)
 
+* SOLR-10451: Remove contrib/ltr/lib from lib includes in the techproducts example config (sungjunyoung via janhoy)
+   
 ==================  7.0.0 ==================
 
 Versions of Major Components
