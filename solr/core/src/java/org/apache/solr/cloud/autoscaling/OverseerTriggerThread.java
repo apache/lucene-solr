@@ -57,6 +57,8 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
   private final ZkController zkController;
 
+  private final CloudConfig cloudConfig;
+
   private final ZkStateReader zkStateReader;
 
   private final SolrZkClient zkClient;
@@ -80,8 +82,9 @@ public class OverseerTriggerThread implements Runnable, Closeable {
 
   private AutoScalingConfig autoScalingConfig;
 
-  public OverseerTriggerThread(ZkController zkController) {
+  public OverseerTriggerThread(ZkController zkController, CloudConfig cloudConfig) {
     this.zkController = zkController;
+    this.cloudConfig = cloudConfig;
     zkStateReader = zkController.getZkStateReader();
     zkClient = zkController.getZkClient();
     scheduledTriggers = new ScheduledTriggers(zkController);
@@ -108,7 +111,7 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     int lastZnodeVersion = znodeVersion;
 
     // we automatically add a trigger for auto add replicas if it does not exists already
-    while (true)  {
+    while (!isClosed)  {
       try {
         AutoScalingConfig autoScalingConfig = zkStateReader.getAutoScalingConfig();
         AutoScalingConfig withAutoAddReplicasTrigger = withAutoAddReplicasTrigger(autoScalingConfig);
@@ -124,9 +127,10 @@ public class OverseerTriggerThread implements Runnable, Closeable {
         log.warn("Interrupted", e);
       } catch (KeeperException e) {
         log.error("A ZK error has occurred", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
       }
     }
+
+    if (!isClosed || Thread.currentThread().isInterrupted())  return;
 
     try {
       refreshAutoScalingConf(new AutoScalingWatcher());
@@ -134,7 +138,11 @@ public class OverseerTriggerThread implements Runnable, Closeable {
       log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
     } catch (KeeperException e) {
       log.error("A ZK error has occurred", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+      if (!isClosed)  {
+        // throw exception only if we haven't been closed already
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
+      }
+      return; // silently!
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
@@ -327,7 +335,6 @@ public class OverseerTriggerThread implements Runnable, Closeable {
   }
 
   private AutoScalingConfig withAutoAddReplicasTrigger(AutoScalingConfig autoScalingConfig) {
-    CloudConfig cloudConfig = zkController.getCoreContainer().getConfig().getCloudConfig();
     Map<String, Object> triggerProps = AutoScaling.AUTO_ADD_REPLICAS_TRIGGER_PROPS;
     String triggerName = (String) triggerProps.get("name");
     Map<String, AutoScalingConfig.TriggerConfig> configs = autoScalingConfig.getTriggerConfigs();

@@ -473,8 +473,6 @@ public class Overseer implements Closeable {
 
   private OverseerThread triggerThread;
 
-  private Thread autoscalingTriggerCreator;
-
   private final ZkStateReader reader;
 
   private final ShardHandler shardHandler;
@@ -526,7 +524,7 @@ public class Overseer implements Closeable {
     ccThread.setDaemon(true);
 
     ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
-    OverseerTriggerThread trigger = new OverseerTriggerThread(zkController);
+    OverseerTriggerThread trigger = new OverseerTriggerThread(zkController, config);
     triggerThread = new OverseerThread(triggerThreadGroup, trigger, "OverseerAutoScalingTriggerThread-" + id);
 
     updaterThread.start();
@@ -576,10 +574,6 @@ public class Overseer implements Closeable {
       IOUtils.closeQuietly(triggerThread);
       triggerThread.interrupt();
     }
-    if (autoscalingTriggerCreator != null) {
-      autoscalingTriggerCreator.interrupt();
-    }
-    
     if (updaterThread != null) {
       try {
         updaterThread.join();
@@ -595,17 +589,9 @@ public class Overseer implements Closeable {
         triggerThread.join();
       } catch (InterruptedException e)  {}
     }
-    if (autoscalingTriggerCreator != null) {
-      try {
-        log.info("Waiting for autoscaling trigger creator join");
-        autoscalingTriggerCreator.join();
-      } catch (InterruptedException e) {}
-    }
-    
     updaterThread = null;
     ccThread = null;
     triggerThread = null;
-    autoscalingTriggerCreator = null;
   }
 
   /**
