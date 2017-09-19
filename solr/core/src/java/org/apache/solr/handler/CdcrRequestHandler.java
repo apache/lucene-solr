@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -617,7 +619,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(CdcrParams.ERRORS, hosts);
   }
 
-  private void handleBootstrapAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  private void handleBootstrapAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, InterruptedException, SolrServerException {
     String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     String shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
     if (!leaderStateManager.amILeader()) {
@@ -625,6 +627,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Action " + CdcrParams.CdcrAction.BOOTSTRAP +
           " sent to non-leader replica");
     }
+    CountDownLatch latch = new CountDownLatch(1); // latch to make sure BOOTSTRAP_STATUS gives correct response
 
     Runnable runnable = () -> {
       Lock recoveryLock = req.getCore().getSolrCoreState().getRecoveryLock();
@@ -635,6 +638,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           handleCancelBootstrap(req, rsp);
         } else if (leaderStateManager.amILeader())  {
           coreState.setCdcrBootstrapRunning(true);
+          latch.countDown(); // free the latch as current bootstrap is executing
           //running.set(true);
           String masterUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
           BootstrapCallable bootstrapCallable = new BootstrapCallable(masterUrl, core);
@@ -657,6 +661,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
         if (locked) {
           coreState.setCdcrBootstrapRunning(false);
           recoveryLock.unlock();
+        } else {
+          latch.countDown(); // free the latch as current bootstrap is executing
         }
       }
     };
@@ -664,6 +670,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     try {
       core.getCoreContainer().getUpdateShardHandler().getUpdateExecutor().submit(runnable);
       rsp.add(RESPONSE_STATUS, "submitted");
+      latch.await(10000, TimeUnit.MILLISECONDS); // put the latch for current bootstrap command
     } catch (RejectedExecutionException ree)  {
       // no problem, we're probably shutting down
       rsp.add(RESPONSE_STATUS, "failed");
