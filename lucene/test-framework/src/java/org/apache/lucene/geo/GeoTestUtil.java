@@ -307,6 +307,11 @@ public class GeoTestUtil {
     return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), true);
   }
 
+  /** returns next pseudorandom box: does not cross the 180th meridian */
+  public static Rectangle nextBoxNotCrossingDateline() {
+    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+  }
+
   /** Makes an n-gon, centered at the provided lat/lon, and each vertex approximately
    *  distanceMeters away from the center.
    *
