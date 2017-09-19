@@ -234,7 +234,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertUlogDir(collections);
 
-    //TODO nocommit, we must test overseer failover
+    //TODO SOLR-11085, we must test overseer failover
     List<JettySolrRunner> stoppedJetties = notOverseerJetties();
     ChaosMonkey.stop(stoppedJetties);
     ChaosMonkey.stop(controlJetty);
