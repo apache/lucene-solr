@@ -459,7 +459,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     if (op.hasError()) return currentConfig;
 
     // validate that we can load the listener class
-    // todo nocommit -- what about MemClassLoader?
+    // todo allow creation from blobstore
     try {
       container.getResourceLoader().findClass(listenerClass, TriggerListener.class);
     } catch (Exception e) {
@@ -518,7 +518,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
 
     // validate that we can load all the actions
-    // todo nocommit -- what about MemClassLoader?
+    // todo allow creation from blobstore
     for (Map<String, String> action : actions) {
       if (!action.containsKey(NAME) || !action.containsKey(CLASS)) {
         op.addError("No 'name' or 'class' specified for action: " + action);
