@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,10 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-  
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,7 +44,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -62,7 +59,6 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudPivotFacet
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10939")
 public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -600,9 +596,21 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       final String[] suffixes = random().nextBoolean() ? STR_FIELD_SUFFIXES : INT_FIELD_SUFFIXES;
       
       final boolean noJoin = random().nextBoolean();
-      final String from = noJoin ? null : field(suffixes, random().nextInt(MAX_FIELD_NUM));
-      final String to = noJoin ? null : field(suffixes, random().nextInt(MAX_FIELD_NUM));
-      
+
+      String from = null;
+      String to = null;
+      for (;;) {
+        if (noJoin) break;
+        from = field(suffixes, random().nextInt(MAX_FIELD_NUM));
+        to = field(suffixes, random().nextInt(MAX_FIELD_NUM));
+        // HACK: joined numeric point fields need docValues.. for now just skip _is fields if we are dealing with points.
+        if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) && (from.endsWith("_is") || to.endsWith("_is")))
+        {
+            continue;
+        }
+        break;
+      }
+
       // keep it simple, only filter on string fields - not point of test
       final String filterField = strfield(random().nextInt(MAX_FIELD_NUM));
       
