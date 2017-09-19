@@ -542,7 +542,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private static String fullName = SystemLogListener.class.getName();
   private static String solrName = "solr." + SystemLogListener.class.getSimpleName();
 
-  private static AutoScalingConfig withSystemLogListener(AutoScalingConfig autoScalingConfig, String triggerName) {
+  static AutoScalingConfig withSystemLogListener(AutoScalingConfig autoScalingConfig, String triggerName) {
     Map<String, AutoScalingConfig.TriggerListenerConfig> configs = autoScalingConfig.getTriggerListenerConfigs();
     for (AutoScalingConfig.TriggerListenerConfig cfg : configs.values()) {
       if (triggerName.equals(cfg.trigger)) {

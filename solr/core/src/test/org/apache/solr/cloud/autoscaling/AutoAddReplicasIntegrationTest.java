@@ -36,12 +36,14 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.common.util.Utils.makeMap;
 
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION1 =  "testSimple1";
   private static final String COLLECTION2 =  "testSimple2";
