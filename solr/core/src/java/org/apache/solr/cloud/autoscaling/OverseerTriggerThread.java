@@ -125,12 +125,13 @@ public class OverseerTriggerThread implements Runnable, Closeable {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
         log.warn("Interrupted", e);
+        break;
       } catch (KeeperException e) {
         log.error("A ZK error has occurred", e);
       }
     }
 
-    if (!isClosed || Thread.currentThread().isInterrupted())  return;
+    if (isClosed || Thread.currentThread().isInterrupted())  return;
 
     try {
       refreshAutoScalingConf(new AutoScalingWatcher());
@@ -138,11 +139,7 @@ public class OverseerTriggerThread implements Runnable, Closeable {
       log.warn("ZooKeeper watch triggered for autoscaling conf, but Solr cannot talk to ZK: [{}]", e.getMessage());
     } catch (KeeperException e) {
       log.error("A ZK error has occurred", e);
-      if (!isClosed)  {
-        // throw exception only if we haven't been closed already
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-      }
-      return; // silently!
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
