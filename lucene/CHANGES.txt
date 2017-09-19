@@ -65,6 +65,9 @@ Bug Fixes
   it did not properly break ties on the surface forms when both the weights and
   the analyzed forms were equal. (Robert Muir)
 
+* LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
+  child scorers (Adrien Grand, Mike McCandless)
+
 Build
 
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
