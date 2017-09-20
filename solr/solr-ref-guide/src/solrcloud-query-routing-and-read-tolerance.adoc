@@ -83,3 +83,4 @@ Example response with `partialResults` flag set to 'true':
     "docs": [ "..." ]
   }
 }
+----
