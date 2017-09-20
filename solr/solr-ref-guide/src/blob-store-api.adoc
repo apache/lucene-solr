@@ -147,7 +147,4 @@ For example, to use a blob named test, you would configure `solrconfig.xml` like
 
 If there are parameters available in the custom handler, you can define them in the same way as any other request handler definition.
 
-[NOTE]
-====
-
-Blob store can only be used to dynamically load components configured in `solrconfig.xml`. Components specified in `schema.xml` cannot be loaded from blob store
+NOTE: Blob store can only be used to dynamically load components configured in `solrconfig.xml`. Components specified in `schema.xml` cannot be loaded from blob store.
