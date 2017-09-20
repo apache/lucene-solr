@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -33,7 +34,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileUtils;
-import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -83,7 +83,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   protected void setSliceState(String collection, String slice, State state) throws SolrServerException, IOException,
-      KeeperException, InterruptedException {
+      Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
 
