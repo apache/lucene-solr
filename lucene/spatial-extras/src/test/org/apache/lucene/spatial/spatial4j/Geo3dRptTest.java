@@ -32,9 +32,7 @@ import org.apache.lucene.spatial3d.geom.GeoAreaShape;
 import org.apache.lucene.spatial3d.geom.GeoPath;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
-import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -79,10 +77,10 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   public void testFailure1() throws IOException {
     setupStrategy();
     final List<GeoPoint> points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
 
     final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(factory.planetModel, points),ctx);
     final Rectangle rect = ctx.makeRectangle(-49, -45, 73, 86);
@@ -94,16 +92,16 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     setupStrategy();
 
     final List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(factory.planetModel, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
     final GeoPoint[] pathPoints = new GeoPoint[] {
-      new GeoPoint(PlanetModel.SPHERE, 55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS),
-      new GeoPoint(PlanetModel.SPHERE, -90.0 * DEGREES_TO_RADIANS, 0.0),
-      new GeoPoint(PlanetModel.SPHERE, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
-      new GeoPoint(PlanetModel.SPHERE, -90.0 * DEGREES_TO_RADIANS, 0.0)};
-    final GeoPath path = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 29 * DEGREES_TO_RADIANS, pathPoints);
+      new GeoPoint(factory.planetModel, 55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS),
+      new GeoPoint(factory.planetModel, -90.0 * DEGREES_TO_RADIANS, 0.0),
+      new GeoPoint(factory.planetModel, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
+      new GeoPoint(factory.planetModel, -90.0 * DEGREES_TO_RADIANS, 0.0)};
+    final GeoPath path = GeoPathFactory.makeGeoPath(factory.planetModel, 29 * DEGREES_TO_RADIANS, pathPoints);
     final Shape shape = new Geo3dShape(path,ctx);
     final Rectangle rect = ctx.makeRectangle(131, 143, 39, 54);
     testOperation(rect,SpatialOperation.Intersects,shape,true);
@@ -118,14 +116,6 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     testOperationRandomShapes(SpatialOperation.Intersects);
   }
 
-  private Shape makeTriangle(double x1, double y1, double x2, double y2, double x3, double y3) {
-    final List<GeoPoint> geoPoints = new ArrayList<>();
-    geoPoints.add(new GeoPoint(PlanetModel.SPHERE, y1 * DEGREES_TO_RADIANS, x1 * DEGREES_TO_RADIANS));
-    geoPoints.add(new GeoPoint(PlanetModel.SPHERE, y2 * DEGREES_TO_RADIANS, x2 * DEGREES_TO_RADIANS));
-    geoPoints.add(new GeoPoint(PlanetModel.SPHERE, y3 * DEGREES_TO_RADIANS, x3 * DEGREES_TO_RADIANS));
-    final GeoPolygon shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, geoPoints);
-    return new Geo3dShape(shape, ctx);
-  }
 
   @Override
   protected Shape randomIndexedShape() {
