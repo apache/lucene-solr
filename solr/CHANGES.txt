@@ -177,6 +177,7 @@ Bug Fixes
 * SOLR-11363: JSON Facet API: repeated values in a numeric points field with docValues enabled
   were double counted. (Hossman, yonik)
 
+* SOLR-11085: Improve resiliency of autoscaling actions against overseer restarts and operation failures. (shalin)
 
 Optimizations
 ----------------------

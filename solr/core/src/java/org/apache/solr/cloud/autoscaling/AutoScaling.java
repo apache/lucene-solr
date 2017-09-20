@@ -27,6 +27,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.cloud.ZkController;
 
 public class AutoScaling {
 
@@ -114,12 +115,15 @@ public class AutoScaling {
   public static class TriggerFactory implements Closeable {
 
     private final CoreContainer coreContainer;
+    private final ZkController zkController;
 
     private boolean isClosed = false;
 
-    public TriggerFactory(CoreContainer coreContainer) {
+    public TriggerFactory(CoreContainer coreContainer, ZkController zkController) {
       Preconditions.checkNotNull(coreContainer);
+      Preconditions.checkNotNull(zkController);
       this.coreContainer = coreContainer;
+      this.zkController = zkController;
     }
 
     public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) {
@@ -128,9 +132,9 @@ public class AutoScaling {
       }
       switch (type) {
         case NODEADDED:
-          return new NodeAddedTrigger(name, props, coreContainer);
+          return new NodeAddedTrigger(name, props, coreContainer, zkController);
         case NODELOST:
-          return new NodeLostTrigger(name, props, coreContainer);
+          return new NodeLostTrigger(name, props, coreContainer, zkController);
         default:
           throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
       }

@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -52,6 +53,7 @@ public class NodeAddedTrigger extends TriggerBase {
   private final String name;
   private final Map<String, Object> properties;
   private final CoreContainer container;
+  private final ZkController zkController;
   private final List<TriggerAction> actions;
   private final AtomicReference<AutoScaling.TriggerEventProcessor> processorRef;
   private final boolean enabled;
@@ -66,11 +68,12 @@ public class NodeAddedTrigger extends TriggerBase {
   private Map<String, Long> nodeNameVsTimeAdded = new HashMap<>();
 
   public NodeAddedTrigger(String name, Map<String, Object> properties,
-                          CoreContainer container) {
-    super(container.getZkController().getZkClient());
+                          CoreContainer container, ZkController zkController) {
+    super(zkController.getZkClient());
     this.name = name;
     this.properties = properties;
     this.container = container;
+    this.zkController = zkController;
     this.timeSource = TimeSource.CURRENT_TIME;
     this.processorRef = new AtomicReference<>();
     List<Map<String, String>> o = (List<Map<String, String>>) properties.get("actions");
@@ -83,7 +86,7 @@ public class NodeAddedTrigger extends TriggerBase {
     } else {
       actions = Collections.emptyList();
     }
-    lastLiveNodes = new HashSet<>(container.getZkController().getZkStateReader().getClusterState().getLiveNodes());
+    lastLiveNodes = new HashSet<>(zkController.getZkStateReader().getClusterState().getLiveNodes());
     log.debug("Initial livenodes: {}", lastLiveNodes);
     this.enabled = Boolean.parseBoolean(String.valueOf(properties.getOrDefault("enabled", "true")));
     this.waitForSecond = ((Long) properties.getOrDefault("waitFor", -1L)).intValue();
@@ -102,7 +105,7 @@ public class NodeAddedTrigger extends TriggerBase {
     }
     // pick up added nodes for which marker paths were created
     try {
-      List<String> added = container.getZkController().getZkClient().getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, null, true);
+      List<String> added = zkClient.getChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, null, true);
       added.forEach(n -> {
         // don't add nodes that have since gone away
         if (lastLiveNodes.contains(n)) {
@@ -229,7 +232,7 @@ public class NodeAddedTrigger extends TriggerBase {
       }
       log.debug("Running NodeAddedTrigger {}", name);
 
-      ZkStateReader reader = container.getZkController().getZkStateReader();
+      ZkStateReader reader = zkController.getZkStateReader();
       Set<String> newLiveNodes = reader.getClusterState().getLiveNodes();
       log.debug("Found livenodes: {}", newLiveNodes);
 
@@ -278,7 +281,7 @@ public class NodeAddedTrigger extends TriggerBase {
           });
         }
       }
-      lastLiveNodes = new HashSet(newLiveNodes);
+      lastLiveNodes = new HashSet<>(newLiveNodes);
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeAddedTrigger", e);
     }
@@ -287,8 +290,8 @@ public class NodeAddedTrigger extends TriggerBase {
   private void removeMarker(String nodeName) {
     String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     try {
-      if (container.getZkController().getZkClient().exists(path, true)) {
-        container.getZkController().getZkClient().delete(path, -1, true);
+      if (zkClient.exists(path, true)) {
+        zkClient.delete(path, -1, true);
       }
     } catch (KeeperException.NoNodeException e) {
       // ignore

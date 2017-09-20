@@ -18,14 +18,19 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Preference implements MapWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final Policy.SortParam name;
   Integer precision;
   final Policy.Sort sort;
@@ -76,6 +81,9 @@ public class Preference implements MapWriter {
   void setApproxVal(List<Row> tmpMatrix) {
     Object prevVal = null;
     for (Row row : tmpMatrix) {
+      if (!row.isLive) {
+        continue;
+      }
       prevVal = row.cells[idx].approxVal =
           (prevVal == null || Double.compare(Math.abs(((Number) prevVal).doubleValue() - ((Number) row.cells[idx].val).doubleValue()), precision) > 0) ?
               row.cells[idx].val :

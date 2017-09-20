@@ -810,7 +810,8 @@ public class ZkStateReader implements Closeable {
       Thread.sleep(GET_LEADER_RETRY_INTERVAL_MS);
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
-        + timeout + "ms " + ", collection: " + collection + " slice: " + shard);
+        + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
+        + " with live_nodes=" + clusterState.getLiveNodes());
   }
 
   /**

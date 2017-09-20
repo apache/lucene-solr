@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -64,6 +66,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Nightly
 @Slow
@@ -71,7 +75,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.*=DEBUG")
 public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final boolean DEBUG = true;
   private static MiniDFSCluster dfsCluster;
@@ -234,8 +240,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertUlogDir(collections);
 
-    //TODO SOLR-11085, we must test overseer failover
-    List<JettySolrRunner> stoppedJetties = notOverseerJetties();
+    boolean allowOverseerRestart = random().nextBoolean();
+    List<JettySolrRunner> stoppedJetties = allowOverseerRestart
+        ? jettys.stream().filter(jettySolrRunner -> random().nextBoolean()).collect(Collectors.toList()) : notOverseerJetties();
     ChaosMonkey.stop(stoppedJetties);
     ChaosMonkey.stop(controlJetty);
 
@@ -276,10 +283,14 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       }
       SolrParams queryAll = new SolrQuery("*:*");
       cloudClient.setDefaultCollection(collection);
-      QueryResponse queryResponse = cloudClient.query(queryAll);
-      actualResultSize = queryResponse.getResults().getNumFound();
-      if(expectedResultSize == actualResultSize) {
-        return;
+      try {
+        QueryResponse queryResponse = cloudClient.query(queryAll);
+        actualResultSize = queryResponse.getResults().getNumFound();
+        if(expectedResultSize == actualResultSize) {
+          return;
+        }
+      } catch (SolrServerException | IOException e) {
+        log.warn("Querying solr threw an exception. This can be expected to happen during restarts.", e);
       }
 
       Thread.sleep(1000);
@@ -399,7 +410,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       }
       Thread.sleep(200);
     }
-    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + cloudClient.getZkStateReader().getClusterState().getCollection(collection));
+    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + cloudClient.getZkStateReader().getClusterState().getCollection(collection) + " with /live_nodes: " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
   }
 
 }
