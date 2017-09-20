@@ -84,7 +84,7 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
 
-    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points),ctx);
+    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(factory.planetModel, points),ctx);
     final Rectangle rect = ctx.makeRectangle(-49, -45, 73, 86);
     testOperation(rect,SpatialOperation.Intersects,triangle, false);
   }
