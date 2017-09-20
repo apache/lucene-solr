@@ -299,7 +299,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("primes", PrimesEvaluator.class)
         .withFunctionName("factorial", FactorialEvaluator.class)
         .withFunctionName("movingMedian", MovingMedianEvaluator.class)
-        .withFunctionName("sphere", SphereEvaluator.class)
 
         // Boolean Stream Evaluators
 
