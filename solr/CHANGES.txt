@@ -75,6 +75,21 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
+
+* SOLR-10340: New set-listener and remove-listener API for autoscaling. (shalin)
+
+* SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
+
+* SOLR-10376: Implement autoscaling trigger for nodeAdded event. (shalin)
+
+* SOLR-10396: Implement trigger support for nodeLost event type (Cao Manh Dat, shalin)
+
+* SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
+  operations upon a trigger fire. (Noble Paul, shalin)
+
+* SOLR-10965: New ExecutePlanAction for autoscaling which executes the operations computed by ComputePlanAction
+  against the cluster. (shalin)
 
 * SOLR-11019: Add addAll Stream Evaluator (Joel Bernstein)
 
@@ -104,9 +119,15 @@ New Features
 * SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
   (yonik)
 
-
 Bug Fixes
 ----------------------
+
+* SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
+
+* SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling
+  config watcher is fired. (shalin)
+
+* SOLR-10738: TriggerAction is initialised even if the trigger is never scheduled. (shalin)
 
 * SOLR-10668: fix NPE at sort=childfield(..) .. on absent values (Mikhail Khludnev)
 
@@ -177,6 +198,9 @@ Optimizations
 
 Other Changes
 ----------------------
+* SOLR-10643: Throttling strategy for triggers and policy executions. (shalin)
+
+* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
 
 * SOLR-10827: Factor out abstract FilteringSolrMetricReporter class. (Christine Poerschke)
 
@@ -442,16 +466,6 @@ New Features
 * SOLR-10278: A new DSL to set cluster-wide preferences and policies on how to allocate replicas to nodes
   (noble, shalin)
 
-* SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
-
-* SOLR-10340: New set-listener and remove-listener API for autoscaling. (shalin)
-
-* SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
-
-* SOLR-10376: Implement autoscaling trigger for nodeAdded event. (shalin)
-
-* SOLR-10396: Implement trigger support for nodeLost event type (Cao Manh Dat, shalin)
-
 * SOLR-10373: Implement read API for autoscaling configuration at /admin/autoscaling or
   /cluster/autoscaling paths. (shalin)
 
@@ -484,12 +498,6 @@ New Features
 * SOLR-10123: Upgraded the Analytics Component to version 2.0 which now supports distributed collections, expressions over
   multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics
   expression  whereas previously docValues was not required. Please see SOLR-10123 for details. (Houston Putman)
-
-* SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
-  operations upon a trigger fire. (Noble Paul, shalin)
-
-* SOLR-10965: New ExecutePlanAction for autoscaling which executes the operations computed by ComputePlanAction
-  against the cluster. (shalin)
 
 * SOLR-10282: bin/solr support for enabling Kerberos authentication (Ishan Chattopadhyaya, Jason Gerlowski)
 
@@ -596,13 +604,6 @@ Bug Fixes
 
 * SOLR-10506: Fix memory leak (upon collection reload or ZooKeeper session expiry) in ZkIndexSchemaReader.
   (Torsten Bøgh Köster, Christine Poerschke, Jörg Rathlev, Mike Drob)
-
-* SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
-
-* SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling
-  config watcher is fired. (shalin)
-
-* SOLR-10738: TriggerAction is initialised even if the trigger is never scheduled. (shalin)
 
 * SOLR-6807: CloudSolrClient's ZK state version check with the server was ignored when handleSelect=false
   (David Smiley)
@@ -806,10 +807,6 @@ Other Changes
   (Christine Poerschke, Anshum Gupta)
 
 * SOLR-10713: Ignore .pid and .out files in solr working directory (Jason Gerlowski via Mike Drob)
-
-* SOLR-10643: Throttling strategy for triggers and policy executions. (shalin)
-
-* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
 
 * SOLR-10782: Improve error handling and tests for Snitch and subclasses and general cleanups. (Noble Paul, shalin)
 
