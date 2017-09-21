@@ -36,7 +36,7 @@ public class ClassificationUpdateProcessorParams {
 
   private int minDf; // knn specific - the minimum Document Frequency for considering a term
 
-  private int k; // knn specific - thw window of top results to evaluate, when assigning the class
+  private int k; // knn specific - the window of top results to evaluate, when assigning the class
 
   public String[] getInputFieldNames() {
     return inputFieldNames;
