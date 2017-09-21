@@ -19,21 +19,29 @@ package org.apache.lucene.spatial.spatial4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoCircle;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.junit.Test;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
 
   public Geo3dShapeSphereModelRectRelationTest() {
     super(PlanetModel.SPHERE);
+    Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
+    factory.planetModel = PlanetModel.SPHERE;
+    //factory.distCalc = new GeodesicSphereDistCalc.Haversine();
+    this.ctx = factory.newSpatialContext();
   }
 
   @Test
@@ -60,13 +68,28 @@ public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelatio
 
   @Test
   public void testFailure2_LUCENE6475() {
-    GeoShape geo3dCircle = GeoCircleFactory.makeGeoCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
+    GeoCircle geo3dCircle = GeoCircleFactory.makeGeoCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
         -70.1600629789353 * RADIANS_PER_DEGREE, 86 * RADIANS_PER_DEGREE);
-    Geo3dShape geo3dShape = new Geo3dShape(planetModel, geo3dCircle, ctx);
+    Geo3dShape geo3dShape = new Geo3dShape(geo3dCircle, ctx);
     Rectangle rect = ctx.makeRectangle(-118, -114, -2.0, 32.0);
     assertTrue(geo3dShape.relate(rect).intersects());
     // thus the bounding box must intersect too
     assertTrue(geo3dShape.getBoundingBox().relate(rect).intersects());
 
+  }
+
+  @Test
+  public void pointBearingTest(){
+    double radius = 136;
+    double distance = 135.97;
+    double bearing = 188;
+    Point p = ctx.getShapeFactory().pointXY(35, 85);
+    Circle circle = ctx.getShapeFactory().circle(p, radius);
+    Point bPoint = ctx.getDistCalc().pointOnBearing(p, distance, bearing, ctx, (Point) null);
+
+    double d = ctx.getDistCalc().distance(p, bPoint);
+    assertEquals(d, distance, 10-8);
+
+    assertEquals(circle.relate(bPoint), SpatialRelation.CONTAINS);
   }
 }

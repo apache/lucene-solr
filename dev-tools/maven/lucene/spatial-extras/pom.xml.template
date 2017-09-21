@@ -45,6 +45,13 @@
       <artifactId>lucene-test-framework</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-spatial3d</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 @lucene-spatial-extras.internal.dependencies@
 @lucene-spatial-extras.external.dependencies@
 @lucene-spatial-extras.internal.test.dependencies@

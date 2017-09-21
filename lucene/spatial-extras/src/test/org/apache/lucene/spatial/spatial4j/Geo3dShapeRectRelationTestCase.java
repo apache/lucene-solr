@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.spatial4j;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.locationtech.spatial4j.TestLog;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -119,9 +121,9 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
       protected Geo3dShape generateRandomShape(Point nearP) {
         final int circleRadius = 180 - random().nextInt(180);//no 0-radius
         final Point point = nearP;
-        final GeoShape shape = GeoCircleFactory.makeGeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
+        final GeoCircle shape = GeoCircleFactory.makeGeoCircle(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
             circleRadius * DEGREES_TO_RADIANS);
-        return new Geo3dShape(planetModel, shape, ctx);
+        return new Geo3dShape(shape, ctx);
       }
 
       @Override
@@ -153,11 +155,11 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
           ulhcPoint = lrhcPoint;
           lrhcPoint = temp;
         }
-        final GeoShape shape = GeoBBoxFactory.makeGeoBBox(planetModel, ulhcPoint.getY() * DEGREES_TO_RADIANS,
+        final GeoBBox shape = GeoBBoxFactory.makeGeoBBox(planetModel, ulhcPoint.getY() * DEGREES_TO_RADIANS,
             lrhcPoint.getY() * DEGREES_TO_RADIANS,
             ulhcPoint.getX() * DEGREES_TO_RADIANS,
             lrhcPoint.getX() * DEGREES_TO_RADIANS);
-        return new Geo3dShape(planetModel, shape, ctx);
+        return new Geo3dShape(shape, ctx);
       }
 
       @Override
@@ -185,11 +187,11 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
             geoPoints.add(gPt);
           }
           try {
-            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
+            final GeoPolygon shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
             if (shape == null) {
               continue;
             }
-            return new Geo3dShape(planetModel, shape, ctx);
+            return new Geo3dShape(shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
             // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
@@ -231,8 +233,8 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
           }
           
           try {
-            final GeoShape path = GeoPathFactory.makeGeoPath(planetModel, width, points);
-            return new Geo3dShape(planetModel, path, ctx);
+            final GeoPath path = GeoPathFactory.makeGeoPath(planetModel, width, points);
+            return new Geo3dShape(path, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
             // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
@@ -257,6 +259,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
   private Point geoPointToSpatial4jPoint(GeoPoint geoPoint) {
     return ctx.makePoint(geoPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES,
-        geoPoint.getLongitude() * DistanceUtils.RADIANS_TO_DEGREES);
+        geoPoint.getLatitude() * DistanceUtils.RADIANS_TO_DEGREES);
   }
 }

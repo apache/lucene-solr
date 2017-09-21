@@ -18,6 +18,10 @@ New Features
 * LUCENE-7392: Add point based LatLonBoundingBox as new RangeField Type.
   (Nick Knize)
 
+* LUCENE-7951: Spatial-extras has much better Geo3d support by implementing Spatial4j
+  abstractions: SpatialContextFactory, ShapeFactory, BinaryCodec, DistanceCalculator.
+  (Ignacio Vera, David Smiley)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
