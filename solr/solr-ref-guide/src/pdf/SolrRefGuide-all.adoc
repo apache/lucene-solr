@@ -5,6 +5,7 @@
 :author: Written by the Apache Lucene/Solr Project
 :email: https://lucene.apache.org/solr
 :revdate: Published {build-date}
+:experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
