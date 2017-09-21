@@ -38,9 +38,18 @@
     <path refid="test.base.classpath" />
     <path refid="spatialjar"/>
     <pathelement path="src/test-files" />
+    <pathelement path="${common.dir}/build/spatial3d/classes/test" />
   </path>
 
   <target name="compile-core" depends="jar-spatial3d,common.compile-core" />
+
+  <target name="compile-test" depends="compile-spatial3d-tests,common.compile-test" />
+
+  <target name="compile-spatial3d-tests">
+    <ant dir="${common.dir}/spatial3d" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
 
   <target name="javadocs" depends="javadocs-spatial3d,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
