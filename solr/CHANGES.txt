@@ -64,6 +64,9 @@ Upgrade Notes
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
+* SOLR-10962: in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated. Instead
+  please configure a direct commitReserveDuration element for use in all modes (master, slave, cloud).
+
 New Features
 ----------------------
 
@@ -89,6 +92,8 @@ New Features
 * SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
   (yonik)
 
+* SOLR-10962: Make ReplicationHandler's commitReserveDuration configurable in SolrCloud mode.
+  (Ramsey Haddad, Christine Poerschke, hossman)
 
 Bug Fixes
 ----------------------

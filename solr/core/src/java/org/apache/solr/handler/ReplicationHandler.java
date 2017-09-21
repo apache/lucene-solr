@@ -68,6 +68,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -81,6 +82,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloseHook;
+import static org.apache.solr.core.Config.assertWarnOrFail;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -1201,6 +1203,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public void inform(SolrCore core) {
     this.core = core;
     registerCloseHook();
+    Long deprecatedReserveCommitDuration = null;
     Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);
     if(nbtk!=null) {
       numberBackupsToKeep = Integer.parseInt(nbtk.toString());
@@ -1316,10 +1319,26 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       String reserve = (String) master.get(RESERVE);
       if (reserve != null && !reserve.trim().equals("")) {
         reserveCommitDuration = readIntervalMs(reserve);
+        deprecatedReserveCommitDuration = reserveCommitDuration;
+        // remove this error check & backcompat logic when Version.LUCENE_7_1_0 is removed
+        assertWarnOrFail(
+          "Beginning with Solr 7.1, master."+RESERVE + " is deprecated and should now be configured directly on the ReplicationHandler.",
+          (null == reserve),
+          core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_1_0));
       }
-      LOG.info("Commits will be reserved for  " + reserveCommitDuration);
       isMaster = true;
     }
+
+    {
+      final String reserve = (String) initArgs.get(RESERVE);
+      if (reserve != null && !reserve.trim().equals("")) {
+        reserveCommitDuration = readIntervalMs(reserve);
+        if (deprecatedReserveCommitDuration != null) {
+          throw new IllegalArgumentException("'master."+RESERVE+"' and '"+RESERVE+"' are mutually exclusive.");
+        }
+      }
+    }
+    LOG.info("Commits will be reserved for " + reserveCommitDuration + "ms.");
   }
 
   // check master or slave is enabled
