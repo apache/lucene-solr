@@ -1105,7 +1105,7 @@ public class SolrMetricManager {
         SolrMetricReporter reporter = loadReporter(registryName, cc.getResourceLoader(), info, null);
         ((SolrClusterReporter)reporter).setCoreContainer(cc);
       } catch (Exception e) {
-        log.warn("Could not load node reporter, pluginInfo=" + info, e);
+        log.warn("Could not load cluster reporter, pluginInfo=" + info, e);
       }
     }
   }
