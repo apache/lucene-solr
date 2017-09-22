@@ -6315,7 +6315,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Number mean = (Number)map.get("mean");
     Number var = (Number)map.get("var");
     //The mean and variance should be almost the same for poisson distribution
-    assertEquals(mean.doubleValue(), var.doubleValue(), 3.0);
+    assertEquals(mean.doubleValue(), var.doubleValue(), 7.0);
     Number prob = (Number)tuples.get(0).get("p");
     assertEquals(prob.doubleValue(), 0.03986099680914713, 0.0);
     Number cprob = (Number)tuples.get(0).get("c");
