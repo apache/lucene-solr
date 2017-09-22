@@ -186,9 +186,9 @@ If the document being updated does not include the `\_version_` field, and atomi
 
 When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every documented added with out needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
 
-For example...
+For example:
 
-[source,bash]
+[source]
 ----
 $ curl -X POST -H 'Content-Type: application/json' 'http://localhost:8983/solr/techproducts/update?versions=true' --data-binary '
 [ { "id" : "aaa" },
@@ -231,7 +231,7 @@ For more information, please also see https://www.youtube.com/watch?v=WYVM6Wz-XT
 
 Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field. However, In some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version. In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
-The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the http://wiki.apache.org/solr/UpdateRequestProcessor[UpdateRequestProcessorChain] and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
+The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 
 [source,xml]
 ----
