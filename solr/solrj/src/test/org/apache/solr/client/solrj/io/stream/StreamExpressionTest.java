@@ -6315,7 +6315,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Number mean = (Number)map.get("mean");
     Number var = (Number)map.get("var");
     //The mean and variance should be almost the same for poisson distribution
-    assertEquals(mean.doubleValue(), var.doubleValue(), 3.0);
+    assertEquals(mean.doubleValue(), var.doubleValue(), 7.0);
     Number prob = (Number)tuples.get(0).get("p");
     assertEquals(prob.doubleValue(), 0.03986099680914713, 0.0);
     Number cprob = (Number)tuples.get(0).get("c");
@@ -6411,7 +6411,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Number dotProduct = (Number)tuples.get(0).get("return-value");
-    assertTrue(dotProduct.doubleValue()== 182);
+    assertTrue(dotProduct.doubleValue() == 182);
   }
 
 
@@ -6499,10 +6499,30 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
     assertTrue(out.size()==4);
-    assertEquals((double)out.get(0), 2.5, .0);
-    assertEquals((double)out.get(1), 3.5, .0);
-    assertEquals((double)out.get(2), 4.5, .0);
-    assertEquals((double)out.get(3), 5.5, .0);
+    assertEquals((double) out.get(0), 2.5, .0);
+    assertEquals((double) out.get(1), 3.5, .0);
+    assertEquals((double) out.get(2), 4.5, .0);
+    assertEquals((double) out.get(3), 5.5, .0);
+  }
+
+
+  @Test
+  public void testMovingMedian() throws Exception {
+    String cexpr = "movingMedian(array(1,2,6,9,10,12,15), 5)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size()==3);
+    assertEquals(out.get(0).doubleValue(), 6.0, .0);
+    assertEquals(out.get(1).doubleValue(), 9.0, .0);
+    assertEquals(out.get(2).doubleValue(), 10.0, .0);
   }
 
 

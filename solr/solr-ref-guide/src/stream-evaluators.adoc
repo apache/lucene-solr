@@ -269,30 +269,157 @@ if(gt(fieldA,fieldB),floor(fieldA),floor(fieldB)) // if fieldA > fieldB then ret
 
 
 == sin
-//TODO
+The `sin` function returns the trigonometirc sine of a number.
+
+=== sin Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the sine of.
+
+=== sin Syntax
+
+[source,text]
+----
+sin(100.4)  // returns the sine of 100.4
+sine(fieldA) // returns the sine for fieldA.
+if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the sine of fieldA, else return the sine of fieldB
+----
+
 
 == asin
-//TODO
+The `asin` function returns the trigonometirc arcsine of a number.
 
-== sinh
-//TODO
+=== asin Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the arcsine of.
+
+=== asin Syntax
+
+[source,text]
+----
+asin(100.4)  // returns the sine of 100.4
+asine(fieldA) // returns the sine for fieldA.
+if(gt(fieldA,fieldB),asin(fieldA),asin(fieldB)) // if fieldA > fieldB then return the asine of fieldA, else return the asine of fieldB
+----
+
+
+== hsin
+The `hsin` function returns the trigonometirc  hyperbolic sine of a number.
+
+=== hsin Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the hyperbolic sine of.
+
+=== hsin Syntax
+
+[source,text]
+----
+hsin(100.4)  // returns the hsine of 100.4
+hsine(fieldA) // returns the hsine for fieldA.
+if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the hsine of fieldA, else return the hsine of fieldB
+----
+
 
 == cos
-//TODO
+The `cos` function returns the trigonometirc  cosine of a number.
+
+=== cos Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the hyperbolic cosine of.
+
+=== cos Syntax
+
+[source,text]
+----
+cos(100.4)  // returns the arccosine of 100.4
+cos(fieldA) // returns the arccosine for fieldA.
+if(gt(fieldA,fieldB),cos(fieldA),cos(fieldB)) // if fieldA > fieldB then return the arccosine of fieldA, else return the cosine of fieldB
+----
 
 == acos
-//TODO
+
+The `acos` function returns the trigonometirc arccosine of a number.
+
+=== acos Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the arccosine of.
+
+=== acos Syntax
+
+[source,text]
+----
+acos(100.4)  // returns the arccosine of 100.4
+acos(fieldA) // returns the arccosine for fieldA.
+if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the arccosine of fieldA, else return the arccosine of fieldB
+----
 
 == atan
-//TODO
+
+The `atan` function returns the trigonometirc arctangent of a number.
+
+=== atan Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the arctangent of.
+
+=== atan Syntax
+
+[source,text]
+----
+atan(100.4)  // returns the arctangent of 100.4
+atan(fieldA) // returns the arctangent for fieldA.
+if(gt(fieldA,fieldB),atan(fieldA),atan(fieldB)) // if fieldA > fieldB then return the arctanget of fieldA, else return the arctangent of fieldB
+----
 
 == round
-//TODO
+
+The `round` function returns the closest whole number to the argument
+
+=== round Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the square root of.
+
+=== round Syntax
+
+[source,text]
+----
+round(100.4)
+round(fieldA)
+if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the round of fieldA, else return the round of fieldB
+----
 
 == sqrt
-//TODO
+
+The `sqrt` function returns the trigonometirc square root of a number.
+
+=== sqrt Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the square root of.
+
+=== sqrt Syntax
+
+[source,text]
+----
+sqrt(100.4)  // returns the square root of 100.4
+sqrt(fieldA) // returns the square root for fieldA.
+if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the sqrt of fieldA, else return the sqrt of fieldB
+----
 
 == cbrt
+
+The `cbrt` function returns the trigonometirc cube root of a number.
+
+=== cbrt Parameters
+
+* `Field Name | Raw Number | Number Evaluator`: The value to return the cube root of.
+
+=== cbrt Syntax
+
+[source,text]
+----
+cbrt(100.4)  // returns the square root of 100.4
+cbrt(fieldA) // returns the square root for fieldA.
+if(gt(fieldA,fieldB),cbrt(fieldA),cbrt(fieldB)) // if fieldA > fieldB then return the cbrt of fieldA, else return the cbrt of fieldB
+----
+
 
 == and
 
@@ -530,3 +657,374 @@ raw(true) // "true" (note: this returns the string "true" and not the boolean tr
 eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA"
 ----
 
+== movingAvg
+
+The `movingAvg` function calculates a moving average over an array of numbers.
+(https://en.wikipedia.org/wiki/Moving_average)
+
+
+=== movingAvg Parameters
+
+* `numeric array`
+* `window size`
+
+=== movingAvg Returns
+
+A numeric array with the moving average. The array returned will be smaller then the
+orignal array by the window size.
+
+=== movingAvg Syntax
+
+movingAverage(numericArray, 30)
+
+== anova
+
+The `anova` function calculates the analysis of variance for two or more numeric arrays.
+
+(https://en.wikipedia.org/wiki/Analysis_of_variance)
+
+=== anova Parameters
+
+* `numeric array` ... (two or more)
+
+=== anova Returns
+
+A tuple with the results of ANOVA
+
+=== anova Syntax
+
+anova(numericArray1, numericArray2) // calculats ANOVA for two numeric arrays
+anova(numericArray1, numericArray2, numericArray2) // calculats ANOVA for three numeric arrays
+
+== hist
+
+The `hist` function creates a histogram from a numeric array. The hist function is designed
+to work with continuous variables.
+
+=== hist Parameters
+
+* `numeric array`
+* `bins` (The number of bins in the histogram)
+
+=== hist Returns
+
+A List of containing a tuple for each bin the the histogram. Each tuple contains
+summary statistics for the observations that were within the bin.
+
+=== hist Sytnax
+
+hist(numericArray, bins)
+
+== array
+
+The array function returns an array of numerics or other objects including other arrays.
+
+=== array Parameters
+
+* `numeric` | `array` ...
+
+=== array Returns
+
+array
+
+=== array Syntax
+
+array(1, 2, 3)  // Array of numerics
+
+array(array(1,2,3), array(4,5,6)) // Array of arrays
+
+== sequence
+
+The `sequence` function returns an array of numbers based on its parameters.
+
+=== sequence Parameters
+
+* `length`
+* `start`
+* `stride`
+
+=== sequence Returns
+
+numeric array
+
+=== sequence Syntax
+
+sequence(100, 0, 1) // Returns a sequence of length 100, starting from 0 with a stride of 1.
+
+== finddelay
+
+The `finddelay` function performs a cross-correlation between two numeric arrays and returns the delay.
+
+=== finddelay Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== finddelay Returns
+
+Integer delay
+
+=== finddelay Syntax
+
+finddelay(numericArray1, numericArray2)
+
+== describe
+
+The `describe` function returns a tuple containing the desciptive statistics for an array.
+
+=== describe Parameters
+
+* `numeric array`
+
+=== describe Returns
+
+Tuple containing descriptive statistics
+
+=== describe Syntax
+
+describe(numericArray)
+
+== copyOfRange
+
+The `copyOfRange` function creates a copy of a range of a numeric array.
+
+=== copyOfRange Parameters
+
+* `numeric array`
+* `start index`
+* `end index`
+
+=== copyOfRange Returns
+
+A copy of an arrar starting from the start index inclusive and ending at the end index
+exclusive.
+
+=== copyOfRange Syntax
+
+copyOfRange(numericArray, startIndex, endIndex)
+
+== copyOf
+
+The `copyOf` function creates a copy of a numeric array.
+
+=== copyOf Parameters
+
+* `numeric array`
+* `length`
+
+=== copyOf Returns
+
+A copy of the numeric array starting from zero of size of the length parameter. The returned
+ array will be right padded with zeros if the length parameter exceeds the size of the
+ original array.
+
+=== copyOf Syntax
+
+copyOf(numericArray, length)
+
+== distance
+
+The `distance` function calculates the Euclidian distance of two numeric arrays.
+
+=== distance Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== distance Returns
+
+number
+
+=== distance Syntax
+
+distance(numericArray1, numuericArray2))
+
+== scale
+
+The `scale` function multiplies all the elements of an array by a number.
+
+=== scale Parameters
+
+* `number`
+* `numeric array`
+
+=== scale Returns
+
+A numeric array with the scaled values
+
+=== scale Syntax
+
+scale(number, numericArray)
+
+== rank
+
+The `rank` performs a *rank transformaion* on a numeric array.
+
+=== rank Parameters
+
+* `numeric array`
+
+
+=== rank Returns
+
+numeric array with rank transformed values
+
+=== rank Syntax
+
+rank(numericArray)
+
+== length
+
+The `length` function returns the length of a numeric array.
+
+=== length Parameters
+
+* `numeric array`
+
+=== length Returns
+
+integer
+
+=== length Syntax
+
+length(numericArray)
+
+== rev
+
+The `rev` function reverses the order of a numeric array.
+
+=== rev Parameters
+
+* `numeric array`
+
+=== rev Returns
+
+A copy of a numeric array with its elements reveresed.
+
+=== rev Syntax
+
+rev(numericArray)
+
+== regress
+
+The `regress` function performs a simple regression on two numeric arrays.
+
+=== regress Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== regress Returns
+
+A regression result tuple which holds the regression results. The regression
+result tuple is also used by the predict function.
+
+=== regress Syntax
+
+regress(numericArray1, numericArray2)
+
+
+== predict
+
+The `predict` function predicts the value of an dependent variable based on
+the output of the regress function.
+
+=== predict Parameters
+
+* `regress output`
+* `numeric predictor`
+
+=== predict Returns
+
+The predicted value
+
+=== predict Syntax
+
+predict(regressOutput, predictor)
+
+== col
+
+The `col` function returns a numeric array from a list of Tuples. The col
+function is used to create numeric arrays from stream sources.
+
+=== col Parameters
+
+* `list of Tuples`
+* `field name`
+
+=== col Returns
+
+A numeric array from a list of tuples. The field name parameter specifies which field
+to create the array from.
+
+=== col Syntax
+
+col(tupleList, fieldName)
+
+== cov
+
+The `cov` function returns the covariance of two numeric arrays.
+
+=== cov Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== cov Returns
+
+Number
+
+=== cov Syntax
+
+cov(numericArray, numericArray)
+
+== corr
+
+The `corr` function returns the Pearson Product Moment Correlation of two numeric arrays.
+
+=== corr Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== corr Returns
+
+double between -1 and 1
+
+=== corr Synax
+
+corr(numericArray1, numericArray2)
+
+== conv
+
+The `conv` function returns the convolution (https://en.wikipedia.org/wiki/Convolution) of two numeric arrays.
+
+=== conv Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== conv Returns
+
+A numeric array with the convolution of the two array parameters.
+
+=== conv Syntax
+
+conv(numericArray1, numericArray2)
+
+== normalize
+
+The `normalize` function normalizes a numeric array so that values within the array
+have a mean of 0 and standard deviation of 1.
+
+=== normalize Parameters
+
+* `numeric array`
+
+=== normalize Returns
+
+A numeric array with normalized values.
+
+=== normalize Syntax
+
+normalize(numericArray)

@@ -321,7 +321,8 @@ public class SynonymMap {
             throw new IllegalArgumentException("term: " + text + " analyzed to a zero-length token");
           }
           if (posIncAtt.getPositionIncrement() != 1) {
-            throw new IllegalArgumentException("term: " + text + " analyzed to a token with posinc != 1");
+            throw new IllegalArgumentException("term: " + text + " analyzed to a token (" + termAtt +
+                                               ") with position increment != 1 (got: " + posIncAtt.getPositionIncrement() + ")");
           }
           reuse.grow(reuse.length() + length + 1); /* current + word + separator */
           int end = reuse.length();

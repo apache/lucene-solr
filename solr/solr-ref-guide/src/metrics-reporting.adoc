@@ -200,16 +200,20 @@ The JMX Reporter uses the `org.apache.solr.metrics.reporters.SolrJmxReporter` cl
 
 It takes the following arguments:
 
-* *domain* - (optional str) JMX domain name. If not specified then registry name will be used.
-* *serviceUrl* - (optional str) service URL for a JMX server. If not specified then the default platform MBean server will be used.
-* *agentId* - (optional str) agent ID for a JMX server. Note: either `serviceUrl` or `agentId` can be specified but not both - if both are specified then the default MBean server will be used.
+* *domain* - (optional string) JMX domain name. If not specified then the registry name will be used.
+* *serviceUrl* - (optional string) The service URL for a JMX server. If not specified, Solr will attempt to discover if the JVM has an MBean server and will use that address. See below for additional information on this.
+* *agentId* - (optional string) The agent ID for a JMX server. Note either `serviceUrl` or `agentId` can be specified but not both - if both are specified then the default MBean server will be used.
 
 Object names created by this reporter are hierarchical, dot-separated but also properly structured to form corresponding hierarchies in e.g., JConsole. This hierarchy consists of the following elements in the top-down order:
 
-* registry name (e.g., `solr.core.collection1.shard1.replica1`. Dot-separated registry names are also split into ObjectName hierarchy levels, so that metrics for this registry will be shown under `/solr/core/collection1/shard1/replica1` in JConsole, with each domain part being assigned to `dom1, dom2, ... domN` property.
+* registry name (e.g., `solr.core.collection1.shard1.replica1`). Dot-separated registry names are also split into ObjectName hierarchy levels, so that metrics for this registry will be shown under `/solr/core/collection1/shard1/replica1` in JConsole, with each domain part being assigned to `dom1, dom2, ... domN` property.
 * reporter name (the value of reporter's `name` attribute)
 * category, scope and name for request handlers
 * or additional `name1, name2, ... nameN` elements for metrics from other components.
+
+The JMX Reporter replaces the JMX functionality available in Solr versions before 7.0. If you have upgraded from an earlier version and have an MBean Server running when Solr starts, Solr will automatically discover the location of the local MBean server and use a default configuration for the SolrJmxReporter.
+
+You can start a local MBean server with a system property at startup by adding `-Dcom.sun.management.jmxremote` to your start command. This will not add the reporter configuration to `solr.xml`, so if you enable it with a system property, you must always start Solr with the system property or JMX will not be enabled in subsequent starts.
 
 === SLF4J Reporter
 
@@ -340,13 +344,14 @@ prefix:: The first characters of metric name that will filter the metrics return
 property:: Allows requesting only this metric from any compound metric. Multiple `property` parameters can be combined to act as an OR request. For example, to only get the 99th and 999th percentile values from all metric types and groups, you can add `&property=p99_ms&property=p999_ms` to your request. This can be combined with `group`, `type`, and `prefix` as necessary.
 
 key:: fully-qualified metric name, which specifies one concrete metric instance (parameter can be
-specified multiple times to retrieve multiple concrete metrics). *NOTE: when this parameter is used other
+specified multiple times to retrieve multiple concrete metrics). *NOTE: when this parameter is used, other
 selection methods listed above are ignored.* Fully-qualified name consists of registry name, colon and
 metric name, with optional colon and metric property. Colons in names can be escaped using back-slash `\`
 character. Examples:
-`key=solr.node:CONTAINER.fs.totalSpace`
-`key=solr.core.collection1:QUERY./select.requestTimes:max_ms`
-`key=solr.jvm:system.properties:user.name`
+
+* `key=solr.node:CONTAINER.fs.totalSpace`
+* `key=solr.core.collection1:QUERY./select.requestTimes:max_ms`
+* `key=solr.jvm:system.properties:user.name`
 
 compact:: When false, a more verbose format of the response will be returned. Instead of a response like this:
 +

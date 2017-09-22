@@ -15,6 +15,13 @@ New Features
 
 * LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
 
+* LUCENE-7392: Add point based LatLonBoundingBox as new RangeField Type.
+  (Nick Knize)
+
+* LUCENE-7951: Spatial-extras has much better Geo3d support by implementing Spatial4j
+  abstractions: SpatialContextFactory, ShapeFactory, BinaryCodec, DistanceCalculator.
+  (Ignacio Vera, David Smiley)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -50,6 +57,13 @@ Bug Fixes
 * LUCENE-7959: Improve NativeFSLockFactory's exception message if it cannot create
   write.lock for an empty index due to bad permissions/read-only filesystem/etc.
   (Erick Erickson, Shawn Heisey, Robert Muir)
+
+* LUCENE-7968: AnalyzingSuggester would sometimes order suggestions incorrectly,
+  it did not properly break ties on the surface forms when both the weights and
+  the analyzed forms were equal. (Robert Muir)
+
+* LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
+  child scorers (Adrien Grand, Mike McCandless)
 
 Build
 

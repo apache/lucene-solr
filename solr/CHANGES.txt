@@ -115,6 +115,10 @@ Bug Fixes
 
 * SOLR-11348: Fix the DIH database example (James Dyer)
 
+* SOLR-11363: JSON Facet API: repeated values in a numeric points field with docValues enabled
+  were double counted. (Hossman, yonik)
+
+
 Optimizations
 ----------------------
 
@@ -126,6 +130,8 @@ Optimizations
 * SOLR-11242: QueryParser: re-use the LookaheadSuccess exception. (Michael Braun via David Smiley)
 
 * SOLR-11314: FastCharStream: re-use the READ_PAST_EOF exception. (Michael Braun via David Smiley)
+
+* SOLR-8344: Decide default when requested fields are both column and row stored. (Cao Manh Dat, David Smiley)
 
 Other Changes
 ----------------------
@@ -187,6 +193,10 @@ Other Changes
 
 * SOLR-11132: Refactor common getSortField logic in various FieldTypes (Jason Gerlowski, hossman)
 
+* SOLR-11351: Make LTRScoringModel model more extensible. (Christine Poerschke)
+
+* SOLR-10451: Remove contrib/ltr/lib from lib includes in the techproducts example config (sungjunyoung via janhoy)
+   
 ==================  7.0.0 ==================
 
 Versions of Major Components
