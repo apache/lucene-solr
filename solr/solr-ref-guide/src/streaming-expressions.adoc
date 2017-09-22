@@ -1,7 +1,7 @@
 = Streaming Expressions
 :page-shortname: streaming-expressions
 :page-permalink: streaming-expressions.html
-:page-children: stream-sources, stream-decorators, stream-evaluators, graph-traversal
+:page-children: stream-sources, stream-decorators, stream-evaluators, statistical-programming, graph-traversal
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,6 +38,7 @@ There is a growing library of functions that can be combined to implement:
 * Retrieve and rank services
 * Text classification and feature extraction
 * Streaming NLP
+* Statistical Programming
 
 Streams from outside systems can be joined with streams originating from Solr and users can add their own stream functions by following Solr's {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/package-summary.html[Java streaming API].
 
