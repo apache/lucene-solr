@@ -311,7 +311,7 @@ public class PlanetModel implements SerializableObject {
       lambdaP = lambda;
       lambda = L + (1.0 - C) * flattening * sinAlpha *
         (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1.0 + 2.0 * cos2SigmaM *cos2SigmaM)));
-    } while (Math.abs(lambda-lambdaP) > Vector.MINIMUM_RESOLUTION && ++iterLimit < 40);
+    } while (Math.abs(lambda-lambdaP) >= Vector.MINIMUM_RESOLUTION && ++iterLimit < 100);
 
     final double uSq = cosSqAlpha * this.squareRatio;
     final double A = 1.0 + uSq / 16384.0 * (4096.0 + uSq * (-768.0 + uSq * (320.0 - 175.0 * uSq)));
@@ -368,7 +368,7 @@ public class PlanetModel implements SerializableObject {
           B / 6.0 * cos2σM * (-3.0 + 4.0 * sinσ * sinσ) * (-3.0 + 4.0 * cos2σM * cos2σM)));
       σʹ = σ;
       σ = dist / (c * A) + Δσ;
-    } while (Math.abs(σ - σʹ) > Vector.MINIMUM_RESOLUTION && ++iterations < 40);
+    } while (Math.abs(σ - σʹ) >= Vector.MINIMUM_RESOLUTION && ++iterations < 100);
 
     double x = sinU1 * sinσ - cosU1 * cosσ * cosα1;
     double φ2 = Math.atan2(sinU1 * cosσ + cosU1 * sinσ * cosα1, (1.0 - flattening) * Math.sqrt(sinα * sinα + x * x));
