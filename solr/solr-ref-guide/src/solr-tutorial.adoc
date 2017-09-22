@@ -448,13 +448,13 @@ You can require that a term or phrase is present by prefixing it with a `+`; con
 
 To find documents that contain both terms "electronics" and "music", enter `+electronics +music` in the `q` box in the Admin UI Query tab.
 
-If you're using curl, you must encode the `+` character because it has a reserved purpose in URLs (encoding the space character). The encoding for `+` is `%2B`:
+If you're using curl, you must encode the `+` character because it has a reserved purpose in URLs (encoding the space character). The encoding for `+` is `%2B` as in:
 
 `curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics%20%2Bmusic"`
 
 You should only get a single result.
 
-To search for documents that contain the term "electronics" but *don't* contain the term "music", enter `+electronics -music` in the `q` box in the Admin UI. For curl, again, URL encode "+" as "%2B":
+To search for documents that contain the term "electronics" but *don't* contain the term "music", enter `+electronics -music` in the `q` box in the Admin UI. For curl, again, URL encode `+` as `%2B` as in:
 
 `curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics+-music"`
 
@@ -592,7 +592,7 @@ This command uses the Schema API to explicitly define a field named "name" that 
 You can also use the Admin UI to create fields, but it offers a bit less control over the properties of your field. It will work for our case, though:
 
 .Creating a field
-image::images/solr-tutorial/tutorial-add-field.png[]
+image::images/solr-tutorial/tutorial-add-field.png[Adding a Field,640,480,pdfwidth=75%]
 
 ===== Create a "catchall" Copy Field
 
@@ -612,7 +612,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{"add-copy-field"
 In the Admin UI, choose btn:[Add Copy Field], then fill out the source and destination for your field, as in this screenshot.
 
 .Creating a copy field
-image::images/solr-tutorial/tutorial-add-copy-field.png[]
+image::images/solr-tutorial/tutorial-add-copy-field.png[Adding a copy field,640,480,pdfwidth=75%]
 
 What this does is make a copy of all fields and put the data into the "\_text_" field.
 
@@ -916,7 +916,7 @@ You can see that that has happened by looking at the values for `numDocs` and `m
 
 `numDocs` represents the number of searchable documents in the index (and will be larger than the number of XML, JSON, or CSV files since some files contained more than one document). The `maxDoc` value may be larger as the `maxDoc` count includes logically deleted documents that have not yet been physically removed from the index. You can re-post the sample files over and over again as much as you want and `numDocs` will never increase, because the new documents will constantly be replacing the old.
 
-Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/post`) again. You'll see your changes reflected in subsequent searches.
+Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/post`). You'll see your changes reflected in subsequent searches.
 
 === Deleting Data
 
