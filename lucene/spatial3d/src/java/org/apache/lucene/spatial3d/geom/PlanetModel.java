@@ -322,6 +322,65 @@ public class PlanetModel implements SerializableObject {
     return c * A * (sigma - deltaSigma);
   }
 
+  /** Compute new point given original point, a bearing direction, and an adjusted angle (as would be computed by
+   * the surfaceDistance() method above).  The original point can be anywhere on the globe.  The bearing direction
+   * ranges from 0 (due east at the equator) to pi/2 (due north) to pi (due west at the equator) to 3 pi/4 (due south)
+   * to 2 pi.
+   * @param from is the starting point.
+   * @param dist is the adjusted angle.
+   * @param bearing is the direction to proceed.
+   * @return the new point, consistent with the bearing direction and distance.
+   */
+  public GeoPoint surfacePointOnBearing(final GeoPoint from, final double dist, final double bearing) {
+    // Algorithm using Vincenty's formulae (https://en.wikipedia.org/wiki/Vincenty%27s_formulae)
+    // which takes into account that planets may not be spherical.
+    //Code adaptation from http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+
+    double lat = from.getLatitude();
+    double lon = from.getLongitude();
+    double sinα1 = Math.sin(bearing);
+    double cosα1 = Math.cos(bearing);
+
+    double tanU1 = (1.0 - flattening) * Math.tan(lat);
+    double cosU1 = 1.0 / Math.sqrt((1.0 + tanU1 * tanU1));
+    double sinU1 = tanU1 * cosU1;
+
+    double σ1 = Math.atan2(tanU1, cosα1);
+    double sinα = cosU1 * sinα1;
+    double cosSqα = 1.0 - sinα * sinα;
+    double uSq = cosSqα * squareRatio;
+    double A = 1.0 + uSq / 16384.0 * (4096.0 + uSq * (-768.0 + uSq * (320.0 - 175.0 * uSq)));
+    double B = uSq / 1024.0 * (256.0 + uSq * (-128.0 + uSq * (74.0 - 47.0 * uSq)));
+
+    double cos2σM;
+    double sinσ;
+    double cosσ;
+    double Δσ;
+
+    double σ = dist / (c * A);
+    double σʹ;
+    double iterations = 0;
+    do {
+      cos2σM = Math.cos(2.0 * σ1 + σ);
+      sinσ = Math.sin(σ);
+      cosσ = Math.cos(σ);
+      Δσ = B * sinσ * (cos2σM + B / 4.0 * (cosσ * (-1.0 + 2.0 * cos2σM * cos2σM) -
+          B / 6.0 * cos2σM * (-3.0 + 4.0 * sinσ * sinσ) * (-3.0 + 4.0 * cos2σM * cos2σM)));
+      σʹ = σ;
+      σ = dist / (c * A) + Δσ;
+    } while (Math.abs(σ - σʹ) > Vector.MINIMUM_ANGULAR_RESOLUTION && ++iterations < 200);
+
+    double x = sinU1 * sinσ - cosU1 * cosσ * cosα1;
+    double φ2 = Math.atan2(sinU1 * cosσ + cosU1 * sinσ * cosα1, (1.0 - flattening) * Math.sqrt(sinα * sinα + x * x));
+    double λ = Math.atan2(sinσ * sinα1, cosU1 * cosσ - sinU1 * sinσ * cosα1);
+    double C = flattening / 16.0 * cosSqα * (4.0 + flattening * (4.0 - 3.0 * cosSqα));
+    double L = λ - (1.0 - C) * flattening * sinα *
+        (σ + C * sinσ * (cos2σM + C * cosσ * (-1.0 + 2.0 * cos2σM * cos2σM)));
+    double λ2 = (lon + L + 3.0 * Math.PI) % (2.0 * Math.PI) - Math.PI;  // normalise to -180..+180
+
+    return new GeoPoint(this, φ2, λ2);
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (!(o instanceof PlanetModel))
