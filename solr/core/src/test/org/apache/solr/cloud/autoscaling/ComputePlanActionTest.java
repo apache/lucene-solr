@@ -53,7 +53,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 /**
  * Test for {@link ComputePlanAction}
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;")
 public class ComputePlanActionTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
