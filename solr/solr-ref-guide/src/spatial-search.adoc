@@ -147,9 +147,9 @@ LLPSF does not support Solr's "PostFilter".
 There are four distance function queries:
 
 * `geodist`, see below, usually the most appropriate;
-*  http://wiki.apache.org/solr/FunctionQuery#dist[`dist`], to calculate the p-norm distance between multi-dimensional vectors;
-* http://wiki.apache.org/solr/FunctionQuery#hsin.2C_ghhsin_-_Haversine_Formula[`hsin`], to calculate the distance between two points on a sphere;
-* https://wiki.apache.org/solr/FunctionQuery#sqedist_-_Squared_Euclidean_Distance[`sqedist`], to calculate the squared Euclidean distance between two points.
+*  <<function-queries.adoc#dist-function,`dist`>>, to calculate the p-norm distance between multi-dimensional vectors;
+* <<function-queries.adoc#hsin-function,`hsin`>>, to calculate the distance between two points on a sphere;
+* <<function-queries.adoc#sqedist-function,`sqedist`>>, to calculate the squared Euclidean distance between two points.
 
 For more information about these function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
 
