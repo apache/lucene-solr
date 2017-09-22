@@ -231,6 +231,7 @@ public class NodeLostTriggerTest extends SolrCloudTestCase {
           break;
         }
       }
+      cluster.waitForAllNodes(5);
 
       AtomicInteger callCount = new AtomicInteger(0);
       AtomicBoolean fired = new AtomicBoolean(false);
