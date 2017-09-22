@@ -368,7 +368,7 @@ public class PlanetModel implements SerializableObject {
           B / 6.0 * cos2σM * (-3.0 + 4.0 * sinσ * sinσ) * (-3.0 + 4.0 * cos2σM * cos2σM)));
       σʹ = σ;
       σ = dist / (c * A) + Δσ;
-    } while (Math.abs(σ - σʹ) > Vector.MINIMUM_ANGULAR_RESOLUTION && ++iterations < 200);
+    } while (Math.abs(σ - σʹ) > Vector.MINIMUM_RESOLUTION && ++iterations < 40);
 
     double x = sinU1 * sinσ - cosU1 * cosσ * cosα1;
     double φ2 = Math.atan2(sinU1 * cosσ + cosU1 * sinσ * cosα1, (1.0 - flattening) * Math.sqrt(sinα * sinα + x * x));
