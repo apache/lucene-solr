@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,7 +62,11 @@ public class ComputePlanAction extends TriggerActionBase {
           return;
         }
         Policy policy = autoScalingConf.getPolicy();
-        Policy.Session session = policy.createSession(new SolrClientDataProvider(cloudSolrClient));
+        SolrClientDataProvider dataProvider = new SolrClientDataProvider(cloudSolrClient);
+        if (log.isDebugEnabled()) {
+          log.debug("Cluster data provider: {}", dataProvider.toMap(new HashMap<>()));
+        }
+        Policy.Session session = policy.createSession(dataProvider);
         Policy.Suggester suggester = getSuggester(session, event, zkStateReader);
         while (true) {
           SolrRequest operation = suggester.getOperation();

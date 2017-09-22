@@ -37,7 +37,7 @@ import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAut
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
+@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;")
 public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -162,6 +162,14 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testHistory() throws Exception {
+    waitForState("Timed out wait for collection be active", PREFIX + "_collection",
+        clusterShape(1, 3));
+    waitForState("Timed out wait for collection be active", CollectionAdminParams.SYSTEM_COLL,
+        clusterShape(1, 3));
+    // todo remove this workaround after SOLR-9440
+    cluster.getSolrClient().getZkStateReader().registerCore(".system");
+    cluster.getSolrClient().getZkStateReader().registerCore(PREFIX + "_collection");
+
     JettySolrRunner jetty = cluster.startJettySolrRunner();
     String nodeAddedName = jetty.getNodeName();
     boolean await = actionFiredLatch.await(60, TimeUnit.SECONDS);
@@ -178,6 +186,11 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
       AutoscalingHistoryHandler.TRIGGER_PARAM, PREFIX + "_node_added_trigger");
     docs = solrClient.query(query).getResults();
+    if (docs.size() != 8) {
+      zkClient().printLayoutToStdOut();
+      query = params(CommonParams.QT, CommonParams.AUTOSCALING_DIAGNOSTICS_PATH);
+      log.info("Diagnostic output: ", solrClient.query(query).getResponse());
+    }
     assertEquals(8, docs.size());
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
