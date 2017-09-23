@@ -49,7 +49,7 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
 
     Object second = null;
     if(objects.length > 1) {
-      second = objects[2];
+      second = objects[1];
     }
 
     if(first instanceof RealDistribution) {
