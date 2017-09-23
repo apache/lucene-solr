@@ -71,6 +71,9 @@ New Features
 * SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
   (yonik)
 
+* SOLR-11382: Lucene's Geo3D (surface of sphere & ellipsoid) is now supported on spatial RPT fields by
+  setting spatialContextFactory="Geo3D".  Furthermore, this is the first time Solr has out of the box
+  support for polygons. (David Smiley)
 
 Bug Fixes
 ----------------------

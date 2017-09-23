@@ -46,6 +46,7 @@ import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.spatial4j.Geo3dSpatialContextFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
@@ -129,6 +130,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
         // "JTS" is a convenience alias
         if (argEntry.getKey().equals(CTX_PARAM) && argEntry.getValue().equals("JTS")) {
           argEntry.setValue("org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory");
+          continue;
+        }
+        if (argEntry.getKey().equals(CTX_PARAM) && argEntry.getValue().equals("Geo3D")) {
+          argEntry.setValue(Geo3dSpatialContextFactory.class.getName());
           continue;
         }
         // Warn about using old Spatial4j class names
