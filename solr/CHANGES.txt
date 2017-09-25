@@ -145,6 +145,9 @@ Bug Fixes
 * SOLR-11363: JSON Facet API: repeated values in a numeric points field with docValues enabled
   were double counted. (Hossman, yonik)
 
+* SOLR-11297: Message "Lock held by this virtual machine" during startup.  Solr is trying to start some cores twice.
+  (Luiz Armesto, Shawn Heisey, Erick Erickson)
+
 
 Optimizations
 ----------------------
