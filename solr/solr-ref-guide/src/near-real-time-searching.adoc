@@ -22,7 +22,7 @@ Near Real Time (NRT) search means that documents are available for search almost
 
 This allows additions and updates to documents to be seen in 'near' real time. Solr does not block updates while a commit is in progress. Nor does it wait for background merges to complete before opening a new search of indexes and returning.
 
-With NRT, you can modify a `commit` command to be a *soft commit*, which avoids parts of a standard commit that can be costly. You will still want to do standard commits to ensure that documents are in stable storage, but *soft commits* let you see a very near real time view of the index in the meantime.
+With NRT, you can modify a `commit` command to be a *soft commit*, which avoids parts of a standard commit that can be costly. You will still want to do standard commits to ensure that documents are in stable storage, but soft commits let you see a very near real time view of the index in the meantime.
 
 However, pay special attention to cache and autowarm settings as they can have a significant impact on NRT performance.
 
@@ -30,9 +30,9 @@ However, pay special attention to cache and autowarm settings as they can have a
 
 A commit operation makes index changes visible to new search requests. A *hard commit* uses the transaction log to get the id of the latest document changes, and also calls `fsync` on the index files to ensure they have been flushed to stable storage and no data loss will result from a power failure. The current transaction log is closed and a new one is opened. See the "transaction log" discussion below for data loss issues.
 
-A *soft commit* is much faster since it only makes index changes visible and does not `fsync` index files, or write a new index descriptor or start a new transaction log. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive", but it is not free, since it can slow throughput. See the "transaction log" discussion below for data loss issues.
+A soft commit is much faster since it only makes index changes visible and does not `fsync` index files, or write a new index descriptor or start a new transaction log. Search collections that have NRT requirements (that want index changes to be quickly visible to searches) will want to soft commit often but hard commit less frequently. A softCommit may be "less expensive", but it is not free, since it can slow throughput. See the "transaction log" discussion below for data loss issues.
 
-An *optimize* is like a *hard commit* except that it forces all of the index segments to be merged into a single segment first. Depending on the use, this operation should be performed infrequently (e.g., nightly), if at all, since it involves reading and re-writing the entire index. Segments are normally merged over time anyway (as determined by the merge policy), and optimize just forces these merges to occur immediately.
+An *optimize* is like a hard commit except that it forces all of the index segments to be merged into a single segment first. Depending on the use, this operation should be performed infrequently (e.g., nightly), if at all, since it involves reading and re-writing the entire index. Segments are normally merged over time anyway (as determined by the merge policy), and optimize just forces these merges to occur immediately.
 
 Soft commit takes uses two parameters: `maxDocs` and `maxTime`.
 
@@ -46,7 +46,7 @@ Use `maxDocs` and `maxTime` judiciously to fine-tune your commit strategies.
 
 === Transaction Logs (tlogs)
 
-Transaction logs are a "rolling window" of at least the last `N` (default 100) documents indexed. Tlogs are configured in solrconfig.xml, including the value of `N`. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
+Transaction logs are a "rolling window" of at least the last `N` (default 100) documents indexed. Tlogs are configured in `solrconfig.xml`, including the value of `N`. The current transaction log is closed and a new one opened each time any variety of hard commit occurs. Soft commits have no effect on the transaction log.
 
 When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client. In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9` etc) any documents written to the tlog that was open when Solr stopped are replayed on startup.
 

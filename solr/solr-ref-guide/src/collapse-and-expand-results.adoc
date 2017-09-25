@@ -33,24 +33,24 @@ The `CollapsingQParser` is really a _post filter_ that provides more performant 
 
 The CollapsingQParser accepts the following local parameters:
 
-field::
+`field`::
 The field that is being collapsed on. The field must be a single valued String, Int or Float-type of field.
 
-min or max::
+`min` or `max`::
 Selects the group head document for each group based on which document has the min or max value of the specified numeric field or <<function-queries.adoc#function-queries,function query>>.
 +
 At most only one of the `min`, `max`, or `sort` (see below) parameters may be specified.
 +
 If none are specified, the group head document of each group will be selected based on the highest scoring document in that group. The default is none.
 
-sort::
+`sort`::
 Selects the group head document for each group based on which document comes first according to the specified <<common-query-parameters.adoc#sort-parameter,sort string>>.
 +
 At most only one of the `min`, `max`, (see above) or `sort` parameters may be specified.
 +
 If none are specified, the group head document of each group will be selected based on the highest scoring document in that group. The default is none.
 
-nullPolicy::
+`nullPolicy`::
 There are three available null policies:
 +
 * `ignore`: removes documents with a null value in the collapse field. This is the default.
@@ -59,14 +59,14 @@ There are three available null policies:
 +
 The default is `ignore`.
 
-hint::
+`hint`::
 Currently there is only one hint available: `top_fc`, which stands for top level FieldCache.
 +
 The `top_fc` hint is only available when collapsing on String fields. `top_fc` usually provides the best query time speed but takes the longest to warm on startup or following a commit. `top_fc` will also result in having the collapsed field cached in memory twice if it's used for faceting or sorting. For very high cardinality (high distinct count) fields, `top_fc` may not fare so well.
 +
 The default is none.
 
-size::
+`size`::
 Sets the initial size of the collapse data structures when collapsing on a *numeric field only*.
 +
 The data structures used for collapsing grow dynamically when collapsing on numeric fields. Setting the size above the number of results expected in the result set will eliminate the resizing cost.
@@ -146,14 +146,14 @@ Inside the expanded section there is a _map_ with each group head pointing to th
 
 The ExpandComponent has the following parameters:
 
-expand.sort::
+`expand.sort`::
 Orders the documents within the expanded groups. The default is `score desc`.
 
-expand.rows::
+`expand.rows`::
 The number of rows to display in each group. The default is 5 rows.
 
-expand.q::
+`expand.q`::
 Overrides the main query (`q`), determines which documents to include in the main group. The default is to use the main query.
 
-expand.fq::
+`expand.fq`::
 Overrides main filter queries (`fq`), determines which documents to include in the main group. The default is to use the main filter queries.
