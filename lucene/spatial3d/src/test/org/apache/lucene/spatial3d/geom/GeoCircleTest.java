@@ -23,6 +23,34 @@ import org.junit.Test;
 public class GeoCircleTest extends LuceneTestCase {
 
   @Test
+  public void testExactCircle() {
+    GeoCircle c;
+    GeoPoint gp;
+    
+    // Construct a variety of circles to see how many actual planes are involved
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.0, 0.0, 0.1, 1e-6);
+    gp = new GeoPoint(PlanetModel.WGS84, 0.0, 0.2);
+    assertTrue(!c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.WGS84, 0.0, 0.0);
+    assertTrue(c.isWithin(gp));
+    
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.1, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.2, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.3, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.4, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, Math.PI * 0.5, 0.0, 0.1, 1e-6);
+    gp = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5 - 0.2, 0.0);
+    assertTrue(!c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5, 0.0);
+    assertTrue(c.isWithin(gp));
+
+  }
+  
+  @Test
   public void testCircleDistance() {
     GeoCircle c;
     GeoPoint gp;
