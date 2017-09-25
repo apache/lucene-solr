@@ -643,7 +643,7 @@ daemon(id="myDaemon",
                       id="myTopic")))
 ----
 
-In the example above a <<daemon,daemon>> wraps an executor**,** which wraps a <<stream-sources.adoc#topic,topic>> that is returning tuples with expressions to execute. When sent to the stream handler, the daemon will call the executor at intervals which will cause the executor to read from the topic and execute the expressions found in the `expr_s` field. The daemon will repeatedly call the executor until all the tuples that match the topic have been iterated, then it will terminate. This is the approach for executing batches of streaming expressions from a `topic` queue.
+In the example above a <<daemon,daemon>> wraps an executor, which wraps a <<stream-sources.adoc#topic,topic>> that is returning tuples with expressions to execute. When sent to the stream handler, the daemon will call the executor at intervals which will cause the executor to read from the topic and execute the expressions found in the `expr_s` field. The daemon will repeatedly call the executor until all the tuples that match the topic have been iterated, then it will terminate. This is the approach for executing batches of streaming expressions from a `topic` queue.
 
 == fetch
 
@@ -676,9 +676,9 @@ The `having` expression wraps a stream and applies a boolean operation to each t
 === having Parameters
 
 * `StreamExpression`: (Mandatory) The stream source for the having function.
-* `booleanEvaluator`: (Madatory) The following boolean operations are supported: *eq* (equals), *gt* (greater than), *lt* (less than), *gteq* (greater than or equal to), *lteq* (less than or equal to), *and*, *or, eor* (exclusive or), and *not*. Boolean evaluators can be nested with other evaluators to form complex boolean logic.
+* `booleanEvaluator`: (Madatory) The following boolean operations are supported: `eq` (equals), `gt` (greater than), `lt` (less than), `gteq` (greater than or equal to), `lteq` (less than or equal to), `and`, `or`, `eor` (exclusive or), and `not`. Boolean evaluators can be nested with other evaluators to form complex boolean logic.
 
-The comparison evaluators compare the value in a specific field with a value, whether a string, number, or boolean. For example: *eq*(field1, 10), returns true if *field1* is equal to 10.
+The comparison evaluators compare the value in a specific field with a value, whether a string, number, or boolean. For example: `eq(field1, 10)`, returns `true` if `field1` is equal to 10.
 
 === having Syntax
 
