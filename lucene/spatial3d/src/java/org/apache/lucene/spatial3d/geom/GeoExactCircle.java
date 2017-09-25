@@ -124,21 +124,21 @@ class GeoExactCircle extends GeoBaseCircle {
       // We construct approximation planes until we have a low enough error estimate
       final List<ApproximationSlice> slices = new ArrayList<>(100);
       // Construct four cardinal points, and then we'll build the first two planes
-      final GeoPoint northPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
-      final GeoPoint southPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
-      final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, 0.0);
-      final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI);
+      final GeoPoint northPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, 0.0);
+      final GeoPoint southPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI);
+      final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
+      final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
       
       this.edgePoints = new GeoPoint[]{northPoint};
       
       if (planetModel.c > planetModel.ab) {
         // z can be greater than x or y, so ellipse is longer in height than width
-        slices.add(new ApproximationSlice(center, eastPoint, 0.0, westPoint, Math.PI, northPoint, Math.PI * 0.5));
-        slices.add(new ApproximationSlice(center, westPoint, Math.PI, eastPoint, 0.0, southPoint, Math.PI * 1.5));
+        slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0));
+        slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI));
       } else {
         // z will be less than x or y, so ellipse is shorter than it is tall
-        slices.add(new ApproximationSlice(center, northPoint, Math.PI * 0.5, southPoint, Math.PI * 1.5, eastPoint, 0.0));
-        slices.add(new ApproximationSlice(center, southPoint, Math.PI * 1.5, northPoint, Math.PI * 0.5, westPoint, Math.PI));
+        slices.add(new ApproximationSlice(center, northPoint, Math.PI * 2.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
+        slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, 0.0, westPoint, Math.PI * 1.5));
       }
       
       // Now, iterate over slices until we have converted all of them into safe SidedPlanes.
