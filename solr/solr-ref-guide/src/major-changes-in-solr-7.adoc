@@ -63,7 +63,7 @@ See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Aut
 ** <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>>
 ** <<metrics-reporting.adoc#metrics-reporting,Metrics API>>. See also information about related deprecations in the section <<JMX Support and MBeans>> below.
 ** <<other-parsers.adoc#payload-query-parsers,Payload queries>>
-** <<stream-evaluators.adoc#stream-evaluators,Streaming Evaluators>>
+** <<stream-evaluator-reference.adoc#stream-evaluator-reference,Streaming Evaluators>>
 ** <<v2-api.adoc#v2-api,/v2 API>>
 ** <<graph-traversal.adoc#graph-traversal,Graph streaming expressions>>
 

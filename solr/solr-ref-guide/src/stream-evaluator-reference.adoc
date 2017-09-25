@@ -1,6 +1,6 @@
 = Stream Evaluator Reference
-:page-shortname: stream-evaluators
-:page-permalink: stream-evaluators.html
+:page-shortname: stream-evaluator-reference
+:page-permalink: stream-evaluator-reference.html
 :page-tocclass: right
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
