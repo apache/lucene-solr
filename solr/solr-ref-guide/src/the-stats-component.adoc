@@ -44,7 +44,10 @@ Specifies a field for which statistics should be generated. This parameter may b
 
 The query below demonstrates computing stats against two different fields numeric fields, as well as stats over the results of a `termfreq()` function call using the `text` field:
 
-`\http://localhost:8983/solr/techproducts/select?q=*:*&stats=true&stats.field={!func}termfreq('text','memory')&stats.field=price&stats.field=popularity&rows=0&indent=true`
+[source,text]
+----
+http://localhost:8983/solr/techproducts/select?q=*:*&wt=xml&stats=true&stats.field={!func}termfreq('text','memory')&stats.field=price&stats.field=popularity&rows=0&indent=true
+----
 
 [source,xml]
 ----
@@ -159,7 +162,8 @@ Additional "Expert" local params are supported in some cases for affecting the b
 
 Here we compute some statistics for the price field. The min, max, mean, 90th, and 99th percentile price values are computed against all products that are in stock (`q=*:*` and `fq=inStock:true`), and independently all of the default statistics are computed against all products regardless of whether they are in stock or not (by excluding that filter).
 
-`\http://localhost:8983/solr/techproducts/select?q=*:*&fq={!tag=stock_check}inStock:true&stats=true&stats.field={!ex=stock_check+key=instock_prices+min=true+max=true+mean=true+percentiles='90,99'}price&stats.field={!key=all_prices}price&rows=0&indent=true`
+[source,text]
+http://localhost:8983/solr/techproducts/select?q=*:*&fq={!tag=stock_check}inStock:true&stats=true&stats.field={!ex=stock_check+key=instock_prices+min=true+max=true+mean=true+percentiles='90,99'}price&stats.field={!key=all_prices}price&rows=0&indent=true
 
 [source,xml]
 ----

@@ -161,7 +161,10 @@ All of the following sample queries work with Solr's "`bin/solr -e techproducts`
 
 === Get Top 10 Terms
 
-This query requests the first ten terms in the name field: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name`
+This query requests the first ten terms in the name field:
+
+[source,text]
+http://localhost:8983/solr/techproducts/terms?terms.fl=name&wt=xml
 
 Results:
 
@@ -191,7 +194,10 @@ Results:
 
 === Get First 10 Terms Starting with Letter 'a'
 
-This query requests the first ten terms in the name field, in index order (instead of the top 10 results by document count): `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.lower=a&terms.sort=index`
+This query requests the first ten terms in the name field, in index order (instead of the top 10 results by document count):
+
+[source,text]
+http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.lower=a&terms.sort=index&wt=xml
 
 Results:
 
@@ -240,7 +246,8 @@ Results:
 
 If the <<suggester.adoc#suggester,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
 
-`\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at`
+[source,text]
+http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&wt=xml
 
 Result:
 
@@ -260,7 +267,10 @@ Result:
 </response>
 ----
 
-You can use the parameter `omitHeader=true` to omit the response header from the query response, like in this example, which also returns the response in JSON format: `\http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&omitHeader=true`
+You can use the parameter `omitHeader=true` to omit the response header from the query response, like in this example, which also returns the response in JSON format:
+
+[source,text]
+http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&omitHeader=true
 
 Result:
 
