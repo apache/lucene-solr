@@ -95,6 +95,10 @@ New Features
 * SOLR-10962: Make ReplicationHandler's commitReserveDuration configurable in SolrCloud mode.
   (Ramsey Haddad, Christine Poerschke, hossman)
 
+* SOLR-11382: Lucene's Geo3D (surface of sphere & ellipsoid) is now supported on spatial RPT fields by
+  setting spatialContextFactory="Geo3D".  Furthermore, this is the first time Solr has out of the box
+  support for polygons. (David Smiley)
+
 Bug Fixes
 ----------------------
 

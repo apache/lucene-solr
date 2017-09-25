@@ -6519,10 +6519,36 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     List<Number> out = (List<Number>)tuples.get(0).get("return-value");
-    assertTrue(out.size()==3);
+    assertTrue(out.size() == 3);
     assertEquals(out.get(0).doubleValue(), 6.0, .0);
     assertEquals(out.get(1).doubleValue(), 9.0, .0);
     assertEquals(out.get(2).doubleValue(), 10.0, .0);
+  }
+
+  @Test
+  public void testMonteCarlo() throws Exception {
+    String cexpr = "let(a=constantDistribution(10), b=constantDistribution(20), c=monteCarlo(add(sample(a), sample(b)), 10))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("c");
+    assertTrue(out.size()==10);
+    assertEquals(out.get(0).doubleValue(), 30.0, .0);
+    assertEquals(out.get(1).doubleValue(), 30.0, .0);
+    assertEquals(out.get(2).doubleValue(), 30.0, .0);
+    assertEquals(out.get(3).doubleValue(), 30.0, .0);
+    assertEquals(out.get(4).doubleValue(), 30.0, .0);
+    assertEquals(out.get(5).doubleValue(), 30.0, .0);
+    assertEquals(out.get(6).doubleValue(), 30.0, .0);
+    assertEquals(out.get(7).doubleValue(), 30.0, .0);
+    assertEquals(out.get(8).doubleValue(), 30.0, .0);
+    assertEquals(out.get(9).doubleValue(), 30.0, .0);
   }
 
 
@@ -7169,13 +7195,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testExecutorStream() throws Exception {
-    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue", cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
-    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("mainCorpus", cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
-    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("destination", cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
 
@@ -7238,13 +7264,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelExecutorStream() throws Exception {
-    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("workQueue", cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
-    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("mainCorpus", cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
-    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("destination", cluster.getSolrClient().getZkStateReader(),
         false, true, TIMEOUT);
 
