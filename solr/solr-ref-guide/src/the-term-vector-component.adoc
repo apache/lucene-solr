@@ -70,7 +70,8 @@ Once your handler is defined, you may use in conjunction with any schema (that h
 
 The example below shows an invocation of this component using the above configuration:
 
-`\http://localhost:8983/solr/techproducts/tvrh?q=*:*&start=0&rows=10&fl=id,includes`
+[source,text]
+http://localhost:8983/solr/techproducts/tvrh?q=*:*&start=0&rows=10&fl=id,includes&wt=xml
 
 [source,xml]
 ----

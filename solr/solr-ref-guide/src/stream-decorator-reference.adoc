@@ -1,6 +1,6 @@
 = Stream Decorator Reference
-:page-shortname: stream-decorators
-:page-permalink: stream-decorators.html
+:page-shortname: stream-decorator-reference
+:page-permalink: stream-decorator-reference.html
 :page-tocclass: right
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -386,7 +386,7 @@ As you can see in the examples above, the `cartesianProduct` function does suppo
 
 == classify
 
-The `classify` function classifies tuples using a logistic regression text classification model. It was designed specifically to work with models trained using the <<stream-sources.adoc#train,train function>>. The `classify` function uses the <<stream-sources.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model. The tuples read by the classifier must contain a text field that can be used for classification. The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied. By default the `classify` function looks for the analyzer using the name of text field in the tuple. If the Solr schema on the worker node does not contain this field, the analyzer can be looked up in another field by specifying the `analyzerField` parameter.
+The `classify` function classifies tuples using a logistic regression text classification model. It was designed specifically to work with models trained using the <<stream-source-reference.adoc#train,train function>>. The `classify` function uses the <<stream-source-reference.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model. The tuples read by the classifier must contain a text field that can be used for classification. The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied. By default the `classify` function looks for the analyzer using the name of text field in the tuple. If the Solr schema on the worker node does not contain this field, the analyzer can be looked up in another field by specifying the `analyzerField` parameter.
 
 Each tuple that is classified is assigned two scores:
 
@@ -500,7 +500,7 @@ daemon(id="uniqueId",
         )
 ----
 
-The sample code above shows a `daemon` function wrapping an `update` function, which is wrapping a `topic` function. When this expression is sent to the `/stream` handler, the `/stream` hander sees the `daemon` function and keeps it in memory where it will run at intervals. In this particular example, the `daemon` function will run the `update` function every second. The `update` function is wrapping a <<stream-sources.adoc#topic,`topic` function>>, which will stream tuples that match the `topic` function query in batches. Each subsequent call to the topic will return the next batch of tuples for the topic. The `update` function will send all the tuples matching the topic to another collection to be indexed. The `terminate` parameter tells the daemon to terminate when the `topic` function stops sending tuples.
+The sample code above shows a `daemon` function wrapping an `update` function, which is wrapping a `topic` function. When this expression is sent to the `/stream` handler, the `/stream` hander sees the `daemon` function and keeps it in memory where it will run at intervals. In this particular example, the `daemon` function will run the `update` function every second. The `update` function is wrapping a <<stream-source-reference.adoc#topic,`topic` function>>, which will stream tuples that match the `topic` function query in batches. Each subsequent call to the topic will return the next batch of tuples for the topic. The `update` function will send all the tuples matching the topic to another collection to be indexed. The `terminate` parameter tells the daemon to terminate when the `topic` function stops sending tuples.
 
 The effect of this is to push documents that match a specific query into another collection. Custom push functions can be plugged in that push documents out of Solr and into other systems, such as Kafka or an email system.
 
@@ -643,7 +643,7 @@ daemon(id="myDaemon",
                       id="myTopic")))
 ----
 
-In the example above a <<daemon,daemon>> wraps an executor**,** which wraps a <<stream-sources.adoc#topic,topic>> that is returning tuples with expressions to execute. When sent to the stream handler, the daemon will call the executor at intervals which will cause the executor to read from the topic and execute the expressions found in the `expr_s` field. The daemon will repeatedly call the executor until all the tuples that match the topic have been iterated, then it will terminate. This is the approach for executing batches of streaming expressions from a `topic` queue.
+In the example above a <<daemon,daemon>> wraps an executor, which wraps a <<stream-source-reference.adoc#topic,topic>> that is returning tuples with expressions to execute. When sent to the stream handler, the daemon will call the executor at intervals which will cause the executor to read from the topic and execute the expressions found in the `expr_s` field. The daemon will repeatedly call the executor until all the tuples that match the topic have been iterated, then it will terminate. This is the approach for executing batches of streaming expressions from a `topic` queue.
 
 == fetch
 
@@ -676,9 +676,9 @@ The `having` expression wraps a stream and applies a boolean operation to each t
 === having Parameters
 
 * `StreamExpression`: (Mandatory) The stream source for the having function.
-* `booleanEvaluator`: (Madatory) The following boolean operations are supported: *eq* (equals), *gt* (greater than), *lt* (less than), *gteq* (greater than or equal to), *lteq* (less than or equal to), *and*, *or, eor* (exclusive or), and *not*. Boolean evaluators can be nested with other evaluators to form complex boolean logic.
+* `booleanEvaluator`: (Madatory) The following boolean operations are supported: `eq` (equals), `gt` (greater than), `lt` (less than), `gteq` (greater than or equal to), `lteq` (less than or equal to), `and`, `or`, `eor` (exclusive or), and `not`. Boolean evaluators can be nested with other evaluators to form complex boolean logic.
 
-The comparison evaluators compare the value in a specific field with a value, whether a string, number, or boolean. For example: *eq*(field1, 10), returns true if *field1* is equal to 10.
+The comparison evaluators compare the value in a specific field with a value, whether a string, number, or boolean. For example: `eq(field1, 10)`, returns `true` if `field1` is equal to 10.
 
 === having Syntax
 
@@ -1001,7 +1001,7 @@ The expression above shows a `parallel` function wrapping a `reduce` function. T
 
 The `priority` function is a simple priority scheduler for the <<executor>> function. The `executor` function doesn't directly have a concept of task prioritization; instead it simply executes tasks in the order that they are read from it's underlying stream. The `priority` function provides the ability to schedule a higher priority task ahead of lower priority tasks that were submitted earlier.
 
-The `priority` function wraps two <<stream-sources.adoc#topic,topics>> that are both emitting tuples that contain streaming expressions to execute. The first topic is considered the higher priority task queue.
+The `priority` function wraps two <<stream-source-reference.adoc#topic,topics>> that are both emitting tuples that contain streaming expressions to execute. The first topic is considered the higher priority task queue.
 
 Each time the `priority` function is called, it checks the higher priority task queue to see if there are any tasks to execute. If tasks are waiting in the higher priority queue then the priority function will emit the higher priority tasks. If there are no high priority tasks to run, the lower priority queue tasks are emitted.
 

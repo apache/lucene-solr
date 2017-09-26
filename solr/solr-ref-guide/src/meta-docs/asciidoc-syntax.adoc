@@ -64,6 +64,14 @@ If your code block will include line breaks, put 4 hyphens (`----`) before and a
 
 More info: http://asciidoctor.org/docs/user-manual/#source-code-blocks
 
+==== Source Block Syntax Highlighting
+
+The PDF and HTML outputs use Pygments to add syntax highlighting to code examples. This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
+
+Pygments has a long selection of lexers available. You can see the full list at http://pygments.org/docs/lexers. Use one of the valid short names to get syntax highlighting for that language.
+
+Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible. When in doubt, choose `text`, or leave it blank.
+
 === Block Titles
 
 Titles can be added to most blocks (images, source blocks, tables, etc.) by simply prefacing the title with a period (`.`). For example, to add a title to the source block example above:
@@ -197,7 +205,7 @@ For more information, see the section <<schema-api.adoc#modify-the-schema,Modify
 
 More info: http://asciidoctor.org/docs/user-manual/#inter-document-cross-references
 
-== Lists
+== Ordered and Unordered Lists
 
 AsciiDoc supports three types of lists:
 
