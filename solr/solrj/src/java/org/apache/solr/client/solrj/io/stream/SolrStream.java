@@ -176,7 +176,9 @@ public class SolrStream extends TupleStream {
   * */
 
   public void close() throws IOException {
-    closeableHttpResponse.close();
+    if (closeableHttpResponse != null) {
+      closeableHttpResponse.close();
+    }
     if(cache == null) {
       client.close();
     }
