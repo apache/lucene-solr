@@ -20,11 +20,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Autoscaling API is used to manage autoscaling policies and preferences, and to get diagnostics on the state of the cluster.
+The Autoscaling API is used to manage autoscaling policies, preferences, triggers, listeners and to get diagnostics on the state of the cluster.
 
 == Read API
 
-The autoscaling Read API is available at `/admin/autoscaling` or `/v2/cluster/autoscaling`. It returns information about the configured cluster preferences, cluster policy and collection-specific policies.
+The autoscaling Read API is available at `/admin/autoscaling` or `/v2/cluster/autoscaling`. It returns information about the configured cluster preferences, cluster policy, collection-specific policies triggers and listeners.
 
 This API does not take any parameters.
 

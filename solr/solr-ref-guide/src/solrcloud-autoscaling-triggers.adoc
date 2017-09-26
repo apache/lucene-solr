@@ -1,0 +1,106 @@
+= SolrCloud AutoScaling Triggers
+:page-shortname: solrcloud-autoscaling-triggers
+:page-permalink: solrcloud-autoscaling-triggers.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+Triggers are used by autoscaling API to watch for cluster events such as node joining or leaving,
+and in the future also for other cluster, node and replica events that are important from the
+point of view of cluster performance.
+
+Trigger implementations verify the state of resources that they monitor. When they detect a
+change that merits attention they generate events, which are then queued and processed by configured
+`TriggerAction` implementations - this usually involves computing and executing a plan to manage the new cluster
+resources (eg. move replicas). Solr provides predefined implementations of triggers for specific event types.
+
+Triggers execute on the node that runs `Overseer`. They are scheduled to run periodically,
+currently at fixed interval of 1s between each execution (not every execution produces events).
+
+== Event types
+Currently the following event types (and corresponding trigger implementations) are defined:
+
+* `nodeAdded` - generated when a new node joins the cluster
+* `nodeLost` - generated when a node leaves the cluster
+
+Events are not necessarily generated immediately after the corresponding state change occurred - the
+maximum rate of events is controlled by the `waitFor` configuration parameter (see below).
+
+The following properties are common to all event types:
+
+* `id` - (string) unique time-based event id.
+* `eventType` - (string) event type.
+* `source` - (string) name of the trigger that produced this event.
+* `eventTime` - (long) Unix time when the condition that caused this event occurred. For example, for
+`nodeAdded` event this will be the time when the node was added and not when the event was actually
+generated, which may significantly differ due to the rate limits set by `waitFor`.
+* `properties` - (map, optional) additional properties. Currently contains `nodeName` property that
+indicates the node that was lost or added.
+
+== `.autoAddReplicas` trigger
+When a collection has a flag `autoAddReplicas` set to true then a trigger configuration named `.auto_add_replicas`
+is automatically created to watch for nodes going away. This trigger produces `nodeLost` events,
+which are then processed by configured actions (usually resulting in computing and executing a plan
+to add replicas on the live nodes to maintain the expected replication factor).
+
+== Trigger configuration
+Trigger configurations are managed using autoscaling Write API with commands `set-trigger`, `remove-trigger`,
+`suspend-trigger`, `resume-trigger`.
+
+Trigger configuration consists of the following properties:
+
+* `name` - (string, required) unique trigger configuration name.
+* `event` - (string, required) one of predefined event types (nodeAdded, nodeLost).
+* `actions` - (list of action configs, optional) ordered list of actions to execute when event is fired
+* `waitFor` - (string, optional) time to wait between generating new events, as an integer number immediately followed
+by unit symbol, one of "s" (seconds), "m" (minutes), or "h" (hours). Default is "0s".
+* `enabled` - (boolean, optional) when true the trigger is enabled. Default is true.
+* additional implementation-specific properties may be provided
+
+Action configuration consists of the following properties:
+
+* `name` - (string, required) unique name of the action configuration.
+* `class` - (string, required) action implementation class
+* additional implementation-specific properties may be provided
+
+Example: adding / updating a trigger for `nodeAdded` events. This trigger configuration will
+compute and execute a plan to allocate the resources available on the new node. A custom action
+is also used to possibly modify the plan.
+[source,json]
+----
+{
+ 'set-trigger': {
+  'name' : 'node_lost_trigger',
+  'event' : 'nodeLost',
+  'waitFor' : '1s',
+  'enabled' : true,
+  'actions' : [
+   {
+    'name' : 'compute_plan',
+    'class': 'solr.ComputePlanAction'
+   },
+   {
+    'name' : 'custom_action',
+    'class': 'com.example.CustomAction'
+   },
+   {
+    'name' : 'execute_plan',
+    'class': 'solr.ExecutePlanAction'
+   }
+  ]
+ }
+}
+----
+
