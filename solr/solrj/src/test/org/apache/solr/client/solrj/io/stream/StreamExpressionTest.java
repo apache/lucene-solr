@@ -6553,6 +6553,53 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testWeibullDistribution() throws Exception {
+    String cexpr = "let(echo=true, " +
+                       "a=percentile(sample(weibullDistribution(1, 10),5000), 50), " +
+                       "b=percentile(sample(weibullDistribution(1, 50),5000), 50), " +
+                       "c=percentile(sample(weibullDistribution(1, 100),5000), 50)," +
+                       "d=percentile(sample(weibullDistribution(4, 10),5000), 50)," +
+                       "e=percentile(sample(weibullDistribution(8, 10),5000), 50))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number a = (Number)tuples.get(0).get("a");
+    Number b = (Number)tuples.get(0).get("b");
+    Number c = (Number)tuples.get(0).get("c");
+    Number d = (Number)tuples.get(0).get("d");
+    Number e = (Number)tuples.get(0).get("e");
+    assertTrue(a.doubleValue() < b.doubleValue());
+    assertTrue(b.doubleValue() < c.doubleValue());
+    assertTrue(a.doubleValue() < d.doubleValue());
+    assertTrue(d.doubleValue() < e.doubleValue());
+  }
+
+
+  @Test
+  public void testMean() throws Exception {
+    String cexpr = "mean(array(1,2,3,4,5))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number mean = (Number)tuples.get(0).get("return-value");
+    assertEquals(mean.doubleValue(), 3.0D, 0.0D);
+  }
+
+
+  @Test
   public void testScale() throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
 
