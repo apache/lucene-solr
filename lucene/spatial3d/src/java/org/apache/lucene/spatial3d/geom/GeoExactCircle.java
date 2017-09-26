@@ -119,8 +119,9 @@ class GeoExactCircle extends GeoBaseCircle {
       this.notableEdgePoints = null;
     } else {
       this.circlePlanes = new ArrayList<>();
-      this.notableEdgePoints = new ArrayList<>();
-      this.eitherBounds = new HashMap<>();
+      // If it turns out that there's only one circle plane, this array will be populated but unused
+      final List<GeoPoint[]> notableEdgePoints = new ArrayList<>();
+      
       // We construct approximation planes until we have a low enough error estimate
       final List<ApproximationSlice> slices = new ArrayList<>(100);
       // Construct four cardinal points, and then we'll build the first two planes
@@ -154,9 +155,11 @@ class GeoExactCircle extends GeoBaseCircle {
         final GeoPoint interpPoint2 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint2Bearing);
         // Is this point on the plane? (that is, is the approximation good enough?)
         if (Math.abs(thisSlice.plane.evaluate(interpPoint1)) < actualAccuracy && Math.abs(thisSlice.plane.evaluate(interpPoint2)) < actualAccuracy) {
-          // Good enough; add it to the list of planes
-          circlePlanes.add(thisSlice.plane);
-          notableEdgePoints.add(new GeoPoint[]{thisSlice.endPoint1, thisSlice.endPoint2});
+          // Good enough; add it to the list of planes, unless it was identical to the previous plane
+          if (circlePlanes.size() == 0 || !circlePlanes.get(circlePlanes.size()-1).isNumericallyIdentical(thisSlice.plane)) {
+            circlePlanes.add(thisSlice.plane);
+            notableEdgePoints.add(new GeoPoint[]{thisSlice.endPoint1, thisSlice.endPoint2});
+          }
         } else {
           // Split the plane into two, and add it back to the end
           slices.add(new ApproximationSlice(center,
@@ -173,11 +176,18 @@ class GeoExactCircle extends GeoBaseCircle {
       //System.out.println("Number of planes needed: "+circlePlanes.size());
       
       // Compute bounds
-      for (int i = 0; i < circlePlanes.size(); i++) {
-        final SidedPlane thisPlane = circlePlanes.get(i);
-        final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
-        final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
-        eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
+      if (circlePlanes.size() == 1) {
+        this.eitherBounds = null;
+        this.notableEdgePoints = null;
+      } else {
+        this.notableEdgePoints = notableEdgePoints;
+        this.eitherBounds = new HashMap<>(circlePlanes.size());
+        for (int i = 0; i < circlePlanes.size(); i++) {
+          final SidedPlane thisPlane = circlePlanes.get(i);
+          final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
+          final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
+          eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
+        }
       }
     }
   }
