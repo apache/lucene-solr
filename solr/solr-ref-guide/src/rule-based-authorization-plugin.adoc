@@ -54,10 +54,10 @@ This example `security.json` shows how the <<basic-authentication-plugin.adoc#ba
 
 There are several things defined in this example:
 
-<1> Basic authentication and rule-based authorization plugins are enabled.
+<1> Basic authentication plugin is enabled.
 <2> All requests w/o credentials will be rejected with a 401 error. Set `'blockUnknown'` to false (or remove it altogether) if you wish to let unauthenticated requests to go through. However, if a particular resource is protected by a rule, they are rejected anyway with a 401 error.
-* A user called 'solr', with a password has been defined.
-<4> Basic authentication and rule-based authorization plugins are enabled.
+<3> A user named 'solr', with a password has been defined.
+<4> Rule-based authorization plugin is enabled.
 <5> The 'admin' role has been defined, and it has permission to edit security settings.
 <6> The 'solr' user has been defined to the 'admin' role.
 
