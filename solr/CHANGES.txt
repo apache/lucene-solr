@@ -151,6 +151,8 @@ Bug Fixes
 * SOLR-11399: The UnifiedHighlighter was ignoring the hl.fragsize parameter when hl.bs.type=SEPARATOR
   (Marc Morissette via David Smiley)
 
+* SOLR-11224: SolrStream.close can hit an NPE (Erick Erickson)
+
 
 Optimizations
 ----------------------
