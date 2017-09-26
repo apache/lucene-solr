@@ -205,7 +205,7 @@ For more information, see the section <<schema-api.adoc#modify-the-schema,Modify
 
 More info: http://asciidoctor.org/docs/user-manual/#inter-document-cross-references
 
-== Lists
+== Ordered and Unordered Lists
 
 AsciiDoc supports three types of lists:
 
