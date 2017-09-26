@@ -112,7 +112,7 @@ Now, let’s add a new word to the English stop word list using an HTTP PUT:
 curl -X PUT -H 'Content-type:application/json' --data-binary '["foo"]' "http://localhost:8983/solr/techproducts/schema/analysis/stopwords/english"
 ----
 
-Here we’re using cURL to PUT a JSON list containing a single word “foo” to the managed English stop words set. Solr will return 200 if the request was successful. You can also put multiple words in a single PUT request.
+Here we’re using curl to PUT a JSON list containing a single word “foo” to the managed English stop words set. Solr will return 200 if the request was successful. You can also put multiple words in a single PUT request.
 
 You can test to see if a specific word exists by sending a GET request for that word as a child resource of the set, such as:
 
