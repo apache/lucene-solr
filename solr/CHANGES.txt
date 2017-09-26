@@ -148,6 +148,9 @@ Bug Fixes
 * SOLR-11297: Message "Lock held by this virtual machine" during startup.  Solr is trying to start some cores twice.
   (Luiz Armesto, Shawn Heisey, Erick Erickson)
 
+* SOLR-11399: The UnifiedHighlighter was ignoring the hl.fragsize parameter when hl.bs.type=SEPARATOR
+  (Marc Morissette via David Smiley)
+
 
 Optimizations
 ----------------------
