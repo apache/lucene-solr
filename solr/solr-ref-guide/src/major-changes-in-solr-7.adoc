@@ -54,14 +54,16 @@ See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Aut
 
 === Other Features & Enhancements
 
+// TODO 7.1 - update link to docs when complete
 * The Analytics Component has been refactored.
+** The documentation for this component is in progress; until it is available, please refer to https://issues.apache.org/jira/browse/SOLR-11144[SOLR-11144] for more details.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** <<learning-to-rank.adoc#learning-to-rank,Learning to Rank>>
 ** <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>>
 ** <<metrics-reporting.adoc#metrics-reporting,Metrics API>>. See also information about related deprecations in the section <<JMX Support and MBeans>> below.
 ** <<other-parsers.adoc#payload-query-parsers,Payload queries>>
-** <<stream-evaluators.adoc#stream-evaluators,Streaming Evaluators>>
+** <<stream-evaluator-reference.adoc#stream-evaluator-reference,Streaming Evaluators>>
 ** <<v2-api.adoc#v2-api,/v2 API>>
 ** <<graph-traversal.adoc#graph-traversal,Graph streaming expressions>>
 

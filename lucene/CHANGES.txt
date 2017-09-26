@@ -22,6 +22,9 @@ New Features
   abstractions: SpatialContextFactory, ShapeFactory, BinaryCodec, DistanceCalculator.
   (Ignacio Vera, David Smiley)
 
+* LUCENE-7973: Update dictionary version for Ukrainian analyzer to 3.9.0 (Andriy
+  Rysin via Dawid Weiss)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by

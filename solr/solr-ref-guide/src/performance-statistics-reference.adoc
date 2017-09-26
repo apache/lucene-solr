@@ -79,7 +79,7 @@ Other types of data such as errors and timeouts are also provided. These are ava
 
 The table below shows the metric names and attributes to request:
 
-[cols="25,75",options="header"]
+[cols="30,70",options="header"]
 |===
 |Metric name | Description
 |`QUERY./select.errors`
