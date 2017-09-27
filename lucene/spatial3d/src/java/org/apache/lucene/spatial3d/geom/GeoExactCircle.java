@@ -52,8 +52,8 @@ class GeoExactCircle extends GeoBaseCircle {
    *@param planetModel is the planet model.
    *@param lat is the center latitude.
    *@param lon is the center longitude.
-   *@param cutoffAngle is the cutoff angle for the circle.
-   *@param accuracy is the allowed error value.
+   *@param cutoffAngle is the surface radius for the circle.
+   *@param accuracy is the allowed error value (linear distance).
    */
   public GeoExactCircle(final PlanetModel planetModel, final double lat, final double lon, final double cutoffAngle, final double accuracy) {
     super(planetModel);
@@ -75,119 +75,76 @@ class GeoExactCircle extends GeoBaseCircle {
       actualAccuracy = accuracy;
     }
     
-    if (Math.abs(cutoffAngle - Math.PI) < Vector.MINIMUM_RESOLUTION) {
-      // Circle is the whole world
-      this.circlePlanes = null;
-      this.eitherBounds = null;
-      this.edgePoints = new GeoPoint[0];
-      this.notableEdgePoints = null;
-    } else if (planetModel.c == planetModel.ab) {
-      // Sphere
-      this.eitherBounds = null;
-      this.circlePlanes = new ArrayList<>(1);
-      // Compute two points on the circle, with the right angle from the center.  We'll use these
-      // to obtain the perpendicular plane to the circle.
-      double upperLat = lat + cutoffAngle;
-      double upperLon = lon;
-      if (upperLat > Math.PI * 0.5) {
-        upperLon += Math.PI;
-        if (upperLon > Math.PI)
-          upperLon -= 2.0 * Math.PI;
-        upperLat = Math.PI - upperLat;
+    // Since the provide cutoff angle is really a surface distance, we need to use the point-on-bearing even for spheres.
+    final List<SidedPlane> circlePlanes = new ArrayList<>();
+    // If it turns out that there's only one circle plane, this array will be populated but unused
+    final List<GeoPoint[]> notableEdgePoints = new ArrayList<>();
+      
+    // We construct approximation planes until we have a low enough error estimate
+    final List<ApproximationSlice> slices = new ArrayList<>(100);
+    // Construct four cardinal points, and then we'll build the first two planes
+    final GeoPoint northPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, 0.0);
+    final GeoPoint southPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI);
+    final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
+    final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
+      
+    if (planetModel.c > planetModel.ab) {
+      // z can be greater than x or y, so ellipse is longer in height than width
+      slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0));
+      slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI));
+    } else {
+      // z will be less than x or y, so ellipse is shorter than it is tall
+      slices.add(new ApproximationSlice(center, northPoint, Math.PI * 2.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
+      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, 0.0, westPoint, Math.PI * 1.5));
+    }
+      
+    // Now, iterate over slices until we have converted all of them into safe SidedPlanes.
+    while (slices.size() > 0) {
+      // Peel off a slice from the back
+      final ApproximationSlice thisSlice = slices.remove(slices.size()-1);
+      // Assess it to see if it is OK as it is, or needs to be split.
+      // To do this, we need to look at the part of the circle that will have the greatest error.
+      // We will need to compute bearing points for these.
+      final double interpPoint1Bearing = (thisSlice.point1Bearing + thisSlice.middlePointBearing) * 0.5;
+      final GeoPoint interpPoint1 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint1Bearing);
+      final double interpPoint2Bearing = (thisSlice.point2Bearing + thisSlice.middlePointBearing) * 0.5;
+      final GeoPoint interpPoint2 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint2Bearing);
+      // Is this point on the plane? (that is, is the approximation good enough?)
+      if (Math.abs(thisSlice.plane.evaluate(interpPoint1)) < actualAccuracy && Math.abs(thisSlice.plane.evaluate(interpPoint2)) < actualAccuracy) {
+        // Good enough; add it to the list of planes, unless it was identical to the previous plane
+        if (circlePlanes.size() == 0 || !circlePlanes.get(circlePlanes.size()-1).isNumericallyIdentical(thisSlice.plane)) {
+          circlePlanes.add(thisSlice.plane);
+          notableEdgePoints.add(new GeoPoint[]{thisSlice.endPoint1, thisSlice.endPoint2});
+        }
+      } else {
+        // Split the plane into two, and add it back to the end
+        slices.add(new ApproximationSlice(center,
+          thisSlice.endPoint1, thisSlice.point1Bearing, 
+          thisSlice.middlePoint, thisSlice.middlePointBearing, 
+          interpPoint1, interpPoint1Bearing));
+        slices.add(new ApproximationSlice(center,
+          thisSlice.middlePoint, thisSlice.middlePointBearing,
+          thisSlice.endPoint2, thisSlice.point2Bearing,
+          interpPoint2, interpPoint2Bearing));
       }
-      double lowerLat = lat - cutoffAngle;
-      double lowerLon = lon;
-      if (lowerLat < -Math.PI * 0.5) {
-        lowerLon += Math.PI;
-        if (lowerLon > Math.PI)
-          lowerLon -= 2.0 * Math.PI;
-        lowerLat = -Math.PI - lowerLat;
-      }
-      final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
-      final GeoPoint lowerPoint = new GeoPoint(planetModel, lowerLat, lowerLon);
-      // Construct normal plane
-      final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, center);
-      // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
-      final SidedPlane circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
-      if (circlePlane == null)
-        throw new IllegalArgumentException("Couldn't construct circle plane, probably too small?  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
-      circlePlanes.add(circlePlane);
-      final GeoPoint recomputedIntersectionPoint = circlePlane.getSampleIntersectionPoint(planetModel, normalPlane);
-      if (recomputedIntersectionPoint == null)
-        throw new IllegalArgumentException("Couldn't construct intersection point, probably circle too small?  Plane = "+circlePlane);
-      this.edgePoints = new GeoPoint[]{recomputedIntersectionPoint};
+    }
+
+    //System.out.println("Number of planes needed: "+circlePlanes.size());
+      
+    this.edgePoints = new GeoPoint[]{northPoint};      
+    this.circlePlanes = circlePlanes;
+    // Compute bounds
+    if (circlePlanes.size() == 1) {
+      this.eitherBounds = null;
       this.notableEdgePoints = null;
     } else {
-      this.circlePlanes = new ArrayList<>();
-      // If it turns out that there's only one circle plane, this array will be populated but unused
-      final List<GeoPoint[]> notableEdgePoints = new ArrayList<>();
-      
-      // We construct approximation planes until we have a low enough error estimate
-      final List<ApproximationSlice> slices = new ArrayList<>(100);
-      // Construct four cardinal points, and then we'll build the first two planes
-      final GeoPoint northPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, 0.0);
-      final GeoPoint southPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI);
-      final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
-      final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
-      
-      this.edgePoints = new GeoPoint[]{northPoint};
-      
-      if (planetModel.c > planetModel.ab) {
-        // z can be greater than x or y, so ellipse is longer in height than width
-        slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0));
-        slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI));
-      } else {
-        // z will be less than x or y, so ellipse is shorter than it is tall
-        slices.add(new ApproximationSlice(center, northPoint, Math.PI * 2.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
-        slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, 0.0, westPoint, Math.PI * 1.5));
-      }
-      
-      // Now, iterate over slices until we have converted all of them into safe SidedPlanes.
-      while (slices.size() > 0) {
-        // Peel off a slice from the back
-        final ApproximationSlice thisSlice = slices.remove(slices.size()-1);
-        // Assess it to see if it is OK as it is, or needs to be split.
-        // To do this, we need to look at the part of the circle that will have the greatest error.
-        // We will need to compute bearing points for these.
-        final double interpPoint1Bearing = (thisSlice.point1Bearing + thisSlice.middlePointBearing) * 0.5;
-        final GeoPoint interpPoint1 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint1Bearing);
-        final double interpPoint2Bearing = (thisSlice.point2Bearing + thisSlice.middlePointBearing) * 0.5;
-        final GeoPoint interpPoint2 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint2Bearing);
-        // Is this point on the plane? (that is, is the approximation good enough?)
-        if (Math.abs(thisSlice.plane.evaluate(interpPoint1)) < actualAccuracy && Math.abs(thisSlice.plane.evaluate(interpPoint2)) < actualAccuracy) {
-          // Good enough; add it to the list of planes, unless it was identical to the previous plane
-          if (circlePlanes.size() == 0 || !circlePlanes.get(circlePlanes.size()-1).isNumericallyIdentical(thisSlice.plane)) {
-            circlePlanes.add(thisSlice.plane);
-            notableEdgePoints.add(new GeoPoint[]{thisSlice.endPoint1, thisSlice.endPoint2});
-          }
-        } else {
-          // Split the plane into two, and add it back to the end
-          slices.add(new ApproximationSlice(center,
-            thisSlice.endPoint1, thisSlice.point1Bearing, 
-            thisSlice.middlePoint, thisSlice.middlePointBearing, 
-            interpPoint1, interpPoint1Bearing));
-          slices.add(new ApproximationSlice(center,
-            thisSlice.middlePoint, thisSlice.middlePointBearing,
-            thisSlice.endPoint2, thisSlice.point2Bearing,
-            interpPoint2, interpPoint2Bearing));
-        }
-      }
-
-      //System.out.println("Number of planes needed: "+circlePlanes.size());
-      
-      // Compute bounds
-      if (circlePlanes.size() == 1) {
-        this.eitherBounds = null;
-        this.notableEdgePoints = null;
-      } else {
-        this.notableEdgePoints = notableEdgePoints;
-        this.eitherBounds = new HashMap<>(circlePlanes.size());
-        for (int i = 0; i < circlePlanes.size(); i++) {
-          final SidedPlane thisPlane = circlePlanes.get(i);
-          final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
-          final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
-          eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
-        }
+      this.notableEdgePoints = notableEdgePoints;
+      this.eitherBounds = new HashMap<>(circlePlanes.size());
+      for (int i = 0; i < circlePlanes.size(); i++) {
+        final SidedPlane thisPlane = circlePlanes.get(i);
+        final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
+        final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
+        eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
       }
     }
   }
@@ -406,6 +363,9 @@ class GeoExactCircle extends GeoBaseCircle {
       this.middlePointBearing = middlePointBearing;
       // Construct the plane going through the three given points
       this.plane = SidedPlane.constructNormalizedThreePointSidedPlane(center, endPoint1, endPoint2, middlePoint);
+      if (this.plane == null) {
+        throw new IllegalArgumentException("Either circle is too large to fit on ellipsoid or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
+      }
     }
 
   }
