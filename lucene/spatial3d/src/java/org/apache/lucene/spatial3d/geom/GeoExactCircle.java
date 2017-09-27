@@ -61,7 +61,7 @@ class GeoExactCircle extends GeoBaseCircle {
       throw new IllegalArgumentException("Latitude out of bounds");
     if (lon < -Math.PI || lon > Math.PI)
       throw new IllegalArgumentException("Longitude out of bounds");
-    if (cutoffAngle < 0.0 || cutoffAngle > Math.PI)
+    if (cutoffAngle < 0.0)
       throw new IllegalArgumentException("Cutoff angle out of bounds");
     if (cutoffAngle < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Cutoff angle cannot be effectively zero");
