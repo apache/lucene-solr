@@ -153,6 +153,9 @@ Bug Fixes
 
 * SOLR-11224: SolrStream.close can hit an NPE (Erick Erickson)
 
+* SOLR-11278: Fix a race condition in the CDCR bootstrap process which could lead to bootstraps cancelling itself
+  (Amrit Sarkar, shalin, Varun Thacker)
+
 
 Optimizations
 ----------------------
