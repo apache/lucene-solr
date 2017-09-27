@@ -107,7 +107,7 @@ Bug Fixes
 
 * SOLR-11278: Stopping CDCR should cancel a running bootstrap operation. (Amrit Sarkar, shalin)
 
-* SOLR-11293: Potential data loss in TLOG replicas after replication failures (noble)
+* SOLR-11293: Potential data loss in TLOG replicas when masterVersion equals zero (noble, Cao Manh Dat)
 
 * SOLR-10101: TestLazyCores hangs (Erick Erickson)
 

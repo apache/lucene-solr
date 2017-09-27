@@ -989,7 +989,7 @@ public class ZkController {
         if (isTlogReplicaAndNotLeader) {
           String commitVersion = ReplicateFromLeader.getCommitVersion(core);
           if (commitVersion != null) {
-            ulog.copyOverOldUpdates(Long.parseLong(commitVersion), true);
+            ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
           }
         }
         // we will call register again after zk expiration and on reload
