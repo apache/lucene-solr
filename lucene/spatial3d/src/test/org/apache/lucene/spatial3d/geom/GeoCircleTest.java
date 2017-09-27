@@ -481,5 +481,25 @@ public class GeoCircleTest extends LuceneTestCase {
     double surfaceDistance = planetModel.surfaceDistance(center, point);
     assertTrue(planetModel.toString() + " " + Double.toString(surfaceDistance - radius) + " " + Double.toString(radius), surfaceDistance - radius < Vector.MINIMUM_ANGULAR_RESOLUTION);
   }
+
+  @Test
+  public void exactCircleLargeTest(){
+    boolean success = true;
+    try {
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(new PlanetModel(0.5, 0.7), 0.25 * Math.PI,  0,0.35 * Math.PI, 1e-12);
+    } catch (IllegalArgumentException e) {
+      success = false;
+    }
+    assertTrue(success);
+    success = false;
+    try {
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.25 * Math.PI,  0,0.9996 * Math.PI, 1e-12);
+    } catch (IllegalArgumentException e) {
+      success = true;
+    }
+    assertTrue(success);
+  }
+
+
   
 }
