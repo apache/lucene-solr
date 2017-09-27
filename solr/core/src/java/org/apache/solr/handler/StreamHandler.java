@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -303,6 +304,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("constantDistribution", ConstantDistributionEvaluator.class)
         .withFunctionName("weibullDistribution", WeibullDistributionEvaluator.class)
         .withFunctionName("mean", MeanEvaluator.class)
+        .withFunctionName("mode", ModeEvaluator.class)
+        .withFunctionName("logNormalDistribution", LogNormalDistributionEvaluator.class)
 
         // Boolean Stream Evaluators
 
