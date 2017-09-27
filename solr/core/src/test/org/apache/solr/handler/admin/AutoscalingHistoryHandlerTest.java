@@ -175,7 +175,9 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     boolean await = actionFiredLatch.await(60, TimeUnit.SECONDS);
     assertTrue("action did not execute", await);
     // commit on the history collection
+    Thread.sleep(2000);
     solrClient.commit(CollectionAdminParams.SYSTEM_COLL);
+    Thread.sleep(2000);
     // verify that new docs exist
     ModifiableSolrParams query = params(CommonParams.Q, "type:" + SystemLogListener.DOC_TYPE,
       CommonParams.FQ, "event.source_s:" + PREFIX + "_node_added_trigger");
@@ -185,11 +187,13 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH,
       AutoscalingHistoryHandler.TRIGGER_PARAM, PREFIX + "_node_added_trigger");
-    docs = solrClient.query(query).getResults();
+    QueryResponse rsp = solrClient.query(query);
+    docs = rsp.getResults();
     if (docs.size() != 8) {
-      zkClient().printLayoutToStdOut();
-      query = params(CommonParams.QT, CommonParams.AUTOSCALING_DIAGNOSTICS_PATH);
-      log.info("Diagnostic output: ", solrClient.query(query).getResponse());
+      log.info("Cluster state: " + solrClient.getZkStateReader().getClusterState());
+      query = params(CommonParams.QT, CommonParams.AUTOSCALING_HISTORY_PATH);
+      log.info("Wrong response: ", rsp);
+      log.info("Full response: " + solrClient.query(query));
     }
     assertEquals(8, docs.size());
 
