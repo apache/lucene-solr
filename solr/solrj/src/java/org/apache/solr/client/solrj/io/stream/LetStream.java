@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,8 +47,17 @@ public class LetStream extends TupleStream implements Expressible {
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     //Get all the named params
+    boolean echo = false;
+    String currentName = null;
     for(StreamExpressionParameter np : namedParams) {
       String name = ((StreamExpressionNamedParameter)np).getName();
+      currentName = name;
+
+      if(name.equals("echo")) {
+        echo = true;
+        continue;
+      }
+
       StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
       if(factory.isEvaluator((StreamExpression)param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
@@ -60,11 +68,20 @@ public class LetStream extends TupleStream implements Expressible {
       }
     }
 
-    if(streamExpressions.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting 1 stream but found %d",expression, streamExpressions.size()));
+    if(streamExpressions.size() > 0) {
+      stream = factory.constructStream(streamExpressions.get(0));
+    } else {
+      StreamExpression tupleExpression = new StreamExpression("tuple");
+      if(!echo) {
+        tupleExpression.addParameter(new StreamExpressionNamedParameter(currentName, currentName));
+      } else {
+        Set<String> names = letParams.keySet();
+        for(String name : names) {
+          tupleExpression.addParameter(new StreamExpressionNamedParameter(name, name));
+        }
+      }
+      stream = factory.constructStream(tupleExpression);
     }
-
-    stream = factory.constructStream(streamExpressions.get(0));
   }
 
 

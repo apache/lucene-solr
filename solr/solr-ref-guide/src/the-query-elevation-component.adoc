@@ -101,31 +101,37 @@ If documents to be elevated are not defined in the `elevate.xml` file, they shou
 
 For debugging it may be useful to see results with and without the elevated docs. To hide results, use `enableElevation=false`:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=false`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=false
 
 === The forceElevation Parameter
 
 You can force elevation during runtime by adding `forceElevation=true` to the query URL:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true&forceElevation=true`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&enableElevation=true&forceElevation=true
 
 === The exclusive Parameter
 
 You can force Solr to return only the results specified in the elevation file by adding `exclusive=true` to the URL:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&exclusive=true`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&debugQuery=true&exclusive=true
 
 === Document Transformers and the markExcludes Parameter
 
 The `[elevated]` <<transforming-result-documents.adoc#transforming-result-documents,Document Transformer>> can be used to annotate each document with information about whether or not it was elevated:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&fl=id,[elevated]`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&fl=id,[elevated]
 
 Likewise, it can be helpful when troubleshooting to see all matching documents – including documents that the elevation configuration would normally exclude. This is possible by using the `markExcludes=true` parameter, and then using the `[excluded]` transformer:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&markExcludes=true&fl=id,[elevated],[excluded]`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&markExcludes=true&fl=id,[elevated],[excluded]
 
 === The elevateIds and excludeIds Parameters
 
@@ -133,13 +139,15 @@ When the elevation component is in use, the pre-configured list of elevations fo
 
 For example, in the request below documents 3007WFP and 9885A004 will be elevated, and document IW-02 will be excluded -- regardless of what elevations or exclusions are configured for the query "cable" in elevate.xml:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=cable&df=text&excludeIds=IW-02&elevateIds=3007WFP,9885A004`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=cable&df=text&excludeIds=IW-02&elevateIds=3007WFP,9885A004
 
 If either one of these parameters is specified at request time, the the entire elevation configuration for the query is ignored.
 
 For example, in the request below documents IW-02 and F8V7067-APL-KIT will be elevated, and no documents will be excluded – regardless of what elevations or exclusions are configured for the query "ipod" in elevate.xml:
 
-`\http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&elevateIds=IW-02,F8V7067-APL-KIT`
+[source,text]
+http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&elevateIds=IW-02,F8V7067-APL-KIT
 
 === The fq Parameter with Elevation
 

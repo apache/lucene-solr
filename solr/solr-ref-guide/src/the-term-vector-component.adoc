@@ -70,7 +70,8 @@ Once your handler is defined, you may use in conjunction with any schema (that h
 
 The example below shows an invocation of this component using the above configuration:
 
-`\http://localhost:8983/solr/techproducts/tvrh?q=*:*&start=0&rows=10&fl=id,includes`
+[source,text]
+http://localhost:8983/solr/techproducts/tvrh?q=*:*&start=0&rows=10&fl=id,includes&wt=xml
 
 [source,xml]
 ----
@@ -156,12 +157,12 @@ If `true`, returns payload information.
 `tv.tf`::
 If `true`, returns document term frequency info for each term in the document.
 
-`tv.tf_idf`:: a|
+`tv.tf_idf`::
 If `true`, calculates TF / DF (ie: TF * IDF) for each term. Please note that this is a _literal_ calculation of "Term Frequency multiplied by Inverse Document Frequency" and *not* a classical TF-IDF similarity measure.
 +
 This parameter requires both `tv.tf` and `tv.df` to be "true". This can be computationally expensive. (The results are not shown in example output)
 
-To learn more about TermVector component output, see the Wiki page: http://wiki.apache.org/solr/TermVectorComponentExampleOptions
+To see an example of TermVector component output, see the Wiki page: http://wiki.apache.org/solr/TermVectorComponentExampleOptions
 
 For schema requirements, see also the section  <<field-properties-by-use-case.adoc#field-properties-by-use-case, Field Properties by Use Case>>.
 

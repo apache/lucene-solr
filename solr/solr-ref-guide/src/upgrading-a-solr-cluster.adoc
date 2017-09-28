@@ -27,8 +27,8 @@ IMPORTANT: The steps outlined on this page assume you use the default service na
 
 Here is a checklist of things you need to prepare before starting the upgrade process:
 
-. Examine the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> page to determine if any behavior changes in the new version of Solr will affect your installation.
-. If not using replication (ie: collections with replicationFactor > 1), then you should make a backup of each collection. If all of your collections use replication, then you don't technically need to make a backup since you will be upgrading and verifying each node individually.
+. Examine the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> to determine if any behavior changes in the new version of Solr will affect your installation.
+. If not using replication (i.e., collections with `replicationFactor` less than 1), then you should make a backup of each collection. If all of your collections use replication, then you don't technically need to make a backup since you will be upgrading and verifying each node individually.
 . Determine which Solr node is currently hosting the Overseer leader process in SolrCloud, as you should upgrade this node last. To determine the Overseer, use the Overseer Status API, see: <<collections-api.adoc#collections-api,Collections API>>.
 . Plan to perform your upgrade during a system maintenance window if possible. You'll be doing a rolling restart of your cluster (each node, one-by-one), but we still recommend doing the upgrade when system usage is minimal.
 . Verify the cluster is currently healthy and all replicas are active, as you should not perform an upgrade on a degraded cluster.
@@ -41,7 +41,7 @@ Here is a checklist of things you need to prepare before starting the upgrade pr
 +
 If you are upgrading from an installation of Solr 5.x or later, these values can typically be found in either `/var/solr/solr.in.sh` or `/etc/default/solr.in.sh`.
 
-You should now be ready to upgrade your cluster. Please verify this process in a test / staging cluster before doing it in production.
+You should now be ready to upgrade your cluster. Please verify this process in a test or staging cluster before doing it in production.
 
 == Upgrade Process
 
@@ -50,7 +50,7 @@ The approach we recommend is to perform the upgrade of each Solr node, one-by-on
 
 === Step 1: Stop Solr
 
-Begin by stopping the Solr node you want to upgrade. After stopping the node, if using a replication, (ie: collections with replicationFactor > 1) verify that all leaders hosted on the downed node have successfully migrated to other replicas; you can do this by visiting the <<cloud-screens.adoc#cloud-screens,Cloud panel in the Solr Admin UI>>. If not using replication, then any collections with shards hosted on the downed node will be temporarily off-line.
+Begin by stopping the Solr node you want to upgrade. After stopping the node, if using a replication (i.e., collections with `replicationFactor` less than 1), verify that all leaders hosted on the downed node have successfully migrated to other replicas; you can do this by visiting the <<cloud-screens.adoc#cloud-screens,Cloud panel in the Solr Admin UI>>. If not using replication, then any collections with shards hosted on the downed node will be temporarily off-line.
 
 
 === Step 2: Install Solr as a Service

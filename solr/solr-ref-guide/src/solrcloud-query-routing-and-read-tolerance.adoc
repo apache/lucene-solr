@@ -63,8 +63,7 @@ The client can specify '<<distributed-search-with-index-sharding.adoc#distribute
 
 Example response with `partialResults` flag set to 'true':
 
-*Solr Response with partialResults*
-
+.Solr Response with partialResults
 [source,json]
 ----
 {
@@ -83,3 +82,4 @@ Example response with `partialResults` flag set to 'true':
     "docs": [ "..." ]
   }
 }
+----

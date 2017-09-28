@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
@@ -68,7 +69,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testFillWorkQueue() throws Exception {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
-      DistributedQueue distributedQueue = new DistributedQueue(cloudClient.getZkStateReader().getZkClient(),
+      DistributedQueue distributedQueue = new ZkDistributedQueue(cloudClient.getZkStateReader().getZkClient(),
           "/overseer/collection-queue-work", new Overseer.Stats());
       //fill the work queue with blocked tasks by adding more than the no:of parallel tasks
       for (int i = 0; i < MAX_PARALLEL_TASKS+5; i++) {
@@ -149,7 +150,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   private void testTaskExclusivity() throws Exception, SolrServerException {
 
-    DistributedQueue distributedQueue = new DistributedQueue(cloudClient.getZkStateReader().getZkClient(),
+    DistributedQueue distributedQueue = new ZkDistributedQueue(cloudClient.getZkStateReader().getZkClient(),
         "/overseer/collection-queue-work", new Overseer.Stats());
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 

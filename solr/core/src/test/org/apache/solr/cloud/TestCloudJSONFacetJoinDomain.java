@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,10 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-  
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,7 +44,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -62,7 +59,6 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudPivotFacet
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10939")
 public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -92,7 +88,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
     // sanity check constants
-    assertTrue("bad test constants: must have UNIQUE_FIELD_VALS < FACET_LIMIT since refinement not currently supported",
+    assertTrue("bad test constants: must have UNIQUE_FIELD_VALS < FACET_LIMIT to get accurate counts without refinements",
                UNIQUE_FIELD_VALS < FACET_LIMIT);
     assertTrue("bad test constants: some suffixes will never be tested",
                (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
@@ -139,6 +135,12 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         }
       }
       CLOUD_CLIENT.add(doc);
+      if (random().nextInt(100) < 1) {
+        CLOUD_CLIENT.commit();  // commit 1% of the time to create new segments
+      }
+      if (random().nextInt(100) < 5) {
+        CLOUD_CLIENT.add(doc);  // duplicate the doc 5% of the time to create deleted docs
+      }
     }
     CLOUD_CLIENT.commit();
   }
@@ -303,7 +305,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   public void testRandom() throws Exception {
 
-    final int numIters = atLeast(3);
+    final int numIters = atLeast(10);
     for (int iter = 0; iter < numIters; iter++) {
       assertFacetCountsAreCorrect(TermFacet.buildRandomFacets(), buildRandomQuery());
     }
@@ -453,8 +455,45 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * recursively generates the <code>json.facet</code> param value to use for testing this facet
      */
     private CharSequence toJSONFacetParamValue() {
-      // NOTE: since refinement isn't supported, we have to use the max cardinality of the field as limit
-      StringBuilder sb = new StringBuilder("{ type:terms, field:" + field + ", limit: " + FACET_LIMIT);
+      int limit = random().nextInt(FACET_LIMIT*2);
+      String limitStr = ", limit:" + limit;
+      if (limit >= FACET_LIMIT && random().nextBoolean()) {
+        limitStr = ", limit:-1"; // unlimited
+      } else if (limit == 10 && random().nextBoolean()) {
+        limitStr=""; // don't specify limit since it's the default
+      }
+
+      int overrequest = -1;
+      switch(random().nextInt(10)) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          overrequest = 0; // 40% of the time, no overrequest to better stress refinement
+          break;
+        case 4:
+        case 5:
+          overrequest = random().nextInt(FACET_LIMIT);
+          break;
+        case 6:
+          overrequest = random().nextInt(Integer.MAX_VALUE);
+          break;
+        default: break;
+      }
+      String overrequestStr = overrequest==-1 ? "" : ", overrequest:"+overrequest;
+
+      boolean refine = (overrequest >= 0 && (long)limit + overrequest < FACET_LIMIT)
+          || (overrequest < 0 && limit < FACET_LIMIT) // don't assume how much overrequest we do by default, just check the limit
+          || random().nextInt(10)==0; // once in a while, turn on refinement even when it isn't needed.
+
+      // refine = false; // NOTE: Uncomment this line to see if refinement testing is adequate (should get fails occasionally)
+      String refineStr=", refine:" + refine;
+      if (!refine) {
+        // if refine==false, don't specify it sometimes (it's the default)
+        if (random().nextBoolean()) refineStr="";
+      }
+
+      StringBuilder sb = new StringBuilder("{ type:terms, field:" + field + limitStr + overrequestStr + refineStr);
       if (! subFacets.isEmpty()) {
         sb.append(", facet:");
         sb.append(toJSONFacetParamValue(subFacets));
@@ -600,9 +639,21 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       final String[] suffixes = random().nextBoolean() ? STR_FIELD_SUFFIXES : INT_FIELD_SUFFIXES;
       
       final boolean noJoin = random().nextBoolean();
-      final String from = noJoin ? null : field(suffixes, random().nextInt(MAX_FIELD_NUM));
-      final String to = noJoin ? null : field(suffixes, random().nextInt(MAX_FIELD_NUM));
-      
+
+      String from = null;
+      String to = null;
+      for (;;) {
+        if (noJoin) break;
+        from = field(suffixes, random().nextInt(MAX_FIELD_NUM));
+        to = field(suffixes, random().nextInt(MAX_FIELD_NUM));
+        // HACK: joined numeric point fields need docValues.. for now just skip _is fields if we are dealing with points.
+        if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) && (from.endsWith("_is") || to.endsWith("_is")))
+        {
+            continue;
+        }
+        break;
+      }
+
       // keep it simple, only filter on string fields - not point of test
       final String filterField = strfield(random().nextInt(MAX_FIELD_NUM));
       
