@@ -6398,6 +6398,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
   }
 
+
+
   @Test
   public void testEnumeratedDistribution() throws Exception {
     String cexpr = "let(a=uniformIntegerDistribution(1, 10)," +
@@ -6624,6 +6626,55 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(e.doubleValue() < f.doubleValue());
     assertTrue(f.doubleValue() < g.doubleValue());
   }
+
+
+  @Test
+  public void testGammaDistribution() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "a=describe(sample(gammaDistribution(1, 10),10000)), " +
+        "b=describe(sample(gammaDistribution(3, 10),10000)), " +
+        "c=describe(sample(gammaDistribution(5, 10),10000))," +
+        "d=describe(sample(gammaDistribution(7, 10),10000))," +
+        "e=mean(sample(gammaDistribution(1, 10),10000))," +
+        "f=mean(sample(gammaDistribution(1, 20),10000))," +
+        "g=mean(sample(gammaDistribution(1, 30),10000)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map a = (Map)tuples.get(0).get("a");
+    Map b = (Map)tuples.get(0).get("b");
+    Map c = (Map)tuples.get(0).get("c");
+    Map d = (Map)tuples.get(0).get("d");
+
+    Number sa = (Number)a.get("skewness");
+    Number sb = (Number)b.get("skewness");
+    Number sc = (Number)c.get("skewness");
+    Number sd = (Number)d.get("skewness");
+
+    //Test shape change
+    assertTrue(sa.doubleValue() > sb.doubleValue());
+    assertTrue(sb.doubleValue() > sc.doubleValue());
+    assertTrue(sc.doubleValue() > sd.doubleValue());
+
+    //Test scale change
+
+    Number e = (Number)tuples.get(0).get("e");
+    Number f = (Number)tuples.get(0).get("f");
+    Number g = (Number)tuples.get(0).get("g");
+
+    assertTrue(e.doubleValue() < f.doubleValue());
+    assertTrue(f.doubleValue() < g.doubleValue());
+  }
+
+
+
 
   @Test
   public void testLogNormalDistribution() throws Exception {
