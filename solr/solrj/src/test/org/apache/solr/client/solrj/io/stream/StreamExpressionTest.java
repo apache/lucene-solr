@@ -6372,6 +6372,33 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testZipFDistribution() throws Exception {
+    String cexpr = "let(a=sample(zipFDistribution(10, 1), 50000), b=freqTable(a), c=col(b, count))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> counts = (List<Number>)tuples.get(0).get("c");
+
+    assertTrue(counts.size() == 10);
+
+    int lastCount = Integer.MAX_VALUE;
+    for(Number number : counts) {
+      int current = number.intValue();
+      if(current > lastCount) {
+        throw new Exception("Zipf distribution not descending!!!");
+      } else {
+        lastCount = current;
+      }
+    }
+  }
+
+  @Test
   public void testEnumeratedDistribution() throws Exception {
     String cexpr = "let(a=uniformIntegerDistribution(1, 10)," +
         "               b=sample(a, 10000)," +
