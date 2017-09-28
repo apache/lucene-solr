@@ -615,9 +615,10 @@ public class CoreContainer {
               if (zkSys.getZkController() != null) {
                 zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
               }
-
+              solrCores.waitAddPendingCoreOps(cd.getName());
               core = createFromDescriptor(cd, false, false);
             } finally {
+              solrCores.removeFromPendingOps(cd.getName());
               if (asyncSolrCoreLoad) {
                 solrCores.markCoreAsNotLoading(cd);
               }
@@ -913,7 +914,13 @@ public class CoreContainer {
       // first and clean it up if there's an error.
       coresLocator.create(this, cd);
 
-      SolrCore core = createFromDescriptor(cd, true, newCollection);
+      SolrCore core = null;
+      try {
+        solrCores.waitAddPendingCoreOps(cd.getName());
+        core = createFromDescriptor(cd, true, newCollection);
+      } finally {
+        solrCores.removeFromPendingOps(cd.getName());
+      }
 
       return core;
     } catch (Exception ex) {
@@ -948,7 +955,6 @@ public class CoreContainer {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
     }
-
   }
 
   /**
@@ -956,6 +962,26 @@ public class CoreContainer {
    *
    * @param dcore        a core descriptor
    * @param publishState publish core state to the cluster if true
+   *
+   * WARNING: Any call to this method should be surrounded by a try/finally block
+   *          that calls solrCores.waitAddPendingCoreOps(...) and solrCores.removeFromPendingOps(...)
+   *
+   *  <pre>
+   *   <code>
+   *   try {
+   *      solrCores.waitAddPendingCoreOps(dcore.getName());
+   *      createFromDescriptor(...);
+   *   } finally {
+   *      solrCores.removeFromPendingOps(dcore.getName());
+   *   }
+   *   </code>
+   * </pre>
+   *
+   *  Trying to put the waitAddPending... in this method results in Bad Things Happening due to race conditions.
+   *  getCore() depends on getting the core returned _if_ it's in the pending list due to some other thread opening it.
+   *  If the core is not in the pending list and not loaded, then getCore() calls this method. Anything that called
+   *  to check if the core was loaded _or_ in pending ops and, based on the return called createFromDescriptor would
+   *  introduce a race condition, see getCore() for the place it would be a problem
    *
    * @return the newly created core
    */
@@ -1236,7 +1262,12 @@ public class CoreContainer {
     } else {
       CoreLoadFailure clf = coreInitFailures.get(name);
       if (clf != null) {
-        createFromDescriptor(clf.cd, true, false);
+        try {
+          solrCores.waitAddPendingCoreOps(clf.cd.getName());
+          createFromDescriptor(clf.cd, true, false);
+        } finally {
+          solrCores.removeFromPendingOps(clf.cd.getName());
+        }
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
       }
@@ -1409,7 +1440,8 @@ public class CoreContainer {
     // TestLazyCores
     if (desc == null || zkSys.getZkController() != null) return null;
 
-    // This will put an entry in pending core ops if the core isn't loaded
+    // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
+    // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
     core = solrCores.waitAddPendingCoreOps(name);
 
     if (isShutDown) return null; // We're quitting, so stop. This needs to be after the wait above since we may come off
