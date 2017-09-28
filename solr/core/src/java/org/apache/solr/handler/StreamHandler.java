@@ -306,7 +306,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("mode", ModeEvaluator.class)
         .withFunctionName("logNormalDistribution", LogNormalDistributionEvaluator.class)
         .withFunctionName("zipFDistribution", ZipFDistributionEvaluator.class)
-
+        .withFunctionName("gammaDistribution", GammaDistributionEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
