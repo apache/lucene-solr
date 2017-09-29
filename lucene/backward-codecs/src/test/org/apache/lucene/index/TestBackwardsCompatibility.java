@@ -305,7 +305,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.0.0-cfs",
     "7.0.0-nocfs"
   };
-  
+
+  public static String[] getOldNames() {
+    return oldNames;
+  }
+
   final String[] unsupportedNames = {
       "1.9.0-cfs",
       "1.9.0-nocfs",
@@ -442,7 +446,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
   final static String[] oldSingleSegmentNames = {
   };
-  
+
+  public static String[] getOldSingleSegmentNames() {
+    return oldSingleSegmentNames;
+  }
+
   static Map<String,Directory> oldIndexDirs;
 
   /**
