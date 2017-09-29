@@ -18,12 +18,24 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  7.0.1 ==================
 
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
 Bug Fixes
 ----------------------
 
 * SOLR-11297: Message "Lock held by this virtual machine" during startup.  Solr is trying to start some cores twice.
   (Luiz Armesto, Shawn Heisey, Erick Erickson)
 
+* SOLR-11406: Solr 7.0 cannot read indexes from 6.x versions. (Shawn Heisey, Steve Rowe)
 
 ==================  7.0.0 ==================
 
