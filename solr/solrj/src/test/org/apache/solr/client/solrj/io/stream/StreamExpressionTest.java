@@ -279,6 +279,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assert (tuples.size() == 5);
       assertOrder(tuples, 0, 1, 2, 3, 4);
 
+      //Test with using the default collection
+      solrParams = new ModifiableSolrParams();
+      solrParams.add("qt", "/stream");
+      solrParams.add("expr", "sql(stmt=\"select id from collection1 order by a_i asc\")");
+      solrStream = new SolrStream(shardUrls.get(0), solrParams);
+      solrStream.setStreamContext(streamContext);
+      tuples = getTuples(solrStream);
+      assert (tuples.size() == 5);
+      assertOrder(tuples, 0, 1, 2, 3, 4);
+
     } finally {
       solrClientCache.close();
     }
