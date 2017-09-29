@@ -6480,6 +6480,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(prob.doubleValue(), 0.1, 0.07);
     Number cprob = (Number)tuples.get(0).get("c");
     assertEquals(cprob.doubleValue(), 0.5, 0.07);
+
+
+    cexpr = "let(a=sample(enumeratedDistribution(array(1,2,3,4), array(40, 30, 20, 10)), 50000),"+
+                "b=freqTable(a),"+
+                "y=col(b, pct))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> freqs = (List<Number>)tuples.get(0).get("y");
+    assertEquals(freqs.get(0).doubleValue(), .40, .03);
+    assertEquals(freqs.get(1).doubleValue(), .30, .03);
+    assertEquals(freqs.get(2).doubleValue(), .20, .03);
+    assertEquals(freqs.get(3).doubleValue(), .10, .03);
   }
 
   @Test
