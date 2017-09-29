@@ -6399,6 +6399,51 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
 
+  @Test
+  public void testBetaDistribution() throws Exception {
+    String cexpr = "let(a=sample(betaDistribution(1, 5), 50000), b=hist(a, 11), c=col(b, N))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> counts = (List<Number>)tuples.get(0).get("c");
+
+    int lastCount = Integer.MAX_VALUE;
+    for(Number number : counts) {
+      int current = number.intValue();
+      if(current > lastCount) {
+        throw new Exception("This beta distribution should be descending");
+      } else {
+        lastCount = current;
+      }
+    }
+
+    cexpr = "let(a=sample(betaDistribution(5, 1), 50000), b=hist(a, 11), c=col(b, N))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    counts = (List<Number>)tuples.get(0).get("c");
+
+    lastCount = Integer.MIN_VALUE;
+    for(Number number : counts) {
+      int current = number.intValue();
+      if(current < lastCount) {
+        throw new Exception("This beta distribution should be ascending");
+      } else {
+        lastCount = current;
+      }
+    }
+  }
 
   @Test
   public void testEnumeratedDistribution() throws Exception {
