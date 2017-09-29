@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,12 +36,39 @@ public class StreamExpressionParser {
   }
 
   public static StreamExpression parse(String clause){
+    clause = stripComments(clause);
     StreamExpressionParameter expr = generateStreamExpression(clause);
     if(null != expr && expr instanceof StreamExpression){
       return (StreamExpression)expr;
     }
     
     return null;
+  }
+
+
+  private static String stripComments(String clause) throws RuntimeException {
+    StringBuilder builder = new StringBuilder();
+    BufferedReader reader = null;
+
+    try {
+      reader = new BufferedReader(new StringReader(clause));
+      String line = null;
+      while ((line = reader.readLine()) != null) {
+        if(line.trim().startsWith("#")) {
+          continue;
+        } else {
+          builder.append(line+'\n');
+        }
+      }
+    }catch(Exception e) {
+      throw new RuntimeException(e);
+    } finally{
+      try {
+        reader.close();
+      } catch (Exception e) {}
+    }
+
+    return builder.toString();
   }
   
   private static StreamExpressionParameter generateStreamExpression(String clause){    

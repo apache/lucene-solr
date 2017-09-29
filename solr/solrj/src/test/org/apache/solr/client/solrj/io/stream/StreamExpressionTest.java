@@ -6630,8 +6630,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testGammaDistribution() throws Exception {
-    String cexpr = "let(echo=true, " +
+    String cexpr = "#comment\nlet(echo=true, " +
         "a=describe(sample(gammaDistribution(1, 10),10000)), " +
+        "\n# commment\n"+
         "b=describe(sample(gammaDistribution(3, 10),10000)), " +
         "c=describe(sample(gammaDistribution(5, 10),10000))," +
         "d=describe(sample(gammaDistribution(7, 10),10000))," +
