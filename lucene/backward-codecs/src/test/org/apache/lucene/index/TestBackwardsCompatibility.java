@@ -301,7 +301,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.6.0-cfs",
     "6.6.0-nocfs",
     "6.6.1-cfs",
-    "6.6.1-nocfs"
+    "6.6.1-nocfs",
+    "7.0.0-cfs",
+    "7.0.0-nocfs"
   };
 
   public static String[] getOldNames() {
