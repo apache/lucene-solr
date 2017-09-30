@@ -85,6 +85,9 @@ Other
 * LUCENE-7978: Add some more documentation about setting up build
   environment.  (Anton R. Yuste via Uwe Schindler)
 
+======================= Lucene 7.0.1 =======================
+(No Changes)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
