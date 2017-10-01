@@ -121,8 +121,8 @@ def update_backcompat_tests(types, index_version, current_version):
     def __call__(self, buffer, match, line):
       if self.start:
         # find where this version should exist
-        i = len(buffer) - 1 
-        previous_version_exists = '};' not in line # Version list closure => there are no versions
+        i = len(buffer) - 1
+        previous_version_exists = not ('};' in line and buffer[-1].strip().endswith("{"))
         if previous_version_exists: # Only look if there is a version here
           v = find_version(buffer[i])
           while i >= self.start and v.on_or_after(index_version):
@@ -143,7 +143,7 @@ def update_backcompat_tests(types, index_version, current_version):
           last = buffer[-1]
           spaces = ' ' * (len(last) - len(last.lstrip()))
         else:
-          spaces = '      '
+          spaces = '    '
         for (j, t) in enumerate(types):
           if t == 'sorted':
             newline = spaces + ('"sorted.%s"') % index_version
