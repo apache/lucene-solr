@@ -24,6 +24,9 @@ New Features
 
 * LUCENE-7973: Update dictionary version for Ukrainian analyzer to 3.9.0 (Andriy
   Rysin via Dawid Weiss)
+  
+* LUCENE-7974: Add FloatPointNearestNeighbor, an N-dimensional FloatPoint
+  K-nearest-neighbor search implementation.  (Steve Rowe)
 
 Optimizations
 
