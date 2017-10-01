@@ -156,7 +156,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(analyzer)
       .setMergePolicy(mp).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
-    LineFileDocs docs = new LineFileDocs(null);
+    LineFileDocs docs = new LineFileDocs(random());
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
@@ -275,6 +275,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
+  public void testCreateEmptyIndex() throws Exception {
+    Path indexDir = getIndexDir().resolve("emptyIndex");
+    Files.deleteIfExists(indexDir);
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
+        .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (Directory dir = newFSDirectory(indexDir);
+         IndexWriter writer = new IndexWriter(dir, conf)) {
+      writer.flush();
+    }
+  }
+
   final static String[] oldNames = {
     "6.0.0-cfs",
     "6.0.0-nocfs",
@@ -308,6 +319,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public static String[] getOldNames() {
     return oldNames;
+  }
+
+  final static String[] oldSortedNames = {
+    "sorted.6.2.0",
+    "sorted.6.2.1",
+    "sorted.6.3.0",
+    "sorted.6.4.0",
+    "sorted.6.4.1",
+    "sorted.6.4.2",
+    "sorted.6.5.0",
+    "sorted.6.5.1",
+    "sorted.6.6.0",
+    "sorted.6.6.1",
+    "sorted.7.0.0"
+  };
+
+  public static String[] getOldSortedNames() {
+    return oldSortedNames;
   }
 
   final String[] unsupportedNames = {
@@ -1571,11 +1600,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testSortedIndex() throws Exception {
-    String[] versions = new String[] {"6.2.0", "6.2.1", "6.3.0"};
-    for(String version : versions) {
+    for (String name : oldSortedNames) {
       Path path = createTempDir("sorted");
-      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("sorted." + version + ".zip");
-      assertNotNull("Sorted index index " + version + " not found", resource);
+      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream(name + ".zip");
+      assertNotNull("Sorted index index " + name + " not found", resource);
       TestUtil.unzip(resource, path);
 
       // TODO: more tests
