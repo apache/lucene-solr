@@ -95,7 +95,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Backcompat index generation, described below, is mostly automated in: 
   //
-  //    dev-tools/scripts/addBackCompatIndexes.py
+  //    dev-tools/scripts/addBackcompatIndexes.py
   //
   // For usage information, see:
   //
@@ -335,7 +335,28 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "6.6.1-cfs",
       "6.6.1-nocfs"
   };
-  
+
+  public static String[] getOldNames() {
+    return oldNames;
+  }
+
+  final static String[] oldSortedNames = {
+    "sorted.6.2.0",
+    "sorted.6.2.1",
+    "sorted.6.3.0",
+    "sorted.6.4.0",
+    "sorted.6.4.1",
+    "sorted.6.4.2",
+    "sorted.6.5.0",
+    "sorted.6.5.1",
+    "sorted.6.6.0",
+    "sorted.6.6.1"
+  };
+
+  public static String[] getOldSortedNames() {
+    return oldSortedNames;
+  }
+
   final String[] unsupportedNames = {
       "1.9.0-cfs",
       "1.9.0-nocfs",
@@ -443,7 +464,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "5.0.0.singlesegment-cfs",
     "5.0.0.singlesegment-nocfs"
   };
-  
+
+  public static String[] getOldSingleSegmentNames() {
+    return oldSingleSegmentNames;
+  }
+
   static Map<String,Directory> oldIndexDirs;
 
   /**
@@ -505,10 +530,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
       if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
         Version v = (Version)field.get(Version.class);
-        if (v.equals(Version.LATEST)) continue;
+        if (v.equals(Version.LATEST)) {
+          continue;
+        }
 
         Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) continue;
+        if (constant.matches() == false) {
+          continue;
+        }
 
         expectedVersions.add(v.toString() + "-cfs");
       }
@@ -519,7 +548,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // find what versions we are testing
     List<String> testedVersions = new ArrayList<>();
     for (String testedVersion : oldNames) {
-      if (testedVersion.endsWith("-cfs") == false) continue;
+      if (testedVersion.endsWith("-cfs") == false) {
+        continue;
+      }
       testedVersions.add(testedVersion);
     }
     Collections.sort(testedVersions);
@@ -1518,11 +1549,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testSortedIndex() throws Exception {
-    String[] versions = new String[] {"6.2.0", "6.2.1", "6.3.0"};
-    for(String version : versions) {
+    for (String name : oldSortedNames) {
       Path path = createTempDir("sorted");
-      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("sorted." + version + ".zip");
-      assertNotNull("Sorted index index " + version + " not found", resource);
+      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream(name + ".zip");
+      assertNotNull("Sorted index index " + name + " not found", resource);
       TestUtil.unzip(resource, path);
 
       // TODO: more tests
