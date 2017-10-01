@@ -156,7 +156,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(analyzer)
       .setMergePolicy(mp).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
-    LineFileDocs docs = new LineFileDocs(null);
+    LineFileDocs docs = new LineFileDocs(random());
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }
@@ -275,11 +275,32 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
+  public void testCreateEmptyIndex() throws Exception {
+    Path indexDir = getIndexDir().resolve("emptyIndex");
+    Files.deleteIfExists(indexDir);
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
+        .setUseCompoundFile(false).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (Directory dir = newFSDirectory(indexDir);
+         IndexWriter writer = new IndexWriter(dir, conf)) {
+      writer.flush();
+    }
+  }
+
   final static String[] oldNames = {
+      "7.0.0-cfs",
+      "7.0.0-nocfs"
   };
 
   public static String[] getOldNames() {
     return oldNames;
+  }
+  
+  final static String[] oldSortedNames = {
+      "sorted.7.0.0"
+  };
+
+  public static String[] getOldSortedNames() {
+    return oldSortedNames;
   }
 
   final String[] unsupportedNames = {
@@ -765,7 +786,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         Directory targetDir2 = newDirectory();
         IndexWriter w = new IndexWriter(targetDir2, newIndexWriterConfig(new MockAnalyzer(random())));
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> TestUtil.addIndexesSlowly(w, reader));
-        assertEquals(e.getMessage(), "Cannot merge a segment that has been created with major version 6 into this index which has been created by major version 7");
+        assertEquals(e.getMessage(), "Cannot merge a segment that has been created with major version 7 into this index which has been created by major version 8");
         w.close();
         targetDir2.close();
 
@@ -1449,14 +1470,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public static final String emptyIndex = "empty.7.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
-    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("emptyIndex");
     TestUtil.unzip(getDataInputStream(emptyIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
 
     newIndexUpgrader(dir).upgrade();
 
-    checkAllSegmentsUpgraded(dir, 6);
+    checkAllSegmentsUpgraded(dir, 7);
     
     dir.close();
   }
@@ -1464,7 +1484,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public static final String moreTermsIndex = "moreterms.7.0.0.zip";
 
   public void testMoreTerms() throws Exception {
-    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1509,7 +1528,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testDocValuesUpdates() throws Exception {
-    assumeTrue("Reenable when 7.0 is released", false);
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
@@ -1572,12 +1590,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testSortedIndex() throws Exception {
-    assumeTrue("Reenable when 7.0 is released", false);
-    String[] versions = new String[] {};
-    for(String version : versions) {
+    for(String name : oldSortedNames) {
       Path path = createTempDir("sorted");
-      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("sorted." + version + ".zip");
-      assertNotNull("Sorted index index " + version + " not found", resource);
+      InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream(name + ".zip");
+      assertNotNull("Sorted index index " + name + " not found", resource);
       TestUtil.unzip(resource, path);
 
       // TODO: more tests
