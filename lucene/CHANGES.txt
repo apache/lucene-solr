@@ -86,6 +86,9 @@ Build
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
   instead of locally installing first, to workaround a double repository push of
   *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+  
+* LUCENE-6673: Maven build fails for target javadoc:jar.  
+  (Ramkumar Aiyengar, Daniel Collins via Steve Rowe)
 
 Other
 
