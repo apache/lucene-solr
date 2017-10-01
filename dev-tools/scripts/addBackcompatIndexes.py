@@ -246,7 +246,7 @@ def main():
   create_and_add_index(source, 'cfs', c.version, current_version, c.temp_dir)
   create_and_add_index(source, 'nocfs', c.version, current_version, c.temp_dir)
   create_and_add_index(source, 'sorted', c.version, current_version, c.temp_dir)
-  if c.version.minor == 0 and c.version.bugfix == 0:
+  if c.version.minor == 0 and c.version.bugfix == 0 and c.version.major < current_version.major:
     create_and_add_index(source, 'moreterms', c.version, current_version, c.temp_dir)
     create_and_add_index(source, 'dvupdates', c.version, current_version, c.temp_dir)
     create_and_add_index(source, 'emptyIndex', c.version, current_version, c.temp_dir)
