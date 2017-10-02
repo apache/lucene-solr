@@ -17,6 +17,9 @@
 
 package org.apache.solr.search;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitudeCeil;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitudeCeil;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
@@ -55,8 +58,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.AbstractEnumField;
+import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
@@ -519,38 +523,45 @@ public class SolrDocumentFetcher {
           final NumberType type = schemaField.getType().getNumberType();
           if (numericDv != null) {
             if (numericDv.advance(localId) == localId) {
-              final List<Object> outValues = new ArrayList<Object>(numericDv.docValueCount());
-              for (int i = 0; i < numericDv.docValueCount(); i++) {
-                long number = numericDv.nextValue();
-                switch (type) {
-                  case INTEGER:
-                    final int raw = (int)number;
-                    if (schemaField.getType() instanceof AbstractEnumField) {
-                      outValues.add(((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(raw));
-                    } else {
-                      outValues.add(raw);
-                    }
-                    break;
-                  case LONG:
-                    outValues.add(number);
-                    break;
-                  case FLOAT:
-                    outValues.add(NumericUtils.sortableIntToFloat((int)number));
-                    break;
-                  case DOUBLE:
-                    outValues.add(NumericUtils.sortableLongToDouble(number));
-                    break;
-                  case DATE:
-                    outValues.add(new Date(number));
-                    break;
-                  default:
-                    throw new AssertionError("Unexpected PointType: " + type);
+              if (type != null) {
+                final List<Object> outValues = new ArrayList<Object>(numericDv.docValueCount());
+                for (int i = 0; i < numericDv.docValueCount(); i++) {
+                  long number = numericDv.nextValue();
+                  switch (type) {
+                    case INTEGER:
+                      final int raw = (int) number;
+                      if (schemaField.getType() instanceof AbstractEnumField) {
+                        outValues.add(
+                            ((AbstractEnumField) schemaField.getType()).getEnumMapping().intValueToStringValue(raw));
+                      } else {
+                        outValues.add(raw);
+                      }
+                      break;
+                    case LONG:
+                      outValues.add(number);
+                      break;
+                    case FLOAT:
+                      outValues.add(NumericUtils.sortableIntToFloat((int) number));
+                      break;
+                    case DOUBLE:
+                      outValues.add(NumericUtils.sortableLongToDouble(number));
+                      break;
+                    case DATE:
+                      outValues.add(new Date(number));
+                      break;
+                    default:
+                      throw new AssertionError("Unexpected PointType: " + type);
+                  }
                 }
+                assert outValues.size() > 0;
+                doc.addField(fieldName, outValues);
+              } else if (schemaField.getType() instanceof LatLonPointSpatialField) {
+                long number = numericDv.nextValue();
+                doc.addField(fieldName, decodeLatitudeCeil(number) + "," + decodeLongitudeCeil(number));
               }
-              assert outValues.size() > 0;
-              doc.addField(fieldName, outValues);
             }
           }
+          break;
         case SORTED_SET:
           final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
           if (values != null && values.getValueCount() > 0) {
@@ -564,6 +575,7 @@ public class SolrDocumentFetcher {
               doc.addField(fieldName, outValues);
             }
           }
+          break;
         case NONE:
           break;
       }
