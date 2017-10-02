@@ -642,7 +642,7 @@ public class Overseer implements SolrCloseable {
    */
   static ZkDistributedQueue getStateUpdateQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
-    return new ZkDistributedQueue(zkClient, "/overseer/queue", zkStats);
+    return new ZkDistributedQueue(zkClient, "/overseer/queue", zkStats, STATE_UPDATE_MAX_QUEUE);
   }
 
   /**
