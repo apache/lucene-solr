@@ -193,7 +193,8 @@ public class FloatPointNearestNeighbor {
     }
   }
 
-  static class NearestHit {
+  /** Holds one hit from {@link FloatPointNearestNeighbor#nearest} */
+  public static class NearestHit {
     public int docID;
     public double distanceSquared;
 
