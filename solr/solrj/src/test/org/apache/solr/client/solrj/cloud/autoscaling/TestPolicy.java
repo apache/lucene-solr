@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,19 +35,24 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class TestPolicy extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String clusterState = "{'gettingstarted':{" +
       "    'router':{'name':'compositeId'}," +
@@ -1185,19 +1191,19 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   public void testMultiReplicaPlacement() {
     String autoScaleJson = "{" +
-        "  'cluster-preferences': [" +
+        "  cluster-preferences: [" +
         "    { maximize : freedisk , precision: 50}," +
         "    { minimize : cores, precision: 2}" +
         "  ]," +
-        "  'cluster-policy': [" +
-        "    { replica : '0' , 'nodeRole': 'overseer'}," +
-        "    { 'replica': '<2', 'shard': '#ANY', 'node': '#ANY'" +
+        "  cluster-policy: [" +
+        "    { replica : '0' , nodeRole: overseer}," +
+        "    { replica: '<2', shard: '#ANY', node: '#ANY'" +
         "    }" +
         "  ]," +
-        "  'policies': {" +
-        "    'policy1': [" +
-        "      { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      { 'replica': '<2', 'shard': '#EACH', 'sysprop.rack': 'rack1'}" +
+        "  policies: {" +
+        "    policy1: [" +
+        "      { replica: '<2', shard: '#EACH', node: '#ANY'}," +
+        "      { replica: '<2', shard: '#EACH', sysprop.rack: rack1}" +
         "    ]" +
         "  }" +
         "}";
@@ -1270,6 +1276,43 @@ public class TestPolicy extends SolrTestCaseJ4 {
     op = suggester.getOperation();
     assertNull(op);
   }
+
+  public void testComputePlanAfterNodeAdded() {
+
+    String dataproviderdata = "{" +
+        "     liveNodes:[" +
+        "       '127.0.0.1:51078_solr'," +
+        "       '127.0.0.1:51147_solr']," +
+        "     replicaInfo:{" +
+        "       '127.0.0.1:51147_solr':{}," +
+        "       '127.0.0.1:51078_solr':{testNodeAdded:{shard1:[" +
+        "             { core_node3 : { type : NRT}}," +
+        "             { core_node4 : { type : NRT}}]}}}," +
+        "     nodeValues:{" +
+        "       '127.0.0.1:51147_solr':{" +
+        "         node:'127.0.0.1:51147_solr'," +
+        "         cores:0," +
+        "         freedisk : 880.5428657531738}," +
+        "       '127.0.0.1:51078_solr':{" +
+        "         node:'127.0.0.1:51078_solr'," +
+        "         cores:2," +
+        "         freedisk:880.5428695678711}}}";
+
+    String autoScalingjson = "cluster-preferences:[" +
+        "       {minimize : cores}," +
+        "       {'maximize':freedisk , precision:100}],    " +
+        " cluster-policy:[{cores:'<10',node:'#ANY'}," +
+        "       {replica:'<2', shard:'#EACH',node:'#ANY'}," +
+        "       { nodeRole:overseer,replica:0}]}";
+    Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    Policy.Session session = policy.createSession(dataProviderWithData(dataproviderdata));
+    Policy.Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
+        .hint(Hint.TARGET_NODE, "127.0.0.1:51147_solr");
+    SolrRequest op = suggester.getOperation();
+    log.info("" + op);
+    assertNotNull(op);
+  }
+   
 
 
 }

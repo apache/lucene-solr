@@ -253,26 +253,15 @@ public class Policy implements MapWriter {
      * Apply the preferences and conditions
      */
     private void applyRules() {
-      if (!clusterPreferences.isEmpty()) {
-        //this is to set the approximate value according to the precision
-        ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
-        for (Preference p : clusterPreferences) {
-          Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
-          p.setApproxVal(tmpMatrix);
-        }
-        //approximate values are set now. Let's do recursive sorting
-        Collections.sort(matrix, (Row r1, Row r2) -> {
-          int result = clusterPreferences.get(0).compare(r1, r2, true);
-          if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
-          return result;
-        });
-      }
+      setApproxValuesAndSortNodes(clusterPreferences, matrix);
 
       for (Clause clause : expandedClauses) {
         List<Violation> errs = clause.test(matrix);
         violations.addAll(errs);
       }
     }
+
+
 
     public List<Violation> getViolations() {
       return violations;
@@ -303,6 +292,22 @@ public class Policy implements MapWriter {
     }
   }
 
+  static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
+    if (!clusterPreferences.isEmpty()) {
+      //this is to set the approximate value according to the precision
+      ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
+      for (Preference p : clusterPreferences) {
+        Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
+        p.setApproxVal(tmpMatrix);
+      }
+      //approximate values are set now. Let's do recursive sorting
+      Collections.sort(matrix, (Row r1, Row r2) -> {
+        int result = clusterPreferences.get(0).compare(r1, r2, true);
+        if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
+        return result;
+      });
+    }
+  }
 
   public Session createSession(ClusterDataProvider dataProvider) {
     return new Session(dataProvider);
@@ -470,7 +475,8 @@ public class Policy implements MapWriter {
       }
     }
 
-    protected List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
+    List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
+      setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences,rows);
       List<Violation> errors = new ArrayList<>();
       for (Clause clause : session.expandedClauses) {
         if (strict || clause.strict) {
@@ -615,6 +621,6 @@ public class Policy implements MapWriter {
    * a value {@code 1} if  r1 is less loaded than r2
    */
   static int compareRows(Row r1, Row r2, Policy policy) {
-    return policy.clusterPreferences.get(0).compare(r1, r2, false);
+    return policy.clusterPreferences.get(0).compare(r1, r2, true);
   }
 }
