@@ -132,6 +132,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-11423: Overseer queue needs a hard cap (maximum size) that clients respect (Scott Blum, Joshua Humphries, Noble Paul)
+
 * SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
 
 * SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling

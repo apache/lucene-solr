@@ -45,6 +45,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -259,7 +260,16 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       String key = invocation.getArgument(0);
       return zkMap.containsKey(key);
     });
-    
+
+    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean())).thenAnswer(invocation -> {
+      String key = invocation.getArgument(0);
+      if (zkMap.containsKey(key)) {
+        return new Stat();
+      } else {
+        return null;
+      }
+    });
+
     zkMap.put("/configs/myconfig", null);
     
     return liveNodes;
