@@ -194,7 +194,7 @@ public class FloatPointNearestNeighbor {
   }
 
   /** Holds one hit from {@link FloatPointNearestNeighbor#nearest} */
-  public static class NearestHit {
+  static class NearestHit {
     public int docID;
     public double distanceSquared;
 
@@ -204,7 +204,7 @@ public class FloatPointNearestNeighbor {
     }
   }
 
-  public static NearestHit[] nearest(List<BKDReader> readers, List<Bits> liveDocs, List<Integer> docBases, final int topN, float[] origin) throws IOException {
+  private static NearestHit[] nearest(List<BKDReader> readers, List<Bits> liveDocs, List<Integer> docBases, final int topN, float[] origin) throws IOException {
 
     // System.out.println("NEAREST: readers=" + readers + " liveDocs=" + liveDocs + " origin: " + Arrays.toString(origin));
 
