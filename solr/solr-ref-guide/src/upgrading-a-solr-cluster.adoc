@@ -59,9 +59,7 @@ Please follow the instructions to install Solr as a Service on Linux documented 
 
 [NOTE]
 ====
-
 If you have a `/var/solr/solr.in.sh` file for your existing Solr install, running the `install_solr_service.sh` script will move this file to its new location: `/etc/default/solr.in.sh` (see https://issues.apache.org/jira/browse/SOLR-8101[SOLR-8101] for more details)
-
 ====
 
 
@@ -69,7 +67,11 @@ If you have a `/var/solr/solr.in.sh` file for your existing Solr install, runnin
 
 Open `/etc/default/solr.in.sh` with a text editor and verify that the following variables are set correctly, or add them bottom of the include file as needed:
 
-`ZK_HOST=SOLR_HOST=SOLR_PORT=SOLR_HOME=`
+[source]
+ZK_HOST=
+SOLR_HOST=
+SOLR_PORT=
+SOLR_HOME=
 
 Make sure the user you plan to own the Solr process is the owner of the `SOLR_HOME` directory. For instance, if you plan to run Solr as the "solr" user and `SOLR_HOME` is `/var/solr/data`, then you would do: `sudo chown -R solr: /var/solr/data`
 
@@ -80,7 +82,7 @@ You are now ready to start the upgraded Solr node by doing: `sudo service solr s
 
 === Step 5: Run Healthcheck
 
-You should run the Solr *healthcheck* command for all collections that are hosted on the upgraded node before proceeding to upgrade the next node in your cluster. For instance, if the newly upgraded node hosts a replica for the *MyDocuments* collection, then you can run the following command (replace ZK_HOST with the ZooKeeper connection string):
+You should run the Solr *healthcheck* command for all collections that are hosted on the upgraded node before proceeding to upgrade the next node in your cluster. For instance, if the newly upgraded node hosts a replica for the *MyDocuments* collection, then you can run the following command (replace `ZK_HOST` with the ZooKeeper connection string):
 
 [source,bash]
 ----
