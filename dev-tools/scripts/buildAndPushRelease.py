@@ -53,9 +53,14 @@ def runAndSendGPGPassword(command, password):
       p.stdin.write((password + '\n').encode('UTF-8'))
       p.stdin.write('\n'.encode('UTF-8'))
 
-  result = p.poll()
-  if result is not None:
-    msg = '    FAILED: %s [see log %s]' % (command, LOG)
+  try:
+    result = p.wait(timeout=120)
+    if result != 0:
+      msg = '    FAILED: %s [see log %s]' % (command, LOG)
+      print(msg)
+      raise RuntimeError(msg)
+  except TimeoutExpired:
+    msg = '    FAILED: %s [timed out after 2 minutes; see log %s]' % (command, LOG)
     print(msg)
     raise RuntimeError(msg)
 
