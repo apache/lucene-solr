@@ -102,6 +102,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-11423: Overseer queue needs a hard cap (maximum size) that clients respect (Scott Blum, Joshua Humphries)
+
 * SOLR-10668: fix NPE at sort=childfield(..) .. on absent values (Mikhail Khludnev)
 
 * SOLR-8984: EnumField's error reporting to now indicate the field name in failure log (Lanny Ripple,
