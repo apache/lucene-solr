@@ -4,8 +4,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
-import org.apache.solr.cloud.DistributedQueue;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.ZkDistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class TriggerEventQueue extends DistributedQueue {
+public class TriggerEventQueue extends ZkDistributedQueue {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ENQUEUE_TIME = "_enqueue_time_";
