@@ -17,69 +17,54 @@
 
 package org.apache.lucene.facet.taxonomy.writercache;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.junit.Test;
+import org.apache.lucene.util.TestUtil;
 
-public class TestCompactLabelToOrdinal extends FacetTestCase {
+public class TestUTF8TaxonomyWriterCache extends FacetTestCase {
 
-  @Test
-  public void testL2O() throws Exception {
+  public void testRandom() throws Exception {
     LabelToOrdinal map = new LabelToOrdinalMap();
 
-    CompactLabelToOrdinal compact = new CompactLabelToOrdinal(2000000, 0.15f, 3);
+    UTF8TaxonomyWriterCache cache = new UTF8TaxonomyWriterCache();
 
     final int n = atLeast(10 * 1000);
     final int numUniqueValues = 50 * 1000;
 
-    String[] uniqueValues = new String[numUniqueValues];
     byte[] buffer = new byte[50];
 
     Random random = random();
-    for (int i = 0; i < numUniqueValues;) {
-      random.nextBytes(buffer);
-      int size = 1 + random.nextInt(buffer.length);
+    Set<String> uniqueValuesSet = new HashSet<>();
+    while (uniqueValuesSet.size() < numUniqueValues) {
+      int numParts = TestUtil.nextInt(random(), 1, 5);
+      StringBuilder b = new StringBuilder();
+      for (int i=0;i<numParts;i++) {
+          String part = null;
+          while (true) {
+            part = TestUtil.randomRealisticUnicodeString(random(), 16);
+            part = part.replace("/", "");
+            if (part.length() > 0) {
+              break;
+            }
+          }
 
-      // This test is turning random bytes into a string,
-      // this is asking for trouble.
-      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-          .onUnmappableCharacter(CodingErrorAction.REPLACE)
-          .onMalformedInput(CodingErrorAction.REPLACE);
-      uniqueValues[i] = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
-      // we cannot have empty path components, so eliminate all prefix as well
-      // as middle consecutive delimiter chars.
-      uniqueValues[i] = uniqueValues[i].replaceAll("/+", "/");
-      if (uniqueValues[i].startsWith("/")) {
-        uniqueValues[i] = uniqueValues[i].substring(1);
+          if (i > 0) {
+            b.append('/');
+          }
+          b.append(part);
       }
-      if (uniqueValues[i].indexOf(CompactLabelToOrdinal.TERMINATOR_CHAR) == -1) {
-        i++;
-      }
+      uniqueValuesSet.add(b.toString());
     }
+    String[] uniqueValues = uniqueValuesSet.toArray(new String[0]);
 
-    Path tmpDir = createTempDir("testLableToOrdinal");
-    Path f = tmpDir.resolve("CompactLabelToOrdinalTest.tmp");
-    int flushInterval = 10;
-
+    int ordUpto = 0;
     for (int i = 0; i < n; i++) {
-      if (i > 0 && i % flushInterval == 0) {
-        compact.flush(f);    
-        compact = CompactLabelToOrdinal.open(f, 0.15f, 3);
-        Files.delete(f);
-        if (flushInterval < (n / 10)) {
-          flushInterval *= 10;
-        }
-      }
 
       int index = random.nextInt(numUniqueValues);
       FacetLabel label;
@@ -91,14 +76,14 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       }
 
       int ord1 = map.getOrdinal(label);
-      int ord2 = compact.getOrdinal(label);
+      int ord2 = cache.get(label);
 
       assertEquals(ord1, ord2);
 
       if (ord1 == LabelToOrdinal.INVALID_ORDINAL) {
-        ord1 = compact.getNextOrdinal();
+        ord1 = ordUpto++;
         map.addLabel(label, ord1);
-        compact.addLabel(label, ord1);
+        cache.put(label, ord1);
       }
     }
 
@@ -111,7 +96,7 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
         label = new FacetLabel(s.split("/"));
       }
       int ord1 = map.getOrdinal(label);
-      int ord2 = compact.getOrdinal(label);
+      int ord2 = cache.get(label);
       assertEquals(ord1, ord2);
     }
   }
@@ -131,7 +116,5 @@ public class TestCompactLabelToOrdinal extends FacetTestCase {
       Integer value = map.get(label);
       return (value != null) ? value.intValue() : LabelToOrdinal.INVALID_ORDINAL;
     }
-
   }
-
 }
