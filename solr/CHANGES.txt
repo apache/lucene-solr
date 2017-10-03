@@ -73,6 +73,9 @@ Upgrade Notes
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
+* SOLR-10962: in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated. Instead
+  please configure a direct commitReserveDuration element for use in all modes (master, slave, cloud).
+
 New Features
 ----------------------
 * SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
@@ -118,6 +121,13 @@ New Features
 
 * SOLR-11316: JSON Facet API: min/max aggregations are now supported on single-valued date fields.
   (yonik)
+
+* SOLR-10962: Make ReplicationHandler's commitReserveDuration configurable in SolrCloud mode.
+  (Ramsey Haddad, Christine Poerschke, hossman)
+
+* SOLR-11382: Lucene's Geo3D (surface of sphere & ellipsoid) is now supported on spatial RPT fields by
+  setting spatialContextFactory="Geo3D".  Furthermore, this is the first time Solr has out of the box
+  support for polygons. (David Smiley)
 
 Bug Fixes
 ----------------------
@@ -166,7 +176,7 @@ Bug Fixes
 
 * SOLR-11278: Stopping CDCR should cancel a running bootstrap operation. (Amrit Sarkar, shalin)
 
-* SOLR-11293: Potential data loss in TLOG replicas after replication failures (noble)
+* SOLR-11293: Potential data loss in TLOG replicas when masterVersion equals zero (noble, Cao Manh Dat)
 
 * SOLR-10101: TestLazyCores hangs (Erick Erickson)
 
@@ -178,6 +188,17 @@ Bug Fixes
   were double counted. (Hossman, yonik)
 
 * SOLR-11085: Improve resiliency of autoscaling actions against overseer restarts and operation failures. (shalin)
+
+* SOLR-11297: Message "Lock held by this virtual machine" during startup.  Solr is trying to start some cores twice.
+  (Luiz Armesto, Shawn Heisey, Erick Erickson)
+
+* SOLR-11399: The UnifiedHighlighter was ignoring the hl.fragsize parameter when hl.bs.type=SEPARATOR
+  (Marc Morissette via David Smiley)
+
+* SOLR-11224: SolrStream.close can hit an NPE (Erick Erickson)
+
+* SOLR-11278: Fix a race condition in the CDCR bootstrap process which could lead to bootstraps cancelling itself
+  (Amrit Sarkar, shalin, Varun Thacker)
 
 Optimizations
 ----------------------
@@ -196,6 +217,8 @@ Optimizations
 * SOLR-11314: FastCharStream: re-use the READ_PAST_EOF exception. (Michael Braun via David Smiley)
 
 * SOLR-8344: Decide default when requested fields are both column and row stored. (Cao Manh Dat, David Smiley)
+
+* SOLR-10285: Skip LEADER messages when there are leader only shards (Cao Manh Dat, Joshua Humphries)
 
 Other Changes
 ----------------------
@@ -273,6 +296,27 @@ Other Changes
 
 * SOLR-10451: Remove contrib/ltr/lib from lib includes in the techproducts example config (sungjunyoung via janhoy)
    
+==================  7.0.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.13
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.14.v20161028
+
+Bug Fixes
+----------------------
+
+* SOLR-11297: Message "Lock held by this virtual machine" during startup.  Solr is trying to start some cores twice.
+  (Luiz Armesto, Shawn Heisey, Erick Erickson)
+
+* SOLR-11406: Solr 7.0 cannot read indexes from 6.x versions. (Shawn Heisey, Steve Rowe)
+
 ==================  7.0.0 ==================
 
 Versions of Major Components
