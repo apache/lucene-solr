@@ -115,6 +115,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected String shardId;
   protected String collection;
   protected LeaderElector leaderElector;
+  protected ZkStateReader zkStateReader;
   private Integer leaderZkNodeParentVersion;
 
   // Prevents a race between cancelling and becoming leader.
@@ -128,6 +129,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         collection, shardId), props, zkStateReader.getZkClient());
     this.leaderElector = leaderElector;
     this.zkClient = zkStateReader.getZkClient();
+    this.zkStateReader = zkStateReader;
     this.shardId = shardId;
     this.collection = collection;
   }
@@ -216,14 +218,24 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } 
     
     assert shardId != null;
-    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION,
-        OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId,
-        ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
-        leaderProps.getProperties().get(ZkStateReader.BASE_URL_PROP),
-        ZkStateReader.CORE_NAME_PROP,
-        leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
-        ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
-    Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
+    boolean isAlreadyLeader = false;
+    if (zkStateReader.getClusterState() != null &&
+        zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() < 2) {
+      Replica leader = zkStateReader.getLeader(collection, shardId);
+      if (leader != null
+          && leader.getBaseUrl().equals(leaderProps.get(ZkStateReader.BASE_URL_PROP))
+          && leader.getCoreName().equals(leaderProps.get(ZkStateReader.CORE_NAME_PROP))) {
+        isAlreadyLeader = true;
+      }
+    }
+    if (!isAlreadyLeader) {
+      ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
+          ZkStateReader.SHARD_ID_PROP, shardId,
+          ZkStateReader.COLLECTION_PROP, collection,
+          ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
+          ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP));
+      Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
+    }
   }
 
   public LeaderElector getLeaderElector() {
@@ -309,10 +321,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
       
       log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
-      // clear the leader in clusterstate
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
-          ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-      Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
+      if (zkController.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() > 1) {
+        // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
+        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
+            ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
+        Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
+      }
 
       boolean allReplicasInLine = false;
       if (!weAreReplacement) {

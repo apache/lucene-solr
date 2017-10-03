@@ -152,6 +152,8 @@ Optimizations
 
 * SOLR-8344: Decide default when requested fields are both column and row stored. (Cao Manh Dat, David Smiley)
 
+* SOLR-10285: Skip LEADER messages when there are leader only shards (Cao Manh Dat, Joshua Humphries)
+
 Other Changes
 ----------------------
 
