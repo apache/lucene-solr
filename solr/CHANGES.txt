@@ -156,6 +156,7 @@ Bug Fixes
 * SOLR-11278: Fix a race condition in the CDCR bootstrap process which could lead to bootstraps cancelling itself
   (Amrit Sarkar, shalin, Varun Thacker)
 
+* SOLR-11425: SolrClientBuilder does not allow infinite timeout (value 0). (Peter Szantai-Kis via Mark Miller)
 
 Optimizations
 ----------------------

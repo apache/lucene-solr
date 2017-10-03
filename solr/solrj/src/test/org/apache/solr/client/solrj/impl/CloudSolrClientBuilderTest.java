@@ -97,4 +97,15 @@ public class CloudSolrClientBuilderTest extends LuceneTestCase {
       assertFalse(createdClient.isDirectUpdatesToLeadersOnly());
     }
   }
+  
+  @Test
+  public void test0Timeouts() throws IOException {
+    try(CloudSolrClient createdClient = new Builder()
+        .withZkHost(ANY_ZK_HOST)
+        .withZkChroot(ANY_CHROOT)
+        .withSocketTimeout(0)
+        .withConnectionTimeout(0)
+        .build()) {
+    }
+  }
 }
