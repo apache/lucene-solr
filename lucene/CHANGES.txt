@@ -83,6 +83,8 @@ Build
 * LUCENE-6673: Maven build fails for target javadoc:jar.  
   (Ramkumar Aiyengar, Daniel Collins via Steve Rowe)
 
+* LUCENE-7985: Upgrade forbiddenapis to 2.4.1.  (Uwe Schindler)
+
 Other
 
 * LUCENE-7948, LUCENE-7937: Upgrade randomizedtesting to 2.5.3 (minor fixes 
