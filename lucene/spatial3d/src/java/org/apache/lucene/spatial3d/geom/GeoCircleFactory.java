@@ -40,4 +40,20 @@ public class GeoCircleFactory {
     return new GeoStandardCircle(planetModel, latitude, longitude, radius);
   }
 
+  /** Create an exact GeoCircle given specified bounds and desired accuracy.
+   * @param planetModel is the planet model.
+   * @param latitude is the center latitude.
+   * @param longitude is the center longitude.
+   * @param radius is the radius surface distance.
+   * @param accuracy is the maximum linear distance between the circle approximation and the real circle, as computed using
+   *  the Vincenty formula.
+   * @return a GeoCircle corresponding to what was specified.
+   */
+  public static GeoCircle makeExactGeoCircle(final PlanetModel planetModel, final double latitude, final double longitude, final double radius, final double accuracy) {
+    if (radius < Vector.MINIMUM_ANGULAR_RESOLUTION) {
+      return new GeoDegeneratePoint(planetModel, latitude, longitude);
+    }
+    return new GeoExactCircle(planetModel, latitude, longitude, radius, accuracy);
+  }
+
 }

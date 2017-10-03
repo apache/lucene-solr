@@ -244,6 +244,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected Gauge<Integer> bufferedOpsGauge;
   protected Meter applyingBufferedOpsMeter;
   protected Meter replayOpsMeter;
+  protected Meter copyOverOldUpdatesMeter;
 
   public static class LogPtr {
     final long pointer;
@@ -435,6 +436,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     manager.registerGauge(null, registry, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
     applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
     replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
+    copyOverOldUpdatesMeter = manager.meter(null, registry, "ops", scope, "copyOverOldUpdates");
     manager.registerGauge(null, registry, () -> state.getValue(), true, "state", scope);
   }
 
@@ -1158,12 +1160,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected void copyAndSwitchToNewTlog(CommitUpdateCommand cuc) {
     synchronized (this) {
-      if (tlog == null && prevTlog == null && prevMapLog2 == null && logs.isEmpty()) {
+      if (tlog == null) {
         return;
       }
       preCommit(cuc);
       try {
-        copyOverOldUpdates(cuc.getVersion(), false);
+        copyOverOldUpdates(cuc.getVersion());
       } finally {
         postCommit(cuc);
       }
@@ -1173,9 +1175,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * Copy over updates from prevTlog or last tlog (in tlog folder) to a new tlog
    * @param commitVersion any updates that have version larger than the commitVersion will be copied over
-   * @param omitCommitted if a tlog is already committed then don't read it
    */
-  public void copyOverOldUpdates(long commitVersion, boolean omitCommitted) {
+  public void copyOverOldUpdates(long commitVersion) {
     TransactionLog oldTlog = prevTlog;
     if (oldTlog == null && !logs.isEmpty()) {
       oldTlog = logs.getFirst();
@@ -1185,11 +1186,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     try {
-      if (omitCommitted && oldTlog.endsWithCommit()) return;
+      if (oldTlog.endsWithCommit()) return;
     } catch (IOException e) {
       log.warn("Exception reading log", e);
       return;
     }
+    copyOverOldUpdatesMeter.mark();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core,
         new ModifiableSolrParams());

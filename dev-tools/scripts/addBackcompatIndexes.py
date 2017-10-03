@@ -31,12 +31,24 @@ import re
 import shutil
 
 def create_and_add_index(source, indextype, index_version, current_version, temp_dir):
+  if not current_version.is_back_compat_with(index_version):
+    prefix = 'unsupported'
+  else:
+    prefix = {
+      'cfs': 'index',
+      'nocfs': 'index',
+      'sorted': 'sorted',
+      'moreterms': 'moreterms',
+      'dvupdates': 'dvupdates',
+      'emptyIndex': 'empty'
+    }[indextype]
   if indextype in ('cfs', 'nocfs'):
     dirname = 'index.%s' % indextype
+    filename = '%s.%s-%s.zip' % (prefix, index_version, indextype)
   else:
     dirname = indextype
-  prefix = 'index' if current_version.is_back_compat_with(index_version) else 'unsupported'
-  filename = '%s.%s-%s.zip' % (prefix, index_version, indextype)
+    filename = '%s.%s.zip' % (prefix, index_version)
+  
   print('  creating %s...' % filename, end='', flush=True)
   module = 'backward-codecs'
   index_dir = os.path.join('lucene', module, 'src/test/org/apache/lucene/index')
@@ -47,7 +59,11 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
 
   test = {
     'cfs': 'testCreateCFS',
-    'nocfs': 'testCreateNoCFS'
+    'nocfs': 'testCreateNoCFS',
+    'sorted': 'testCreateSortedIndex',
+    'moreterms': 'testCreateMoreTermsIndex',
+    'dvupdates': 'testCreateIndexWithDocValuesUpdates',
+    'emptyIndex': 'testCreateEmptyIndex'
   }[indextype]
   ant_args = ' '.join([
     '-Dtests.bwcdir=%s' % temp_dir,
@@ -83,27 +99,35 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
   print('done')
 
 def update_backcompat_tests(types, index_version, current_version):
-  print('  adding new indexes to backcompat tests...', end='', flush=True)
+  print('  adding new indexes %s to backcompat tests...' % types, end='', flush=True)
   module = 'lucene/backward-codecs'
   filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % module
-  matcher = re.compile(r'final static String\[\] oldNames = {|};' if current_version.is_back_compat_with(index_version)
-                       else r'final String\[\] unsupportedNames = {|};')
+  if not current_version.is_back_compat_with(index_version):
+    matcher = re.compile(r'final String\[\] unsupportedNames = {|};'),
+  elif 'sorted' in types:
+    matcher = re.compile(r'final static String\[\] oldSortedNames = {|};')
+  else:
+    matcher = re.compile(r'final static String\[\] oldNames = {|};')
+
+  strip_dash_suffix_re = re.compile(r'-.*')
 
   def find_version(x):
     x = x.strip()
-    end = x.index("-")
-    return scriptutil.Version.parse(x[1:end])
+    x = re.sub(strip_dash_suffix_re, '', x) # remove the -suffix if any
+    return scriptutil.Version.parse(x)
 
   class Edit(object):
     start = None
     def __call__(self, buffer, match, line):
       if self.start:
         # find where this version should exist
-        i = len(buffer) - 1 
-        v = find_version(buffer[i])
-        while i >= self.start and v.on_or_after(index_version):
-          i -= 1
+        i = len(buffer) - 1
+        previous_version_exists = not ('};' in line and buffer[-1].strip().endswith("{"))
+        if previous_version_exists: # Only look if there is a version here
           v = find_version(buffer[i])
+          while i >= self.start and v.on_or_after(index_version):
+            i -= 1
+            v = find_version(buffer[i])
         i += 1 # readjust since we skipped past by 1
 
         # unfortunately python doesn't have a range remove from list...
@@ -111,14 +135,20 @@ def update_backcompat_tests(types, index_version, current_version):
         while i < len(buffer) and index_version.on_or_after(find_version(buffer[i])):
           buffer.pop(i)
 
-        if i == len(buffer) and not buffer[-1].strip().endswith(","):
+        if i == len(buffer) and previous_version_exists and not buffer[-1].strip().endswith(","):
           # add comma
           buffer[-1] = buffer[-1].rstrip() + ",\n" 
 
-        last = buffer[-1]
-        spaces = ' ' * (len(last) - len(last.lstrip()))
+        if previous_version_exists:
+          last = buffer[-1]
+          spaces = ' ' * (len(last) - len(last.lstrip()))
+        else:
+          spaces = '    '
         for (j, t) in enumerate(types):
-          newline = spaces + ('"%s-%s"' % (index_version, t))
+          if t == 'sorted':
+            newline = spaces + ('"sorted.%s"') % index_version
+          else:
+            newline = spaces + ('"%s-%s"' % (index_version, t))
           if j < len(types) - 1 or i < len(buffer):
             newline += ','
           buffer.insert(i, newline + '\n')
@@ -215,9 +245,16 @@ def main():
   current_version = scriptutil.Version.parse(scriptutil.find_current_version())
   create_and_add_index(source, 'cfs', c.version, current_version, c.temp_dir)
   create_and_add_index(source, 'nocfs', c.version, current_version, c.temp_dir)
+  create_and_add_index(source, 'sorted', c.version, current_version, c.temp_dir)
+  if c.version.minor == 0 and c.version.bugfix == 0 and c.version.major < current_version.major:
+    create_and_add_index(source, 'moreterms', c.version, current_version, c.temp_dir)
+    create_and_add_index(source, 'dvupdates', c.version, current_version, c.temp_dir)
+    create_and_add_index(source, 'emptyIndex', c.version, current_version, c.temp_dir)
+    print ('\nMANUAL UPDATE REQUIRED: edit TestBackwardsCompatibility to enable moreterms, dvupdates, and empty index testing')
     
   print('\nAdding backwards compatibility tests')
   update_backcompat_tests(['cfs', 'nocfs'], c.version, current_version)
+  update_backcompat_tests(['sorted'], c.version, current_version)
 
   print('\nTesting changes')
   check_backcompat_tests()

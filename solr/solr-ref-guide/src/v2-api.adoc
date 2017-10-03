@@ -18,11 +18,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// TODO: most of the sample introspection calls below include cwiki.apache.org URLs that should be replaced...
-// TODO: ...but they come directly from the API.
-// TODO: so first the core/src/resources/apispec/*.json files need updated, then update the docs to match
-// TODO: What URLs shold the apispec files even point to? version specific or something general?
-
 
 The v2 API is a modernized self-documenting API interface covering most current Solr APIs. It is anticipated that once the v2 API reaches full coverage, and Solr-internal API usages like SolrJ and the Admin UI have been converted from the old API to the v2 API, the old API will eventually be retired.
 

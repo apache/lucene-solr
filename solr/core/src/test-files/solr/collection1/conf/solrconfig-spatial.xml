@@ -32,5 +32,11 @@
            initialSize="0"
            autowarmCount="100%"
            regenerator="solr.NoOpRegenerator"/>
+    <cache name="perSegSpatialFieldCache_srptgeom_geo3d"
+           class="solr.LRUCache"
+           size="3"
+           initialSize="0"
+           autowarmCount="100%"
+           regenerator="solr.NoOpRegenerator"/>
   </query>
 </config>

@@ -25,6 +25,19 @@ New Features
 
 * LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
 
+* LUCENE-7392: Add point based LatLonBoundingBox as new RangeField Type.
+  (Nick Knize)
+
+* LUCENE-7951: Spatial-extras has much better Geo3d support by implementing Spatial4j
+  abstractions: SpatialContextFactory, ShapeFactory, BinaryCodec, DistanceCalculator.
+  (Ignacio Vera, David Smiley)
+
+* LUCENE-7973: Update dictionary version for Ukrainian analyzer to 3.9.0 (Andriy
+  Rysin via Dawid Weiss)
+  
+* LUCENE-7974: Add FloatPointNearestNeighbor, an N-dimensional FloatPoint
+  K-nearest-neighbor search implementation.  (Steve Rowe)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -73,6 +86,9 @@ Build
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
   instead of locally installing first, to workaround a double repository push of
   *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+  
+* LUCENE-6673: Maven build fails for target javadoc:jar.  
+  (Ramkumar Aiyengar, Daniel Collins via Steve Rowe)
 
 Other
 
@@ -81,6 +97,12 @@ Other
 
 * LUCENE-7933: LongBitSet now validates the numBits parameter (Won
   Jonghoon, Mike McCandless)
+
+* LUCENE-7978: Add some more documentation about setting up build
+  environment.  (Anton R. Yuste via Uwe Schindler)
+
+======================= Lucene 7.0.1 =======================
+(No Changes)
 
 ======================= Lucene 7.0.0 =======================
 

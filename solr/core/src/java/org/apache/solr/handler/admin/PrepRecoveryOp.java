@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -29,15 +28,10 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,33 +170,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         if (coreContainer.isShutDown()) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Solr is shutting down");
-        }
-
-        // solrcloud_debug
-        if (log.isDebugEnabled() && core != null) {
-          try {
-            LocalSolrQueryRequest r = new LocalSolrQueryRequest(core,
-                new ModifiableSolrParams());
-            CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
-            commitCmd.softCommit = true;
-            core.getUpdateHandler().commit(commitCmd);
-            RefCounted<SolrIndexSearcher> searchHolder = core
-                .getNewestSearcher(false);
-            SolrIndexSearcher searcher = searchHolder.get();
-            try {
-              log.debug(core.getCoreContainer()
-                  .getZkController().getNodeName()
-                  + " to replicate "
-                  + searcher.search(new MatchAllDocsQuery(), 1).totalHits
-                  + " gen:"
-                  + core.getDeletionPolicy().getLatestCommit().getGeneration()
-                  + " data:" + core.getDataDir());
-            } finally {
-              searchHolder.decref();
-            }
-          } catch (Exception e) {
-            log.debug("Error in solrcloud_debug block", e);
-          }
         }
       }
       Thread.sleep(1000);

@@ -27,7 +27,7 @@ import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class SampleEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
+public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
 
   private static final long serialVersionUID = 1;
 
@@ -36,26 +36,36 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements TwoValu
   }
   
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
+  public Object doWork(Object ... objects) throws IOException{
+    if(objects.length < 1){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
-    }
+
+    Object first = objects[0];
+
     if(!(first instanceof RealDistribution) && !(first instanceof IntegerDistribution)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a Real or Integer Distribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
-    if(!(second instanceof Number)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
+
+    Object second = null;
+    if(objects.length > 1) {
+      second = objects[1];
     }
 
     if(first instanceof RealDistribution) {
       RealDistribution realDistribution = (RealDistribution) first;
-      return Arrays.stream(realDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
+      if(second != null) {
+        return Arrays.stream(realDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
+      } else {
+        return realDistribution.sample();
+      }
     } else {
       IntegerDistribution integerDistribution = (IntegerDistribution) first;
-      return Arrays.stream(integerDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
+      if(second != null) {
+        return Arrays.stream(integerDistribution.sample(((Number) second).intValue())).mapToObj(item -> item).collect(Collectors.toList());
+      } else {
+        return integerDistribution.sample();
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 = Stream Source Reference
-:page-shortname: stream-sources
-:page-permalink: stream-sources.html
+:page-shortname: stream-source-reference
+:page-permalink: stream-source-reference.html
 :page-tocclass: right
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -20,6 +20,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+Put something here to see if it fixes things.
 
 == search
 
@@ -36,7 +37,7 @@ This expression allows you to specify a request hander using the `qt` parameter.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 * `qt`: Specifies the query type, or request handler, to use. Set this to `/export` to work with large result sets. The default is `/select`.
 * `rows`: (Mandatory with the `/select` handler) The rows parameter specifies how many rows to return. This parameter is only needed with the `/select` handler (which is the default) since the `/export` handler always returns all rows.
-* `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorators.adoc#parallel,parallel>> function for details.
+* `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorator-reference.adoc#parallel,parallel>> function for details.
 
 === search Syntax
 
@@ -251,7 +252,7 @@ knn(collection1,
 
 == model
 
-The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection. The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format. After the model is retrieved it can be used by the <<stream-decorators.adoc#classify,classify function>> to classify documents.
+The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection. The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format. After the model is retrieved it can be used by the <<stream-decorator-reference.adoc#classify,classify function>> to classify documents.
 
 A single model tuple is fetched and returned based on the *id* parameter. The model is retrieved by matching the *id* parameter with a model name in the index. If more then one iteration of the named model is stored in the index, the highest iteration is selected.
 
@@ -384,7 +385,7 @@ stream decorator to perform parallel relational algebra. When used in parallel m
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
-* `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorators.adoc#parallel,parallel>> function for details.
+* `partitionKeys`: Comma delimited list of keys to partition the search results by. To be used with the parallel function for parallelizing operations across worker nodes. See the <<stream-decorator-reference.adoc#parallel,parallel>> function for details.
 
 === shuffle Syntax
 
@@ -536,5 +537,3 @@ the tuple stream from the Stream Expression into a list of Tuples.
 tuple(a=add(1,1),
       b=search(collection1, q="cat:a", fl="a, b, c", sort="a desc"))
 ----
-
-

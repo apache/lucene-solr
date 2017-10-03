@@ -809,7 +809,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   /**
    * Mapping from old ordinal to new ordinals, used when merging indexes 
-   * wit separate taxonomies.
+   * with separate taxonomies.
    * <p> 
    * addToTaxonomies() merges one or more taxonomies into the given taxonomy
    * (this). An OrdinalMap is filled for each of the added taxonomies,
