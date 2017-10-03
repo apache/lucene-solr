@@ -25,16 +25,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
-import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
-import org.apache.lucene.facet.taxonomy.writercache.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.UTF8TaxonomyWriterCache;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -252,13 +252,13 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     final TaxonomyWriterCache cache;
     if (d < 0.7) {
       // this is the fastest, yet most memory consuming
-      cache = new Cl2oTaxonomyWriterCache(1024, 0.15f, 3);
+      cache = new UTF8TaxonomyWriterCache();
     } else if (TEST_NIGHTLY && d > 0.98) {
       // this is the slowest, but tests the writer concurrency when no caching is done.
       // only pick it during NIGHTLY tests, and even then, with very low chances.
       cache = NO_OP_CACHE;
     } else {
-      // this is slower than CL2O, but less memory consuming, and exercises finding categories on disk too.
+      // this is slower than UTF8, but less memory consuming, and exercises finding categories on disk too.
       cache = new LruTaxonomyWriterCache(ncats / 10);
     }
     if (VERBOSE) {
@@ -441,7 +441,7 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
   public void testHugeLabel() throws Exception {
     Directory indexDir = newDirectory(), taxoDir = newDirectory();
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
-    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, new Cl2oTaxonomyWriterCache(2, 1f, 1));
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE, new UTF8TaxonomyWriterCache());
     FacetsConfig config = new FacetsConfig();
     
     // Add one huge label:

@@ -38,6 +38,9 @@ New Features
 * LUCENE-7974: Add FloatPointNearestNeighbor, an N-dimensional FloatPoint
   K-nearest-neighbor search implementation.  (Steve Rowe)
 
+* LUCENE-7975: Change the default taxonomy facets cache to a faster
+  byte[] (UTF-8) based cache.
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
