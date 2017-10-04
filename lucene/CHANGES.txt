@@ -39,7 +39,11 @@ New Features
   K-nearest-neighbor search implementation.  (Steve Rowe)
 
 * LUCENE-7975: Change the default taxonomy facets cache to a faster
-  byte[] (UTF-8) based cache.
+  byte[] (UTF-8) based cache.  (Mike McCandless)
+
+* LUCENE-7972: DirectoryTaxonomyReader, in Lucene's facet module, now
+  implements Accountable, so you can more easily track how much heap
+  it's using.  (Mike McCandless)
 
 * LUCENE-7982: A new NormsFieldExistsQuery matches documents that have
   norms in a specified field (Colin Goodheart-Smithe via Mike McCandless)
