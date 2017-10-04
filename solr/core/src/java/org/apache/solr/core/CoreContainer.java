@@ -1018,7 +1018,7 @@ public class CoreContainer {
       MDCLoggingContext.setCoreDescriptor(this, dcore);
       SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
-        zkSys.getZkController().preRegister(dcore);
+        zkSys.getZkController().preRegister(dcore, publishState);
       }
 
       ConfigSet coreConfig = coreConfigService.getConfig(dcore);
