@@ -17,9 +17,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;

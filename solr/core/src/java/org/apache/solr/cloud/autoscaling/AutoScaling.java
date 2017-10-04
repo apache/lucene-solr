@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -120,8 +121,8 @@ public class AutoScaling {
     private boolean isClosed = false;
 
     public TriggerFactory(CoreContainer coreContainer, ZkController zkController) {
-      Preconditions.checkNotNull(coreContainer);
-      Preconditions.checkNotNull(zkController);
+      Objects.requireNonNull(coreContainer);
+      Objects.requireNonNull(zkController);
       this.coreContainer = coreContainer;
       this.zkController = zkController;
     }
