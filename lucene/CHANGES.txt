@@ -407,6 +407,8 @@ New Features
 * LUCENE-7982: A new NormsFieldExistsQuery matches documents that have
   norms in a specified field (Colin Goodheart-Smithe via Mike McCandless)
 
+* SOLR-10078: Handle MatchNoDocsQuery in BooleanQuery nested in ComplexPhraseQuery
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
