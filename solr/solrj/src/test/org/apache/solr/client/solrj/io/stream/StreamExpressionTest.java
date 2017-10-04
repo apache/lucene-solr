@@ -6579,6 +6579,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(7).intValue() == 1);
   }
 
+  @Test
+  public void testHarmonicFit() throws Exception {
+    String cexpr = "let(a=sin(sequence(100, 1, 6)), b=harmonicFit(a), s=ebeSubtract(a, b))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("s");
+    assertTrue(out.size() == 100);
+    for(Number n : out) {
+      assertEquals(n.doubleValue(), 0.0, .01);
+    }
+  }
+
 
   @Test
   public void testAnova() throws Exception {
