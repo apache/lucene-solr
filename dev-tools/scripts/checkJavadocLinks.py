@@ -210,9 +210,6 @@ def checkAll(dirName):
         elif link.find('lucene.apache.org/solr/mirrors-solr-latest-redir.html') != -1:
           # OK
           pass
-        elif link.find('lucene.apache.org/solr/quickstart.html') != -1:
-          # OK
-          pass
         elif link.find('lucene.apache.org/solr/guide/') != -1:
           # OK
           pass
