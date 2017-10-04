@@ -308,6 +308,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("zipFDistribution", ZipFDistributionEvaluator.class)
         .withFunctionName("gammaDistribution", GammaDistributionEvaluator.class)
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
+        .withFunctionName("polyfit", PolyFitEvaluator.class)
+        .withFunctionName("polyfitDerivative", PolyFitDerivativeEvaluator.class)
 
         // Boolean Stream Evaluators
 

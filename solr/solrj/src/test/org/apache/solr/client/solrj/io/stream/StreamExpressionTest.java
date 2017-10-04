@@ -6541,6 +6541,44 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(out.get(5).intValue() == -6);
   }
 
+  @Test
+  public void testPolyfit() throws Exception {
+    String cexpr = "let(echo=true," +
+                   "    a=array(0,1,2,3,4,5,6,7)," +
+                   "    fit=polyfit(a, 1)," +
+                   "    deriv=polyfitDerivative(a, 1))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("fit");
+    assertTrue(out.size() == 8);
+    assertTrue(out.get(0).intValue() == 0);
+    assertTrue(out.get(1).intValue() == 1);
+    assertTrue(out.get(2).intValue() == 2);
+    assertTrue(out.get(3).intValue() == 3);
+    assertTrue(out.get(4).intValue() == 4);
+    assertTrue(out.get(5).intValue() == 5);
+    assertTrue(out.get(6).intValue() == 6);
+    assertTrue(out.get(7).intValue() == 7);
+
+    out = (List<Number>)tuples.get(0).get("deriv");
+    assertTrue(out.size() == 8);
+    assertTrue(out.get(0).intValue() == 1);
+    assertTrue(out.get(1).intValue() == 1);
+    assertTrue(out.get(2).intValue() == 1);
+    assertTrue(out.get(3).intValue() == 1);
+    assertTrue(out.get(4).intValue() == 1);
+    assertTrue(out.get(5).intValue() == 1);
+    assertTrue(out.get(6).intValue() == 1);
+    assertTrue(out.get(7).intValue() == 1);
+  }
+
 
   @Test
   public void testAnova() throws Exception {
