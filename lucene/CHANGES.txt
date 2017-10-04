@@ -31,6 +31,8 @@ New Features
 * LUCENE-7975: Change the default taxonomy facets cache to a faster
   byte[] (UTF-8) based cache.
 
+* SOLR-10078: Handle MatchNoDocsQuery in BooleanQuery nested in ComplexPhraseQuery
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
