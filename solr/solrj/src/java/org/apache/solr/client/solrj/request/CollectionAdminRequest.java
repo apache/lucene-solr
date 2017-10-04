@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -32,6 +33,7 @@ import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -57,7 +59,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
  *
  * @since solr 4.5
  */
-public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport {
+public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport, MapWriter {
 
   protected final CollectionAction action;
 
@@ -94,6 +96,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   protected void addProperties(ModifiableSolrParams params, Properties props) {
     for (String propertyName : props.stringPropertyNames()) {
       params.set(PROPERTY_PREFIX + propertyName, props.getProperty(propertyName));
+    }
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("class", this.getClass().getName());
+    ew.put("method", getMethod().toString());
+    SolrParams params = getParams();
+    if (params != null) {
+      for (Iterator<String> it = params.getParameterNamesIterator(); it.hasNext(); ) {
+        final String name = it.next();
+        final String [] values = params.getParams(name);
+        for (String value : values) {
+          ew.put("params." + name, value);
+        }
+      }
     }
   }
 

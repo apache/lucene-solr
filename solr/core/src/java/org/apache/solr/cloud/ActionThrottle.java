@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,41 +32,29 @@ public class ActionThrottle {
   private volatile Long minMsBetweenActions;
 
   private final String name;
+  private final TimeSource timeSource;
 
-  private final NanoTimeSource nanoTimeSource;
-  
-  public interface NanoTimeSource {
-    long getTime();
-  }
-  
-  private static class DefaultNanoTimeSource implements NanoTimeSource {
-    @Override
-    public long getTime() {
-      return System.nanoTime();
-    }
-  }
-  
   public ActionThrottle(String name, long minMsBetweenActions) {
     this.name = name;
     this.minMsBetweenActions = minMsBetweenActions;
-    this.nanoTimeSource = new DefaultNanoTimeSource();
+    this.timeSource = TimeSource.NANO_TIME;
   }
   
-  public ActionThrottle(String name, long minMsBetweenActions, NanoTimeSource nanoTimeSource) {
+  public ActionThrottle(String name, long minMsBetweenActions, TimeSource timeSource) {
     this.name = name;
     this.minMsBetweenActions = minMsBetweenActions;
-    this.nanoTimeSource = nanoTimeSource;
+    this.timeSource = timeSource;
   }
   
   public void markAttemptingAction() {
-    lastActionStartedAt = nanoTimeSource.getTime();
+    lastActionStartedAt = timeSource.getTime();
   }
   
   public void minimumWaitBetweenActions() {
     if (lastActionStartedAt == null) {
       return;
     }
-    long diff = nanoTimeSource.getTime() - lastActionStartedAt;
+    long diff = timeSource.getTime() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
     long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
     log.info("The last {} attempt started {}ms ago.", name, diffMs);

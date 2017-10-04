@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,15 +28,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -53,9 +53,10 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.data.Stat;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY;
@@ -63,11 +64,9 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
-
 
 public class Assign {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static int incAndGetId(SolrZkClient zkClient, String collection, int defaultValue) {
     String path = "/collections/"+collection;
@@ -236,8 +235,7 @@ public class Assign {
     return nodeList;
   }
 
-  public static List<ReplicaPosition> identifyNodes(Supplier<CoreContainer> coreContainer,
-                                                    ZkStateReader zkStateReader,
+  public static List<ReplicaPosition> identifyNodes(OverseerCollectionMessageHandler ocmh,
                                                     ClusterState clusterState,
                                                     List<String> nodeList,
                                                     String collectionName,
@@ -248,13 +246,13 @@ public class Assign {
                                                     int numPullReplicas) throws KeeperException, InterruptedException {
     List<Map> rulesMap = (List) message.get("rule");
     String policyName = message.getStr(POLICY);
-    Map autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
+    AutoScalingConfig autoScalingConfig = ocmh.zkStateReader.getAutoScalingConfig();
 
-    if (rulesMap == null && policyName == null && autoScalingJson.get(Policy.CLUSTER_POLICY) == null) {
+    if (rulesMap == null && policyName == null && autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
+      log.debug("Identify nodes using default");
       int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
-      for (String aShard : shardNames) {
-
+      for (String aShard : shardNames)
         for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, numNrtReplicas,
             Replica.Type.TLOG, numTlogReplicas,
             Replica.Type.PULL, numPullReplicas
@@ -264,11 +262,9 @@ public class Assign {
             i++;
           }
         }
-
-      }
       return result;
     } else {
-      if (numTlogReplicas + numPullReplicas != 0) {
+      if (numTlogReplicas + numPullReplicas != 0 && rulesMap != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
       }
@@ -285,16 +281,26 @@ public class Assign {
           (List<Map>) message.get(SNITCH),
           new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
           nodeList,
-          coreContainer.get(),
+          ocmh.overseer.getZkController().getCoreContainer(),
           clusterState);
 
       Map<ReplicaPosition, String> nodeMappings = replicaAssigner.getNodeMappings();
       return nodeMappings.entrySet().stream()
           .map(e -> new ReplicaPosition(e.getKey().shard, e.getKey().index, e.getKey().type, e.getValue()))
           .collect(Collectors.toList());
-    } else {
-      return getPositionsUsingPolicy(collectionName,
-          shardNames, numNrtReplicas, policyName, zkStateReader, nodeList);
+    } else  {
+      if (message.getStr(CREATE_NODE_SET) == null)
+        nodeList = Collections.emptyList();// unless explicitly specified do not pass node list to Policy
+      synchronized (ocmh) {
+        PolicyHelper.SESSION_REF.set(ocmh.policySessionRef);
+        try {
+          return getPositionsUsingPolicy(collectionName,
+              shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas, policyName, ocmh.zkStateReader, nodeList);
+        } finally {
+          PolicyHelper.SESSION_REF.remove();
+        }
+
+      }
     }
   }
 
@@ -317,10 +323,11 @@ public class Assign {
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
   // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
   public static List<ReplicaCount> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
-                                                          String shard, int numberOfNodes,
+                                                          String shard, int nrtReplicas,
                                                           Object createNodeSet, CoreContainer cc) throws KeeperException, InterruptedException {
+    log.debug("getNodesForNewReplicas() shard: {} , replicas : {} , createNodeSet {}", shard, nrtReplicas, createNodeSet );
     DocCollection coll = clusterState.getCollection(collectionName);
-    Integer maxShardsPerNode = coll.getInt(MAX_SHARDS_PER_NODE, 1);
+    Integer maxShardsPerNode = coll.getMaxShardsPerNode();
     List<String> createNodeList = null;
 
     if (createNodeSet instanceof List) {
@@ -339,23 +346,23 @@ public class Assign {
           availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
         }
       }
-      if (availableSlots < numberOfNodes) {
+      if (availableSlots < nrtReplicas) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             String.format(Locale.ROOT, "Cannot create %d new replicas for collection %s given the current number of live nodes and a maxShardsPerNode of %d",
-                numberOfNodes, collectionName, maxShardsPerNode));
+                nrtReplicas, collectionName, maxShardsPerNode));
       }
     }
 
     List l = (List) coll.get(DocCollection.RULE);
     List<ReplicaPosition> replicaPositions = null;
     if (l != null) {
-      replicaPositions = getNodesViaRules(clusterState, shard, numberOfNodes, cc, coll, createNodeList, l);
+      replicaPositions = getNodesViaRules(clusterState, shard, nrtReplicas, cc, coll, createNodeList, l);
     }
     String policyName = coll.getStr(POLICY);
-    Map autoScalingJson = Utils.getJson(cc.getZkController().getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-    if (policyName != null || autoScalingJson.get(Policy.CLUSTER_POLICY) != null) {
-      replicaPositions = Assign.getPositionsUsingPolicy(collectionName, Collections.singletonList(shard), numberOfNodes,
-          policyName, cc.getZkController().getZkStateReader(), createNodeList);
+    AutoScalingConfig autoScalingConfig = cc.getZkController().zkStateReader.getAutoScalingConfig();
+    if (policyName != null || !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
+      replicaPositions = Assign.getPositionsUsingPolicy(collectionName, Collections.singletonList(shard), nrtReplicas, 0, 0,
+          policyName, cc.getZkController().zkStateReader, createNodeList);
     }
 
     if(replicaPositions != null){
@@ -372,27 +379,41 @@ public class Assign {
 
   }
 
-  public static List<ReplicaPosition> getPositionsUsingPolicy(String collName, List<String> shardNames, int numReplicas,
+  public static List<ReplicaPosition> getPositionsUsingPolicy(String collName, List<String> shardNames,
+                                                              int nrtReplicas,
+                                                              int tlogReplicas,
+                                                              int pullReplicas,
                                                               String policyName, ZkStateReader zkStateReader,
                                                               List<String> nodesList) throws KeeperException, InterruptedException {
+    log.debug("shardnames {} NRT {} TLOG {} PULL {} , policy {}, nodeList {}", shardNames, nrtReplicas, tlogReplicas, pullReplicas, policyName, nodesList);
+    SolrClientDataProvider clientDataProvider = null;
+    List<ReplicaPosition> replicaPositions = null;
+    AutoScalingConfig autoScalingConfig = zkStateReader.getAutoScalingConfig();
     try (CloudSolrClient csc = new CloudSolrClient.Builder()
         .withClusterStateProvider(new ZkClientClusterStateProvider(zkStateReader))
         .build()) {
-      SolrClientDataProvider clientDataProvider = new SolrClientDataProvider(csc);
-      Map<String, Object> autoScalingJson = Utils.getJson(zkStateReader.getZkClient(), SOLR_AUTOSCALING_CONF_PATH, true);
-      Map<String, List<String>> locations = PolicyHelper.getReplicaLocations(collName,
-          autoScalingJson,
-          clientDataProvider, singletonMap(collName, policyName), shardNames, numReplicas, nodesList);
-      List<ReplicaPosition> result = new ArrayList<>();
-      for (Map.Entry<String, List<String>> e : locations.entrySet()) {
-        List<String> value = e.getValue();
-        for (int i = 0; i < value.size(); i++) {
-          result.add(new ReplicaPosition(e.getKey(), i, Replica.Type.NRT, value.get(i)));
-        }
-      }
-      return result;
+      clientDataProvider = new SolrClientDataProvider(csc);
+      Map<String, String> kvMap = Collections.singletonMap(collName, policyName);
+      replicaPositions = PolicyHelper.getReplicaLocations(
+          collName,
+          autoScalingConfig,
+          clientDataProvider,
+          kvMap,
+          shardNames,
+          nrtReplicas,
+          tlogReplicas,
+          pullReplicas,
+          nodesList);
+      return replicaPositions;
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error closing CloudSolrClient",e);
+    } finally {
+      if (log.isTraceEnabled()) {
+        if (clientDataProvider != null) log.trace("CLUSTER_DATA_PROVIDER: " + Utils.toJSONString(clientDataProvider));
+        if (replicaPositions != null)
+          log.trace("REPLICA_POSITIONS: " + Utils.toJSONString(Utils.getDeepCopy(replicaPositions, 7, true)));
+        log.trace("AUTOSCALING_CONF: " + Utils.toJSONString(autoScalingConfig));
+      }
     }
   }
 
@@ -444,7 +465,7 @@ public class Assign {
       return nodeNameVsShardCount;
     }
     DocCollection coll = clusterState.getCollection(collectionName);
-    Integer maxShardsPerNode = coll.getInt(MAX_SHARDS_PER_NODE, 1);
+    Integer maxShardsPerNode = coll.getMaxShardsPerNode();
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       DocCollection c = entry.getValue();

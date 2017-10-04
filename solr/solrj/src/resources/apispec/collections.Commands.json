@@ -101,6 +101,11 @@
             "type": "string"
           }
         },
+        "policy": {
+          "type": "string",
+          "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-policy-preferences.html",
+          "description": "Name of the collection-level policy"
+        },
         "properties": {
           "type": "object",
           "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",

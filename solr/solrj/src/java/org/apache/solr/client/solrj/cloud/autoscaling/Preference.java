@@ -18,22 +18,32 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Preference implements MapWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final Policy.SortParam name;
   Integer precision;
   final Policy.Sort sort;
   Preference next;
-  public int idx;
+  final int idx;
   private final Map original;
 
-  Preference(Map<String, Object> m) {
+  public Preference(Map<String, Object> m) {
+    this(m, 0);
+  }
+
+  public Preference(Map<String, Object> m, int idx) {
+    this.idx = idx;
     this.original = Utils.getDeepCopy(m,3);
     sort = Policy.Sort.get(m);
     name = Policy.SortParam.get(m.get(sort.name()).toString());
@@ -43,7 +53,7 @@ public class Preference implements MapWriter {
       throw new RuntimeException("precision must be a positive value ");
     }
     if(precision< name.min || precision> name.max){
-      throw new RuntimeException(StrUtils.formatString("invalid precision value {0} must lie between {1} and {1}",
+      throw new RuntimeException(StrUtils.formatString("invalid precision value {0} , must lie between {1} and {2}",
           precision, name.min, name.max ) );
     }
 
@@ -53,6 +63,9 @@ public class Preference implements MapWriter {
   // recursive, it uses the precision to tie & when there is a tie use the next preference to compare
   // in non-recursive mode, precision is not taken into consideration and sort is done on actual value
   int compare(Row r1, Row r2, boolean useApprox) {
+    if (!r1.isLive && !r2.isLive) return 0;
+    if (!r1.isLive) return -1;
+    if (!r2.isLive) return 1;
     Object o1 = useApprox ? r1.cells[idx].approxVal : r1.cells[idx].val;
     Object o2 = useApprox ? r2.cells[idx].approxVal : r2.cells[idx].val;
     int result = 0;
@@ -68,6 +81,9 @@ public class Preference implements MapWriter {
   void setApproxVal(List<Row> tmpMatrix) {
     Object prevVal = null;
     for (Row row : tmpMatrix) {
+      if (!row.isLive) {
+        continue;
+      }
       prevVal = row.cells[idx].approxVal =
           (prevVal == null || Double.compare(Math.abs(((Number) prevVal).doubleValue() - ((Number) row.cells[idx].val).doubleValue()), precision) > 0) ?
               row.cells[idx].val :
@@ -83,7 +99,27 @@ public class Preference implements MapWriter {
     }
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Preference that = (Preference) o;
+
+    if (idx != that.idx) return false;
+    if (getName() != that.getName()) return false;
+    if (precision != null ? !precision.equals(that.precision) : that.precision != null) return false;
+    if (sort != that.sort) return false;
+    if (next != null ? !next.equals(that.next) : that.next != null) return false;
+    return original.equals(that.original);
+  }
+
   public Policy.SortParam getName() {
     return name;
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 }

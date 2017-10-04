@@ -42,7 +42,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
@@ -153,7 +153,7 @@ public class BlobRepository {
    */
   ByteBuffer fetchBlob(String key) {
     Replica replica = getSystemCollReplica();
-    String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";
+    String url = replica.getStr(BASE_URL_PROP) + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
 
     HttpClient httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
     HttpGet httpGet = new HttpGet(url);
@@ -180,10 +180,10 @@ public class BlobRepository {
   private Replica getSystemCollReplica() {
     ZkStateReader zkStateReader = this.coreContainer.getZkController().getZkStateReader();
     ClusterState cs = zkStateReader.getClusterState();
-    DocCollection coll = cs.getCollectionOrNull(CollectionsHandler.SYSTEM_COLL);
-    if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, ".system collection not available");
+    DocCollection coll = cs.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
+    if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, CollectionAdminParams.SYSTEM_COLL + " collection not available");
     ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
-    if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for .system collection");
+    if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
     Collections.shuffle(slices, RANDOM); //do load balancing
 
     Replica replica = null;
@@ -202,7 +202,7 @@ public class BlobRepository {
       }
     }
     if (replica == null) {
-      throw new SolrException(SERVICE_UNAVAILABLE, ".no active replica available for .system collection");
+      throw new SolrException(SERVICE_UNAVAILABLE, "No active replica available for " + CollectionAdminParams.SYSTEM_COLL + " collection");
     }
     return replica;
   }

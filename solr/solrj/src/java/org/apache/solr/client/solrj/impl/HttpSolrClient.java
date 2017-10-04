@@ -498,7 +498,6 @@ public class HttpSolrClient extends SolrClient {
     throw new SolrServerException("Unsupported method: " + request.getMethod());
 
   }
-
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");//Utils.getObjectByPath(err, false,"metadata/error-class")
 
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor, final boolean isV2Api) throws SolrServerException {

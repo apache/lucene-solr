@@ -38,10 +38,6 @@ public class CloudConfig {
 
   private final int autoReplicaFailoverWaitAfterExpiration;
 
-  private final int autoReplicaFailoverWorkLoopDelay;
-
-  private final int autoReplicaFailoverBadNodeExpiration;
-
   private final String zkCredentialsProviderClass;
 
   private final String zkACLProviderClass;
@@ -51,9 +47,9 @@ public class CloudConfig {
   private final boolean createCollectionCheckLeaderActive;
 
   CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames, 
-              int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration, 
-              int autoReplicaFailoverWorkLoopDelay, int autoReplicaFailoverBadNodeExpiration, String zkCredentialsProviderClass, 
-              String zkACLProviderClass, int createCollectionWaitTimeTillActive, boolean createCollectionCheckLeaderActive) {
+              int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration,
+              String zkCredentialsProviderClass, String zkACLProviderClass, int createCollectionWaitTimeTillActive,
+              boolean createCollectionCheckLeaderActive) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -63,8 +59,6 @@ public class CloudConfig {
     this.leaderVoteWait = leaderVoteWait;
     this.leaderConflictResolveWait = leaderConflictResolveWait;
     this.autoReplicaFailoverWaitAfterExpiration = autoReplicaFailoverWaitAfterExpiration;
-    this.autoReplicaFailoverWorkLoopDelay = autoReplicaFailoverWorkLoopDelay;
-    this.autoReplicaFailoverBadNodeExpiration = autoReplicaFailoverBadNodeExpiration;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
     this.zkACLProviderClass = zkACLProviderClass;
     this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
@@ -116,14 +110,6 @@ public class CloudConfig {
     return autoReplicaFailoverWaitAfterExpiration;
   }
 
-  public int getAutoReplicaFailoverWorkLoopDelay() {
-    return autoReplicaFailoverWorkLoopDelay;
-  }
-
-  public int getAutoReplicaFailoverBadNodeExpiration() {
-    return autoReplicaFailoverBadNodeExpiration;
-  }
-
   public boolean getGenericCoreNodeNames() {
     return useGenericCoreNames;
   }
@@ -146,8 +132,6 @@ public class CloudConfig {
  
     // TODO: tune defaults
     private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 30000;
-    private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY = 10000;
-    private static final int DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION = 60000;
 
     private String zkHost = System.getProperty("zkHost");
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
@@ -158,8 +142,6 @@ public class CloudConfig {
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
     private int autoReplicaFailoverWaitAfterExpiration = DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION;
-    private int autoReplicaFailoverWorkLoopDelay = DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY;
-    private int autoReplicaFailoverBadNodeExpiration = DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION;
     private String zkCredentialsProviderClass;
     private String zkACLProviderClass;
     private int createCollectionWaitTimeTillActive = DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT;
@@ -205,16 +187,6 @@ public class CloudConfig {
       return this;
     }
 
-    public CloudConfigBuilder setAutoReplicaFailoverWorkLoopDelay(int autoReplicaFailoverWorkLoopDelay) {
-      this.autoReplicaFailoverWorkLoopDelay = autoReplicaFailoverWorkLoopDelay;
-      return this;
-    }
-
-    public CloudConfigBuilder setAutoReplicaFailoverBadNodeExpiration(int autoReplicaFailoverBadNodeExpiration) {
-      this.autoReplicaFailoverBadNodeExpiration = autoReplicaFailoverBadNodeExpiration;
-      return this;
-    }
-
     public CloudConfigBuilder setZkCredentialsProviderClass(String zkCredentialsProviderClass) {
       this.zkCredentialsProviderClass = zkCredentialsProviderClass;
       return this;
@@ -237,8 +209,7 @@ public class CloudConfig {
     
     public CloudConfig build() {
       return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait, 
-                             leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, autoReplicaFailoverWorkLoopDelay, 
-                             autoReplicaFailoverBadNodeExpiration, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
+                             leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
                              createCollectionCheckLeaderActive);
     }
   }

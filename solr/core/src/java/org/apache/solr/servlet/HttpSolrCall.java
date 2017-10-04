@@ -119,7 +119,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.handler.admin.CollectionsHandler.SYSTEM_COLL;
+import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
@@ -347,7 +347,7 @@ public class HttpSolrCall {
         SYSTEM_COLL.equals(corename) &&
         "POST".equals(req.getMethod()) &&
         !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
-      log.info("Going to auto-create .system collection");
+      log.info("Going to auto-create " + SYSTEM_COLL + " collection");
       SolrQueryResponse rsp = new SolrQueryResponse();
       String repFactor = String.valueOf(Math.min(3, cores.getZkController().getClusterState().getLiveNodes().size()));
       cores.getCollectionsHandler().handleRequestBody(new LocalSolrQueryRequest(null,
@@ -356,7 +356,7 @@ public class HttpSolrCall {
               .add( NAME, SYSTEM_COLL)
               .add(REPLICATION_FACTOR, repFactor)), rsp);
       if (rsp.getValues().get("success") == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not auto-create .system collection: "+ Utils.toJSONString(rsp.getValues()));
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not auto-create " + SYSTEM_COLL + " collection: "+ Utils.toJSONString(rsp.getValues()));
       }
       TimeOut timeOut = new TimeOut(3, TimeUnit.SECONDS);
       for (; ; ) {
@@ -364,7 +364,7 @@ public class HttpSolrCall {
           break;
         } else {
           if (timeOut.hasTimedOut()) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find .system collection even after 3 seconds");
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
           }
           Thread.sleep(50);
         }
