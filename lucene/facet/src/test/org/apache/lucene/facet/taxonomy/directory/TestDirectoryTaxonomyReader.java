@@ -25,12 +25,12 @@ import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -529,5 +529,33 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     
     dir.close();
   }
-  
+
+  public void testAccountable() throws Exception {
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
+    int numCategories = atLeast(10);
+    int numA = 0, numB = 0;
+    Random random = random();
+    // add the two categories for which we'll also add children (so asserts are simpler)
+    taxoWriter.addCategory(new FacetLabel("a"));
+    taxoWriter.addCategory(new FacetLabel("b"));
+    for (int i = 0; i < numCategories; i++) {
+      if (random.nextBoolean()) {
+        taxoWriter.addCategory(new FacetLabel("a", Integer.toString(i)));
+        ++numA;
+      } else {
+        taxoWriter.addCategory(new FacetLabel("b", Integer.toString(i)));
+        ++numB;
+      }
+    }
+    // add category with no children
+    taxoWriter.addCategory(new FacetLabel("c"));
+    taxoWriter.close();
+    
+    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+    assertTrue(taxoReader.ramBytesUsed() > 0);
+    assertTrue(taxoReader.getChildResources().size() > 0);
+    taxoReader.close();
+    dir.close();
+  }
 }
