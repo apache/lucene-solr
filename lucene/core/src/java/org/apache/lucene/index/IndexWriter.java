@@ -4804,19 +4804,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    *
-   * <p><b>NOTE</b>: warm is called before any deletes have
-   * been carried over to the merged segment. */
-  public static abstract class IndexReaderWarmer {
-
-    /** Sole constructor. (For invocation by subclass 
-     *  constructors, typically implicit.) */
-    protected IndexReaderWarmer() {
-    }
-
-    /** Invoked on the {@link LeafReader} for the newly
-     *  merged segment, before that segment is made visible
-     *  to near-real-time readers. */
-    public abstract void warm(LeafReader reader) throws IOException;
+   * <p><b>NOTE</b>: {@link #warm(LeafReader)} is called before any
+   * deletes have been carried over to the merged segment. */
+  @FunctionalInterface
+  public static interface IndexReaderWarmer {
+    /**
+     * Invoked on the {@link LeafReader} for the newly
+     * merged segment, before that segment is made visible
+     * to near-real-time readers.
+     */
+    void warm(LeafReader reader) throws IOException;
   }
 
   void tragicEvent(Throwable tragedy, String location) throws IOException {

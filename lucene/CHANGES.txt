@@ -106,6 +106,10 @@ Other
 * LUCENE-7978: Add some more documentation about setting up build
   environment.  (Anton R. Yuste via Uwe Schindler)
 
+* LUCENE-7983: IndexWriter.IndexReaderWarmer is now a functional interface
+  instead of an abstract class with a single method (Dawid Weiss)
+
+
 ======================= Lucene 7.0.1 =======================
 (No Changes)
 

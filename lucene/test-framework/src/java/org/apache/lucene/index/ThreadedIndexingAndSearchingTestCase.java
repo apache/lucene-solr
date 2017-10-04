@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -468,32 +467,29 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
       mp.setNoCFSRatio(Math.max(0.25d, mp.getNoCFSRatio()));
     }
 
-    conf.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
-      @Override
-      public void warm(LeafReader reader) throws IOException {
-        if (VERBOSE) {
-          System.out.println("TEST: now warm merged reader=" + reader);
-        }
-        warmed.put(((SegmentReader) reader).core, Boolean.TRUE);
-        final int maxDoc = reader.maxDoc();
-        final Bits liveDocs = reader.getLiveDocs();
-        int sum = 0;
-        final int inc = Math.max(1, maxDoc/50);
-        for(int docID=0;docID<maxDoc;docID += inc) {
-          if (liveDocs == null || liveDocs.get(docID)) {
-            final Document doc = reader.document(docID);
-            sum += doc.getFields().size();
-          }
-        }
-
-        IndexSearcher searcher = newSearcher(reader, false);
-        sum += searcher.search(new TermQuery(new Term("body", "united")), 10).totalHits;
-
-        if (VERBOSE) {
-          System.out.println("TEST: warm visited " + sum + " fields");
+    conf.setMergedSegmentWarmer((reader) -> {
+      if (VERBOSE) {
+        System.out.println("TEST: now warm merged reader=" + reader);
+      }
+      warmed.put(((SegmentReader) reader).core, Boolean.TRUE);
+      final int maxDoc = reader.maxDoc();
+      final Bits liveDocs = reader.getLiveDocs();
+      int sum = 0;
+      final int inc = Math.max(1, maxDoc/50);
+      for(int docID=0;docID<maxDoc;docID += inc) {
+        if (liveDocs == null || liveDocs.get(docID)) {
+          final Document doc = reader.document(docID);
+          sum += doc.getFields().size();
         }
       }
-      });
+
+      IndexSearcher searcher = newSearcher(reader, false);
+      sum += searcher.search(new TermQuery(new Term("body", "united")), 10).totalHits;
+
+      if (VERBOSE) {
+        System.out.println("TEST: warm visited " + sum + " fields");
+      }
+    });
 
     if (VERBOSE) {
       conf.setInfoStream(new PrintStreamInfoStream(System.out) {
