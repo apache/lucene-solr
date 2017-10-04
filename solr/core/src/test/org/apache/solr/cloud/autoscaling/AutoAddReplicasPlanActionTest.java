@@ -36,6 +36,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -147,6 +148,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
     }
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to create unique id")
   private List<SolrRequest> getOperations(JettySolrRunner actionJetty, String lostNodeName) {
     AutoAddReplicasPlanAction action = new AutoAddReplicasPlanAction();
     TriggerEvent lostNode = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST, ".auto_add_replicas", Collections.singletonList(System.currentTimeMillis()), Collections.singletonList(lostNodeName));

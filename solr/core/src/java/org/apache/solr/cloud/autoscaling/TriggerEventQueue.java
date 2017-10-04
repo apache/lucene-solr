@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -69,7 +70,7 @@ public class TriggerEventQueue extends ZkDistributedQueue {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
-          LOG.warn("Invalid event data, ignoring: " + new String(data));
+          LOG.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
@@ -91,7 +92,7 @@ public class TriggerEventQueue extends ZkDistributedQueue {
           Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(data);
           return fromMap(map);
         } catch (Exception e) {
-          LOG.warn("Invalid event data, ignoring: " + new String(data));
+          LOG.warn("Invalid event data, ignoring: " + new String(data, StandardCharsets.UTF_8));
           continue;
         }
       }
