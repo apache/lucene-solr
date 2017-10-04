@@ -41,6 +41,9 @@ New Features
 * LUCENE-7975: Change the default taxonomy facets cache to a faster
   byte[] (UTF-8) based cache.
 
+* LUCENE-7982: A new NormsFieldExistsQuery matches documents that have
+  norms in a specified field (Colin Goodheart-Smithe via Mike McCandless)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
