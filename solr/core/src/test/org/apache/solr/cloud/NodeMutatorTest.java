@@ -42,31 +42,30 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
   @Test
   public void downNodeReportsAllImpactedCollectionsAndNothingElse() throws IOException {
     NodeMutator nm = new NodeMutator();
-    ZkNodeProps props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, NODE1);
 
     //We use 2 nodes with maxShardsPerNode as 1
     //Collection1: 2 shards X 1 replica = replica1 on node1 and replica2 on node2
     //Collection2: 1 shard X 1 replica = replica1 on node2
-    ClusterStateMockUtil.Result result = ClusterStateMockUtil.buildClusterState(null, "csrr2rD*csr2", 1, 1, NODE1, NODE2);
-    ClusterState clusterState = result.reader.getClusterState();
+    ZkStateReader reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2", 1, 1, NODE1, NODE2);
+    ClusterState clusterState = reader.getClusterState();
     assertEquals(clusterState.getCollection("collection1").getReplica("replica1").getBaseUrl(), NODE1_URL);
     assertEquals(clusterState.getCollection("collection1").getReplica("replica2").getBaseUrl(), NODE2_URL);
     assertEquals(clusterState.getCollection("collection2").getReplica("replica4").getBaseUrl(), NODE2_URL);
 
-    props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, NODE1);
+    ZkNodeProps props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, NODE1);
     List<ZkWriteCommand> writes = nm.downNode(clusterState, props);
     assertEquals(writes.size(), 1);
     assertEquals(writes.get(0).name, "collection1");
     assertEquals(writes.get(0).collection.getReplica("replica1").getState(), Replica.State.DOWN);
     assertEquals(writes.get(0).collection.getReplica("replica2").getState(), Replica.State.ACTIVE);
-    result.close();
+    reader.close();
 
     //We use 3 nodes with maxShardsPerNode as 1
     //Collection1: 2 shards X 1 replica = replica1 on node1 and replica2 on node2
     //Collection2: 1 shard X 1 replica = replica1 on node2
     //Collection3: 1 shard X 3 replica = replica1 on node1 , replica2 on node2, replica3 on node3
-    result = ClusterStateMockUtil.buildClusterState(null, "csrr2rD*csr2csr1r2r3", 1, 1, NODE1, NODE2, NODE3);
-    clusterState = result.reader.getClusterState();
+    reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2csr1r2r3", 1, 1, NODE1, NODE2, NODE3);
+    clusterState = reader.getClusterState();
     assertEquals(clusterState.getCollection("collection1").getReplica("replica1").getBaseUrl(), NODE1_URL);
     assertEquals(clusterState.getCollection("collection1").getReplica("replica2").getBaseUrl(), NODE2_URL);
 
@@ -90,6 +89,6 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
         fail("No other collection needs to be changed");
       }
     }
-    result.close();
+    reader.close();
   }
 }

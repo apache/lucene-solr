@@ -51,6 +51,15 @@ Detailed Change List
 Upgrade Notes
 ----------------------
 
+* 'autoAddReplicas' feature is ported to autoscaling framework. Existing users of this feature should not have
+  to change anything. Note these changes:
+  1. Behaviour: Changing the autoAddReplicas property from disabled to enabled using MODIFYCOLLECTION API
+  no longer replaces down replicas for the collection immediately. Instead, replicas are only added
+  if a node containing them went down while autoAddReplicas was enabled. The params
+  autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay are no longer used.
+  2. Deprecations: Enabling/disabling autoAddReplicas cluster wide with the API will be deprecated; use
+  suspend/resume trigger APIs with name='.auto_add_replicas' instead.
+
 * SOLR-11195: shard and cluster metric reporter configuration now requires a class attribute.
   If a reporter configures the group="shard" attribute then please also configure the
   class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute.
@@ -60,7 +69,7 @@ Upgrade Notes
 * SOLR-11254: the abstract DocTransformer class now has an abstract score-less transform method variant.
 
 * SOLR-11283: all Stream Evaluators in solrj.io.eval have been refactored to have a simplier and more
-  robust structure. This simplifies and condenses the code required to implement a new Evaluator and 
+  robust structure. This simplifies and condenses the code required to implement a new Evaluator and
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
@@ -69,14 +78,35 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
+
+* SOLR-10340: New set-listener and remove-listener API for autoscaling. (shalin)
+
+* SOLR-10358: New suspend-trigger and resume-trigger APIs for autoscaling. (shalin)
+
+* SOLR-10376: Implement autoscaling trigger for nodeAdded event. (shalin)
+
+* SOLR-10396: Implement trigger support for nodeLost event type (Cao Manh Dat, shalin)
+
+* SOLR-10496: New ComputePlanAction for autoscaling which uses the policy framework to compute cluster
+  operations upon a trigger fire. (Noble Paul, shalin)
+
+* SOLR-10965: New ExecutePlanAction for autoscaling which executes the operations computed by ComputePlanAction
+  against the cluster. (shalin)
 
 * SOLR-11019: Add addAll Stream Evaluator (Joel Bernstein)
+
+* SOLR-10996: Implement TriggerListener API (ab, shalin)
 
 * SOLR-11046: Add residuals Stream Evaluator (Joel Bernstein)
 
 * SOLR-10858: Make UUIDUpdateProcessorFactory as Runtime URP (Amit Sarkar, noble)
 
 * SOLR-11126: Node level health check handler (Anshum Gupta)
+
+* SOLR-11031: Implement SystemLogListener for autoscaling (ab)
+
+* SOLR-11205: Any metrics value can be directly accessed in autoscaling policies (noble)
 
 * SOLR-11199: Payloads supports an "operator" param. Supported operators are 'or', "phrase" ( default ).
   A new "sum" function is also added. Example :
@@ -102,12 +132,24 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
+
+* SOLR-10714: OverseerTriggerThread does not start triggers on overseer start until autoscaling
+  config watcher is fired. (shalin)
+
+* SOLR-10738: TriggerAction is initialised even if the trigger is never scheduled. (shalin)
+
 * SOLR-10668: fix NPE at sort=childfield(..) .. on absent values (Mikhail Khludnev)
 
 * SOLR-8984: EnumField's error reporting to now indicate the field name in failure log (Lanny Ripple,
   Ann Addicks via Ishan Chattopadhyaya)
 
 * SOLR-11012: Fix three (JavaBinCodec not being closed) Resource Leak warnings. (Christine Poerschke)
+
+* SOLR-11026: MoveReplicaSuggester must check if the target becomes more 'loaded' than the source
+  if an operation is performed (noble)
+
+* SOLR-10994: CREATE, CREATESHARD & ADDREPLICA to use policy framework & support replica types (noble)
 
 * SOLR-11011: Assign.buildCoreName can lead to error in creating a new core when legacyCloud=false (Cao Manh Dat)
 
@@ -145,6 +187,8 @@ Bug Fixes
 * SOLR-11363: JSON Facet API: repeated values in a numeric points field with docValues enabled
   were double counted. (Hossman, yonik)
 
+* SOLR-11085: Improve resiliency of autoscaling actions against overseer restarts and operation failures. (shalin)
+
 * SOLR-11297: Message "Lock held by this virtual machine" during startup.  Solr is trying to start some cores twice.
   (Luiz Armesto, Shawn Heisey, Erick Erickson)
 
@@ -164,7 +208,11 @@ Optimizations
 * SOLR-10985: Remove unnecessary toString() calls in solr-core's search package's debug logging.
   (Michael Braun via Christine Poerschke)
 
+* SOLR-11000: Changes made via AutoScalingHandler should be atomic. (ab, shalin)
+
 * SOLR-11124: MoveReplicaCmd should skip deleting old replica in case of its node is not live (Cao Manh Dat)
+
+* SOLR-10769: Allow nodeAdded / nodeLost events to report multiple nodes in one event. (ab)
 
 * SOLR-11242: QueryParser: re-use the LookaheadSuccess exception. (Michael Braun via David Smiley)
 
@@ -178,6 +226,9 @@ Optimizations
 
 Other Changes
 ----------------------
+* SOLR-10643: Throttling strategy for triggers and policy executions. (shalin)
+
+* SOLR-10764: AutoScalingHandler should validate policy and preferences before updating zookeeper. (shalin)
 
 * SOLR-10827: Factor out abstract FilteringSolrMetricReporter class. (Christine Poerschke)
 
@@ -195,10 +246,10 @@ Other Changes
 
 * SOLR-11106: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong server name
   (Kensho Hirasawa via Erick Erickson)
-  
+
 * SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
-* SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster 
+* SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster
   to instead extend SolrCloudTestCase. (Steve Rowe)
 
 * SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.
@@ -209,6 +260,11 @@ Other Changes
 
 * SOLR-11187: contrib/ltr TestModelManagerPersistence improvements. (Yuki Yano via Christine Poerschke)
 
+* SOLR-10397: Port 'autoAddReplicas' feature to the autoscaling framework and make it work with non-shared filesystems
+  (Cao Manh Dat, shalin)
+
+* SOLR-11157: remove-policy must fail if a policy to be deleted is used by a collection (noble)
+
 * SOLR-11090: Add Replica.getProperty accessor. (Christine Poerschke)
 
 * SOLR-11061: Add a spins metric for data directory paths. (ab)
@@ -217,7 +273,11 @@ Other Changes
 
 * SOLR-11195: Require class attribute for shard and cluster metric reporter configuration. (Christine Poerschke)
 
+* SOLR:10822: Share a Policy.session object between multiple collection admin calls to get the correct computations (noble)
+
 * SOLR-11249: Upgrade Jetty from 9.3.14.v20161028 to 9.3.20.v20170531 (Michael Braun via David Smiley)
+
+* SOLR-11270: Automatically added SystemLogListener should not prevent deleting a trigger. (ab)
 
 * SOLR-5129: Timeout property for waiting ZK get started. (Cao Manh Dat, Hrishikesh Gadre, Varun Thacker)
 

@@ -28,6 +28,9 @@ public interface CollectionAdminParams {
 
   String COUNT_PROP = "count";
 
+  /** Predefined system collection name. */
+  String SYSTEM_COLL = ".system";
+
   /**
    * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore operation).
    */
@@ -59,5 +62,4 @@ public interface CollectionAdminParams {
    */
   public static final Collection<String> INDEX_BACKUP_STRATEGIES =
       Arrays.asList(COPY_FILES_STRATEGY, NO_INDEX_BACKUP_STRATEGY);
-
 }

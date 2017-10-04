@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +93,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     ProtectionDomain defaultDomain = null;
     //using the default protection domain, with no permissions
     try {
-      defaultDomain = new ProtectionDomain(new CodeSource(new URL("http://localhost/.system/blob/" + jarName.get()), (Certificate[]) null),
+      defaultDomain = new ProtectionDomain(new CodeSource(new URL("http://localhost/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + jarName.get()), (Certificate[]) null),
           null);
     } catch (MalformedURLException mue) {
       throw new ClassNotFoundException("Unexpected exception ", mue);

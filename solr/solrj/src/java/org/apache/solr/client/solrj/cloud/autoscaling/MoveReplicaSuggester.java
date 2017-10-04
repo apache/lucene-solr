@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.Pair;
@@ -40,41 +39,41 @@ public class MoveReplicaSuggester extends Suggester {
     List<Clause.Violation> leastSeriousViolation = null;
     Integer targetNodeIndex = null;
     Integer sourceNodeIndex = null;
-    ReplicaInfo fromReplicaInfo = null;
+    ReplicaInfo sourceReplicaInfo = null;
     for (Pair<ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
       Row fromRow = fromReplica.second();
       ReplicaInfo replicaInfo = fromReplica.first();
       String coll = replicaInfo.collection;
       String shard = replicaInfo.shard;
-      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard);
-      Row tmpRow = pair.first();
-      if (tmpRow == null) {
+      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard, replicaInfo.type);
+      Row srcTmpRow = pair.first();
+      if (srcTmpRow == null) {
         //no such replica available
         continue;
       }
-      tmpRow.violations.clear();
 
       final int i = getMatrix().indexOf(fromRow);
       for (int j = getMatrix().size() - 1; j > i; j--) {
         Row targetRow = getMatrix().get(j);
+        if(!targetRow.isLive) continue;
         if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
-        targetRow = targetRow.addReplica(coll, shard);
-        targetRow.violations.clear();
-        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), tmpRow, i), targetRow, j));
-        if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation)) {
+        targetRow = targetRow.addReplica(coll, shard, replicaInfo.type);
+        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), srcTmpRow, i), targetRow, j));
+        if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation) &&
+            Policy.compareRows(srcTmpRow, targetRow, session.getPolicy()) < 1) {
           leastSeriousViolation = errs;
           targetNodeIndex = j;
           sourceNodeIndex = i;
-          fromReplicaInfo = replicaInfo;
+          sourceReplicaInfo = replicaInfo;
         }
       }
     }
     if (targetNodeIndex != null && sourceNodeIndex != null) {
-      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(fromReplicaInfo.collection, fromReplicaInfo.shard).first());
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(fromReplicaInfo.collection, fromReplicaInfo.shard));
+      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.type).first());
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.type));
       return new CollectionAdminRequest.MoveReplica(
-          fromReplicaInfo.collection,
-          fromReplicaInfo.name,
+          sourceReplicaInfo.collection,
+          sourceReplicaInfo.name,
           getMatrix().get(targetNodeIndex).node);
     }
     return null;
