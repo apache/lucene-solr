@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.common.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
@@ -441,7 +442,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
   }
 
-  void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {
+  void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws KeeperException, InterruptedException {
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
         ZkStateReader.CORE_NAME_PROP, core,
@@ -463,7 +464,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   //TODO should we not remove in the next release ?
   private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results)
-      throws Exception {
+      throws KeeperException, InterruptedException {
     final String collectionName = message.getStr(COLLECTION_PROP);
 
     boolean firstLoop = true;
@@ -634,7 +635,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
 
   private void modifyCollection(ClusterState clusterState, ZkNodeProps message, NamedList results)
-      throws Exception {
+      throws KeeperException, InterruptedException {
     
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     //the rest of the processing is based on writing cluster state properties
@@ -668,6 +669,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       if (areChangesVisible) break;
       Thread.sleep(100);
     }
+
     if (!areChangesVisible)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
   }
@@ -972,6 +974,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     );
   }
+
+  public final PolicyHelper.SessionRef policySessionRef = new PolicyHelper.SessionRef();
 
   @Override
   public void close() throws IOException {

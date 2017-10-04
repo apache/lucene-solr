@@ -19,14 +19,15 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy.ReplicaInfo;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 
@@ -37,15 +38,16 @@ public class Row implements MapWriter {
   public final String node;
   final Cell[] cells;
   public Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas;
-  List<Clause> violations = new ArrayList<>();
   boolean anyValueMissing = false;
+  boolean isLive = true;
 
   public Row(String node, List<String> params, ClusterDataProvider dataProvider) {
     collectionVsShardVsReplicas = dataProvider.getReplicaInfo(node, params);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    Map<String, Object> vals = dataProvider.getNodeValues(node, params);
+    isLive = dataProvider.getNodes().contains(node);
+    Map<String, Object> vals = isLive ? dataProvider.getNodeValues(node, params) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
       cells[i] = new Cell(i, s, Clause.validate(s,vals.get(s), false));
@@ -54,8 +56,10 @@ public class Row implements MapWriter {
     }
   }
 
-  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, List<Clause> violations) {
+  public Row(String node, Cell[] cells, boolean anyValueMissing, Map<String,
+      Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, boolean isLive) {
     this.node = node;
+    this.isLive = isLive;
     this.cells = new Cell[cells.length];
     for (int i = 0; i < this.cells.length; i++) {
       this.cells[i] = cells[i].copy();
@@ -63,7 +67,6 @@ public class Row implements MapWriter {
     }
     this.anyValueMissing = anyValueMissing;
     this.collectionVsShardVsReplicas = collectionVsShardVsReplicas;
-    this.violations = violations;
   }
 
   @Override
@@ -75,7 +78,7 @@ public class Row implements MapWriter {
   }
 
   Row copy() {
-    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), new ArrayList<>(violations));
+    return new Row(node, cells, anyValueMissing, Utils.getDeepCopy(collectionVsShardVsReplicas, 3), isLive);
   }
 
   Object getVal(String name) {
@@ -89,28 +92,42 @@ public class Row implements MapWriter {
   }
 
   // this adds a replica to the replica info
-  public Row addReplica(String coll, String shard) {
+  public Row addReplica(String coll, String shard, Replica.Type type) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
-    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, new HashMap<>()));
+    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, type, new HashMap<>()));
     for (Cell cell : row.cells) {
-      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() + 1;
+      if (cell.name.equals("cores")) {
+        cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() + 1;
+      }
     }
     return row;
 
   }
 
-  public Pair<Row, ReplicaInfo> removeReplica(String coll, String shard) {
+  public Pair<Row, ReplicaInfo> removeReplica(String coll, String shard, Replica.Type type) {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.get(coll);
     if (c == null) return null;
-    List<ReplicaInfo> s = c.get(shard);
-    if (s == null || s.isEmpty()) return null;
-    for (Cell cell : row.cells) {
-      if (cell.name.equals("cores")) cell.val = ((Number) cell.val).longValue() -1;
+    List<ReplicaInfo> r = c.get(shard);
+    if (r == null) return null;
+    int idx = -1;
+    for (int i = 0; i < r.size(); i++) {
+      ReplicaInfo info = r.get(i);
+      if (type == null || info.type == type) {
+        idx = i;
+        break;
+      }
     }
-    return new Pair(row, s.remove(0));
+    if(idx == -1) return null;
+
+    for (Cell cell : row.cells) {
+      if (cell.name.equals("cores")) {
+        cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() - 1;
+      }
+    }
+    return new Pair(row, r.remove(idx));
 
   }
 

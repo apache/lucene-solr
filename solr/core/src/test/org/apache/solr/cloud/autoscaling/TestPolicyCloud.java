@@ -22,12 +22,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.OverseerTaskProcessor;
@@ -43,6 +46,9 @@ import org.junit.BeforeClass;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 @LuceneTestCase.Slow
 public class TestPolicyCloud extends SolrCloudTestCase {
@@ -69,7 +75,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
     int port = jetty.getLocalPort();
 
-    String commands =  "{set-policy :{c1 : [{replica:2 , shard:'#EACH', port: '" + port + "'}]}}";
+    String commands =  "{set-policy :{c1 : [{replica:0 , shard:'#EACH', port: '!" + port + "'}]}}";
     cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
@@ -128,6 +134,111 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     assertEquals("Expected exactly three replica of collection on node with port: " + firstNodePort, 3, replicasOnNode1);
     assertEquals("Expected exactly three replica of collection on node with port: " + secondNodePort, 3, replicasOnNode2);
+  }
+
+  public void testMetricsTag() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'metrics:abc':'overseer', 'replica':0}" +
+        "    ]" +
+        "}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    try {
+      solrClient.request(req);
+      fail("expected exception");
+    } catch (HttpSolrClient.RemoteExecutionException e) {
+      // expected
+      assertTrue(String.valueOf(getObjectByPath(e.getMetaData(),
+          false, "error/details[0]/errorMessages[0]")).contains("Invalid metrics: param in"));
+    }
+    setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'metrics:solr.node:ADMIN./admin/authorization.clientErrors:count':'>58768765', 'replica':0}" +
+        "    ]" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    solrClient.request(req);
+
+    //org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
+    CollectionAdminRequest.createCollection("metricsTest", "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    DocCollection collection = getCollectionState("metricsTest");
+    SolrClientDataProvider provider = new SolrClientDataProvider(solrClient);
+    List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
+        "metrics:solr.jvm:buffers.direct.Count");
+    Map<String, Object> val = provider.getNodeValues(collection .getReplicas().get(0).getNodeName(), tags);
+    for (String tag : tags) {
+      assertNotNull( "missing : "+ tag , val.get(tag));
+    }
+
+
+  }
+
+  public void testCreateCollectionAddShardWithReplicaTypeUsingPolicy() throws Exception {
+    JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
+    String nrtNodeName = jetty.getNodeName();
+    int nrtPort = jetty.getLocalPort();
+
+    jetty = cluster.getJettySolrRunners().get(1);
+    String pullNodeName = jetty.getNodeName();
+    int pullPort = jetty.getLocalPort();
+
+    jetty = cluster.getJettySolrRunners().get(2);
+    String tlogNodeName = jetty.getNodeName();
+    int tlogPort = jetty.getLocalPort();
+    log.info("NRT {} PULL {} , TLOG {} ", nrtNodeName, pullNodeName, tlogNodeName);
+
+    String commands = "{set-cluster-policy :[" +
+        "{replica:0 , shard:'#EACH', type: NRT, port: '!" + nrtPort + "'}" +
+        "{replica:0 , shard:'#EACH', type: PULL, port: '!" + pullPort + "'}" +
+        "{replica:0 , shard:'#EACH', type: TLOG, port: '!" + tlogPort + "'}" +
+        "]}";
+
+
+    cluster.getSolrClient().request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    Map<String, Object> json = Utils.getJson(cluster.getZkClient(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, true);
+    assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
+        Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
+    assertEquals("full json:" + Utils.toJSONString(json), "!" + pullPort,
+        Utils.getObjectByPath(json, true, "cluster-policy[1]/port"));
+    assertEquals("full json:" + Utils.toJSONString(json), "!" + tlogPort,
+        Utils.getObjectByPath(json, true, "cluster-policy[2]/port"));
+
+    CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
+        .process(cluster.getSolrClient());
+
+    DocCollection coll = getCollectionState("policiesTest");
+
+
+    BiConsumer<String, Replica> verifyReplicas = (s, replica) -> {
+      switch (replica.getType()) {
+        case NRT: {
+          assertTrue("NRT replica should be in " + nrtNodeName, replica.getNodeName().equals(nrtNodeName));
+          break;
+        }
+        case TLOG: {
+          assertTrue("TLOG replica should be in " + tlogNodeName, replica.getNodeName().equals(tlogNodeName));
+          break;
+        }
+        case PULL: {
+          assertTrue("PULL replica should be in " + pullNodeName, replica.getNodeName().equals(pullNodeName));
+          break;
+        }
+      }
+
+    };
+    coll.forEachReplica(verifyReplicas);
+
+    CollectionAdminRequest.createShard("policiesTest", "s3").
+        process(cluster.getSolrClient());
+    coll = getCollectionState("policiesTest");
+    assertEquals(3, coll.getSlice("s3").getReplicas().size());
+    coll.forEachReplica(verifyReplicas);
   }
 
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {

@@ -54,6 +54,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -64,6 +65,7 @@ import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
@@ -188,7 +190,7 @@ public class ZkController {
 
   private final SolrZkClient zkClient;
   private final ZkCmdExecutor cmdExecutor;
-  private final ZkStateReader zkStateReader;
+  public final ZkStateReader zkStateReader;
 
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
@@ -675,6 +677,10 @@ public class ZkController {
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH, zkClient);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
     cmdExecutor.ensureExists(ZkStateReader.CLUSTER_STATE, emptyJson, CreateMode.PERSISTENT, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
@@ -736,6 +742,7 @@ public class ZkController {
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
       checkForExistingEphemeralNode();
+      registerLiveNodesListener();
 
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
@@ -804,6 +811,53 @@ public class ZkController {
       throw new SolrException(ErrorCode.SERVER_ERROR, "A previous ephemeral live node still exists. " +
           "Solr cannot continue. Please ensure that no other Solr process using the same port is running already.");
     }
+  }
+
+  private void registerLiveNodesListener() {
+    // this listener is used for generating nodeLost events, so we check only if
+    // some nodes went missing compared to last state
+    LiveNodesListener listener = (oldNodes, newNodes) -> {
+      oldNodes.removeAll(newNodes);
+      if (oldNodes.isEmpty()) { // only added nodes
+        return;
+      }
+      if (isClosed) {
+        return;
+      }
+      // if this node is in the top three then attempt to create nodeLost message
+      int i = 0;
+      for (String n : newNodes) {
+        if (n.equals(getNodeName())) {
+          break;
+        }
+        if (i > 2) {
+          return; // this node is not in the top three
+        }
+        i++;
+      }
+
+      // retrieve current trigger config - if there are no nodeLost triggers
+      // then don't create markers
+      boolean createNodes = false;
+      try {
+        createNodes = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODELOST);
+      } catch (KeeperException | InterruptedException e1) {
+        log.warn("Unable to read autoscaling.json", e1);
+      }
+      if (createNodes) {
+        for (String n : oldNodes) {
+          String path = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
+          try {
+            zkClient.create(path, null, CreateMode.PERSISTENT, true);
+          } catch (KeeperException.NodeExistsException e) {
+            // someone else already created this node - ignore
+          } catch (KeeperException | InterruptedException e1) {
+            log.warn("Unable to register nodeLost path for " + n, e1);
+          }
+        }
+      }
+    };
+    zkStateReader.registerLiveNodesListener(listener);
   }
 
   public void publishAndWaitForDownStates() throws KeeperException,
@@ -880,8 +934,18 @@ public class ZkController {
     }
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
-    zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
+    List<Op> ops = new ArrayList<>(2);
+    ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    // if there are nodeAdded triggers don't create nodeAdded markers
+    boolean createMarkerNode = zkStateReader.getAutoScalingConfig().hasTriggerForEvents(TriggerEventType.NODEADDED);
+    if (createMarkerNode && !zkClient.exists(nodeAddedPath, true)) {
+      // use EPHEMERAL so that it disappears if this node goes down
+      // and no other action is taken
+      ops.add(Op.create(nodeAddedPath, null, zkClient.getZkACLProvider().getACLsToAdd(nodeAddedPath), CreateMode.EPHEMERAL));
+    }
+    zkClient.multi(ops, true);
   }
 
   public String getNodeName() {
@@ -1427,6 +1491,7 @@ public class ZkController {
             if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
                   .setCoreNodeName(replica.getName());
+              getCoreContainer().getCoresLocator().persist(getCoreContainer(), descriptor);
               return;
             }
           }
@@ -1921,7 +1986,7 @@ public class ZkController {
     }
   }
 
-  CoreContainer getCoreContainer() {
+  public CoreContainer getCoreContainer() {
     return cc;
   }
 

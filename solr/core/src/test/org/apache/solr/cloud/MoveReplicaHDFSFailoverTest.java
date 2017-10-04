@@ -42,7 +42,7 @@ import org.junit.Test;
     BadHdfsThreadsFilter.class, // hdfs currently leaks thread(s)
     MoveReplicaHDFSTest.ForkJoinThreadsFilter.class
 })
-public class MoveReplicaHDFSUlogDirTest extends SolrCloudTestCase {
+public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
@@ -128,6 +128,71 @@ public class MoveReplicaHDFSUlogDirTest extends SolrCloudTestCase {
 
     cluster.getSolrClient().commit(coll);
     assertEquals(numDocs, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
+  }
+
+  @Test
+  public void testOldReplicaIsDeleted() throws Exception {
+    String coll = "movereplicatest_coll3";
+    CollectionAdminRequest.createCollection(coll, "conf1", 1, 1)
+        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
+        .process(cluster.getSolrClient());
+    addDocs(coll, 2);
+    Replica replica = getCollectionState(coll).getReplicas().iterator().next();
+
+    cluster.getJettySolrRunners().get(0).stop();
+    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    // move replica from node0 -> node1
+    new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
+        .process(cluster.getSolrClient());
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    cluster.getJettySolrRunners().get(1).stop();
+    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
+    cluster.getJettySolrRunners().get(0).start();
+    Thread.sleep(5000);
+    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    cluster.getJettySolrRunners().get(1).start();
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    assertEquals(1, getCollectionState(coll).getReplicas().size());
+    assertEquals(2, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
+  }
+
+  @Test
+  public void testOldReplicaIsDeletedInRaceCondition() throws Exception {
+    String coll = "movereplicatest_coll4";
+    CollectionAdminRequest.createCollection(coll, "conf1", 1, 1)
+        .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
+        .process(cluster.getSolrClient());
+    addDocs(coll, 100);
+    Replica replica = getCollectionState(coll).getReplicas().iterator().next();
+
+    cluster.getJettySolrRunners().get(0).stop();
+    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    // move replica from node0 -> node1
+    new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
+        .process(cluster.getSolrClient());
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    cluster.getJettySolrRunners().get(1).stop();
+    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    cluster.getJettySolrRunners().get(1).start();
+    // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
+    cluster.getJettySolrRunners().get(0).start();
+    Thread.sleep(5000);
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+
+    assertEquals(1, getCollectionState(coll).getReplicas().size());
+    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
   }
 
   private void addDocs(String collection, int numDocs) throws SolrServerException, IOException {

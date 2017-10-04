@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -469,8 +470,8 @@ public class Overseer implements Closeable {
   private OverseerThread ccThread;
 
   private OverseerThread updaterThread;
-  
-  private OverseerThread arfoThread;
+
+  private OverseerThread triggerThread;
 
   private final ZkStateReader reader;
 
@@ -521,16 +522,14 @@ public class Overseer implements Closeable {
     overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
-    
-    ThreadGroup ohcfTg = new ThreadGroup("Overseer Hdfs SolrCore Failover Thread.");
 
-    OverseerAutoReplicaFailoverThread autoReplicaFailoverThread = new OverseerAutoReplicaFailoverThread(config, reader, updateShardHandler);
-    arfoThread = new OverseerThread(ohcfTg, autoReplicaFailoverThread, "OverseerHdfsCoreFailoverThread-" + id);
-    arfoThread.setDaemon(true);
-    
+    ThreadGroup triggerThreadGroup = new ThreadGroup("Overseer autoscaling triggers");
+    OverseerTriggerThread trigger = new OverseerTriggerThread(zkController, config);
+    triggerThread = new OverseerThread(triggerThreadGroup, trigger, "OverseerAutoScalingTriggerThread-" + id);
+
     updaterThread.start();
     ccThread.start();
-    arfoThread.start();
+    triggerThread.start();
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -571,11 +570,10 @@ public class Overseer implements Closeable {
       IOUtils.closeQuietly(ccThread);
       ccThread.interrupt();
     }
-    if (arfoThread != null) {
-      IOUtils.closeQuietly(arfoThread);
-      arfoThread.interrupt();
+    if (triggerThread != null)  {
+      IOUtils.closeQuietly(triggerThread);
+      triggerThread.interrupt();
     }
-    
     if (updaterThread != null) {
       try {
         updaterThread.join();
@@ -586,15 +584,14 @@ public class Overseer implements Closeable {
         ccThread.join();
       } catch (InterruptedException e) {}
     }
-    if (arfoThread != null) {
+    if (triggerThread != null)  {
       try {
-        arfoThread.join();
-      } catch (InterruptedException e) {}
+        triggerThread.join();
+      } catch (InterruptedException e)  {}
     }
-    
     updaterThread = null;
     ccThread = null;
-    arfoThread = null;
+    triggerThread = null;
   }
 
   /**

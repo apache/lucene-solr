@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -140,18 +139,14 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         continue;
       }
       MetricUtils.PropertyFilter propertyFilter = MetricUtils.PropertyFilter.ALL;
+      boolean simple = false;
       if (propertyName != null) {
         propertyFilter = (name) -> name.equals(propertyName);
+        simple = true;
         // use escaped versions
         key = parts[0] + ":" + parts[1];
       }
-      MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, false, ":", (k, v) -> {
-        if ((v instanceof Map) && propertyName != null) {
-          ((Map)v).forEach((k1, v1) -> result.add(k + ":" + k1, v1));
-        } else {
-          result.add(k, v);
-        }
-      });
+      MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, simple, ":", (k, v) -> result.add(k, v));
     }
     rsp.getValues().add("metrics", result);
     if (errors.size() > 0) {

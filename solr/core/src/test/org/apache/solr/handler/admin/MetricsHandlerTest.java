@@ -277,15 +277,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     val = values.findRecursive("metrics", key3);
     assertNotNull(val);
 
-    String key4 = "solr.core.collection1:QUERY./select.requestTimes:1minRate";
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
-        MetricsHandler.KEY_PARAM, key4), resp);
-    values = resp.getValues();
-    val = values.findRecursive("metrics", key4);
-    assertNotNull(val);
-    assertTrue(val instanceof Number);
-
     // test errors
 
     // invalid keys

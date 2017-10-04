@@ -25,6 +25,7 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
 import java.util.Objects;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
+import org.apache.solr.common.params.CoreAdminParams;
 
 
 public enum Operand {
@@ -37,7 +38,7 @@ public enum Operand {
   },
   EQUAL("", 0) {
     @Override
-    public int _delta(int expected, int actual) {
+    public long _delta(long expected, long actual) {
       return expected - actual;
     }
   },
@@ -48,7 +49,7 @@ public enum Operand {
     }
 
     @Override
-    public int _delta(int expected, int actual) {
+    public long _delta(long expected, long actual) {
       return expected - actual;
     }
 
@@ -57,6 +58,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
         return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == 1 ? PASS : FAIL;
       }
@@ -64,7 +66,7 @@ public enum Operand {
     }
 
     @Override
-    protected int _delta(int expected, int actual) {
+    protected long _delta(long expected, long actual) {
       return actual > expected ? 0 : (expected + 1) - actual;
     }
   },
@@ -72,6 +74,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
         return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == -1 ? PASS : FAIL;
       }
@@ -79,7 +82,7 @@ public enum Operand {
     }
 
     @Override
-    protected int _delta(int expected, int actual) {
+    protected long _delta(long expected, long actual) {
       return actual < expected ? 0 : (expected ) - actual;
     }
 
@@ -90,10 +93,6 @@ public enum Operand {
   Operand(String val, int priority) {
     this.operand = val;
     this.priority = priority;
-  }
-
-  public String toStr(Object expectedVal) {
-    return operand + expectedVal.toString();
   }
 
   public TestStatus match(Object ruleVal, Object testVal) {
@@ -107,17 +106,17 @@ public enum Operand {
 
   }
 
-  public Integer delta(Object expected, Object actual) {
+  public Long delta(Object expected, Object actual) {
     try {
-      Integer expectedInt = Integer.parseInt(String.valueOf(expected));
-      Integer actualInt = Integer.parseInt(String.valueOf(actual));
+      Long expectedInt = (Long) Clause.validate(CoreAdminParams.REPLICA, expected, false);
+      Long actualInt = (Long) Clause.validate(CoreAdminParams.REPLICA, actual, false);
       return _delta(expectedInt, actualInt);
     } catch (Exception e) {
       return null;
     }
   }
 
-  protected int _delta(int expected, int actual) {
+  protected long _delta(long expected, long actual) {
     return 0;
   }
 }

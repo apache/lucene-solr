@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
@@ -46,6 +48,7 @@ import org.apache.solr.common.util.Utils;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 /*The class that reads, parses and applies policies specified in
@@ -61,55 +64,78 @@ public class Policy implements MapWriter {
   public static final String POLICY = "policy";
   public static final String EACH = "#EACH";
   public static final String ANY = "#ANY";
+  public static final String POLICIES = "policies";
   public static final String CLUSTER_POLICY = "cluster-policy";
-  public static final String CLUSTER_PREFERENCE = "cluster-preferences";
+  public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Collections.singleton("cores");
-  final Map<String, List<Clause>> policies = new HashMap<>();
+  public static final Preference DEFAULT_PREFERENCE = new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}"));
+  final Map<String, List<Clause>> policies;
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
   final List<String> params;
 
+  public Policy() {
+    this(Collections.emptyMap());
+  }
 
   public Policy(Map<String, Object> jsonMap) {
-
-    clusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCE, emptyList())).stream()
-        .map(Preference::new)
+    int[] idx = new int[1];
+    List<Preference> initialClusterPreferences = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_PREFERENCES, emptyList())).stream()
+        .map(m -> new Preference(m, idx[0]++))
         .collect(toList());
-    for (int i = 0; i < clusterPreferences.size() - 1; i++) {
-      Preference preference = clusterPreferences.get(i);
-      preference.next = clusterPreferences.get(i + 1);
+    for (int i = 0; i < initialClusterPreferences.size() - 1; i++) {
+      Preference preference = initialClusterPreferences.get(i);
+      preference.next = initialClusterPreferences.get(i + 1);
     }
-    if (clusterPreferences.isEmpty()) {
-      clusterPreferences.add(new Preference((Map<String, Object>) Utils.fromJSONString("{minimize : cores, precision:1}")));
+    if (initialClusterPreferences.isEmpty()) {
+      initialClusterPreferences.add(DEFAULT_PREFERENCE);
     }
-    SortedSet<String> paramsOfInterest = new TreeSet<>();
+    this.clusterPreferences = Collections.unmodifiableList(initialClusterPreferences);
+    final SortedSet<String> paramsOfInterest = new TreeSet<>();
     for (Preference preference : clusterPreferences) {
       if (paramsOfInterest.contains(preference.name.name())) {
         throw new RuntimeException(preference.name + " is repeated");
       }
       paramsOfInterest.add(preference.name.toString());
     }
-    this.params = new ArrayList<>(paramsOfInterest);
-
+    List<String> newParams = new ArrayList<>(paramsOfInterest);
     clusterPolicy = ((List<Map<String, Object>>) jsonMap.getOrDefault(CLUSTER_POLICY, emptyList())).stream()
         .map(Clause::new)
         .filter(clause -> {
-          clause.addTags(params);
+          clause.addTags(newParams);
           return true;
         })
-        .collect(Collectors.toList());
+        .collect(collectingAndThen(toList(), Collections::unmodifiableList));
 
-    ((Map<String, List<Map<String, Object>>>) jsonMap.getOrDefault("policies", emptyMap())).forEach((s, l1) ->
-        this.policies.put(s, l1.stream()
-            .map(Clause::new)
-            .filter(clause -> {
-              if (!clause.isPerCollectiontag())
-                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
-              clause.addTags(params);
-              return true;
-            })
-            .sorted()
-            .collect(toList())));
+    this.policies = Collections.unmodifiableMap(
+        policiesFromMap((Map<String, List<Map<String, Object>>>)jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
+    this.params = Collections.unmodifiableList(newParams);
+
+  }
+
+  private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences,
+                 List<String> params) {
+    this.policies = policies != null ? Collections.unmodifiableMap(policies) : Collections.emptyMap();
+    this.clusterPolicy = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy) : Collections.emptyList();
+    this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) :
+        Collections.singletonList(DEFAULT_PREFERENCE);
+    this.params = params != null ? Collections.unmodifiableList(params) : Collections.emptyList();
+  }
+
+  public Policy withPolicies(Map<String, List<Clause>> policies) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
+  }
+
+  public Policy withClusterPreferences(List<Preference> clusterPreferences) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
+  }
+
+  public Policy withClusterPolicy(List<Clause> clusterPolicy) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
+  }
+
+  public Policy withParams(List<String> params) {
+    return new Policy(policies, clusterPolicy, clusterPreferences, params);
   }
 
   public List<Clause> getClusterPolicy() {
@@ -123,24 +149,43 @@ public class Policy implements MapWriter {
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     if (!policies.isEmpty()) {
-      ew.put("policies", (MapWriter) ew1 -> {
+      ew.put(POLICIES, (MapWriter) ew1 -> {
         for (Map.Entry<String, List<Clause>> e : policies.entrySet()) {
           ew1.put(e.getKey(), e.getValue());
         }
       });
     }
     if (!clusterPreferences.isEmpty()) {
-      ew.put("preferences", (IteratorWriter) iw -> {
+      ew.put(CLUSTER_PREFERENCES, (IteratorWriter) iw -> {
         for (Preference p : clusterPreferences) iw.add(p);
       });
     }
+    if (!clusterPolicy.isEmpty()) {
+      ew.put(CLUSTER_POLICY, (IteratorWriter) iw -> {
+        for (Clause c : clusterPolicy) {
+          iw.add(c);
+        }
+      });
+    }
+  }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Policy policy = (Policy) o;
+
+    if (!getPolicies().equals(policy.getPolicies())) return false;
+    if (!getClusterPolicy().equals(policy.getClusterPolicy())) return false;
+    if (!getClusterPreferences().equals(policy.getClusterPreferences())) return false;
+    return params.equals(policy.params);
   }
 
   /*This stores the logical state of the system, given a policy and
-   * a cluster state.
-   *
-   */
+     * a cluster state.
+     *
+     */
   public class Session implements MapWriter {
     final List<String> nodes;
     final ClusterDataProvider dataProvider;
@@ -208,26 +253,15 @@ public class Policy implements MapWriter {
      * Apply the preferences and conditions
      */
     private void applyRules() {
-      if (!clusterPreferences.isEmpty()) {
-        //this is to set the approximate value according to the precision
-        ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
-        for (Preference p : clusterPreferences) {
-          Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
-          p.setApproxVal(tmpMatrix);
-        }
-        //approximate values are set now. Let's do recursive sorting
-        Collections.sort(matrix, (Row r1, Row r2) -> {
-          int result = clusterPreferences.get(0).compare(r1, r2, true);
-          if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
-          return result;
-        });
-      }
+      setApproxValuesAndSortNodes(clusterPreferences, matrix);
 
       for (Clause clause : expandedClauses) {
         List<Violation> errs = clause.test(matrix);
         violations.addAll(errs);
       }
     }
+
+
 
     public List<Violation> getViolations() {
       return violations;
@@ -258,6 +292,22 @@ public class Policy implements MapWriter {
     }
   }
 
+  static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
+    if (!clusterPreferences.isEmpty()) {
+      //this is to set the approximate value according to the precision
+      ArrayList<Row> tmpMatrix = new ArrayList<>(matrix);
+      for (Preference p : clusterPreferences) {
+        Collections.sort(tmpMatrix, (r1, r2) -> p.compare(r1, r2, false));
+        p.setApproxVal(tmpMatrix);
+      }
+      //approximate values are set now. Let's do recursive sorting
+      Collections.sort(matrix, (Row r1, Row r2) -> {
+        int result = clusterPreferences.get(0).compare(r1, r2, true);
+        if (result == 0) result = clusterPreferences.get(0).compare(r1, r2, false);
+        return result;
+      });
+    }
+  }
 
   public Session createSession(ClusterDataProvider dataProvider) {
     return new Session(dataProvider);
@@ -298,37 +348,6 @@ public class Policy implements MapWriter {
   }
 
 
-  public static class ReplicaInfo implements MapWriter {
-    final String name;
-    String core, collection, shard;
-    Map<String, Object> variables;
-
-    public ReplicaInfo(String name, String coll, String shard, Map<String, Object> vals) {
-      this.name = name;
-      this.variables = vals;
-      this.collection = coll;
-      this.shard = shard;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put(name, variables);
-    }
-
-    public String getCore() {
-      return core;
-    }
-
-    public String getCollection() {
-      return collection;
-    }
-
-    public String getShard() {
-      return shard;
-    }
-  }
-
-
   /* A suggester is capable of suggesting a collection operation
    * given a particular session. Before it suggests a new operation,
    * it ensures that ,
@@ -348,10 +367,12 @@ public class Policy implements MapWriter {
     }
 
     public Suggester hint(Hint hint, Object value) {
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
-        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).add(value);
+      hint.validator.accept(value);
+      if (hint.multiValued) {
+        Collection<?> values = value instanceof Collection ? (Collection)value : Collections.singletonList(value);
+        ((Set) hints.computeIfAbsent(hint, h -> new HashSet<>())).addAll(values);
       } else {
-        hints.put(hint, value);
+        hints.put(hint, value == null ? null : String.valueOf(value));
       }
       return this;
     }
@@ -361,21 +382,30 @@ public class Policy implements MapWriter {
 
     public SolrRequest getOperation() {
       if (!isInitialized) {
-        String coll = (String) hints.get(Hint.COLL);
-        String shard = (String) hints.get(Hint.SHARD);
-        // if this is not a known collection from the existing clusterstate,
-        // then add it
-        if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(coll))) {
-          session.addClausesForCollection(session.dataProvider, coll);
+        Set<String> collections = (Set<String>) hints.getOrDefault(Hint.COLL, Collections.emptySet());
+        Set<Pair<String, String>> s = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
+        if (!collections.isEmpty() || !s.isEmpty()) {
+          HashSet<Pair<String, String>> shards = new HashSet<>(s);
+          collections.stream().forEach(c -> shards.add(new Pair<>(c, null)));
+          for (Pair<String, String> shard : shards) {
+            // if this is not a known collection from the existing clusterstate,
+            // then add it
+            if (session.matrix.stream().noneMatch(row -> row.collectionVsShardVsReplicas.containsKey(shard.first()))) {
+              session.addClausesForCollection(session.dataProvider, shard.first());
+            }
+            for (Row row : session.matrix) {
+              Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.computeIfAbsent(shard.first(), it -> new HashMap<>());
+              if (shard.second() != null) shardInfo.computeIfAbsent(shard.second(), it -> new ArrayList<>());
+            }
+          }
           Collections.sort(session.expandedClauses);
         }
-        if (coll != null) {
-          for (Row row : session.matrix) {
-            if (!row.collectionVsShardVsReplicas.containsKey(coll)) row.collectionVsShardVsReplicas.put(coll, new HashMap<>());
-            if (shard != null) {
-              Map<String, List<ReplicaInfo>> shardInfo = row.collectionVsShardVsReplicas.get(coll);
-              if (!shardInfo.containsKey(shard)) shardInfo.put(shard, new ArrayList<>());
-            }
+        Set<String> srcNodes = (Set<String>) hints.get(Hint.SRC_NODE);
+        if (srcNodes != null && !srcNodes.isEmpty()) {
+          // the source node is dead so live nodes may not have it
+          for (String srcNode : srcNodes) {
+            if(session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
+            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.dataProvider));
           }
         }
         session.applyRules();
@@ -420,7 +450,7 @@ public class Policy implements MapWriter {
     }
 
     List<Pair<ReplicaInfo, Row>> getValidReplicas(boolean sortDesc, boolean isSource, int until) {
-      List<Pair<Policy.ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
+      List<Pair<ReplicaInfo, Row>> allPossibleReplicas = new ArrayList<>();
 
       if (sortDesc) {
         if (until == -1) until = getMatrix().size();
@@ -433,18 +463,20 @@ public class Policy implements MapWriter {
       return allPossibleReplicas;
     }
 
-    void addReplicaToList(Row r, boolean isSource, List<Pair<Policy.ReplicaInfo, Row>> replicaList) {
+    void addReplicaToList(Row r, boolean isSource, List<Pair<ReplicaInfo, Row>> replicaList) {
       if (!isAllowed(r.node, isSource ? Hint.SRC_NODE : Hint.TARGET_NODE)) return;
-      for (Map.Entry<String, Map<String, List<Policy.ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
+      for (Map.Entry<String, Map<String, List<ReplicaInfo>>> e : r.collectionVsShardVsReplicas.entrySet()) {
         if (!isAllowed(e.getKey(), Hint.COLL)) continue;
-        for (Map.Entry<String, List<Policy.ReplicaInfo>> shard : e.getValue().entrySet()) {
-          if (!isAllowed(e.getKey(), Hint.SHARD)) continue;
+        for (Map.Entry<String, List<ReplicaInfo>> shard : e.getValue().entrySet()) {
+          if (!isAllowed(new Pair<>(e.getKey(), shard.getKey()), Hint.COLL_SHARD)) continue;//todo fix
+          if(shard.getValue() == null || shard.getValue().isEmpty()) continue;
           replicaList.add(new Pair<>(shard.getValue().get(0), r));
         }
       }
     }
 
-    protected List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
+    List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
+      setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences,rows);
       List<Violation> errors = new ArrayList<>();
       for (Clause clause : session.expandedClauses) {
         if (strict || clause.strict) {
@@ -465,7 +497,7 @@ public class Policy implements MapWriter {
 
     protected boolean isAllowed(Object v, Hint hint) {
       Object hintVal = hints.get(hint);
-      if (hint == Hint.TARGET_NODE || hint == Hint.SRC_NODE) {
+      if (hint.multiValued) {
         Set set = (Set) hintVal;
         return set == null || set.contains(v);
       } else {
@@ -474,10 +506,66 @@ public class Policy implements MapWriter {
     }
 
     public enum Hint {
-      COLL, SHARD, SRC_NODE, TARGET_NODE
+      COLL(true),
+      // collection shard pair
+      // this should be a Pair<String, String> , (collection,shard)
+      COLL_SHARD(true, v -> {
+        Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
+        for (Object o : c) {
+          if (!(o instanceof Pair)) {
+            throw new RuntimeException("SHARD hint must use a Pair");
+          }
+          Pair p = (Pair) o;
+          if (p.first() == null || p.second() == null) {
+            throw new RuntimeException("Both collection and shard must not be null");
+          }
+        }
+
+      }),
+      SRC_NODE(true),
+      TARGET_NODE(true),
+      REPLICATYPE(false, o -> {
+        if (!(o instanceof Replica.Type)) {
+          throw new RuntimeException("REPLICATYPE hint must use a ReplicaType");
+        }
+      });
+
+      public final boolean multiValued;
+      public final Consumer<Object> validator;
+
+      Hint(boolean multiValued) {
+        this(multiValued, v -> {
+          Collection c = v instanceof Collection ? (Collection) v : Collections.singleton(v);
+          for (Object o : c) {
+            if (!(o instanceof String)) throw new RuntimeException("hint must be of type String");
+          }
+        });
+      }
+
+      Hint(boolean multiValued, Consumer<Object> c) {
+        this.multiValued = multiValued;
+        this.validator = c;
+      }
+
     }
 
 
+  }
+
+  public static Map<String, List<Clause>> policiesFromMap(Map<String, List<Map<String, Object>>> map, List<String> newParams) {
+    Map<String, List<Clause>> newPolicies = new HashMap<>();
+    map.forEach((s, l1) ->
+        newPolicies.put(s, l1.stream()
+            .map(Clause::new)
+            .filter(clause -> {
+              if (!clause.isPerCollectiontag())
+                throw new RuntimeException(clause.globalTag.name + " is only allowed in 'cluster-policy'");
+              clause.addTags(newParams);
+              return true;
+            })
+            .sorted()
+            .collect(collectingAndThen(toList(), Collections::unmodifiableList))));
+    return newPolicies;
   }
 
   public static List<Clause> mergePolicies(String coll,
@@ -517,5 +605,22 @@ public class Policy implements MapWriter {
 
   public Map<String, List<Clause>> getPolicies() {
     return policies;
+  }
+
+  public List<String> getParams() {
+    return params;
+  }
+
+  /**
+   * Compares two {@link Row} loads according to a policy.
+   *
+   * @param r1 the first {@link Row} to compare
+   * @param r2 the second {@link Row} to compare
+   * @return the value {@code 0} if r1 and r2 are equally loaded
+   * a value {@code -1} if r1 is more loaded than r2
+   * a value {@code 1} if  r1 is less loaded than r2
+   */
+  static int compareRows(Row r1, Row r2, Policy policy) {
+    return policy.clusterPreferences.get(0).compare(r1, r2, true);
   }
 }

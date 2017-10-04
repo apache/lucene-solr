@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.noggit.JSONWriter;
 
@@ -339,7 +341,20 @@ public class ClusterState implements JSONWriter.Writable {
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
+  public void forEachCollection(Consumer<DocCollection> consumer) {
+    collectionStates.forEach((s, collectionRef) -> {
+      try {
+        consumer.accept(collectionRef.get());
+      } catch (SolrException e) {
+        if (e.getCause() instanceof KeeperException.NoNodeException) {
+          //don't do anything. This collection does not exist
+        } else{
+          throw e;
+        }
+      }
+    });
 
+  }
   public static class CollectionRef {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;

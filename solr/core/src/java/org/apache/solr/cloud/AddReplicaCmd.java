@@ -24,8 +24,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -93,10 +97,31 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
+    final Long policyVersionBefore = PolicyHelper.REF_VERSION.get();
+    AtomicLong policyVersionAfter  = new AtomicLong(-1);
     // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
     if (!skipCreateReplicaInClusterState) {
-      node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
-          ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
+      if (CreateShardCmd.usePolicyFramework(coll, ocmh)) {
+        if (node == null) {
+          if(coll.getPolicyName() != null) message.getProperties().put(Policy.POLICY, coll.getPolicyName());
+          node = Assign.identifyNodes(ocmh,
+              clusterState,
+              Collections.emptyList(),
+              collection,
+              message,
+              Collections.singletonList(shard),
+              replicaType == Replica.Type.NRT ? 0 : 1,
+              replicaType == Replica.Type.TLOG ? 0 : 1,
+              replicaType == Replica.Type.PULL ? 0 : 1
+          ).get(0).node;
+          if (policyVersionBefore == null && PolicyHelper.REF_VERSION.get() != null) {
+            policyVersionAfter.set(PolicyHelper.REF_VERSION.get());
+          }
+        }
+      } else {
+        node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
+            ocmh.overseer.getZkController().getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
+      }
     }
     log.info("Node Identified {} for creating new replica", node);
 
@@ -172,6 +197,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (instanceDir != null) {
       params.set(CoreAdminParams.INSTANCE_DIR, instanceDir);
     }
+    if (coreNodeName != null) {
+      params.set(CoreAdminParams.CORE_NODE_NAME, coreNodeName);
+    }
     ocmh.addPropertyParams(message, params);
 
     // For tracking async calls.
@@ -184,6 +212,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Runnable runnable = () -> {
       ocmh.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica", asyncId, requestMap);
       ocmh.waitForCoreNodeName(collection, fnode, fcoreName);
+      if (policyVersionAfter.get() > -1) {
+        PolicyHelper.REF_VERSION.remove();
+        ocmh.policySessionRef.decref(policyVersionAfter.get());
+      }
       if (onComplete != null) onComplete.run();
     };
 
