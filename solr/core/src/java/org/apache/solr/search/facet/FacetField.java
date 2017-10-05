@@ -49,6 +49,7 @@ abstract class FacetRequestSorted extends FacetRequest {
 
 
 public class FacetField extends FacetRequestSorted {
+  public static final int DEFAULT_FACET_LIMIT = 10;
   String field;
   boolean missing;
   boolean allBuckets;   // show cumulative stats across all buckets (this can be different than non-bucketed stats across all docs because of multi-valued docs)
@@ -63,7 +64,7 @@ public class FacetField extends FacetRequestSorted {
   {
     // defaults for FacetRequestSorted
     mincount = 1;
-    limit = 10;
+    limit = DEFAULT_FACET_LIMIT;
   }
 
   public enum FacetMethod {

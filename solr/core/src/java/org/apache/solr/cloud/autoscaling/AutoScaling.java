@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.util.Utils;
@@ -50,7 +49,7 @@ public class AutoScaling {
   /**
    * Interface for a Solr trigger. Each trigger implements Runnable and Closeable interface. A trigger
    * is scheduled using a {@link java.util.concurrent.ScheduledExecutorService} so it is executed as
-   * per a configured schedule to check whether the trigger is ready to fire. The {@link Trigger#setProcessor(TriggerEventProcessor)}
+   * per a configured schedule to check whether the trigger is ready to fire. The {@link AutoScaling.Trigger#setProcessor(AutoScaling.TriggerEventProcessor)}
    * method should be used to set a processor which is used by implementation of this class whenever
    * ready.
    * <p>

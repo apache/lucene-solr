@@ -146,7 +146,22 @@ public class ScheduledTriggers implements Closeable {
     if (isClosed) {
       throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
     }
-    ScheduledTrigger scheduledTrigger = new ScheduledTrigger(newTrigger, zkClient, queueStats);
+    ScheduledTrigger st;
+    try {
+      st = new ScheduledTrigger(newTrigger, zkClient, queueStats);
+    } catch (Exception e) {
+      if (isClosed) {
+        throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
+      }
+      if (!zkClient.isConnected() || zkClient.isClosed()) {
+        log.error("Failed to add trigger " + newTrigger.getName() + " - closing or disconnected from ZK", e);
+      } else {
+        log.error("Failed to add trigger " + newTrigger.getName(), e);
+      }
+      return;
+    }
+    ScheduledTrigger scheduledTrigger = st;
+
     ScheduledTrigger old = scheduledTriggers.putIfAbsent(newTrigger.getName(), scheduledTrigger);
     if (old != null) {
       if (old.trigger.equals(newTrigger)) {

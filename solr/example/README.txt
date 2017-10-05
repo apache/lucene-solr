@@ -48,8 +48,8 @@ For more information about this example please read...
 
  * example/solr/README.txt
    For more information about the "Solr Home" and Solr specific configuration
- * http://lucene.apache.org/solr/quickstart.html
-   For a Tutorial using this example configuration
+ * https://lucene.apache.org/solr/guide/solr-tutorial.html
+   For a Solr tutorial
  * http://wiki.apache.org/solr/SolrResources 
    For a list of other tutorials and introductory articles.
 
