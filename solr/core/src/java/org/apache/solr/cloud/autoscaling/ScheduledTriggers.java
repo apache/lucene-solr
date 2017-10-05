@@ -37,7 +37,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -147,17 +146,21 @@ public class ScheduledTriggers implements Closeable {
     if (isClosed) {
       throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
     }
-    ScheduledTrigger st = null;
+    ScheduledTrigger st;
     try {
       st = new ScheduledTrigger(newTrigger, zkClient, queueStats);
     } catch (Exception e) {
-      //TODO to decide what to do
-      log.error("Failed to add trigger", e);
+      if (isClosed) {
+        throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
+      }
+      if (!zkClient.isConnected() || zkClient.isClosed()) {
+        log.error("Failed to add trigger " + newTrigger.getName() + " - closing or disconnected from ZK", e);
+      } else {
+        log.error("Failed to add trigger " + newTrigger.getName(), e);
+      }
       return;
     }
-
     ScheduledTrigger scheduledTrigger = st;
-
 
     ScheduledTrigger old = scheduledTriggers.putIfAbsent(newTrigger.getName(), scheduledTrigger);
     if (old != null) {
