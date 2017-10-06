@@ -114,7 +114,8 @@ curl -XPUT 'http://localhost:8983/solr/techproducts/schema/feature-store' --data
 
 To view the features you just uploaded please open the following URL in a browser:
 
-`\http://localhost:8983/solr/techproducts/schema/feature-store/\_DEFAULT_`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/feature-store/_DEFAULT_
 
 .Example: /path/myFeatures.json
 [source,json]
@@ -146,7 +147,8 @@ To view the features you just uploaded please open the following URL in a browse
 
 To extract features as part of a query, add `[features]` to the `fl` parameter, for example:
 
-`\http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,%5Bfeatures%5D`
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features]
 
 The output XML will include feature values as a comma-separated list, resembling the output shown here:
 
@@ -182,7 +184,8 @@ curl -XPUT 'http://localhost:8983/solr/techproducts/schema/model-store' --data-b
 
 To view the model you just uploaded please open the following URL in a browser:
 
-`\http://localhost:8983/solr/techproducts/schema/model-store`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/model-store
 
 .Example: /path/myModel.json
 [source,json]
@@ -210,14 +213,14 @@ To view the model you just uploaded please open the following URL in a browser:
 To rerank the results of a query, add the `rq` parameter to your search, for example:
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq=%7B!ltr%20model=myModel%20reRankDocs=100%7D&fl=id,score[http://localhost:8983/solr/techproducts/query?q=test&rq=\{!ltr model=myModel reRankDocs=100}&fl=id,score]`
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score
 
 The addition of the `rq` parameter will not change the output XML of the search.
 
 To obtain the feature values computed during reranking, add `[features]` to the `fl` parameter, for example:
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq=%7B!ltr%20model=myModel%20reRankDocs=100%7D&fl=id,score,%5Bfeatures%5D[http://localhost:8983/solr/techproducts/query?q=test&rq=\{!ltr model=myModel reRankDocs=100}&fl=id,score,[features]]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score,[features]
 
 The output XML will include feature values as a comma-separated list, resembling the output shown here:
 
@@ -258,7 +261,8 @@ curl -XPUT 'http://localhost:8983/solr/techproducts/schema/feature-store' --data
 
 To view the features you just uploaded please open the following URL in a browser:
 
-`\http://localhost:8983/solr/techproducts/schema/feature-store/myEfiFeatureStore`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/feature-store/myEfiFeatureStore
 
 .Example: /path/myEfiFeatures.json
 [source,json]
@@ -314,7 +318,8 @@ curl -XPUT 'http://localhost:8983/solr/techproducts/schema/model-store' --data-b
 
 To view the model you just uploaded please open the following URL in a browser:
 
-`\http://localhost:8983/solr/techproducts/schema/model-store`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/model-store
 
 .Example: /path/myEfiModel.json
 [source,json]
@@ -345,7 +350,7 @@ To view the model you just uploaded please open the following URL in a browser:
 To obtain the feature values computed during reranking, add `[features]` to the `fl` parameter and `efi.*` parameters to the `rq` parameter, for example:
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq=\{!ltr model=myEfiModel efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=1}&fl=id,cat,manu,score,[features]] link:[]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myEfiModel efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=1}&fl=id,cat,manu,score,[features]
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myEfiModel efi.text=test efi.preferredManufacturer=Apache efi.fromMobile=0 efi.answer=13}&fl=id,cat,manu,score,[features]
@@ -436,21 +441,17 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 
 ==== Implementation and Contributions
 
-.How does Solr Learning-To-Rank work under the hood?
+How does Solr Learning-To-Rank work under the hood?::
+Please refer to the `ltr` {solr-javadocs}/solr-ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
-NOTE: Please refer to the `ltr` {solr-javadocs}/solr-ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
-
-.How could i write additional models and/or features?
-[NOTE]
-====
+How could I write additional models and/or features?::
 Contributions for further models, features and normalizers are welcome. Related links:
-
++
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
 * http://wiki.apache.org/solr/HowToContribute
 * http://wiki.apache.org/lucene-java/HowToContribute
-====
 
 == LTR Lifecycle
 
@@ -464,11 +465,13 @@ It is recommended that you organise all your features into stores which are akin
 
 To discover the names of all your feature stores:
 
-`\http://localhost:8983/solr/techproducts/schema/feature-store`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/feature-store
 
 To inspect the content of the `commonFeatureStore` feature store:
 
-`\http://localhost:8983/solr/techproducts/schema/feature-store/commonFeatureStore`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/feature-store/commonFeatureStore
 
 === Models
 
@@ -479,15 +482,18 @@ To inspect the content of the `commonFeatureStore` feature store:
 
 To extract features for `currentFeatureStore` 's features:
 
-`\http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features store=currentFeatureStore]`
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features store=currentFeatureStore]
 
 To extract features for `nextFeatureStore` features whilst reranking with `currentModel` based on `currentFeatureStore`:
 
-`\http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=currentModel reRankDocs=100}&fl=id,score,[features store=nextFeatureStore]`
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=currentModel reRankDocs=100}&fl=id,score,[features store=nextFeatureStore]
 
 To view all models:
 
-`\http://localhost:8983/solr/techproducts/schema/model-store`
+[source,text]
+http://localhost:8983/solr/techproducts/schema/model-store
 
 To delete the `currentModel` model:
 
@@ -496,7 +502,7 @@ To delete the `currentModel` model:
 curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/model-store/currentModel'
 ----
 
-IMPORTANT: A feature store must be deleted only when there are no models using it.
+IMPORTANT: A feature store may be deleted only when there are no models using it.
 
 To delete the `currentFeatureStore` feature store:
 
