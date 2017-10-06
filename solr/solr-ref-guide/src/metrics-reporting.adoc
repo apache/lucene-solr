@@ -94,6 +94,7 @@ This section of `solr.xml` allows you to define the system properties which are 
 If this section is not defined, the following default configuration is used which hides password and authentication information:
 
 [source,xml]
+----
 <metrics>
   <hiddenSysProps>
     <str>javax.net.ssl.keyStorePassword</str>
@@ -103,6 +104,7 @@ If this section is not defined, the following default configuration is used whic
     <str>zkDigestReadonlyPassword</str>
   </hiddenSysProps>
 </metrics>
+----
 
 === The <metrics><reporters> Element
 
@@ -132,6 +134,7 @@ Implementation of a custom metrics supplier is beyond the scope of this guide, b
 As an example of a section of `solr.xml` that defines some of these custom parameters, the following defines the default `Meter` supplier with a non-default `clock` and the default `Timer` is used with a non-default reservoir:
 
 [source,xml]
+----
 <metrics>
   <suppliers>
     <meter>
@@ -143,6 +146,7 @@ As an example of a section of `solr.xml` that defines some of these custom param
     </timer>
   </suppliers>
 </metrics>
+----
 
 == Reporters
 
@@ -300,7 +304,6 @@ Basic metrics are always collected - collection of additional metrics can be tur
     <metrics>
       <majorMergeDocs>524288</majorMergeDocs>
       <bool name="mergeDetails">true</bool>
-      <bool name="directoryDetails">true</bool>
     </metrics>
     ...
   </indexConfig>
