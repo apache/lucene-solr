@@ -120,7 +120,11 @@ Other
 
 
 ======================= Lucene 7.0.1 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
+  child scorers (Adrien Grand, Mike McCandless)
 
 ======================= Lucene 7.0.0 =======================
 
