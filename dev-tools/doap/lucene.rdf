@@ -68,6 +68,13 @@
 
     <release>
       <Version>
+        <name>lucene-7.0.1</name>
+        <created>2017-10-06</created>
+	      <revision>7.0.1</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
         <name>lucene-7.0.0</name>
         <created>2017-09-20</created>
 	      <revision>7.0.0</revision>
