@@ -343,10 +343,7 @@
      standard package such as org.apache.solr.analysis
   -->
 
-  <!-- The StrField type is not analyzed, but indexed/stored verbatim.
-     It supports doc values but in that case the field needs to be
-     single-valued and either required or have a default value.
-    -->
+  <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <!-- boolean type: "true" or "false" -->
