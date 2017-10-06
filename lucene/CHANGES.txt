@@ -103,6 +103,9 @@ Other
 * LUCENE-7978: Add some more documentation about setting up build
   environment.  (Anton R. Yuste via Uwe Schindler)
 
+* LUCENE-5753: Update TLDs recognized by UAX29URLEmailTokenizer. (Steve Rowe)
+
+
 ======================= Lucene 7.0.1 =======================
 (No Changes)
 
