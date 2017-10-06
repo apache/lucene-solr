@@ -636,6 +636,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testEventQueue() throws Exception {
+    waitForSeconds = 1;
     CloudSolrClient solrClient = cluster.getSolrClient();
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
