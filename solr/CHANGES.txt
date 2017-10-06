@@ -221,6 +221,9 @@ Other Changes
 * SOLR-11351: Make LTRScoringModel model more extensible. (Christine Poerschke)
 
 * SOLR-10451: Remove contrib/ltr/lib from lib includes in the techproducts example config (sungjunyoung via janhoy)
+
+* SOLR-11306: Fix inaccurate comments on docValues and StrField in the example schemas
+  (Tom Burton-West, Jason Gerlowski, Varun Thacker)
    
 ==================  7.0.1 ==================
 
