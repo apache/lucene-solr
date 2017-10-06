@@ -115,6 +115,8 @@ Other
 
 * LUCENE-7983: IndexWriter.IndexReaderWarmer is now a functional interface
   instead of an abstract class with a single method (Dawid Weiss)
+  
+* LUCENE-5753: Update TLDs recognized by UAX29URLEmailTokenizer. (Steve Rowe)
 
 
 ======================= Lucene 7.0.1 =======================
