@@ -1107,6 +1107,7 @@ body.toc2 #header > h1:nth-last-child(2)
         float: right;
         margin-left: 1em;
         border: none;
+        max-width: 300px;
     }
 }
 .toc > ul
@@ -1156,7 +1157,6 @@ div.toc ul {
     background-color: whitesmoke;
     padding: 5px;
     border-radius: 5px;
-    max-width: 300px;
     color: gray;
 }
 
