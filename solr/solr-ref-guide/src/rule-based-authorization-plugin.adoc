@@ -40,25 +40,26 @@ This example `security.json` shows how the <<basic-authentication-plugin.adoc#ba
 ----
 {
 "authentication":{
-   "class":"solr.BasicAuthPlugin",
-   "blockUnknown": true,
-   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="}
+   "class":"solr.BasicAuthPlugin", <1>
+   "blockUnknown": true, <2>
+   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="} <3>
 },
 "authorization":{
-   "class":"solr.RuleBasedAuthorizationPlugin",
+   "class":"solr.RuleBasedAuthorizationPlugin", <4>
    "permissions":[{"name":"security-edit",
-      "role":"admin"}],
-   "user-role":{"solr":"admin"}
+      "role":"admin"}], <5>
+   "user-role":{"solr":"admin"} <6>
 }}
 ----
 
 There are several things defined in this example:
 
-* Basic authentication and rule-based authorization plugins are enabled.
-* A user called 'solr', with a password has been defined.
-* All requests w/o credentials will be rejected with a 401 error. Set `'blockUnknown'` to false (or remove it altogether) if you wish to let unauthenticated requests to go through. However, if a particular resource is protected by a rule, they are rejected anyway with a 401 error.
-* The 'admin' role has been defined, and it has permission to edit security settings.
-* The 'solr' user has been defined to the 'admin' role.
+<1> Basic authentication plugin is enabled.
+<2> All requests w/o credentials will be rejected with a 401 error. Set `'blockUnknown'` to false (or remove it altogether) if you wish to let unauthenticated requests to go through. However, if a particular resource is protected by a rule, they are rejected anyway with a 401 error.
+<3> A user named 'solr', with a password has been defined.
+<4> Rule-based authorization plugin is enabled.
+<5> The 'admin' role has been defined, and it has permission to edit security settings.
+<6> The 'solr' user has been defined to the 'admin' role.
 
 == Permission Attributes
 

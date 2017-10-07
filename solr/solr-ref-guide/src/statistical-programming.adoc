@@ -18,27 +18,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Streaming Expression language includes a powerful statistical programing syntax with many of the
-features of a functional programming language. The syntax includes *variables*, *data structures*
-and a growing set of *mathematical functions*.
+The Streaming Expression language includes a powerful statistical programing syntax with many of the features of a functional programming language.
 
-Using the statistical programing syntax Solr's powerful *data retrieval*
-capabilities can be combined with in-depth *statistical analysis*.
+The syntax includes variables, data structures and a growing set of mathematical functions.
 
-The *data retrieval* methods include:
+Using the statistical programing syntax, Solr's powerful data retrieval
+capabilities can be combined with in-depth statistical analysis.
+
+The data retrieval methods include:
 
  * SQL
  * time series aggregation
  * random sampling
  * faceted aggregation
- * KNN searches
- * topic message queues
+ * K-Nearest Neighbor (KNN) searches
+ * `topic` message queues
  * MapReduce (parallel relational algebra)
  * JDBC calls to outside databases
  * Graph Expressions
 
-Once the data is retrieved, the statistical programming syntax can be used to create *arrays* from the data so it
-can be *manipulated*, *transformed* and *analyzed*.
+Once the data is retrieved, the statistical programming syntax can be used to create arrays from the data so it
+can be manipulated, transformed and analyzed.
 
 The statistical function library includes functions that perform:
 
@@ -48,7 +48,7 @@ The statistical function library includes functions that perform:
 * Moving averages
 * Percentiles
 * Simple regression and prediction
-* ANOVA
+* Analysis of covariance (ANOVA)
 * Histograms
 * Convolution
 * Euclidean distance
@@ -56,34 +56,30 @@ The statistical function library includes functions that perform:
 * Rank transformation
 * Normalization transformation
 * Sequences
-* Array manipulation functions (creation, copying, length, scaling, reverse etc...)
+* Array manipulation functions (creation, copying, length, scaling, reverse, etc.)
 
-The statistical function library is backed by *Apache Commons Math*.
+The statistical function library is backed by https://commons.apache.org/proper/commons-math/[Apache Commons Math library]. A full discussion of many of the math functions available to streaming expressions is available in the section <<stream-evaluator-reference.adoc#stream-evaluator-reference,Stream Evaluator Reference>>.
 
-This document provides an overview of the how to apply the variables, data structures
-and mathematical functions.
+This document provides an overview of the how to apply the variables, data structures and mathematical functions.
 
-== /stream handler
+NOTE: Like all streaming expressions, the statistical functions are run by Solr's `/stream` handler. For an overview of this handler, see the section <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>.
 
-Like all Streaming Expressions, the statistical functions can be run by Solr's /stream handler.
+== Math Functions
 
-== Math
+Streaming expressions contain a suite of mathematical functions which can be called on their own or as part of a larger expression.
 
-Streaming Expressions contain a suite of *mathematical functions* which can be called on
-their own or as part of a larger expression.
+Solr's `/stream` handler evaluates the mathematical expression and returns a result.
 
-Solr's /stream handler evaluates the mathematical expression and returns a result.
-
-For example sending the following expression to the /stream handler:
+For example, if you send the following expression to the `/stream` handler:
 
 [source,text]
 ----
 add(1, 1)
 ----
 
-Returns the following response:
+You get the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -109,7 +105,7 @@ pow(10, add(1,1))
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -126,9 +122,7 @@ Returns the following response:
 }
 ----
 
-You can also perform math on a stream of Tuples.
-
-For example:
+You can also perform math on a stream of Tuples. For example:
 
 [source,text]
 ----
@@ -139,7 +133,7 @@ select(search(collection2, q="*:*", fl="price_f", sort="price_f desc", rows="3")
 
 Returns the following response:
 
-[source, text]
+[source,json]
 ----
 {
   "result-set": {
@@ -165,9 +159,13 @@ Returns the following response:
 }
 ----
 
-== Array (data structure)
+== Data Structures
 
-The first data structure we'll explore is the *array*.
+Several types of data can be manipulated with the statistical programming syntax. The following sections explore <<Arrays,arrays>>, <<Tuples,tuples>>, and <<Lists,lists>>.
+
+=== Arrays
+
+The first data structure we'll explore is the array.
 
 We can create an array with the `array` function:
 
@@ -180,7 +178,7 @@ array(1, 2, 3)
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -201,7 +199,7 @@ Returns the following response:
 }
 ----
 
-We can nest arrays within arrays to form a *matrix*:
+We can nest arrays within arrays to form a matrix:
 
 [source,text]
 ----
@@ -211,7 +209,7 @@ array(array(1, 2, 3),
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -239,9 +237,7 @@ Returns the following response:
 }
 ----
 
-We can manipulate arrays with functions.
-
-For example we can reverse and array with the `rev` function:
+We can manipulate arrays with functions. For example, we can reverse an array with the `rev` function:
 
 [source,text]
 ----
@@ -250,7 +246,7 @@ rev(array(1, 2, 3))
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -271,18 +267,16 @@ Returns the following response:
 }
 ----
 
-Arrays can also be built and returned by functions.
-
-For example the sequence function:
+Arrays can also be built and returned by functions. For example, the `sequence` function:
 
 [source,text]
 ----
 sequence(5,0,1)
 ----
 
-This returns an array of size *5* starting from *0* with a stride of *1*.
+This returns an array of size `5` starting from `0` with a stride of `1`.
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -305,11 +299,7 @@ This returns an array of size *5* starting from *0* with a stride of *1*.
 }
 ----
 
-We can perform math on an array.
-
-For example we can scale an array with the `scale` function:
-
-Expression:
+We can perform math on an array. For example, we can scale an array with the `scale` function:
 
 [source,text]
 ----
@@ -318,7 +308,7 @@ scale(10, sequence(5,0,1))
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -341,9 +331,7 @@ Returns the following response:
 }
 ----
 
-We can perform *statistical analysis* on arrays.
-
-For example we can correlate two sequences with the `corr` function:
+We can perform statistical analysis on arrays For example, we can correlate two sequences with the `corr` function:
 
 [source,text]
 ----
@@ -352,7 +340,7 @@ corr(sequence(5,1,1), sequence(5,10,10))
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -370,12 +358,11 @@ Returns the following response:
 ----
 
 
-== Tuple (data structure)
+=== Tuples
 
-The *tuple* is the next data structure we'll explore.
+The tuple is the next data structure we'll explore.
 
-The `tuple` function returns a map of name/value pairs. A tuple is a very flexible data structure
-that can hold values that are strings, numerics, arrays and lists of tuples.
+The `tuple` function returns a map of name/value pairs. A tuple is a very flexible data structure that can hold values that are strings, numerics, arrays and lists of tuples.
 
 A tuple can be used to return a complex result from a statistical expression.
 
@@ -390,7 +377,7 @@ tuple(title="hello world",
 Returns the following response:
 
 ----
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -419,12 +406,11 @@ Returns the following response:
 }
 ----
 
-== List (data structure)
+=== Lists
 
-Next we have the *list* data structure.
+Next we have the list data structure.
 
-The `list` function is a data structure that wraps Streaming Expressions and emits all the tuples from the wrapped
-expressions as a single concatenated stream.
+The `list` function is a data structure that wraps streaming expressions and emits all the tuples from the wrapped expressions as a single concatenated stream.
 
 Below is an example of a list of tuples:
 
@@ -436,7 +422,7 @@ list(tuple(id=1, data=array(1, 2, 3)),
 
 Returns the following response:
 
-[source,text]
+[source,json]
 ----
 
 {
@@ -467,14 +453,12 @@ Returns the following response:
 }
 ----
 
-== Let (setting variables)
+== Setting Variables with let
 
-The `let` function sets *variables* and runs a Streaming Expression that references the variables. The `let` funtion can be used to
+The `let` function sets variables and runs a streaming expression that references the variables. The `let` function can be used to
 write small statistical programs.
 
-A *variable* can be set to the output of any Streaming Expression.
-
-Here is a very simple example:
+A variable can be set to the output of any streaming expression. Here is a very simple example:
 
 [source,text]
 ----
@@ -483,7 +467,7 @@ let(a=random(collection2, q="*:*", rows="3", fl="price_f"),
     tuple(sample1=a, sample2=b))
 ----
 
-The `let` expression above is setting variables *a* and *b* to random
+The `let` expression above is setting variables `a` and `b` to random
 samples taken from collection2.
 
 The `let` function then executes the `tuple` streaming expression
@@ -491,7 +475,7 @@ which references the two variables.
 
 Here is the output:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -529,11 +513,11 @@ Here is the output:
 }
 ----
 
-== Creating arrays with `col` function
+== Creating Arrays with col Function
 
 The `col` function is used to move a column of numbers from a list of tuples into an `array`.
-This is an important function because Streaming Expressions such as `sql`, `random` and `timeseries` return tuples,
-but the statistical functions operate on arrays.
+
+This is an important function because streaming expressions such as `sql`, `random` and `timeseries` return tuples, but the statistical functions operate on arrays.
 
 Below is an example of the `col` function:
 
@@ -546,20 +530,19 @@ let(a=random(collection2, q="*:*", rows="3", fl="price_f"),
     tuple(sample1=c, sample2=d))
 ----
 
-The example above is using the `col` function to create arrays from the tuples stored in
-variables *a* and *b*.
+The example above is using the `col` function to create arrays from the tuples stored in variables `a` and `b`.
 
-Variable *c* contains an array of values from the *price_f* field,
-taken from the tuples stored in variable *a*.
+Variable `c` contains an array of values from the `price_f` field,
+taken from the tuples stored in variable `a`.
 
-Variable *d* contains an array of values from the *price_f* field,
-taken from the tuples stored in variable *b*.
+Variable `d` contains an array of values from the `price_f` field,
+taken from the tuples stored in variable `b`.
 
-Also notice inn that the response `tuple` executed by `let` is pointing to the arrays in variables *c* and *d*.
+Also notice inn that the response `tuple` executed by `let` is pointing to the arrays in variables `c` and `d`.
 
 The response shows the arrays:
 
-[source,text]
+[source,json]
 ----
 
 {
@@ -588,61 +571,60 @@ The response shows the arrays:
 
 == Statistical Programming Example
 
-We've covered how the *data structures*, *variables* and a few *statistical functions* work.
-Let's dive into an example that puts these tools to use.
+We've covered how the data structures, variables and a few statistical functions work. Let's dive into an example that puts these tools to use.
 
-=== Use case
+=== Use Case
 
 We have an existing hotel in *cityA* that is very profitable.
 We are contemplating opening up a new hotel in a different city.
 We're considering 4 different cities: *cityB*, *cityC*, *cityD*, *cityE*.
-We'd like to open a hotel in a city that has similar room rates to *cityA*.
+We'd like to open a hotel in a city that has similar room rates to cityA.
 
-How do we determine which of the 4 cities we're considering has room rates which are most similar to *cityA*?
+How do we determine which of the 4 cities we're considering has room rates which are most similar to cityA?
 
 === The Data
 
-We have a data set of un-aggregated hotel *bookings*. Each booking record has a rate and city.
+We have a data set of un-aggregated hotel bookings. Each booking record has a rate and city.
 
-=== Can we simply aggregate?
+=== Can We Simply Aggregate?
 
-One approach would be to aggregate the data from each city and compare the *mean* room rates. This approach will
+One approach would be to aggregate the data from each city and compare the mean room rates. This approach will
 give us some useful information, but the mean is a summary statistic which loses a significant amount of information
-about the data. For example we don't have an understanding of how the distribution of room rates is impacting the
+about the data. For example, we don't have an understanding of how the distribution of room rates is impacting the
 mean.
 
-The *median* room rate provides another interesting data point but it's still not the entire picture. It's sill just
+The median room rate provides another interesting data point but it's still not the entire picture. It's sill just
 one point of reference.
 
 Is there a way that we can compare the markets without losing valuable information in the data?
 
-=== K Nearest Neighbor
+==== K-Nearest Neighbor
 
-The use case we're reasoning about can often be approached using a K Nearest Neighbor (knn) algorithm.
+The use case we're reasoning about can often be approached using a K-Nearest Neighbor (knn) algorithm.
 
-With knn we use a *distance* measure to compare vectors of data to find the k nearest neighbors to
+With knn we use a distance measure to compare vectors of data to find the k nearest neighbors to
 a specific vector.
 
-=== Euclidean Distance
+==== Euclidean Distance
 
-The Streaming Expression statistical function library has a function called `distance`. The `distance` function
+The streaming expression statistical function library has a function called `distance`. The `distance` function
 computes the Euclidean distance between two vectors. This looks promising for comparing vectors of room rates.
 
-=== Vectors
+==== Vectors
 
 But how to create the vectors from a our data set? Remember we have un-aggregated room rates from each of the cities.
 How can we vectorize the data so it can be compared using the `distance` function.
 
-We have a Streaming Expression that can retrieve a *random sample* from each of the cities. The name of this
+We have a streaming expression that can retrieve a random sample from each of the cities. The name of this
 expression is `random`. So we could take a random sample of 1000 room rates from each of the five cities.
 
 But random vectors of room rates are not comparable because the distance algorithm compares values at each index
 in the vector. How can make these vectors comparable?
 
-We can make them comparable by *sorting* them. Then as the distance algorithm moves along the vectors it will be
+We can make them comparable by sorting them. Then as the distance algorithm moves along the vectors it will be
 comparing room rates from lowest to highest in both cities.
 
-=== The code
+=== The Code
 
 [source,text]
 ----
@@ -664,16 +646,16 @@ let(cityA=sort(random(bookings, q="city:cityA", rows="1000", fl="rate_d"), by="r
              tuple(city=E, distance=distance(ratesA, ratesE)))))
 ----
 
-==== The code explained
+=== The Code Explained
 
 The `let` expression sets variables first.
 
 The first 5 variables (cityA, cityB, cityC, cityD, cityE), contain the random samples from the `bookings` collection.
-the `random` function is pulling 1000 random samples from each city and including the `rate_d` field in the
+The `random` function is pulling 1000 random samples from each city and including the `rate_d` field in the
 tuples that are returned.
 
 The `random` function is wrapped by a `sort` function which is sorting the tuples in
-ascending order based on the rate_d field.
+ascending order based on the `rate_d` field.
 
 The next five variables (ratesA, ratesB, ratesC, ratesD, ratesE) contain the arrays of room rates for each
 city. The `col` function is used to move the `rate_d` field from the random sample tuples

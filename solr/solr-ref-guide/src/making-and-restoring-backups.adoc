@@ -181,10 +181,10 @@ http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&co
 
 The list snapshot request parameters are:
 
-core::
+`core`::
 The name of the core to whose snapshots we want to list.
 
-async::
+`async`::
 Request ID to track this action which will be processed asynchronously.
 
 === Delete Snapshot API
@@ -209,7 +209,6 @@ The name of the core whose snapshot we want to delete
 
 `async`::
 Request ID to track this action which will be processed asynchronously
-
 
 == Backup/Restore Storage Repositories
 

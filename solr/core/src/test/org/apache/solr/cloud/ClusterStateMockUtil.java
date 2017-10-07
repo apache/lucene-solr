@@ -18,13 +18,10 @@
 package org.apache.solr.cloud;
 
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,22 +37,12 @@ public class ClusterStateMockUtil {
 
   private final static Pattern BLUEPRINT = Pattern.compile("([a-z])(\\d+)?(?:(['A','R','D','F']))?(\\*)?");
 
-  protected static class Result implements Closeable {
-    OverseerAutoReplicaFailoverThread.DownReplica badReplica;
-    ZkStateReader reader;
-
-    @Override
-    public void close() throws IOException {
-      reader.close();
-    }
+  protected static ZkStateReader buildClusterState(String string, String ... liveNodes) {
+    return buildClusterState(string, 1, liveNodes);
   }
 
-  protected static ClusterStateMockUtil.Result buildClusterState(List<Result> results, String string, String ... liveNodes) {
-    return buildClusterState(results, string, 1, liveNodes);
-  }
-
-  protected static ClusterStateMockUtil.Result buildClusterState(List<Result> results, String string, int replicationFactor, String ... liveNodes) {
-    return buildClusterState(results, string, replicationFactor, 10, liveNodes);
+  protected static ZkStateReader buildClusterState(String string, int replicationFactor, String ... liveNodes) {
+    return buildClusterState(string, replicationFactor, 10, liveNodes);
   }
 
   /**
@@ -118,9 +105,7 @@ public class ClusterStateMockUtil {
    *
    */
   @SuppressWarnings("resource")
-  protected static ClusterStateMockUtil.Result buildClusterState(List<Result> results, String clusterDescription, int replicationFactor, int maxShardsPerNode, String ... liveNodes) {
-    ClusterStateMockUtil.Result result = new ClusterStateMockUtil.Result();
-
+  protected static ZkStateReader buildClusterState(String clusterDescription, int replicationFactor, int maxShardsPerNode, String ... liveNodes) {
     Map<String,Slice> slices = null;
     Map<String,Replica> replicas = null;
     Map<String,Object> collectionProps = new HashMap<>();
@@ -181,22 +166,11 @@ public class ClusterStateMockUtil {
           String nodeName = "baseUrl" + node + "_";
           String replicaName = "replica" + replicaCount++;
 
-          if ("*".equals(m.group(4))) {
-            replicaName += " (bad)";
-          }
-
           replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
           replicaPropMap.put(ZkStateReader.BASE_URL_PROP, "http://baseUrl" + node);
           replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
 
           replica = new Replica(replicaName, replicaPropMap);
-
-          if ("*".equals(m.group(4))) {
-            result.badReplica = new OverseerAutoReplicaFailoverThread.DownReplica();
-            result.badReplica.replica = replica;
-            result.badReplica.slice = slice;
-            result.badReplica.collection = docCollection;
-          }
 
           replicas.put(replica.getName(), replica);
           break;
@@ -216,17 +190,7 @@ public class ClusterStateMockUtil {
     }
     System.err.println(json);
 
-    // todo remove the limitation of always having a bad replica
-    assert result.badReplica != null : "Is there no bad replica?";
-    assert result.badReplica.slice != null : "Is there no bad replica?";
-
-    result.reader = reader;
-
-    if (results != null) {
-      results.add(result);
-    }
-
-    return result;
+    return reader;
   }
 
 

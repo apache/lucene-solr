@@ -20,71 +20,25 @@
 
 http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[Java Management Extensions (JMX)] is a technology that makes it possible for complex systems to be controlled by tools without the systems and tools having any previous knowledge of each other. In essence, it is a standard interface by which complex systems can be viewed and manipulated.
 
-Solr, like any other good citizen of the Java universe, can be controlled via a JMX interface. You can enable JMX support by adding lines to `solrconfig.xml`. You can use a JMX client, like jconsole, to connect with Solr. Check out the Wiki page http://wiki.apache.org/solr/SolrJmx for more information. You may also find the following overview of JMX to be useful: http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
+Solr, like any other good citizen of the Java universe, can be controlled via a JMX interface. Once enabled, you can use a JMX client, like jconsole, to connect with Solr.
+
+If you are unfamiliar with JMX, you may  find the following overview useful: http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
 
 == Configuring JMX
 
-JMX configuration is provided in `solrconfig.xml`. Please see the http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX Technology Home Page] for more details.
+JMX support is configured by defining a metrics reporter, as described in the section the section <<metrics-reporting.adoc#jmx-reporter,JMX Reporter>>.
 
-A `rootName` attribute can be used when configuring `<jmx />` in `solrconfig.xml`. If this attribute is set, Solr uses it as the root name for all the MBeans that Solr exposes via JMX. The default name is "solr" followed by the core name.
+If you have an existing MBean server running in Solr's JVM, or if you start Solr with the system property `-Dcom.sun.management.jmxremote`, Solr will automatically identify it's location on startup even if you have not defined a reporter explicitly in `solr.xml`. You can also define the location of the MBean server with parameters defined in the reporter definition.
 
-[IMPORTANT]
-====
+== Configuring MBean Servers
 
-Enabling/disabling JMX and securing access to MBeanServers is left up to the user by specifying appropriate JVM parameters and configuration. Please explore the http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX Technology Home Page] for more details.
+Versions of Solr prior to 7.0 defined JMX support in `solrconfig.xml`. This has been changed to the metrics reporter configuration defined above. Parameters for the reporter configuration allow defining the location or address of an existing MBean server.
 
-====
-
-=== Configuring an Existing MBeanServer
-
-The command:
-
-[source,xml]
-----
-<jmx />
-----
-
-enables JMX support in Solr if and only if an existing MBeanServer is found. Use this if you want to configure JMX with JVM parameters. Remove this to disable exposing Solr configuration and statistics to JMX. If this is specified, Solr will try to list all available MBeanServers and use the first one to register MBeans.
-
-=== Configuring an Existing MBeanServer with agentId
-
-The command:
-
-[source,xml]
-----
-<jmx agentId="myMBeanServer" />
-----
-
-enables JMX support in Solr if and only if an existing MBeanServer is found matching the given agentId. If multiple servers are found, the first one is used. If none is found, an exception is raised and depending on the configuration, Solr may refuse to start.
-
-=== Configuring a New MBeanServer
-
-The command:
-
-[source,xml]
-----
-<jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solrjmx" />
-----
-
-creates a new MBeanServer exposed for remote monitoring at the specific service URL. If the JMXConnectorServer can't be started (probably because the serviceUrl is bad), an exception is thrown.
-
-==== MBean Server Example
-
-Solr's `sample_techproducts_configs` config set uses the simple `<jmx />` configuration option. If you start the example with the necessary JVM system properties to launch an internal MBeanServer, Solr will register with it and you can connect using a tool like `jconsole`:
-
-1.  Launch the `techproducts` example with JMX enabled:
-+
-[source,bash]
-----
-bin/solr -e techproducts -Dcom.sun.management.jmxremote
-----
-2.  Start `jconsole` (provided with the Sun JDK in the bin directory).
-3.  Connect to the "`start.jar`" shown in the list of local processes.
-4.  Switch to the "MBeans" tab. You should be able to see "`solr/techproducts`" listed there, at which point you can drill down and see details of every solr plugin.
+An MBean server can be started at the time of Solr's startup by passing the system parameter `-Dcom.sun.management.jmxremote`. See Oracle's documentation for additional settings available to start and control an MBean server at http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
 
 === Configuring a Remote Connection to Solr JMX
 
-If you need to attach a JMX-enabled Java profiling tool, such as JConsole or VisualVM, to a remote Solr server, then you need to enable remote JMX access when starting the Solr server. Simply change the `ENABLE_REMOTE_JMX_OPTS` property in the include file to true. You’ll also need to choose a port for the JMX RMI connector to bind to, such as 18983. For example, if your Solr include script sets:
+If you need to attach a JMX-enabled Java profiling tool, such as JConsole or VisualVM, to a remote Solr server, then you need to enable remote JMX access when starting the Solr server. Simply change the `ENABLE_REMOTE_JMX_OPTS` property in the `solr.in.sh` or `solr.in.cmd` (for Windows) file to true. You’ll also need to choose a port for the JMX RMI connector to bind to, such as 18983. For example, if your Solr include script sets:
 
 [source,bash]
 ----
@@ -106,11 +60,9 @@ The JMX RMI connector will allow Java profiling tools to attach to port 18983. W
 
 We don’t recommend enabling remote JMX access in production, but it can sometimes be useful when doing performance and user-acceptance testing prior to going into production.
 
-For more information about these settings, see:
-
-http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html
+For more information about these settings, see: http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html.
 
 [IMPORTANT]
 ====
-Making JMX connections into machines running behind NATs (e.g. Amazon's EC2 service) is not a simple task. The `java.rmi.server.hostname` system property may help, but running `jconsole` on the server itself and using a remote desktop is often the simplest solution. See http://web.archive.org/web/20130525022506/http://jmsbrdy.com/monitoring-java-applications-running-on-ec2-i.
+Making JMX connections into machines running behind NATs (e.g., Amazon's EC2 service) is not a simple task. The `java.rmi.server.hostname` system property may help, but running `jconsole` on the server itself and using a remote desktop is often the simplest solution. See http://web.archive.org/web/20130525022506/http://jmsbrdy.com/monitoring-java-applications-running-on-ec2-i.
 ====

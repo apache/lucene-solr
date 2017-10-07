@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -382,8 +383,8 @@ public class SplitShardCmd implements Cmd {
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
-      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(() -> ocmh.overseer.getZkController().getCoreContainer(),
-          ocmh.zkStateReader, clusterState,
+      List<ReplicaPosition> replicaPositions = Assign.identifyNodes(ocmh,
+          clusterState,
           new ArrayList<>(clusterState.getLiveNodes()),
           collectionName,
           new ZkNodeProps(collection.getProperties()),
@@ -505,6 +506,8 @@ public class SplitShardCmd implements Cmd {
     } catch (Exception e) {
       log.error("Error executing split operation for collection: " + collectionName + " parent shard: " + slice, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e);
+    } finally {
+      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
     }
   }
 }

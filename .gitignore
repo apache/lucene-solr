@@ -1,5 +1,6 @@
 # .
 /eclipse-build
+/maven-build
 /classes
 build
 /idea-build

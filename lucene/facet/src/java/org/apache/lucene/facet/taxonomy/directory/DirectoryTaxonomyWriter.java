@@ -39,19 +39,19 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.writercache.Cl2oTaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.UTF8TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderManager;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Terms;
@@ -149,7 +149,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @param cache
    *    A {@link TaxonomyWriterCache} implementation which determines
    *    the in-memory caching policy. See for example
-   *    {@link LruTaxonomyWriterCache} and {@link Cl2oTaxonomyWriterCache}.
+   *    {@link LruTaxonomyWriterCache} and {@link UTF8TaxonomyWriterCache}.
    *    If null or missing, {@link #defaultTaxonomyWriterCache()} is used.
    * @throws CorruptIndexException
    *     if the taxonomy is corrupted.
@@ -291,12 +291,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * Defines the default {@link TaxonomyWriterCache} to use in constructors
    * which do not specify one.
    * <P>  
-   * The current default is {@link Cl2oTaxonomyWriterCache} constructed
-   * with the parameters (1024, 0.15f, 3), i.e., the entire taxonomy is
-   * cached in memory while building it.
+   * The current default is {@link UTF8TaxonomyWriterCache}, i.e.,
+   * the entire taxonomy is cached in memory while building it.
    */
   public static TaxonomyWriterCache defaultTaxonomyWriterCache() {
-    return new Cl2oTaxonomyWriterCache(1024, 0.15f, 3);
+    return new UTF8TaxonomyWriterCache();
   }
 
   /** Create this with {@code OpenMode.CREATE_OR_APPEND}. */
@@ -809,7 +808,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   /**
    * Mapping from old ordinal to new ordinals, used when merging indexes 
-   * wit separate taxonomies.
+   * with separate taxonomies.
    * <p> 
    * addToTaxonomies() merges one or more taxonomies into the given taxonomy
    * (this). An OrdinalMap is filled for each of the added taxonomies,

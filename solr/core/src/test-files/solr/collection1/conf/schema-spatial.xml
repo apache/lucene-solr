@@ -56,6 +56,9 @@
 
   <fieldType name="srptgeom" class="solr.RptWithGeometrySpatialField"/>
 
+  <fieldType name="srptgeom_geo3d" class="solr.RptWithGeometrySpatialField"
+             spatialContextFactory="Geo3D" planetModel="wgs84"/><!-- or sphere -->
+
   <fieldType name="bbox" class="solr.BBoxField"
              numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
 
@@ -75,6 +78,7 @@
   <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true"/>
   <field name="pointvector" type="pointvector"/>
   <field name="srptgeom" type="srptgeom"/>
+  <field name="srptgeom_geo3d" type="srptgeom_geo3d"/>
   <field name="bbox" type="bbox"/>
   <field name="pbbox" type="pbbox"/>
   <field name="bbox_ndv" type="bbox_ndv"/>

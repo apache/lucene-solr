@@ -20,7 +20,11 @@
 
 Solr ships with many out-of-the-box RequestHandlers, which are called implicit because they are not configured in `solrconfig.xml`.
 
+These handlers have pre-defined default parameters, known as _paramsets_, which can be modified if necessary.
+
 == List of Implicitly Available Endpoints
+
+// TODO 7.1 - this doesn't look great in the PDF, redesign the presentation
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -57,17 +61,20 @@ Solr ships with many out-of-the-box RequestHandlers, which are called implicit b
 
 == How to View the Configuration
 
-You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>. E.g. for the `gettingstarted` collection:
+You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>. For the `gettingstarted` collection:
 
-`curl http://localhost:8983/solr/gettingstarted/config/requestHandler`
+[source,text]
+curl http://localhost:8983/solr/gettingstarted/config/requestHandler
 
-To restrict the results to the configuration for a particular request handler, use the `componentName` request param. E.g. to see just the configuration for the `/export` request handler:
+To restrict the results to the configuration for a particular request handler, use the `componentName` request parameter. To see just the configuration for the `/export` request handler:
 
-`curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export"`
+[source,text]
+curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export"
 
-To include the expanded paramset in the response, as well as the effective parameters from merging the paramset params with the built-in params, use the `expandParams` request param. E.g. for the `/export` request handler:
+To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request param. For the `/export` request handler, you can make a request like this:
 
-`curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true"`
+[source,text]
+curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true"
 
 == How to Edit the Configuration
 

@@ -101,6 +101,7 @@
     <pathelement location="${memory.jar}"/>
     <pathelement location="${misc.jar}"/>
     <pathelement location="${spatial-extras.jar}"/>
+    <pathelement location="${spatial3d.jar}"/>
     <pathelement location="${expressions.jar}"/>
     <pathelement location="${suggest.jar}"/>
     <pathelement location="${grouping.jar}"/>
@@ -170,7 +171,7 @@
 
   <target name="prep-lucene-jars" 
           depends="jar-lucene-core, jar-backward-codecs, jar-analyzers-phonetic, jar-analyzers-kuromoji, jar-codecs,jar-expressions, jar-suggest, jar-highlighter, jar-memory,
-                   jar-misc, jar-spatial-extras, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox, jar-classification">
+                   jar-misc, jar-spatial-extras, jar-spatial3d, jar-grouping, jar-queries, jar-queryparser, jar-join, jar-sandbox, jar-classification">
       <property name="solr.deps.compiled" value="true"/>
   </target>
   
@@ -488,6 +489,12 @@
 
   <target name="-compile-test-lucene-queryparser">
     <ant dir="${common.dir}/queryparser" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="-compile-test-lucene-backward-codecs">
+    <ant dir="${common.dir}/backward-codecs" target="compile-test" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>

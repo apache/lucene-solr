@@ -175,6 +175,7 @@ The attributes that can be modified are:
 * collection.configName
 * rule
 * snitch
+* policy
 +
 See the <<create,CREATE action>> section above for details on these attributes.
 

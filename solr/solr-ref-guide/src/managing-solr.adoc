@@ -1,7 +1,7 @@
 = Managing Solr
 :page-shortname: managing-solr
 :page-permalink: managing-solr.html
-:page-children: securing-solr, running-solr-on-hdfs, making-and-restoring-backups, configuring-logging, using-jmx-with-solr, mbean-request-handler, performance-statistics-reference, metrics-reporting, v2-api
+:page-children: securing-solr, running-solr-on-hdfs, making-and-restoring-backups, configuring-logging, metrics-reporting, using-jmx-with-solr, mbean-request-handler, performance-statistics-reference, v2-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

@@ -101,7 +101,7 @@ Integer specifying how many backups to keep. This can be used to delete all but 
 The configuration files to replicate, separated by a comma.
 
 `commitReserveDuration`::
-If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time taken to download 5Mb from the master to a slave. The default is 10 seconds.
+If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time expected to be required to transfer data. The default is `00:00:10` i.e. 10 seconds.
 
 The example below shows a possible 'master' configuration for the `ReplicationHandler`, including a fixed number of backups and an invariant setting for the `maxWriteMBPerSec` request parameter to prevent slaves from saturating its network interface
 
@@ -112,9 +112,9 @@ The example below shows a possible 'master' configuration for the `ReplicationHa
     <str name="replicateAfter">optimize</str>
     <str name="backupAfter">optimize</str>
     <str name="confFiles">schema.xml,stopwords.txt,elevate.xml</str>
-    <str name="commitReserveDuration">00:00:10</str>
   </lst>
   <int name="maxNumberOfBackups">2</int>
+  <str name="commitReserveDuration">00:00:10</str>
   <lst name="invariants">
     <str name="maxWriteMBPerSec">16</str>
   </lst>

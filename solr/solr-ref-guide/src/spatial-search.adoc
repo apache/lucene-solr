@@ -147,9 +147,9 @@ LLPSF does not support Solr's "PostFilter".
 There are four distance function queries:
 
 * `geodist`, see below, usually the most appropriate;
-*  http://wiki.apache.org/solr/FunctionQuery#dist[`dist`], to calculate the p-norm distance between multi-dimensional vectors;
-* http://wiki.apache.org/solr/FunctionQuery#hsin.2C_ghhsin_-_Haversine_Formula[`hsin`], to calculate the distance between two points on a sphere;
-* https://wiki.apache.org/solr/FunctionQuery#sqedist_-_Squared_Euclidean_Distance[`sqedist`], to calculate the squared Euclidean distance between two points.
+*  <<function-queries.adoc#dist-function,`dist`>>, to calculate the p-norm distance between multi-dimensional vectors;
+* <<function-queries.adoc#hsin-function,`hsin`>>, to calculate the distance between two points on a sphere;
+* <<function-queries.adoc#sqedist-function,`sqedist`>>, to calculate the squared Euclidean distance between two points.
 
 For more information about these function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
 
@@ -187,9 +187,11 @@ Using the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<t
 
 == RPT
 
-RPT refers to either `SpatialRecursivePrefixTreeFieldType` (aka simply RPT) and an extended version: `RptWithGeometrySpatialField` (aka RPT with Geometry). RPT offers several functional improvements over LatLonPointSpatialField:
+RPT refers to either `SpatialRecursivePrefixTreeFieldType` (aka simply RPT) and an extended version:
+  `RptWithGeometrySpatialField` (aka RPT with Geometry).
+RPT offers several functional improvements over LatLonPointSpatialField:
 
-* Non-geodetic – geo=false general x & y (_not_ latitude and longitude)
+* Non-geodetic – geo=false general x & y (_not_ latitude and longitude) -- if desired
 * Query by polygons and other complex shapes, in addition to circles & rectangles
 * Ability to index non-point shapes (e.g. polygons) as well as points – see RptWithGeometrySpatialField
 * Heatmap grid faceting
@@ -198,8 +200,16 @@ RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are
 
 * Latitude/Longitude indexed point data; possibly multi-valued
 * Fast filtering with `geofilt`, `bbox` filters, and range query syntax (dateline crossing is supported)
-* Sort/boost via `geodist`
-* Well-Known-Text (WKT) shape syntax (required for specifying polygons & other complex shapes), and GeoJSON too. In addition to indexing and searching, this works with the `wt=geojson` (GeoJSON Solr response-writer) and `[geo f=myfield]` (geo Solr document-transformer).
+* Well-Known-Text (WKT) shape syntax (required for specifying polygons & other complex shapes), and GeoJSON too.
+  In addition to indexing and searching, this works with the `wt=geojson` (GeoJSON Solr response-writer) and `[geo f=myfield]` (geo Solr document-transformer).
+* Sort/boost via `geodist` -- _although not recommended_
+
+[TIP]
+====
+*Important*: Although RPT supports distance sorting/boosting, it is so inefficient at doing this that it might be
+ removed in the future.  Fortunately, you can use LatLonPointSpatialField _as well_ as RPT.  Use LLPSF for the distance
+ sorting/boosting; it only needs to have docValues for this; the index attribute can be disabled as it won't be used.
+====
 
 === Schema Configuration for RPT
 
@@ -251,18 +261,36 @@ A third choice is `packedQuad`, which is generally more efficient than `quad`, p
 
 *_And there are others:_* `normWrapLongitude`, `datelineRule`, `validationRule`, `autoIndex`, `allowMultiOverlap`, `precisionModel`. For further info, see notes below about `spatialContextFactory` implementations referenced above, especially the link to the JTS based one.
 
-=== JTS and Polygons
+=== Standard Shapes
 
-As indicated above, `spatialContextFactory` must be set to `JTS` for polygon support, including multi-polygon.
+The RPT field types support a set of standard shapes:
+points, circles (aka buffered points), envelopes (aka rectangles or bounding boxes), line strings,
+polygons, and "multi" variants of these.  The envelopes and line strings are Euclidean/cartesian (flat 2D) shapes.
+Underlying Solr is the Spatial4j library which implements them.  To support other shapes, you can configure the
+`spatialContextFactory` attribute on the field type to reference other options.  Two are available: JTS and Geo3D.
 
-All other shapes, including even line-strings, are supported without JTS. JTS stands for http://sourceforge.net/projects/jts-topo-suite/[JTS Topology Suite], which does not come with Solr due to its LGPL license. You must download it (a JAR file) and put that in a special location internal to Solr: `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`. You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/. It will not work if placed in other more typical Solr lib directories, unfortunately.
+=== JTS and Polygons (flat)
 
-When activated, there are additional configuration attributes available; see https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/context/jts/JtsSpatialContextFactory.html[org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory] for the Javadocs, and remember to look at the superclass's options in as well. One option in particular you should most likely enable is `autoIndex` (i.e., use JTS's PreparedGeometry) as it's been shown to be a major performance boost for non-trivial polygons.
+The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computational geometry library with a Euclidean/cartesian (flat 2D) model.
+It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
+With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
+Unfortunately Solr cannot include JTS due to its LGPL license.
+You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
+You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/.
+_It will not work if placed in other more typical Solr lib directories, unfortunately._
+JTS's license is expected to be transitioned to BSD by the end of 2017.
+
+Set the `spatialContextFactory` attribute on the field type to `JTS`.
+
+When activated, there are additional configuration attributes available; see
+  https://locationtech.github.io/spatial4j/apidocs/org/locationtech/spatial4j/context/jts/JtsSpatialContextFactory.html[org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory]
+  for the Javadocs, and remember to look at the superclass's options as well.
+One option in particular you should most likely enable is `autoIndex` (i.e., use JTS's PreparedGeometry) as it's been shown to be a major performance boost for non-trivial polygons.
 
 [source,xml]
 ----
 <fieldType name="location_rpt"   class="solr.SpatialRecursivePrefixTreeFieldType"
-               spatialContextFactory="org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory"
+               spatialContextFactory="JTS"
                autoIndex="true"
                validationRule="repairBuffer0"
                distErrPct="0.025"
@@ -280,6 +308,25 @@ Here's an example polygon query for a field "geo" that can be either solr.Spatia
 Inside the parenthesis following the search predicate is the shape definition. The format of that shape is governed by the `format` attribute on the field type, defaulting to WKT. If you prefer GeoJSON, you can specify that instead.
 
 Beyond this Reference Guide and Spatila4j's docs, there are some details that remain at the Solr Wiki at http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4.
+
+=== Geo3D and Polygons (on the ellipsoid)
+
+Geo3D is the colloquial name of the Lucene spatial-3d module, included with Solr.
+It's a computational geometry library implementing a variety of shapes (including polygons) on a sphere or WGS84 ellipsoid.
+Geo3D is particularly suited for spatial applications where the geometries cover large distances across the globe.
+Geo3D is named as-such due to its internal implementation that uses geocentric coordinates (X,Y,Z),
+  *not* for 3-dimensional geometry, which it does not support.
+Despite these internal details, you still supply latitude and longitude as you would normally in Solr.
+
+Set the `spatialContextFactory` attribute on the field type to `Geo3D`.
+
+[source,xml]
+----
+<fieldType name="geom" class="solr.SpatialRecursivePrefixTreeFieldType"
+             spatialContextFactory="Geo3D" planetModel="WGS84"/><!-- or "sphere" -->
+----
+
+Once the field type has been defined, define a field that uses it.
 
 === RptWithGeometrySpatialField
 

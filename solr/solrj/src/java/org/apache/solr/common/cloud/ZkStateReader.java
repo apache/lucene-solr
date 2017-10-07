@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -42,9 +44,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Pair;
@@ -61,6 +65,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.emptySortedSet;
 import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
@@ -95,6 +100,10 @@ public class ZkStateReader implements Closeable {
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
   public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
   public static final String SOLR_AUTOSCALING_CONF_PATH = "/autoscaling.json";
+  public static final String SOLR_AUTOSCALING_EVENTS_PATH = "/autoscaling/events";
+  public static final String SOLR_AUTOSCALING_TRIGGER_STATE_PATH = "/autoscaling/triggerState";
+  public static final String SOLR_AUTOSCALING_NODE_ADDED_PATH = "/autoscaling/nodeAdded";
+  public static final String SOLR_AUTOSCALING_NODE_LOST_PATH = "/autoscaling/nodeLost";
 
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
@@ -139,7 +148,7 @@ public class ZkStateReader implements Closeable {
   /** Collections with format2 state.json, not "interesting" and not actively watched. */
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates = new ConcurrentHashMap<>();
 
-  private volatile Set<String> liveNodes = emptySet();
+  private volatile SortedSet<String> liveNodes = emptySortedSet();
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
@@ -153,6 +162,37 @@ public class ZkStateReader implements Closeable {
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
+  /**
+   * Get current {@link AutoScalingConfig}.
+   * @return current configuration from <code>autoscaling.json</code>. NOTE:
+   * this data is retrieved from ZK on each call.
+   */
+  public AutoScalingConfig getAutoScalingConfig() throws KeeperException, InterruptedException {
+    return getAutoScalingConfig(null);
+  }
+
+  /**
+   * Get current {@link AutoScalingConfig}.
+   * @param watcher optional {@link Watcher} to set on a znode to watch for config changes.
+   * @return current configuration from <code>autoscaling.json</code>. NOTE:
+   * this data is retrieved from ZK on each call.
+   */
+  public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
+    Stat stat = new Stat();
+
+    Map<String, Object> map = new HashMap<>();
+    try {
+      byte[] bytes = zkClient.getData(SOLR_AUTOSCALING_CONF_PATH, watcher, stat, true);
+      if (bytes != null && bytes.length > 0) {
+        map = (Map<String, Object>) fromJSON(bytes);
+      }
+    } catch (KeeperException.NoNodeException e) {
+      // ignore
+    }
+    map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
+    return new AutoScalingConfig(map);
+  }
+
   private static class CollectionWatch {
 
     int coreRefCount = 0;
@@ -163,6 +203,8 @@ public class ZkStateReader implements Closeable {
     }
 
   }
+
+  private Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
 
   public static final Set<String> KNOWN_CLUSTER_PROPS = unmodifiableSet(new HashSet<>(asList(
       LEGACY_CLOUD,
@@ -662,25 +704,25 @@ public class ZkStateReader implements Closeable {
   // We don't get a Stat or track versions on getChildren() calls, so force linearization.
   private final Object refreshLiveNodesLock = new Object();
   // Ensures that only the latest getChildren fetch gets applied.
-  private final AtomicReference<Set<String>> lastFetchedLiveNodes = new AtomicReference<>();
+  private final AtomicReference<SortedSet<String>> lastFetchedLiveNodes = new AtomicReference<>();
 
   /**
    * Refresh live_nodes.
    */
   private void refreshLiveNodes(Watcher watcher) throws KeeperException, InterruptedException {
     synchronized (refreshLiveNodesLock) {
-      Set<String> newLiveNodes;
+      SortedSet<String> newLiveNodes;
       try {
         List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
-        newLiveNodes = new HashSet<>(nodeList);
+        newLiveNodes = new TreeSet<>(nodeList);
       } catch (KeeperException.NoNodeException e) {
-        newLiveNodes = emptySet();
+        newLiveNodes = emptySortedSet();
       }
       lastFetchedLiveNodes.set(newLiveNodes);
     }
 
     // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
-    Set<String> oldLiveNodes, newLiveNodes;
+    SortedSet<String> oldLiveNodes, newLiveNodes;
     synchronized (getUpdateLock()) {
       newLiveNodes = lastFetchedLiveNodes.getAndSet(null);
       if (newLiveNodes == null) {
@@ -698,8 +740,20 @@ public class ZkStateReader implements Closeable {
       LOG.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
     }
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Updated live nodes from ZooKeeper... {} -> {}", new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes));
+      LOG.debug("Updated live nodes from ZooKeeper... {} -> {}", oldLiveNodes, newLiveNodes);
     }
+    if (!oldLiveNodes.equals(newLiveNodes)) { // fire listeners
+      liveNodesListeners.forEach(listener ->
+          listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes)));
+    }
+  }
+
+  public void registerLiveNodesListener(LiveNodesListener listener) {
+    liveNodesListeners.add(listener);
+  }
+
+  public void removeLiveNodesListener(LiveNodesListener listener) {
+    liveNodesListeners.remove(listener);
   }
 
   /**
@@ -756,7 +810,8 @@ public class ZkStateReader implements Closeable {
       Thread.sleep(GET_LEADER_RETRY_INTERVAL_MS);
     }
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
-        + timeout + "ms " + ", collection: " + collection + " slice: " + shard);
+        + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
+        + " with live_nodes=" + clusterState.getLiveNodes());
   }
 
   /**

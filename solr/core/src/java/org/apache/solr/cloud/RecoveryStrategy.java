@@ -214,6 +214,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set(ReplicationHandler.MASTER_URL, leaderUrl);
+    solrParams.set(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
     
     if (isClosed()) return; // we check closed on return
     boolean success = replicationHandler.doFetch(solrParams, false).getSuccessful();

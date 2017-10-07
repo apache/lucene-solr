@@ -16,11 +16,40 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class GeoCircleTest extends LuceneTestCase {
 
+  @Test
+  public void testExactCircle() {
+    GeoCircle c;
+    GeoPoint gp;
+    
+    // Construct a variety of circles to see how many actual planes are involved
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.0, 0.0, 0.1, 1e-6);
+    gp = new GeoPoint(PlanetModel.WGS84, 0.0, 0.2);
+    assertTrue(!c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.WGS84, 0.0, 0.0);
+    assertTrue(c.isWithin(gp));
+    
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.1, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.2, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.3, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, 0.4, 0.0, 0.1, 1e-6);
+
+    c = new GeoExactCircle(PlanetModel.WGS84, Math.PI * 0.5, 0.0, 0.1, 1e-6);
+    gp = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5 - 0.2, 0.0);
+    assertTrue(!c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5, 0.0);
+    assertTrue(c.isWithin(gp));
+
+  }
+  
   @Test
   public void testCircleDistance() {
     GeoCircle c;
@@ -418,5 +447,59 @@ public class GeoCircleTest extends LuceneTestCase {
     assert gc.isWithin(gp)?solid.isWithin(gp):true;
     
   }
+
+  @Test
+  @Repeat(iterations = 100)
+  public void RandomPointBearingWGS84Test(){
+    PlanetModel planetModel = PlanetModel.WGS84;
+    RandomGeo3dShapeGenerator generator = new RandomGeo3dShapeGenerator();
+    GeoPoint center = generator.randomGeoPoint(planetModel);
+    double radius = random().nextDouble() * Math.PI;
+    checkBearingPoint(planetModel, center, radius, 0);
+    checkBearingPoint(planetModel, center, radius, 0.5 * Math.PI);
+    checkBearingPoint(planetModel, center, radius, Math.PI);
+    checkBearingPoint(planetModel, center, radius, 1.5 * Math.PI);
+  }
+
+  @Test
+  @Repeat(iterations = 10000)
+  public void RandomPointBearingCardinalTest(){
+    double ab = random().nextDouble() * 0.6 + 0.9;
+    double c = random().nextDouble() * 0.6  + 0.9 ;
+    PlanetModel planetModel = new PlanetModel(ab, c);
+    RandomGeo3dShapeGenerator generator = new RandomGeo3dShapeGenerator();
+    GeoPoint center = generator.randomGeoPoint(planetModel);
+    double radius =  random().nextDouble() * 0.9 * Math.PI;
+    checkBearingPoint(planetModel, center, radius, 0);
+    checkBearingPoint(planetModel, center, radius, 0.5 * Math.PI);
+    checkBearingPoint(planetModel, center, radius, Math.PI);
+    checkBearingPoint(planetModel, center, radius, 1.5 * Math.PI);
+  }
+
+  private void checkBearingPoint(PlanetModel planetModel, GeoPoint center, double radius, double bearingAngle) {
+    GeoPoint point = planetModel.surfacePointOnBearing(center, radius, bearingAngle);
+    double surfaceDistance = planetModel.surfaceDistance(center, point);
+    assertTrue(planetModel.toString() + " " + Double.toString(surfaceDistance - radius) + " " + Double.toString(radius), surfaceDistance - radius < Vector.MINIMUM_ANGULAR_RESOLUTION);
+  }
+
+  @Test
+  public void exactCircleLargeTest(){
+    boolean success = true;
+    try {
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(new PlanetModel(0.5, 0.7), 0.25 * Math.PI,  0,0.35 * Math.PI, 1e-12);
+    } catch (IllegalArgumentException e) {
+      success = false;
+    }
+    assertTrue(success);
+    success = false;
+    try {
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.25 * Math.PI,  0,0.9996 * Math.PI, 1e-12);
+    } catch (IllegalArgumentException e) {
+      success = true;
+    }
+    assertTrue(success);
+  }
+
+
   
 }

@@ -16,16 +16,23 @@
  */
 package org.apache.lucene.facet.taxonomy.directory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
-
-import java.io.IOException;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A {@link ParallelTaxonomyArrays} that are initialized from the taxonomy
@@ -33,7 +40,7 @@ import java.io.IOException;
  * 
  * @lucene.experimental
  */
-class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
+class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable {
 
   private final int[] parents;
 
@@ -214,4 +221,29 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays {
     return siblings;
   }
 
+  @Override
+  public synchronized long ramBytesUsed() {
+    long ramBytesUsed = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_BOOLEAN;
+    ramBytesUsed += RamUsageEstimator.shallowSizeOf(parents);
+    if (children != null) {
+      ramBytesUsed += RamUsageEstimator.shallowSizeOf(children);
+    }
+    if (siblings != null) {
+      ramBytesUsed += RamUsageEstimator.shallowSizeOf(siblings);
+    }
+    return ramBytesUsed;
+  }
+
+  @Override
+  public synchronized Collection<Accountable> getChildResources() {
+    final List<Accountable> resources = new ArrayList<>();
+    resources.add(Accountables.namedAccountable("parents", RamUsageEstimator.shallowSizeOf(parents)));
+    if (children != null) {
+      resources.add(Accountables.namedAccountable("children", RamUsageEstimator.shallowSizeOf(children)));
+    }
+    if (siblings != null) {
+      resources.add(Accountables.namedAccountable("siblings", RamUsageEstimator.shallowSizeOf(siblings)));
+    }
+    return Collections.unmodifiableList(resources);
+  }
 }

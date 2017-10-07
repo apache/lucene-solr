@@ -22,7 +22,7 @@
 Solr 7 is a major new release of Solr which introduces new features and a number of other changes that may impact your existing installation.
 
 == Upgrade Planning
-There are major changes in Solr 7 to consider before starting to migrate your configurations and indexes. This page is designed to highlight the biggest changes - new features you may want to be aware of, but also changes in default behavior, and deprecated features that have been removed.
+There are major changes in Solr 7 to consider before starting to migrate your configurations and indexes. This page is designed to highlight the biggest changes - new features you may want to be aware of, but also changes in default behavior and deprecated features that have been removed.
 
 There are many hundreds of changes in Solr 7, however, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 7. This section attempts to highlight some of the major changes you should be aware of.
 
@@ -54,14 +54,16 @@ See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Aut
 
 === Other Features & Enhancements
 
+// TODO 7.1 - update link to docs when complete
 * The Analytics Component has been refactored.
+** The documentation for this component is in progress; until it is available, please refer to https://issues.apache.org/jira/browse/SOLR-11144[SOLR-11144] for more details.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** <<learning-to-rank.adoc#learning-to-rank,Learning to Rank>>
 ** <<highlighting.adoc#the-unified-highlighter,Unified Highlighter>>
 ** <<metrics-reporting.adoc#metrics-reporting,Metrics API>>. See also information about related deprecations in the section <<JMX Support and MBeans>> below.
 ** <<other-parsers.adoc#payload-query-parsers,Payload queries>>
-** <<stream-evaluators.adoc#stream-evaluators,Streaming Evaluators>>
+** <<stream-evaluator-reference.adoc#stream-evaluator-reference,Streaming Evaluators>>
 ** <<v2-api.adoc#v2-api,/v2 API>>
 ** <<graph-traversal.adoc#graph-traversal,Graph streaming expressions>>
 
@@ -135,11 +137,11 @@ See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more i
 === JMX Support and MBeans
 * The `<jmx>` element in `solrconfig.xml` has been removed in favor of `<metrics><reporter>` elements defined in `solr.xml`.
 +
-Limited back-compatibility is offered by automatically adding a default instance of `SolrJmxReporter` if it's missing, AND when a local MBean server is found (which can be activated either via `ENABLE_REMOTE_JMX_OPTS` in `solr.in.sh` or via system properties, e.g., `-Dcom.sun.management.jmxremote`). This default instance exports all Solr metrics from all registries as hierarchical MBeans.
+Limited back-compatibility is offered by automatically adding a default instance of `SolrJmxReporter` if it's missing AND when a local MBean server is found. A local MBean server can be activated either via `ENABLE_REMOTE_JMX_OPTS` in `solr.in.sh` or via system properties, e.g., `-Dcom.sun.management.jmxremote`. This default instance exports all Solr metrics from all registries as hierarchical MBeans.
 +
 This behavior can be also disabled by specifying a `SolrJmxReporter` configuration with a boolean init argument `enabled` set to `false`. For a more fine-grained control users should explicitly specify at least one `SolrJmxReporter` configuration.
 +
-See also the section <<metrics-reporting.adoc#the-metrics-reporters-element,The <metrics><reporters> Element>>, which describes how to set up Metrics Reporters in `solr.xml`.
+See also the section <<metrics-reporting.adoc#the-metrics-reporters-element,The <metrics><reporters> Element>>, which describes how to set up Metrics Reporters in `solr.xml`. Note that back-compatibility support may be removed in Solr 8.
 
 * MBean names and attributes now follow the hierarchical names used in metrics. This is reflected also in `/admin/mbeans` and `/admin/plugins` output, and can be observed in the UI Plugins tab, because now all these APIs get their data from the metrics API. The old (mostly flat) JMX view has been removed.
 
@@ -164,6 +166,8 @@ The following changes were made in SolrJ.
 
 == Major Changes in Earlier 6.x Versions
 The following summary of changes in earlier 6.x releases highlights significant changes released between Solr 6.0 and 6.6 that were listed in earlier versions of this Guide. Mentions of deprecations are likely superseded by removal in Solr 7, as noted in the above sections.
+
+Note again that this is not a complete list of all changes that may impact your installation, so a thorough review of CHANGES.txt is highly recommended if upgrading from any version earlier than 6.6.
 
 * The Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
 * JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any `mincount` greater than 1.

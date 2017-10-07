@@ -21,7 +21,7 @@
 
 Query Re-Ranking allows you to run a simple query (A) for matching documents and then re-rank the top N documents using the scores from a more complex query (B).
 
-Since the more costly ranking from query B is only applied to the top _N_ documents it will have less impact on performance then just using the complex query B by itself. The trade off is that documents which score very low using the simple query A may not be considered during the re-ranking phase, even if they would score very highly using query B.
+Since the more costly ranking from query B is only applied to the top _N_ documents, it will have less impact on performance then just using the complex query B by itself. The trade off is that documents which score very low using the simple query A may not be considered during the re-ranking phase, even if they would score very highly using query B.
 
 == Specifying a Ranking Query
 

@@ -136,7 +136,8 @@ Pass the location of HDFS client configuration files - needed for HDFS HA for ex
 
 Hadoop can be configured to use the Kerberos protocol to verify user identity when trying to access core services like HDFS. If your HDFS directories are protected using Kerberos, then you need to configure Solr's HdfsDirectoryFactory to authenticate using Kerberos in order to read and write to HDFS. To enable Kerberos authentication from Solr, you need to set the following parameters:
 
-`solr.hdfs.security.kerberos.enabled`:: false |Set to `true` to enable Kerberos authentication. The default is `false`.
+`solr.hdfs.security.kerberos.enabled`::
+Set to `true` to enable Kerberos authentication. The default is `false`.
 
 `solr.hdfs.security.kerberos.keytabfile`::
 A keytab file contains pairs of Kerberos principals and encrypted keys which allows for password-less authentication when Solr attempts to authenticate with secure Hadoop.

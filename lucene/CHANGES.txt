@@ -28,6 +28,26 @@ New Features
 * LUCENE-7392: Add point based LatLonBoundingBox as new RangeField Type.
   (Nick Knize)
 
+* LUCENE-7951: Spatial-extras has much better Geo3d support by implementing Spatial4j
+  abstractions: SpatialContextFactory, ShapeFactory, BinaryCodec, DistanceCalculator.
+  (Ignacio Vera, David Smiley)
+
+* LUCENE-7973: Update dictionary version for Ukrainian analyzer to 3.9.0 (Andriy
+  Rysin via Dawid Weiss)
+  
+* LUCENE-7974: Add FloatPointNearestNeighbor, an N-dimensional FloatPoint
+  K-nearest-neighbor search implementation.  (Steve Rowe)
+
+* LUCENE-7975: Change the default taxonomy facets cache to a faster
+  byte[] (UTF-8) based cache.  (Mike McCandless)
+
+* LUCENE-7972: DirectoryTaxonomyReader, in Lucene's facet module, now
+  implements Accountable, so you can more easily track how much heap
+  it's using.  (Mike McCandless)
+
+* LUCENE-7982: A new NormsFieldExistsQuery matches documents that have
+  norms in a specified field (Colin Goodheart-Smithe via Mike McCandless)
+
 Optimizations
 
 * LUCENE-7905: Optimize how OrdinalMap (used by
@@ -76,6 +96,11 @@ Build
 * SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
   instead of locally installing first, to workaround a double repository push of
   *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+  
+* LUCENE-6673: Maven build fails for target javadoc:jar.  
+  (Ramkumar Aiyengar, Daniel Collins via Steve Rowe)
+
+* LUCENE-7985: Upgrade forbiddenapis to 2.4.1.  (Uwe Schindler)
 
 Other
 
@@ -84,6 +109,22 @@ Other
 
 * LUCENE-7933: LongBitSet now validates the numBits parameter (Won
   Jonghoon, Mike McCandless)
+
+* LUCENE-7978: Add some more documentation about setting up build
+  environment.  (Anton R. Yuste via Uwe Schindler)
+
+* LUCENE-7983: IndexWriter.IndexReaderWarmer is now a functional interface
+  instead of an abstract class with a single method (Dawid Weiss)
+  
+* LUCENE-5753: Update TLDs recognized by UAX29URLEmailTokenizer. (Steve Rowe)
+
+
+======================= Lucene 7.0.1 =======================
+
+Bug Fixes
+
+* LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
+  child scorers (Adrien Grand, Mike McCandless)
 
 ======================= Lucene 7.0.0 =======================
 

@@ -51,8 +51,8 @@ An example `security.json` showing both sections is shown below to show how thes
 There are several things defined in this file:
 
 <1> Basic authentication and rule-based authorization plugins are enabled.
-<2> A user called 'solr', with a password `'SolrRocks'` has been defined.
-<3> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
+<2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
+<3> A user called 'solr', with a password `'SolrRocks'` has been defined.
 <4> The 'admin' role has been defined, and it has permission to edit security settings.
 <5> The 'solr' user has been defined to the 'admin' role.
 

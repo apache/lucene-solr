@@ -310,15 +310,19 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
       if (fragsize == 0 || "WHOLE".equals(type)) { // 0 is special value; no fragmenting
         return new WholeBreakIterator();
-      } else if ("SEPARATOR".equals(type)) {
-        char customSep = parseBiSepChar(params.getFieldParam(field, HighlightParams.BS_SEP));
-        return new CustomSeparatorBreakIterator(customSep);
       }
-      String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
-      String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
-      String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
-      Locale locale = parseLocale(language, country, variant);
-      BreakIterator baseBI = parseBreakIterator(type, locale);
+
+      BreakIterator baseBI;
+      if ("SEPARATOR".equals(type)) {
+        char customSep = parseBiSepChar(params.getFieldParam(field, HighlightParams.BS_SEP));
+        baseBI = new CustomSeparatorBreakIterator(customSep);
+      } else {
+        String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
+        String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
+        String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
+        Locale locale = parseLocale(language, country, variant);
+        baseBI = parseBreakIterator(type, locale);
+      }
 
       if (fragsize <= 1) { // no real minimum size
         return baseBI;

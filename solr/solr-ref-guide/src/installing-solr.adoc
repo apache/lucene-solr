@@ -173,7 +173,7 @@ That's it! Solr is running. If you need convincing, use a Web browser to see the
 `\http://localhost:8983/solr/`
 
 .The Solr Admin interface.
-image::images/running-solr/SolrAdminDashboard.png[image,width=900,height=456]
+image::images/running-solr/SolrAdminDashboard.png[Solr's Admin UI,pdfwidth=75%]
 
 If Solr is not running, your browser will complain that it cannot connect to the server. Check your port number and try again.
 

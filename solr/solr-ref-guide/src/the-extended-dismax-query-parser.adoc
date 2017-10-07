@@ -203,7 +203,7 @@ The Solr Query Parser's use of `\_val_` and `\_query_` differs from the Lucene Q
 
 * If the magic field name `\_val_` is used in a term or phrase query, the value is parsed as a function.
 
-* It provides a hook into http://wiki.apache.org/solr/FunctionQuery[`FunctionQuery`] syntax. Quotes are necessary to encapsulate the function when it includes parentheses. For example:
+* It provides a hook into <<function-queries.adoc#function-queries,`FunctionQuery`>> syntax. Quotes are necessary to encapsulate the function when it includes parentheses. For example:
 +
 [source,text]
 ----
@@ -217,4 +217,3 @@ _val_:"recip(rord(myfield),1,2,3)"
 ----
 _query_:"{!dismax qf=myfield}how now brown cow"
 ----
-

@@ -82,6 +82,7 @@ public abstract class UpdateRequestProcessor implements Closeable {
   
   @Override
   public final void close() throws IOException {
+    @SuppressWarnings("resource")
     UpdateRequestProcessor p = this;
     while (p != null) {
       try {

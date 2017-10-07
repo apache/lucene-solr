@@ -1,7 +1,7 @@
 = Streaming Expressions
 :page-shortname: streaming-expressions
 :page-permalink: streaming-expressions.html
-:page-children: stream-sources, stream-decorators, stream-evaluators, graph-traversal
+:page-children: stream-source-reference, stream-decorator-reference, stream-evaluator-reference, statistical-programming, graph-traversal
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,6 +38,7 @@ There is a growing library of functions that can be combined to implement:
 * Retrieve and rank services
 * Text classification and feature extraction
 * Streaming NLP
+* Statistical Programming
 
 Streams from outside systems can be joined with streams originating from Solr and users can add their own stream functions by following Solr's {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/package-summary.html[Java streaming API].
 
@@ -120,12 +121,12 @@ Because streaming expressions relies on the `/export` handler, many of the field
 
 Stream sources originate streams. The most commonly used one of these is `search`, which does a query.
 
-A full reference to all available source expressions is available in <<stream-sources.adoc#stream-sources,Stream Sources>>.
+A full reference to all available source expressions is available in <<stream-source-reference.adoc#stream-source-reference,Stream Source Reference>>.
 
 === About Stream Decorators
 Stream decorators wrap other stream functions or perform operations on a stream.
 
-A full reference to all available decorator expressions is available in <<stream-decorators.adoc#stream-decorators,Stream Decorators>>.
+A full reference to all available decorator expressions is available in <<stream-decorator-reference.adoc#stream-decorator-reference,Stream Decorator Reference>>.
 
 === About Stream Evaluators
 
@@ -140,4 +141,4 @@ In cases where you want to use raw values as part of an evaluation you will need
 
 If you wish to use a raw string as part of an evaluation, you will want to consider using the `raw(string)` evaluator. This will always return the raw value, no matter what is entered.
 
-A full reference to all available evaluator expressions is available in <<stream-evaluators.adoc#stream-evaluators,Stream Evaluators>>.
+A full reference to all available evaluator expressions is available in <<stream-evaluator-reference.adoc#stream-evaluator-reference,Stream Evaluator Reference>>.

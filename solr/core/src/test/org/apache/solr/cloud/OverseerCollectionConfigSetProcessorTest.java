@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.cloud.ClusterState;
@@ -44,6 +45,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -72,6 +74,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static ZkStateReader zkStateReaderMock;
   private static ClusterState clusterStateMock;
   private static SolrZkClient solrZkClientMock;
+  private static AutoScalingConfig autoScalingConfig = new AutoScalingConfig(Collections.emptyMap());
   private final Map zkMap = new HashMap();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
   private final List<ZkNodeProps> replicas = new ArrayList<>();
@@ -197,6 +200,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
+    when(zkStateReaderMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
 
     when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
@@ -256,7 +260,16 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       String key = invocation.getArgument(0);
       return zkMap.containsKey(key);
     });
-    
+
+    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean())).thenAnswer(invocation -> {
+      String key = invocation.getArgument(0);
+      if (zkMap.containsKey(key)) {
+        return new Stat();
+      } else {
+        return null;
+      }
+    });
+
     zkMap.put("/configs/myconfig", null);
     
     return liveNodes;

@@ -14,98 +14,97 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.spatial.spatial4j;
 
+import org.apache.lucene.spatial3d.geom.GeoArea;
+import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
+import org.apache.lucene.spatial3d.geom.GeoAreaShape;
+import org.apache.lucene.spatial3d.geom.GeoBBox;
+import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoPoint;
+import org.apache.lucene.spatial3d.geom.LatLonBounds;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.locationtech.spatial4j.shape.impl.RectangleImpl;
-import org.apache.lucene.spatial3d.geom.LatLonBounds;
-import org.apache.lucene.spatial3d.geom.GeoArea;
-import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
-import org.apache.lucene.spatial3d.geom.GeoPoint;
-import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 
 /**
- * A Spatial4j Shape wrapping a {@link GeoShape} ("Geo3D") -- a 3D planar geometry based Spatial4j Shape implementation.
+ * A Spatial4j Shape wrapping a {@link GeoAreaShape} ("Geo3D") -- a 3D planar geometry
+ * based Spatial4j Shape implementation.
  * Geo3D implements shapes on the surface of a sphere or ellipsoid.
  *
+ * @param <T> is the type of {@link GeoAreaShape}
  * @lucene.experimental
  */
-public class Geo3dShape implements Shape {
-  /** The required size of this adjustment depends on the actual planetary model chosen.
-   * This value is big enough to account for WGS84. */
-  protected static final double ROUNDOFF_ADJUSTMENT = 0.05;
 
-  public final SpatialContext ctx;
-  public final GeoShape shape;
-  public final PlanetModel planetModel;
+public class Geo3dShape<T extends GeoAreaShape> implements Shape {
 
-  private volatile Rectangle boundingBox = null; // lazy initialized
+  protected final SpatialContext spatialcontext;
 
-  public Geo3dShape(final GeoShape shape, final SpatialContext ctx) {
-    this(PlanetModel.SPHERE, shape, ctx);
-  }
+  protected T shape;
+  protected volatile Rectangle boundingBox = null; // lazy initialized
+  protected volatile Point center = null; // lazy initialized
 
-  public Geo3dShape(final PlanetModel planetModel, final GeoShape shape, final SpatialContext ctx) {
-    if (!ctx.isGeo()) {
-      throw new IllegalArgumentException("SpatialContext.isGeo() must be true");
-    }
-    this.ctx = ctx;
-    this.planetModel = planetModel;
+  public Geo3dShape(final T shape, final SpatialContext spatialcontext) {
+    this.spatialcontext = spatialcontext;
     this.shape = shape;
   }
 
   @Override
-  public SpatialContext getContext() {
-    return ctx;
-  }
-
-  @Override
   public SpatialRelation relate(Shape other) {
-    if (other instanceof Rectangle)
-      return relate((Rectangle)other);
-    else if (other instanceof Point)
-      return relate((Point)other);
-    else
+    int relationship;
+    if (other instanceof Geo3dShape<?>) {
+      relationship = relate((Geo3dShape<?>) other);
+    } else if (other instanceof Rectangle) {
+      relationship = relate((Rectangle) other);
+    } else if (other instanceof Point) {
+      relationship = relate((Point) other);
+    } else {
       throw new RuntimeException("Unimplemented shape relationship determination: " + other.getClass());
+    }
+
+    switch (relationship) {
+      case GeoArea.DISJOINT:
+        return SpatialRelation.DISJOINT;
+      case GeoArea.OVERLAPS:
+        return (other instanceof Point ? SpatialRelation.CONTAINS : SpatialRelation.INTERSECTS);
+      case GeoArea.CONTAINS:
+        return (other instanceof Point ? SpatialRelation.CONTAINS : SpatialRelation.WITHIN);
+      case GeoArea.WITHIN:
+        return SpatialRelation.CONTAINS;
+    }
+
+    throw new RuntimeException("Undetermined shape relationship: " + relationship);
   }
 
-  protected SpatialRelation relate(Rectangle r) {
+  private int relate(Geo3dShape<?> s) {
+    return shape.getRelationship(s.shape);
+  }
+
+  private int relate(Rectangle r) {
     // Construct the right kind of GeoArea first
-    GeoArea geoArea = GeoAreaFactory.makeGeoArea(planetModel,
+    GeoArea geoArea = GeoAreaFactory.makeGeoArea(shape.getPlanetModel(),
         r.getMaxY() * DistanceUtils.DEGREES_TO_RADIANS,
         r.getMinY() * DistanceUtils.DEGREES_TO_RADIANS,
         r.getMinX() * DistanceUtils.DEGREES_TO_RADIANS,
         r.getMaxX() * DistanceUtils.DEGREES_TO_RADIANS);
-    int relationship = geoArea.getRelationship(shape);
-    if (relationship == GeoArea.WITHIN)
-      return SpatialRelation.WITHIN;
-    else if (relationship == GeoArea.CONTAINS)
-      return SpatialRelation.CONTAINS;
-    else if (relationship == GeoArea.OVERLAPS)
-      return SpatialRelation.INTERSECTS;
-    else if (relationship == GeoArea.DISJOINT)
-      return SpatialRelation.DISJOINT;
-    else
-      throw new RuntimeException("Unknown relationship returned: "+relationship);
+
+    return geoArea.getRelationship(shape);
   }
 
-  protected SpatialRelation relate(Point p) {
-    // Create a GeoPoint
-    GeoPoint point = new GeoPoint(planetModel, p.getY()* DistanceUtils.DEGREES_TO_RADIANS, p.getX()* DistanceUtils.DEGREES_TO_RADIANS);
+  private int relate(Point p) {
+    GeoPoint point = new GeoPoint(shape.getPlanetModel(),
+        p.getY() * DistanceUtils.DEGREES_TO_RADIANS,
+        p.getX() * DistanceUtils.DEGREES_TO_RADIANS);
+
     if (shape.isWithin(point)) {
-      // Point within shape
-      return SpatialRelation.CONTAINS;
+      return GeoArea.WITHIN;
     }
-    return SpatialRelation.DISJOINT;
+    return GeoArea.DISJOINT;
   }
-
-
 
   @Override
   public Rectangle getBoundingBox() {
@@ -113,28 +112,12 @@ public class Geo3dShape implements Shape {
     if (bbox == null) {
       LatLonBounds bounds = new LatLonBounds();
       shape.getBounds(bounds);
-      double leftLon;
-      double rightLon;
-      if (bounds.checkNoLongitudeBound()) {
-        leftLon = -180.0;
-        rightLon = 180.0;
-      } else {
-        leftLon = bounds.getLeftLongitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
-        rightLon = bounds.getRightLongitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
-      }
-      double minLat;
-      if (bounds.checkNoBottomLatitudeBound()) {
-        minLat = -90.0;
-      } else {
-        minLat = bounds.getMinLatitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
-      }
-      double maxLat;
-      if (bounds.checkNoTopLatitudeBound()) {
-        maxLat = 90.0;
-      } else {
-        maxLat = bounds.getMaxLatitude().doubleValue() * DistanceUtils.RADIANS_TO_DEGREES;
-      }
-      bbox = new RectangleImpl(leftLon, rightLon, minLat, maxLat, ctx).getBuffered(ROUNDOFF_ADJUSTMENT, ctx);
+      double leftLon = bounds.checkNoLongitudeBound() ? -Math.PI : bounds.getLeftLongitude();
+      double rightLon = bounds.checkNoLongitudeBound() ? Math.PI : bounds.getRightLongitude();
+      double minLat = bounds.checkNoBottomLatitudeBound() ? -Math.PI * 0.5 : bounds.getMinLatitude();
+      double maxLat = bounds.checkNoTopLatitudeBound() ? Math.PI * 0.5 : bounds.getMaxLatitude();
+      GeoBBox geoBBox = GeoBBoxFactory.makeGeoBBox(shape.getPlanetModel(), maxLat, minLat, leftLon, rightLon);
+      bbox = new Geo3dRectangleShape(geoBBox, spatialcontext);
       this.boundingBox = bbox;
     }
     return bbox;
@@ -146,17 +129,22 @@ public class Geo3dShape implements Shape {
   }
 
   @Override
-  public double getArea(SpatialContext ctx) {
+  public double getArea(SpatialContext spatialContext) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public Point getCenter() {
-    throw new UnsupportedOperationException();
+    Point center = this.center;//volatile read once
+    if (center == null) {
+      center = getBoundingBox().getCenter();
+      this.center = center;
+    }
+    return center;
   }
 
   @Override
-  public Shape getBuffered(double distance, SpatialContext ctx) {
+  public Shape getBuffered(double distance, SpatialContext spatialContext) {
     throw new UnsupportedOperationException();
   }
 
@@ -166,20 +154,20 @@ public class Geo3dShape implements Shape {
   }
 
   @Override
-  public String toString() {
-    return "Geo3dShape{planetmodel=" + planetModel + ", shape=" + shape + '}';
+  public SpatialContext getContext() {
+    return spatialcontext;
   }
 
   @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof Geo3dShape))
+  public boolean equals(Object o) {
+    if (!(o instanceof Geo3dShape<?>))
       return false;
-    Geo3dShape tr = (Geo3dShape)other;
-    return tr.ctx.equals(ctx) && tr.planetModel.equals(planetModel) && tr.shape.equals(shape);
+    final Geo3dShape<?> other = (Geo3dShape<?>) o;
+    return (other.spatialcontext.equals(spatialcontext) && other.shape.equals(shape));
   }
 
   @Override
   public int hashCode() {
-    return planetModel.hashCode() + shape.hashCode();
+    return spatialcontext.hashCode() + shape.hashCode();
   }
 }
