@@ -113,6 +113,44 @@ New Features
   setting spatialContextFactory="Geo3D".  Furthermore, this is the first time Solr has out of the box
   support for polygons. (David Smiley)
 
+* SOLR-11160 Add normalDistribution, uniformDistribution, sample and kolmogorovSmirnov Stream Evaluators
+  (Joel Bernstein)
+
+* SOLR-11225 Add cumulativeProbability Stream Evaluator (Joel Bernstein)
+
+* SOLR-11241 Add discrete counting and probability Stream Evaluators (Joel Bernstein)
+
+* SOLR-11321 Add ebeAdd, ebeSubtract, ebeDivide, ebeMultiply, dotProduct and cosineSimilarity Stream Evaluators
+  (Joel Bernstein)
+
+* SOLR-11338 Add Kendall's Tau-b rank and Spearmans rank correlation Stream Evaluators (Joel Bernstein)
+
+* SOLR-11339 Add Canberra, Chebyshev, Earth Movers and Manhattan Distance Stream Evaluators (Joel Bernstein)
+
+* SOLR-11342 Add sumDifference and meanDifference Stream Evaluators (Joel Bernstein)
+
+* SOLR-11350 Add primes Stream Evaluator (Joel Bernstein)
+
+* SOLR-11354 Add factorial and movingMedian Stream Evaluators (Joel Bernstein)
+
+* SOLR-11377 Add expMovingAverage (exponential moving average) Stream Evaluator (Mathew Skaria, Joel Bernstein)
+
+* SOLR-11388 Add monteCarlo Stream Evaluator to support Monte Carlo simulations (Joel Bernstein)
+
+* SOLR-11398 Add weibullDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11400 Add logNormalDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11401 Add zipFDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11414 Add gammaDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11415 Add betaDistribution Stream Evaluator (Joel Bernstein)
+
+* SOLR-11436 Add polyfit and polyfitDerivative Stream Evaluators (Joel Bernstein)
+
+* SOLR-11439 Add harmonicFit Stream Evaluator (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
