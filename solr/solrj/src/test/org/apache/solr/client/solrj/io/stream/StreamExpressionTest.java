@@ -5897,6 +5897,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testBinomialCoefficient() throws Exception {
+    String cexpr = "binomialCoefficient(8,3)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Tuple tuple = tuples.get(0);
+    long binomialCoefficient = (long) tuple.get("return-value");
+    assertEquals(binomialCoefficient, 56);
+  }
+
+  @Test
   public void testAscend() throws Exception {
     String cexpr = "asc(array(11.5, 12.3, 4, 3, 1, 0))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -6518,6 +6535,45 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(dotProduct.doubleValue() == 182);
   }
 
+  @Test
+  public void testExponentialMovingAverage() throws Exception {
+    String cexpr = "expMovingAvg(array(22.27, 22.19, 22.08, 22.17, 22.18, 22.13, 22.23, 22.43, 22.24, 22.29, " +
+                   "22.15, 22.39, 22.38, 22.61, 23.36, 24.05, 23.75, 23.83, 23.95, 23.63, 23.82, 23.87, 23.65, 23.19,"+
+                   "23.10, 23.33, 22.68, 23.10, 22.40, 22.17), 10)";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 21);
+    assertEquals((double)out.get(0), 22.22, 0.009);
+    assertEquals((double)out.get(1), 22.21, 0.009);
+    assertEquals((double)out.get(2), 22.24, 0.009);
+    assertEquals((double)out.get(3), 22.27, 0.009);
+    assertEquals((double)out.get(4), 22.33, 0.009);
+    assertEquals((double)out.get(5), 22.52, 0.009);
+    assertEquals((double)out.get(6), 22.80, 0.009);
+    assertEquals((double)out.get(7), 22.97, 0.009);
+    assertEquals((double)out.get(8), 23.13, 0.009);
+    assertEquals((double)out.get(9), 23.28, 0.009);
+    assertEquals((double)out.get(10), 23.34, 0.009);
+    assertEquals((double)out.get(11), 23.43, 0.009);
+    assertEquals((double)out.get(12), 23.51, 0.009);
+    assertEquals((double)out.get(13), 23.54, 0.009);
+    assertEquals((double)out.get(14), 23.47, 0.009);
+    assertEquals((double)out.get(15), 23.40, 0.009);
+    assertEquals((double)out.get(16), 23.39, 0.009);
+    assertEquals((double)out.get(17), 23.26, 0.009);
+    assertEquals((double)out.get(18), 23.23, 0.009);
+    assertEquals((double)out.get(19), 23.08, 0.009);
+    assertEquals((double)out.get(20), 22.92, 0.009);
+  }
 
   @Test
   public void testResiduals() throws Exception {
@@ -8537,5 +8593,4 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       stream.close();
     }
   }
-
 }
