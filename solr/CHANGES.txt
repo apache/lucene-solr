@@ -133,7 +133,8 @@ New Features
 
 * SOLR-11354: Add factorial and movingMedian Stream Evaluators (Joel Bernstein)
 
-* SOLR-11377: Add expMovingAverage (exponential moving average) Stream Evaluator (Mathew Skaria, Joel Bernstein)
+* SOLR-11377: Add expMovingAverage (exponential moving average) and binomialCoefficient Stream Evaluators
+  (Mathew Skaria, Joel Bernstein)
 
 * SOLR-11388: Add monteCarlo Stream Evaluator to support Monte Carlo simulations (Joel Bernstein)
 
