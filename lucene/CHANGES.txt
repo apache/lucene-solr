@@ -7,10 +7,40 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-7970: Add a shape to Geo3D that consists of multiple planes that
+  approximate a true circle, rather than an ellipse, for non-spherical planet models.
+  (Karl Wright, Ignacio Vera)
+  
+* LUCENE-7955: Add support for the concept of "nearest distance" to Geo3D's
+  GeoPath abstraction, which is the distance along the path to the point that is
+  closest to the provided point. (Karl Wright)
+  
+* LUCENE-7906: Add spatial relationships between all currently-defined Geo shapes.
+  (Ignacio Vera)
+
+* LUCENE-7955: Add support for zero-width paths. (Karl Wright)
+
+* LUCENE-7936: Add serialization and deserialization support to Geo3D. (Karl Wright,
+  Ignacio Vera)
+
+* LUCENE-7942: Distance computations now have the ability to accurately aggregate
+  distances, rather than just doing sums. (Karl Wright)
+
+* LUCENE-7934: Add a planet model interface. (Karl Wright)
+
+* LUCENE-7918: Revamp the API for composites so that it's generic and can be used
+  for many kinds of shapes. (Ignacio Vera)
+
 * LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
   (Juan Pedro via Adrien Grand)
 
 Bug Fixes
+
+* LUCENE-7967: The GeoDegeneratePoint isWithin() method needed allowance for
+   numerical precision. (Karl Wright)
+
+* LUCENE-7965: GeoBBoxFactory was constructing the wrong shape at the poles
+  if the longitude span was greater than 180 degrees. (Karl Wright)
 
 * LUCENE-7864: IndexMergeTool is not using intermediate hard links (even 
   if possible). (Dawid Weiss)
