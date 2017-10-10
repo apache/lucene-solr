@@ -225,6 +225,8 @@ Bug Fixes
 
 * SOLR-11425: SolrClientBuilder does not allow infinite timeout (value 0). (Peter Szantai-Kis via Mark Miller)
 
+* SOLR-11449: MoveReplicaCmd mistakenly called registerCollectionStateWatcher on failure. (ab)
+
 Optimizations
 ----------------------
 

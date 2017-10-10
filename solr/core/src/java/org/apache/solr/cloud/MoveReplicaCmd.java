@@ -206,7 +206,7 @@ public class MoveReplicaCmd implements Cmd{
       log.warn(errorString);
       results.add("failure", errorString);
       if (watcher != null) { // unregister
-        ocmh.zkStateReader.registerCollectionStateWatcher(coll.getName(), watcher);
+        ocmh.zkStateReader.removeCollectionStateWatcher(coll.getName(), watcher);
       }
       return;
     }
