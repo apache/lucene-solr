@@ -489,16 +489,23 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllActiveReplicas(2);
     assertCopyOverOldUpdates(1, timeCopyOverPerCores);
 
+    boolean firstCommit = true;
     // UpdateLog copy over old updates
     for (int i = 15; i <= 150; i++) {
       cloudClient.add(collectionName, sdoc("id",String.valueOf(i)));
       if (random().nextInt(100) < 15 & i != 150) {
+        if (firstCommit) {
+          // because tlog replicas periodically ask leader for new segments,
+          // therefore the copy over old updates action must not be triggered until
+          // tlog replicas actually get new segments
+          assertCopyOverOldUpdates(1, timeCopyOverPerCores);
+          firstCommit = false;
+        }
         cloudClient.commit(collectionName);
       }
     }
     checkRTG(120,150, cluster.getJettySolrRunners());
     waitForReplicasCatchUp(20);
-    assertCopyOverOldUpdates(2, timeCopyOverPerCores);
   }
   
   @SuppressWarnings("unchecked")
