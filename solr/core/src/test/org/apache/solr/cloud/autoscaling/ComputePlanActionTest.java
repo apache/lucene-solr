@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -39,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -174,6 +176,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     // 1 replica per node and none on the overseer
     JettySolrRunner node2 = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
+    assertTrue(node2.getNodeName() + "is not live yet", cluster.getSolrClient().getZkStateReader().getClusterState().liveNodesContain(node2.getNodeName()) );
 
     // stop the original node
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
@@ -190,7 +193,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
-    assertNotNull("The operations computed by ComputePlanAction should not be null", operations);
+    assertNotNull("The operations computed by ComputePlanAction should not be null , "+ getDataProviderState(), operations);
     assertEquals("ComputePlanAction should have computed exactly 1 operation", 1, operations.size());
     SolrRequest solrRequest = operations.get(0);
     SolrParams params = solrRequest.getParams();
@@ -206,6 +209,15 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         break;
       }
     }
+  }
+  static String getDataProviderState() {
+    String result = "SolrClientDataProvider.DEBUG";
+    if(SolrClientDataProvider.INST != null) {
+      result+= Utils.toJSONString(SolrClientDataProvider.INST);
+      if(SolrClientDataProvider.INST.config != null) result+= Utils.toJSONString(SolrClientDataProvider.INST.config);
+    }
+    return result;
+
   }
 
   public void testNodeWithMultipleReplicasLost() throws Exception {
@@ -268,7 +280,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
-    assertNotNull("The operations computed by ComputePlanAction should not be null", operations);
+    assertNotNull("The operations computed by ComputePlanAction should not be null "+getDataProviderState(), operations);
     operations.forEach(solrRequest -> log.info(solrRequest.getParams().toString()));
     assertEquals("ComputePlanAction should have computed exactly 2 operation", 2, operations.size());
 
@@ -334,7 +346,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     Map context = actionContextPropsRef.get();
     assertNotNull(context);
     List<SolrRequest> operations = (List<SolrRequest>) context.get("operations");
-    assertNotNull("The operations computed by ComputePlanAction should not be null", operations);
+    assertNotNull("The operations computed by ComputePlanAction should not be null" + getDataProviderState(), operations);
     assertEquals("ComputePlanAction should have computed exactly 1 operation", 1, operations.size());
     SolrRequest request = operations.get(0);
     SolrParams params = request.getParams();
