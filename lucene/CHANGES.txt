@@ -13,6 +13,9 @@ Changes in Runtime Behavior
 
 
 
+======================= Lucene 7.2.0 =======================
+(No Changes)
+
 ======================= Lucene 7.1.0 =======================
 
 New Features
