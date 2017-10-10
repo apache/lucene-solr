@@ -62,6 +62,15 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
           "  </document>" +
           "</dataConfig>";
 
+  private String vsdxConf =
+      "<dataConfig>" +
+          "  <dataSource type=\"BinFileDataSource\"/>" +
+          "  <document>" +
+          "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/test_vsdx.vsdx").getAbsolutePath() + "\" >" +
+          "      <field column=\"text\"/>" +
+          "     </entity>" +
+          "  </document>" +
+          "</dataConfig>";
 
   private String[] tests = {
       "//*[@numFound='1']"
@@ -100,6 +109,11 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
       "//str[@name='text'][not(contains(.,'When in the Course'))]"
   };
 
+  private String[] testsVSDX = {
+      "//*[@numFound='1']",
+      "//str[@name='text'][contains(.,'Arrears')]"
+  };
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
@@ -117,6 +131,14 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   public void testSkip() throws Exception {
     runFullImport(skipOnErrConf);
     assertQ(req("*:*"), "//*[@numFound='1']");
+  }
+
+  @Test
+  public void testVSDX() throws Exception {
+    //this ensures that we've included the curvesapi dependency
+    //and that the ConnectsType class is bundled with poi-ooxml-schemas.
+    runFullImport(vsdxConf);
+    assertQ(req("*:*"), testsVSDX);
   }
 
   @Test
