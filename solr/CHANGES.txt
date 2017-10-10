@@ -152,6 +152,8 @@ New Features
 
 * SOLR-11439: Add harmonicFit Stream Evaluator (Joel Bernstein)
 
+* SOLR-11076: New /autoscaling/history API to return past cluster events and actions. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -304,7 +306,7 @@ Other Changes
 
 * SOLR-5129: Timeout property for waiting ZK get started. (Cao Manh Dat, Hrishikesh Gadre, Varun Thacker)
 
-* SOLR-10628: Less verbose output from bin/solr commands. (Jason Gerlowski, janhoy) 
+* SOLR-10628: Less verbose output from bin/solr commands. (Jason Gerlowski, janhoy)
 
 * SOLR-11240: Raise UnInvertedField internal limit. (Toke Eskildsen)
 
@@ -560,18 +562,18 @@ New Features
 * SOLR-10406: v2 API error messages list the URL request path as /solr/____v2/... when the original path was /v2/... (Cao Manh Dat, noble)
 
 * SOLR-10574: New _default config set replacing basic_configs and data_driven_schema_configs.
-  (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, janhoy, Alexandre Rafalovitch) 
+  (Ishan Chattopadhyaya, noble, shalin, hossman, David Smiley, janhoy, Alexandre Rafalovitch)
 
 * SOLR-10272: Use _default config set if no collection.configName is specified with CREATE (Ishan Chattopadhyaya)
 
-* SOLR-9526: Data driven schema now indexes text field "foo" as both "foo" (text_general) and as "foo_str" (string) 
-  to facilitate both search and faceting. AddSchemaFieldsUpdateProcessor now has the ability to add a "copyField" to 
+* SOLR-9526: Data driven schema now indexes text field "foo" as both "foo" (text_general) and as "foo_str" (string)
+  to facilitate both search and faceting. AddSchemaFieldsUpdateProcessor now has the ability to add a "copyField" to
   the type mappings, with an optional maxChars limitation. You can also define one typeMappings as default.
   This also solves issues SOLR-8495, SOLR-6966, and SOLR-7058
   (janhoy, Steve Rowe, hossman, Alexandre Rafalovitch, Shawn Heisey, Cao Manh Dat)
 
-* SOLR-10123: Upgraded the Analytics Component to version 2.0 which now supports distributed collections, expressions over 
-  multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics 
+* SOLR-10123: Upgraded the Analytics Component to version 2.0 which now supports distributed collections, expressions over
+  multivalued fields, a new JSON request language, and more. DocValues are now required for any field used in the analytics
   expression  whereas previously docValues was not required. Please see SOLR-10123 for details. (Houston Putman)
 
 * SOLR-10282: bin/solr support for enabling Kerberos authentication (Ishan Chattopadhyaya, Jason Gerlowski)
@@ -712,7 +714,7 @@ Bug Fixes
 
 * SOLR-11130: V2Request in SolrJ should return the correct collection name so that the request is forwarded to the
   correct node (noble)
-  
+
 * SOLR-11151: SolrInfoMBeanHandler.getDiff() ADD case non-functional: NPE when a bean value goes from null -> non-null.
   (Steve Rowe)
 
@@ -961,13 +963,13 @@ Other Changes
 
 * SOLR-10926: Increase the odds of randomly choosing point fields in our SolrTestCaseJ4 numeric type randomization.
   (hossman, Steve Rowe)
-  
+
 * SOLR-10846: ExternalFileField/FloatFieldSource should throw a clear exception on initialization with
   a Points-based keyField, which is not supported. (hossman, Steve Rowe)
-  
+
 * SOLR-11155: /analysis/field and /analysis/document requests should support points fields.
   (Jason Gerlowski, Steve Rowe)
-  
+
 * SOLR-10756: Undeprecate ZkStateReader.updateClusterState(), mark as @lucene.internal, and rename to
   forciblyRefreshAllClusterStateSlow(). (hossman, shalin, Steve Rowe)
 
@@ -987,7 +989,7 @@ Other Changes
 
 * SOLR-11023: Added EnumFieldType, a non-Trie-based version of EnumField, and deprecated EnumField
   in favor of EnumFieldType. (hossman, Steve Rowe)
-  
+
 * SOLR-10803: Mark all Trie/LegacyNumeric based fields @deprecated in Solr7.  (Steve Rowe)
 
 * SOLR-10821: Ref guide documentation for Autoscaling (Noble Paul, Cassandra Targett, shalin)
@@ -1047,7 +1049,7 @@ Other Changes
 
 * SOLR-11261, SOLR-10966: Upgrade to Hadoop 2.7.4 to fix incompatibility with Java 9.
   (Uwe Schindler)
-  
+
 * SOLR-11324: Clean up mention of trie fields in documentation and source comments. (Steve Rowe)
 
 ==================  6.6.1 ==================
