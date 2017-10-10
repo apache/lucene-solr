@@ -63,6 +63,7 @@ public class ComputePlanAction extends TriggerActionBase {
         }
         Policy policy = autoScalingConf.getPolicy();
         SolrClientDataProvider dataProvider = new SolrClientDataProvider(cloudSolrClient);
+        dataProvider.config = autoScalingConf;
         if (log.isDebugEnabled()) {
           log.debug("Cluster data provider: {}", dataProvider.toMap(new HashMap<>()));
         }

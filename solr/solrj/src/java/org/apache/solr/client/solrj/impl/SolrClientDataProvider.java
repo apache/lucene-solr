@@ -32,6 +32,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ClusterDataProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -61,6 +62,10 @@ import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.METRICS_PREF
  */
 public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  //only for debugging
+  public static SolrClientDataProvider INST;
+  //only for debugging, do not use it for anything else
+  public AutoScalingConfig config;
 
   private final CloudSolrClient solrClient;
   private final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> data = new HashMap<>();
@@ -84,6 +89,7 @@ public class SolrClientDataProvider implements ClusterDataProvider, MapWriter {
         replicas.add(new ReplicaInfo(replica.getName(), collName, shard, replica.getType(), new HashMap<>()));
       });
     });
+    if(log.isDebugEnabled()) INST = this;
   }
 
   @Override
