@@ -249,8 +249,10 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     waitForState("Timed out wait for collection be active", CollectionAdminParams.SYSTEM_COLL,
         clusterShape(1, 1));
 
+    log.info("### Start add node...");
     JettySolrRunner jetty = cluster.startJettySolrRunner();
     String nodeAddedName = jetty.getNodeName();
+    log.info("### Added node " + nodeAddedName);
     boolean await = actionFiredLatch.await(60, TimeUnit.SECONDS);
     assertTrue("action did not execute", await);
 
@@ -342,6 +344,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
 
     Thread.sleep(5000);
     // commit on the history collection
+    log.info("### Commit .system");
     solrClient.commit(CollectionAdminParams.SYSTEM_COLL);
     Thread.sleep(5000);
 
@@ -372,18 +375,25 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
   private static void waitForRecovery(String collection) throws Exception {
     log.info("Waiting for recovery of " + collection);
     boolean recovered = false;
+    boolean allActive = true;
+    boolean hasLeaders = true;
+    DocCollection collState = null;
     for (int i = 0; i < 300; i++) {
       ClusterState state = solrClient.getZkStateReader().getClusterState();
-      DocCollection collState = getCollectionState(collection);
+      collState = getCollectionState(collection);
       log.debug("###### " + collState);
       Collection<Replica> replicas = collState.getReplicas();
-      boolean allActive = true;
-      boolean hasLeaders = true;
+      allActive = true;
+      hasLeaders = true;
       if (replicas != null && !replicas.isEmpty()) {
         for (Replica r : replicas) {
-          if (!r.isActive(state.getLiveNodes())) {
-            log.info("Not active: " + r);
-            allActive = false;
+          if (state.getLiveNodes().contains(r.getNodeName())) {
+            if (!r.isActive(state.getLiveNodes())) {
+              log.info("Not active: " + r);
+              allActive = false;
+            }
+          } else {
+            log.info("Replica no longer on a live node, ignoring: " + r);
           }
         }
       } else {
@@ -402,7 +412,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         Thread.sleep(1000);
       }
     }
-    assertTrue("replica never fully recovered", recovered);
+    assertTrue("replica never fully recovered: allActive=" + allActive + ", hasLeaders=" + hasLeaders + ", collState=" + collState, recovered);
 
   }
 
