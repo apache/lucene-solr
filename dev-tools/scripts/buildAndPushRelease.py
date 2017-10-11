@@ -298,7 +298,7 @@ def main():
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:
-    os.chdir(root)
+    os.chdir(c.root)
     rev = open('rev.txt', encoding='UTF-8').read()
 
   if c.push_local:
