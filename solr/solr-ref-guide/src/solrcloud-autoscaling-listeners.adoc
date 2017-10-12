@@ -95,7 +95,12 @@ below, together with their configuration parameters.
 This trigger listener sends trigger events and processing context as documents for indexing in
 SolrCloud `.system` collection.
 
+When a trigger configuration is first created a corresponding trigger listener configuration that
+uses `SystemLogListener` is also automatically created, to make sure that all events and
+actions related to the autoscaling framework are logged to the `.system` collection.
+
 Supported configuration properties:
+
 * `collection` - (string, optional) specifies the target collection where documents are sent.
 Default value is `.system`
 * `enabled` - (boolean, optional) enables the listener when true. Default value is true.
@@ -127,6 +132,18 @@ processed)
 * `event.property.*` - additional fields that represent other arbitrary event properties. These fields use either
 `_s` or `_ss` suffix depending on whether the property value is a collection (values inside collection are treated as
 strings, there's no recursive flattening)
+
+The following configuration is used for the automatically created listener (in this case for a
+trigger named `foo`):
+
+[source,json]
+----
+{
+ 'name' : 'foo.system',
+ 'trigger' : 'solr.SystemLogListener',
+ 'stage' : ['WAITING', 'STARTED', 'ABORTED', 'SUCCEEDED', 'FAILED', 'BEFORE_ACTION', 'AFTER_ACTION']
+}
+----
 
 === `HttpTriggerListener`
 This listener uses HTTP POST to send a representation of event and context to a specified URL.
