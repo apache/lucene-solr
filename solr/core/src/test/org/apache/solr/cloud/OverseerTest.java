@@ -689,6 +689,63 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
     }
   }
+
+  @Test
+  public void testExceptionWhenFlushClusterState() throws Exception {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient controllerClient = null;
+    SolrZkClient overseerClient = null;
+    ZkStateReader reader = null;
+
+    try {
+      server.run();
+      controllerClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+      ZkController.createClusterZkNodes(controllerClient);
+
+      reader = new ZkStateReader(controllerClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      // We did not create /collections -> this message will cause exception when Overseer try to flush the clusterstate
+      ZkNodeProps badMessage = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+          "name", "collection1",
+          ZkStateReader.REPLICATION_FACTOR, "1",
+          ZkStateReader.NUM_SHARDS_PROP, "1",
+          DocCollection.STATE_FORMAT, "2",
+          "createNodeSet", "");
+      ZkNodeProps goodMessage = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
+          "name", "collection2",
+          ZkStateReader.REPLICATION_FACTOR, "1",
+          ZkStateReader.NUM_SHARDS_PROP, "1",
+          DocCollection.STATE_FORMAT, "1",
+          "createNodeSet", "");
+      ZkDistributedQueue workQueue = Overseer.getInternalWorkQueue(controllerClient, new Overseer.Stats());
+      workQueue.offer(Utils.toJSON(badMessage));
+      workQueue.offer(Utils.toJSON(goodMessage));
+      overseerClient = electNewOverseer(server.getZkAddress());
+      waitForCollections(reader, "collection2");
+
+      ZkDistributedQueue q = Overseer.getStateUpdateQueue(controllerClient);
+      q.offer(Utils.toJSON(badMessage));
+      q.offer(Utils.toJSON(goodMessage.plus("name", "collection3")));
+      waitForCollections(reader, "collection2", "collection3");
+      assertNotNull(reader.getClusterState().getCollectionOrNull("collection2"));
+      assertNotNull(reader.getClusterState().getCollectionOrNull("collection3"));
+
+      assertTrue(workQueue.peek() == null);
+      assertTrue(q.peek() == null);
+    } finally {
+      close(overseerClient);
+      close(controllerClient);
+      close(reader);
+      server.shutdown();
+    }
+  }
   
   @Test
   public void testShardLeaderChange() throws Exception {
