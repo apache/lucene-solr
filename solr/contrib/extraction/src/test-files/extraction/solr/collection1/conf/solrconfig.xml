@@ -33,10 +33,10 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
-    <!-- autocommit pending docs if certain criteria are met
-    <autoCommit>
+    <!-- autocommit pending docs if certain criteria are met 
+    <autoCommit> 
       <maxDocs>10000</maxDocs>
-      <maxTime>3600000</maxTime>
+      <maxTime>3600000</maxTime> 
     </autoCommit>
     -->
 
@@ -203,7 +203,7 @@
 
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
+    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
   </admin>
 
   <!-- test getting system property -->

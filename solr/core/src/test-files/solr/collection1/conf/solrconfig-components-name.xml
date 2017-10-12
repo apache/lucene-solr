@@ -38,7 +38,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <updateHandler class="solr.DirectUpdateHandler2"></updateHandler>
-
+  
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
@@ -61,9 +61,9 @@
 
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
+    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
   </admin>
-
+  
  <searchComponent name="component1" class="org.apache.solr.search.MockSearchComponent">
      <str name="testParam">foo</str>
  </searchComponent>
