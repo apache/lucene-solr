@@ -20,9 +20,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Expression sources are the source of the data being aggregated in <<analytics.adoc#analytics-expressions,analytics expressions>>.
+Expression sources are the source of the data being aggregated in <<analytics.adoc#expressions,analytics expressions>>.
 
-These sources can be either Solr Fields, indexed with docValues, or constants. 
+These sources can be either Solr Fields, indexed with docValues, or constants.
 
 [[analytics-fields]]
 == Field Types
@@ -68,7 +68,7 @@ Constants do not need to be surrounded by any function to define them, they can 
 [[analytics-constant-string]]
 === Strings
 
-There are two possible ways of specifying constant strings, as shown below. 
+There are two possible ways of specifying constant strings, as shown below.
 
 * Surrounded by double quotes, inside the quotes both `"` and `\` must be escaped with a `\` character.
 +

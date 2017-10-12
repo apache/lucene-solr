@@ -3,7 +3,7 @@
 :page-permalink: analytics.html
 :page-children: analytics-expression-sources, analytics-mapping-functions, analytics-reduction-functions
 :page-tocclass: right
-:page-toclevel: 5
+:page-toclevel: 2
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,16 +21,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Analytics Component is a feature in Solr that allows users to calculate complex statistical aggregations over result sets.
+The Analytics Component allows users to calculate complex statistical aggregations over result sets.
 
 The component enables interacting with data in a variety of ways, both through a diverse set of analytics functions as well as powerful faceting functionality.
 The standard facets are supported within the analytics component with additions that leverage its analytical capabilities.
 
-[[analytics-usage]]
-== Usage Overview
-
-[[analytics-usage-setup]]
-=== Setup
+== Analytics Configuration
 
 The Analytics component is in a contrib module, therefore it will need to be enabled in the `solrconfig.xml`.
 
@@ -39,81 +35,87 @@ Since the Analytics framework is a _search component_, it must be declared as su
 For distributed analytics requests over cloud collections, the component uses the `AnalyticsHandler` *strictly for inter-shard communication*.
 The Analytics Handler should not be used by users to submit analytics requests.
 
-The component can be enabled in Solr by adding the following lines in the `solrconfig.xml`:
+To configure Solr to use the Analytics Component, the first step is to add a `lib` directive so Solr loads the Analytic Component classes (for more about the `lib` directive, see <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig, Lib Directives in SolrConfig>>). In the section of `solrconfig.xml` where the default `lib` directive are, add a line:
+
+[source,xml]
+<lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-analytics-\d.*\.jar" />
+
+Next you need to enable the request handler and search component. Add the following lines to `solrconfig.xml`, near the defintions for other request handlers:
 
 [source,xml]
 .solrconfig.xml
 ----
 <!-- To handle user requests -->
-<searchComponent name="analytics" class="org.apahce.solr.handler.component.AnalyticsComponent" />
+<searchComponent name="analytics" class="org.apache.solr.handler.component.AnalyticsComponent" />
 
 <requestHandler name="/select" class="solr.SearchHandler">
     <arr name="last_components">
         <str>analytics</str>
     </arr>
-</arr>
+</requestHandler>
 
 <!-- For inter-shard communication during distributed requests -->
 <requestHandler name="/analytics" class="org.apache.solr.handler.AnalyticsHandler" />
 ----
 
-[[analytics-request_syntax]]
-=== Request Syntax
+For these changes to take effect, restart Solr or reload the core or collection.
 
-A Solr Analytics request is given through an additional URL parameter `analytics` in a request sent to the
+== Request Syntax
+
+An Analytics request is passed to Solr with the parameter `analytics` in a request sent to the
 <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,Search Handler>>.
 Since the analytics request is sent inside of a search handler request, it will compute results based on the result set determined by the search handler.
+
 For example, this curl command encodes and POSTs a simple analytics request to the the search handler:
 
 [source,bash]
 ----
-curl --data-urlencode 'analytics={ 
-                                    "expressions" : { 
-                                        "revenue" : "sum(mult(price,quantity))"
-                                    }
-                                 }'
-        http://localhost:8983/solr/sales/select?q=*:*&wt=json&rows=0
+curl --data-urlencode 'analytics={
+   "expressions" : {
+      "revenue" : "sum(mult(price,quantity))"
+      }
+   }'
+   http://localhost:8983/solr/sales/select?q=*:*&wt=json&rows=0
 ----
 
-There are 3 base parts of an analytics request:
-
-Functions::
-The list of <<analytics-variable_functions, Variable Functions>> to be used throughout the rest of the request
-These functions for the expressions defined in `expressions` as well as `groupings`.
+There are 3 main parts of any analytics request:
 
 Expressions::
-The list of <<analytics-expressions, Expressions>> to calculate over the entire result set.
-Expressions aggregate the search results into a single value to return.
-This list is entirely independent of the expressions defined in each of the groupings.
+A list of calculations to perform over the entire result set. Expressions aggregate the search results into a single value to return.
+This list is entirely independent of the expressions defined in each of the groupings. Find out more about them in the section <<Expressions>>.
+
+Functions::
+One or more <<variable-functions, Variable Functions>> to be used throughout the rest of the request. These are essentially lambda functions and can be combined in a number of ways.
+These functions for the expressions defined in `expressions` as well as `groupings`.
 
 Groupings::
-The list of <<analytics-facets, Groupings>> to calculate along side the expressions.
+The list of <<groupings-and-facets, Groupings>> to calculate in addition to the expressions.
 Groupings hold a set of facets and a list of expressions to compute over those facets.
 The expressions defined in a grouping are only calculated over the facets defined in that grouping.
 
 [NOTE]
 .Optional Parameters
-Either *expressions* or *groupings* must be present in the request, or else there are no analytics to compute.
-*Functions* is always an optional parameter.
+Either the `expressions` or the `groupings` parameter must be present in the request, or else there will be no analytics to compute.
+The `functions` parameter is always optional.
 
 [source,json]
 .Example Analytics Request
 ----
 {
-    "functions" : {
-        "sale()" : "mult(price,quantity)"
+    "functions": {
+        "sale()": "mult(price,quantity)"
     },
     "expressions" : {
         "max_sale" : "max(sale())",
         "med_sale" : "median(sale())"
-    }
+    },
     "groupings" : {
         "sales" : {
             "expressions" : {
                 "stddev_sale" : "stddev(sale())",
                 "min_price" : "min(price)",
                 "max_quantity" : "max(quantity)"
-            }
+            },
             "facets" : {
                 "category" : {
                     "type" : "value",
@@ -146,161 +148,150 @@ Either *expressions* or *groupings* must be present in the request, or else ther
 }
 ----
 
-[[analytics-expressions]]
 == Expressions
 
-Expressions are the way to request peices of information from the analytics component. These are the statistical expressions 
-that you want computed and returned in your response.
+Expressions are the way to request pieces of information from the analytics component. These are the statistical expressions that you want computed and returned in your response.
 
-[[analytics-expressions-construction]]
 === Constructing an Expression
 
-[[analytics-expressions-components]]
 ==== Expression Components
 
 An expression is built using fields, constants, mapping functions and reduction functions. The ways that these can be defined are described below.
 
-* *Sources*
-    ** *Constants* +
+Sources::
+    * Constants +
         Constants are values defined in the expression.
         The supported constant types are described in the <<analytics-expression-sources.adoc#analytics-constants, Analytics Expression Source Reference>>
-    ** *Fields* +
+    * Fields +
         Solr fields that are read from the index.
         The supported fields are listed in the <<analytics-expression-sources.adoc#analytics-fields, Analytics Expression Source Reference>>
-* *Mapping Functions* +
-    Functions that map values for each Solr Document or Reduction.
-    The provided mapping functions are detailed in the <<analytics-mapping-functions.adoc#analytics-mapping-functions,Analytics Mapping Function Reference>>.
-    
-    ** *Unreduced Mapping* +
+
+Mapping Functions::
+Functions that map values for each Solr Document or Reduction.
+The provided mapping functions are detailed in the <<analytics-mapping-functions.adoc#analytics-mapping-functions,Analytics Mapping Function Reference>>.
+
+    * Unreduced Mapping +
     Mapping a Field with another Field or Constant returns a value for every Solr Document.
     Unreduced mapping functions can take fields, constants as well as other unreduced mapping functions as input.
-    
-    ** *Reduced Mapping* +
+
+    * Reduced Mapping +
     Mapping a Reduction Function with another Reduction Function or Constant returns a single value.
-    
-* *Reduction Functions* +
+
+Reduction Functions::
     Functions that reduce the values of sources and/or unreduced mapping functions for every Solr Document to a single value.
     The provided reduction functions are detailed in the <<analytics-reduction-functions.adoc#analytics-reduction-functions,Analytics Reduction Function Reference>>.
-    
-[[analytics-expressions-component-ordering]]
+
 ==== Component Ordering
 
 The expression components must be used in the following order to create valid expressions.
 
-* *Reduced Mapping Function*
-** *Constants*
-** *Reduction Function*
-*** *Sources*
-*** *Unreduced Mapping Function*
-**** *Sources*
-**** *Unreduced Mapping Function...*
-** *Reduced Mapping Function...*
-* *Reduction Function...*
+. Reduced Mapping Function
+.. Constants
+.. Reduction Function
+... Sources
+... Unreduced Mapping Function
+.... Sources
+.... Unreduced Mapping Function
+.. Reduced Mapping Function
+. Reduction Function
 
 This ordering is based on the following rules:
 
-* No reduction function will be an argument of another reduction function.
-*Since all reduction is done together in one step, one reduction function cannot rely on the result of another.*
-* No fields are left unreduced, since the analytics component cannot return a list of values for an expression (one for every document).
+* No reduction function can be an argument of another reduction function.
+Since all reduction is done together in one step, one reduction function cannot rely on the result of another.
+* No fields can be left unreduced, since the analytics component cannot return a list of values for an expression (one for every document).
 Every expression must be reduced to a single value.
 * Mapping functions are not necessary when creating functions, however as many nested mappings as needed can be used.
 * Nested mapping functions must be the same type, so either both must be unreduced or both must be reduced.
 A reduced mapping function cannot take an unreduced mapping function as a parameter and vice versa.
 
-[[analytics-expressions-construction-example]]
 ==== Example Construction
 
 With the above definitions and ordering, an example expression can be broken up into its components:
 
-`div(sum(a,fill_missing(b,0)),add(10.5,count(mult(a,c)))))`
+[source,bash]
+div(sum(a,fill_missing(b,0)),add(10.5,count(mult(a,c)))))
 
-* `*div(sum(a,fill_missing(b,0)),add(10.5,count(mult(a,c)))))` - Reduced Mapping Function* +
-`div` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-div,provided mapping function>> and has reduced arguments
+As a whole, this is a reduced mapping Function. `div` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-div,provided mapping function>> and has reduced arguments.
 
-** `*sum(a,fill_missing(b,0))` - Reduction Function* +
-`sum` is a <<analytics-reduction-functions.adoc#analytics-reduction-sum,provided reduction function>>
+If we break down the expression further:
 
-*** `*a` - Field*
-*** `*fill_missing(b,0)` - Unreduced Mapping Function* +
-`fill_missing` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-cond-fill_missing,provided mapping function>> and has a field argument
+* `sum(a,fill_missing(b,0))`: Reduction Function +
+`sum` is a <<analytics-reduction-functions.adoc#analytics-reduction-sum,provided reduction function>>.
+** `a`: a Field
+** `fill_missing(b,0)`: Unreduced Mapping Function +
+`fill_missing` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-cond-fill_missing,provided mapping function>> and has a field argument.
+*** `b`: Field
+*** `0`: Constant
 
-**** `*b` - Field*
-**** `*0` - Constant*
-** `*add(10.5,count(mult(a,mult(b,c))))` - Reduced Mapping Function* +
-`add` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-add,provided mapping function>> and has a reduction function argument
-
-*** `*10.5` - Constant*
-*** `*count(mult(a,c))` - Reduction Function* +
+* `add(10.5,count(mult(a,mult(b,c))))`: Reduced Mapping Function +
+`add` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-add,provided mapping function>> and has a reduction function argument.
+** `10.5`: Constant
+** `count(mult(a,c))`: Reduction Function +
 `count` is a  <<analytics-reduction-functions.adoc#analytics-reduction-count,provided reduction function>>
+*** `mult(a,c)`: Unreduced Mapping Function +
+`mult` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-mult,provided mapping function>> and has two field arguments.
+**** `a`: Field
+**** `c`: Field
 
-**** `*mult(a,c)` - Unreduced Mapping Function* +
-`mult` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-mult,provided mapping function>> and has two field arguments
-
-***** `*a` - Field*
-***** `*c` - Field*
-
-[[analytics-expressions-cardinality]]
 === Expression Cardinality (Multi-Valued and Single-Valued)
 
 The root of all multi-valued expressions are multi-valued fields. Single-valued expressions can be started with constants or single-valued fields.
-All single-valued expressions can be treated as multi valued expressions that contain one value.
+All single-valued expressions can be treated as multi-valued expressions that contain one value.
 
-Single-valued expressions and Multi-valued expressions can be used together in many mapping functions, as well as Multi-valued expressions being used alone, and many single-valued expressions being used together. For example:
+Single-valued expressions and multi-valued expressions can be used together in many mapping functions, as well as multi-valued expressions being used alone, and many single-valued expressions being used together. For example:
 
-`add(*<single-valued double>*, *<single-valued double>*, ...)`:: 
-    Returns a *single-valued* double expression where the value of the values of each expression are added.
-`add(*<single-valued double>*, *<multi-valued double>*)`::
-    Returns a *multi-valued* double expression where each value of the second expression is added to the single value of the first expression.
-`add(*<multi-valued double>*, *<single-valued double>*)`::
-    Acts the same as the above function.
-`add(*<multi-valued double>*)`::
+`add(<single-valued double>, <single-valued double>, ...)`::
+Returns a *single-valued* double expression where the value of the values of each expression are added.
+
+`add(<single-valued double>, <multi-valued double>)`::
+Returns a *multi-valued* double expression where each value of the second expression is added to the single value of the first expression.
+
+`add(<multi-valued double>*, <single-valued double>)`::
+Acts the same as the above function.
+
+`add(<multi-valued double>)`::
     Returns a *single-valued* double expression which is the sum of the multiple values of the parameter expression.
 
-[[analytics-expressions-types]]
 === Types and Implicit Casting
 
-The new analytics component currently supports the following types:
-*boolean*, *int*, *long*, *float*, *double*, *date* and *string*.
+The new analytics component currently supports the types listed in the below table.
 These types have one-way implicit casting enabled for the following relationships:
 
 [cols="20,80",options="header"]
 |===
 | Type | Implicitly Casts To
-
 | *Boolean* | String
-
 | *Date* | Long, String
-
 | *Integer* | Long, Float, Double, String
-
 | *Long* | Double, String
-
 | *Float* | Double, String
-
 | *Double* | String
-
 | *String* | _none_
 |===
 
 An implicit cast means that if a function requires a certain type of value as a parameter, arguments will be automatically converted to that type if it is possible.
-For example `concat()` only accepts *String* parameters and since all types can be implicitly cast to *Strings*, any type is accepted as an argument. 
-This also goes for dynamically typed functions. `fillmissing()` requires two arguments of the same type, however two types that implicitly cast to the same type can also be used.
-For example `fill_missing(*<long>*,*<float>*)` will be cast to `fill_missing(*<double>*,*<double>*)` since *long* cannot be cast to *float* and *float* cannot be cast to *long* implicitly.
+
+For example, `concat()` only accepts string parameters and since all types can be implicitly cast to strings, any type is accepted as an argument.
+
+This also goes for dynamically typed functions. `fillmissing()` requires two arguments of the same type. However, two types that implicitly cast to the same type can also be used.
+
+For example, `fill_missing(<long>,<float>)` will be cast to `fill_missing(<double>,<double>)` since long cannot be cast to float and float cannot be cast to long implicitly.
 
 There is an ordering to implicit casts, where the more specialized type is ordered ahead of the more general type.
-Therefore even though both *Long* and *Float* can be implicitly cast to *Double* and *String*, they will be cast to *Double*.
-This is because *Double* is a more specialized type than *String*, which every type can be cast to.
+Therefore even though both long and float can be implicitly cast to double and string, they will be cast to double.
+This is because double is a more specialized type than string, which every type can be cast to.
+
 The ordering is the same as their order in the above table.
 
-Cardinality can also be implicity cast.
+Cardinality can also be implicitly cast.
 Single-valued expressions can always be implicitly cast to multi-valued expressions, since all single-valued expressions are multi-valued expressions with one value.
 
-Implicit casting will only occur when an expression will not _"compile"_ without it.
+Implicit casting will only occur when an expression will not "compile" without it.
 If an expression follows all typing rules initially, no implicit casting will occur.
 Certain functions such as `string()`, `date()`, `round()`, `floor()`, and `ceil()` act as explicit casts, declaring the type that is desired.
-However `round()`, `floor()` and `cell()` can return either *int* or *long* depending on the argument type.
-                          
-[[analytics-variable_functions]]
+However `round()`, `floor()` and `cell()` can return either int or long, depending on the argument type.
+
 == Variable Functions
 
 Variable functions are a way to shorten your expressions and make writing analytics queries easier. They are essentially lambda functions defined in a request.
@@ -319,7 +310,7 @@ Variable functions are a way to shorten your expressions and make writing analyt
 }
 ----
 
-In the above request, instead of writing `mult(price,quantity)` twice a function `sale()` was defined to abstract this idea. Then that function was used in the multiple expressions.
+In the above request, instead of writing `mult(price,quantity)` twice, a function `sale()` was defined to abstract this idea. Then that function was used in the multiple expressions.
 
 Suppose that we want to look at the sales of specific categories:
 
@@ -338,8 +329,7 @@ Suppose that we want to look at the sales of specific categories:
     }
 }
 ----
-                                                          
-[[analytics-variable_functions-arguments]]
+
 === Arguments
 
 Instead of making a function for each category, it would be much easier to use category as an input to the `sale()` function.
@@ -362,13 +352,13 @@ An example of this functionality is shown below:
 ----
 
 Variable Functions can take any number of arguments and use them in the function expression as if they were a field or constant.
-                                                          
-[[analytics-variable_functions-variable_length_arguments]]
+
 === Variable Length Arguments
 
 There are analytics functions that take a variable amount of parameters.
 Therefore there are use cases where variable functions would need to take a variable amount of parameters.
-For example maybe there are multiple, yet undetermined number of, components to the price of a product.
+
+For example, maybe there are multiple, yet undetermined, number of components to the price of a product.
 Functions can take a variable length of parameters if the last parameter is followed by `..`
 
 [source,json]
@@ -400,20 +390,22 @@ is expanded to both of the following:
 * `add(material, tariff, tax)`
 * `add(material, construction)`
 
-[[analytics-variable_functions-for_each]]
-=== For-Each
+=== For-Each Functions
+
 [CAUTION]
 .Advanced Functionality
 ====
-The following function details are for advanced requests. 
+The following function details are for advanced requests.
 ====
 
 Although the above functionality allows for an undefined number of arguments to be passed to a function, it does not allow for interacting with those arguments.
+
 Many times we might want to wrap each argument in additional functions.
 For example maybe we want to be able to look at multiple categories at the same time.
 So we want to see if `category EQUALS x *OR* category EQUALS y` and so on.
-In order to do this we need to use *for-each lambda functions*, which transform each value of the variable length parameter.
-The *for-each* is started with the `:` character after the variable length parameter.
+
+In order to do this we need to use for-each lambda functions, which transform each value of the variable length parameter.
+The for-each is started with the `:` character after the variable length parameter.
 
 [source,json]
 .Example Function with a For-Each
@@ -431,8 +423,8 @@ The *for-each* is started with the `:` character after the variable length param
 }
 ----
 
-`cats:` is the syntax that starts a for-each lambda function over every parameter `cats`, and the `\_` character is used to refer to the value of `cats` in each iteration in the for-each.
-Therefore when `sale("Clothing", "Kitchen")` is called the lambda function `equal(category,_)` is applied to both *Clothing* and *Kitchen* inside of the `or()` function.
+In this example, `cats:` is the syntax that starts a for-each lambda function over every parameter `cats`, and the `\_` character is used to refer to the value of `cats` in each iteration in the for-each.
+When `sale("Clothing", "Kitchen")` is called, the lambda function `equal(category,_)` is applied to both Clothing and Kitchen inside of the `or()` function.
 
 Using all of these rules
 
@@ -444,20 +436,15 @@ is expanded to
 
 by the expression parser.
 
-[[analytics-facets]]
 == Groupings And Facets
 
-*Facets*, much like in the rest of Solr, allow analytics results to be broken up and grouped by attributes of the data that the expressions are being calculated over.
-The currently available facets for use in the analytics component are *Value Facets*, *Pivot Facets*, *Range Facets* and *Query Facets*.
+Facets, much like in other parts of Solr, allow analytics results to be broken up and grouped by attributes of the data that the expressions are being calculated over.
+
+The currently available facets for use in the analytics component are Value Facets, Pivot Facets, Range Facets and Query Facets.
 Each facet is required to have a unique name within the grouping it is defined in, and no facet can be defined outside of a grouping.
 
-*Groupings* allow users to calculate the same grouping of expressions over a set of facets.
+Groupings allow users to calculate the same grouping of expressions over a set of facets.
 Groupings must have both `expressions` and `facets` given.
-And 
-
-[NOTE]
-.Facet Examples
-The examples below will use the following grouping Request and Response bases:
 
 [source,json]
 .Example Base Facet Request
@@ -494,27 +481,35 @@ The examples below will use the following grouping Request and Response bases:
 }
 ----
 
-[[analytics-facet-sorting]]
 === Facet Sorting
 
 Some Analytics facets allow for complex sorting of their results.
-The two current sortable facets are <<analytics-facets-value, Value Facets>> and <<analytics-facets-pivot, Pivot Facets>>.
+The two current sortable facets are <<value-facets, Analytic Value Facets>> and <<analytic-pivot-facets, Analytic Pivot Facets>>.
 
 ==== Parameters
 
+`criteria`::
+The list of criteria to sort the facet by.
++
+It takes the following parameters:
 
-* *Criteria* - List of criteria to sort the facet by
-** _Criterion_
-*** *Type*
-**** Expression - Sort by the value of an expression defined in the same grouping
-**** Facet Value - Sort by the string-representation of the facet value
-*** *Direction* _(Optional)_
-**** Ascending _(Default)_
-**** Descending
-*** *Expression* when `type = expression` - The name of an expression defined in the same grouping
-* *Limit* _(Optional)_ - Limit the number of returned facet values to the top _N_
-* *Offset* _(Optional)_ - When a limit is set, skip the top _N_ facet values
+`type`::: The type of sort. There are two possible values:
+* `expression`: Sort by the value of an expression defined in the same grouping.
+* `facetvalue`: Sort by the string-representation of the facet value.
 
+`Direction`:::
+_(Optional)_ The direction to sort.
+* `ascending` _(Default)_
+* `descending`
+
+`expression`:::
+When `type = expression`, the name of an expression defined in the same grouping.
+
+`limit`::
+Limit the number of returned facet values to the top _N_.  _(Optional)_
+
+`offset`::
+ When a limit is set, skip the top _N_ facet values. _(Optional)_
 
 [source,json]
 .Example Sort Request
@@ -536,15 +531,15 @@ The two current sortable facets are <<analytics-facets-value, Value Facets>> and
 }
 ----
 
-[[analytics-facets-value]]
 === Value Facets
 
-Value Facets are used to group documents by the value of a *mapping expression* applied to each document.
-Mapping expressions are expressions that do not include a *reduction function*.
-For more information, refer to the <<analytics-expressions-components, Expressions section>>.
+Value Facets are used to group documents by the value of a mapping expression applied to each document.
+Mapping expressions are expressions that do not include a reduction function.
 
-* `mult(quantity, sum(price, tax))` : breakup documents by the revenue generated
-* `fillmissing(state, "N/A")` : breakup documents by state, where *N/A* is used when the document doesn't contain a state
+For more information, refer to the <<expression-components, Expressions section>>.
+
+* `mult(quantity, sum(price, tax))`: breakup documents by the revenue generated
+* `fillmissing(state, "N/A")`: breakup documents by state, where N/A is used when the document doesn't contain a state
 
 Value Facets can be sorted.
 
@@ -559,7 +554,7 @@ Value Facets can be sorted.
 ----
 [NOTE]
 .Optional Parameters
-The *sort* parameter is optional.
+The `sort` parameter is optional.
 
 [source,json]
 .Example Value Facet Response
@@ -587,22 +582,20 @@ The *sort* parameter is optional.
 [NOTE]
 .Field Facets
 This is a replacement for Field Facets in the original Analytics Component.
-Field Facet functionality is mainted in Value Facets by using the name of a field as the expression.
+Field Facet functionality is maintained in Value Facets by using the name of a field as the expression.
 
-[[analytics-facets-pivot]]
-=== Pivot Facets
+=== Analytic Pivot Facets
 
-Pivot Facets are used to group documents by the value of multiple mapping expression applied to each document.
-Something about drill down.
+Pivot Facets are used to group documents by the value of multiple mapping expressions applied to each document.
 
-Pivot Facets work much like layers of <<analytics-facets-value,Value Facets>>.
+Pivot Facets work much like layers of <<value-facets,Analytic Value Facets>>.
 A list of pivots is required, and the order of the list directly impacts the results returned.
 The first pivot given will be treated like a normal value facet.
 The second pivot given will be treated like one value facet for each value of the first pivot.
 Each of these second-level value facets will be limited to the documents in their first-level facet bucket.
 This continues for however many pivots are provided.
 
-Sorting is enabled on a per-pivot basis. This means that if your top pivot has a sort with `limit : 1`, then only that first
+Sorting is enabled on a per-pivot basis. This means that if your top pivot has a sort with `limit:1`, then only that first
 value of the facet will be drilled down into. Sorting in each pivot is independent of the other pivots.
 
 [source,json]
@@ -628,9 +621,10 @@ value of the facet will be drilled down into. Sorting in each pivot is independe
     ]
 }
 ----
+
 [NOTE]
 .Optional Parameters
-The *sort* parameter within the pivot object is optional, and can be given in any, none or all of the provided pivots.
+The `sort` parameter within the pivot object is optional, and can be given in any, none or all of the provided pivots.
 
 
 [source,json]
@@ -674,8 +668,7 @@ The *sort* parameter within the pivot object is optional, and can be given in an
 ]
 ----
 
-[[analytics-facets-range]]
-=== Range Facets
+=== Analytic Range Facets
 
 Range Facets are used to group documents by the value of a field into a given set of ranges.
 The inputs for analytics Range Facets are identical to those used for Solr Range Facets.
@@ -706,9 +699,10 @@ Refer to the <<faceting.adoc#range-faceting,Range Facet documentation>> for ques
     ]
 }
 ----
+
 [NOTE]
 .Optional Parameters
-The *hardend*, *include* and *others* parameters are all optional. 
+The *hardend*, *include* and *others* parameters are all optional.
 
 [source,json]
 .Example Range Facet Response
@@ -753,7 +747,6 @@ The *hardend*, *include* and *others* parameters are all optional.
 ]
 ----
 
-[[analytics-facets-query]]
 === Query Facets
 
 Query Facets are used to group documents by given set of queries.
