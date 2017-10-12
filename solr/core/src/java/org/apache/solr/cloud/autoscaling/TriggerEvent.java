@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.IdUtils;
 
 /**
@@ -145,11 +146,6 @@ public class TriggerEvent implements MapWriter {
 
   @Override
   public String toString() {
-    return this.getClass().getSimpleName() + "{" +
-        "id='" + id + '\'' +
-        ", source='" + source + '\'' +
-        ", eventTime=" + eventTime +
-        ", properties=" + properties +
-        '}';
+    return Utils.toJSONString(this);
   }
 }
