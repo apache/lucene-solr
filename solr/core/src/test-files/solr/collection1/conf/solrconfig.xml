@@ -46,7 +46,7 @@
     <double name="maxWriteMBPerSecMerge">3000000</double>
     <double name="maxWriteMBPerSecRead">4000000</double>
     <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool> 
+    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
     <bool name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</bool>
     <bool name="solr.hdfs.blockcache.write.enabled">${solr.hdfs.blockcache.write.enabled:false}</bool>
     <int name="solr.hdfs.blockcache.blocksperbank">10</int>
@@ -90,11 +90,11 @@
       <arr name="env"> <str>MYVAR=val1</str> </arr>
     </listener>
     -->
-    
+
     <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.ulog.dir:}</str>
-    </updateLog> 
-    
+    </updateLog>
+
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
@@ -192,7 +192,7 @@
     <slowQueryThresholdMillis>2000</slowQueryThresholdMillis>
 
   </query>
-  
+
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
@@ -267,7 +267,7 @@
     </lst>
     <lst name="spellchecker">
       <str name="name">wordbreak</str>
-      <str name="classname">solr.WordBreakSolrSpellChecker</str>      
+      <str name="classname">solr.WordBreakSolrSpellChecker</str>
       <str name="field">lowerfilt</str>
       <str name="combineWords">true</str>
       <str name="breakWords">true</str>
@@ -329,8 +329,8 @@
       <str>termsComp</str>
     </arr>
   </requestHandler>
-  
-  
+
+
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
@@ -390,7 +390,7 @@
         <str>spellcheck</str>
       </arr>
  </requestHandler>
- 
+
   <requestHandler name="/mltrh" class="org.apache.solr.handler.component.SearchHandler">
 
   </requestHandler>
@@ -477,10 +477,10 @@
       <str name="facet.query">foo_s:bar</str>
     </lst>
   </requestHandler>
-  
+
   <admin>
     <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml admin-extra.html</gettableFiles>
+    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
   </admin>
 
   <!-- test getting system property -->
@@ -527,10 +527,10 @@
         <str>uniq</str>
         <str>uniq2</str>
         <str>uniq3</str>
-      </arr>      
+      </arr>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->
@@ -546,7 +546,7 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
     <!-- implicit test w/o distrib declared-->
@@ -561,10 +561,10 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <restManager>
-    <!-- 
+    <!--
     IMPORTANT: Due to the Lucene SecurityManager, tests can only write to their runtime directory or below.
     But it's easier to just keep everything in memory for testing so no remnants are left behind.
     -->
@@ -577,8 +577,7 @@
       <str name="df">text</str>
     </lst>
   </initParams>
-  
-  
+
+
 
 </config>
-
