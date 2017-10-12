@@ -34,6 +34,9 @@ import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-11469")
 public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
 
   private static final String TEST_COLLECTION_1 = "testCollection1";
