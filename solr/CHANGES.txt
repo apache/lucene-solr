@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.13
+Apache Tika 1.16
 Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -46,6 +46,11 @@ Bug Fixes
 
 * SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
   (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+Other Changes
+----------------------
+
+* SOLR-10335: Upgrade to Tika 1.16. (Tim Allison, Tomás Fernández Löbbe via shalin)
 
 ==================  6.6.1 ==================
 
