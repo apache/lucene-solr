@@ -27,6 +27,12 @@ Upgrade Notes
 * SOLR-11477: in the XML query parser (defType=xmlparser or {!xmlparser ... })
   the resolving of external entities is now disallowed by default.
 
+* SOLR-11482: RunExecutableListener was deprecated and is disabled by default for
+  security reasons. Legacy applications still using it must explicitely pass
+  '-Dsolr.enableRunExecutableListener=true' to the Solr command line.
+  Be aware that you should really disable API-based config editing at the same
+  time, using '-Ddisable.configEdit=true'!  (Uwe Schindler)
+
 Bug Fixes
 ----------------------
 

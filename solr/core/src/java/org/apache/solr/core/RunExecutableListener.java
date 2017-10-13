@@ -17,8 +17,11 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,16 +29,31 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Locale;
 import java.util.ArrayList;
 
 /**
+ * Runs native programs on IndexWriter events. Do not use anymore!
+ * @deprecated and disabled for security reasons!
  */
-class RunExecutableListener extends AbstractSolrEventListener {
+@Deprecated
+public class RunExecutableListener extends AbstractSolrEventListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
+  public static final String ENABLED_ARG = "solr.enableRunExecutableListener";
+  
+  private static final String WARNING_MESSAGE = String.format(Locale.ENGLISH,
+      "RunExecutableListener is deprecated and disabled by default for security reasons. Legacy applications still using it "
+      + "must explicitely pass '-D%s=true' to the Solr command line. Be aware that you should really disable API-based config editing "
+      + "at the same time, using '-D%s=true'!",
+      ENABLED_ARG, SolrConfigHandler.CONFIGSET_EDITING_DISABLED_ARG);
+  
+  private static final boolean enabled = Boolean.getBoolean(ENABLED_ARG);
+    
   public RunExecutableListener(SolrCore core) {
     super(core);
   }
+  
   protected String[] cmd;
   protected File dir;
   protected String[] envp;
@@ -70,11 +88,15 @@ class RunExecutableListener extends AbstractSolrEventListener {
    * External executable listener.
    * 
    * @param callback Unused (As of solr 1.4-dev)
-   * @return Error code indicating if the command has executed successfully. <br />
-   *  0 , indicates normal termination.<br />
+   * @return Error code indicating if the command has executed successfully.<br>
+   *  0 , indicates normal termination.<br>
    *  non-zero , otherwise.
    */
   protected int exec(String callback) {
+    if (!enabled) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, WARNING_MESSAGE);
+    }
+    
     int ret = 0;
 
     try {
