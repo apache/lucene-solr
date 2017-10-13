@@ -34,6 +34,8 @@ Bug Fixes
 
 * SOLR-11445: Overseer should not hang when process bad message. (Cao Manh Dat, shalin) 
 
+* SOLR-11447: ZkStateWriter should process commands in atomic. (Cao Manh Dat, shalin)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
