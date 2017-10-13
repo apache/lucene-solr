@@ -18,6 +18,11 @@ Changes in Runtime Behavior
 
 ======================= Lucene 7.1.0 =======================
 
+Changes in Runtime Behavior
+
+* Resolving of external entities in queryparser/xml/CoreParser is disallowed
+  by default. See SOLR-11477 for details.
+
 New Features
 
 * LUCENE-7970: Add a shape to Geo3D that consists of multiple planes that
@@ -123,6 +128,9 @@ Bug Fixes
 
 * LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
   child scorers (Adrien Grand, Mike McCandless)
+
+* SOLR-11477: Disallow resolving of external entities in queryparser/xml/CoreParser
+  by default. (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
 
 Build
 
