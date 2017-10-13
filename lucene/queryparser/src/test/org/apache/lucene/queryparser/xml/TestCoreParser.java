@@ -37,6 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.xml.sax.SAXException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -99,6 +100,32 @@ public class TestCoreParser extends LuceneTestCase {
   public void testSimpleXML() throws ParserException, IOException {
     Query q = parse("TermQuery.xml");
     dumpResults("TermQuery", q, 5);
+  }
+
+  public void test_DOCTYPE_TermQueryXML() throws ParserException, IOException {
+    try {
+      parse("DOCTYPE_TermQuery.xml");
+      fail("should have thrown a ParserException!");
+    }
+    catch (ParserException saxe) {
+      assertTrue(saxe.getMessage().equals(
+          "Error parsing XML stream: org.xml.sax.SAXException: External Entity resolving unsupported:  publicId=\"null\" systemId=\"foo://bar.xyz/mydtd\""));
+      return;
+    }
+    fail("should have thrown a ParserException!");
+  }
+
+  public void test_ENTITY_TermQueryXML() throws ParserException, IOException {
+    try {
+      parse("ENTITY_TermQuery.xml");
+      fail("should have thrown a ParserException!");
+    }
+    catch (ParserException saxe) {
+      assertTrue(saxe.getMessage().equals(
+          "Error parsing XML stream: org.xml.sax.SAXException: External Entity resolving unsupported:  publicId=\"null\" systemId=\"foo://bar.xyz/external\""));
+      return;
+    }
+    fail("should have thrown a ParserException!");
   }
 
   public void testSimpleTermsQueryXML() throws ParserException, IOException {
