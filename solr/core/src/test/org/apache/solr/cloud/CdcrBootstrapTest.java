@@ -269,12 +269,15 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
+          log.info("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
         QueryResponse response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
+
+        //additional logging
+        log.info("cdcr: numDocs after initial indexing in source: " + numDocs);
 
         // setup the target cluster
         target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
@@ -284,8 +287,16 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);
 
+        //additional logging
+        log.info("cdcr: numDocs in target-1 : " + targetSolrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
         cdcrStart(targetSolrClient);
         cdcrStart(sourceSolrClient);
+
+        //additional logging
+        log.info("cdcr: cdcr is enabled on source and target both, bootstrap should be triggered");
+        log.info("cdcr: current numDocs in target-2: " + targetSolrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
         int c = 0;
         for (int k = 0; k < docs; k++) {
           UpdateRequest req = new UpdateRequest();
@@ -296,12 +307,19 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
+          log.info("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
+        //additional logging
+        log.info("cdcr: current numDocs in target-3: " + targetSolrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+
         response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
+
+        //additional logging
+        log.info("cdcr: numDocs after second indexing in source: " + numDocs);
+        log.info("cdcr: current numDocs in target-4: " + targetSolrClient.query(new SolrQuery("*:*")).getResults().getNumFound());
 
         response = getCdcrQueue(sourceSolrClient);
         System.out.println("Cdcr queue response: " + response.getResponse());
@@ -323,6 +341,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
       try {
         targetSolrClient.commit();
         response = targetSolrClient.query(new SolrQuery("*:*"));
+        log.info("cdcr: numDocs in waitForTargetToSync: " + response.getResults().getNumFound());
         if (response.getResults().getNumFound() == numDocs) {
           break;
         }

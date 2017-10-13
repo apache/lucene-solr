@@ -416,6 +416,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       for (final Future<Long> future : parallelExecutor.invokeAll(callables)) {
         long version = future.get();
+        //additional logging
+        log.info("cdcr: shardcheckpoint: versions on target: " + version);
         if (version < checkpoint) { // we must take the lowest checkpoint from all the shards
           checkpoint = version;
         }
@@ -629,16 +631,23 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
     CountDownLatch latch = new CountDownLatch(1); // latch to make sure BOOTSTRAP_STATUS gives correct response
 
+    //additional logging
+    log.info("cdcr: bootstrap executing for collection: " + collectionName + " and shard: " + shard);
+
     Runnable runnable = () -> {
       Lock recoveryLock = req.getCore().getSolrCoreState().getRecoveryLock();
       boolean locked = recoveryLock.tryLock();
       SolrCoreState coreState = core.getSolrCoreState();
       try {
         if (!locked)  {
+          //additional logging
+          log.info("cdcr: couldn't acquire lock for bootstrap, issue CANCEL");
           handleCancelBootstrap(req, rsp);
         } else if (leaderStateManager.amILeader())  {
           coreState.setCdcrBootstrapRunning(true);
           latch.countDown(); // free the latch as current bootstrap is executing
+          //additional logging
+          log.info("cdcr: acquire lock for bootstrap, latch removed");
           //running.set(true);
           String masterUrl = req.getParams().get(ReplicationHandler.MASTER_URL);
           BootstrapCallable bootstrapCallable = new BootstrapCallable(masterUrl, core);
@@ -665,6 +674,8 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
           latch.countDown(); // free the latch as current bootstrap is executing
         }
       }
+      //additional logging
+      log.info("cdcr: bootstrap status after action: " + coreState.getCdcrBootstrapRunning());
     };
 
     try {
