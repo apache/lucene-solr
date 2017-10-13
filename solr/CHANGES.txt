@@ -58,7 +58,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.13
+Apache Tika 1.16
 Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -380,6 +380,8 @@ Other Changes
 
 * SOLR-11482: RunExecutableListener was removed for security reasons.  (Michael Stepankin,
   Olga Barinova, Uwe Schindler, Tomás Fernández Löbbe)
+
+* SOLR-10335: Upgrade to Tika 1.16. (Tim Allison, Tomás Fernández Löbbe via shalin)
 
 ==================  7.0.1 ==================
 
