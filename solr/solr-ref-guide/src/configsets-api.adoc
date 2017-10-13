@@ -155,7 +155,6 @@ http://localhost:8983/solr/admin/configs?action=LIST
 
 Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
 
- * RunExecutableListener does not initialize, if specified in the ConfigSet.
  * DataImportHandler's ScriptTransformer does not initialize, if specified in the ConfigSet.
  * XSLT transformer (tr parameter) cannot be used at request processing time.
  * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.

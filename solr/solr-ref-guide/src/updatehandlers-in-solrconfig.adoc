@@ -91,22 +91,8 @@ With this configuration, when you call `commitWithin` as part of your update mes
 
 The UpdateHandler section is also where update-related event listeners can be configured. These can be triggered to occur after any commit (`event="postCommit"`) or only after optimize commands (`event="postOptimize"`).
 
-Users can write custom update event listener classes, but a common use case is to run external executables via the `RunExecutableListener`:
-
-`exe`::
-The name of the executable to run. It should include the path to the file, relative to Solr home.
-
-`dir`::
-The directory to use as the working directory. The default is the current directory (".").
-
-`wait`::
-Forces the calling thread to wait until the executable returns a response. The default is `true`.
-
-`args`::
-Any arguments to pass to the program. The default is none.
-
-`env`::
-Any environment variables to set. The default is none.
+Users can write custom update event listener classes in Solr plugins. As of Solr 7.1,
+`RunExecutableListener` was removed for security reasons.
 
 == Transaction Log
 
