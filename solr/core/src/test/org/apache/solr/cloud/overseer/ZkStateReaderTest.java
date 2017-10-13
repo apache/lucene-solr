@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +89,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         // create new collection with stateFormat = 1
         DocCollection stateV1 = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE);
         ZkWriteCommand c1 = new ZkWriteCommand("c1", stateV1);
-        writer.enqueueUpdate(reader.getClusterState(), c1, null);
+        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
         writer.writePendingUpdates();
 
         Map map = (Map) Utils.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
@@ -111,7 +112,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         // Now update the collection to stateFormat = 2
         DocCollection stateV2 = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json");
         ZkWriteCommand c2 = new ZkWriteCommand("c1", stateV2);
-        writer.enqueueUpdate(reader.getClusterState(), c2, null);
+        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c2), null);
         writer.writePendingUpdates();
 
         Map map = (Map) Utils.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
@@ -160,7 +161,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // create new collection with stateFormat = 2
       ZkWriteCommand c1 = new ZkWriteCommand("c1",
           new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
-      writer.enqueueUpdate(reader.getClusterState(), c1, null);
+      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
       writer.writePendingUpdates();
       reader.forceUpdateCollection("c1");
 
@@ -211,7 +212,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // create new collection with stateFormat = 2
       DocCollection state = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE + "/c1/state.json");
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
-      writer.enqueueUpdate(reader.getClusterState(), wc, null);
+      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
 
       assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));

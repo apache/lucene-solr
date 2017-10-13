@@ -37,7 +37,9 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -379,6 +381,63 @@ public class OverseerTest extends SolrTestCaseJ4 {
       assertNotNull(reader.getLeaderUrl("collection2", "shard2", 15000));
       assertNotNull(reader.getLeaderUrl("collection2", "shard3", 15000));
       
+    } finally {
+      close(zkClient);
+      if (zkController != null) {
+        zkController.close();
+      }
+      close(overseerClient);
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testDownNodeFailover() throws Exception {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    MockZKController zkController = null;
+    SolrZkClient zkClient = null;
+    SolrZkClient overseerClient = null;
+
+    try {
+      server.run();
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      ZkController.createClusterZkNodes(zkClient);
+
+      overseerClient = electNewOverseer(server.getZkAddress());
+
+      ZkStateReader reader = new ZkStateReader(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      zkController = new MockZKController(server.getZkAddress(), "127.0.0.1");
+
+      for (int i = 0; i < 5; i++) {
+        zkController.createCollection("collection" + i, 1);
+        assertNotNull("shard got no id?", zkController.publishState("collection"+i, "core1",
+            "core_node1", "shard1" , Replica.State.ACTIVE, 1));
+      }
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1");
+      List<ZkWriteCommand> commands = new NodeMutator().downNode(reader.getClusterState(), m);
+
+      ZkDistributedQueue q = Overseer.getStateUpdateQueue(zkClient);
+      // More than Overseer.STATE_UPDATE_DELAY
+      Thread.sleep(2200);
+      q.offer(Utils.toJSON(m));
+
+      verifyReplicaStatus(reader, commands.get(0).name, "shard1", "core_node1", Replica.State.DOWN);
+      overseerClient.close();
+      Thread.sleep(1000); // wait for overseer to get killed
+
+      overseerClient = electNewOverseer(server.getZkAddress());
+      for (int i = 0; i < 5; i++) {
+        verifyReplicaStatus(reader, "collection"+i, "shard1", "core_node1", Replica.State.DOWN);
+      }
     } finally {
       close(zkClient);
       if (zkController != null) {
