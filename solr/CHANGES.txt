@@ -60,6 +60,10 @@ Upgrade Notes
 * SOLR-10962: in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated. Instead
   please configure a direct commitReserveDuration element for use in all modes (master, slave, cloud).
 
+* SOLR-11482: RunExecutableListener was removed for security reasons. If you want to listen to
+  events caused by updates, commits, or optimize, write your own listener as native Java class
+  as part of a Solr plugin.
+
 New Features
 ----------------------
 * SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
@@ -327,6 +331,9 @@ Other Changes
 
 * SOLR-11306: Fix inaccurate comments on docValues and StrField in the example schemas
   (Tom Burton-West, Jason Gerlowski, Varun Thacker)
+
+* SOLR-11482: RunExecutableListener was removed for security reasons.  (Michael Stepankin,
+  Olga Barinova, Uwe Schindler, Tomás Fernández Löbbe)
 
 ==================  7.0.1 ==================
 
