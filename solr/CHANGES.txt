@@ -82,6 +82,9 @@ Upgrade Notes
   events caused by updates, commits, or optimize, write your own listener as native Java class
   as part of a Solr plugin.
 
+* SOLR-11477: in the XML query parser (defType=xmlparser or {!xmlparser ... })
+  the resolving of external entities is now disallowed by default.
+
 New Features
 ----------------------
 * SOLR-10339: New set-trigger and remove-trigger APIs for autoscaling. (shalin)
@@ -250,6 +253,9 @@ Bug Fixes
 * SOLR-11425: SolrClientBuilder does not allow infinite timeout (value 0). (Peter Szantai-Kis via Mark Miller)
 
 * SOLR-11449: MoveReplicaCmd mistakenly called registerCollectionStateWatcher on failure. (ab)
+
+* SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
+  (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
 
 Optimizations
 ----------------------

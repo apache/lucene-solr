@@ -23,11 +23,17 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import java.io.InputStream;
+import java.util.Locale;
 
 /**
  * Assembles a QueryBuilder which uses only core Lucene Query objects
@@ -111,6 +117,10 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     queryFactory.addBuilder("SpanNot", snot);
   }
 
+  /**
+   * Parses the given stream as XML file and returns a {@link Query}.
+   * By default this disallows external entities for security reasons.
+   */
   public Query parse(InputStream xmlStream) throws ParserException {
     return getQuery(parseXML(xmlStream).getDocumentElement());
   }
@@ -133,23 +143,47 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     spanFactory.addBuilder(nodeName, builder);
   }
 
-  static Document parseXML(InputStream pXmlFile) throws ParserException {
-    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-    DocumentBuilder db = null;
+  /**
+   * Returns a SAX {@link EntityResolver} to be used by {@link DocumentBuilder}.
+   * By default this returns {@link #DISALLOW_EXTERNAL_ENTITY_RESOLVER}, which disallows the
+   * expansion of external entities (for security reasons). To restore legacy behavior,
+   * override this method to return {@code null}.
+   */
+  protected EntityResolver getEntityResolver() {
+    return DISALLOW_EXTERNAL_ENTITY_RESOLVER;
+  }
+
+  /**
+   * Subclass and override to return a SAX {@link ErrorHandler} to be used by {@link DocumentBuilder}.
+   * By default this returns {@code null} so no error handler is used.
+   * This method can be used to redirect XML parse errors/warnings to a custom logger.
+   */
+  protected ErrorHandler getErrorHandler() {
+    return null;
+  }
+
+  private Document parseXML(InputStream pXmlFile) throws ParserException {
+    final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    dbf.setValidating(false);
+    try {
+      dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    } catch (ParserConfigurationException e) {
+      // ignore since all implementations are required to support the
+      // {@link javax.xml.XMLConstants#FEATURE_SECURE_PROCESSING} feature
+    }
+    final DocumentBuilder db;
     try {
       db = dbf.newDocumentBuilder();
+    } catch (Exception se) {
+      throw new ParserException("XML Parser configuration error.", se);
     }
-    catch (Exception se) {
-      throw new ParserException("XML Parser configuration error", se);
-    }
-    org.w3c.dom.Document doc = null;
     try {
-      doc = db.parse(pXmlFile);
+      db.setEntityResolver(getEntityResolver());
+      db.setErrorHandler(getErrorHandler());
+      return db.parse(pXmlFile);
+    } catch (Exception se) {
+      throw new ParserException("Error parsing XML stream: " + se, se);
     }
-    catch (Exception se) {
-      throw new ParserException("Error parsing XML stream:" + se, se);
-    }
-    return doc;
   }
 
   public Query getQuery(Element e) throws ParserException {
@@ -160,4 +194,11 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     return spanFactory.getSpanQuery(e);
   }
+
+  public static final EntityResolver DISALLOW_EXTERNAL_ENTITY_RESOLVER = (String publicId, String systemId) -> {
+    throw new SAXException(String.format(Locale.ENGLISH,
+        "External Entity resolving unsupported:  publicId=\"%s\" systemId=\"%s\"",
+        publicId, systemId));
+  };
+
 }
