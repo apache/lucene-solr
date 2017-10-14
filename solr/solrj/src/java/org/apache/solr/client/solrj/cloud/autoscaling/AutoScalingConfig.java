@@ -495,6 +495,10 @@ public class AutoScalingConfig implements MapWriter {
     ew.put("listeners", getTriggerListenerConfigs());
   }
 
+  public String toString() {
+    return Utils.toJSONString(this);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -503,8 +507,8 @@ public class AutoScalingConfig implements MapWriter {
     AutoScalingConfig that = (AutoScalingConfig) o;
 
     if (!getPolicy().equals(that.getPolicy())) return false;
-    if (!triggers.equals(that.triggers)) return false;
-    return listeners.equals(that.listeners);
+    if (!getTriggerConfigs().equals(that.getTriggerConfigs())) return false;
+    return getTriggerListenerConfigs().equals(that.getTriggerListenerConfigs());
   }
 
   private static List<Object> getList(String key, Map<String, Object> properties) {

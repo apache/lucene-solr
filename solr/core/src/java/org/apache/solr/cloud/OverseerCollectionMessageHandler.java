@@ -36,8 +36,8 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
-import org.apache.solr.common.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -145,7 +145,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   String adminPath;
   ZkStateReader zkStateReader;
   String myId;
-  Overseer.Stats stats;
+  Stats stats;
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
@@ -172,7 +172,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
                                         final ShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
-                                        Overseer.Stats stats,
+                                        Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerPrioritizer) {
     this.zkStateReader = zkStateReader;
@@ -442,7 +442,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
   }
 
-  void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws KeeperException, InterruptedException {
+  void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
         ZkStateReader.CORE_NAME_PROP, core,
@@ -463,8 +463,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   //TODO should we not remove in the next release ?
-  private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results)
-      throws KeeperException, InterruptedException {
+  private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     final String collectionName = message.getStr(COLLECTION_PROP);
 
     boolean firstLoop = true;
@@ -635,7 +634,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
 
   private void modifyCollection(ClusterState clusterState, ZkNodeProps message, NamedList results)
-      throws KeeperException, InterruptedException {
+      throws Exception {
     
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     //the rest of the processing is based on writing cluster state properties
@@ -713,7 +712,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   ZkNodeProps addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
-      throws KeeperException, InterruptedException {
+      throws Exception {
 
     return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, message, results, onComplete);
   }

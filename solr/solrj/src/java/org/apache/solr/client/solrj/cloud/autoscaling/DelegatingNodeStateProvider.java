@@ -17,36 +17,27 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public interface ClusterDataProvider extends Closeable {
-  /**Get the value of each tag for a given node
-   *
-   * @param node node name
-   * @param tags tag names
-   * @return a map of tag vs value
-   */
-  Map<String, Object> getNodeValues(String node, Collection<String> tags);
+/**
+ * Base class for overriding some behavior of {@link NodeStateProvider}.
+ */
+public class DelegatingNodeStateProvider implements NodeStateProvider {
+  private final NodeStateProvider delegate;
 
-  /**
-   * Get the details of each replica in a node. It attempts to fetch as much details about
-   * the replica as mentioned in the keys list. It is not necessary to give al details
-   * <p>
-   * the format is {collection:shard :[{replicadetails}]}
-   */
-  Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys);
-
-  Collection<String> getNodes();
-
-  /**Get the collection-specific policy
-   */
-  String getPolicyNameByCollection(String coll);
+  public DelegatingNodeStateProvider(NodeStateProvider delegate) {
+    this.delegate = delegate;
+  }
 
   @Override
-  default void close() throws IOException {
+  public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
+    return delegate.getNodeValues(node, tags);
+  }
+
+  @Override
+  public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+    return delegate.getReplicaInfo(node, keys);
   }
 }

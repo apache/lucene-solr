@@ -962,6 +962,8 @@ public class CoreContainer {
           SolrException.log(log, null, e);
         } catch (KeeperException e) {
           SolrException.log(log, null, e);
+        } catch (Exception e) {
+          SolrException.log(log, null, e);
         }
       }
 
@@ -1406,6 +1408,8 @@ public class CoreContainer {
         Thread.currentThread().interrupt();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
       } catch (KeeperException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+      } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       }
     }

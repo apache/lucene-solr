@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -61,7 +62,7 @@ public class ZkStateWriter {
   public static ZkWriteCommand NO_OP = ZkWriteCommand.noop();
 
   protected final ZkStateReader reader;
-  protected final Overseer.Stats stats;
+  protected final Stats stats;
 
   protected Map<String, DocCollection> updates = new HashMap<>();
   private int numUpdates = 0;
@@ -75,7 +76,7 @@ public class ZkStateWriter {
    */
   protected boolean invalidState = false;
 
-  public ZkStateWriter(ZkStateReader zkStateReader, Overseer.Stats stats) {
+  public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
     assert zkStateReader != null;
 
     this.reader = zkStateReader;

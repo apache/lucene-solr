@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -105,7 +105,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     producer.offer(data);
     consumer.poll();
 
-    assertEquals(2, consumer.getStats().getQueueLength());
+    assertEquals(2, consumer.getZkStats().getQueueLength());
     producer.offer(data);
     producer2.offer(data);
     consumer.poll();
@@ -114,10 +114,10 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       Thread.sleep(20);
     }
     // DQ still have elements in their queue, so we should not fetch elements path from Zk
-    assertEquals(1, consumer.getStats().getQueueLength());
+    assertEquals(1, consumer.getZkStats().getQueueLength());
     consumer.poll();
     consumer.peek();
-    assertEquals(2, consumer.getStats().getQueueLength());
+    assertEquals(2, consumer.getZkStats().getQueueLength());
   }
 
   @Test

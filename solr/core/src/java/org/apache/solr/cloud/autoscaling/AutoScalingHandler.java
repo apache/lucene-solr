@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
@@ -45,7 +46,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
+import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.cloud.ZkDistributedQueueFactory;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -214,7 +216,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try (CloudSolrClient build = new CloudSolrClient.Builder()
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      Policy.Session session = policy.createSession(new SolrClientDataProvider(build));
+      DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
+      Policy.Session session = policy.createSession(new SolrClientCloudManager(queueFactory, build));
       List<Row> sorted = session.getSorted();
       List<Clause.Violation> violations = session.getViolations();
 
@@ -638,7 +641,9 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     try (CloudSolrClient build = new CloudSolrClient.Builder()
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
-      Policy.Session session = autoScalingConf.getPolicy().createSession(new SolrClientDataProvider(build));
+      DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
+      Policy.Session session = autoScalingConf.getPolicy()
+          .createSession(new SolrClientCloudManager(queueFactory, build));
       log.debug("Verified autoscaling configuration");
     }
   }

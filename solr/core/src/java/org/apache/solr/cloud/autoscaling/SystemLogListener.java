@@ -31,8 +31,8 @@ import java.util.StringJoiner;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,7 +41,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.IdUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +72,8 @@ public class SystemLogListener extends TriggerListenerBase {
   private boolean enabled = true;
 
   @Override
-  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(coreContainer, config);
+  public void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) {
+    super.init(dataProvider, config);
     collection = (String)config.properties.getOrDefault(CollectionAdminParams.COLLECTION, CollectionAdminParams.SYSTEM_COLL);
     enabled = Boolean.parseBoolean(String.valueOf(config.properties.getOrDefault("enabled", true)));
   }
@@ -85,10 +84,7 @@ public class SystemLogListener extends TriggerListenerBase {
     if (!enabled) {
       return;
     }
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
-        .withZkHost(coreContainer.getZkController().getZkServerAddress())
-        .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
-        .build()) {
+    try {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(CommonParams.TYPE, DOC_TYPE);
       doc.addField(SOURCE_FIELD, SOURCE);
@@ -122,7 +118,8 @@ public class SystemLogListener extends TriggerListenerBase {
       }
       UpdateRequest req = new UpdateRequest();
       req.add(doc);
-      cloudSolrClient.request(req, collection);
+      req.setParam(CollectionAdminParams.COLLECTION, collection);
+      dataProvider.request(req);
     } catch (Exception e) {
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
         // relatively benign

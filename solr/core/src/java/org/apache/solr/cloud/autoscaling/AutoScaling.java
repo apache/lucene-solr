@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.core.SolrResourceLoader;
 
 public class AutoScaling {
 
@@ -112,33 +112,13 @@ public class AutoScaling {
     void init();
   }
 
-  public static class TriggerFactory implements Closeable {
+  /**
+   * Factory to produce instances of {@link Trigger}.
+   */
+  public static abstract class TriggerFactory implements Closeable {
+    protected boolean isClosed = false;
 
-    private final CoreContainer coreContainer;
-    private final ZkController zkController;
-
-    private boolean isClosed = false;
-
-    public TriggerFactory(CoreContainer coreContainer, ZkController zkController) {
-      Objects.requireNonNull(coreContainer);
-      Objects.requireNonNull(zkController);
-      this.coreContainer = coreContainer;
-      this.zkController = zkController;
-    }
-
-    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) {
-      if (isClosed) {
-        throw new AlreadyClosedException("TriggerFactory has already been closed, cannot create new triggers");
-      }
-      switch (type) {
-        case NODEADDED:
-          return new NodeAddedTrigger(name, props, coreContainer, zkController);
-        case NODELOST:
-          return new NodeLostTrigger(name, props, coreContainer, zkController);
-        default:
-          throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
-      }
-    }
+    public abstract Trigger create(TriggerEventType type, String name, Map<String, Object> props);
 
     @Override
     public void close() throws IOException {
@@ -146,6 +126,38 @@ public class AutoScaling {
         isClosed = true;
       }
     }
+  }
+
+  /**
+   * Default implementation of {@link TriggerFactory}.
+   */
+  public static class TriggerFactoryImpl extends TriggerFactory {
+
+    private final SolrCloudManager dataProvider;
+    private final SolrResourceLoader loader;
+
+    public TriggerFactoryImpl(SolrResourceLoader loader, SolrCloudManager dataProvider) {
+      Objects.requireNonNull(dataProvider);
+      Objects.requireNonNull(loader);
+      this.dataProvider = dataProvider;
+      this.loader = loader;
+    }
+
+    @Override
+    public synchronized Trigger create(TriggerEventType type, String name, Map<String, Object> props) {
+      if (isClosed) {
+        throw new AlreadyClosedException("TriggerFactory has already been closed, cannot create new triggers");
+      }
+      switch (type) {
+        case NODEADDED:
+          return new NodeAddedTrigger(name, props, loader, dataProvider);
+        case NODELOST:
+          return new NodeLostTrigger(name, props, loader, dataProvider);
+        default:
+          throw new IllegalArgumentException("Unknown event type: " + type + " in trigger: " + name);
+      }
+    }
+
   }
 
   public static final String AUTO_ADD_REPLICAS_TRIGGER_DSL =

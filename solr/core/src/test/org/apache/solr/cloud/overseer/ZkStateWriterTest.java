@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTest;
+import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
@@ -87,7 +88,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c2"));
         ZkWriteCommand c3 = new ZkWriteCommand("c3",
             new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c3"));
-        ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         // First write is flushed immediately
         ClusterState clusterState = writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
@@ -129,7 +130,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -171,7 +172,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -215,7 +216,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
@@ -291,7 +292,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);

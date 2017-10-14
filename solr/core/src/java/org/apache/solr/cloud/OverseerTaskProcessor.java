@@ -91,7 +91,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private boolean isClosed;
 
-  private Overseer.Stats stats;
+  private Stats stats;
 
   // Set of tasks that have been picked up for processing but not cleaned up from zk work-queue.
   // It may contain tasks that have completed execution, have been entered into the completed/failed map in zk but not
@@ -122,7 +122,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private OverseerNodePrioritizer prioritizer;
 
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
-                                        Overseer.Stats stats,
+                                        Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
                                         OverseerTaskQueue workQueue,

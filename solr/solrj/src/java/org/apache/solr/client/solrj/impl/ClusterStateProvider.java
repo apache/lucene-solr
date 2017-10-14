@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.cloud.ClusterState;
@@ -32,7 +34,7 @@ public interface ClusterStateProvider extends Closeable {
   /**
    * Obtain set of live_nodes for the cluster.
    */
-  Set<String> liveNodes();
+  Set<String> getLiveNodes();
 
   /**
    * Given an alias, returns the collection name that this alias points to
@@ -46,14 +48,37 @@ public interface ClusterStateProvider extends Closeable {
   String getCollectionName(String name);
 
   /**
-   * Obtain a cluster property, or null if it doesn't exist.
+   * Obtain the current cluster state.
    */
-  Object getClusterProperty(String propertyName);
+  ClusterState getClusterState() throws IOException;
+
+  /**
+   * Obtain cluster properties.
+   * @return configured cluster properties, or an empty map, never null.
+   */
+  Map<String, Object> getClusterProperties();
 
   /**
    * Obtain a cluster property, or the default value if it doesn't exist.
    */
-  Object getClusterProperty(String propertyName, String def);
+  default <T> T getClusterProperty(String key, T defaultValue) {
+    T value = (T) getClusterProperties().get(key);
+    if (value == null)
+      return defaultValue;
+    return value;
+  }
+
+  /**
+   * Obtain a cluster property, or null if it doesn't exist.
+   */
+  default <T> T getClusterProperty(String propertyName) {
+    return (T) getClusterProperties().get(propertyName);
+  }
+
+  /**
+   * Get the collection-specific policy
+   */
+  String getPolicyNameByCollection(String coll);
 
   void connect();
 }

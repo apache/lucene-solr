@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTest;
+import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
@@ -81,7 +81,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         reader.registerCore("c1");
       }
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -154,7 +154,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
@@ -206,7 +206,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // Still no c1 collection, despite a collection path.
       assertNull(reader.getClusterState().getCollectionRef("c1"));
 
-      ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
 
       // create new collection with stateFormat = 2

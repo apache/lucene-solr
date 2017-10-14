@@ -23,17 +23,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringJoiner;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.StringEntity;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +58,6 @@ import org.slf4j.LoggerFactory;
 public class HttpTriggerListener extends TriggerListenerBase {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private HttpClient httpClient;
   private String urlTemplate;
   private String payloadTemplate;
   private String contentType;
@@ -72,9 +66,8 @@ public class HttpTriggerListener extends TriggerListenerBase {
   private boolean followRedirects;
 
   @Override
-  public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
-    super.init(coreContainer, config);
-    httpClient = coreContainer.getUpdateShardHandler().getHttpClient();
+  public void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) {
+    super.init(dataProvider, config);
     urlTemplate = (String)config.properties.get("url");
     payloadTemplate = (String)config.properties.get("payload");
     contentType = (String)config.properties.get("contentType");
@@ -146,31 +139,16 @@ public class HttpTriggerListener extends TriggerListenerBase {
       payload = Utils.toJSONString(properties);
       type = "application/json";
     }
-    HttpPost post = new HttpPost(url);
-    HttpEntity entity = new StringEntity(payload, "UTF-8");
+    Map<String, String> headers = new HashMap<>();
     headerTemplates.forEach((k, v) -> {
       String headerVal = PropertiesUtil.substituteProperty(v, properties);
       if (!headerVal.isEmpty()) {
-        post.addHeader(k, headerVal);
+        headers.put(k, headerVal);
       }
     });
-    post.setEntity(entity);
-    post.setHeader("Content-Type", type);
-    org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
-    requestConfigBuilder.setSocketTimeout(timeout);
-    requestConfigBuilder.setConnectTimeout(timeout);
-    requestConfigBuilder.setRedirectsEnabled(followRedirects);
-
-    post.setConfig(requestConfigBuilder.build());
+    headers.put("Content-Type", type);
     try {
-      HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
-      HttpResponse rsp = httpClient.execute(post, httpClientRequestContext);
-      int statusCode = rsp.getStatusLine().getStatusCode();
-      if (statusCode != 200) {
-        LOG.warn("Error sending request for event " + event + ", HTTP response: " + rsp.toString());
-      }
-      HttpEntity responseEntity = rsp.getEntity();
-      Utils.consumeFully(responseEntity);
+      dataProvider.httpRequest(url, SolrRequest.METHOD.POST, headers, payload, timeout, followRedirects);
     } catch (IOException e) {
       LOG.warn("Exception sending request for event " + event, e);
     }

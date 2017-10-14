@@ -19,7 +19,10 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
@@ -31,9 +34,9 @@ import java.util.function.Predicate;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.util.Pair;
@@ -47,7 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A distributed queue. Optimized for single-consumer,
+ * A ZK-based distributed queue. Optimized for single-consumer,
  * multiple-producer: if there are multiple consumers on the same ZK queue,
  * the results should be correct but inefficient
  */
@@ -71,7 +74,7 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   final SolrZkClient zookeeper;
 
-  final Overseer.Stats stats;
+  final Stats stats;
 
   /**
    * A lock that guards all of the mutable state that follows.
@@ -104,14 +107,14 @@ public class ZkDistributedQueue implements DistributedQueue {
   private final AtomicInteger offerPermits = new AtomicInteger(0);
 
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir) {
-    this(zookeeper, dir, new Overseer.Stats());
+    this(zookeeper, dir, new Stats());
   }
 
-  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats) {
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats) {
     this(zookeeper, dir, stats, 0);
   }
 
-  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats, int maxQueueSize) {
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize) {
     this.dir = dir;
 
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
@@ -331,8 +334,33 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  public Overseer.Stats getStats() {
+  public Stats getZkStats() {
     return stats;
+  }
+
+  @Override
+  public Map<String, Object> getStats() {
+    if (stats == null) {
+      return Collections.emptyMap();
+    }
+    Map<String, Object> res = new HashMap<>();
+    res.put("queueLength", stats.getQueueLength());
+    final Map<String, Object> statsMap = new HashMap<>();
+    res.put("stats", statsMap);
+    stats.getStats().forEach((op, stat) -> {
+      final Map<String, Object> statMap = new HashMap<>();
+      statMap.put("success", stat.success.get());
+      statMap.put("errors", stat.errors.get());
+      final List<Map<String, Object>> failed = new ArrayList<>(stat.failureDetails.size());
+      statMap.put("failureDetails", failed);
+      stat.failureDetails.forEach(failedOp -> {
+        Map<String, Object> fo = new HashMap<>();
+        fo.put("req", failedOp.req);
+        fo.put("resp", failedOp.resp);
+      });
+      statsMap.put(op, statMap);
+    });
+    return res;
   }
 
   /**
@@ -400,7 +428,8 @@ public class ZkDistributedQueue implements DistributedQueue {
   /**
    * Return the currently-known set of elements, using child names from memory. If no children are found, or no
    * children pass {@code acceptFilter}, waits up to {@code waitMillis} for at least one child to become available.
-   * Package-private to support {@link OverseerTaskQueue} specifically.
+   * <p>
+   * Package-private to support {@link OverseerTaskQueue} specifically.</p>
    */
   @Override
   public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {

@@ -74,7 +74,7 @@ class ReplicaCount extends Number implements MapWriter {
   public void increment(List<ReplicaInfo> infos) {
     if (infos == null) return;
     for (ReplicaInfo info : infos) {
-      switch (info.type) {
+      switch (info.getType()) {
         case NRT:
           nrt++;
           break;

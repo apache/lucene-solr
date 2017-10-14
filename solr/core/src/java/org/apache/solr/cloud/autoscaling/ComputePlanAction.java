@@ -20,19 +20,14 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.SolrClientDataProvider;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,45 +44,30 @@ public class ComputePlanAction extends TriggerActionBase {
   @Override
   public void process(TriggerEvent event, ActionContext context) {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
-    CoreContainer container = context.getCoreContainer();
+    SolrCloudManager cloudManager = context.getCloudManager();
     try {
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
-          .withZkHost(container.getZkController().getZkServerAddress())
-          .withHttpClient(container.getUpdateShardHandler().getHttpClient())
-          .build()) {
-        ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-        AutoScalingConfig autoScalingConf = zkStateReader.getAutoScalingConfig();
-        if (autoScalingConf.isEmpty()) {
-          log.error("Action: " + getName() + " executed but no policy is configured");
-          return;
-        }
-        Policy policy = autoScalingConf.getPolicy();
-        SolrClientDataProvider dataProvider = new SolrClientDataProvider(cloudSolrClient);
-        dataProvider.config = autoScalingConf;
-        if (log.isDebugEnabled()) {
-          log.debug("Cluster data provider: {}", dataProvider.toMap(new HashMap<>()));
-        }
-        Policy.Session session = policy.createSession(dataProvider);
-        Policy.Suggester suggester = getSuggester(session, event, zkStateReader);
-        while (true) {
-          SolrRequest operation = suggester.getOperation();
-          if (operation == null) break;
-          log.info("Computed Plan: {}", operation.getParams());
-          Map<String, Object> props = context.getProperties();
-          props.compute("operations", (k, v) -> {
-            List<SolrRequest> operations = (List<SolrRequest>) v;
-            if (operations == null) operations = new ArrayList<>();
-            operations.add(operation);
-            return operations;
-          });
-          session = suggester.getSession();
-          suggester = getSuggester(session, event, zkStateReader);
-        }
+      AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
+      if (autoScalingConf.isEmpty()) {
+        log.error("Action: " + getName() + " executed but no policy is configured");
+        return;
       }
-    } catch (KeeperException e) {
-      log.error("ZooKeeperException while processing event: " + event, e);
-    } catch (InterruptedException e) {
-      log.error("Interrupted while processing event: " + event, e);
+      Policy policy = autoScalingConf.getPolicy();
+      Policy.Session session = policy.createSession(cloudManager);
+      Policy.Suggester suggester = getSuggester(session, event, cloudManager);
+      while (true) {
+        SolrRequest operation = suggester.getOperation();
+        if (operation == null) break;
+        log.info("Computed Plan: {}", operation.getParams());
+        Map<String, Object> props = context.getProperties();
+        props.compute("operations", (k, v) -> {
+          List<SolrRequest> operations = (List<SolrRequest>) v;
+          if (operations == null) operations = new ArrayList<>();
+          operations.add(operation);
+          return operations;
+        });
+        session = suggester.getSession();
+        suggester = getSuggester(session, event, cloudManager);
+      }
     } catch (IOException e) {
       log.error("IOException while processing event: " + event, e);
     } catch (Exception e) {
@@ -95,7 +75,7 @@ public class ComputePlanAction extends TriggerActionBase {
     }
   }
 
-  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, ZkStateReader zkStateReader) {
+  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
     Policy.Suggester suggester;
     switch (event.getEventType()) {
       case NODEADDED:

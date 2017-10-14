@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,7 +47,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.TimeSource;
@@ -966,8 +966,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   public static class TestTriggerListener extends TriggerListenerBase {
     @Override
-    public void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) {
-      super.init(coreContainer, config);
+    public void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) {
+      super.init(dataProvider, config);
       listenerCreated.countDown();
     }
 

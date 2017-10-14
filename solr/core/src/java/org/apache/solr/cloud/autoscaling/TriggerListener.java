@@ -19,8 +19,8 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.Closeable;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
-import org.apache.solr.core.CoreContainer;
 
 /**
  * Implementations of this interface are notified of stages in event processing that they were
@@ -28,7 +28,7 @@ import org.apache.solr.core.CoreContainer;
  */
 public interface TriggerListener extends Closeable {
 
-  void init(CoreContainer coreContainer, AutoScalingConfig.TriggerListenerConfig config) throws Exception;
+  void init(SolrCloudManager dataProvider, AutoScalingConfig.TriggerListenerConfig config) throws Exception;
 
   AutoScalingConfig.TriggerListenerConfig getConfig();
 

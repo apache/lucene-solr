@@ -1005,7 +1005,7 @@ public class CloudSolrClient extends SolrClient {
     }
     List<String> theUrlList = new ArrayList<>();
     if (request instanceof V2Request) {
-      Set<String> liveNodes = stateProvider.liveNodes();
+      Set<String> liveNodes = stateProvider.getLiveNodes();
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
@@ -1013,7 +1013,7 @@ public class CloudSolrClient extends SolrClient {
             (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
       }
     } else if (ADMIN_PATHS.contains(request.getPath())) {
-      Set<String> liveNodes = stateProvider.liveNodes();
+      Set<String> liveNodes = stateProvider.getLiveNodes();
       for (String liveNode : liveNodes) {
         theUrlList.add(ZkStateReader.getBaseUrlForNodeName(liveNode,
             (String) stateProvider.getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
@@ -1046,7 +1046,7 @@ public class CloudSolrClient extends SolrClient {
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
-      Set<String> liveNodes = stateProvider.liveNodes();
+      Set<String> liveNodes = stateProvider.getLiveNodes();
 
       List<String> leaderUrlList = null;
       List<String> urlList = null;

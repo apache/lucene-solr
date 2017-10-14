@@ -45,7 +45,7 @@ public class MoveReplicaSuggester extends Suggester {
       ReplicaInfo replicaInfo = fromReplica.first();
       String coll = replicaInfo.collection;
       String shard = replicaInfo.shard;
-      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard, replicaInfo.type);
+      Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard, replicaInfo.getType());
       Row srcTmpRow = pair.first();
       if (srcTmpRow == null) {
         //no such replica available
@@ -57,7 +57,7 @@ public class MoveReplicaSuggester extends Suggester {
         Row targetRow = getMatrix().get(j);
         if(!targetRow.isLive) continue;
         if (!isAllowed(targetRow.node, Hint.TARGET_NODE)) continue;
-        targetRow = targetRow.addReplica(coll, shard, replicaInfo.type);
+        targetRow = targetRow.addReplica(coll, shard, replicaInfo.getType());
         List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getModifiedMatrix(getMatrix(), srcTmpRow, i), targetRow, j));
         if (!containsNewErrors(errs) && isLessSerious(errs, leastSeriousViolation) &&
             Policy.compareRows(srcTmpRow, targetRow, session.getPolicy()) < 1) {
@@ -69,8 +69,8 @@ public class MoveReplicaSuggester extends Suggester {
       }
     }
     if (targetNodeIndex != null && sourceNodeIndex != null) {
-      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.type).first());
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.type));
+      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.getType()).first());
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.getType()));
       return new CollectionAdminRequest.MoveReplica(
           sourceReplicaInfo.collection,
           sourceReplicaInfo.name,
