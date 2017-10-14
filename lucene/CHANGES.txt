@@ -73,6 +73,31 @@ Optimizations
   compute the relation between the query and inner nodes of the BKD tree.
   (Adrien Grand)
 
+======================= Lucene 6.6.3 =======================
+(No Changes)
+
+======================= Lucene 6.6.2 =======================
+
+Changes in Runtime Behavior
+
+* Resolving of external entities in queryparser/xml/CoreParser is disallowed
+  by default. See SOLR-11477 for details.
+
+Bug Fixes
+
+* SOLR-11477: Disallow resolving of external entities in queryparser/xml/CoreParser
+  by default. (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+======================= Lucene 6.6.1 =======================
+
+Bug Fixes
+
+* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
+  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
+  with multiple points that should match to not match. (Martijn van Groningen)
+
+* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
+
 ======================= Lucene 6.6.0 =======================
 
 New Features

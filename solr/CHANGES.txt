@@ -218,7 +218,7 @@ Other Changes
  * SOLR-11122: Creating a core should write a core.properties file first and clean up on failure
    (Erick Erickson)
 
-   ==================  6.6.2 ==================
+==================  6.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
