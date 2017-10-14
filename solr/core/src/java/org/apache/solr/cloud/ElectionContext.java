@@ -233,7 +233,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection,
           ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
-          ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP));
+          ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
+          ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       Overseer.getStateUpdateQueue(zkClient).offer(Utils.toJSON(m));
     }
   }
@@ -508,7 +509,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     }
   }
 
-  public void publishActiveIfRegisteredAndNotActive(SolrCore core) throws KeeperException, InterruptedException {
+  public void publishActiveIfRegisteredAndNotActive(SolrCore core) throws Exception {
       if (core.getCoreDescriptor().getCloudDescriptor().hasRegistered()) {
         ZkStateReader zkStateReader = zkController.getZkStateReader();
         zkStateReader.forceUpdateCollection(collection);

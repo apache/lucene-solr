@@ -139,6 +139,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return asyncId;
     }
 
+    public void setAsyncId(String asyncId) {
+      this.asyncId = asyncId;
+    }
+
     /**
      * Process this request asynchronously, generating and returning a request id
      * @param client a Solr client

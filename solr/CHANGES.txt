@@ -36,6 +36,12 @@ Bug Fixes
 
 * SOLR-11447: ZkStateWriter should process commands in atomic. (Cao Manh Dat, shalin)
 
+Optimizations
+----------------------
+* SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
+  to make testing and large scale simulations easier. (ab)
+
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

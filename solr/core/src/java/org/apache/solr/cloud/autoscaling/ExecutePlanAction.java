@@ -28,17 +28,15 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -57,43 +55,45 @@ public class ExecutePlanAction extends TriggerActionBase {
   @Override
   public void process(TriggerEvent event, ActionContext context) {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
-    CoreContainer container = context.getCoreContainer();
-    SolrZkClient zkClient = container.getZkController().getZkClient();
+    SolrCloudManager dataProvider = context.getCloudManager();
     List<SolrRequest> operations = (List<SolrRequest>) context.getProperty("operations");
     if (operations == null || operations.isEmpty()) {
       log.info("No operations to execute for event: {}", event);
       return;
     }
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
-        .withZkHost(container.getZkController().getZkServerAddress())
-        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
-        .build()) {
-      int counter = 0;
+    try {
       for (SolrRequest operation : operations) {
         log.info("Executing operation: {}", operation.getParams());
         try {
           SolrResponse response = null;
+          int counter = 0;
           if (operation instanceof CollectionAdminRequest.AsyncCollectionAdminRequest) {
             CollectionAdminRequest.AsyncCollectionAdminRequest req = (CollectionAdminRequest.AsyncCollectionAdminRequest) operation;
             String asyncId = event.getSource() + '/' + event.getId() + '/' + counter;
-            String znode = saveAsyncId(event, context, asyncId);
+            String znode = saveAsyncId(dataProvider.getDistribStateManager(), event, asyncId);
             log.debug("Saved requestId: {} in znode: {}", asyncId, znode);
-            asyncId = req.processAsync(asyncId, cloudSolrClient);
-            CollectionAdminRequest.RequestStatusResponse statusResponse = waitForTaskToFinish(cloudSolrClient, asyncId,
+            // TODO: find a better way of using async calls using dataProvider API !!!
+            req.setAsyncId(asyncId);
+            SolrResponse asyncResponse = dataProvider.request(req);
+            if (asyncResponse.getResponse().get("error") != null) {
+              throw new IOException("" + asyncResponse.getResponse().get("error"));
+            }
+            asyncId = (String)asyncResponse.getResponse().get("requestid");
+            CollectionAdminRequest.RequestStatusResponse statusResponse = waitForTaskToFinish(dataProvider, asyncId,
                 DEFAULT_TASK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (statusResponse != null) {
               RequestStatusState state = statusResponse.getRequestStatus();
               if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED || state == RequestStatusState.NOT_FOUND) {
                 try {
-                  zkClient.delete(znode, -1, true);
-                } catch (KeeperException e) {
+                  dataProvider.getDistribStateManager().removeData(znode, -1);
+                } catch (Exception e) {
                   log.warn("Unexpected exception while trying to delete znode: " + znode, e);
                 }
               }
               response = statusResponse;
             }
           } else {
-            response = operation.process(cloudSolrClient);
+            response = dataProvider.request(operation);
           }
           NamedList<Object> result = response.getResponse();
           context.getProperties().compute("responses", (s, o) -> {
@@ -102,40 +102,41 @@ public class ExecutePlanAction extends TriggerActionBase {
             responses.add(result);
             return responses;
           });
-        } catch (SolrServerException | HttpSolrClient.RemoteSolrException e) {
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to talk to ZooKeeper", e);
+//        } catch (InterruptedException e) {
+//          Thread.currentThread().interrupt();
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
+        } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ExecutePlanAction was interrupted", e);
-        } catch (KeeperException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to talk to ZooKeeper", e);
         }
 
-        counter++;
+//        counter++;
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unexpected IOException while processing event: " + event, e);
     }
   }
 
-  static CollectionAdminRequest.RequestStatusResponse waitForTaskToFinish(CloudSolrClient cloudSolrClient, String requestId, long duration, TimeUnit timeUnit) throws SolrServerException, IOException, InterruptedException {
+
+  static CollectionAdminRequest.RequestStatusResponse waitForTaskToFinish(SolrCloudManager dataProvider, String requestId, long duration, TimeUnit timeUnit) throws IOException, InterruptedException {
     long timeoutSeconds = timeUnit.toSeconds(duration);
     RequestStatusState state = RequestStatusState.NOT_FOUND;
     CollectionAdminRequest.RequestStatusResponse statusResponse = null;
     for (int i = 0; i < timeoutSeconds; i++) {
       try {
-        statusResponse = CollectionAdminRequest.requestStatus(requestId).process(cloudSolrClient);
+        statusResponse = (CollectionAdminRequest.RequestStatusResponse)dataProvider.request(CollectionAdminRequest.requestStatus(requestId));
         state = statusResponse.getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
           log.info("Task with requestId={} finished with state={} in {}s", requestId, state, i * 5);
-          CollectionAdminRequest.deleteAsyncId(requestId).process(cloudSolrClient);
+          dataProvider.request(CollectionAdminRequest.deleteAsyncId(requestId));
           return statusResponse;
         } else if (state == RequestStatusState.NOT_FOUND) {
           // the request for this id was never actually submitted! no harm done, just bail out
           log.warn("Task with requestId={} was not found on overseer", requestId);
-          CollectionAdminRequest.deleteAsyncId(requestId).process(cloudSolrClient);
+          dataProvider.request(CollectionAdminRequest.deleteAsyncId(requestId));
           return statusResponse;
         }
       } catch (Exception e) {
@@ -162,16 +163,14 @@ public class ExecutePlanAction extends TriggerActionBase {
    *
    * @return the path of the newly created node in ZooKeeper
    */
-  private String saveAsyncId(TriggerEvent event, ActionContext context, String asyncId) throws InterruptedException, KeeperException {
-    String parentPath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + context.getSource().getName() + "/" + getName();
-    CoreContainer container = context.getCoreContainer();
-    SolrZkClient zkClient = container.getZkController().getZkClient();
+  private String saveAsyncId(DistribStateManager stateManager, TriggerEvent event, String asyncId) throws InterruptedException, AlreadyExistsException, IOException, KeeperException {
+    String parentPath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + event.getSource() + "/" + getName();
     try {
-      zkClient.makePath(parentPath, new byte[0], CreateMode.PERSISTENT, true);
-    } catch (KeeperException.NodeExistsException e) {
+      stateManager.makePath(parentPath);
+    } catch (AlreadyExistsException e) {
       // ignore
     }
-    return zkClient.create(parentPath + "/" + PREFIX, Utils.toJSON(Collections.singletonMap("requestid", asyncId)), CreateMode.PERSISTENT_SEQUENTIAL, true);
+    return stateManager.createData(parentPath + "/" + PREFIX, Utils.toJSON(Collections.singletonMap("requestid", asyncId)), CreateMode.PERSISTENT_SEQUENTIAL);
   }
 
 }

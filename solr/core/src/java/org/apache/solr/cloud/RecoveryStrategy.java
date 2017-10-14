@@ -64,7 +64,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,7 +173,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void recoveryFailed(final SolrCore core,
       final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CoreDescriptor cd) throws KeeperException, InterruptedException {
+      final String shardZkNodeName, final CoreDescriptor cd) throws Exception {
     SolrException.log(LOG, "Recovery failed - I give up.");
     try {
       zkController.publish(cd, Replica.State.RECOVERY_FAILED);
@@ -298,7 +297,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
   
-  final public void doRecovery(SolrCore core) throws KeeperException, InterruptedException {
+  final public void doRecovery(SolrCore core) throws Exception {
     if (core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog()) {
       doSyncOrReplicateRecovery(core);
     } else {
@@ -441,7 +440,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  final public void doSyncOrReplicateRecovery(SolrCore core) throws KeeperException, InterruptedException {
+  final public void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
     boolean replayed = false;
     boolean successfulRecovery = false;
 

@@ -25,6 +25,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.cloud.ClusterState;
@@ -45,12 +50,16 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +74,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static final String CONFIG_NAME = "myconfig";
   
   private static OverseerTaskQueue workQueueMock;
+  private static Overseer overseerMock;
+  private static ZkController zkControllerMock;
+  private static SolrCloudManager cloudDataProviderMock;
+  private static ClusterStateProvider clusterStateProviderMock;
   private static DistributedMap runningMapMock;
   private static DistributedMap completedMapMock;
   private static DistributedMap failureMapMock;
@@ -73,6 +86,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static ZkStateReader zkStateReaderMock;
   private static ClusterState clusterStateMock;
   private static SolrZkClient solrZkClientMock;
+  private static DistribStateManager stateManagerMock;
   private static AutoScalingConfig autoScalingConfig = new AutoScalingConfig(Collections.emptyMap());
   private final Map zkMap = new HashMap();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
@@ -93,9 +107,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         String myId, ShardHandlerFactory shardHandlerFactory,
         String adminPath,
         OverseerTaskQueue workQueue, DistributedMap runningMap,
+        Overseer overseer,
         DistributedMap completedMap,
         DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Overseer.Stats(), null, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
     }
     
     @Override
@@ -116,6 +131,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkStateReaderMock = mock(ZkStateReader.class);
     clusterStateMock = mock(ClusterState.class);
     solrZkClientMock = mock(SolrZkClient.class);
+    overseerMock = mock(Overseer.class);
+    zkControllerMock = mock(ZkController.class);
+    cloudDataProviderMock = mock(SolrCloudManager.class);
+    clusterStateProviderMock = mock(ClusterStateProvider.class);
+    stateManagerMock = mock(DistribStateManager.class);
   }
   
   @AfterClass
@@ -129,6 +149,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkStateReaderMock = null;
     clusterStateMock = null;
     solrZkClientMock = null;
+    overseerMock = null;
+    zkControllerMock = null;
+    cloudDataProviderMock = null;
+    clusterStateProviderMock = null;
   }
   
   @Before
@@ -144,6 +168,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(zkStateReaderMock);
     reset(clusterStateMock);
     reset(solrZkClientMock);
+    reset(overseerMock);
+    reset(zkControllerMock);
+    reset(cloudDataProviderMock);
+    reset(clusterStateProviderMock);
+    reset(stateManagerMock);
 
     zkMap.clear();
     collectionsSet.clear();
@@ -259,7 +288,55 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       String key = invocation.getArgument(0);
       return zkMap.containsKey(key);
     });
-    
+
+    when(overseerMock.getZkController()).thenReturn(zkControllerMock);
+    when(overseerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
+    when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
+    when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
+    when(clusterStateProviderMock.getClusterState()).thenReturn(clusterStateMock);
+    when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
+    when(stateManagerMock.hasData(anyString())).thenAnswer(invocation -> zkMap.containsKey(invocation.getArgument(0)));
+    when(stateManagerMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
+    doAnswer(new Answer<Void>() {
+      @Override
+      public Void answer(InvocationOnMock invocation) throws Throwable {
+        if (!zkMap.containsKey(invocation.getArgument(0))) {
+          zkMap.put(invocation.getArgument(0), "");
+        }
+        return null;
+      }
+    }).when(stateManagerMock).makePath(anyString());
+    doAnswer(new Answer<Void>() {
+      @Override
+      public Void answer(InvocationOnMock invocation) throws Throwable {
+        VersionedData d = new VersionedData(0, invocation.getArgument(1), "test");
+        zkMap.put(invocation.getArgument(0), d);
+        return null;
+      }
+    }).when(stateManagerMock).createData(anyString(), any(byte[].class), any(CreateMode.class));
+    doAnswer(new Answer<Void>() {
+      @Override
+      public Void answer(InvocationOnMock invocation) throws Throwable {
+        VersionedData d = (VersionedData)zkMap.get(invocation.getArgument(0));
+        if (d != null && d.getVersion() != (Integer)invocation.getArgument(2)) {
+          throw new BadVersionException(invocation.getArgument(2), invocation.getArgument(0));
+        }
+        int version = (Integer)invocation.getArgument(2) + 1;
+        zkMap.put(invocation.getArgument(0), new VersionedData(version, invocation.getArgument(1), "test"));
+        return null;
+      }
+    }).when(stateManagerMock).setData(anyString(), any(byte[].class), anyInt());
+    when(stateManagerMock.getData(anyString(), any())).thenAnswer(invocation -> zkMap.get(invocation.getArgument(0)));
+
+    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean())).thenAnswer(invocation -> {
+      String key = invocation.getArgument(0);
+      if (zkMap.containsKey(key)) {
+        return new Stat();
+      } else {
+        return null;
+      }
+    });
+
     zkMap.put("/configs/myconfig", null);
     
     return liveNodes;
@@ -490,7 +567,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
-        completedMapMock, failureMapMock);
+        overseerMock, completedMapMock, failureMapMock);
 
 
     log.info("clusterstate " + clusterStateMock.hashCode());

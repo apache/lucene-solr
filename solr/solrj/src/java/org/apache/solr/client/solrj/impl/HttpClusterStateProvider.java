@@ -113,7 +113,9 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   @SuppressWarnings({"rawtypes", "unchecked"})
   private ClusterState fetchClusterState(SolrClient client, String collection) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("collection", collection);
+    if (collection != null) {
+      params.set("collection", collection);
+    }
     params.set("action", "CLUSTERSTATUS");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
@@ -129,7 +131,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public Set<String> liveNodes() {
+  public Set<String> getLiveNodes() {
     if (liveNodes == null) {
       throw new RuntimeException("We don't know of any live_nodes to fetch the"
           + " latest live_nodes information from. "
@@ -228,17 +230,41 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public Object getClusterProperty(String propertyName) {
-    if (propertyName.equals(ZkStateReader.URL_SCHEME)) {
-      return this.urlScheme;
+  public ClusterState getClusterState() throws IOException {
+    for (String nodeName: liveNodes) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder().
+          withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
+          withHttpClient(httpClient).build()) {
+        ClusterState cs = fetchClusterState(client, null);
+        return cs;
+      } catch (SolrServerException | RemoteSolrException | IOException e) {
+        log.warn("Attempt to fetch cluster state from " +
+            ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+      }
     }
+    throw new RuntimeException("Tried fetching cluster state using the node names we knew of, i.e. " + liveNodes +". However, "
+        + "succeeded in obtaining the cluster state from none of them."
+        + "If you think your Solr cluster is up and is accessible,"
+        + " you could try re-creating a new CloudSolrClient using working"
+        + " solrUrl(s) or zkHost(s).");
+  }
+
+  @Override
+  public Map<String, Object> getClusterProperties() {
     throw new UnsupportedOperationException("Fetching cluster properties not supported"
         + " using the HttpClusterStateProvider. "
         + "ZkClientClusterStateProvider can be used for this."); // TODO
   }
 
   @Override
-  public Object getClusterProperty(String propertyName, String def) {
+  public String getPolicyNameByCollection(String coll) {
+    throw new UnsupportedOperationException("Fetching cluster properties not supported"
+        + " using the HttpClusterStateProvider. "
+        + "ZkClientClusterStateProvider can be used for this."); // TODO
+  }
+
+  @Override
+  public Object getClusterProperty(String propertyName) {
     if (propertyName.equals(ZkStateReader.URL_SCHEME)) {
       return this.urlScheme;
     }

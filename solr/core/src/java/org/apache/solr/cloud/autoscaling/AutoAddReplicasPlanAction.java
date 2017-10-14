@@ -18,8 +18,13 @@
 package org.apache.solr.cloud.autoscaling;
 
 
+import java.io.IOException;
+
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -27,15 +32,21 @@ import org.apache.solr.common.cloud.ZkStateReader;
 public class AutoAddReplicasPlanAction extends ComputePlanAction {
 
   @Override
-  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, ZkStateReader zkStateReader) {
+  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
     // for backward compatibility
-    String autoAddReplicas = zkStateReader.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
+    ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
+    String autoAddReplicas = stateProvider.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
     if (autoAddReplicas != null && autoAddReplicas.equals("false")) {
       return new NoneSuggester();
     }
 
-    Policy.Suggester suggester = super.getSuggester(session, event, zkStateReader);
-    ClusterState clusterState = zkStateReader.getClusterState();
+    Policy.Suggester suggester = super.getSuggester(session, event, cloudManager);
+    ClusterState clusterState;
+    try {
+      clusterState = stateProvider.getClusterState();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception getting cluster state", e);
+    }
 
     boolean anyCollections = false;
     for (DocCollection collection: clusterState.getCollectionsMap().values()) {

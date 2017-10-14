@@ -33,7 +33,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.solr.common.cloud.DistributedQueue;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ReplicaPosition;

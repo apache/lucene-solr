@@ -28,6 +28,7 @@ import java.util.Random;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 
@@ -41,13 +42,14 @@ public class Row implements MapWriter {
   boolean anyValueMissing = false;
   boolean isLive = true;
 
-  public Row(String node, List<String> params, ClusterDataProvider dataProvider) {
-    collectionVsShardVsReplicas = dataProvider.getReplicaInfo(node, params);
+  public Row(String node, List<String> params, SolrCloudManager cloudManager) {
+    NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
+    collectionVsShardVsReplicas = nodeStateProvider.getReplicaInfo(node, params);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
-    isLive = dataProvider.getNodes().contains(node);
-    Map<String, Object> vals = isLive ? dataProvider.getNodeValues(node, params) : Collections.emptyMap();
+    isLive = cloudManager.getClusterStateProvider().getLiveNodes().contains(node);
+    Map<String, Object> vals = isLive ? nodeStateProvider.getNodeValues(node, params) : Collections.emptyMap();
     for (int i = 0; i < params.size(); i++) {
       String s = params.get(i);
       cells[i] = new Cell(i, s, Clause.validate(s,vals.get(s), false));
@@ -96,7 +98,8 @@ public class Row implements MapWriter {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
-    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard, type, new HashMap<>()));
+    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard,
+        Collections.singletonMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString())));
     for (Cell cell : row.cells) {
       if (cell.name.equals("cores")) {
         cell.val = cell.val == null ? 0 : ((Number) cell.val).longValue() + 1;
@@ -115,7 +118,7 @@ public class Row implements MapWriter {
     int idx = -1;
     for (int i = 0; i < r.size(); i++) {
       ReplicaInfo info = r.get(i);
-      if (type == null || info.type == type) {
+      if (type == null || info.getType() == type) {
         idx = i;
         break;
       }

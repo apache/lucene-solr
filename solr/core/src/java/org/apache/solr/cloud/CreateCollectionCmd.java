@@ -225,7 +225,7 @@ public class CreateCollectionCmd implements Cmd {
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
-        String coreName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), zkStateReader.getClusterState().getCollection(collectionName),
+        String coreName = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), zkStateReader.getClusterState().getCollection(collectionName),
             replicaPosition.shard, replicaPosition.type, true);
         log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
             , coreName, replicaPosition.shard, collectionName, nodeName));

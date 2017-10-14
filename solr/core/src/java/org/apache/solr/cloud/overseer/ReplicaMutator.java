@@ -24,9 +24,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.Assign;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler;
@@ -38,7 +42,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,10 +53,12 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class ReplicaMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final ZkStateReader zkStateReader;
+  protected final SolrCloudManager dataProvider;
+  protected final DistribStateManager stateManager;
 
-  public ReplicaMutator(ZkStateReader reader) {
-    this.zkStateReader = reader;
+  public ReplicaMutator(SolrCloudManager dataProvider) {
+    this.dataProvider = dataProvider;
+    this.stateManager = dataProvider.getDistribStateManager();
   }
 
   protected Replica setProperty(Replica replica, String key, String value) {
@@ -196,7 +201,7 @@ public class ReplicaMutator {
   }
 
   public ZkWriteCommand setState(ClusterState clusterState, ZkNodeProps message) {
-    if (Overseer.isLegacy(zkStateReader)) {
+    if (Overseer.isLegacy(dataProvider.getClusterStateProvider())) {
       return updateState(clusterState, message);
     } else {
       return updateStateNew(clusterState, message);
@@ -220,7 +225,7 @@ public class ReplicaMutator {
       ClusterStateMutator.getShardNames(numShards, shardNames);
       Map<String, Object> createMsg = Utils.makeMap(NAME, cName);
       createMsg.putAll(message.getProperties());
-      writeCommand = new ClusterStateMutator(zkStateReader).createCollection(prevState, new ZkNodeProps(createMsg));
+      writeCommand = new ClusterStateMutator(dataProvider).createCollection(prevState, new ZkNodeProps(createMsg));
       DocCollection collection = writeCommand.collection;
       newState = ClusterStateMutator.newState(prevState, cName, collection);
     }
@@ -240,7 +245,7 @@ public class ReplicaMutator {
         log.debug("node=" + coreNodeName + " is already registered");
       } else {
         // if coreNodeName is null, auto assign one
-        coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection);
+        coreNodeName = Assign.assignNode(stateManager, collection);
       }
       message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
           coreNodeName);
@@ -415,14 +420,19 @@ public class ReplicaMutator {
             if (shardParentNode != null && shardParentZkSession != null)  {
               log.info("Checking whether sub-shard leader node is still the same one at {} with ZK session id {}", shardParentNode, shardParentZkSession);
               try {
-                Stat leaderZnodeStat = zkStateReader.getZkClient().exists(ZkStateReader.LIVE_NODES_ZKNODE
-                    + "/" + shardParentNode, null, true);
-                if (leaderZnodeStat == null)  {
+                VersionedData leaderZnode = null;
+                try {
+                  leaderZnode = stateManager.getData(ZkStateReader.LIVE_NODES_ZKNODE
+                      + "/" + shardParentNode, null);
+                } catch (NoSuchElementException e) {
+                  // ignore
+                }
+                if (leaderZnode == null)  {
                   log.error("The shard leader node: {} is not live anymore!", shardParentNode);
                   isLeaderSame = false;
-                } else if (leaderZnodeStat.getEphemeralOwner() != Long.parseLong(shardParentZkSession))  {
+                } else if (!shardParentZkSession.equals(leaderZnode.getOwner())) {
                   log.error("The zk session id for shard leader node: {} has changed from {} to {}",
-                      shardParentNode, shardParentZkSession, leaderZnodeStat.getEphemeralOwner());
+                      shardParentNode, shardParentZkSession, leaderZnode.getOwner());
                   isLeaderSame = false;
                 }
               } catch (Exception e) {
@@ -443,7 +453,7 @@ public class ReplicaMutator {
               }
               propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
               ZkNodeProps m = new ZkNodeProps(propMap);
-              return new SliceMutator(zkStateReader).updateShardState(prevState, m).collection;
+              return new SliceMutator(dataProvider).updateShardState(prevState, m).collection;
             } else  {
               // we must mark the shard split as failed by switching sub-shards to recovery_failed state
               Map<String, Object> propMap = new HashMap<>();
@@ -454,7 +464,7 @@ public class ReplicaMutator {
               }
               propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
               ZkNodeProps m = new ZkNodeProps(propMap);
-              return new SliceMutator(zkStateReader).updateShardState(prevState, m).collection;
+              return new SliceMutator(dataProvider).updateShardState(prevState, m).collection;
             }
           }
         }

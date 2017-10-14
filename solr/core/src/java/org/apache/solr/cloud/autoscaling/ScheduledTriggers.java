@@ -43,24 +43,22 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatusResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.ActionThrottle;
-import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,17 +93,19 @@ public class ScheduledTriggers implements Closeable {
 
   private final ActionThrottle actionThrottle;
 
-  private final SolrZkClient zkClient;
+  private final SolrCloudManager dataProvider;
 
-  private final Overseer.Stats queueStats;
+  private final DistribStateManager stateManager;
 
-  private final CoreContainer coreContainer;
+  private final SolrResourceLoader loader;
+
+  private final Stats queueStats;
 
   private final TriggerListeners listeners;
 
   private AutoScalingConfig autoScalingConfig;
 
-  public ScheduledTriggers(ZkController zkController) {
+  public ScheduledTriggers(SolrResourceLoader loader, SolrCloudManager dataProvider) {
     // todo make the core pool size configurable
     // it is important to use more than one because a time taking trigger can starve other scheduled triggers
     // ideally we should have as many core threads as the number of triggers but firstly, we don't know beforehand
@@ -118,9 +118,10 @@ public class ScheduledTriggers implements Closeable {
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
     // todo make the wait time configurable
     actionThrottle = new ActionThrottle("action", DEFAULT_MIN_MS_BETWEEN_ACTIONS);
-    coreContainer = zkController.getCoreContainer();
-    zkClient = zkController.getZkClient();
-    queueStats = new Overseer.Stats();
+    this.dataProvider = dataProvider;
+    this.stateManager = dataProvider.getDistribStateManager();
+    this.loader = loader;
+    queueStats = new Stats();
     listeners = new TriggerListeners();
   }
 
@@ -148,13 +149,13 @@ public class ScheduledTriggers implements Closeable {
     }
     ScheduledTrigger st;
     try {
-      st = new ScheduledTrigger(newTrigger, zkClient, queueStats);
+      st = new ScheduledTrigger(newTrigger, dataProvider, queueStats);
     } catch (Exception e) {
       if (isClosed) {
         throw new AlreadyClosedException("ScheduledTriggers has been closed and cannot be used anymore");
       }
-      if (!zkClient.isConnected() || zkClient.isClosed()) {
-        log.error("Failed to add trigger " + newTrigger.getName() + " - closing or disconnected from ZK", e);
+      if (dataProvider.isClosed()) {
+        log.error("Failed to add trigger " + newTrigger.getName() + " - closing or disconnected from data provider", e);
       } else {
         log.error("Failed to add trigger " + newTrigger.getName(), e);
       }
@@ -174,7 +175,7 @@ public class ScheduledTriggers implements Closeable {
       scheduledTriggers.replace(newTrigger.getName(), scheduledTrigger);
     }
     newTrigger.setProcessor(event -> {
-      if (coreContainer.isShutDown()) {
+      if (dataProvider.isClosed()) {
         String msg = String.format(Locale.ROOT, "Ignoring autoscaling event %s because Solr has been shutdown.", event.toString());
         log.warn(msg);
         listeners.fireListeners(event.getSource(), event, TriggerEventProcessorStage.ABORTED, msg);
@@ -219,7 +220,7 @@ public class ScheduledTriggers implements Closeable {
               // this event so that we continue processing other events and not block this action executor
               waitForPendingTasks(newTrigger, actions);
 
-              ActionContext actionContext = new ActionContext(coreContainer, newTrigger, new HashMap<>());
+              ActionContext actionContext = new ActionContext(dataProvider, newTrigger, new HashMap<>());
               for (TriggerAction action : actions) {
                 List<String> beforeActions = (List<String>)actionContext.getProperties().computeIfAbsent(TriggerEventProcessorStage.BEFORE_ACTION.toString(), k -> new ArrayList<String>());
                 beforeActions.add(action.getName());
@@ -266,39 +267,35 @@ public class ScheduledTriggers implements Closeable {
   }
 
   private void waitForPendingTasks(AutoScaling.Trigger newTrigger, List<TriggerAction> actions) throws AlreadyClosedException {
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder()
-        .withZkHost(coreContainer.getZkController().getZkServerAddress())
-        .withHttpClient(coreContainer.getUpdateShardHandler().getHttpClient())
-        .build()) {
-
-      SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
+    DistribStateManager stateManager = dataProvider.getDistribStateManager();
+    try {
 
       for (TriggerAction action : actions) {
         if (action instanceof ExecutePlanAction) {
           String parentPath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + newTrigger.getName() + "/" + action.getName();
-          if (!zkClient.exists(parentPath, true))  {
+          if (!stateManager.hasData(parentPath))  {
             break;
           }
-          List<String> children = zkClient.getChildren(parentPath, null, true);
+          List<String> children = stateManager.listData(parentPath);
           if (children != null) {
             for (String child : children) {
               String path = parentPath + '/' + child;
-              byte[] data = zkClient.getData(path, null, null, true);
+              VersionedData data = stateManager.getData(path, null);
               if (data != null) {
-                Map map = (Map) Utils.fromJSON(data);
+                Map map = (Map) Utils.fromJSON(data.getData());
                 String requestid = (String) map.get("requestid");
                 try {
                   log.debug("Found pending task with requestid={}", requestid);
-                  RequestStatusResponse statusResponse = waitForTaskToFinish(cloudSolrClient, requestid,
+                  RequestStatusResponse statusResponse = waitForTaskToFinish(dataProvider, requestid,
                       ExecutePlanAction.DEFAULT_TASK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                   if (statusResponse != null) {
                     RequestStatusState state = statusResponse.getRequestStatus();
                     if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED || state == RequestStatusState.NOT_FOUND) {
-                      zkClient.delete(path, -1, true);
+                      stateManager.removeData(path, -1);
                     }
                   }
                 } catch (Exception e) {
-                  if (coreContainer.isShutDown())  {
+                  if (dataProvider.isClosed())  {
                     throw e; // propagate the abort to the caller
                   }
                   Throwable rootCause = ExceptionUtils.getRootCause(e);
@@ -319,7 +316,7 @@ public class ScheduledTriggers implements Closeable {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted", e);
     } catch (Exception e) {
-      if (coreContainer.isShutDown())  {
+      if (dataProvider.isClosed())  {
         throw new AlreadyClosedException("The Solr instance has been shutdown");
       }
       // we catch but don't rethrow because a failure to wait for pending tasks
@@ -344,36 +341,24 @@ public class ScheduledTriggers implements Closeable {
     String statePath = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName;
     String eventsPath = ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH + "/" + triggerName;
     try {
-      zkDelTree(zkClient, statePath);
-    } catch (KeeperException | InterruptedException e) {
+      if (stateManager.hasData(statePath)) {
+        stateManager.removeData(statePath, -1);
+      }
+    } catch (Exception e) {
       log.warn("Failed to remove state for removed trigger " + statePath, e);
     }
     try {
-      zkDelTree(zkClient, eventsPath);
-    } catch (KeeperException | InterruptedException e) {
-      log.warn("Failed to remove events for removed trigger " + eventsPath, e);
-    }
-  }
-
-  static List<OpResult> zkDelTree(SolrZkClient zkClient, String znode) throws KeeperException, InterruptedException {
-    if (zkClient.exists(znode, true)) {
-      ArrayList<Op> ops = new ArrayList<>();
-      zkDelTree(zkClient, znode, ops);
-      return zkClient.multi(ops, true);
-    }
-    return Collections.emptyList();
-  }
-
-  private static void zkDelTree(SolrZkClient zkClient, String znode, ArrayList<Op> ops) throws KeeperException, InterruptedException {
-    if (zkClient.exists(znode, true)) {
-      List<String> children = zkClient.getChildren(znode, null, true);
-      if (children != null) {
-        for (String child : children) {
-          String path = znode + "/" + child;
-          zkDelTree(zkClient, path, ops);
-        }
+      if (stateManager.hasData(eventsPath)) {
+        List<String> events = stateManager.listData(eventsPath);
+        List<Op> ops = new ArrayList<>(events.size() + 1);
+        events.forEach(ev -> {
+          ops.add(Op.delete(eventsPath + "/" + ev, -1));
+        });
+        ops.add(Op.delete(eventsPath, -1));
+        stateManager.multi(ops);
       }
-      ops.add(Op.delete(znode, -1));
+    } catch (Exception e) {
+      log.warn("Failed to remove events for removed trigger " + eventsPath, e);
     }
   }
 
@@ -408,9 +393,9 @@ public class ScheduledTriggers implements Closeable {
     boolean replay;
     volatile boolean isClosed;
 
-    ScheduledTrigger(AutoScaling.Trigger trigger, SolrZkClient zkClient, Overseer.Stats stats) {
+    ScheduledTrigger(AutoScaling.Trigger trigger, SolrCloudManager cloudManager, Stats stats) throws IOException {
       this.trigger = trigger;
-      this.queue = new TriggerEventQueue(zkClient, trigger.getName(), stats);
+      this.queue = new TriggerEventQueue(cloudManager, trigger.getName(), stats);
       this.replay = true;
       this.isClosed = false;
     }
@@ -537,13 +522,13 @@ public class ScheduledTriggers implements Closeable {
           if (listener == null) { // create new instance
             String clazz = config.listenerClass;
             try {
-              listener = coreContainer.getResourceLoader().newInstance(clazz, TriggerListener.class);
+              listener = loader.newInstance(clazz, TriggerListener.class);
             } catch (Exception e) {
               log.warn("Invalid TriggerListener class name '" + clazz + "', skipping...", e);
             }
             if (listener != null) {
               try {
-                listener.init(coreContainer, config);
+                listener.init(dataProvider, config);
                 listenersPerName.put(config.name, listener);
               } catch (Exception e) {
                 log.warn("Error initializing TriggerListener " + config, e);
