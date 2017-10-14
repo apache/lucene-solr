@@ -860,7 +860,7 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
   if [ $# -gt 0 ]; then
     while true; do  
       case "$1" in
-          update|list|outdated)
+          update)
               if [[ -z "$2" ]]; then
                 PLUGIN_CMD="$1"
                 shift
@@ -870,8 +870,8 @@ if [ "$SCRIPT_CMD" == "plugin" ]; then
                 exit 1
               fi
           ;;
-          install|uninstall|search|upgrade|repo)
-              if [[ -z "$2" && "$1" != "search" ]]; then
+          install|uninstall|search|upgrade|repo|list)
+              if [[ -z "$2" && "$1" != "search" && "$1" != "list" ]]; then
                 print_usage "$SCRIPT_CMD" "Sub command $1 expects an argument"
                 exit 1
               else
