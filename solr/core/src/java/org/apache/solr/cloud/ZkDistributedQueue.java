@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
@@ -207,6 +208,42 @@ public class ZkDistributedQueue implements DistributedQueue {
       return result;
     } finally {
       time.stop();
+    }
+  }
+
+  public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
+    if (paths.isEmpty()) return;
+    List<Op> ops = new ArrayList<>();
+    for (String path : paths) {
+      ops.add(Op.delete(dir + "/" + path, -1));
+    }
+    for (int from = 0; from < ops.size(); from += 1000) {
+      int to = Math.min(from + 1000, ops.size());
+      if (from < to) {
+        try {
+          zookeeper.multi(ops.subList(from, to), true);
+        } catch (KeeperException.NoNodeException e) {
+          // don't know which nodes are not exist, so try to delete one by one node
+          for (int j = from; j < to; j++) {
+            try {
+              zookeeper.delete(ops.get(j).getPath(), -1, true);
+            } catch (KeeperException.NoNodeException e2) {
+              LOG.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
+            }
+          }
+        }
+      }
+    }
+
+    int cacheSizeBefore = knownChildren.size();
+    knownChildren.removeAll(paths);
+    if (cacheSizeBefore - paths.size() == knownChildren.size() && knownChildren.size() != 0) {
+      stats.setQueueLength(knownChildren.size());
+    } else {
+      // There are elements get deleted but not present in the cache,
+      // the cache seems not valid anymore
+      knownChildren.clear();
+      isDirty = true;
     }
   }
 

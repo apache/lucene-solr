@@ -112,10 +112,6 @@ public class ZkStateWriter {
     if (cmds.isEmpty()) return prevState;
     if (isNoOps(cmds)) return prevState;
 
-    if (callback != null) {
-      callback.onEnqueue();
-    }
-
     for (ZkWriteCommand cmd : cmds) {
       if (cmd == NO_OP) continue;
       if (!isClusterStateModified && clusterStateGetModifiedWith(cmd, prevState)) {
@@ -254,14 +250,9 @@ public class ZkStateWriter {
 
   public interface ZkWriteCallback {
     /**
-     * Called by ZkStateWriter if a ZkWriteCommand is queued
-     */
-    public void onEnqueue() throws Exception;
-
-    /**
      * Called by ZkStateWriter if state is flushed to ZK
      */
-    public void onWrite() throws Exception;
+    void onWrite() throws Exception;
   }
 }
 

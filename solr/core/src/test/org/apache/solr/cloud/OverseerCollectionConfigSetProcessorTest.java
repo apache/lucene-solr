@@ -190,7 +190,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     doAnswer(invocation -> {
       queue.remove(invocation.getArgument(0));
       return null;
-    }).when(workQueueMock).remove(any());
+    }).when(workQueueMock).remove(any(QueueEvent.class));
 
     when(workQueueMock.poll()).thenAnswer(invocation -> {
       queue.poll();
