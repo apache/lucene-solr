@@ -38,4 +38,5 @@ public interface DistributedQueue {
 
   Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws Exception;
 
+  void remove(Collection<String> paths) throws Exception;
 }

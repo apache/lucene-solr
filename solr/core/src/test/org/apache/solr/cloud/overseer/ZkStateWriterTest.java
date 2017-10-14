@@ -45,17 +45,7 @@ import org.slf4j.LoggerFactory;
 public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final ZkStateWriter.ZkWriteCallback FAIL_ON_WRITE = new ZkStateWriter.ZkWriteCallback() {
-    @Override
-    public void onEnqueue() throws Exception {
-
-    }
-
-    @Override
-    public void onWrite() throws Exception {
-      fail("Got unexpected flush");
-    }
-  };
+  private static final ZkStateWriter.ZkWriteCallback FAIL_ON_WRITE = () -> fail("Got unexpected flush");
 
   @BeforeClass
   public static void setup() {
@@ -106,31 +96,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
         AtomicBoolean didWrite = new AtomicBoolean(false);
-        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c3), new ZkStateWriter.ZkWriteCallback() {
-          @Override
-          public void onEnqueue() throws Exception {
-
-          }
-
-          @Override
-          public void onWrite() throws Exception {
-            didWrite.set(true);
-          }
-        });
+        clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
         assertTrue("Exceed the update delay, should be flushed", didWrite.get());
 
         for (int i = 0; i <= Overseer.STATE_UPDATE_BATCH_SIZE; i++) {
-          clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c3), new ZkStateWriter.ZkWriteCallback() {
-            @Override
-            public void onEnqueue() throws Exception {
-
-            }
-
-            @Override
-            public void onWrite() throws Exception {
-              didWrite.set(true);
-            }
-          });
+          clusterState = writer.enqueueUpdate(clusterState, Collections.singletonList(c3), () -> didWrite.set(true));
         }
         assertTrue("Exceed the update batch size, should be flushed", didWrite.get());
       }
