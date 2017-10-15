@@ -73,9 +73,6 @@ Optimizations
   compute the relation between the query and inner nodes of the BKD tree.
   (Adrien Grand)
 
-======================= Lucene 6.6.3 =======================
-(No Changes)
-
 ======================= Lucene 6.6.2 =======================
 
 Changes in Runtime Behavior
