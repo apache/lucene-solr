@@ -3,9 +3,6 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-======================= Lucene 6.6.3 =======================
-(No Changes)
-
 ======================= Lucene 6.6.2 =======================
 
 Changes in Runtime Behavior
