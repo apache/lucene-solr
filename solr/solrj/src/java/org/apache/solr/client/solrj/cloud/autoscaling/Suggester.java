@@ -45,7 +45,7 @@ public abstract class Suggester {
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
-  protected List<Clause.Violation> originalViolations = new ArrayList<>();
+  protected List<Violation> originalViolations = new ArrayList<>();
   private boolean isInitialized = false;
 
   void _init(Policy.Session session) {
@@ -113,13 +113,13 @@ public abstract class Suggester {
   }
 
   //check if the fresh set of violations is less serious than the last set of violations
-  boolean isLessSerious(List<Clause.Violation> fresh, List<Clause.Violation> old) {
+  boolean isLessSerious(List<Violation> fresh, List<Violation> old) {
     if (old == null || fresh.size() < old.size()) return true;
     if (fresh.size() == old.size()) {
       for (int i = 0; i < fresh.size(); i++) {
-        Clause.Violation freshViolation = fresh.get(i);
-        Clause.Violation oldViolation = null;
-        for (Clause.Violation v : old) {
+        Violation freshViolation = fresh.get(i);
+        Violation oldViolation = null;
+        for (Violation v : old) {
           if (v.equals(freshViolation)) oldViolation = v;
         }
         if (oldViolation != null && freshViolation.isLessSerious(oldViolation)) return true;
@@ -128,8 +128,8 @@ public abstract class Suggester {
     return false;
   }
 
-  boolean containsNewErrors(List<Clause.Violation> violations) {
-    for (Clause.Violation v : violations) {
+  boolean containsNewErrors(List<Violation> violations) {
+    for (Violation v : violations) {
       int idx = originalViolations.indexOf(v);
       if (idx < 0 || originalViolations.get(idx).isLessSerious(v)) return true;
     }
@@ -162,12 +162,12 @@ public abstract class Suggester {
     }
   }
 
-  List<Clause.Violation> testChangedMatrix(boolean strict, List<Row> rows) {
+  List<Violation> testChangedMatrix(boolean strict, List<Row> rows) {
     Policy.setApproxValuesAndSortNodes(session.getPolicy().clusterPreferences,rows);
-    List<Clause.Violation> errors = new ArrayList<>();
+    List<Violation> errors = new ArrayList<>();
     for (Clause clause : session.expandedClauses) {
       if (strict || clause.strict) {
-        List<Clause.Violation> errs = clause.test(rows);
+        List<Violation> errs = clause.test(rows);
         if (!errs.isEmpty()) {
           errors.addAll(errs);
         }

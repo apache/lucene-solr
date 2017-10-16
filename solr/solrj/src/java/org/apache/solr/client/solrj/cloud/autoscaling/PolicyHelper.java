@@ -113,7 +113,7 @@ public class PolicyHelper {
   public static MapWriter getDiagnostics(Policy policy, SolrClientCloudManager cloudManager) {
     Policy.Session session = policy.createSession(cloudManager);
     List<Row> sorted = session.getSorted();
-    List<Clause.Violation> violations = session.getViolations();
+    List<Violation> violations = session.getViolations();
 
     List<Preference> clusterPreferences = policy.getClusterPreferences();
 

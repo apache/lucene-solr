@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -231,73 +230,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid tag : " + s + ":" + val, e);
-    }
-  }
-
-  public static class Violation implements MapWriter {
-    final String shard, coll, node;
-    final Object actualVal;
-    final Long delta;//how far is the actual value from the expected value
-    final Object tagKey;
-    private final int hash;
-    private final Clause clause;
-
-
-    private Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long delta, Object tagKey) {
-      this.clause = clause;
-      this.shard = shard;
-      this.coll = coll;
-      this.node = node;
-      this.delta = delta;
-      this.actualVal = actualVal;
-      this.tagKey = tagKey;
-      hash = ("" + coll + " " + shard + " " + node + " " + String.valueOf(tagKey) + " " + Utils.toJSONString(getClause().toMap(new HashMap<>()))).hashCode();
-    }
-
-    public Clause getClause() {
-      return clause;
-    }
-
-    @Override
-    public int hashCode() {
-      return hash;
-    }
-    //if the delta is lower , this violation is less serious
-    public boolean isLessSerious(Violation that) {
-      return that.delta != null && delta != null &&
-          Math.abs(delta) < Math.abs(that.delta);
-    }
-
-    @Override
-    public boolean equals(Object that) {
-      if (that instanceof Violation) {
-        Violation v = (Violation) that;
-        return Objects.equals(this.shard, v.shard) &&
-            Objects.equals(this.coll, v.coll) &&
-            Objects.equals(this.node, v.node) &&
-            Objects.equals(this.tagKey, v.tagKey)
-            ;
-      }
-      return false;
-    }
-
-    @Override
-    public String toString() {
-      return Utils.toJSONString(Utils.getDeepCopy(toMap(new LinkedHashMap<>()), 5));
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.putIfNotNull("collection", coll);
-      ew.putIfNotNull("shard", shard);
-      ew.putIfNotNull("node", node);
-      ew.putIfNotNull("tagKey", String.valueOf(tagKey));
-      ew.putIfNotNull("violation", (MapWriter) ew1 -> {
-        if (getClause().isPerCollectiontag()) ew1.put("replica", actualVal);
-        else ew1.put(clause.tag.name, String.valueOf(actualVal));
-        ew1.putIfNotNull("delta", delta);
-      });
-      ew.put("clause", getClause());
     }
   }
 
