@@ -32,14 +32,14 @@ public class ReplicaInfo implements MapWriter {
   final String core, collection, shard;
   final Map<String, Object> variables = new HashMap<>();
 
-  public ReplicaInfo(String name, String coll, String shard, Map<String, Object> vals) {
+  public ReplicaInfo(String name, String coreName, String coll, String shard, Map<String, Object> vals) {
     this.name = name;
+    this.core = coreName == null ? (String) vals.get("core") : coreName;
     if (vals != null) {
       this.variables.putAll(vals);
     }
     this.collection = coll;
     this.shard = shard;
-    this.core = (String)vals.get("core");
   }
 
   @Override

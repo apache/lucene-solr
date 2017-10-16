@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
-import org.apache.solr.client.solrj.cloud.autoscaling.Policy.Suggester.Hint;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
@@ -115,7 +115,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           if (!node_name.equals(node)) return;
           Map<String, List<ReplicaInfo>> shardVsReplicaStats = result.computeIfAbsent(collName, k -> new HashMap<>());
           List<ReplicaInfo> replicaInfos = shardVsReplicaStats.computeIfAbsent(shard, k -> new ArrayList<>());
-          replicaInfos.add(new ReplicaInfo(replicaName, collName, shard, r));
+          replicaInfos.add(new ReplicaInfo(replicaName,replicaName, collName, shard, r));
         });
       });
     });
@@ -309,7 +309,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     AutoScalingConfig config = new AutoScalingConfig(policies);
     Policy policy = config.getPolicy();
     Policy.Session session = policy.createSession(provider);
-    Policy.Suggester suggester = session.getSuggester(MOVEREPLICA)
+    Suggester suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.SRC_NODE, "node1");
 
     SolrRequest operation = suggester.getOperation();
@@ -424,7 +424,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
           for (int i = 0; i < l3.size(); i++) {
             Object o = l3.get(i);
             Map m3 = (Map) o;
-            l3.set(i, new ReplicaInfo(m3.keySet().iterator().next().toString()
+            String name = m3.keySet().iterator().next().toString();
+            l3.set(i, new ReplicaInfo(name,name
                 ,coll.toString(), shard.toString(), m3));
           }
         });
@@ -480,7 +481,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
         "}");
     Policy policy = new Policy(policies);
-    Policy.Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
         .getSuggester(ADDREPLICA)
         .hint(Hint.COLL_SHARD, new Pair("newColl", "shard1"))
         .hint(Hint.REPLICATYPE, Replica.Type.PULL);
@@ -620,11 +621,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  'tlogReplicas':'0'}\n" +
         "}";
     Policy policy = new Policy(new HashMap<>());
-    Policy.Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
         .getSuggester(MOVEREPLICA)
         .hint(Hint.COLL, "collection1")
         .hint(Hint.COLL, "collection2")
-        .hint(Policy.Suggester.Hint.SRC_NODE, "node2");
+        .hint(Suggester.Hint.SRC_NODE, "node2");
     SolrRequest op = suggester.getOperation();
     assertNotNull(op);
     assertEquals("collection2", op.getParams().get("collection"));
@@ -636,7 +637,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .getSuggester(MOVEREPLICA)
         .hint(Hint.COLL, "collection1")
         .hint(Hint.COLL, "collection2")
-        .hint(Policy.Suggester.Hint.SRC_NODE, "node2");
+        .hint(Suggester.Hint.SRC_NODE, "node2");
     op = suggester.getOperation();
     assertNotNull(op);
     assertEquals("collection2", op.getParams().get("collection"));
@@ -648,7 +649,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         .getSuggester(MOVEREPLICA)
         .hint(Hint.COLL, "collection1")
         .hint(Hint.COLL, "collection2")
-        .hint(Policy.Suggester.Hint.SRC_NODE, "node2");
+        .hint(Suggester.Hint.SRC_NODE, "node2");
     op = suggester.getOperation();
     assertNull(op);
   }
@@ -676,7 +677,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "node4:{cores:8, freedisk: 375, heapUsage:16900, nodeRole:overseer, rack: rack1}" +
         "}");
     Policy policy = new Policy(policies);
-    Policy.Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
+    Suggester suggester = policy.createSession(getSolrCloudManager(nodeValues, clusterState))
         .getSuggester(ADDREPLICA)
         .hint(Hint.REPLICATYPE, Replica.Type.PULL)
         .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
@@ -819,7 +820,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertTrue(violations.stream().anyMatch(violation -> "nodeRole".equals(violation.getClause().tag.getName())));
     assertTrue(violations.stream().anyMatch(violation -> (violation.getClause().replica.getOperand() == Operand.LESS_THAN && "node".equals(violation.getClause().tag.getName()))));
 
-    Policy.Suggester suggester = session.getSuggester(ADDREPLICA)
+    Suggester suggester = session.getSuggester(ADDREPLICA)
         .hint(Hint.COLL_SHARD, new Pair<>("gettingstarted","r1"));
     SolrParams operation = suggester.getOperation().getParams();
     assertEquals("node2", operation.get("node"));
@@ -935,7 +936,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
     Policy.Session session = policy.createSession(cloudManager);
     for (int i = 0; i < 3; i++) {
-      Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
+      Suggester suggester = session.getSuggester(ADDREPLICA);
       SolrRequest op = suggester
           .hint(Hint.COLL_SHARD, new Pair<>("newColl","shard1"))
           .getOperation();
@@ -966,7 +967,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     SolrCloudManager cloudManager = getSolrCloudManager(nodeValues, clusterState);
     Policy.Session session = policy.createSession(cloudManager);
-    Policy.Suggester suggester = session.getSuggester(ADDREPLICA);
+    Suggester suggester = session.getSuggester(ADDREPLICA);
     SolrRequest op = suggester
         .hint(Hint.COLL_SHARD, new Pair<>("newColl", "shard1"))
         .getOperation();
@@ -1006,8 +1007,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      {'core_node2':{}}]}}}");
     Map m = (Map) Utils.getObjectByPath(replicaInfoMap, false, "127.0.0.1:60089_solr/compute_plan_action_test");
     m.put("shard1", Arrays.asList(
-        new ReplicaInfo("core_node1", "compute_plan_action_test", "shard1", Collections.singletonMap(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT)),
-        new ReplicaInfo("core_node2", "compute_plan_action_test", "shard1", Collections.singletonMap(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT))
+        new ReplicaInfo("core_node1", "core_node1", "compute_plan_action_test", "shard1", Collections.singletonMap(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT)),
+        new ReplicaInfo("core_node2", "core_node2", "compute_plan_action_test", "shard1", Collections.singletonMap(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT))
     ));
 
     Map<String, Map<String, Object>> tagsMap = (Map) Utils.fromJSONString("{" +
@@ -1046,7 +1047,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         };
       }
     });
-    Policy.Suggester suggester = session.getSuggester(MOVEREPLICA)
+    Suggester suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:60099_solr");
     SolrRequest op = suggester.getOperation();
     assertNotNull(op);
@@ -1308,7 +1309,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  'cluster-preferences':[{'minimize':'cores'}]}";
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
-    Policy.Suggester suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
+    Suggester suggester = session.getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
     SolrRequest op = suggester.getOperation();
     assertNotNull(op);
     suggester = suggester.getSession().getSuggester(MOVEREPLICA).hint(Hint.TARGET_NODE, "10.0.0.6:7574_solr");
@@ -1345,7 +1346,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "       { nodeRole:overseer,replica:0}]}";
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData(dataproviderdata));
-    Policy.Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
+    Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
         .hint(Hint.TARGET_NODE, "127.0.0.1:51147_solr");
     SolrRequest op = suggester.getOperation();
     log.info("" + op);

@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -32,7 +33,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 public class AutoAddReplicasPlanAction extends ComputePlanAction {
 
   @Override
-  protected Policy.Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
+  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {
     // for backward compatibility
     ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
     String autoAddReplicas = stateProvider.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
@@ -40,7 +41,7 @@ public class AutoAddReplicasPlanAction extends ComputePlanAction {
       return new NoneSuggester();
     }
 
-    Policy.Suggester suggester = super.getSuggester(session, event, cloudManager);
+    Suggester suggester = super.getSuggester(session, event, cloudManager);
     ClusterState clusterState;
     try {
       clusterState = stateProvider.getClusterState();
@@ -52,7 +53,7 @@ public class AutoAddReplicasPlanAction extends ComputePlanAction {
     for (DocCollection collection: clusterState.getCollectionsMap().values()) {
       if (collection.getAutoAddReplicas()) {
         anyCollections = true;
-        suggester.hint(Policy.Suggester.Hint.COLL, collection.getName());
+        suggester.hint(Suggester.Hint.COLL, collection.getName());
       }
     }
 

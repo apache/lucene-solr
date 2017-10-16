@@ -98,7 +98,8 @@ public class Row implements MapWriter {
     Row row = copy();
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
-    replicas.add(new ReplicaInfo("" + new Random().nextInt(1000) + 1000, coll, shard,
+    String replicaname = "" + new Random().nextInt(1000) + 1000;
+    replicas.add(new ReplicaInfo(replicaname,replicaname, coll, shard,
         Collections.singletonMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString())));
     for (Cell cell : row.cells) {
       if (cell.name.equals("cores")) {
