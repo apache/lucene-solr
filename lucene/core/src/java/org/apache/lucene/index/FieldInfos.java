@@ -357,7 +357,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
   static final class Builder {
     private final HashMap<String,FieldInfo> byName = new HashMap<>();
     final FieldNumbers globalFieldNumbers;
-
+    private boolean finished;
+    
     Builder() {
       this(new FieldNumbers());
     }
@@ -371,6 +372,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
 
     public void add(FieldInfos other) {
+      assert assertNotFinished();
       for(FieldInfo fieldInfo : other){ 
         add(fieldInfo);
       }
@@ -380,6 +382,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     public FieldInfo getOrAdd(String name) {
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
+        assert assertNotFinished();
         // This field wasn't yet added to this in-RAM
         // segment's FieldInfo, so now we get a global
         // number for this field.  If the field was seen
@@ -399,6 +402,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                           boolean storeTermVector,
                                           boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
                                           int dimensionCount, int dimensionNumBytes) {
+      assert assertNotFinished();
       if (docValues == null) {
         throw new NullPointerException("DocValuesType must not be null");
       }
@@ -444,8 +448,17 @@ public class FieldInfos implements Iterable<FieldInfo> {
     public FieldInfo fieldInfo(String fieldName) {
       return byName.get(fieldName);
     }
+
+    /** Called only from assert */
+    private boolean assertNotFinished() {
+      if (finished) {
+        throw new IllegalStateException("FieldInfos.Builder was already finished; cannot add new fields");
+      }
+      return true;
+    }
     
     FieldInfos finish() {
+      finished = true;
       return new FieldInfos(byName.values().toArray(new FieldInfo[byName.size()]));
     }
   }
