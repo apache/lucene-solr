@@ -52,6 +52,8 @@ Bug Fixes
 
 * SOLR-11447: ZkStateWriter should process commands in atomic. (Cao Manh Dat, shalin)
 
+* SOLR-11491: Support retrieval of cluster properties in HttpClusterStateProvider. (ab)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
