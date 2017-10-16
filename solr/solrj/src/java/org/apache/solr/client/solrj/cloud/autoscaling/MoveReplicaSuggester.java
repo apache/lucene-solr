@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.Violation;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.Pair;
 
@@ -35,7 +34,7 @@ public class MoveReplicaSuggester extends Suggester {
 
   SolrRequest tryEachNode(boolean strict) {
     //iterate through elements and identify the least loaded
-    List<Clause.Violation> leastSeriousViolation = null;
+    List<Violation> leastSeriousViolation = null;
     Integer targetNodeIndex = null;
     Integer sourceNodeIndex = null;
     ReplicaInfo sourceReplicaInfo = null;

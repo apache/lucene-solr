@@ -42,7 +42,7 @@ class AddReplicaSuggester extends Suggester {
     for (Pair<String,String> shard : shards) {
       Replica.Type type = Replica.Type.get((String) hints.get(Hint.REPLICATYPE));
       //iterate through elements and identify the least loaded
-      List<Clause.Violation> leastSeriousViolation = null;
+      List<Violation> leastSeriousViolation = null;
       Integer targetNodeIndex = null;
       for (int i = getMatrix().size() - 1; i >= 0; i--) {
         Row row = getMatrix().get(i);
@@ -50,7 +50,7 @@ class AddReplicaSuggester extends Suggester {
         if (!isAllowed(row.node, Hint.TARGET_NODE)) continue;
         Row tmpRow = row.addReplica(shard.first(), shard.second(), type);
 
-        List<Clause.Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
+        List<Violation> errs = testChangedMatrix(strict, getModifiedMatrix(getMatrix(), tmpRow, i));
         if (!containsNewErrors(errs)) {
           if (isLessSerious(errs, leastSeriousViolation)) {
             leastSeriousViolation = errs;
