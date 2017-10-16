@@ -38,11 +38,10 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
-import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -217,32 +216,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         .withHttpClient(container.getUpdateShardHandler().getHttpClient())
         .withZkHost(container.getZkController().getZkServerAddress()).build()) {
       DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
-      Policy.Session session = policy.createSession(new SolrClientCloudManager(queueFactory, build));
-      List<Row> sorted = session.getSorted();
-      List<Clause.Violation> violations = session.getViolations();
-
-      List<Preference> clusterPreferences = policy.getClusterPreferences();
-
-      List<Map<String, Object>> sortedNodes = new ArrayList<>(sorted.size());
-      for (Row row : sorted) {
-        Map<String, Object> map = Utils.makeMap("node", row.node);
-        for (Cell cell : row.getCells()) {
-          for (Preference clusterPreference : clusterPreferences) {
-            Policy.SortParam name = clusterPreference.getName();
-            if (cell.getName().equalsIgnoreCase(name.name())) {
-              map.put(name.name(), cell.getValue());
-              break;
-            }
-          }
-        }
-        sortedNodes.add(map);
-      }
-
-      Map<String, Object> map = new HashMap<>(2);
-      map.put("sortedNodes", sortedNodes);
-
-      map.put("violations", violations);
-      rsp.getValues().add("diagnostics", map);
+      rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, new SolrClientCloudManager(queueFactory, build)));
     }
   }
 

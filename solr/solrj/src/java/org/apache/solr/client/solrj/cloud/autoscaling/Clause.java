@@ -234,15 +234,17 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
   }
 
-  public class Violation implements MapWriter {
+  public static class Violation implements MapWriter {
     final String shard, coll, node;
     final Object actualVal;
     final Long delta;//how far is the actual value from the expected value
     final Object tagKey;
     private final int hash;
+    private final Clause clause;
 
 
-    private Violation(String coll, String shard, String node, Object actualVal, Long delta, Object tagKey) {
+    private Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long delta, Object tagKey) {
+      this.clause = clause;
       this.shard = shard;
       this.coll = coll;
       this.node = node;
@@ -253,7 +255,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
 
     public Clause getClause() {
-      return Clause.this;
+      return clause;
     }
 
     @Override
@@ -292,7 +294,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
       ew.putIfNotNull("tagKey", String.valueOf(tagKey));
       ew.putIfNotNull("violation", (MapWriter) ew1 -> {
         if (getClause().isPerCollectiontag()) ew1.put("replica", actualVal);
-        else ew1.put(tag.name, String.valueOf(actualVal));
+        else ew1.put(clause.tag.name, String.valueOf(actualVal));
         ew1.putIfNotNull("delta", delta);
       });
       ew.put("clause", getClause());
@@ -310,7 +312,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
           if (!shard.isPass(shardVsCount.getKey())) continue;
           for (Map.Entry<String, ReplicaCount> counts : shardVsCount.getValue().entrySet()) {
             if (!replica.isPass(counts.getValue())) {
-              violations.add(new Violation(
+              violations.add(new Violation(this,
                   e.getKey(),
                   shardVsCount.getKey(),
                   tag.name.equals("node") ? counts.getKey() : null,
@@ -325,7 +327,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       for (Row r : allRows) {
         if (!tag.isPass(r)) {
-          violations.add(new Violation(null, null, r.node, r.getVal(tag.name), tag.delta(r.getVal(tag.name)), null));
+          violations.add(new Violation(this, null, null, r.node, r.getVal(tag.name), tag.delta(r.getVal(tag.name)), null));
         }
       }
     }
