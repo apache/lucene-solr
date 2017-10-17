@@ -139,9 +139,9 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     liveNodesTimestamp = System.nanoTime();
     ClusterState cs = ClusterState.load(znodeVersion, collectionsMap, liveNodes, ZkStateReader.CLUSTER_STATE);
     if (clusterProperties != null) {
-      NamedList properties = (NamedList) cluster.get("properties");
+      Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
       if (properties != null) {
-        clusterProperties.putAll(properties.asMap(10));
+        clusterProperties.putAll(properties);
       }
     }
     return cs;
