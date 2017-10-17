@@ -31,7 +31,7 @@ The material as presented assumes that you are familiar with some basic search c
 
 The default port when running Solr is 8983. The samples, URLs and screenshots in this guide may show different ports, because the port number that Solr uses is configurable.
 
-If you have not customized your installation of Solr, please make sure that you use port 8983 when following the examples, or configure your own installation to use the port numbers shown in the examples. For information about configuring port numbers, see the section <<managing-solr.adoc#managing-solr,Managing Solr>>.
+If you have not customized your installation of Solr, please make sure that you use port 8983 when following the examples, or configure your own installation to use the port numbers shown in the examples. For information about configuring port numbers, see the section <<monitoring-solr.adoc#monitoring-solr,Monitoring Solr>>.
 
 Similarly, URL examples use `localhost` throughout; if you are accessing Solr from a location remote to the server hosting Solr, replace `localhost` with the proper domain or IP where Solr is running.
 
