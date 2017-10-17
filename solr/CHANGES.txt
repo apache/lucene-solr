@@ -54,6 +54,8 @@ Bug Fixes
 
 * SOLR-11491: Support retrieval of cluster properties in HttpClusterStateProvider. (ab)
 
+* SOLR-11146: Small fixes to the mapping functions in the Analytics Component (Houston Putman)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
@@ -64,6 +66,8 @@ Optimizations
 Other Changes
 ----------------------
 * SOLR-11478: Solr should remove itself from live_nodes in zk immediately on shutdown. (Cao Manh Dat)
+
+* SOLR-11145: Adds comprehensive unit tests for the Analytics Component v2 (Houston Putman)
 
 ==================  7.1.0 ==================
 
