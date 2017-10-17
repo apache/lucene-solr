@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.13
+Apache Tika 1.16
 Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -38,7 +38,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.13
+Apache Tika 1.16
 Carrot2 3.15.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -59,6 +59,11 @@ Optimizations
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
   to make testing and large scale simulations easier. (ab)
 
+* SOLR-11443: Remove the usage of workqueue for Overseer. (Cao Manh Dat, Scott Blum)
+
+Other Changes
+----------------------
+* SOLR-11478: Solr should remove itself from live_nodes in zk immediately on shutdown. (Cao Manh Dat)
 
 ==================  7.1.0 ==================
 

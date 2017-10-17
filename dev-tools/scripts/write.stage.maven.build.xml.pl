@@ -46,7 +46,6 @@ my $output_build_xml_file = $ARGV[1];
 my $common_build_xml = $ARGV[2];
 my $m2_credentials_prompt = $ARGV[3];
 my $m2_repository_id = $ARGV[4];
-my $m2_repository_url = $ARGV[5];
 if ($^O eq 'cygwin') { # Make sure Cygwin Perl can find the output path
   $output_build_xml_file = `cygpath -u "$output_build_xml_file"`;
   $output_build_xml_file =~ s/\s+$//; # Trim trailing whitespace

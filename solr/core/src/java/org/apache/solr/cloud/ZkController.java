@@ -976,6 +976,20 @@ public class ZkController {
     zkClient.multi(ops, true);
   }
 
+  public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
+    if (zkRunOnly) {
+      return;
+    }
+    String nodeName = getNodeName();
+    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+    String nodeAddedPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
+    log.info("Remove node as live in ZooKeeper:" + nodePath);
+    List<Op> ops = new ArrayList<>(2);
+    ops.add(Op.delete(nodePath, -1));
+    ops.add(Op.delete(nodeAddedPath, -1));
+    zkClient.multi(ops, true);
+  }
+
   public String getNodeName() {
     return nodeName;
   }
