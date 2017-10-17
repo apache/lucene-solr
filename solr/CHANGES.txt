@@ -59,6 +59,7 @@ Optimizations
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
   to make testing and large scale simulations easier. (ab)
 
+* SOLR-11443: Remove the usage of workqueue for Overseer. (Cao Manh Dat, Scott Blum)
 
 ==================  7.1.0 ==================
 
