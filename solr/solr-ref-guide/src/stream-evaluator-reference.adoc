@@ -199,6 +199,83 @@ atan(fieldA) // returns the arctangent for fieldA.
 if(gt(fieldA,fieldB),atan(fieldA),atan(fieldB)) // if fieldA > fieldB then return the arctanget of fieldA, else return the arctangent of fieldB
 ----
 
+== betaDistribution
+
+The `betaDistribution` function returns a beta probability distribution (https://en.wikipedia.org/wiki/Beta_distribution)
+based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+
+=== betaDistribution Parameters
+
+* `double` : shape1
+* `double` : shape2
+
+=== betaDistribution Returns
+
+probability distribution function
+
+=== betaDistribution Syntax
+
+[source,text]
+betaDistribution(1, 5)
+
+== binomialCoefficient
+
+The `binomialCoefficient` function returns the number of k-element subsets that can
+be selected from an n-element set (https://en.wikipedia.org/wiki/Binomial_coefficient).
+
+=== binomialCoefficient Parameters
+
+* `integer` : [n] set
+* `integer` : [k] subset
+
+=== binomialCoefficient Returns
+
+long value : The number of k-element subsets that can be selected from an n-element set.
+
+=== binomialCoefficient Syntax
+
+[source,text]
+binomialCoefficient(8, 3) // Returns the number of 3 element subsets from an 8 element set.
+
+== binomialDistribution
+
+The `binomialDistribution` function returns a binomial probability distribution (https://en.wikipedia.org/wiki/Binomial_distribution)
+based on its parameters. This function is part of the probability distribution framework and is designed to
+work with the `sample`, `probability` and `cumulativeProbability` functions.
+
+=== binomialDistribution Parameters
+
+* `integer` : number of trials
+* `double`  : probability of success
+
+=== binomialDistribution Returns
+
+probability distribution function
+
+=== binomialDistribution Syntax
+
+[source,text]
+binomialDistribution(1000, .5)
+
+== canberraDistance
+
+The `canberraDistance` function calculates the Canberra distance (https://en.wikipedia.org/wiki/Canberra_distance) of two numeric arrays.
+
+=== canberraDistance Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== canberraDistance Syntax
+
+[source,text]
+canberraDistance(numericArray1, numuericArray2))
+
+=== canberraDistance Returns
+
+numeric
+
 == cbrt
 
 The `cbrt` function returns the trigonometric cube root of a number.
@@ -234,6 +311,24 @@ ceil(fieldA) // returns the next highest whole number for fieldA.
 if(gt(fieldA,fieldB),ceil(fieldA),ceil(fieldB)) // if fieldA > fieldB then return the ceil of fieldA, else return the ceil of fieldB.
 ----
 
+== chebyshevDistance
+
+The `chebyshevDistance` function calculates the Chebyshev distance (https://en.wikipedia.org/wiki/Chebyshev_distance) of two numeric arrays.
+
+=== chebyshevDistance Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== chebyshevDistance Syntax
+
+[source,text]
+chebyshevDistance(numericArray1, numuericArray2))
+
+=== chebyshevDistance Returns
+
+numeric
+
 == col
 
 The `col` function returns a numeric array from a list of Tuples. The `col`
@@ -250,6 +345,27 @@ function is used to create numeric arrays from stream sources.
 
 [source,text]
 col(tupleList, fieldName)
+
+== constantDistribution
+
+The `constantDistribution` function returns a constant probability distribution based on its parameter.
+This function is part of the probability distribution framework and is designed to
+work with the `sample` and `cumulativeProbability` functions.
+
+When sampled the constant distribution always returns its constant value.
+
+=== constantDistribution Parameters
+
+* `double` : constant value
+
+=== constantDistribution Returns
+
+probability distribution function
+
+=== constantDistribution Syntax
+
+[source,text]
+constantDistribution(constantValue)
 
 == conv
 
@@ -331,6 +447,26 @@ cos(fieldA) // returns the arccosine for fieldA.
 if(gt(fieldA,fieldB),cos(fieldA),cos(fieldB)) // if fieldA > fieldB then return the arccosine of fieldA, else return the cosine of fieldB
 ----
 
+== cosineSimilarity
+
+The `cosineSimilarity` function returns the cosine similarity (https://en.wikipedia.org/wiki/Cosine_similarity) of two numeric arrays.
+
+=== cosineSimilarity Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== cosineSimilarity Syntax
+
+[source,text]
+----
+cosineSimilarity(numericArray, numericArray)
+----
+
+=== cosineSimilarity Returns
+
+numeric
+
 == cov
 
 The `cov` function returns the covariance of two numeric arrays.
@@ -345,6 +481,26 @@ The `cov` function returns the covariance of two numeric arrays.
 
 [source,text]
 cov(numericArray, numericArray)
+
+== cumulativeProbability
+
+The `cumulativeProbability` function returns the cumulative probability of a random variable within a
+probability distribution. The cumulative probability is the total probability of
+all random variables less then or equal to a random variable.
+
+=== cumulativeProbability Parameters
+
+* `probability distribution`
+* `number` : Value to compute the probability for.
+
+=== cumulativeProbability Returns
+
+double : the cumulative probability
+
+=== cumulativeProbability Syntax
+
+[source,text]
+cumulativeProbability(normalDistribution(500, 25), 502) // Returns the cumulative probability of the random sample 502 in a normal distribution with a mean of 500 and standard deviation of 25.
 
 == describe
 
@@ -394,6 +550,167 @@ div(fieldA,1.4) // fieldA / 1.4
 div(fieldA,add(fieldA,fieldB)) // fieldA / (fieldA + fieldB)
 ----
 
+== dotProduct
+
+The `dotProduct` function returns the dotproduct (https://en.wikipedia.org/wiki/Dot_product) of a numeric array.
+
+=== dotProduct Parameters
+
+* `numeric array`
+
+=== dotProduct Syntax
+
+[source,text]
+dotProduct(numericArray)
+
+=== dotProduct Returns
+
+number
+
+== earthMoversDistance
+
+The `earthMoversDistance` function calculates the Earth Movers distance (https://en.wikipedia.org/wiki/Earth_mover%27s_distance) of two numeric arrays.
+
+=== earthMoversDistance Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== earthMoversDistance Syntax
+
+[source,text]
+earthMoversDistance(numericArray1, numuericArray2))
+
+=== earthMoversDistance Returns
+
+numeric
+
+== ebeAdd
+
+The `ebeAdd` function performs an element-by-element addition of two numeric arrays.
+
+=== ebeAdd Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== ebeAdd Syntax
+
+[source,text]
+ebeAdd(numericArray, numericArray)
+
+=== ebeAdd Returns
+
+numeric array
+
+== ebeDivide
+
+The `ebeDivide` function performs an element-by-element division of two numeric arrays.
+
+=== ebeDivide Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== ebeDivide Syntax
+
+[source,text]
+ebeDivide(numericArray, numericArray)
+
+=== ebeDivide Returns
+
+numeric array
+
+== ebeMultiple
+
+The `ebeMultiply` function performs an element-by-element multiplication of two numeric arrays.
+
+=== ebeMultiply Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== ebeMultiply Syntax
+
+[source,text]
+ebeMultiply(numericArray, numericArray)
+
+=== ebeMultiply Returns
+
+numeric array
+
+== ebeSubtract
+
+The `ebeSubtract` function performs an element-by-element subtraction of two numeric arrays.
+
+=== ebeSubtract Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== ebeSubtract Syntax
+
+[source,text]
+ebeSubtract(numericArray, numericArray)
+
+=== ebeSubtract Returns
+
+numeric array
+
+== empiricalDistribution
+
+The `empiricalDistribution` function returns a continuous probability distribution function based
+on an actual data set (https://en.wikipedia.org/wiki/Empirical_distribution_function). This function is part of the probability distribution framework and is designed to
+work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+
+This function is designed to work with continuous data. To build a distribution from
+a discrete data set use the `enumeratedDistribution`.
+
+=== empiricalDistribution Parameters
+
+* `numeric array` : empirical observations
+
+=== empiricalDistribution Returns
+
+probability distribution function
+
+=== empiricalDistribution Syntax
+
+empiricalDistribution(numericArray)
+
+== enumeratedDistribution
+
+The `enumeratedDistribution` function returns a discrete probability distribution function based
+on an actual data set or a pre-defined set of data and probabilities.
+This function is part of the probability distribution framework and is designed to
+work with the `sample`, `probability` and `cumulativeProbability` functions.
+
+The enumeratedDistribution can be called in two different scenarios:
+
+1) Single array of discrete values. This works like an empirical distribution for
+discrete data.
+
+2) An array of singleton discrete values and an array of double values representing
+the probabilities of the discrete values.
+
+This function is designed to work with discrete data. To build a distribution from
+a continuous data set use the `empiricalDistribution`.
+
+=== enumeratedDistribution Parameters
+
+* `integer array` : discrete observations or singleton discrete values.
+* `double array` : (Optional) values representing the probabilities of the singleton discrete values.
+
+=== enumeratedDistribution Returns
+
+probability distribution function
+
+=== enumeratedDistribution Syntax
+
+[source,text]
+enumeratedDistribution(integerArray) // This creates an enumerated distribution from the observations in the numeric array.
+enumeratedDistribution(array(1,2,3,4), array(.25,.25,.25,.25)) // This creates an enumerated distribution with four discrete values (1,2,3,4) each with a probability of .25.
+
 == eor
 
 The `eor` function will return the logical exclusive or of at least two boolean parameters. The function will fail to execute if any parameters are non-boolean or null. Returns a boolean value.
@@ -439,6 +756,45 @@ eq(fieldA,val(foo)) fieldA == "foo"
 eq(add(fieldA,fieldB),6) // fieldA + fieldB == 6
 ----
 
+== expMovingAge
+
+The `expMovingAverage` function computes an exponential moving average (https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average) for a numeric array.
+
+=== expMovingAge Parameters
+
+* `numeric array` : The array to compute the exponential moving average from.
+* `integer`: window size
+
+=== expMovingAvg Returns
+
+numeric array : (The first element of the returned array will start from the windowSize-1 index of the original array)
+
+=== expMovingAvg Syntax
+
+[source,text]
+----
+expMovingAvg(numericArray, 5) //Computes an exponential moving average with a window size of 5.
+----
+
+== factorial
+
+The `factorial` function returns the factorial (https://en.wikipedia.org/wiki/Factorial) of its parameter.
+
+=== factorial Parameters
+
+* `integer` : The value to compute the factorial for. The largest supported value of this parameter is 170.
+
+=== factorial Returns
+
+double
+
+=== factorial Syntax
+
+[source,text]
+----
+factorial(100) //Computes the factorial of 100
+----
+
 == finddelay
 
 The `finddelay` function performs a cross-correlation between two numeric arrays and returns the delay.
@@ -470,6 +826,49 @@ floor(100.4) // returns 100.
 ceil(fieldA) // returns the next lowestt whole number for fieldA.
 if(gt(fieldA,fieldB),floor(fieldA),floor(fieldB)) // if fieldA > fieldB then return the floor of fieldA, else return the floor of fieldB.
 ----
+
+== freqTable
+
+The `freqTable` function returns a frequency distribution (https://en.wikipedia.org/wiki/Frequency_distribution) from
+an array of discrete values.
+
+This function is designed to work with discrete values. To work with continuous data
+use the `hist` function.
+
+=== freqTable Parameters
+
+* `integer array` : The values to build the frequency distribution from.
+
+=== freqTable Returns
+
+A list of tuples containing the frequency information for each discrete value.
+
+=== freqTable Syntax
+
+[source,text]
+----
+freqTable(integerArray)
+----
+
+== gammaDistribution
+
+The `gammaDistribution` function returns a gamma probability distribution (https://en.wikipedia.org/wiki/Gamma_distribution)
+based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+
+=== gammaDistribution Parameters
+
+* `double` : shape
+* `double` : scale
+
+=== gammaDistribution Returns
+
+probability distribution function
+
+=== gammaDistribution Syntax
+
+[source,text]
+gammaDistribution(1, 10)
 
 == gt
 
@@ -567,6 +966,25 @@ if(gt(fieldA,5), fieldA, 5) // if fieldA > 5 then fieldA else 5
 if(eq(fieldB,null), null, div(fieldA,fieldB)) // if fieldB is null then null else fieldA / fieldB
 ----
 
+
+== kendallsCorr
+
+The `kendallsCorr` function returns the Kendall's Tau-b Rank Correlation (https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient) of two numeric arrays.
+
+=== kendallsCorr Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== kendalsCorr Returns
+
+double between -1 and 1
+
+=== kendalsCorr Synax
+
+[source,text]
+kendalsCorr(numericArray1, numericArray2)
+
 == length
 
 The `length` function returns the length of a numeric array.
@@ -599,6 +1017,48 @@ log(100)
 log(add(fieldA,fieldB))
 log(fieldA)
 ----
+
+== logNormalDistribution
+
+The `logNormalDistribution` function returns a log normal probability distribution (https://en.wikipedia.org/wiki/Log-normal_distribution)
+based on its parameters. This function is part of the probability distribution framework and is designed to
+work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+
+=== logNormalDistribution Parameters
+
+* `double` : shape
+* `double` : scale
+
+=== logNormalDistribution Returns
+
+probability distribution function
+
+=== logNormalDistribution Syntax
+
+[source,text]
+logNormalDistribution(.3, .0)
+
+== kolmogorovSmirnov
+
+The `kolmogorovSmirnov` function performs a Kolmogorov Smirnov test (https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test),
+between a reference continuous probability distribution and a sample set.
+
+The supported distribution functions are:
+(empiricalDistribution, normalDistribution, logNormalDistribution, weibullDistribution, gammaDistribution, betaDistribution)
+
+=== kolmogorovSmirnov Parameters
+
+* `continuous probability distribution` : Reference distribution
+* `numeric array` : sample set
+
+=== kolmogorovSmirnov Returns
+
+result tuple : A tuple containing the p-value and d-statistic for test result.
+
+=== kolmogorovSmirnov Syntax
+
+[source,text]
+kolmogorovSmirnov(normalDistribution(10, 2), sampleSet)
 
 == lt
 
@@ -642,6 +1102,44 @@ lteq(fieldA,val(foo)) fieldA <= "foo"
 lteq(add(fieldA,fieldB),6) // fieldA + fieldB <= 6
 ----
 
+== manhattanDistance
+
+The `manhattanDistance` function calculates the Manhattan distance (https://en.wiktionary.org/wiki/Manhattan_distance) of two numeric arrays.
+
+=== manhattanDistance Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== manhattanDistance Syntax
+
+[source,text]
+manhattanDistance(numericArray1, numuericArray2))
+
+=== manhattanDistance Returns
+
+numeric
+
+== meanDifference
+
+The `meanDifference` function calculates the mean of the differences following the element-by-element subtraction between two numeric arrays.
+
+=== meanDifference Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== meanDifference Returns
+
+numeric
+
+=== meanDifference Syntax
+
+[source,text]
+----
+meanDifference(numericArray, numericArray)
+----
+
 == mod
 The `mod` function returns the remainder (modulo) of the first parameter divided by the second parameter.
 
@@ -662,20 +1160,71 @@ mod(fieldA,1.4) // returns the remainder of fieldA divided by 1.4.
 if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > fieldB then return the remainder of fieldA/fieldB, else return the remainder of fieldB/fieldA.
 ----
 
+== monteCarlo
+
+The `monteCarlo` function performs a Monte Carlo simulation (https://en.wikipedia.org/wiki/Monte_Carlo_method)
+based on its parameters. The monteCarlo function runs another function a set number of times and returns the results.
+The function being run typically has one or more variables that are drawn from probability
+distributions on each run. The `sample` function is used in the function to draw the samples.
+
+The simulation's result array can then be treated as an empirical distribution to understand
+the probabilities of the simulation results.
+
+=== monteCarlo Parameters
+
+* `numeric function` : The function being run by the simulation, which must return a numeric value.
+* `integer` : The number of times to run the function.
+
+=== monteCarlo Returns
+
+numeric array: The results of simulation runs.
+
+=== monteCarlo Syntax
+
+[source,text]
+let(a=uniformIntegerDistribution(1, 6),
+    b=uniformIntegerDistribution(1, 6),
+    c=monteCarlo(add(sample(a), sample(b)), 1000))
+
+In the expression above the monteCarlo function is running the function `add(sample(a), sample(b))`
+1000 times and returning the result. Each time the function is run samples are drawn from the
+probability distributions stored in variables `a` and `b`.
+
 == movingAvg
 
 The `movingAvg` function calculates a https://en.wikipedia.org/wiki/Moving_average[moving average] over an array of numbers.
 
 === movingAvg Parameters
 
-//TODO 7.1 - fill in details of Parameters
 * `numeric array`
-* `window size`: The array returned will be smaller than this value.
+* `window size`
+
+=== movingAvg Returns
+
+numeric array (The first element of the returned array will start from the windowSize-1 index of the original array)
 
 === movingAvg Syntax
 
 [source,text]
 movingAverage(numericArray, 30)
+
+== movingMedian
+
+The `movingMedian` function calculates a moving median over an array of numbers.
+
+=== movingMedian Parameters
+
+* `numeric array`
+* `window size`
+
+=== movingMedian Syntax
+
+[source,text]
+movingMedian(numericArray, 30)
+
+=== movingMedian Returns
+
+numeric array (The first element of the returned array will start from the windowSize-1 index of the original array)
 
 == mult
 
@@ -701,6 +1250,26 @@ mult(fieldA,fieldB,fieldC) // value of fieldA * value of fieldB * value of field
 mult(fieldA,div(fieldA,fieldB)) // value of fieldA * (value of fieldA / value of fieldB)
 mult(fieldA,if(gt(fieldA,fieldB),fieldA,fieldB)) // if fieldA > fieldB then fieldA * fieldA, else fieldA * fieldB
 ----
+
+== normalDistribution
+
+The `normalDistribution` function returns a normal probability distribution (https://en.wikipedia.org/wiki/Normal_distribution)
+based on its parameters. This function is part of the probability distribution framework and is designed to
+work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+
+=== normalDistribution Parameters
+
+* `double` : mean
+* `double` : standard deviation
+
+=== normalDistribution Returns
+
+probability distribution function
+
+=== normalDistribution Syntax
+
+[source,text]
+normalDistribution(mean, stddev)
 
 == normalize
 
@@ -758,21 +1327,64 @@ or(and(fieldA,fieldB),fieldC) // (fieldA && fieldB) || fieldC
 or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 ----
 
-== predict
+== poissonDistribution
 
-The `predict` function predicts the value of an dependent variable based on
-the output of the regress function.
+The `poissonDistribution` function returns a poisson probability distribution (https://en.wikipedia.org/wiki/Poisson_distribution)
+based on its parameters. This function is part of the probability distribution framework and is designed to
+work with the `sample`, `probability` and `cumulativeProbability` functions.
 
-=== predict Parameters
+=== poissonDistribution Parameters
 
-//TODO 7.1 - fill in details of Parameters
-* `regress output`
-* `numeric predictor`
+* `double` : mean
 
-=== predict Syntax
+=== poissonDistribution Returns
+
+probability distribution function
+
+=== poissonDistribution Syntax
 
 [source,text]
-predict(regressOutput, predictor)
+poissonDistribution(mean)
+
+== polyFit
+
+The `polyFit` function performs polynomial curve fitting (https://en.wikipedia.org/wiki/Curve_fitting#Fitting_lines_and_polynomial_functions_to_data_points).
+
+=== polyFit Parameters
+
+* `numeric array` : (Optional) x values. If omitted an sequence will be created for the x values.
+* `numeric array` : y values
+* `integer` : (Optional) polynomial degree. Defaults to 3.
+
+=== polyFit Returns
+
+numeric array : curve that was fit to the data points.
+
+=== polyFit Syntax
+
+[source,text]
+polyFit(yValues) // This creates the xValues automatically and fits a curve through the data points using a the default 3 degree polynomial.
+polyFit(xValues, yValues, 5) // This will fit a curve through the data points using a 5 degree polynomial.
+
+== polyfitDerivative
+
+The `polyfitDerivative` function returns the derivative of the curve created by the polynomial curve fitter.
+
+=== polyfitDerivative Parameters
+
+* `numeric array` : (Optional) x values. If omitted an sequence will be created for the x values.
+* `numeric array` : y values
+* `integer` : (Optional) polynomial degree. Defaults to 3.
+
+=== polyfitDerivative Returns
+
+numeric array : The curve for the derivative created by the polynomial curve fitter.
+
+=== polyfitDerivative Syntax
+
+[source,text]
+polyfitDerivative(yValues) // This creates the xValues automatically and returns the polyfit derivative
+polyfitDerivative(xValues, yValues, 5) // This will fit a curve through the data points using a 5 degree polynomial and returns the polyfit derivative.
 
 == pow
 The `pow` function returns the value of its first parameter raised to the power of its second parameter.
@@ -793,6 +1405,60 @@ pow(4,fieldA) // returns 4 raised by the value of fieldA.
 pow(fieldA,1.4) // returns the value of fieldA raised by 1.4.
 if(gt(fieldA,fieldB),pow(fieldA,fieldB),pow(fieldB,fieldA)) // if fieldA > fieldB then raise fieldA by fieldB, else raise fieldB by fieldA.
 ----
+
+== predict
+
+The `predict` function predicts the value of an dependent variable based on
+the output of the regress function.
+
+=== predict Parameters
+
+//TODO 7.1 - fill in details of Parameters
+* `regress output`
+* `numeric predictor`
+
+=== predict Syntax
+
+[source,text]
+predict(regressOutput, predictor)
+
+== primes
+The `primes` function returns an array of prime numbers starting from a specified number.
+
+=== primes Parameters
+
+* `integer`: The number of primes to return in the list
+* `integer`: The starting point for returning the primes
+
+=== primes Syntax
+
+[source,text]
+----
+primes(100, 2000) // returns 100 primes starting from 2000
+----
+
+=== primes Returns
+
+numeric array
+
+== probability
+
+The `probability` function returns the probability of encountering a random variable within a discrete
+probability distribution.
+
+=== probability Parameters
+
+* `discrete probability distribution` : poissonDistribution | binomialDistribution | uniformDistribution | enumeratedDistribution
+* `integer` : Value to compute the probability for.
+
+=== probability Returns
+
+double : the probability
+
+=== probability Syntax
+
+[source,text]
+probability(poissonDistribution(10), 7) // Returns the probability of encountering a random sample if 7 in a poisson distribution with a mean of 10.
 
 == rank
 
@@ -833,7 +1499,7 @@ eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA
 
 The `regress` function performs a simple regression on two numeric arrays.
 
-The result of this expression is also used by the `predict` function.
+The result of this expression is also used by the `predict` and `residuals` functions.
 
 === regress Parameters
 
@@ -845,6 +1511,28 @@ The result of this expression is also used by the `predict` function.
 
 [source,text]
 regress(numericArray1, numericArray2)
+
+== residuals
+
+The `residuals` function takes three parameters: a simple regression model, an array of predictor values
+and an array of actual values. The residuals function applies the simple regression model to the
+array of predictor values and computes a predictions array. The actual values array is then
+subtracted from the predictions array to compute the residuals array.
+
+=== residuals Parameters
+
+* `regress output`
+* `numeric array`: The array of predictor values
+* `numeric array`: The array of actual values
+
+=== residuals Syntax
+
+[source,text]
+residuals(regressOutput, numericArray, numericArray)
+
+=== residuals Returns
+
+numeric array of residuals
 
 == rev
 
@@ -875,6 +1563,25 @@ round(100.4)
 round(fieldA)
 if(gt(fieldA,fieldB),sqrt(fieldA),sqrt(fieldB)) // if fieldA > fieldB then return the round of fieldA, else return the round of fieldB
 ----
+
+== sample
+
+The `sample` function can be used to draw random samples from a probability distribution.
+
+=== sample Parameters
+
+* `probability distribution`: The distribution to sample.
+* `integer`: (Optional) Sample size. Defaults to 1.
+
+=== sample Returns
+
+Either a single numeric random sample, or a numeric array depending on the sample size parameter.
+
+=== sample Syntax
+
+[source,text]
+sample(normalDistribution(50, 5)) // Return a single random sample from a normalDistribution with mean of 50 and standard deviation of 5.
+sample(poissonDistribution(5), 1000) // Return 1000 random samples from poissonDistribution with a mean of 5.
 
 == scale
 
@@ -923,6 +1630,24 @@ sine(fieldA) // returns the sine for fieldA.
 if(gt(fieldA,fieldB),sin(fieldA),sin(fieldB)) // if fieldA > fieldB then return the sine of fieldA, else return the sine of fieldB
 ----
 
+== spearmansCorr
+
+The `spearmansCorr` function returns the Spearmans Rank Correlation (https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) of two numeric arrays.
+
+=== spearmansCorr Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== spearmansCorr Returns
+
+double between -1 and 1
+
+=== spearmansCorr Synax
+
+[source,text]
+spearmansCorr(numericArray1, numericArray2)
+
 == sqrt
 
 The `sqrt` function returns the trigonometric square root of a number.
@@ -964,3 +1689,104 @@ sub(fieldA,fieldB,fieldC) // value of fieldA - value of fieldB - value of fieldC
 sub(fieldA,div(fieldA,fieldB)) // value of fieldA - (value of fieldA / value of fieldB)
 if(gt(fieldA,fieldB),sub(fieldA,fieldB),sub(fieldB,fieldA)) // if fieldA > fieldB then fieldA - fieldB, else fieldB - field
 ----
+
+== sumDifference
+
+The `sumDifference` function calculates the sum of the differences following an element-by-element subtraction between two numeric arrays.
+
+=== sumDifference Parameters
+
+* `numeric array`
+* `numeric array`
+
+=== sumDifference Returns
+
+numeric
+
+=== sumDifference Syntax
+
+[source,text]
+----
+sumDifference(numericArray, numericArray)
+----
+
+== uniformDistribution
+
+The `uniformDistribution` function returns a continuous uniform probability distribution (https://en.wikipedia.org/wiki/Uniform_distribution_(continuous))
+based on its parameters. See the `uniformIntegerDistribution` to work with discrete uniform distributions. This function is part of the
+probability distribution framework and is designed to work with the `sample` and `cumulativeProbability` functions.
+
+=== uniforDistribution Parameters
+
+* `double` : start
+* `double` : end
+
+=== uniformDistribution Returns
+
+probability distribution function
+
+=== uniformDistribution Syntax
+
+[source,text]
+uniformDistribution(0.0, 100.0)
+
+== uniformIntegerDistribution
+
+The `uniformIntegerDistribution` function returns a discrete uniform probability distribution (https://en.wikipedia.org/wiki/Discrete_uniform_distribution)
+based on its parameters. See the `uniformDistribution` to work with continuous uniform distributions. This function is part of the
+probability distribution framework and is designed to work with the `sample`, `probability` and `cumulativeProbability` functions.
+
+=== uniformIntegerDistribution Parameters
+
+* `integer` : start
+* `integer` : end
+
+=== uniformIntegerDistribution Returns
+
+probability distribution function
+
+=== uniformIntegerDistribution Syntax
+
+[source,text]
+uniformDistribution(1, 6)
+
+== weibullDistribution
+
+The `weibullDistribution` function returns a Weibull probability distribution (https://en.wikipedia.org/wiki/Weibull_distribution)
+based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+
+=== weibullDistribution Parameters
+
+* `double` : shape
+* `double` : scale
+
+=== weibullDistribution Returns
+
+probability distribution function
+
+=== weibullDistribution Syntax
+
+[source,text]
+weibullDistribution(.5, 10)
+
+== zipFDistribution
+
+The `zipFDistribution` function returns a ZipF distribution (https://en.wikipedia.org/wiki/Zeta_distribution)
+based on its parameters. This function is part of the
+probability distribution framework and is designed to work with the `sample`,
+`probability` and `cumulativeProbability` functions.
+
+=== zipFDistribution Parameters
+
+* `integer` : size
+* `double` : exponent
+
+=== zipFDistribution Returns
+
+probability distribution function
+
+=== zipFDistribution Syntax
+
+[source,text]
+zipFDistribution(5000, 1.0)
