@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -35,7 +34,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 
 import java.io.BufferedReader;
@@ -43,7 +41,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 
 public class TestCoreParser extends LuceneTestCase {
@@ -99,6 +96,32 @@ public class TestCoreParser extends LuceneTestCase {
   public void testSimpleXML() throws ParserException, IOException {
     Query q = parse("TermQuery.xml");
     dumpResults("TermQuery", q, 5);
+  }
+
+  public void test_DOCTYPE_TermQueryXML() throws ParserException, IOException {
+    try {
+      parse("DOCTYPE_TermQuery.xml");
+      fail("should have thrown a ParserException!");
+    }
+    catch (ParserException saxe) {
+      assertTrue(saxe.getMessage().equals(
+          "Error parsing XML stream: org.xml.sax.SAXException: External Entity resolving unsupported:  publicId=\"null\" systemId=\"foo://bar.xyz/mydtd\""));
+      return;
+    }
+    fail("should have thrown a ParserException!");
+  }
+
+  public void test_ENTITY_TermQueryXML() throws ParserException, IOException {
+    try {
+      parse("ENTITY_TermQuery.xml");
+      fail("should have thrown a ParserException!");
+    }
+    catch (ParserException saxe) {
+      assertTrue(saxe.getMessage().equals(
+          "Error parsing XML stream: org.xml.sax.SAXException: External Entity resolving unsupported:  publicId=\"null\" systemId=\"foo://bar.xyz/external\""));
+      return;
+    }
+    fail("should have thrown a ParserException!");
   }
 
   public void testSimpleTermsQueryXML() throws ParserException, IOException {

@@ -16,10 +16,16 @@
  */
 package org.apache.solr.search;
 
+import java.lang.invoke.MethodHandles;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.CoreParser;
 
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.ErrorHandler;
 
 /**
  * Assembles a QueryBuilder which uses Query objects from Solr's <code>search</code> module
@@ -27,12 +33,20 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class SolrCoreParser extends CoreParser {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
+
   public SolrCoreParser(String defaultField, Analyzer analyzer,
       SolrQueryRequest req) {
     super(defaultField, analyzer);
 
     // final IndexSchema schema = req.getSchema();
     // lucene_parser.addQueryBuilder("SomeOtherQuery", new SomeOtherQueryBuilder(schema));
+  }
+
+  @Override
+  protected ErrorHandler getErrorHandler() {
+    return xmllog;
   }
 
 }

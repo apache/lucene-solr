@@ -21,10 +21,20 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
 Jetty 9.2.13.v20150730
 
+Upgrade Notes
+----------------------
+
+* SOLR-11477: in the XML query parser (defType=xmlparser or {!xmlparser ... })
+  the resolving of external entities is now disallowed by default.
+
 Bug Fixes
 ----------------------
 
-* SOLR-10420: Solr 6.x leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+* SOLR-10420: Leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
+* SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
+  (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
 
 ======================= 5.5.4 =======================
 
