@@ -88,7 +88,7 @@ public final class DoubleRange extends Range {
 
   @Override
   public String toString() {
-    return "DoubleRange(" + min + " to " + max + ")";
+    return "DoubleRange(" + label + ": " + min + " to " + max + ")";
   }
 
   private static class ValueSourceQuery extends Query {
