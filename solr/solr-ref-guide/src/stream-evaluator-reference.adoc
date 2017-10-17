@@ -1577,7 +1577,7 @@ The `sample` function can be used to draw random samples from a probability dist
 
 Either a single numeric random sample, or a numeric array depending on the sample size parameter.
 
-=== sample Syntax
+=== sample function Syntax
 
 [source,text]
 sample(normalDistribution(50, 5)) // Return a single random sample from a normalDistribution with mean of 50 and standard deviation of 5.
