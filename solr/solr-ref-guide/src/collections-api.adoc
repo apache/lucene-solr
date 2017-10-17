@@ -1878,7 +1878,7 @@ Time in seconds to wait until new replicas are created, and until leader replica
 ====
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
-
+[[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
 This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` will be reused.
