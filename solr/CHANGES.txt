@@ -61,6 +61,10 @@ Optimizations
 
 * SOLR-11443: Remove the usage of workqueue for Overseer. (Cao Manh Dat, Scott Blum)
 
+Other Changes
+----------------------
+* SOLR-11478: Solr should remove itself from live_nodes in zk immediately on shutdown. (Cao Manh Dat)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
