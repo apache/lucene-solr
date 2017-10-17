@@ -74,7 +74,7 @@ The data structures used for collapsing grow dynamically when collapsing on nume
 The default is 100,000.
 
 
-=== Sample Syntax
+=== Sample Usage Syntax
 
 Collapse on `group_field` selecting the document in each group with the highest scoring document:
 
