@@ -17,6 +17,29 @@
     "reload": {
       "#include": "collections.collection.Commands.reload"
     },
+    "move-replica": {
+      "type": "object",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#movereplica",
+      "description": "This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` will be reused.",
+      "properties": {
+        "replica": {
+          "type": "string",
+          "description": "The name of the replica"
+        },
+        "shard": {
+          "type": "string",
+          "description": "The name of the shard"
+        },
+        "sourceNode": {
+          "type": "string",
+          "description": "The name of the node that contains the replica"
+        },
+        "targetNode": {
+          "type": "string",
+          "description": "The name of the destination node. This parameter is required"
+        }
+      }
+    },
     "migrate-docs":{
       "type":"object",
       "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#migrate",
