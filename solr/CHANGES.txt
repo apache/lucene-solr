@@ -53,9 +53,12 @@ Optimizations
 
 Other Changes
 ----------------------
+* SOLR-11478: Solr should remove itself from live_nodes in zk immediately on shutdown. (Cao Manh Dat)
+
 * SOLR-11145: Adds comprehensive unit tests for the Analytics Component v2 (Houston Putman)
 
 * SOLR-11464, SOLR-11493: Minor refactorings to DistributedUpdateProcessor. (Gus Heck, David Smiley)
+
 
 ==================  7.1.0 ==================
 

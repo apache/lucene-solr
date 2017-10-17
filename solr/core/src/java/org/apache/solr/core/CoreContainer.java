@@ -743,6 +743,11 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
       zkSys.zkController.publishNodeAsDown(zkSys.zkController.getNodeName());
+      try {
+        zkSys.zkController.removeEphemeralLiveNode();
+      } catch (Exception e) {
+        log.warn("Error removing live node. Continuing to close CoreContainer", e);
+      }
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
       }
