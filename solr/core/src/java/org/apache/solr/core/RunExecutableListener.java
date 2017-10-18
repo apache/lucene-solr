@@ -37,7 +37,7 @@ import java.util.ArrayList;
  * @deprecated and disabled for security reasons!
  */
 @Deprecated
-public class RunExecutableListener extends AbstractSolrEventListener {
+public class RunExecutableListener extends AbstractSolrEventListener implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final String ENABLED_ARG = "solr.enableRunExecutableListener";
@@ -82,6 +82,11 @@ public class RunExecutableListener extends AbstractSolrEventListener {
     }
 
     if ("false".equals(args.get("wait")) || Boolean.FALSE.equals(args.get("wait"))) wait=false;
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    log.warn(WARNING_MESSAGE);
   }
 
   /**
