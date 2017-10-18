@@ -44,6 +44,7 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  * &lt;processor class="solr.HTMLStripFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="typeClass"&gt;solr.StrField&lt;/str&gt;
  * &lt;/processor&gt;</pre>
+ * @since 4.0.0
  */
 public final class HTMLStripFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 

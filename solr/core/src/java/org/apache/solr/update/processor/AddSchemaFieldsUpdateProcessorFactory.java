@@ -129,6 +129,7 @@ import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
  *     &lt;str name="fieldType"&gt;pdoubles&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/updateProcessor&gt;</pre>
+ * @since 4.4.0
  */
 public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {

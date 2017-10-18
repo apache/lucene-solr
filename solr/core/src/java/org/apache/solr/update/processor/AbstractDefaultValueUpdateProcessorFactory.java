@@ -37,6 +37,7 @@ import org.apache.solr.update.AddUpdateCommand;
  * subclasses may choose to return from their <code>getInstance</code> 
  * implementation.
  * </p>
+ * @since 4.0.0
  */
 public abstract class AbstractDefaultValueUpdateProcessorFactory
   extends UpdateRequestProcessorFactory {

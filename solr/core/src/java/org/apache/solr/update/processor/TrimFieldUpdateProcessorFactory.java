@@ -41,6 +41,7 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  *     &lt;str name="fieldRegex"&gt;.*_literal&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
+ * @since 4.0.0
  */
 public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 

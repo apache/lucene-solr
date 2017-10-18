@@ -50,6 +50,7 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  *
  * @see MaxFieldValueUpdateProcessorFactory
  * @see Collections#min
+ * @since 4.0.0
  */
 public final class MinFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 

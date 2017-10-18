@@ -89,6 +89,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  *     a status 200 to the client) instead of generating a 409 Version Conflict error.
  *   </li>
  * </ul>
+ * @since 4.6.0
  */
 public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware, UpdateRequestProcessorFactory.RunAlways {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
