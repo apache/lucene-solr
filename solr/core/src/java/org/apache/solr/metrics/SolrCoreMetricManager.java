@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -69,7 +70,7 @@ public class SolrCoreMetricManager implements Closeable {
       shardName = cd.getShardId();
       //replicaName = cd.getCoreNodeName();
       String coreName = core.getName();
-      replicaName = parseReplicaName(collectionName, coreName);
+      replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
       if (replicaName == null) {
         replicaName = cd.getCoreNodeName();
       }
@@ -207,7 +208,7 @@ public class SolrCoreMetricManager implements Closeable {
     CloudDescriptor cd = aCore.getCoreDescriptor().getCloudDescriptor();
     String replicaName = null;
     if (cd != null) {
-      replicaName = parseReplicaName(cd.getCollectionName(), coreName);
+      replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), coreName);
     }
     return createRegistryName(
         cd != null,
@@ -216,25 +217,6 @@ public class SolrCoreMetricManager implements Closeable {
         replicaName,
         coreName
         );
-  }
-
-  public static String parseReplicaName(String collectionName, String coreName) {
-    if (collectionName == null || !coreName.startsWith(collectionName)) {
-      return null;
-    } else {
-      // split "collection1_shard1_1_replica1" into parts
-      if (coreName.length() > collectionName.length()) {
-        String str = coreName.substring(collectionName.length() + 1);
-        int pos = str.lastIndexOf("_replica");
-        if (pos == -1) { // ?? no _replicaN part ??
-          return str;
-        } else {
-          return str.substring(pos + 1);
-        }
-      } else {
-        return null;
-      }
-    }
   }
 
   public static String createLeaderRegistryName(boolean cloud, String collectionName, String shardName) {
