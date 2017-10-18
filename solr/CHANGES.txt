@@ -59,6 +59,10 @@ Other Changes
 
 * SOLR-11145: Adds comprehensive unit tests for the Analytics Component v2 (Houston Putman)
 
+* SOLR-11389: For Solr(Shard|Cluster)Reporter instances the SolrMetricManager.registerReporter
+  method is now called after the SolrCore or CoreContainer has been set for the instance.
+  (Christine Poerschke)
+
 * SOLR-11464, SOLR-11493: Minor refactorings to DistributedUpdateProcessor. (Gus Heck, David Smiley)
 
 * SOLR-11444: Improved consistency of collection alias handling, and collection references that are

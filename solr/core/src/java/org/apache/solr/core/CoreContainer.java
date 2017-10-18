@@ -545,9 +545,9 @@ public class CoreContainer {
       containerHandlers.put(PKIAuthenticationPlugin.PATH, pkiAuthenticationPlugin.getRequestHandler());
 
     PluginInfo[] metricReporters = cfg.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.node);
-    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.jvm);
-    metricManager.loadReporters(metricReporters, loader, null, SolrInfoBean.Group.jetty);
+    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.node);
+    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
+    metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
 
     coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
 

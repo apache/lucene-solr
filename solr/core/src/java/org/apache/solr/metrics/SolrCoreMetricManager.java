@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -82,9 +83,10 @@ public class SolrCoreMetricManager implements Closeable {
    * group or with a registry name specific to this core.
    */
   public void loadReporters() {
-    NodeConfig nodeConfig = core.getCoreContainer().getConfig();
+    CoreContainer coreContainer = core.getCoreContainer();
+    NodeConfig nodeConfig = coreContainer.getConfig();
     PluginInfo[] pluginInfos = nodeConfig.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(pluginInfos, core.getResourceLoader(), tag,
+    metricManager.loadReporters(pluginInfos, core.getResourceLoader(), coreContainer, core, tag,
         SolrInfoBean.Group.core, registryName);
     if (cloudMode) {
       metricManager.loadShardReporters(pluginInfos, core);

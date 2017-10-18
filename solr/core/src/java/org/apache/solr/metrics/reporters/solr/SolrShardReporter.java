@@ -28,6 +28,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
@@ -91,6 +92,11 @@ public class SolrShardReporter extends FilteringSolrMetricReporter {
   }
 
   @Override
+  public void init(PluginInfo pluginInfo) {
+    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,SolrCore) instead.");
+  }
+
+  @Override
   protected void doInit() {
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
@@ -116,7 +122,8 @@ public class SolrShardReporter extends FilteringSolrMetricReporter {
     }
   }
 
-  public void setCore(SolrCore core) {
+  public void init(PluginInfo pluginInfo, SolrCore core) {
+    super.init(pluginInfo);
     if (reporter != null) {
       reporter.close();
     }
