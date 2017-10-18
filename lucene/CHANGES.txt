@@ -14,7 +14,12 @@ Changes in Runtime Behavior
 
 
 ======================= Lucene 7.2.0 =======================
-(No Changes)
+
+Bug Fixes
+
+* LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
+  a previous boosted field's factor to subsequent unboosted fields.
+  (Christine Poerschke)
 
 ======================= Lucene 7.1.0 =======================
 
