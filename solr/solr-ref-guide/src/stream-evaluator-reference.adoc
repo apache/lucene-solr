@@ -659,8 +659,14 @@ ebeSubtract(numericArray, numericArray)
 
 == empiricalDistribution
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 The `empiricalDistribution` function returns https://en.wikipedia.org/wiki/Empirical_distribution_function[empirical distribution function], a continuous probability distribution function based
 on an actual data set. This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
+=======
+The `empiricalDistribution` function returns a continuous probability distribution function based
+on an actual data set (https://en.wikipedia.org/wiki/Empirical_distribution_function). This function is part of the probability distribution framework and is
+designed to work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 This function is designed to work with continuous data. To build a distribution from
 a discrete data set use the `<<enumeratedDistribution>>`.
@@ -1049,7 +1055,11 @@ The supported distribution functions are: `<<empiricalDistribution>>`, `<<normal
 
 === kolmogorovSmirnov Returns
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 A result tuple: A tuple containing the p-value and d-statistic for the test result.
+=======
+result tuple : A tuple containing the p-value and d-statistic for the test result.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === kolmogorovSmirnov Syntax
 
@@ -1158,8 +1168,13 @@ if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > field
 
 == monteCarlo
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 The `monteCarlo` function performs a https://en.wikipedia.org/wiki/Monte_Carlo_method[Monte Carlo simulation]
 based on its parameters. The `monteCarlo` function runs another function a specified number of times and returns the results.
+=======
+The `monteCarlo` function performs a Monte Carlo simulation (https://en.wikipedia.org/wiki/Monte_Carlo_method)
+based on its parameters. The monteCarlo function runs another function a specified number of times and returns the results.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 The function being run typically has one or more variables that are drawn from probability
 distributions on each run. The `<<sample>>` function is used in the function to draw the samples.
 
@@ -1325,9 +1340,15 @@ or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 
 == poissonDistribution
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 The `poissonDistribution` function returns a https://en.wikipedia.org/wiki/Poisson_distribution[poisson probability distribution]
 based on its parameter. This function is part of the probability distribution framework and is designed to
 work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
+=======
+The `poissonDistribution` function returns a poisson probability distribution (https://en.wikipedia.org/wiki/Poisson_distribution)
+based on its parameter. This function is part of the probability distribution framework and is designed to
+work with the `sample`, `probability` and `cumulativeProbability` functions.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === poissonDistribution Parameters
 
@@ -1348,9 +1369,15 @@ The `polyFit` function performs https://en.wikipedia.org/wiki/Curve_fitting#Fitt
 
 === polyFit Parameters
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 * `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
 * `numeric array`: y values
 * `integer`: (Optional) polynomial degree. Defaults to 3.
+=======
+* `numeric array` : (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array` : y values
+* `integer` : (Optional) polynomial degree. Defaults to 3.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === polyFit Returns
 
@@ -1359,7 +1386,8 @@ A numeric array: curve that was fit to the data points.
 === polyFit Syntax
 
 [source,text]
-polyFit(yValues) // This creates the xValues automatically and fits a curve through the data points using a the default 3 degree polynomial.
+polyFit(yValues) // This creates the xValues automatically and fits a curve through the data points using the default 3 degree polynomial.
+polyFit(yValues, 5) // This creates the xValues automatically and fits a curve through the data points using a 5 degree polynomial.
 polyFit(xValues, yValues, 5) // This will fit a curve through the data points using a 5 degree polynomial.
 
 == polyfitDerivative
@@ -1368,9 +1396,15 @@ The `polyfitDerivative` function returns the derivative of the curve created by 
 
 === polyfitDerivative Parameters
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 * `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
 * `numeric array`: y values
 * `integer`: (Optional) polynomial degree. Defaults to 3.
+=======
+* `numeric array` : (Optional) x values. If omitted a sequence will be created for the x values.
+* `numeric array` : y values
+* `integer` : (Optional) polynomial degree. Defaults to 3.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === polyfitDerivative Returns
 
@@ -1380,6 +1414,7 @@ A numeric array: The curve for the derivative created by the polynomial curve fi
 
 [source,text]
 polyfitDerivative(yValues) // This creates the xValues automatically and returns the polyfit derivative
+polyfitDerivative(yValues, 5) //  This creates the xValues automatically and fits a curve through the data points using a 5 degree polynomial and returns the polyfit derivative.
 polyfitDerivative(xValues, yValues, 5) // This will fit a curve through the data points using a 5 degree polynomial and returns the polyfit derivative.
 
 == pow
@@ -1439,13 +1474,17 @@ primes(100, 2000) // returns 100 primes starting from 2000
 
 == probability
 
-The `probability` function returns the probability of encountering a random variable within a discrete
-probability distribution.
+The `probability` function returns the probability of a random variable within a discrete probability distribution.
 
 === probability Parameters
 
+<<<<<<< 3196557fc49995bb3d083f25e13e09b3477a765c
 * `discrete probability distribution`: poissonDistribution | binomialDistribution | uniformDistribution | enumeratedDistribution
 * `integer`: Value of the random variable to compute the probability for.
+=======
+* `discrete probability distribution` : poissonDistribution | binomialDistribution | uniformDistribution | enumeratedDistribution
+* `integer` : Value of the random variable to compute the probability for.
+>>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === probability Returns
 
@@ -1454,7 +1493,7 @@ A double: the probability.
 === probability Syntax
 
 [source,text]
-probability(poissonDistribution(10), 7) // Returns the probability of encountering a random sample if 7 in a poisson distribution with a mean of 10.
+probability(poissonDistribution(10), 7) // Returns the probability of a random sample of 7 in a poisson distribution with a mean of 10.
 
 == rank
 
@@ -1493,7 +1532,7 @@ eq(raw(fieldA), fieldA) // true if the value of fieldA equals the string "fieldA
 
 == regress
 
-The `regress` function performs a simple regression on two numeric arrays.
+The `regress` function performs a simple regression of two numeric arrays.
 
 The result of this expression is also used by the `<<predict>>` and `<<residuals>>` functions.
 
@@ -1512,8 +1551,8 @@ regress(numericArray1, numericArray2)
 
 The `residuals` function takes three parameters: a simple regression model, an array of predictor values
 and an array of actual values. The residuals function applies the simple regression model to the
-array of predictor values and computes a predictions array. The actual values array is then
-subtracted from the predictions array to compute the residuals array.
+array of predictor values and computes a predictions array. The predicted values array is then
+subtracted from the actual value array to compute the residuals array.
 
 === residuals Parameters
 
@@ -1576,8 +1615,8 @@ Either a single numeric random sample, or a numeric array depending on the sampl
 === sample Syntax
 
 [source,text]
-sample(normalDistribution(50, 5)) // Return a single random sample from a normalDistribution with mean of 50 and standard deviation of 5.
-sample(poissonDistribution(5), 1000) // Return 1000 random samples from poissonDistribution with a mean of 5.
+sample(poissonDistribution(5)) // Returns a single random sample from a poissonDistribution with mean of 5.
+sample(poissonDistribution(5), 1000) // Returns 1000 random samples from poissonDistribution with a mean of 5.
 
 == scale
 
