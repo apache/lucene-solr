@@ -85,6 +85,6 @@ The time chosen for `autoSoftCommit` determines the maximum time after a documen
 
 TIP: For extremely high bulk indexing, especially for the initial load if there is no searching, consider turning off `autoSoftCommit` by specifying a value of `-1` for the maxTime parameter.
 
-== Advanced Options
+== Advanced Commit Options
 
 All varieties of commits can be invoked from a SolrJ client or via a URL. The usual recommendation is to _not_ call commits externally. For those cases where it is desirable, see <<uploading-data-with-index-handlers.adoc#xml-update-commands,Update Commands>>. These options are listed for XML update commands that can be issued from a browser or curl etc and the equivalents are available from a SolrJ client.
