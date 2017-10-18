@@ -27,6 +27,7 @@ import org.apache.solr.update.AddUpdateCommand;
 /**
  * A base class for writing a very simple UpdateProcessor without worrying too much about the API.
  * This is deliberately made to support only the add operation
+ * @since 5.1.0
  */
 public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private String myName; // if classname==XyzUpdateProcessorFactory  myName=Xyz

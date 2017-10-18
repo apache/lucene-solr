@@ -31,7 +31,7 @@ import org.apache.uima.util.JCasPool;
 /**
  * Factory for {@link UIMAUpdateRequestProcessor}
  * 
- * 
+ * @since 3.1.0
  */
 public class UIMAUpdateRequestProcessorFactory extends
     UpdateRequestProcessorFactory {

@@ -47,6 +47,7 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  *     &lt;str&gt;solr.LongPointField&lt;/str&gt;
  *   &lt;/arr&gt;
  * &lt;/processor&gt;</pre>
+ * @since 4.0.0
  */
 public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 

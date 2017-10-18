@@ -27,6 +27,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * Factory for {@link DistributedUpdateProcessor}.
  *
  * @see DistributedUpdateProcessor
+ * @since 4.0.0
  */
 public class DistributedUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory 
