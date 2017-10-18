@@ -2210,7 +2210,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes recieve updates 
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes receive updates
    * unless otherwise specified by the caller.
    *
    * @see #sendDirectUpdatesToAnyShardReplica
