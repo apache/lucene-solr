@@ -38,6 +38,7 @@ import java.util.Set;
  *                   useWhitelist="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 3.6.0
  */
 public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean useWhitelist;

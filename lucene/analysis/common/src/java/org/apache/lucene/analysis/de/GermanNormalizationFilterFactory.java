@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.GermanNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
+ * @since 3.6.0
  */
 public class GermanNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 

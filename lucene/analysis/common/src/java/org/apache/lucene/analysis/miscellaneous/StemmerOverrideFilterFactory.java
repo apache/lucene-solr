@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.StemmerOverrideFilterFactory" dictionary="dictionary.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 3.1.0
  */
 public class StemmerOverrideFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private StemmerOverrideMap dictionary;

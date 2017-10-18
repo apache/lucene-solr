@@ -48,6 +48,7 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.*;
  *             types="wdfftypes.txt" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 6.5.0
  */
 public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";

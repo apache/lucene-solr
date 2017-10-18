@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.SoraniNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 4.7.0
  */
 public class SoraniNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
