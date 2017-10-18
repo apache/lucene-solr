@@ -100,6 +100,9 @@ The name of the collection to which the policy rule should apply. If omitted, th
 `shard`::
 The name of the shard to which the policy rule should apply. If omitted, the rule is applied for all shards in the collection. It supports a special value `#EACH` which means that the rule is applied for each shard in the collection.
 
+`type`::
+The type of the replica to which the policy rule should apply. If omitted, the rule is applied for all replica types of this collection/shard. The allowed values are `NRT`, `TLOG` and `PULL`
+
 `replica`::
 The number of replicas that must exist to satisfy the rule. This must be a positive integer. This is a required attribute.
 
@@ -134,6 +137,9 @@ The least significant to most significant segments of IP address. For example, f
 
 `sysprop.<system_property_name>`::
 Any arbitrary system property set on the node on startup.
+
+`metrics:<full-path-to-the metric>` ::
+Any arbitrary metric. eg: `metrics:solr.node:CONTAINER.fs.totalSpace`. Refer to the `key` parameter in <<metrics-reporting.adoc, Metrics API>>
 
 === Policy Operators
 
@@ -187,6 +193,13 @@ Place all replicas in nodes with freedisk more than 500GB when possible. Here we
 
 [source,json]
 {"replica": 0, "freedisk": "<500", "strict" : false}
+
+==== Try to Place all Replicas of type TLOG in SSD type file system
+
+[source,json]
+{ "replica": 0,  "sysprop.file_system" : "!ssd",  "type" : "TLOG" }
+
+Please note that to use the `sysprop.fs` attribute all your ssd nodes must be started with a system property `-Dfile_system=ssd`.
 
 [[collection-specific-policy]]
 == Defining Collection-Specific Policies
