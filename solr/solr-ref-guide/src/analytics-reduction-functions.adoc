@@ -27,111 +27,96 @@ for every Solr Document to a single value.
 Below is a list of all reduction functions provided by the Analytics Component.
 These can be combined using mapping functions to implement more complex functionality.
 
-[[analytics-reduction-counting]]
 == Counting Reductions
 
-[[analytics-reduction-count]]
 === Count
-The number of existing values for an expression. For single-valued expressions, this is equivalent to `*docCount*`.
+The number of existing values for an expression. For single-valued expressions, this is equivalent to `docCount`.
 If no expression is given, the number of matching documents is returned.
 
-`*count*() *⟹* < _Single Long_ >`::
-`*count*(< *T* >) *⟹* < _Single Long_ >`::
+`count()` \=> `< _Single Long_ >`
+`count(< T >)` \=> `< _Single Long_ >`
 
-[[analytics-reduction-doc_count]]
 === Doc Count
-The number of documents for which an expression has existing values. For single-valued expressions, this is equivalent to `*count*`.
+The number of documents for which an expression has existing values. For single-valued expressions, this is equivalent to `count`.
 If no expression is given, the number of matching documents is returned.
 
-`*doc_count*() *⟹* < _Single Long_ >`::
-`*doc_count*(< *T* >) *⟹* < _Single Long_ >`::
+`doc_count()` \=> `< _Single Long_ >`
 
-[[analytics-reduction-missing]]
+`doc_count(< T >)` \=> `< _Single Long_ >`
+
 === Missing
 The number of documents for which an expression has no existing value.
 
-`*missing*(< *T* >) *⟹* < _Single Long_ >`::
+`missing(< T >)` \=> `< _Single Long_ >`
 
-[[analytics-reduction-unique]]
+[[analytics-unique]]
 === Unique
 The number of unique values for an expression. This function accepts `Numeric`, `Date` and `String` expressions.
 
-`*unique*(< *T* >) *⟹* < _Single Long_ >`::
+`unique(< T >)` \=> `< _Single Long_ >`
 
-[[analytics-reduction-math]]
 == Math Reductions
 
-[[analytics-reduction-sum]]
 === Sum
 Returns the sum of all values for the expression.
 
-`*sum*(< _Double_ >) *⟹* < _Single Double_ >`::
+`sum(< _Double_ >)` \=> `< _Single Double_ >`
 
-[[analytics-reduction-variance]]
 === Variance
 Returns the variance of all values for the expression.
 
-`*variance*(< _Double_ >) *⟹* < _Single Double_ >`::
+`variance(< _Double_ >)` \=> `< _Single Double_ >`
 
-[[analytics-reduction-stddev]]
 === Standard Deviation
 Returns the standard deviation of all values for the expression.
 
-`*stddev*(< _Double_ >) *⟹* < _Single Double_ >`::
+`stddev(< _Double_ >)` \=> `< _Single Double_ >`
 
-[[analytics-reduction-mean]]
 === Mean
 Returns the arithmetic mean of all values for the expression.
 
-`*mean*(< _Double_ >) *⟹* < _Single Double_ >`::
+`mean(< _Double_ >)` \=> `< _Single Double_ >`
 
-[[analytics-reduction-wmean]]
 === Weighted Mean
 Returns the arithmetic mean of all values for the second expression weighted by the values of the first expression.
 
-*NOTE*: The expressions must satisfy the rules for `mult` function parameters.
+`wmean(< _Double_ >, < _Double_ >)` \=> `< _Single Double_ >`
 
-`*wmean*(< _Double_ >, < _Double_ >) *⟹* < _Single Double_ >`::
+NOTE: The expressions must satisfy the rules for `mult` function parameters.
 
-[[analytics-reduction-ordering]]
 == Ordering Reductions
 
-[[analytics-reduction-min]]
 === Minimum
 Returns the minimum value for the expression. This function accepts `Numeric`, `Date` and `String` expressions.
 
-`*min*(< *T* >) *⟹* < _Single_ *T* >`::
+`min(< T >)` \=> `< _Single_ T >`
 
-[[analytics-reduction-max]]
 === Maximum
 Returns the maximum value for the expression. This function accepts `Numeric`, `Date` and `String` expressions.
 
-`*max*(< *T* >) *⟹* < _Single_ *T* >`::
+`max(< T >)` \=> `< _Single_ T >`
 
-[[analytics-reduction-median]]
 === Median
 Returns the median of all values for the expression. This function accepts `Numeric` and `Date` expressions.
 
-`*median*(< *T* >) *⟹* < _Single_ *T* >`::
+`median(< T >)` \=> `< _Single_ T >`
 
-[[analytics-reduction-percentile]]
 === Percentile
 Calculates the given percentile of all values for the expression.
 This function accepts `Numeric`, `Date` and `String` expressions for the 2^nd^ parameter.
 
-The percentile, given as the 1^st^ parameter, must be a <<analytics-expression-sources.adoc#analytics-constant-numeric,constant double>> between [0, 100).
+The percentile, given as the 1^st^ parameter, must be a <<analytics-expression-sources.adoc#numeric,constant double>> between [0, 100).
 
-`*percentile*(<Constant Double>, < *T* >) *⟹* < _Single_ *T* >`::
+`percentile(<Constant Double>, < T >)` \=> `< _Single_ T >`
 
-[[analytics-reduction-ordinal]]
 === Ordinal
 Calculates the given ordinal of all values for the expression.
 This function accepts `Numeric`, `Date` and `String` expressions for the 2^nd^ parameter.
-The ordinal, given as the 1^st^ parameter, must be a <<analytics-expression-sources.adoc#analytics-constant-numeric,constant integer>>. 
+The ordinal, given as the 1^st^ parameter, must be a <<analytics-expression-sources.adoc#numeric,constant integer>>.
 *0 is not accepted as an ordinal value.*
 
-If the ordinal is *positive*, the returned value will be the _n^th^_ *smallestvalue.
+If the ordinal is positive, the returned value will be the _n_^th^ smallest value.
 
-If the ordinal is *negative*, the returned value will be the _n^th^_ *largestvalue.
+If the ordinal is negative, the returned value will be the _n_^th^ largest value.
 
-`*ordinal*(<Constant Int>, < *T* >) *⟹* < _Single_ *T* >`::
+`ordinal(<Constant Int>, < T >)` \=> `< _Single_ T >`

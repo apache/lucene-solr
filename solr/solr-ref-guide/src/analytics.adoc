@@ -32,7 +32,7 @@ The Analytics component is in a contrib module, therefore it will need to be ena
 
 Since the Analytics framework is a _search component_, it must be declared as such and added to the search handler.
 
-For distributed analytics requests over cloud collections, the component uses the `AnalyticsHandler` *strictly for inter-shard communication*.
+For distributed analytics requests over cloud collections, the component uses the `AnalyticsHandler` strictly for inter-shard communication.
 The Analytics Handler should not be used by users to submit analytics requests.
 
 To configure Solr to use the Analytics Component, the first step is to add a `lib` directive so Solr loads the Analytic Component classes (for more about the `lib` directive, see <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig, Lib Directives in SolrConfig>>). In the section of `solrconfig.xml` where the default `lib` directive are, add a line:
@@ -161,10 +161,10 @@ An expression is built using fields, constants, mapping functions and reduction 
 Sources::
     * Constants +
         Constants are values defined in the expression.
-        The supported constant types are described in the <<analytics-expression-sources.adoc#analytics-constants, Analytics Expression Source Reference>>
+        The supported constant types are described in the <<analytics-expression-sources.adoc#constants, Analytics Expression Source Reference>>
     * Fields +
         Solr fields that are read from the index.
-        The supported fields are listed in the <<analytics-expression-sources.adoc#analytics-fields, Analytics Expression Source Reference>>
+        The supported fields are listed in the <<analytics-expression-sources.adoc#supported-field-types, Analytics Expression Source Reference>>
 
 Mapping Functions::
 Functions that map values for each Solr Document or Reduction.
@@ -212,25 +212,25 @@ With the above definitions and ordering, an example expression can be broken up 
 [source,bash]
 div(sum(a,fill_missing(b,0)),add(10.5,count(mult(a,c)))))
 
-As a whole, this is a reduced mapping Function. `div` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-div,provided mapping function>> and has reduced arguments.
+As a whole, this is a reduced mapping Function. `div` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#division,provided mapping function>> and has reduced arguments.
 
 If we break down the expression further:
 
 * `sum(a,fill_missing(b,0))`: Reduction Function +
-`sum` is a <<analytics-reduction-functions.adoc#analytics-reduction-sum,provided reduction function>>.
+`sum` is a <<analytics-reduction-functions.adoc#sum,provided reduction function>>.
 ** `a`: a Field
 ** `fill_missing(b,0)`: Unreduced Mapping Function +
-`fill_missing` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-cond-fill_missing,provided mapping function>> and has a field argument.
+`fill_missing` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#fill-missing,provided mapping function>> and has a field argument.
 *** `b`: Field
 *** `0`: Constant
 
 * `add(10.5,count(mult(a,mult(b,c))))`: Reduced Mapping Function +
-`add` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-add,provided mapping function>> and has a reduction function argument.
+`add` is a reduced mapping function since it is a <<analytics-mapping-functions.adoc#addition,provided mapping function>> and has a reduction function argument.
 ** `10.5`: Constant
 ** `count(mult(a,c))`: Reduction Function +
-`count` is a  <<analytics-reduction-functions.adoc#analytics-reduction-count,provided reduction function>>
+`count` is a  <<analytics-reduction-functions.adoc#count,provided reduction function>>
 *** `mult(a,c)`: Unreduced Mapping Function +
-`mult` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#analytics-mapping-num-mult,provided mapping function>> and has two field arguments.
+`mult` is an unreduced mapping function since it is a <<analytics-mapping-functions.adoc#multiplication,provided mapping function>> and has two field arguments.
 **** `a`: Field
 **** `c`: Field
 
@@ -242,39 +242,39 @@ All single-valued expressions can be treated as multi-valued expressions that co
 Single-valued expressions and multi-valued expressions can be used together in many mapping functions, as well as multi-valued expressions being used alone, and many single-valued expressions being used together. For example:
 
 `add(<single-valued double>, <single-valued double>, ...)`::
-Returns a *single-valued* double expression where the value of the values of each expression are added.
+Returns a single-valued double expression where the value of the values of each expression are added.
 
 `add(<single-valued double>, <multi-valued double>)`::
-Returns a *multi-valued* double expression where each value of the second expression is added to the single value of the first expression.
+Returns a multi-valued double expression where each value of the second expression is added to the single value of the first expression.
 
-`add(<multi-valued double>*, <single-valued double>)`::
+`add(<multi-valued double>, <single-valued double>)`::
 Acts the same as the above function.
 
 `add(<multi-valued double>)`::
-    Returns a *single-valued* double expression which is the sum of the multiple values of the parameter expression.
+    Returns a single-valued double expression which is the sum of the multiple values of the parameter expression.
 
 === Types and Implicit Casting
 
 The new analytics component currently supports the types listed in the below table.
 These types have one-way implicit casting enabled for the following relationships:
 
-[cols="20,80",options="header"]
+[cols="20s,80",options="header"]
 |===
 | Type | Implicitly Casts To
-| *Boolean* | String
-| *Date* | Long, String
-| *Integer* | Long, Float, Double, String
-| *Long* | Double, String
-| *Float* | Double, String
-| *Double* | String
-| *String* | _none_
+| Boolean | String
+| Date | Long, String
+| Integer | Long, Float, Double, String
+| Long | Double, String
+| Float | Double, String
+| Double | String
+| String | _none_
 |===
 
 An implicit cast means that if a function requires a certain type of value as a parameter, arguments will be automatically converted to that type if it is possible.
 
 For example, `concat()` only accepts string parameters and since all types can be implicitly cast to strings, any type is accepted as an argument.
 
-This also goes for dynamically typed functions. `fillmissing()` requires two arguments of the same type. However, two types that implicitly cast to the same type can also be used.
+This also goes for dynamically typed functions. `fill_missing()` requires two arguments of the same type. However, two types that implicitly cast to the same type can also be used.
 
 For example, `fill_missing(<long>,<float>)` will be cast to `fill_missing(<double>,<double>)` since long cannot be cast to float and float cannot be cast to long implicitly.
 
@@ -595,8 +595,7 @@ The second pivot given will be treated like one value facet for each value of th
 Each of these second-level value facets will be limited to the documents in their first-level facet bucket.
 This continues for however many pivots are provided.
 
-Sorting is enabled on a per-pivot basis. This means that if your top pivot has a sort with `limit:1`, then only that first
-value of the facet will be drilled down into. Sorting in each pivot is independent of the other pivots.
+Sorting is enabled on a per-pivot basis. This means that if your top pivot has a sort with `limit:1`, then only that first value of the facet will be drilled down into. Sorting in each pivot is independent of the other pivots.
 
 [source,json]
 .Example Pivot Facet Request
@@ -671,7 +670,7 @@ The `sort` parameter within the pivot object is optional, and can be given in an
 === Analytic Range Facets
 
 Range Facets are used to group documents by the value of a field into a given set of ranges.
-The inputs for analytics Range Facets are identical to those used for Solr Range Facets.
+The inputs for analytics range facets are identical to those used for Solr range facets.
 Refer to the <<faceting.adoc#range-faceting,Range Facet documentation>> for questions regarding use.
 
 [source,json]
@@ -700,9 +699,12 @@ Refer to the <<faceting.adoc#range-faceting,Range Facet documentation>> for ques
 }
 ----
 
+// TODO need explanation of these parameters, even if they are also explained in Faceting docs
+// They are not identical - the names are different.
+
 [NOTE]
 .Optional Parameters
-The *hardend*, *include* and *others* parameters are all optional.
+The `hardend`, `include` and `others` parameters are all optional.
 
 [source,json]
 .Example Range Facet Response
@@ -750,6 +752,8 @@ The *hardend*, *include* and *others* parameters are all optional.
 === Query Facets
 
 Query Facets are used to group documents by given set of queries.
+
+// TODO need explanation of parameters
 
 [source,json]
 .Example Query Facet Request
