@@ -273,12 +273,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertFalse(success);
 
     Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    for (Iterator<CollectionStateWatcher> it = newWatchers.iterator(); it.hasNext(); ) {
-      CollectionStateWatcher watcher = it.next();
-      if (watcher instanceof ReplaceNodeCmd.RecoveryWatcher) {
-        it.remove();
-      }
-    }
     assertEquals(watchers, newWatchers);
   }
 
