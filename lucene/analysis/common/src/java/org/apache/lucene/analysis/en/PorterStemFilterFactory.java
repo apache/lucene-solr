@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.PorterStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 1.1.0
  */
 public class PorterStemFilterFactory extends TokenFilterFactory {
   

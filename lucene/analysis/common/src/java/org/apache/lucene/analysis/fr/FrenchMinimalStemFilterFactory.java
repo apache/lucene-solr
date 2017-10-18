@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.FrenchMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 3.1.0
  */
 public class FrenchMinimalStemFilterFactory extends TokenFilterFactory {
   

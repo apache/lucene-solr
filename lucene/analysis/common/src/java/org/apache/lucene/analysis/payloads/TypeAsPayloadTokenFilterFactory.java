@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.TypeAsPayloadTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 1.3.0
  */
 public class TypeAsPayloadTokenFilterFactory extends TokenFilterFactory {
   

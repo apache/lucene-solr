@@ -57,6 +57,7 @@ import org.xml.sax.InputSource;
  * &lt;/fieldType&gt;</pre>
  *
  * @see HyphenationCompoundWordTokenFilter
+ * @since 3.1.0
  */
 public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private CharArraySet dictionary;

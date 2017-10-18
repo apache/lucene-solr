@@ -44,6 +44,7 @@ import com.ibm.icu.text.UnicodeSet;
  * @see ICUNormalizer2Filter
  * @see Normalizer2
  * @see FilteredNormalizer2
+ * @since 3.1.0
  */
 public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private final Normalizer2 normalizer;

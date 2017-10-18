@@ -73,6 +73,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * @see SolrSynonymParser SolrSynonymParser: default format
  *
  * @lucene.experimental
+ * @since 6.4.0
  */
 public class SynonymGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   private final boolean ignoreCase;

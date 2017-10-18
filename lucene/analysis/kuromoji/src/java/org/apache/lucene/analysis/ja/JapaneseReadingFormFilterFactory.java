@@ -34,6 +34,7 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ * @since 3.6.0
  */
 public class JapaneseReadingFormFilterFactory extends TokenFilterFactory {
   private static final String ROMAJI_PARAM = "useRomaji";

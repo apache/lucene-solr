@@ -36,6 +36,7 @@ import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
  *     &lt;filter class="solr.NorwegianMinimalStemFilterFactory" variant="nb"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 3.6.0
  */
 public class NorwegianMinimalStemFilterFactory extends TokenFilterFactory {
   

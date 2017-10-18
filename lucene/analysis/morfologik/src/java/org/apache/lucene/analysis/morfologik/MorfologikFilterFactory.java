@@ -48,6 +48,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * and used by default. 
  * 
  * @see <a href="http://morfologik.blogspot.com/">Morfologik web site</a>
+ * @since 4.0.0
  */
 public class MorfologikFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   /** Dictionary resource attribute (should have {@code ".dict"} suffix), loaded from {@link ResourceLoader}. */

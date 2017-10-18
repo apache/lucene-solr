@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.DecimalDigitFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 5.4.0
  */
 public class DecimalDigitFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   
