@@ -769,12 +769,14 @@ public class SolrMetricManager {
    * the list. If both attributes are present then only "group" attribute will be processed.
    * @param pluginInfos plugin configurations
    * @param loader resource loader
+   * @param coreContainer core container
+   * @param solrCore optional solr core
    * @param tag optional tag for the reporters, to distinguish reporters logically created for different parent
    *            component instances.
    * @param group selected group, not null
    * @param registryNames optional child registry name elements
    */
-  public void loadReporters(PluginInfo[] pluginInfos, SolrResourceLoader loader, String tag, SolrInfoBean.Group group, String... registryNames) {
+  public void loadReporters(PluginInfo[] pluginInfos, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, String tag, SolrInfoBean.Group group, String... registryNames) {
     if (pluginInfos == null || pluginInfos.length == 0) {
       return;
     }
@@ -814,7 +816,7 @@ public class SolrMetricManager {
         }
       }
       try {
-        loadReporter(registryName, loader, info, tag);
+        loadReporter(registryName, loader, coreContainer, solrCore, info, tag);
       } catch (Exception e) {
         log.warn("Error loading metrics reporter, plugin info: " + info, e);
       }
@@ -822,16 +824,43 @@ public class SolrMetricManager {
   }
 
   /**
+   * Convenience wrapper for {@link SolrMetricManager#loadReporter(String, SolrResourceLoader, CoreContainer, SolrCore, PluginInfo, String)}
+   * passing {@link SolrCore#getResourceLoader()} and {@link SolrCore#getCoreContainer()} as the extra parameters.
+   */
+  public void loadReporter(String registry, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
+    loadReporter(registry,
+        solrCore.getResourceLoader(),
+        solrCore.getCoreContainer(),
+        solrCore,
+        pluginInfo,
+        tag);
+  }
+
+  /**
+   * Convenience wrapper for {@link SolrMetricManager#loadReporter(String, SolrResourceLoader, CoreContainer, SolrCore, PluginInfo, String)}
+   * passing {@link CoreContainer#getResourceLoader()} and null solrCore and tag.
+   */
+  public void loadReporter(String registry, CoreContainer coreContainer, PluginInfo pluginInfo) throws Exception {
+    loadReporter(registry,
+        coreContainer.getResourceLoader(),
+        coreContainer,
+        null,
+        pluginInfo,
+        null);
+  }
+
+  /**
    * Create and register an instance of {@link SolrMetricReporter}.
    * @param registry reporter is associated with this registry
    * @param loader loader to use when creating an instance of the reporter
+   * @param coreContainer core container
+   * @param solrCore optional solr core
    * @param pluginInfo plugin configuration. Plugin "name" and "class" attributes are required.
    * @param tag optional tag for the reporter, to distinguish reporters logically created for different parent
    *            component instances.
-   * @return instance of newly created and registered reporter
    * @throws Exception if any argument is missing or invalid
    */
-  public SolrMetricReporter loadReporter(String registry, SolrResourceLoader loader, PluginInfo pluginInfo, String tag) throws Exception {
+  public void loadReporter(String registry, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
     if (registry == null || pluginInfo == null || pluginInfo.name == null || pluginInfo.className == null) {
       throw new IllegalArgumentException("loadReporter called with missing arguments: " +
           "registry=" + registry + ", loader=" + loader + ", pluginInfo=" + pluginInfo);
@@ -846,12 +875,17 @@ public class SolrMetricManager {
         new Object[]{this, registry}
     );
     try {
-      reporter.init(pluginInfo);
+      if (reporter instanceof SolrShardReporter) {
+        ((SolrShardReporter)reporter).init(pluginInfo, solrCore);
+      } else if (reporter instanceof SolrClusterReporter) {
+        ((SolrClusterReporter)reporter).init(pluginInfo, coreContainer);
+      } else {
+        reporter.init(pluginInfo);
+      }
     } catch (IllegalStateException e) {
       throw new IllegalArgumentException("reporter init failed: " + pluginInfo, e);
     }
     registerReporter(registry, pluginInfo.name, tag, reporter);
-    return reporter;
   }
 
   private void registerReporter(String registry, String name, String tag, SolrMetricReporter reporter) throws Exception {
@@ -1078,9 +1112,8 @@ public class SolrMetricManager {
         attrs, initArgs);
     for (PluginInfo info : infos) {
       try {
-        SolrMetricReporter reporter = loadReporter(registryName, core.getResourceLoader(), info,
+        loadReporter(registryName, core, info,
             String.valueOf(core.hashCode()));
-        ((SolrShardReporter)reporter).setCore(core);
       } catch (Exception e) {
         log.warn("Could not load shard reporter, pluginInfo=" + info, e);
       }
@@ -1102,8 +1135,7 @@ public class SolrMetricManager {
     String registryName = getRegistryName(SolrInfoBean.Group.cluster);
     for (PluginInfo info : infos) {
       try {
-        SolrMetricReporter reporter = loadReporter(registryName, cc.getResourceLoader(), info, null);
-        ((SolrClusterReporter)reporter).setCoreContainer(cc);
+        loadReporter(registryName, cc, info);
       } catch (Exception e) {
         log.warn("Could not load cluster reporter, pluginInfo=" + info, e);
       }

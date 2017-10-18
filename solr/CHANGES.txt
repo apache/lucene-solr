@@ -73,6 +73,10 @@ Other Changes
 
 * SOLR-11145: Adds comprehensive unit tests for the Analytics Component v2 (Houston Putman)
 
+* SOLR-11389: For Solr(Shard|Cluster)Reporter instances the SolrMetricManager.registerReporter
+  method is now called after the SolrCore or CoreContainer has been set for the instance.
+  (Christine Poerschke)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
