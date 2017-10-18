@@ -20,6 +20,6 @@ public interface CommonAdminParams
 {
 
   /** async or not? **/
-  public static final String ASYNC = "async";
-
+  String ASYNC = "async";
+  String WAIT_FOR_FINAL_STATE = "waitForFinalState";
 }

@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -73,6 +74,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
@@ -89,6 +91,7 @@ public class CreateCollectionCmd implements Cmd {
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     final String collectionName = message.getStr(NAME);
+    final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     log.info("Create collection {}", collectionName);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
@@ -242,7 +245,8 @@ public class CreateCollectionCmd implements Cmd {
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
               ZkStateReader.BASE_URL_PROP, baseUrl,
-              ZkStateReader.REPLICA_TYPE, replicaPosition.type.name());
+              ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
+              CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
           Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
         }
 
@@ -317,6 +321,7 @@ public class CreateCollectionCmd implements Cmd {
       PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
     }
   }
+
   String getConfigName(String coll, ZkNodeProps message) throws KeeperException, InterruptedException {
     String configName = message.getStr(COLL_CONF);
 

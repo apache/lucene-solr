@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
@@ -54,6 +56,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 
 public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -77,8 +80,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
     String coreNodeName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
+    int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
     boolean parallel = message.getBool("parallel", false);
+    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     if (StringUtils.isBlank(coreName)) {
       coreName = message.getStr(CoreAdminParams.PROPERTY_PREFIX + CoreAdminParams.NAME);
     }
@@ -222,8 +227,22 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (onComplete != null) onComplete.run();
     };
 
-    if (!parallel) {
-      runnable.run();
+    if (!parallel || waitForFinalState) {
+      if (waitForFinalState) {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collection, null, Collections.singletonList(coreName), countDownLatch);
+        try {
+          zkStateReader.registerCollectionStateWatcher(collection, watcher);
+          runnable.run();
+          if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
+          }
+        } finally {
+          zkStateReader.removeCollectionStateWatcher(collection, watcher);
+        }
+      } else {
+        runnable.run();
+      }
     } else {
       ocmh.tpe.submit(runnable);
     }
@@ -236,4 +255,5 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         ZkStateReader.NODE_NAME_PROP, node
     );
   }
+
 }

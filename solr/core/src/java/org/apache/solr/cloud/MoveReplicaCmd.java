@@ -45,6 +45,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 
 public class MoveReplicaCmd implements Cmd{
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,6 +66,7 @@ public class MoveReplicaCmd implements Cmd{
     ocmh.checkRequired(message, COLLECTION_PROP, "targetNode");
     String collection = message.getStr(COLLECTION_PROP);
     String targetNode = message.getStr("targetNode");
+    boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
 
     String async = message.getStr(ASYNC);
@@ -111,14 +113,14 @@ public class MoveReplicaCmd implements Cmd{
     assert slice != null;
     Object dataDir = replica.get("dataDir");
     if (dataDir != null && dataDir.toString().startsWith("hdfs:/")) {
-      moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout);
+      moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     } else {
-      moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout);
+      moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     }
   }
 
   private void moveHdfsReplica(ClusterState clusterState, NamedList results, String dataDir, String targetNode, String async,
-                                 DocCollection coll, Replica replica, Slice slice, int timeout) throws Exception {
+                                 DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String skipCreateReplicaInClusterState = "true";
     if (clusterState.getLiveNodes().contains(replica.getNodeName())) {
       skipCreateReplicaInClusterState = "false";
@@ -183,7 +185,7 @@ public class MoveReplicaCmd implements Cmd{
   }
 
   private void moveNormalReplica(ClusterState clusterState, NamedList results, String targetNode, String async,
-                                 DocCollection coll, Replica replica, Slice slice, int timeout) throws Exception {
+                                 DocCollection coll, Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String newCoreName = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), coll, slice.getName(), replica.getType());
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, coll.getName(),
@@ -193,10 +195,9 @@ public class MoveReplicaCmd implements Cmd{
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     CountDownLatch countDownLatch = new CountDownLatch(1);
-    ReplaceNodeCmd.RecoveryWatcher watcher = null;
-    if (replica.equals(slice.getLeader())) {
-      watcher = new ReplaceNodeCmd.RecoveryWatcher(coll.getName(), slice.getName(),
-          replica.getName(), null, countDownLatch);
+    ActiveReplicaWatcher watcher = null;
+    if (replica.equals(slice.getLeader()) || waitForFinalState) {
+      watcher = new ActiveReplicaWatcher(coll.getName(), Collections.singletonList(replica.getName()), null, countDownLatch);
       ocmh.zkStateReader.registerCollectionStateWatcher(coll.getName(), watcher);
     }
     ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
@@ -221,7 +222,7 @@ public class MoveReplicaCmd implements Cmd{
           results.add("failure", errorString);
           return;
         } else {
-          log.debug("Replica " + watcher.getRecoveredReplica() + " is active - deleting the source...");
+          log.debug("Replica " + watcher.getActiveReplicas() + " is active - deleting the source...");
         }
       } finally {
         ocmh.zkStateReader.removeCollectionStateWatcher(coll.getName(), watcher);

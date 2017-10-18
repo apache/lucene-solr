@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -68,6 +69,7 @@ public class CreateShardCmd implements Cmd {
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String collectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
 
     log.info("Create shard invoked: {}", message);
     if (collectionName == null || sliceName == null)
@@ -134,7 +136,8 @@ public class CreateShardCmd implements Cmd {
             SHARD_ID_PROP, sliceName,
             ZkStateReader.REPLICA_TYPE, position.type.name(),
             CoreAdminParams.NODE, nodeName,
-            CoreAdminParams.NAME, coreName);
+            CoreAdminParams.NAME, coreName,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         Map<String, Object> propertyParams = new HashMap<>();
         ocmh.addPropertyParams(message, propertyParams);
         addReplicasProps = addReplicasProps.plus(propertyParams);
