@@ -77,6 +77,8 @@ Other Changes
   method is now called after the SolrCore or CoreContainer has been set for the instance.
   (Christine Poerschke)
 
+* SOLR-11464, SOLR-11493: Minor refactorings to DistributedUpdateProcessor. (Gus Heck, David Smiley)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
