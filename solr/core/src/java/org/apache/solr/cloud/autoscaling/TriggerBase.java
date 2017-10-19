@@ -50,7 +50,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final String name;
-  protected final SolrCloudManager dataProvider;
+  protected final SolrCloudManager cloudManager;
   protected final DistribStateManager stateManager;
   protected final Map<String, Object> properties = new HashMap<>();
   protected final TriggerEventType eventType;
@@ -62,11 +62,11 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
   protected boolean isClosed;
 
 
-  protected TriggerBase(TriggerEventType eventType, String name, Map<String, Object> properties, SolrResourceLoader loader, SolrCloudManager dataProvider) {
+  protected TriggerBase(TriggerEventType eventType, String name, Map<String, Object> properties, SolrResourceLoader loader, SolrCloudManager cloudManager) {
     this.eventType = eventType;
     this.name = name;
-    this.dataProvider = dataProvider;
-    this.stateManager = dataProvider.getDistribStateManager();
+    this.cloudManager = cloudManager;
+    this.stateManager = cloudManager.getDistribStateManager();
     if (properties != null) {
       this.properties.putAll(properties);
     }
