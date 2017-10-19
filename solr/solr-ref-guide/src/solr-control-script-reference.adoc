@@ -115,9 +115,11 @@ Start Solr on the defined port. If this is not specified, '8983' will be used.
 *Example*: `bin/solr start -p 8655`
 
 `-s <dir>`::
-Sets the solr.solr.home system property; Solr will create core directories under this directory. This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the -d parameter. If set, the specified directory should contain a solr.xml file, unless solr.xml exists in ZooKeeper. The default value is `server/solr`.
+Sets the `solr.solr.home` system property; Solr will create core directories under this directory. This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
 +
-This parameter is ignored when running examples (-e), as the solr.solr.home depends on which example is run.
+If set, the specified directory should contain a `solr.xml` file, unless `solr.xml` exists in ZooKeeper. The default value is `server/solr`.
++
+This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
 +
 *Example*: `bin/solr start -s newHome`
 
@@ -298,20 +300,19 @@ Solr process 39827 running on port 8865
 
 === Assert
 
-The `assert` command sanity-checks common issues with Solr installations.  These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL.  The command can either output a specified error message, or change its exit code to indicate errors.
+The `assert` command sanity checks common issues with Solr installations. These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL. The command can either output a specified error message, or change its exit code to indicate errors.
 
 As an example:
 
-`bin/solr assert --exists /opt/bin/solr`
+[source,bash]
+bin/solr assert --exists /opt/bin/solr
 
 Results in the output below:
 
 [source,plain]
-----
-
 ERROR: Directory /opt/bin/solr does not exist.
 
-----
+Use `bin/solr assert -help` for a full list of options.
 
 === Healthcheck
 

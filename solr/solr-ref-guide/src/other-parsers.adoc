@@ -337,9 +337,10 @@ The `graph` query parser does a breadth first, cyclic aware, graph traversal of 
 
 The graph is built according to linkages between documents based on the terms found in `from` and `to` fields that you specify as part of the query.
 
-The supported fieldTypes are point fields with docValues enabled or string fields with indexed=true or docValues=true.
-For string fields which are indexed=false and docValues=true please refer to the javadocs for `DocValuesTermsQuery`
-for it's performance characteristics so indexed=true will perform better for most use-cases.
+Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
+
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}sandbox/org/apache/lucene/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
+for it's performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 
@@ -688,24 +689,24 @@ The main query, for both of these parsers, is parsed straightforwardly from the 
 This parser accepts the following parameters:
 
 `f`::
-The field to use (required).
+The field to use. This parameter is required.
 
 `func`::
-Payload function: min, max, average, sum (required).
+The payload function. The options are: `min`, `max`, `average`, or `sum`. This parameter is required.
 
 `operator`::
-Search operator: or , phrase ( default ) (optional). This defines if the search query should be an OR
-query or a phrase query
+A search operator. The options are `or` and `phrase`, which is the default. This defines if the search query should be an OR query or a phrase query.
 
 `includeSpanScore`::
-If `true`, multiples computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
+If `true`, multiples the computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
 
-*Example*
+*Examples*
 
 [source,text]
-----
 {!payload_score f=my_field_dpf v=some_term func=max}
-----
+
+[source,text]
+{!payload_score f=payload_field func=sum operator=or}A B C
 
 === Payload Check Parser
 
