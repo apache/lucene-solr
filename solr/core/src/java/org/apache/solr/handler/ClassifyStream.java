@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.*;
  *  The classify expression retrieves a model trained by the train expression and uses it to classify documents from a stream
  *  Syntax:
  *  classif(model(...), anyStream(...), field="body")
+ * @since 6.3.0
  **/
 
 public class ClassifyStream extends TupleStream implements Expressible {

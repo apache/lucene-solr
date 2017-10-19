@@ -51,6 +51,9 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
+/**
+ * @since 6.5.0
+ */
 public class SignificantTermsStream extends TupleStream implements Expressible{
 
   private static final long serialVersionUID = 1;

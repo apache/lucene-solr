@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
 * Selects fields from the incoming stream and applies optional field renaming.
 * Does not reorder the outgoing stream.
+* @since 6.0.0
 **/
 
 

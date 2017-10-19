@@ -49,6 +49,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
  *
  *  fetch(collection, stream, on="a=b", fl="c,d,e", batchSize="50")
  *
+ * @since 6.3.0
  **/
 
 public class FetchStream extends TupleStream implements Expressible {
