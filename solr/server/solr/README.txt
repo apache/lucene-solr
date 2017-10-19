@@ -60,7 +60,7 @@ defined in core.properties. For an example of core.properties, please see:
 example/solr/collection1/core.properties
 
 For more information about core discovery, please see:
-https://lucene.apache.org/solr/guide/defining-core-properties.html 
+https://lucene.apache.org/solr/guide/defining-core-properties.html
 
 * A Shared 'lib' Directory *
 
@@ -72,6 +72,6 @@ Solr Home Directory.
 
 When using SolrCloud using the embedded ZooKeeper option for Solr, it is
 common to have a "zoo.cfg" file and "zoo_data" directories in the Solr Home
-Directory.  Please see the SolrCloud wiki page for more details...
+Directory.  Please see the SolrCloud documentation for more details.
 
-https://wiki.apache.org/solr/SolrCloud
+https://lucene.apache.org/solr/guide/solrcloud.html
