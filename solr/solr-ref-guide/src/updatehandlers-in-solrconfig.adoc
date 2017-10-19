@@ -118,7 +118,6 @@ The maximum number of logs keep. The default is `10`.
 `numVersionBuckets`::
 The number of buckets used to keep track of max version values when checking for re-ordered updates; increase this value to reduce the cost of synchronizing access to version buckets during high-volume indexing, this requires `(8 bytes (long) * numVersionBuckets)` of heap space per Solr core. The default is `65536`.
 
-
 An example, to be included under `<config><updateHandler>` in `solrconfig.xml`, employing the above advanced settings:
 
 [source,xml]
