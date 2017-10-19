@@ -986,7 +986,9 @@ public class ZkController {
     log.info("Remove node as live in ZooKeeper:" + nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.delete(nodePath, -1));
-    ops.add(Op.delete(nodeAddedPath, -1));
+    if (zkClient.exists(nodeAddedPath, true)) {
+      ops.add(Op.delete(nodeAddedPath, -1));
+    }
     zkClient.multi(ops, true);
   }
 
