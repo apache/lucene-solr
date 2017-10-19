@@ -393,9 +393,6 @@ Lasse Collin and others, XZ for Java (http://tukaani.org/xz/java.html)
 java-libpst is a pure java library for the reading of Outlook PST and OST files.
 https://github.com/rjohnsondev/java-libpst
 
-JMatIO is a JAVA library to read/write/manipulate with Matlab binary MAT-files.
-http://www.sourceforge.net/projects/jmatio
-
 =========================================================================
 ==  Language Detection Notices                                         ==
 =========================================================================
