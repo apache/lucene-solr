@@ -186,6 +186,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
   public void testExplanations() throws Exception {
     for (Query q : testQueries) {
+      testExplanations(q, DoubleValuesSource.fromQuery(new TermQuery(new Term("english", "one"))));
       testExplanations(q, DoubleValuesSource.fromIntField("int"));
       testExplanations(q, DoubleValuesSource.fromLongField("long"));
       testExplanations(q, DoubleValuesSource.fromFloatField("float"));
@@ -226,6 +227,39 @@ public class TestDoubleValuesSource extends LuceneTestCase {
       @Override
       public boolean needsScores() {
         return rewritten.needsScores();
+      }
+    });
+  }
+
+  public void testQueryDoubleValuesSource() throws Exception {
+    Query q = new TermQuery(new Term("english", "two"));
+    DoubleValuesSource vs = DoubleValuesSource.fromQuery(q).rewrite(searcher);
+    searcher.search(q, new SimpleCollector() {
+
+      DoubleValues v;
+      Scorer scorer;
+      LeafReaderContext ctx;
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
+        this.ctx = context;
+      }
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+        this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        assertTrue(v.advanceExact(doc));
+        assertEquals(scorer.score(), v.doubleValue(), 0.00001);
+      }
+
+      @Override
+      public boolean needsScores() {
+        return true;
       }
     });
   }
