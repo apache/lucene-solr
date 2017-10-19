@@ -139,6 +139,36 @@ Instead, you should use a sibling mandatory clause as a filter:
 
 You can optionally use the `score` local parameter to return scores of the subordinate query. The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`. Implicit default is `none` which returns `0.0`.
 
+== Boolean Query Parser
+
+The `BoolQParser` creates a Lucene `BooleanQuery` which is a boolean combination of other queries. Sub-queries along with their typed occurrences indicate how documents will be matched and scored.
+
+*Parameters*
+
+`must`::
+A list of queries that *must* appear in matching documents and contribute to the score.
+
+`must_not`::
+A list of queries that *must not* appear in matching documents.
+
+`should`::
+A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
+
+`filter`::
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored.
+
+*Examples*
+
+[source,text]
+----
+{!bool must=foo must=bar}
+----
+
+[source,text]
+----
+{!bool filter=foo should=bar}
+----
+
 == Boost Query Parser
 
 `BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value. The main value is the query to be boosted. Parameter `b` is the function query to use as the boost. The query to be boosted may be of any type.
