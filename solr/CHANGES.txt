@@ -79,6 +79,11 @@ Other Changes
 
 * SOLR-11464, SOLR-11493: Minor refactorings to DistributedUpdateProcessor. (Gus Heck, David Smiley)
 
+* SOLR-11444: Improved consistency of collection alias handling, and collection references that are
+  comma delimited lists of collections, across the various places collections can be referred to.
+  Updates are delivered to the first in a list.  It's now possible to refer to a comma delimited list
+  of them in the path, ex: /solr/colA,colB/select?... (David Smiley)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.common.cloud.ClusterState;
@@ -37,15 +38,10 @@ public interface ClusterStateProvider extends Closeable {
   Set<String> getLiveNodes();
 
   /**
-   * Given an alias, returns the collection name that this alias points to
+   * Given a collection alias, returns a list of collections it points to, or returns a singleton list of the input if
+   * it's not an alias.
    */
-  String getAlias(String alias);
-
-  /**
-   * Given a name, returns the collection name if an alias by that name exists, or
-   * returns the name itself, if no alias exists.
-   */
-  String getCollectionName(String name);
+  List<String> resolveAlias(String alias);
 
   /**
    * Obtain the current cluster state.

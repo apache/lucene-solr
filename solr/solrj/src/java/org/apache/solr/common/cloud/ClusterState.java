@@ -232,15 +232,6 @@ public class ClusterState implements JSONWriter.Writable {
     return new ClusterState( liveNodes, collections,version);
   }
 
-  public static Aliases load(byte[] bytes) {
-    if (bytes == null || bytes.length == 0) {
-      return new Aliases();
-    }
-    Map<String,Map<String,String>> aliasMap = (Map<String,Map<String,String>>) Utils.fromJSON(bytes);
-
-    return new Aliases(aliasMap);
-  }
-
   // TODO move to static DocCollection.loadFromMap
   private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version, String znode) {
     Map<String,Object> props;

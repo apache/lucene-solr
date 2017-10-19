@@ -16,7 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.function.Consumer;
+
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -24,6 +28,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,92 +68,50 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases().get("testalias"));
 
     // search for alias
-    QueryResponse res = cluster.getSolrClient().query("testalias", new SolrQuery("*:*"));
-    assertEquals(3, res.getResults().getNumFound());
-    
-    // search for alias with random non cloud client
-    JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/testalias")) {
-      res = client.query(new SolrQuery("*:*"));
-      assertEquals(3, res.getResults().getNumFound());
-    }
+    searchSeveralWays("testalias", new SolrQuery("*:*"), 3);
+
+    // Use a comma delimited list, one of which is an alias
+    searchSeveralWays("testalias,collection2", new SolrQuery("*:*"), 5);
 
     // create alias, collection2 first because it's not on every node
     CollectionAdminRequest.createAlias("testalias", "collection2,collection1").process(cluster.getSolrClient());
-    
-    // search with new cloud client
-    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean())) {
-      cloudSolrClient.setParallelUpdates(random().nextBoolean());
-      SolrQuery query = new SolrQuery("*:*");
-      query.set("collection", "testalias");
-      res = cloudSolrClient.query(query);
-      assertEquals(5, res.getResults().getNumFound());
 
-      // Try with setDefaultCollection
-      query = new SolrQuery("*:*");
-      cloudSolrClient.setDefaultCollection("testalias");
-      res = cloudSolrClient.query(query);
-      assertEquals(5, res.getResults().getNumFound());
-    }
-
-    // search for alias with random non cloud client
-    jetty = cluster.getRandomJetty(random());
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/testalias")) {
-      SolrQuery query = new SolrQuery("*:*");
-      query.set("collection", "testalias");
-      res = client.query(query);
-      assertEquals(5, res.getResults().getNumFound());
-
-      // now without collections param
-      query = new SolrQuery("*:*");
-      res = client.query(query);
-      assertEquals(5, res.getResults().getNumFound());
-    }
+    searchSeveralWays("testalias", new SolrQuery("*:*"), 5);
 
     // update alias
     CollectionAdminRequest.createAlias("testalias", "collection2").process(cluster.getSolrClient());
 
-    // search for alias
-    SolrQuery query = new SolrQuery("*:*");
-    query.set("collection", "testalias");
-    res = cluster.getSolrClient().query(query);
-    assertEquals(2, res.getResults().getNumFound());
-    
+    searchSeveralWays("testalias", new SolrQuery("*:*"), 2);
+
     // set alias to two collections
     CollectionAdminRequest.createAlias("testalias", "collection1,collection2").process(cluster.getSolrClient());
+    searchSeveralWays("testalias", new SolrQuery("*:*"), 5);
 
-    query = new SolrQuery("*:*");
-    query.set("collection", "testalias");
-    res = cluster.getSolrClient().query(query);
-    assertEquals(5, res.getResults().getNumFound());
-    
-    // try a std client
-    // search 1 and 2, but have no collections param
-    query = new SolrQuery("*:*");
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/testalias")) {
-      res = client.query(query);
-      assertEquals(5, res.getResults().getNumFound());
-    }
+    // alias pointing to alias (one level of indirection is supported; more than that is not (may or may not work)
+    // TODO dubious; remove?
+    CollectionAdminRequest.createAlias("testalias2", "testalias").process(cluster.getSolrClient());
+    searchSeveralWays("testalias2", new SolrQuery("*:*"), 5);
 
+    // Test 2 aliases pointing to the same collection
     CollectionAdminRequest.createAlias("testalias", "collection2").process(cluster.getSolrClient());
-    
-    // a second alias
     CollectionAdminRequest.createAlias("testalias2", "collection2").process(cluster.getSolrClient());
 
-    try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/testalias")) {
-      new UpdateRequest()
-          .add("id", "11", "a_t", "humpty dumpy4 sat on a walls")
-          .commit(cluster.getSolrClient(), "testalias");
-      res = client.query(query);
-      assertEquals(3, res.getResults().getNumFound());
-    }
+    // add one document to testalias, thus to collection2
+    new UpdateRequest()
+        .add("id", "11", "a_t", "humpty dumpy4 sat on a walls")
+        .commit(cluster.getSolrClient(), "testalias"); // thus gets added to collection2
+
+    searchSeveralWays("testalias", new SolrQuery("*:*"), 3);
 
     CollectionAdminRequest.createAlias("testalias", "collection2,collection1").process(cluster.getSolrClient());
-    
-    query = new SolrQuery("*:*");
-    query.set("collection", "testalias");
-    res = cluster.getSolrClient().query(query);
-    assertEquals(6, res.getResults().getNumFound());
+
+    searchSeveralWays("testalias", new SolrQuery("*:*"), 6);
+
+    // add one document to testalias, which will route to collection2 because it's the first
+    new UpdateRequest()
+        .add("id", "12", "a_t", "humpty dumpy5 sat on a walls")
+        .commit(cluster.getSolrClient(), "testalias"); // thus gets added to collection2
+    searchSeveralWays("collection2", new SolrQuery("*:*"), 4);
 
     CollectionAdminRequest.deleteAlias("testalias").process(cluster.getSolrClient());
     CollectionAdminRequest.deleteAlias("testalias2").process(cluster.getSolrClient());
@@ -158,6 +122,49 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       cluster.getSolrClient().query(q);
     });
     assertTrue("Unexpected exception message: " + e.getMessage(), e.getMessage().contains("Collection not found: testalias"));
+  }
+
+  private void searchSeveralWays(String collectionList, SolrParams solrQuery, int expectedNumFound) throws IOException, SolrServerException {
+    searchSeveralWays(collectionList, solrQuery, res -> assertEquals(expectedNumFound, res.getResults().getNumFound()));
+  }
+
+  private void searchSeveralWays(String collectionList, SolrParams solrQuery, Consumer<QueryResponse> responseConsumer) throws IOException, SolrServerException {
+    if (random().nextBoolean()) {
+      // cluster's CloudSolrClient
+      responseConsumer.accept(cluster.getSolrClient().query(collectionList, solrQuery));
+    } else {
+      // new CloudSolrClient (random shardLeadersOnly)
+      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
+        if (random().nextBoolean()) {
+          solrClient.setDefaultCollection(collectionList);
+          responseConsumer.accept(solrClient.query(null, solrQuery));
+        } else {
+          responseConsumer.accept(solrClient.query(collectionList, solrQuery));
+        }
+      }
+    }
+
+    // HttpSolrClient
+    JettySolrRunner jetty = cluster.getRandomJetty(random());
+    if (random().nextBoolean()) {
+      try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+        responseConsumer.accept(client.query(null, solrQuery));
+      }
+    } else {
+      try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+        responseConsumer.accept(client.query(collectionList, solrQuery));
+      }
+    }
+
+    // Recursively do again; this time with the &collection= param
+    if (solrQuery.get("collection") == null) {
+      // put in "collection" param
+      ModifiableSolrParams newParams = new ModifiableSolrParams(solrQuery);
+      newParams.set("collection", collectionList);
+      String maskedColl = new String[]{null, "bogus", "collection2", "collection1"}[random().nextInt(4)];
+      searchSeveralWays(maskedColl, newParams, responseConsumer);
+    }
+
   }
 
   public void testErrorChecks() throws Exception {
@@ -189,6 +196,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // Valid
     CollectionAdminRequest.createAlias("testalias", "testErrorChecks-collection").process(cluster.getSolrClient());
+    // TODO dubious; remove?
     CollectionAdminRequest.createAlias("testalias2", "testalias").process(cluster.getSolrClient());
 
     // Alias + invalid

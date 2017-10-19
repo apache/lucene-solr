@@ -37,14 +37,11 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +138,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       CloudSolrClient cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = getSlices(collection, zkStateReader, true);
+      Collection<Slice> slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
@@ -160,45 +157,6 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     }
 
     return shards;
-  }
-
-  public static Collection<Slice> getSlices(String collectionName,
-                                            ZkStateReader zkStateReader,
-                                            boolean checkAlias) throws IOException {
-    ClusterState clusterState = zkStateReader.getClusterState();
-
-    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-
-    // Check collection case sensitive
-    if(collectionsMap.containsKey(collectionName)) {
-      return collectionsMap.get(collectionName).getActiveSlices();
-    }
-
-    // Check collection case insensitive
-    for(String collectionMapKey : collectionsMap.keySet()) {
-      if(collectionMapKey.equalsIgnoreCase(collectionName)) {
-        return collectionsMap.get(collectionMapKey).getActiveSlices();
-      }
-    }
-
-    if(checkAlias) {
-      // check for collection alias
-      Aliases aliases = zkStateReader.getAliases();
-      String alias = aliases.getCollectionAlias(collectionName);
-      if (alias != null) {
-        Collection<Slice> slices = new ArrayList<>();
-
-        List<String> aliasList = StrUtils.splitSmart(alias, ",", true);
-        for (String aliasCollectionName : aliasList) {
-          // Add all active slices for this alias collection
-          slices.addAll(collectionsMap.get(aliasCollectionName).getActiveSlices());
-        }
-
-        return slices;
-      }
-    }
-
-    throw new IOException("Slices not found for " + collectionName);
   }
 
   public static class IgnoreException extends IOException {

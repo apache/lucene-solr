@@ -16,47 +16,132 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+
+/**
+ * Holds collection aliases -- virtual collections that point to one or more other collections.
+ * We might add other types of aliases here some day.
+ * Immutable.
+ */
 public class Aliases {
 
-  private Map<String,Map<String,String>> aliasMap;
+  public static final Aliases EMPTY = new Aliases(Collections.emptyMap());
 
-  public Aliases(Map<String,Map<String,String>> aliasMap) {
+  /** Map of "collection" string constant to ->
+   *   alias name -> comma delimited list of collections */
+  private final Map<String,Map<String,String>> aliasMap; // not-null
+
+  private final Map<String, List<String>> collectionAliasListMap; // not-null; computed from aliasMap
+
+  public static Aliases fromJSON(byte[] bytes) {
+    if (bytes == null || bytes.length == 0) {
+      return EMPTY;
+    }
+    return new Aliases((Map<String,Map<String,String>>) Utils.fromJSON(bytes));
+  }
+
+  private Aliases(Map<String, Map<String,String>> aliasMap) {
     this.aliasMap = aliasMap;
+    collectionAliasListMap = convertMapOfCommaDelimitedToMapOfList(getCollectionAliasMap());
   }
 
-  public Aliases() {
-    this.aliasMap = new HashMap<>();
+  public static Map<String, List<String>> convertMapOfCommaDelimitedToMapOfList(Map<String, String> collectionAliasMap) {
+    Map<String, List<String>> collectionAliasListMap = new LinkedHashMap<>(collectionAliasMap.size());
+    for (Map.Entry<String, String> entry : collectionAliasMap.entrySet()) {
+      collectionAliasListMap.put(entry.getKey(), StrUtils.splitSmart(entry.getValue(), ",", true));
+    }
+    return collectionAliasListMap;
   }
-  
+
+  /**
+   * Returns an unmodifiable Map of collection aliases mapped to a comma delimited list of what the alias maps to.
+   * Does not return null.
+   * Prefer use of {@link #getCollectionAliasListMap()} instead, where appropriate.
+   */
   public Map<String,String> getCollectionAliasMap() {
     Map<String,String> cam = aliasMap.get("collection");
-    if (cam == null) return null;
-    return Collections.unmodifiableMap(cam);
-  }
-  
-  public Map<String,Map<String,String>> getAliasMap() {
-    return Collections.unmodifiableMap(aliasMap);
+    return cam == null ? Collections.emptyMap() : Collections.unmodifiableMap(cam);
   }
 
-  public int collectionAliasSize() {
-    Map<String,String> cam = aliasMap.get("collection");
-    if (cam == null) return 0;
-    return cam.size();
+  /**
+   * Returns an unmodifiable Map of collection aliases mapped to a list of what the alias maps to.
+   * Does not return null.
+   */
+  public Map<String,List<String>> getCollectionAliasListMap() {
+    return Collections.unmodifiableMap(collectionAliasListMap);
   }
   
+  public boolean hasCollectionAliases() {
+    return !collectionAliasListMap.isEmpty();
+  }
+
+  /**
+   * Returns a list of collections that the input alias name maps to. If there
+   * are none, the input is returned. One level of alias indirection is supported (alias to alias to collection).
+   * Treat the result as unmodifiable.
+   */
+  public List<String> resolveAliases(String aliasName) {
+    return resolveAliasesGivenAliasMap(collectionAliasListMap, aliasName);
+  }
+
+  /** @lucene.internal */
+  public static List<String> resolveAliasesGivenAliasMap(Map<String, List<String>> collectionAliasListMap, String aliasName) {
+    //return collectionAliasListMap.getOrDefault(aliasName, Collections.singletonList(aliasName));
+    // TODO deprecate and remove this dubious feature?
+    // Due to another level of indirection, this is more complicated...
+    List<String> level1 = collectionAliasListMap.get(aliasName);
+    if (level1 == null) {
+      return Collections.singletonList(aliasName);// is a collection
+    }
+    List<String> result = new ArrayList<>(level1.size());
+    for (String level1Alias : level1) {
+      List<String> level2 = collectionAliasListMap.get(level1Alias);
+      if (level2 == null) {
+        result.add(level1Alias);
+      } else {
+        result.addAll(level2);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Creates a new Aliases instance with the same data as the current one but with a modification based on the
+   * parameters. If {@code collections} is null, then the {@code alias} is removed, otherwise it is added/updated.
+   */
+  public Aliases cloneWithCollectionAlias(String alias, String collections) {
+    Map<String,String> newCollectionMap = new HashMap<>(getCollectionAliasMap());
+    if (collections == null) {
+      newCollectionMap.remove(alias);
+    } else {
+      newCollectionMap.put(alias, collections);
+    }
+    if (newCollectionMap.isEmpty()) {
+      return EMPTY;
+    } else {
+      return new Aliases(Collections.singletonMap("collection", newCollectionMap));
+    }
+  }
+
+  /** Serialize to ZooKeeper. */
+  public byte[] toJSON() {
+    if (collectionAliasListMap.isEmpty()) {
+      return null;
+    } else {
+      return Utils.toJSON(aliasMap);
+    }
+  }
+
   @Override
   public String toString() {
     return "Aliases [aliasMap=" + aliasMap + "]";
   }
-
-  public String getCollectionAlias(String collectionName) {
-    Map<String,String> cam = aliasMap.get("collection");
-    if (cam == null) return null;
-    return cam.get(collectionName);
-  }
-
 }

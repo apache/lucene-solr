@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClusterState.CollectionRef;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -47,7 +48,7 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   private String urlScheme;
   volatile Set<String> liveNodes;
   long liveNodesTimestamp = 0;
-  volatile Map<String, String> aliases;
+  volatile Map<String, List<String>> aliases;
   long aliasesTimestamp = 0;
 
   private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
@@ -191,12 +192,11 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public String getAlias(String alias) {
-    Map<String, String> aliases = getAliases(false);
-    return aliases.get(alias);
+  public List<String> resolveAlias(String aliasName) {
+    return Aliases.resolveAliasesGivenAliasMap(getAliases(false), aliasName);
   }
 
-  private Map<String, String> getAliases(boolean forceFetch) {
+  private Map<String, List<String>> getAliases(boolean forceFetch) {
     if (this.liveNodes == null) {
       throw new RuntimeException("We don't know of any live_nodes to fetch the"
           + " latest aliases information from. "
@@ -212,10 +212,10 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
             withBaseSolrUrl(ZkStateReader.getBaseUrlForNodeName(nodeName, urlScheme)).
             withHttpClient(httpClient).build()) {
 
-          Map<String, String> aliases = new CollectionAdminRequest.ListAliases().process(client).getAliases();
+          Map<String, List<String>> aliases = new CollectionAdminRequest.ListAliases().process(client).getAliasesAsLists();
           this.aliases = aliases;
           this.aliasesTimestamp = System.nanoTime();
-          return Collections.unmodifiableMap(aliases);
+          return Collections.unmodifiableMap(this.aliases);
         } catch (SolrServerException | RemoteSolrException | IOException e) {
           // Situation where we're hitting an older Solr which doesn't have LISTALIASES
           if (e instanceof RemoteSolrException && ((RemoteSolrException)e).code()==400) {
@@ -238,12 +238,6 @@ public class HttpClusterStateProvider implements ClusterStateProvider {
     } else {
       return Collections.unmodifiableMap(this.aliases); // cached copy is fresh enough
     }
-  }
-
-  @Override
-  public String getCollectionName(String name) {
-    Map<String, String> aliases = getAliases(false);
-    return aliases.containsKey(name) ? aliases.get(name): name;
   }
 
   @Override
