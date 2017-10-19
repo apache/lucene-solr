@@ -126,7 +126,7 @@ public class NodeLostTrigger extends TriggerBase {
         }
       }
 
-      Set<String> newLiveNodes = new HashSet<>(dataProvider.getClusterStateProvider().getLiveNodes());
+      Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
       log.debug("Running NodeLostTrigger: {} with currently live nodes: {}", name, newLiveNodes);
 
       // have any nodes that we were tracking been added to the cluster?
