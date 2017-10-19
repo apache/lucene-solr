@@ -65,6 +65,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * Under the covers the SolrStream instances send the query to the replicas.
  * SolrStreams are opened using a thread pool, but a single thread is used
  * to iterate and merge Tuples from each SolrStream.
+ * @since 5.1.0
  **/
 
 public class CloudSolrStream extends TupleStream implements Expressible {

@@ -115,6 +115,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * </tr>
  * </table>
  * 
+ * @since 6.0.0
  **/
 
 public class JDBCStream extends TupleStream implements Expressible {

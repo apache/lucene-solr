@@ -46,6 +46,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 /**
  * Sends tuples emitted by a wrapped {@link TupleStream} as updates to a SolrCloud collection.
+ * @since 6.0.0
  */
 public class UpdateStream extends TupleStream implements Expressible {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

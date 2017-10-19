@@ -41,7 +41,9 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
-
+/**
+ * @since 6.0.0
+ */
 public class DaemonStream extends TupleStream implements Expressible {
 
   private TupleStream tupleStream;

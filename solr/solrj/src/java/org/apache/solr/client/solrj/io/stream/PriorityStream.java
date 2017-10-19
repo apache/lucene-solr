@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * returned.
  *
  * The scheduler is designed to be wrapped by the executor function and a daemon function can be used to call the executor iteratively.
+ * @since 6.4.0
  **/
 
 public class PriorityStream extends TupleStream implements Expressible {

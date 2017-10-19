@@ -50,6 +50,9 @@ import static org.apache.solr.common.params.CommonParams.Q;
 import static org.apache.solr.common.params.CommonParams.ROWS;
 
 
+/**
+ * @since 7.0.0
+ */
 public class KnnStream extends TupleStream implements Expressible  {
 
   private static String[] mltParams = {"qf", "mintf", "mindf", "maxdf", "minwl", "maxwl", "maxqt", "maxntp", "boost"};

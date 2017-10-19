@@ -53,6 +53,7 @@ import org.apache.solr.common.util.NamedList;
 /**
  *  The FacetStream abstracts the output from the JSON facet API as a Stream of Tuples. This provides an alternative to the
  *  RollupStream which uses Map/Reduce to perform aggregations.
+ * @since 6.0.0
  **/
 
 public class FacetStream extends TupleStream implements Expressible  {

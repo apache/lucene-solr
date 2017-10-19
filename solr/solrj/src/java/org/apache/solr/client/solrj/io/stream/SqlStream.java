@@ -39,6 +39,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
+/**
+ * @since 7.0.0
+ */
 public class SqlStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;

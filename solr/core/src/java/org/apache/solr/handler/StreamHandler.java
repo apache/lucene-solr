@@ -70,6 +70,9 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
+/**
+ * @since 5.1.0
+ */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
