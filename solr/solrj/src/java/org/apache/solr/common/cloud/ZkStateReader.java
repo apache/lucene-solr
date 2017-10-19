@@ -257,7 +257,7 @@ public class ZkStateReader implements Closeable {
   
   private final boolean closeClient;
 
-  private volatile Aliases aliases = new Aliases();
+  private volatile Aliases aliases = Aliases.EMPTY;
 
   private volatile boolean closed = false;
 
@@ -385,8 +385,10 @@ public class ZkStateReader implements Closeable {
   public void updateLiveNodes() throws KeeperException, InterruptedException {
     refreshLiveNodes(null);
   }
-  
+
+  /** Never null. */
   public Aliases getAliases() {
+    assert aliases != null;
     return aliases;
   }
 
@@ -455,7 +457,7 @@ public class ZkStateReader implements Closeable {
                   final Watcher thisWatch = this;
                   final Stat stat = new Stat();
                   final byte[] data = zkClient.getData(ALIASES, thisWatch, stat, true);
-                  ZkStateReader.this.aliases = ClusterState.load(data);
+                  ZkStateReader.this.aliases = Aliases.fromJSON(data);
                   LOG.debug("New alias definition is: " + ZkStateReader.this.aliases.toString());
                 }
               } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
@@ -896,7 +898,7 @@ public class ZkStateReader implements Closeable {
 
   public void updateAliases() throws KeeperException, InterruptedException {
     final byte[] data = zkClient.getData(ALIASES, null, null, true);
-    this.aliases = ClusterState.load(data);
+    this.aliases = Aliases.fromJSON(data);
   }
 
   /**

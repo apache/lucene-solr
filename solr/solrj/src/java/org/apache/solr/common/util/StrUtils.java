@@ -88,6 +88,7 @@ public class StrUtils {
    * @param s  the string to split
    * @param separator the separator to split on
    * @param decode decode backslash escaping
+   * @return not null
    */
   public static List<String> splitSmart(String s, String separator, boolean decode) {
     ArrayList<String> lst = new ArrayList<>(2);

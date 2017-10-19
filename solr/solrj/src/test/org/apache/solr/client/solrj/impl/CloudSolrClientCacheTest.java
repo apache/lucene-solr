@@ -22,6 +22,7 @@ import java.net.SocketException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -130,13 +131,8 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       }
 
       @Override
-      public String getAlias(String collection) {
-        return collection;
-      }
-
-      @Override
-      public String getCollectionName(String name) {
-        return name;
+      public List<String> resolveAlias(String collection) {
+        return Collections.singletonList(collection);
       }
 
       @Override

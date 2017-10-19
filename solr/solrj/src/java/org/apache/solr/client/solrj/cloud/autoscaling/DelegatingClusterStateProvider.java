@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,20 +54,11 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public String getAlias(String alias) {
+  public List<String> resolveAlias(String alias) {
     if (delegate != null) {
-      return delegate.getAlias(alias);
+      return delegate.resolveAlias(alias);
     } else {
-      return null;
-    }
-  }
-
-  @Override
-  public String getCollectionName(String name) {
-    if (delegate != null) {
-      return delegate.getCollectionName(name);
-    } else {
-      return null;
+      return Collections.singletonList(alias);
     }
   }
 

@@ -17,26 +17,27 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 public class CreateAliasCmd implements Cmd {
@@ -51,24 +52,12 @@ public class CreateAliasCmd implements Cmd {
   public void call(ClusterState state, ZkNodeProps message, NamedList results)
       throws Exception {
     String aliasName = message.getStr(NAME);
-    String collections = message.getStr("collections");
+    String collections = message.getStr("collections"); // could be comma delimited list
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    Map<String, String> prevColAliases = zkStateReader.getAliases().getCollectionAliasMap();
-    validateAllCollectionsExist(collections, prevColAliases, zkStateReader.getClusterState());
+    validateAllCollectionsExistAndNoDups(collections, zkStateReader);
 
-    Map<String, Map<String, String>> newAliasesMap = new HashMap<>();
-    Map<String, String> newCollectionAliasesMap = new HashMap<>();
-    if (prevColAliases != null) {
-      newCollectionAliasesMap.putAll(prevColAliases);
-    }
-    newCollectionAliasesMap.put(aliasName, collections);
-    newAliasesMap.put("collection", newCollectionAliasesMap);
-    Aliases newAliases = new Aliases(newAliasesMap);
-    byte[] jsonBytes = null;
-    if (newAliases.collectionAliasSize() > 0) { // only sub map right now
-      jsonBytes = Utils.toJSON(newAliases.getAliasMap());
-    }
+    byte[] jsonBytes = zkStateReader.getAliases().cloneWithCollectionAlias(aliasName, collections).toJSON();
     try {
       zkStateReader.getZkClient().setData(ZkStateReader.ALIASES, jsonBytes, true);
 
@@ -84,10 +73,16 @@ public class CreateAliasCmd implements Cmd {
     }
   }
 
-  private void validateAllCollectionsExist(String collections, Map<String,String> prevColAliases, ClusterState clusterState) {
-    String[] collectionArr = collections.split(",");
-    for (String collection:collectionArr) {
-      if (clusterState.getCollectionOrNull(collection) == null && (prevColAliases == null || !prevColAliases.containsKey(collection))) {
+  private void validateAllCollectionsExistAndNoDups(String collections, ZkStateReader zkStateReader) {
+    List<String> collectionArr = StrUtils.splitSmart(collections, ",", true);
+    if (new HashSet<>(collectionArr).size() != collectionArr.size()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', since it contains duplicates", collections));
+    }
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Set<String> aliasNames = zkStateReader.getAliases().getCollectionAliasListMap().keySet();
+    for (String collection : collectionArr) {
+      if (clusterState.getCollectionOrNull(collection) == null && !aliasNames.contains(collection)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             String.format(Locale.ROOT,  "Can't create collection alias for collections='%s', '%s' is not an existing collection or alias", collections, collection));
       }
@@ -95,14 +90,11 @@ public class CreateAliasCmd implements Cmd {
   }
 
   private void checkForAlias(String name, String value) {
-
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     boolean success = false;
-    Aliases aliases;
     while (!timeout.hasTimedOut()) {
-      aliases = ocmh.zkStateReader.getAliases();
-      String collections = aliases.getCollectionAlias(name);
-      if (collections != null && collections.equals(value)) {
+      String collections = ocmh.zkStateReader.getAliases().getCollectionAliasMap().get(name);
+      if (Objects.equals(collections, value)) {
         success = true;
         break;
       }

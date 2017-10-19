@@ -22,11 +22,11 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -83,9 +83,8 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
 
   @Override
-  public String getAlias(String alias) {
-    Aliases aliases = zkStateReader.getAliases();
-    return aliases.getCollectionAlias(alias);
+  public List<String> resolveAlias(String alias) {
+    return zkStateReader.getAliases().resolveAliases(alias); // if not an alias, returns itself
   }
 
   @Override
@@ -101,18 +100,6 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
       return (T)props.get(propertyName);
     }
     return def;
-  }
-
-  @Override
-  public String getCollectionName(String name) {
-    Aliases aliases = zkStateReader.getAliases();
-    if (aliases != null) {
-      Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
-      if (collectionAliases != null && collectionAliases.containsKey(name)) {
-        name = collectionAliases.get(name);
-      }
-    }
-    return name;
   }
 
   @Override

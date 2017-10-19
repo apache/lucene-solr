@@ -84,6 +84,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -2224,6 +2225,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       super();
     }
 
+    public CloudSolrClient.Builder withCluster(MiniSolrCloudCluster cluster) {
+      if (random().nextBoolean()) {
+        return withZkHost(cluster.getZkServer().getZkAddress());
+      } else {
+        return withSolrUrl(cluster.getRandomJetty(random()).getBaseUrl().toString());
+      }
+    }
+
     @Override
     public CloudSolrClient.Builder sendDirectUpdatesToShardLeadersOnly() {
       configuredDUTflag = true;
@@ -2247,7 +2256,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     @Override
     public CloudSolrClient build() {
       if (configuredDUTflag == false) {
-        // flag value not explicity configured
+        // flag value not explicitly configured
         if (random().nextBoolean()) {
           // so randomly choose a value
           randomlyChooseDirectUpdatesToLeadersOnly();
@@ -2262,7 +2271,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
-   * Tests that do not wish to have any randomized behavior should use the 
+   * Tests that do not wish to have any randomized behavior should use the
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
@@ -2270,7 +2279,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .withZkHost(zkHost)
         .build();
   }
-  
+
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */
+  public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
+    return new CloudSolrClientBuilder()
+        .withCluster(cluster)
+        .build();
+  }
+
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
    * Tests that do not wish to have any randomized behavior should use the 
@@ -2300,7 +2320,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .sendUpdatesToAllReplicasInShard()
         .build();
   }
-  
+
+  public static CloudSolrClientBuilder newCloudSolrClient(String zkHost) {
+    return (CloudSolrClientBuilder) new CloudSolrClientBuilder().withZkHost(zkHost);
+  }
+
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
    * Tests that do not wish to have any randomized behavior should use the 

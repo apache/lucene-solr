@@ -38,20 +38,18 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 
 public class ClusterStatus {
   private final ZkStateReader zkStateReader;
-  private final String collection;
-  private ZkNodeProps message;
+  private final ZkNodeProps message;
+  private final String collection; // maybe null
 
   public ClusterStatus(ZkStateReader zkStateReader, ZkNodeProps props) {
     this.zkStateReader = zkStateReader;
     this.message = props;
     collection = props.getStr(ZkStateReader.COLLECTION_PROP);
-
   }
 
   @SuppressWarnings("unchecked")
@@ -60,20 +58,14 @@ public class ClusterStatus {
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionVsAliases = new HashMap<>();
-    Map<String, String> aliasVsCollections = aliases.getCollectionAliasMap();
-    if (aliasVsCollections != null) {
-      for (Map.Entry<String, String> entry : aliasVsCollections.entrySet()) {
-        List<String> colls = StrUtils.splitSmart(entry.getValue(), ',');
-        String alias = entry.getKey();
-        for (String coll : colls) {
-          if (collection == null || collection.equals(coll))  {
-            List<String> list = collectionVsAliases.get(coll);
-            if (list == null) {
-              list = new ArrayList<>();
-              collectionVsAliases.put(coll, list);
-            }
-            list.add(alias);
-          }
+    Map<String, List<String>> aliasVsCollections = aliases.getCollectionAliasListMap();
+    for (Map.Entry<String, List<String>> entry : aliasVsCollections.entrySet()) {
+      String alias = entry.getKey();
+      List<String> colls = entry.getValue();
+      for (String coll : colls) {
+        if (collection == null || collection.equals(coll))  {
+          List<String> list = collectionVsAliases.computeIfAbsent(coll, k -> new ArrayList<>());
+          list.add(alias);
         }
       }
     }
@@ -158,8 +150,9 @@ public class ClusterStatus {
     }
 
     // add the alias map too
-    if (aliasVsCollections != null && !aliasVsCollections.isEmpty())  {
-      clusterStatus.add("aliases", aliasVsCollections);
+    Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap(); // comma delim
+    if (!collectionAliasMap.isEmpty())  {
+      clusterStatus.add("aliases", collectionAliasMap);
     }
 
     // add the roles map
@@ -172,6 +165,7 @@ public class ClusterStatus {
 
     results.add("cluster", clusterStatus);
   }
+
   /**
    * Get collection status from cluster state.
    * Can return collection status by given shard name.
