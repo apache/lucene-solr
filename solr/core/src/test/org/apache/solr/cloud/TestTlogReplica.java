@@ -487,7 +487,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .commit(cloudClient, collectionName);
 
     waitForNumDocsInAllActiveReplicas(2);
-    assertCopyOverOldUpdates(1, timeCopyOverPerCores);
+    // There are a small delay between new searcher and copy over old updates operation
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut()) {
+      if (assertCopyOverOldUpdates(1, timeCopyOverPerCores)) {
+        break;
+      } else {
+        Thread.sleep(500);
+      }
+    }
+    assertTrue("Expect only one copy over updates per cores", assertCopyOverOldUpdates(1, timeCopyOverPerCores));
 
     boolean firstCommit = true;
     // UpdateLog copy over old updates
@@ -498,7 +507,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
           // because tlog replicas periodically ask leader for new segments,
           // therefore the copy over old updates action must not be triggered until
           // tlog replicas actually get new segments
-          assertCopyOverOldUpdates(1, timeCopyOverPerCores);
+          assertTrue("Expect only one copy over updates per cores", assertCopyOverOldUpdates(1, timeCopyOverPerCores));
           firstCommit = false;
         }
         cloudClient.commit(collectionName);
@@ -911,10 +920,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   }
 
-  private void assertCopyOverOldUpdates(long delta, Map<SolrCore, Long> timesPerCore) {
+  private boolean assertCopyOverOldUpdates(long delta, Map<SolrCore, Long> timesPerCore) {
     for (SolrCore core : timesPerCore.keySet()) {
-      assertEquals(timesPerCore.get(core) + delta, getTimesCopyOverOldUpdates(core));
+      if (timesPerCore.get(core) + delta != getTimesCopyOverOldUpdates(core)) return false;
     }
+    return true;
   }
 
   private Map<SolrCore, Long> getTimesCopyOverOldUpdates(List<SolrCore> cores) {
