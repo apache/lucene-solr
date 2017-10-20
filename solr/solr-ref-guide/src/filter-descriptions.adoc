@@ -189,7 +189,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 *Arguments:*
 
-`inject` :: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
 *Example:*
 

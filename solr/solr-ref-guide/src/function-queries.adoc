@@ -31,7 +31,7 @@ Functions must be expressed as function calls (for example, `sum(a,b)` instead o
 
 There are several ways of using function queries in a Solr query:
 
-* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>> . For example:
+* Via an explicit QParser that expects function arguments, such <<other-parsers.adoc#function-query-parser,`func`>> or <<other-parsers.adoc#function-range-query-parser,`frange`>>. For example:
 +
 [source,text]
 ----
@@ -258,7 +258,7 @@ Arguments may be the name of a `DatePointField`, `TrieDateField`, or date math b
 
 * `ms()`: Equivalent to `ms(NOW)`, number of milliseconds since the epoch.
 * `ms(a):` Returns the number of milliseconds since the epoch that the argument represents.
-* `ms(a,b)` : Returns the number of milliseconds that b occurs before a (that is, a - b)
+* `ms(a,b)`: Returns the number of milliseconds that b occurs before a (that is, a - b)
 
 *Syntax Examples*
 

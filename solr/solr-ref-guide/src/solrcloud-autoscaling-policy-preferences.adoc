@@ -132,14 +132,14 @@ The heap usage of the node as reported by the Metrics API under the key `solr.jv
 `nodeRole`::
 The role of the node. The only supported value currently is `overseer`.
 
-`ip_1 , ip_2, ip_3, ip_4`::
+`ip_1, ip_2, ip_3, ip_4`::
 The least significant to most significant segments of IP address. For example, for an IP address `192.168.1.2`, `ip_1 = 2`, `ip_2 = 1`, `ip_3 = 168`, `ip_4 = 192`.
 
 `sysprop.<system_property_name>`::
 Any arbitrary system property set on the node on startup.
 
-`metrics:<full-path-to-the metric>` ::
-Any arbitrary metric. eg: `metrics:solr.node:CONTAINER.fs.totalSpace`. Refer to the `key` parameter in <<metrics-reporting.adoc#metrics-reporting, Metrics API>>
+`metrics:<full-path-to-the metric>`::
+Any arbitrary metric. For example, `metrics:solr.node:CONTAINER.fs.totalSpace`. Refer to the `key` parameter in the  <<metrics-reporting.adoc#metrics-reporting, Metrics API>> section.
 
 === Policy Operators
 

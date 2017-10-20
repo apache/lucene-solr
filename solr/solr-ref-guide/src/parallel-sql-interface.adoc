@@ -431,4 +431,4 @@ Examples of using Python and Jython for connecting to Solr with the Solr JDBC dr
 
 === R
 
-Examples of using R for connecting to Solr with the Solr JDBC driver are available in the section <<solr-jdbc-r.adoc#solr-jdbc-r,Solr JDBC - R>> .
+Examples of using R for connecting to Solr with the Solr JDBC driver are available in the section <<solr-jdbc-r.adoc#solr-jdbc-r,Solr JDBC - R>>.

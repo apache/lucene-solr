@@ -33,7 +33,7 @@ Solr includes a Java implementation of index replication that works over HTTP:
 * The configuration affecting replication is controlled by a single file, `solrconfig.xml`
 * Supports the replication of configuration files as well as index files
 * Works across platforms with same configuration
-* No reliance on OS-dependent file system features (eg: hard links)
+* No reliance on OS-dependent file system features (e.g., hard links)
 * Tightly integrated with Solr; an admin page offers fine-grained control of each aspect of replication
 * The Java-based replication feature is implemented as a request handler. Configuring replication is therefore similar to any normal request handler.
 

@@ -69,7 +69,7 @@ There is an additional configuration option available, which is to modify the `d
 Please note that the `docValuesFormat` option may change in future releases.
 
 [NOTE]
-Lucene index back-compatibility is only supported for the default codec. If you choose to customize the `docValuesFormat` in your schema.xml, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
+Lucene index back-compatibility is only supported for the default codec. If you choose to customize the `docValuesFormat` in your `schema.xml`, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
 
 == Using DocValues
 

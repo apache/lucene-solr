@@ -139,7 +139,7 @@ On systems where the number of open files allowed per process is limited, CFS ma
 .CFS: New Segments vs Merged Segments
 [NOTE]
 ====
-To configure whether _newly written segments_ should use CFS, see the <<useCompoundFile,`useCompoundFile`>> setting described above. To configure whether _merged segments_ use CFS, review the Javadocs for your <<mergePolicyFactory,`mergePolicyFactory`>> .
+To configure whether _newly written segments_ should use CFS, see the <<useCompoundFile,`useCompoundFile`>> setting described above. To configure whether _merged segments_ use CFS, review the Javadocs for your <<mergePolicyFactory,`mergePolicyFactory`>>.
 
 Many <<Merging Index Segments,Merge Policy>> implementations support `noCFSRatio` and `maxCFSSegmentSizeMB` settings with default values that prevent compound files from being used for large segments, but do use compound files for small segments.
 

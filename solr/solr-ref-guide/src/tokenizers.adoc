@@ -484,7 +484,10 @@ Simple tokenizer that splits the text stream on whitespace and returns sequences
 
 *Factory class:* `solr.WhitespaceTokenizerFactory`
 
-*Arguments:* `rule` : Specifies how to define whitespace for the purpose of tokenization. Valid values:
+*Arguments:*
+
+`rule`::
+Specifies how to define whitespace for the purpose of tokenization. Valid values:
 
 * `java`: (Default) Uses https://docs.oracle.com/javase/8/docs/api/java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
 * `unicode`: Uses Unicode's WHITESPACE property

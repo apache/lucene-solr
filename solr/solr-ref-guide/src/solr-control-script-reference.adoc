@@ -455,7 +455,7 @@ Any changes you make to the configuration for the contacts collection will not a
 
 You can override the name given to the configuration directory in ZooKeeper by using the `-n` option. For instance, the command `bin/solr create -c logs -d _default -n basic` will upload the `server/solr/configsets/_default/conf` directory to ZooKeeper as `/configs/basic`.
 
-Notice that we used the `-d` option to specify a different configuration than the default. Solr provides several built-in configurations under `server/solr/configsets`. However you can also provide the path to your own configuration directory using the `-d` option. For instance, the command `bin/solr create -c mycoll -d /tmp/myconfigs`, will upload `/tmp/myconfigs` into ZooKeeper under `/configs/mycoll` .
+Notice that we used the `-d` option to specify a different configuration than the default. Solr provides several built-in configurations under `server/solr/configsets`. However you can also provide the path to your own configuration directory using the `-d` option. For instance, the command `bin/solr create -c mycoll -d /tmp/myconfigs`, will upload `/tmp/myconfigs` into ZooKeeper under `/configs/mycoll`.
 
 To reiterate, the configuration directory is named after the collection unless you override it using the `-n` option.
 
@@ -608,7 +608,7 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 *Example*: `-n myconfig`
 
 `-d <configset dir>`::
-The path of the configuration set to upload. It should have a "conf" directory immediately below it that in turn contains solrconfig.xml etc.
+The path of the configuration set to upload. It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.
 +
 If just a name is supplied, `$SOLR_HOME/server/solr/configsets` will be checked for this name. An absolute path may be supplied instead.
 +

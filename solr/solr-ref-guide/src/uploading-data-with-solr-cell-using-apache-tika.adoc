@@ -77,7 +77,7 @@ You can also use `bin/post` to send a PDF file into Solr (without the params, th
 bin/post -c techproducts example/exampledocs/solr-word.pdf -params "literal.id=a"
 ----
 
-Now you should be able to execute a query and find that document. You can make a request like `\http://localhost:8983/solr/techproducts/select?q=pdf` .
+Now you should be able to execute a query and find that document. You can make a request like `\http://localhost:8983/solr/techproducts/select?q=pdf`.
 
 You may notice that although the content of the sample document has been indexed and stored, there are not a lot of metadata fields associated with this document. This is because unknown fields are ignored according to the default parameters configured for the `/update/extract` handler in `solrconfig.xml`, and this behavior can be easily changed or overridden. For example, to store and see all metadata and content, execute the following:
 
@@ -208,7 +208,7 @@ The `tika.config` entry points to a file containing a Tika configuration. The `d
 
 === Parser-Specific Properties
 
-Parsers used by Tika may have specific properties to govern how data is extracted. For instance, when using the Tika library from a Java program, the PDFParserConfig class has a method setSortByPosition(boolean) that can extract vertically oriented text. To access that method via configuration with the ExtractingRequestHandler, one can add the parseContext.config property to the solrconfig.xml file (see above) and then set properties in Tika's PDFParserConfig as below. Consult the Tika Java API documentation for configuration parameters that can be set for any particular parsers that require this level of control.
+Parsers used by Tika may have specific properties to govern how data is extracted. For instance, when using the Tika library from a Java program, the PDFParserConfig class has a method `setSortByPosition(boolean)` that can extract vertically oriented text. To access that method via configuration with the ExtractingRequestHandler, one can add the `parseContext.config` property to the `solrconfig.xml` file (see above) and then set properties in Tika's PDFParserConfig as below. Consult the Tika Java API documentation for configuration parameters that can be set for any particular parsers that require this level of control.
 
 [source,xml]
 ----

@@ -76,7 +76,7 @@ By default, values are returned as a String, but a "```t```" parameter can be sp
 q=*:*&fl=id,my_number:[value v=42 t=int],my_string:[value v=42]
 ----
 
-In addition to using these request parameters, you can configure additional named instances of ValueAugmenterFactory, or override the default behavior of the existing `[value]` transformer in your solrconfig.xml file:
+In addition to using these request parameters, you can configure additional named instances of ValueAugmenterFactory, or override the default behavior of the existing `[value]` transformer in your `solrconfig.xml` file:
 
 [source,xml]
 ----
@@ -264,7 +264,7 @@ fl=...*,categories:[subquery]&categories.fl=*&categories.q=...
 
 ==== Subquery Parameters Shift
 
-If subquery is declared as `fl=*,foo:[subquery]`, subquery parameters are prefixed with the given name and period. eg
+If a subquery is declared as `fl=*,foo:[subquery]`, subquery parameters are prefixed with the given name and period. For example:
 
 `q=*:*&fl=*,**foo**:[subquery]&**foo.**q=to be continued&**foo.**rows=10&**foo.**sort=id desc`
 
@@ -272,15 +272,15 @@ If subquery is declared as `fl=*,foo:[subquery]`, subquery parameters are prefix
 
 It's necessary to pass some document field values as a parameter for subquery. It's supported via implicit *`row.__fieldname__`* parameter, and can be (but might not only) referred via Local Parameters syntax: `q=namne:john&fl=name,id,depts:[subquery]&depts.q={!terms f=id **v=$row.dept_id**}&depts.rows=10`
 
-Here departmens are retrieved per every employee in search result. We can say that it's like SQL `join ON emp.dept_id=dept.id`.
+Here departments are retrieved per every employee in search result. We can say that it's like SQL `join ON emp.dept_id=dept.id`.
 
-Note, when document field has multiple values they are concatenated with comma by default, it can be changed by local parameter `foo:[subquery separator=' ']` , this mimics *`{!terms}`* to work smoothly with it.
+Note, when a document field has multiple values they are concatenated with a comma by default. This can be changed with the local parameter `foo:[subquery separator=' ']`, this mimics *`{!terms}`* to work smoothly with it.
 
 To log substituted subquery request parameters, add the corresponding parameter names, as in `depts.logParamsList=q,fl,rows,**row.dept_id**`
 
 ==== Cores and Collections in SolrCloud
 
-Use `foo:[subquery fromIndex=departments]` to invoke subquery on another core on the same node, it's what *`{!join}`* does for non-SolrCloud mode. But in case of SolrCloud just (and only) explicitly specify its' native parameters like `collection, shards` for subquery, eg:
+Use `foo:[subquery fromIndex=departments]` to invoke subquery on another core on the same node, it's what *`{!join}`* does for non-SolrCloud mode. But in case of SolrCloud just (and only) explicitly specify its native parameters like `collection, shards` for subquery, e.g.:
 
 `q=*:*&fl=*,foo:[subquery]&foo.q=cloud&**foo.collection**=departments`
 

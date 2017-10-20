@@ -186,7 +186,7 @@ The example above shows a facet function with rollups over three buckets, where 
 
 == features
 
-The `features` function extracts the key terms from a text field in a classification training set stored in a SolrCloud collection. It uses an algorithm known as * Information Gain* , to select the important terms from the training set. The `features` function was designed to work specifically with the <<train,train>> function, which uses the extracted features to train a text classifier.
+The `features` function extracts the key terms from a text field in a classification training set stored in a SolrCloud collection. It uses an algorithm known as *Information Gain*, to select the important terms from the training set. The `features` function was designed to work specifically with the <<train,train>> function, which uses the extracted features to train a text classifier.
 
 The `features` function is designed to work with a training set that provides both positive and negative examples of a class. It emits a tuple for each feature term that is extracted along with the inverse document frequency (IDF) for the term in the training set.
 
@@ -348,8 +348,8 @@ The `shortestPath` function is an implementation of a shortest path graph traver
 * `from`: (Mandatory) The nodeID to start the search from
 * `to`: (Mandatory) The nodeID to end the search at
 * `edge`: (Mandatory) Syntax: `from_field=to_field`. The `from_field` defines which field to search from. The `to_field` defines which field to search to. See example below for a detailed explanation.
-* `threads`: (Optional : Default 6) The number of threads used to perform the partitioned join in the traversal.
-* `partitionSize`: (Optional : Default 250) The number of nodes in each partition of the join.
+* `threads`: (Optional: Default 6) The number of threads used to perform the partitioned join in the traversal.
+* `partitionSize`: (Optional: Default 250) The number of nodes in each partition of the join.
 * `fq`: (Optional) Filter query
 * `maxDepth`: (Mandatory) Limits to the search to a maximum depth in the graph.
 
