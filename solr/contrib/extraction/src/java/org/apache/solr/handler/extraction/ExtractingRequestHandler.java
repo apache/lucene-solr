@@ -17,6 +17,7 @@
 package org.apache.solr.handler.extraction;
 
 
+import com.jmatio.io.MatFileReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.DateUtil;
@@ -64,6 +65,12 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   @Override
   public void init(NamedList args) {
     super.init(args);
+    try {
+      // SOLR-11486: Make sure that this is set to false!
+      MatFileReader.setAllowObjectDeserialization(false);
+    } catch (NoClassDefFoundError e) {
+      // Matlab parser was disabled, ignore
+    }
   }
 
   @Override

@@ -63,6 +63,7 @@ import org.kitesdk.morphline.stdio.AbstractParser;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
+import com.jmatio.io.MatFileReader;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -79,6 +80,15 @@ import com.typesafe.config.Config;
  * in a prior command.
  */
 public final class SolrCellBuilder implements CommandBuilder {
+
+  static {
+    try {
+      // SOLR-11486: Make sure that this is set to false!
+      MatFileReader.setAllowObjectDeserialization(false);
+    } catch (NoClassDefFoundError e) {
+      // Matlab parser was disabled, ignore
+    }
+  }
 
   @Override
   public Collection<String> getNames() {

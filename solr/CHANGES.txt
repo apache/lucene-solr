@@ -44,7 +44,8 @@ Bug Fixes
 Other
 ----------------------
 
-* SOLR-11486: Remove Matlab MAT file support from extraction contrib. (Steve Rowe)
+* SOLR-11486: Update jmatio to 1.2 and prevent deserialization inside Matlab files.
+  (Uwe Schindler, Steve Rowe)
 
 ======================= 5.5.4 =======================
 
