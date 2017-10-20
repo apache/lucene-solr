@@ -144,27 +144,30 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
 
-    // HttpSolrClient
-    JettySolrRunner jetty = cluster.getRandomJetty(random());
-    if (random().nextBoolean()) {
-      try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
-        responseConsumer.accept(client.query(null, solrQuery));
+    // note: collectionList could be null when we randomly recurse and put the actual collection list into the
+    //  "collection" param and some bugs value into collectionList (including null).  Only CloudSolrClient supports null.
+    if (collectionList != null) {
+      // HttpSolrClient
+      JettySolrRunner jetty = cluster.getRandomJetty(random());
+      if (random().nextBoolean()) {
+        try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+          responseConsumer.accept(client.query(null, solrQuery));
+        }
+      } else {
+        try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+          responseConsumer.accept(client.query(collectionList, solrQuery));
+        }
       }
-    } else {
-      try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
-        responseConsumer.accept(client.query(collectionList, solrQuery));
+
+      // Recursively do again; this time with the &collection= param
+      if (solrQuery.get("collection") == null) {
+        // put in "collection" param
+        ModifiableSolrParams newParams = new ModifiableSolrParams(solrQuery);
+        newParams.set("collection", collectionList);
+        String maskedColl = new String[]{null, "bogus", "collection2", "collection1"}[random().nextInt(4)];
+        searchSeveralWays(maskedColl, newParams, responseConsumer);
       }
     }
-
-    // Recursively do again; this time with the &collection= param
-    if (solrQuery.get("collection") == null) {
-      // put in "collection" param
-      ModifiableSolrParams newParams = new ModifiableSolrParams(solrQuery);
-      newParams.set("collection", collectionList);
-      String maskedColl = new String[]{null, "bogus", "collection2", "collection1"}[random().nextInt(4)];
-      searchSeveralWays(maskedColl, newParams, responseConsumer);
-    }
-
   }
 
   public void testErrorChecks() throws Exception {
