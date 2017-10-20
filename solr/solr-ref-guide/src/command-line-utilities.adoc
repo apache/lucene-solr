@@ -85,9 +85,9 @@ For `clusterprop`: the cluster property value. If not specified, *null* will be 
 
 [TIP]
 ====
-The short form parameter options may be specified with a single dash (eg: `-c mycollection`).
+The short form parameter options may be specified with a single dash (e.g., `-c mycollection`).
 
-The long form parameter options may be specified using either a single dash (eg: `-collection mycollection`) or a double dash (eg: `--collection mycollection`)
+The long form parameter options may be specified using either a single dash (e.g., `-collection mycollection`) or a double dash (e.g., `--collection mycollection`)
 ====
 
 == ZooKeeper CLI Examples

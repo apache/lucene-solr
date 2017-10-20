@@ -142,7 +142,7 @@ Similar to the <<faceting.adoc#faceting,Facet Component>>, the `stats.field` par
 * Changing the Output Key: `stats.field={!key=my_price_stats}price`
 * Tagging stats for <<The Stats Component and Faceting,use with `facet.pivot`>>: `stats.field={!tag=my_pivot_stats}price`
 
-Local parameters can also be used to specify individual statistics by name, overriding the set of statistics computed by default, eg: `stats.field={!min=true max=true percentiles='99,99.9,99.99'}price`
+Local parameters can also be used to specify individual statistics by name, overriding the set of statistics computed by default, e.g., `stats.field={!min=true max=true percentiles='99,99.9,99.99'}price`.
 
 [IMPORTANT]
 ====

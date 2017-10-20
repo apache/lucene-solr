@@ -61,13 +61,13 @@ To limit the introspect output to include just one particular HTTP method, add r
 
 `\http://localhost:8983/api/c/_introspect?method=POST`
 
-Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_` .
+Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_`.
 
 `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 
 === Interpreting the Introspect Output
 
-Example : `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
+Example: `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 
 [source,json]
 ----
@@ -95,12 +95,12 @@ Example : `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 
 Description of some of the keys in the above example:
 
-* `**documentation**` : URL to the online Solr reference guide section for this API
-* `**description**` : A text description of the feature/variable/command etc.
-* `**spec/methods**` : HTTP methods supported by this API
-* `**spec/url/paths**` : URL paths supported by this API
-* `**spec/url/params**` : List of supported URL request params
-* `**availableSubPaths**` : List of valid URL subpaths and the HTTP method(s) each supports
+* `**documentation**`: URL to the online Solr reference guide section for this API
+* `**description**`: A text description of the feature/variable/command etc.
+* `**spec/methods**`: HTTP methods supported by this API
+* `**spec/url/paths**`: URL paths supported by this API
+* `**spec/url/params**`: List of supported URL request params
+* `**availableSubPaths**`: List of valid URL subpaths and the HTTP method(s) each supports
 
 Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 

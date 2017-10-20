@@ -28,7 +28,7 @@ When using this API, `solrconfig.xml` is not changed. Instead, all edited config
 
 * `/config`: retrieve or modify the config. GET to retrieve and POST for executing commands
 * `/config/overlay`: retrieve the details in the `configoverlay.json` alone
-* `/config/params` : allows creating parameter sets that can override or take the place of parameters defined in `solrconfig.xml`. See the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> section for more details.
+* `/config/params`: allows creating parameter sets that can override or take the place of parameters defined in `solrconfig.xml`. See the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> section for more details.
 
 == Retrieving the Config
 
@@ -427,7 +427,7 @@ And you should see the following as output:
     "httpMethod":"GET"}}
 ----
 
-To update a request handler, you should use the `update-requesthandler` command :
+To update a request handler, you should use the `update-requesthandler` command:
 
 [source,bash]
 ----
@@ -507,7 +507,7 @@ curl http://localhost:8983/solr/techproducts/config -H'Content-type:application/
 
 Directly editing any files without 'touching' the directory *will not* make it visible to all nodes.
 
-It is possible for components to watch for the configset 'touch' events by registering a listener using `SolrCore#registerConfListener()` .
+It is possible for components to watch for the configset 'touch' events by registering a listener using `SolrCore#registerConfListener()`.
 
 === Listening to config Changes
 

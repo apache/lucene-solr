@@ -610,7 +610,7 @@ The parameter setting above causes the field facet results for the "doctype" fie
 
 === Limiting Facet with Certain Terms
 
-To limit field facet with certain terms specify them comma separated with `terms` local parameter. Commas and quotes in terms can be escaped with backslash, as in `\,`. In this case facet is calculated on a way similar to `facet.method=enum` , but ignores `facet.enum.cache.minDf`. For example:
+To limit field facet with certain terms specify them comma separated with `terms` local parameter. Commas and quotes in terms can be escaped with backslash, as in `\,`. In this case facet is calculated on a way similar to `facet.method=enum`, but ignores `facet.enum.cache.minDf`. For example:
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
 

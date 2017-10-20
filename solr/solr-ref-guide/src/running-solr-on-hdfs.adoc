@@ -166,7 +166,7 @@ Here is a sample `solrconfig.xml` configuration for storing Solr indexes on HDFS
 </directoryFactory>
 ----
 
-If using Kerberos, you will need to add the three Kerberos related properties to the `<directoryFactory>` element in solrconfig.xml, such as:
+If using Kerberos, you will need to add the three Kerberos related properties to the `<directoryFactory>` element in `solrconfig.xml`, such as:
 
 [source,xml]
 ----

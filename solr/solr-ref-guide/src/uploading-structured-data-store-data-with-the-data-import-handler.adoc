@@ -968,7 +968,7 @@ groupNames::
 A comma separated list of field column names, used where the regex contains groups and each group is to be saved to a different field. If some groups are not to be named leave a space between commas.
 
 replaceWith::
-Used along with regex . It is equivalent to the method `new String(<sourceColVal>).replaceAll(<regex>, <replaceWith>)`.
+Used along with regex. It is equivalent to the method `new String(<sourceColVal>).replaceAll(<regex>, <replaceWith>)`.
 
 Here is an example of configuring the regex transformer:
 

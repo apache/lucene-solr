@@ -84,7 +84,7 @@ Tag values come from a plugin called Snitch. If there is a tag named ‘rack’ 
 * *host*: host name of the node
 * *port*: port of the node
 * *node*: node name
-* *role* : The role of the node. The only supported role is 'overseer'
+* *role*: The role of the node. The only supported role is 'overseer'
 * *ip_1, ip_2, ip_3, ip_4*: These are ip fragments for each node. For example, in a host with ip `192.168.1.2`, `ip_1 = 2`, `ip_2 =1`, `ip_3 = 168` and` ip_4 = 192`
 * *sysprop.{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
 
@@ -119,7 +119,7 @@ replica:<2,node:*
 
 === For a given shard, keep less than 2 replicas on any node
 
-For this rule, we use the `shard` condition to define any shard , the `replica` condition with operators for "less than 2", and finally a pre-defined tag named `node` to define nodes with any name.
+For this rule, we use the `shard` condition to define any shard, the `replica` condition with operators for "less than 2", and finally a pre-defined tag named `node` to define nodes with any name.
 
 [source,text]
 ----
@@ -135,7 +135,7 @@ This rule limits the `shard` condition to 'shard1', but any number of replicas. 
 shard:shard1,replica:*,rack:730
 ----
 
-In this case, the default value of `replica` is * (or, all replicas). So, it can be omitted and the rule can be reduced to:
+In this case, the default value of `replica` is `*`, or all replicas. It can be omitted and the rule will be reduced to:
 
 [source,text]
 ----

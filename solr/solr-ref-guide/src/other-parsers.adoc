@@ -108,7 +108,7 @@ In older version the error is:
 [literal]
 child query must only match non-parent docs.
 
-You can search for `q=+(parentFilter) +(someChildren)` to find a cause .
+You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
 
 Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud`. We get this document in response:
 
@@ -1005,7 +1005,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 
 === Customizing XML Query Parser
 
-You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example solrconfig.xml snippet:
+You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
 
 [source,xml]
 ----

@@ -35,7 +35,7 @@ Solr caches are associated with a specific instance of an Index Searcher, a spec
 
 When a new searcher is opened, the current searcher continues servicing requests while the new one auto-warms its cache. The new searcher uses the current searcher's cache to pre-populate its own. When the new searcher is ready, it is registered as the current searcher and begins handling all new search requests. The old searcher will be closed once it has finished servicing all its requests.
 
-In Solr, there are three cache implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache` .
+In Solr, there are three cache implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
 
 The acronym LRU stands for Least Recently Used. When an LRU cache fills up, the entry with the oldest last-accessed timestamp is evicted to make room for the new entry. The net effect is that entries that are accessed frequently tend to stay in the cache, while those that are not accessed frequently tend to drop out and will be re-fetched from the index if needed again.
 
