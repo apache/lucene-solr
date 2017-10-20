@@ -390,9 +390,9 @@ The `classify` function classifies tuples using a logistic regression text class
 
 Each tuple that is classified is assigned two scores:
 
-* probability_d* : A float between 0 and 1 which describes the probability that the tuple belongs to the class. This is useful in the classification use case.
+* probability_d*: A float between 0 and 1 which describes the probability that the tuple belongs to the class. This is useful in the classification use case.
 
-* score_d* : The score of the document that has not be squashed between 0 and 1. The score may be positive or negative. The higher the score the better the document fits the class. This un-squashed score will be useful in query re-ranking and recommendation use cases. This score is particularly useful when multiple high ranking documents have a probability_d score of 1, which won't provide a meaningful ranking between documents.
+* score_d*: The score of the document that has not be squashed between 0 and 1. The score may be positive or negative. The higher the score the better the document fits the class. This un-squashed score will be useful in query re-ranking and recommendation use cases. This score is particularly useful when multiple high ranking documents have a probability_d score of 1, which won't provide a meaningful ranking between documents.
 
 === classify Parameters
 

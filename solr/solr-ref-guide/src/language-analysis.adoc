@@ -1418,7 +1418,7 @@ See the Solr wiki for tips & advice on using this filter: https://wiki.apache.or
 
 *Arguments:*
 
-`haircut` :: Select the extend of normalization. Valid values are:
+`haircut`:: Select the extend of normalization. Valid values are:
 +
 * `bald`: (Default behavior) Cyrillic characters are first converted to Latin; then, Latin characters have their diacritics removed, with the exception of https://en.wikipedia.org/wiki/D_with_stroke[LATIN SMALL LETTER D WITH STROKE] (U+0111) which is converted to "```dj```"
 * `regular`: Only Cyrillic to Latin normalization will be applied, preserving the Latin diatrics

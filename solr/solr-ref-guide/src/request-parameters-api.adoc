@@ -45,7 +45,7 @@ The available commands are:
 
 * `set`: Create or overwrite a parameter set map.
 * `unset`: delete a parameter set map.
-* `update`: update a parameter set map. This is equivalent to a map.putAll(newMap) . Both the maps are merged and if the new map has same keys as old they are overwritten
+* `update`: update a parameter set map. This is equivalent to a `map.putAll(newMap)`. Both the maps are merged and if the new map has same keys as old they are overwritten.
 
 You can mix these commands into a single request if necessary.
 

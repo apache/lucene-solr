@@ -28,7 +28,7 @@ The defType parameter selects the query parser that Solr should use to process t
 
 `defType=dismax`
 
-If no defType param is specified, then by default, the <<the-standard-query-parser.adoc#the-standard-query-parser,The Standard Query Parser>> is used. (eg: `defType=lucene`)
+If no defType param is specified, then by default, the <<the-standard-query-parser.adoc#the-standard-query-parser,The Standard Query Parser>> is used. (e.g., `defType=lucene`)
 
 == sort Parameter
 

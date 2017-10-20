@@ -36,7 +36,7 @@ You can request update request handler statistics with an API request such as `\
 
 === Search Request Handler
 
-Can be useful to measure and track number of search queries, response times, etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler , the realtime handler “get”, or any other handler similar statistics can be found for that as well.
+Can be useful to measure and track number of search queries, response times, etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler, the realtime handler “get”, or any other handler similar statistics can be found for that as well.
 
 *Registry & Path*: `solr.<core>:QUERY./select`
 

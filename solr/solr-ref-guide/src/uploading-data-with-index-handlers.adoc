@@ -398,7 +398,7 @@ curl 'http://localhost:8983/solr/my_collection/update?commit=true' --data-binary
 
 === CSV Update Parameters
 
-The CSV handler allows the specification of many parameters in the URL in the form: `f._parameter_._optional_fieldname_=_value_` .
+The CSV handler allows the specification of many parameters in the URL in the form: `f._parameter_._optional_fieldname_=_value_`.
 
 The table below describes the parameters for the update handler.
 

@@ -187,8 +187,8 @@ Reporter plugins use the following arguments:
 Additionally, several implementation-specific initialization arguments can be specified in nested elements. There are some arguments that are common to SLF4J, Ganglia and Graphite reporters:
 
 * *period* - (optional int) period in seconds between reports. Default value is 60.
-* *prefix* - (optional str) prefix to be added to metric names, may be helpful in logical grouping of related Solr instances, e.g., machine name or cluster name. Default is empty string, ie. just the registry name and metric name will be used to form a fully-qualified metric name.
-* *filter* - (optional str) if not empty then only metric names that start with this value will be reported. Default is no filtering, ie. all metrics from selected registry will be reported.
+* *prefix* - (optional str) prefix to be added to metric names, may be helpful in logical grouping of related Solr instances, e.g., machine name or cluster name. Default is empty string, i.e., just the registry name and metric name will be used to form a fully-qualified metric name.
+* *filter* - (optional str) if not empty then only metric names that start with this value will be reported. Default is no filtering, i.e., all metrics from selected registry will be reported.
 
 Reporters are instantiated for every group and registry that they were configured for, at the time when the respective components are initialized (e.g., on JVM startup or SolrCore load).
 

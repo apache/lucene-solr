@@ -331,7 +331,7 @@ These factories all provide functionality to _modify_ fields in a document as th
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/RegexReplaceProcessorFactory.html[RegexReplaceProcessorFactory]:: An updated processor that applies a configured regex to any CharSequence values found in the selected fields, and replaces any matches with the configured replacement string.
 
-{solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0. (ie: empty strings).
+{solr-javadocs}/solr-core/org/apache/solr/update/processor/RemoveBlankFieldUpdateProcessorFactory.html[RemoveBlankFieldUpdateProcessorFactory]:: Removes any values found which are CharSequence with a length of 0 (i.e., empty strings).
 
 {solr-javadocs}/solr-core/org/apache/solr/update/processor/TrimFieldUpdateProcessorFactory.html[TrimFieldUpdateProcessorFactory]:: Trims leading and trailing whitespace from any CharSequence values found in fields matching the specified conditions.
 
