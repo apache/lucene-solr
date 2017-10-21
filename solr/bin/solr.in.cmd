@@ -48,6 +48,9 @@ REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
 REM set SOLR_HOST=192.168.1.1
 
+REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+REM set SOLR_WAIT_FOR_ZK=30
+
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
 

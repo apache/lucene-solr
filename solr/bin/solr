@@ -1919,6 +1919,10 @@ function launch_solr() {
     GC_TUNE=($GC_TUNE)
   fi
 
+  if [ -n "$SOLR_WAIT_FOR_ZK" ]; then
+    WAIT_FOR_ZK_PROP="-DwaitForZk=$SOLR_WAIT_FOR_ZK"
+    SOLR_OPTS+=($WAIT_FOR_ZK_PROP)
+  fi
 
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" ]; then
