@@ -13,4 +13,5 @@ Stempel relies on lucene-libs/lucene-analyzers-stempel-X.Y.jar
 
 Morfologik relies on lucene-libs/lucene-analyzers-morfologik-X.Y.jar
 and lib/morfologik-*.jar
- 
+
+If you want to use one of the analyzers above, in addition to the dependencies listed for each analyzer, solr-analysis-extras-X.Y.jar from the dist directory is required.
