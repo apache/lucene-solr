@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @since 1.1.0
  */
 public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   

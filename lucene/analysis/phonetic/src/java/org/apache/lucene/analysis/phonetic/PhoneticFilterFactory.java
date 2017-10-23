@@ -62,7 +62,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  * 
  * @see PhoneticFilter
- * @since 1.2.0
  */
 public class PhoneticFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   /** parameter name: either a short name or a full class name */

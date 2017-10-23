@@ -34,7 +34,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @see TrimFilter
- * @since 1.2.0
  */
 public class TrimFilterFactory extends TokenFilterFactory {
   

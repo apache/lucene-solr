@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.GermanStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @since 1.3.0
  */
 public class GermanStemFilterFactory extends TokenFilterFactory {
   

@@ -35,7 +35,6 @@ import org.apache.lucene.analysis.util.*;
  *     &lt;filter class="solr.CommonGramsFilterFactory" words="commongramsstopwords.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @since 1.4.0
  */
 public class CommonGramsFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   // TODO: shared base class for Stop/Keep/CommonGrams? 
