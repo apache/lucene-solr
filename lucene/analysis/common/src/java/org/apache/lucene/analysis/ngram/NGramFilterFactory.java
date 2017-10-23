@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.NGramFilterFactory" minGramSize="1" maxGramSize="2"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @since 1.3.0
  */
 public class NGramFilterFactory extends TokenFilterFactory {
   private final int maxGramSize;

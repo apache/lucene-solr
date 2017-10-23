@@ -36,9 +36,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-/**
- * @since 1.4.0
- */
 public class SignatureUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory 
   implements SolrCoreAware {
