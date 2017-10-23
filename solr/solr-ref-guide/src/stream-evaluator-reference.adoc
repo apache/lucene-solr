@@ -659,14 +659,8 @@ ebeSubtract(numericArray, numericArray)
 
 == empiricalDistribution
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
 The `empiricalDistribution` function returns https://en.wikipedia.org/wiki/Empirical_distribution_function[empirical distribution function], a continuous probability distribution function based
 on an actual data set. This function is part of the probability distribution framework and is designed to work with the `<<sample>>`, `<<kolmogorovSmirnov>>` and `<<cumulativeProbability>>` functions.
-=======
-The `empiricalDistribution` function returns a continuous probability distribution function based
-on an actual data set (https://en.wikipedia.org/wiki/Empirical_distribution_function). This function is part of the probability distribution framework and is
-designed to work with the `sample`, `kolmogorovSmirnov` and `cumulativeProbability` functions.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 This function is designed to work with continuous data. To build a distribution from
 a discrete data set use the `<<enumeratedDistribution>>`.
@@ -1055,11 +1049,7 @@ The supported distribution functions are: `<<empiricalDistribution>>`, `<<normal
 
 === kolmogorovSmirnov Returns
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
-A result tuple: A tuple containing the p-value and d-statistic for the test result.
-=======
 result tuple : A tuple containing the p-value and d-statistic for the test result.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === kolmogorovSmirnov Syntax
 
@@ -1168,13 +1158,10 @@ if(gt(fieldA,fieldB),mod(fieldA,fieldB),mod(fieldB,fieldA)) // if fieldA > field
 
 == monteCarlo
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
-The `monteCarlo` function performs a https://en.wikipedia.org/wiki/Monte_Carlo_method[Monte Carlo simulation]
-based on its parameters. The `monteCarlo` function runs another function a specified number of times and returns the results.
-=======
+
 The `monteCarlo` function performs a Monte Carlo simulation (https://en.wikipedia.org/wiki/Monte_Carlo_method)
 based on its parameters. The monteCarlo function runs another function a specified number of times and returns the results.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
+
 The function being run typically has one or more variables that are drawn from probability
 distributions on each run. The `<<sample>>` function is used in the function to draw the samples.
 
@@ -1340,15 +1327,9 @@ or(fieldA,fieldB,fieldC,and(fieldD,fieldE),fieldF)
 
 == poissonDistribution
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
 The `poissonDistribution` function returns a https://en.wikipedia.org/wiki/Poisson_distribution[poisson probability distribution]
 based on its parameter. This function is part of the probability distribution framework and is designed to
 work with the `<<sample>>`, `<<probability>>` and `<<cumulativeProbability>>` functions.
-=======
-The `poissonDistribution` function returns a poisson probability distribution (https://en.wikipedia.org/wiki/Poisson_distribution)
-based on its parameter. This function is part of the probability distribution framework and is designed to
-work with the `sample`, `probability` and `cumulativeProbability` functions.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === poissonDistribution Parameters
 
@@ -1369,15 +1350,9 @@ The `polyFit` function performs https://en.wikipedia.org/wiki/Curve_fitting#Fitt
 
 === polyFit Parameters
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
 * `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
 * `numeric array`: y values
 * `integer`: (Optional) polynomial degree. Defaults to 3.
-=======
-* `numeric array` : (Optional) x values. If omitted a sequence will be created for the x values.
-* `numeric array` : y values
-* `integer` : (Optional) polynomial degree. Defaults to 3.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === polyFit Returns
 
@@ -1396,15 +1371,9 @@ The `polyfitDerivative` function returns the derivative of the curve created by 
 
 === polyfitDerivative Parameters
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
 * `numeric array`: (Optional) x values. If omitted a sequence will be created for the x values.
 * `numeric array`: y values
 * `integer`: (Optional) polynomial degree. Defaults to 3.
-=======
-* `numeric array` : (Optional) x values. If omitted a sequence will be created for the x values.
-* `numeric array` : y values
-* `integer` : (Optional) polynomial degree. Defaults to 3.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === polyfitDerivative Returns
 
@@ -1478,13 +1447,8 @@ The `probability` function returns the probability of a random variable within a
 
 === probability Parameters
 
-<<<<<<< 10cd93fc248b3d24425433c68affd71fdc8f1f58
 * `discrete probability distribution`: poissonDistribution | binomialDistribution | uniformDistribution | enumeratedDistribution
 * `integer`: Value of the random variable to compute the probability for.
-=======
-* `discrete probability distribution` : poissonDistribution | binomialDistribution | uniformDistribution | enumeratedDistribution
-* `integer` : Value of the random variable to compute the probability for.
->>>>>>> Solr Ref Guide: update 7.1 statistical function docs
 
 === probability Returns
 
