@@ -74,7 +74,9 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     "w1 w3 xx w2 yy w3 zz",
     "t1 t2 t2 t1",
     "g x x g g x x x g g x x g",
-      "go to webpage"
+    "go to webpage",
+    "x x a x a x",
+    "x x a x b x c x x x x a x b"
   };
 
   protected SpanNearQuery makeQuery(String s1, String s2, String s3,
@@ -243,6 +245,68 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     assertNext(spans,4,1,4);
     assertNext(spans,4,2,4);
     assertFinished(spans);
+  }
+
+  public void testMinShouldMatch1() throws Exception {
+    //test repeated token
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD, "a")), new SpanTermQuery(new Term(FIELD, "a"))
+    }, 1, true, 2);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    assertNext(spans,7,2,5);
+    assertFinished(spans);
+  }
+
+  public void testMinShouldMatch3() throws Exception {
+    //test that 2 work
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD, "a")), new SpanTermQuery(new Term(FIELD, "b")),
+        new SpanTermQuery(new Term(FIELD, "d"))
+    }, 1, true, 2);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    assertNext(spans,8,2,5);
+    assertNext(spans,8,11,14);
+    assertFinished(spans);
+  }
+
+  public void testMinShouldMatch4() throws Exception {
+    //requires 3, only 2 in docs: no hits
+    SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+        new SpanTermQuery(new Term(FIELD, "a")), new SpanTermQuery(new Term(FIELD, "b")),
+        new SpanTermQuery(new Term(FIELD, "d")), new SpanTermQuery(new Term(FIELD, "e"))
+    }, 1, true, 3);
+    Spans spans = q.createWeight(searcher, false, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    assertFinished(spans);
+  }
+
+  public void testMinShouldMatchEx1(){
+    try {
+      SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+          new SpanTermQuery(new Term(FIELD, "t1")), new SpanTermQuery(new Term(FIELD, "t2"))
+      }, 0, true, 1);
+      fail("Can't have value < 2");
+    } catch (IllegalArgumentException e) {
+    }
+  }
+
+  public void testMinShouldMatchEx2(){
+    try {
+      SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+          new SpanTermQuery(new Term(FIELD, "t1")), new SpanTermQuery(new Term(FIELD, "t2"))
+      }, 0, true, 0);
+      fail("Can't have value < 2");
+    } catch (IllegalArgumentException e) {
+    }
+  }
+
+  public void testMinShouldMatchEx3(){
+    try {
+      SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
+          new SpanTermQuery(new Term(FIELD, "t1")), new SpanTermQuery(new Term(FIELD, "t2"))
+      }, 0, true, 5);
+      fail("MinNumberShouldMatch can't be > length of SpanQuery[]");
+    } catch (IllegalArgumentException e) {
+    }
   }
 
   /**
