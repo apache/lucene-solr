@@ -267,6 +267,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("polyfit", PolyFitEvaluator.class)
         .withFunctionName("polyfitDerivative", PolyFitDerivativeEvaluator.class)
         .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
+        .withFunctionName("loess", LoessEvaluator.class)
 
         // Boolean Stream Evaluators
 
