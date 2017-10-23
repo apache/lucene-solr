@@ -89,7 +89,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       boolean found = false;
       while (System.nanoTime() < timeout) {
         try {
-          found = getElectionNodes(TEST_COLLECTION_1, "shard1", stateReader.getZkClient()).size() == 0;
+          found = getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size() == 0;
           break;
         } catch (KeeperException.NoNodeException nne) {
           // ignore
