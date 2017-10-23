@@ -464,12 +464,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     {
       long docsPending = (long) getSolrCore(true).get(0).getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
-      assertEquals(4, docsPending);
+      assertEquals("Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),4, docsPending);
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
       long docsPending = (long) solrCore.getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
-      assertEquals(0, docsPending);
+      assertEquals("Expected non docs are pending in core " + solrCore.getCoreDescriptor(),0, docsPending);
     }
 
     checkRTG(1, 4, cluster.getJettySolrRunners());
@@ -673,8 +673,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
+    String oldLeaderNodeName = oldLeaderJetty.getNodeName();
     ChaosMonkey.kill(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
+    waitForState("Expect new leader", collectionName, (liveNodes, collectionState) ->
+        !collectionState.getLeader("shard1").getNodeName().equals(oldLeaderNodeName)
+    );
     ChaosMonkey.start(oldLeaderJetty);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,1, cluster.getJettySolrRunners());
