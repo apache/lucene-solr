@@ -102,6 +102,8 @@ public class CollectionApiMapping {
             "target.collection", "target",
             "forward.timeout", "forwardTimeout"
         )),
+    MOVE_REPLICA(PER_COLLECTION,
+        POST, MOVEREPLICA, "move-replica", null),
     REBALANCE_LEADERS(PER_COLLECTION,
         POST,
         REBALANCELEADERS,
