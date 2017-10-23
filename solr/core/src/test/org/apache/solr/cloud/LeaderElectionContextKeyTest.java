@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -34,9 +35,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-11469")
 public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
 
   private static final String TEST_COLLECTION_1 = "testCollection1";
@@ -48,14 +46,22 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest
-        .createCollection("testCollection1", "config", 2, 1)
-        .setMaxShardsPerNode(1000)
-        .process(cluster.getSolrClient());
-    CollectionAdminRequest
-        .createCollection("testCollection2", "config", 2, 1)
-        .setMaxShardsPerNode(1000)
-        .process(cluster.getSolrClient());
+    for (int i = 1; i <= 2; i++) {
+      // Create two collections with same order of requests, no parallel
+      // therefore Assign.buildCoreNodeName will create same coreNodeName
+      CollectionAdminRequest
+          .createCollection("testCollection"+i, "config", 2, 1)
+          .setMaxShardsPerNode(100)
+          .setCreateNodeSet("")
+          .process(cluster.getSolrClient());
+      CollectionAdminRequest
+          .addReplicaToShard("testCollection"+i, "shard1")
+          .process(cluster.getSolrClient());
+      CollectionAdminRequest
+          .addReplicaToShard("testCollection"+i, "shard2")
+          .process(cluster.getSolrClient());
+    }
+
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection1", cluster.getSolrClient().getZkStateReader(),
         false, true, 30);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection2", cluster.getSolrClient().getZkStateReader(),
@@ -69,11 +75,12 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
     List<Replica> replicasOfCollection1 = stateReader.getClusterState().getCollection(TEST_COLLECTION_1).getReplicas();
     List<Replica> replicasOfCollection2 = stateReader.getClusterState().getCollection(TEST_COLLECTION_2).getReplicas();
     Replica replica = findLeaderReplicaWithDuplicatedName(replicasOfCollection1, replicasOfCollection2);
+    String shard = getShard(stateReader.getClusterState().getCollection(TEST_COLLECTION_1), replica);
     assertNotNull(replica);
 
     SolrClient shardLeaderClient = new HttpSolrClient.Builder(replica.get("base_url").toString()).build();
     try {
-      assertEquals(1L, getElectionNodes(TEST_COLLECTION_1, "shard1", stateReader.getZkClient()).size());
+      assertEquals(1L, getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size());
       List<String> collection2Shard1Nodes = getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient());
       List<String> collection2Shard2Nodes = getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient());
       CoreAdminRequest.unloadCore(replica.getCoreName(), shardLeaderClient);
@@ -95,6 +102,10 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
     } finally {
       shardLeaderClient.close();
     }
+  }
+
+  private String getShard(DocCollection docCollection, Replica replica) {
+    return docCollection.getShardId(replica.getNodeName(), replica.getCoreName());
   }
 
   private Replica findLeaderReplicaWithDuplicatedName(List<Replica> replicas1, List<Replica> replicas2) {
