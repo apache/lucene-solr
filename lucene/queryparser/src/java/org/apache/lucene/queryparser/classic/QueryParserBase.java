@@ -18,7 +18,13 @@ package org.apache.lucene.queryparser.classic;
 
 import java.io.StringReader;
 import java.text.DateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,11 +33,25 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanQuery.TooManyClauses;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.FieldQueryBuilder;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -74,6 +94,8 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   DateTools.Resolution dateResolution = null;
   // maps field names to date resolutions
   Map<String,DateTools.Resolution> fieldToDateResolution = null;
+  // maps field names to specific query builders
+  Map<String, FieldQueryBuilder> fieldBuilders = new HashMap<>();
 
   boolean autoGeneratePhraseQueries;
   int maxDeterminizedStates = DEFAULT_MAX_DETERMINIZED_STATES;
@@ -371,6 +393,13 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return maxDeterminizedStates;
   }
 
+  /**
+   * Set a particular builder to use for building term and range queries for a field
+   */
+  public void setFieldBuilder(String field, FieldQueryBuilder builder) {
+    this.fieldBuilders.put(field, builder);
+  }
+
   protected void addClause(List<BooleanClause> clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
@@ -514,6 +543,14 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
     return builder.build();
   }
 
+  @Override
+  protected Query newTermQuery(Term term) {
+    if (fieldBuilders.containsKey(term.field())) {
+      return fieldBuilders.get(term.field()).newTermQuery(term);
+    }
+    return super.newTermQuery(term);
+  }
+
   protected Query getRangeQuery(String field,
                                 String part1,
                                 String part2,
@@ -606,6 +643,10 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    * @return new {@link TermRangeQuery} instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
+
+    if (fieldBuilders.containsKey(field))
+      return fieldBuilders.get(field).newRangeQuery(field, part1, part2, startInclusive, endInclusive);
+
     final BytesRef start;
     final BytesRef end;
      
