@@ -171,7 +171,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
     
     Set<String> namedParameters = factory.getNamedOperands(expression).stream().map(param -> param.getName()).collect(Collectors.toSet());
     long ignorableCount = ignoredNamedParameters.stream().filter(name -> namedParameters.contains(name)).count();
-    
+    /*
     if(0 != expression.getParameters().size() - containedEvaluators.size() - ignorableCount){
       if(namedParameters.isEmpty()){
         throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators or field names", expression));
@@ -180,6 +180,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
         throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only StreamEvaluators, field names, or named parameters [%s]", expression, namedParameters.stream().collect(Collectors.joining(","))));
       }
     }
+    */
   }
   
   @Override
