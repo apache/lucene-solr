@@ -3665,16 +3665,38 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.16
-Carrot2 3.15.0
+Apache Tika 1.7
+Carrot2 3.10.4
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
-Apache ZooKeeper 3.4.10
-Jetty 9.3.20.v20170531
+Apache ZooKeeper 3.4.6
+Jetty 9.2.13.v20150730
 
+Upgrade Notes
+----------------------
 
-(No Changes)
+* SOLR-11477: in the XML query parser (defType=xmlparser or {!xmlparser ... })
+  the resolving of external entities is now disallowed by default.
 
+* SOLR-11482: RunExecutableListener was deprecated and is disabled by default for
+  security reasons. Legacy applications still using it must explicitely pass
+  '-Dsolr.enableRunExecutableListener=true' to the Solr command line.
+  Be aware that you should really disable API-based config editing at the same
+  time, using '-Ddisable.configEdit=true'!  (Uwe Schindler)
+
+Bug Fixes
+----------------------
+
+* SOLR-10420: Leaking one SolrZkClient instance per second (Scott Blum, Cao Manh Dat, Markus Jelsma, Steve Rowe)
+
+* SOLR-11477: Disallow resolving of external entities in the XML query parser (defType=xmlparser).
+  (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+Other
+----------------------
+
+* SOLR-11486: Update jmatio to 1.2 and prevent deserialization inside Matlab files.
+  (Uwe Schindler, Steve Rowe)
 
 ======================= 5.5.4 =======================
 
