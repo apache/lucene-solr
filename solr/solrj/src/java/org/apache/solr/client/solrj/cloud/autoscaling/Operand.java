@@ -17,15 +17,14 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.util.Objects;
+
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
+
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.FAIL;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
-
-import java.util.Objects;
-
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
-import org.apache.solr.common.params.CoreAdminParams;
 
 
 public enum Operand {
@@ -66,6 +65,11 @@ public enum Operand {
     }
 
     @Override
+    public Operand opposite(boolean flag) {
+      return flag ? LESS_THAN : GREATER_THAN;
+    }
+
+    @Override
     protected long _delta(long expected, long actual) {
       return actual > expected ? 0 : (expected + 1) - actual;
     }
@@ -83,10 +87,18 @@ public enum Operand {
 
     @Override
     protected long _delta(long expected, long actual) {
-      return actual < expected ? 0 : (expected ) - actual;
+      return actual < expected ? 0 : (actual + 1) - expected;
     }
 
+    @Override
+    public Operand opposite(boolean flag) {
+      return flag ? GREATER_THAN : this;
+    }
   };
+
+  public Operand opposite(boolean flag) {
+    return this;
+  }
   public final String operand;
   final int priority;
 
@@ -107,13 +119,14 @@ public enum Operand {
   }
 
   public Long delta(Object expected, Object actual) {
-    try {
-      Long expectedInt = (Long) Clause.validate(CoreAdminParams.REPLICA, expected, false);
-      Long actualInt = (Long) Clause.validate(CoreAdminParams.REPLICA, actual, false);
-      return _delta(expectedInt, actualInt);
-    } catch (Exception e) {
-      return null;
+    if (expected instanceof Number && actual instanceof Number) {
+      Long expectedL = ((Number) expected).longValue();
+      Long actualL = ((Number) actual).longValue();
+      return _delta(expectedL, actualL);
+    } else {
+      return 0l;
     }
+
   }
 
   protected long _delta(long expected, long actual) {

@@ -18,31 +18,43 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 
 public class Violation implements MapWriter {
   final String shard, coll, node;
   final Object actualVal;
-  final Long delta;//how far is the actual value from the expected value
+  final Long replicaCountDelta;//how far is the actual value from the expected value
   final Object tagKey;
   private final int hash;
   private final Clause clause;
+  private List<Pair<ReplicaInfo, ViolationMeta>> violationVsMetaData = new ArrayList<>();
 
-
-  Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long delta, Object tagKey) {
+  Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long replicaCountDelta, Object tagKey) {
     this.clause = clause;
     this.shard = shard;
     this.coll = coll;
     this.node = node;
-    this.delta = delta;
+    this.replicaCountDelta = replicaCountDelta;
     this.actualVal = actualVal;
     this.tagKey = tagKey;
     hash = ("" + coll + " " + shard + " " + node + " " + String.valueOf(tagKey) + " " + Utils.toJSONString(getClause().toMap(new HashMap<>()))).hashCode();
+  }
+
+  public Violation addReplica(ReplicaInfo r, ViolationMeta meta) {
+    violationVsMetaData.add(new Pair<>(r, meta));
+    return this;
+  }
+
+  public List<Pair<ReplicaInfo, ViolationMeta>> getViolatingReplicas() {
+    return violationVsMetaData;
   }
 
   public Clause getClause() {
@@ -55,8 +67,8 @@ public class Violation implements MapWriter {
   }
   //if the delta is lower , this violation is less serious
   public boolean isLessSerious(Violation that) {
-    return that.delta != null && delta != null &&
-        Math.abs(delta) < Math.abs(that.delta);
+    return that.replicaCountDelta != null && replicaCountDelta != null &&
+        Math.abs(replicaCountDelta) < Math.abs(that.replicaCountDelta);
   }
 
   @Override
@@ -86,8 +98,27 @@ public class Violation implements MapWriter {
     ew.putIfNotNull("violation", (MapWriter) ew1 -> {
       if (getClause().isPerCollectiontag()) ew1.put("replica", actualVal);
       else ew1.put(clause.tag.name, String.valueOf(actualVal));
-      ew1.putIfNotNull("delta", delta);
+      ew1.putIfNotNull("delta", replicaCountDelta);
     });
     ew.put("clause", getClause());
+  }
+
+  static class ViolationMeta implements MapWriter {
+    Long delta;
+
+    public ViolationMeta withDelta(Long delta) {
+      this.delta = delta;
+      return this;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.putIfNotNull("delta", delta);
+    }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(this);
+    }
   }
 }

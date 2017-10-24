@@ -23,6 +23,7 @@ public interface AutoScalingParams {
 
   // parameters
   String DIAGNOSTICS = "diagnostics";
+  String SUGGESTIONS = "suggestions";
   String NAME = "name";
   String TRIGGER = "trigger";
   String EVENT = "event";

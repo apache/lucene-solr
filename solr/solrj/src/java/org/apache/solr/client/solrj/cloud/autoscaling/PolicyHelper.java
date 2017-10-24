@@ -89,7 +89,7 @@ public class PolicyHelper {
                 suggester = suggester.hint(Hint.TARGET_NODE, nodeName);
               }
             }
-            SolrRequest op = suggester.getOperation();
+            SolrRequest op = suggester.getSuggestion();
             if (op == null) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No node can satisfy the rules " +
                   Utils.toJSONString(Utils.getDeepCopy(session.expandedClauses, 4, true)));
@@ -138,6 +138,18 @@ public class PolicyHelper {
     };
 
 
+  }
+
+  public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf, SolrCloudManager cloudManager) {
+    Policy policy = autoScalingConf.getPolicy();
+    Suggestion.SuggestionCtx suggestionCtx = new Suggestion.SuggestionCtx();
+    suggestionCtx.session = policy.createSession(cloudManager);
+    List<Violation> violations = suggestionCtx.session.getViolations();
+    for (Violation violation : violations) {
+      Suggestion.getTagType(violation.getClause().tag.name).getSuggestions(suggestionCtx.setViolation(violation));
+      suggestionCtx.violation = null;
+    }
+    return suggestionCtx.getSuggestions();
   }
 
   public static class SessionRef {

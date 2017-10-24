@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -46,6 +48,8 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
@@ -54,6 +58,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * Test for AutoScalingHandler
  */
 public class AutoScalingHandlerTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   final static String CONFIGSET_NAME = "conf";
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -692,9 +697,26 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     for (Map<String, Object> violation : violations) {
       assertEquals("readApiTestViolations", violation.get("collection"));
       assertEquals("shard1", violation.get("shard"));
-      assertEquals(-1l, getObjectByPath(violation, true, "violation/delta"));
+      assertEquals(2l, getObjectByPath(violation, true, "violation/delta"));
       assertEquals(3l, getObjectByPath(violation, true, "violation/replica/NRT"));
       assertNotNull(violation.get("clause"));
+    }
+    JettySolrRunner runner1 = cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
+
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, "/suggestions", null);
+    response = solrClient.request(req);
+    List l = (List) response.get("suggestions");
+    assertNotNull(l);
+    assertEquals(1, l.size());
+    for (int i = 0; i < l.size(); i++) {
+      Object suggestion = l.get(i);
+      assertEquals("violation", Utils.getObjectByPath(suggestion, true, "type"));
+      assertEquals("POST", Utils.getObjectByPath(suggestion, true, "operation/method"));
+      assertEquals("/c/readApiTestViolations", Utils.getObjectByPath(suggestion, true, "operation/path"));
+      String node = (String) Utils.getObjectByPath(suggestion, true, "operation/command/move-replica/targetNode");
+      assertNotNull(node);
+      assertEquals(runner1.getNodeName(), node);
     }
   }
 

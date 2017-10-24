@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -42,9 +43,9 @@ public class Row implements MapWriter {
   boolean anyValueMissing = false;
   boolean isLive = true;
 
-  public Row(String node, List<String> params, SolrCloudManager cloudManager) {
+  public Row(String node, List<String> params, List<String> perReplicaAttributes, SolrCloudManager cloudManager) {
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
-    collectionVsShardVsReplicas = nodeStateProvider.getReplicaInfo(node, params);
+    collectionVsShardVsReplicas = nodeStateProvider.getReplicaInfo(node, perReplicaAttributes);
     if (collectionVsShardVsReplicas == null) collectionVsShardVsReplicas = new HashMap<>();
     this.node = node;
     cells = new Cell[params.size()];
@@ -88,6 +89,14 @@ public class Row implements MapWriter {
     return null;
   }
 
+  Object getVal(String name, Object def) {
+    for (Cell cell : cells)
+      if (cell.name.equals(name)) {
+        return cell.val == null ? def : cell.val;
+      }
+    return def;
+  }
+
   @Override
   public String toString() {
     return node;
@@ -99,7 +108,7 @@ public class Row implements MapWriter {
     Map<String, List<ReplicaInfo>> c = row.collectionVsShardVsReplicas.computeIfAbsent(coll, k -> new HashMap<>());
     List<ReplicaInfo> replicas = c.computeIfAbsent(shard, k -> new ArrayList<>());
     String replicaname = "" + new Random().nextInt(1000) + 1000;
-    replicas.add(new ReplicaInfo(replicaname,replicaname, coll, shard,
+    replicas.add(new ReplicaInfo(replicaname, replicaname, coll, shard, type, this.node,
         Collections.singletonMap(ZkStateReader.REPLICA_TYPE, type != null ? type.toString() : Replica.Type.NRT.toString())));
     for (Cell cell : row.cells) {
       if (cell.name.equals("cores")) {
@@ -137,5 +146,16 @@ public class Row implements MapWriter {
 
   public Cell[] getCells() {
     return cells;
+  }
+
+  public void forEachReplica(Consumer<ReplicaInfo> consumer) {
+    forEachReplica(collectionVsShardVsReplicas, consumer);
+  }
+
+  public static void forEachReplica(Map<String, Map<String, List<ReplicaInfo>>> collectionVsShardVsReplicas, Consumer<ReplicaInfo> consumer) {
+    collectionVsShardVsReplicas.forEach((coll, shardVsReplicas) -> shardVsReplicas
+        .forEach((shard, replicaInfos) -> {
+          for (ReplicaInfo r : replicaInfos) consumer.accept(r);
+        }));
   }
 }

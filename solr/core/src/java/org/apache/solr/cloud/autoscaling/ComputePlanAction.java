@@ -61,7 +61,7 @@ public class ComputePlanAction extends TriggerActionBase {
       Policy.Session session = policy.createSession(cloudManager);
       Suggester suggester = getSuggester(session, event, cloudManager);
       while (true) {
-        SolrRequest operation = suggester.getOperation();
+        SolrRequest operation = suggester.getSuggestion();
         if (operation == null) break;
         log.info("Computed Plan: {}", operation.getParams());
         Map<String, Object> props = context.getProperties();

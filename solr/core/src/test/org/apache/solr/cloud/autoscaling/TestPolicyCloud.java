@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Constants;
@@ -29,7 +30,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -72,6 +78,46 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     cluster.deleteAllCollections();
     cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
         "{}".getBytes(StandardCharsets.UTF_8), true);
+  }
+
+  public void testDataProviderPerReplicaDetails() throws Exception {
+    CollectionAdminRequest.createCollection("perReplicaDataColl", "conf", 1, 5)
+        .process(cluster.getSolrClient());
+
+    DocCollection coll = getCollectionState("perReplicaDataColl");
+    String autoScaleJson = "{" +
+        "  'cluster-preferences': [" +
+        "    { maximize : freedisk , precision: 50}," +
+        "    { minimize : cores, precision: 2}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { replica : '0' , 'nodeRole': 'overseer'}," +
+        "    { 'replica': '<2', 'shard': '#ANY', 'node': '#ANY'" +
+        "    }" +
+        "  ]," +
+        "  'policies': {" +
+        "    'policy1': [" +
+        "      { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      { 'replica': '<2', 'shard': '#EACH', 'sysprop.rack': 'rack1'}" +
+        "    ]" +
+        "  }" +
+        "}";
+    AutoScalingConfig config = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScaleJson));
+    SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(cluster.getZkClient()), cluster.getSolrClient());
+    Policy.Session session = config.getPolicy().createSession(cloudManager);
+
+    AtomicInteger count = new AtomicInteger(0);
+    for (Row row : session.getSorted()) {
+      row.collectionVsShardVsReplicas.forEach((c, shardVsReplicas) -> shardVsReplicas.forEach((s, replicaInfos) -> {
+        for (ReplicaInfo replicaInfo : replicaInfos) {
+          if (replicaInfo.getVariables().containsKey(Suggestion.ConditionType.CORE_IDX.tagName)) count.incrementAndGet();
+        }
+      }));
+    }
+    assertTrue(count.get() > 0);
+
+    CollectionAdminRequest.deleteCollection("perReplicaDataColl").process(cluster.getSolrClient());
+
   }
 
   public void testCreateCollectionAddReplica() throws Exception  {
@@ -137,6 +183,8 @@ public class TestPolicyCloud extends SolrCloudTestCase {
 
     assertEquals("Expected exactly three replica of collection on node with port: " + firstNodePort, 3, replicasOnNode1);
     assertEquals("Expected exactly three replica of collection on node with port: " + secondNodePort, 3, replicasOnNode2);
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+
   }
 
   public void testMetricsTag() throws Exception {
