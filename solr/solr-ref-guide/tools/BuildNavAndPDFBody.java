@@ -103,7 +103,9 @@ public class BuildNavAndPDFBody {
             }
             previous.set(page);
 
-            
+            // use an explicit anchor, since the auto-generated ID from the "title" might not match
+            // the shortname/filename
+            w.append("[[").append(page.shortname).append("]]\n");
             // HACK: where this file actually lives will determine what we need here...
             w.write("include::../");
             w.write(page.file.getName());
@@ -223,6 +225,16 @@ public class BuildNavAndPDFBody {
       Map<String,Object> attrs = header.getAttributes();
       this.shortname = (String) attrs.get("page-shortname");
       this.permalink = (String) attrs.get("page-permalink");
+
+      // TODO: SOLR-11531: we should eliminate these attributes and not depend on them in jekyll, ...
+      // ...but for now at least be sure they are consistent with the filename
+      if (! file.getName().equals(shortname + ".adoc") ) {
+        throw new RuntimeException(file + " has a mismatched shortname: " + shortname);
+      }
+      if (! permalink.equals(shortname + ".html") ) {
+        throw new RuntimeException(file + " has a mismatched permalink: " + permalink);
+      }
+
       
       if (attrs.containsKey("page-children")) {
         String kidsString = ((String) attrs.get("page-children")).trim();
