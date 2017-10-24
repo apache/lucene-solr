@@ -103,7 +103,7 @@ def update_backcompat_tests(types, index_version, current_version):
   module = 'lucene/backward-codecs'
   filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % module
   if not current_version.is_back_compat_with(index_version):
-    matcher = re.compile(r'final String\[\] unsupportedNames = {|};'),
+    matcher = re.compile(r'final String\[\] unsupportedNames = {|};')
   elif 'sorted' in types:
     matcher = re.compile(r'final static String\[\] oldSortedNames = {|};')
   else:
@@ -245,7 +245,8 @@ def main():
   current_version = scriptutil.Version.parse(scriptutil.find_current_version())
   create_and_add_index(source, 'cfs', c.version, current_version, c.temp_dir)
   create_and_add_index(source, 'nocfs', c.version, current_version, c.temp_dir)
-  create_and_add_index(source, 'sorted', c.version, current_version, c.temp_dir)
+  if c.version.major > 6 or (c.version.major == 6 and c.version.minor >= 2):
+    create_and_add_index(source, 'sorted', c.version, current_version, c.temp_dir)
   if c.version.minor == 0 and c.version.bugfix == 0 and c.version.major < current_version.major:
     create_and_add_index(source, 'moreterms', c.version, current_version, c.temp_dir)
     create_and_add_index(source, 'dvupdates', c.version, current_version, c.temp_dir)
@@ -254,7 +255,8 @@ def main():
     
   print('\nAdding backwards compatibility tests')
   update_backcompat_tests(['cfs', 'nocfs'], c.version, current_version)
-  update_backcompat_tests(['sorted'], c.version, current_version)
+  if c.version.major > 6 or (c.version.major == 6 and c.version.minor >= 2):
+    update_backcompat_tests(['sorted'], c.version, current_version)
 
   print('\nTesting changes')
   check_backcompat_tests()
