@@ -176,6 +176,11 @@ public interface FacetParams {
   public static final String FACET_CONTAINS = FACET + ".contains";
 
   /**
+   * Only return constraints of a facet field containing the given string.
+   */
+  public static final String FACET_MATCHES = FACET + ".matches";
+
+  /**
    * If using facet contains, ignore case when comparing values.
    */
   public static final String FACET_CONTAINS_IGNORE_CASE = FACET_CONTAINS + ".ignoreCase";

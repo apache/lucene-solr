@@ -65,6 +65,10 @@ The `facet.contains` parameter limits the terms on which to facet to those conta
 
 If `facet.contains` is used, the `facet.contains.ignoreCase` parameter causes case to be ignored when matching the given substring against candidate facet terms.
 
+`facet.matches`::
+
+If you want to only return facet buckets for the terms that match a regular expression.
+
 `facet.sort`::
 This parameter determines the ordering of the facet field constraints.
 +
