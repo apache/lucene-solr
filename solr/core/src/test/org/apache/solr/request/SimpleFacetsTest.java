@@ -568,6 +568,36 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
 
   @Test
+  public void testFacetMatches() {
+    final String[][] uifSwitch = new String[][] {
+        new String[]{"f.trait_s.facet.method", "uif"},
+        new String[]{"facet.method", "uif"}
+    };
+    final String[] none = new String[]{};
+    for (String[] aSwitch : uifSwitch) {
+      for(String[] methodParam : new String[][]{ none, aSwitch}) {
+        assertQ("check facet.match filters facets returned",
+            req(methodParam
+                , "q", "id:[42 TO 47]"
+                , "facet", "true"
+                , "facet.field", "trait_s"
+                , "facet.matches", ".*o.*"
+            )
+            , "*[count(//doc)=6]"
+
+            , "//lst[@name='facet_counts']/lst[@name='facet_queries']"
+
+            , "//lst[@name='facet_counts']/lst[@name='facet_fields']"
+            , "//lst[@name='facet_fields']/lst[@name='trait_s']"
+            , "*[count(//lst[@name='trait_s']/int)=2]"
+            , "//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+            , "//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
+        );
+      }
+    }
+  }
+
+  @Test
   public void testSimpleFacetCounts() {
  
     assertQ("standard request handler returns all matches",

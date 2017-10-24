@@ -41,6 +41,9 @@ New Features
 
 * SOLR-11518: Implement Suggestions for freedisk violations (noble)
 
+* SOLR-10132: A new optional facet.matches parameter to return facet buckets only
+  for terms that match a regular expression. (Gus Heck, Christine Poerschke)
+
 * SOLR-11520: Implement autoscaling suggestions for cores count violations (noble)
 
 Bug Fixes
