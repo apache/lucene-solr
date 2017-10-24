@@ -26,7 +26,7 @@ The Guide is written in simple AsciiDoc-formatted files, and the source lives in
 
 // This section only appears in the PDF version of the Ref Guide.
 ifdef::backend-pdf[]
-See the latest information on how to contribute to documentation online at https://lucene.apache.org/solr/guide/meta-docs.html.
+Find information on how to contribute to documentation online at https://lucene.apache.org/solr/guide/how-to-contribute.html.
 endif::[]
 
 // This section only appears in the HTML version of the Ref Guide.
