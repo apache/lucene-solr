@@ -73,7 +73,7 @@ The `backup` operation can be monitored to see if it has completed by sending th
 .Status API Example
 [source,text]
 ----
-http://localhost:8983/solr/gettingstarted/replication?command=details
+http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 ----
 
 .Output Snippet
@@ -126,7 +126,7 @@ You can also check the status of a `restore` operation by sending the `restorest
 .Status API Example
 [source,text]
 ----
-http://localhost:8983/solr/gettingstarted/replication?command=restorestatus
+http://localhost:8983/solr/gettingstarted/replication?command=restorestatus&wt=xml
 ----
 
 .Status API Output
