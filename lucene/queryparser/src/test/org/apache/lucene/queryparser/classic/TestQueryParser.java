@@ -31,8 +31,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -55,6 +57,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.FieldQueryBuilder;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /**
@@ -951,5 +954,37 @@ public class TestQueryParser extends QueryParserTestBase {
       return false;
     }
 
+  }
+
+  public void testLongPointTypes() throws ParseException {
+    final QueryParser qp = new QueryParser(FIELD, new MockAnalyzer(random()));
+    qp.setFieldBuilder("longpoint", FieldQueryBuilder.LONG_POINT_BUILDER);
+
+    assertEquals(LongPoint.newExactQuery("longpoint", 4), qp.parse("longpoint:4"));
+    assertEquals(LongPoint.newRangeQuery("longpoint", 1, 5),
+        qp.parse("longpoint:[1 TO 5]"));
+
+    assertEquals(LongPoint.newRangeQuery("longpoint", new long[]{4, 3}, new long[]{4, 3}),
+        qp.parse("longpoint:4,3"));
+    assertEquals(LongPoint.newRangeQuery("longpoint", new long[]{0, 0}, new long[]{4, 4}),
+        qp.parse("longpoint:[0,0 TO 4,4]"));
+    assertEquals(LongPoint.newRangeQuery("longpoint", new long[]{1, 1}, new long[]{4, 4}),
+        qp.parse("longpoint:{0,0 TO 4,4]"));
+    assertEquals(LongPoint.newRangeQuery("longpoint", new long[]{0, 0}, new long[]{4, Long.MAX_VALUE}),
+        qp.parse("longpoint:[0,0 TO 4,*]"));
+  }
+
+  public void testDoublePointTypes() throws ParseException {
+    final QueryParser qp = new QueryParser(FIELD, new MockAnalyzer(random()));
+    qp.setFieldBuilder("doublepoint", FieldQueryBuilder.DOUBLE_POINT_BUILDER);
+
+    assertEquals(DoublePoint.newExactQuery("doublepoint", 4), qp.parse("doublepoint:4"));
+    assertEquals(DoublePoint.newRangeQuery("doublepoint", 1, 5),
+        qp.parse("doublepoint:[1 TO 5]"));
+
+    assertEquals(DoublePoint.newRangeQuery("doublepoint", new double[]{4, 3}, new double[]{4, 3}),
+        qp.parse("doublepoint:4,3"));
+    assertEquals(DoublePoint.newRangeQuery("doublepoint", new double[]{0, 0}, new double[]{4, 4}),
+        qp.parse("doublepoint:[0,0 TO 4,4]"));
   }
 }
