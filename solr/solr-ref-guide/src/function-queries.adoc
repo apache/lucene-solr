@@ -47,7 +47,7 @@ sort=div(popularity,price) desc, score desc
 +
 [source,text]
 ----
-&fl=sum(x, y),id,a,b,c,score
+&fl=sum(x, y),id,a,b,c,score&wt=xml
 ----
 +
 the output would be:
@@ -531,7 +531,7 @@ http://localhost:8983/solr/collection_name/select?q=*:*&sort=dist(2, point1, poi
 
 Sort by function also supports pseudo-fields: fields can be generated dynamically and return results as though it was normal field in the index. For example,
 
-`&fl=id,sum(x, y),score`
+`&fl=id,sum(x, y),score&wt=xml`
 
 would return:
 

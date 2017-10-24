@@ -64,7 +64,7 @@ The parameter `allParents` is a filter that matches *only parent documents*; her
 
 The parameter `someParents` identifies a query that will match some of the parent documents. The output is the children.
 
-Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene`. We only get one document in response:
+Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene&wt=xml`. We only get one document in response:
 
 [source,xml]
 ----
@@ -110,7 +110,7 @@ child query must only match non-parent docs.
 
 You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
 
-Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud`. We get this document in response:
+Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud&wt=xml`. We get this document in response:
 
 [source,xml]
 ----

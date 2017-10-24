@@ -54,7 +54,7 @@ Modifies every document to include the exact same value, as if it were a stored 
 
 [source,plain]
 ----
-q=*:*&fl=id,greeting:[value v='hello']
+q=*:*&fl=id,greeting:[value v='hello']&wt=xml
 ----
 
 The above query would produce results like the following:
