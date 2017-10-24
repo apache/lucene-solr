@@ -164,7 +164,7 @@ Short requests can also be sent using a HTTP GET command, if enabled in <<reques
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update?stream.body=%3Ccommit/%3E
+curl http://localhost:8983/solr/my_collection/update?stream.body=%3Ccommit/%3E&wt=xml
 ----
 
 Responses from Solr take the form shown here:
