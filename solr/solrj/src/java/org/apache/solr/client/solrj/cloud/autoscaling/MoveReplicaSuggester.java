@@ -41,8 +41,8 @@ public class MoveReplicaSuggester extends Suggester {
     for (Pair<ReplicaInfo, Row> fromReplica : getValidReplicas(true, true, -1)) {
       Row fromRow = fromReplica.second();
       ReplicaInfo replicaInfo = fromReplica.first();
-      String coll = replicaInfo.collection;
-      String shard = replicaInfo.shard;
+      String coll = replicaInfo.getCollection();
+      String shard = replicaInfo.getShard();
       Pair<Row, ReplicaInfo> pair = fromRow.removeReplica(coll, shard, replicaInfo.getType());
       Row srcTmpRow = pair.first();
       if (srcTmpRow == null) {
@@ -67,11 +67,11 @@ public class MoveReplicaSuggester extends Suggester {
       }
     }
     if (targetNodeIndex != null && sourceNodeIndex != null) {
-      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.getType()).first());
-      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(sourceReplicaInfo.collection, sourceReplicaInfo.shard, sourceReplicaInfo.getType()));
+      getMatrix().set(sourceNodeIndex, getMatrix().get(sourceNodeIndex).removeReplica(sourceReplicaInfo.getCollection(), sourceReplicaInfo.getShard(), sourceReplicaInfo.getType()).first());
+      getMatrix().set(targetNodeIndex, getMatrix().get(targetNodeIndex).addReplica(sourceReplicaInfo.getCollection(), sourceReplicaInfo.getShard(), sourceReplicaInfo.getType()));
       return new CollectionAdminRequest.MoveReplica(
-          sourceReplicaInfo.collection,
-          sourceReplicaInfo.name,
+          sourceReplicaInfo.getCollection(),
+          sourceReplicaInfo.getName(),
           getMatrix().get(targetNodeIndex).node);
     }
     return null;

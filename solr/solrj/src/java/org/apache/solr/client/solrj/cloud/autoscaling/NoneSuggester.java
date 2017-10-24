@@ -28,7 +28,7 @@ public class NoneSuggester extends Suggester {
   }
 
   @Override
-  public SolrRequest getOperation() {
+  public SolrRequest getSuggestion() {
     return null;
   }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.function.Consumer;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
 
@@ -66,7 +68,7 @@ public abstract class Suggester {
   abstract SolrRequest init();
 
 
-  public SolrRequest getOperation() {
+  public SolrRequest getSuggestion() {
     if (!isInitialized) {
       Set<String> collections = (Set<String>) hints.getOrDefault(Hint.COLL, Collections.emptySet());
       Set<Pair<String, String>> s = (Set<Pair<String, String>>) hints.getOrDefault(Hint.COLL_SHARD, Collections.emptySet());
@@ -92,7 +94,7 @@ public abstract class Suggester {
         // the source node is dead so live nodes may not have it
         for (String srcNode : srcNodes) {
           if(session.matrix.stream().noneMatch(row -> row.node.equals(srcNode)))
-          session.matrix.add(new Row(srcNode, session.getPolicy().params, session.cloudManager));
+            session.matrix.add(new Row(srcNode, session.getPolicy().params, session.getPolicy().perReplicaAttributes, session.cloudManager));
         }
       }
       session.applyRules();
@@ -110,6 +112,31 @@ public abstract class Suggester {
   List<Row> getMatrix() {
     return session.matrix;
 
+  }
+
+  public static class SuggestionInfo implements MapWriter {
+    Violation violation;
+    SolrRequest operation;
+
+    public SuggestionInfo(Violation violation, SolrRequest op) {
+      this.violation = violation;
+      this.operation = op;
+    }
+
+    public SolrRequest getOperation() {
+      return operation;
+    }
+
+    public Violation getViolation() {
+      return violation;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("type", violation == null ? "improvement" : "violation");
+      ew.putIfNotNull("violation", violation);
+      ew.put("operation", operation);
+    }
   }
 
   //check if the fresh set of violations is less serious than the last set of violations

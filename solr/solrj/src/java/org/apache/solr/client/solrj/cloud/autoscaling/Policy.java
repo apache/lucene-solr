@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -67,6 +68,7 @@ public class Policy implements MapWriter {
   final List<Clause> clusterPolicy;
   final List<Preference> clusterPreferences;
   final List<String> params;
+  final List<String> perReplicaAttributes;
 
   public Policy() {
     this(Collections.emptyMap());
@@ -104,7 +106,13 @@ public class Policy implements MapWriter {
     this.policies = Collections.unmodifiableMap(
         policiesFromMap((Map<String, List<Map<String, Object>>>)jsonMap.getOrDefault(POLICIES, emptyMap()), newParams));
     this.params = Collections.unmodifiableList(newParams);
-
+    perReplicaAttributes = readPerReplicaAttrs();
+  }
+  private List<String> readPerReplicaAttrs() {
+    return this.params.stream()
+        .map(Suggestion.tagVsPerReplicaVal::get)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
   }
 
   private Policy(Map<String, List<Clause>> policies, List<Clause> clusterPolicy, List<Preference> clusterPreferences) {
@@ -113,6 +121,7 @@ public class Policy implements MapWriter {
     this.clusterPreferences = clusterPreferences != null ? Collections.unmodifiableList(clusterPreferences) :
         Collections.singletonList(DEFAULT_PREFERENCE);
     this.params = Collections.unmodifiableList(buildParams(this.clusterPreferences, this.clusterPolicy, this.policies));
+    perReplicaAttributes = readPerReplicaAttrs();
   }
 
   private List<String> buildParams(List<Preference> preferences, List<Clause> policy, Map<String, List<Clause>> policies) {
@@ -230,7 +239,7 @@ public class Policy implements MapWriter {
       Collections.sort(expandedClauses);
 
       matrix = new ArrayList<>(nodes.size());
-      for (String node : nodes) matrix.add(new Row(node, params, cloudManager));
+      for (String node : nodes) matrix.add(new Row(node, params, perReplicaAttributes,cloudManager));
       applyRules();
     }
 
@@ -238,8 +247,10 @@ public class Policy implements MapWriter {
       String p = stateProvider.getPolicyNameByCollection(c);
       if (p != null) {
         List<Clause> perCollPolicy = policies.get(p);
-        if (perCollPolicy == null)
-          throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
+        if (perCollPolicy == null) {
+          return;
+//          throw new RuntimeException(StrUtils.formatString("Policy for collection {0} is {1} . It does not exist", c, p));
+        }
       }
       expandedClauses.addAll(mergePolicies(c, policies.getOrDefault(p, emptyList()), clusterPolicy));
     }

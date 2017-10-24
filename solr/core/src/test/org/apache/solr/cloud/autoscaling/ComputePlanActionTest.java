@@ -162,7 +162,6 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("testNodeLost",
         "conf",1, 2);
-//    create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
@@ -188,7 +187,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
         break;
       }
     }
-    log.info("$$$$$$$$$$$$$$Stopped_node : {}", node);
+    log.info("Stopped_node : {}", node);
     cluster.waitForAllNodes(30);
 
     assertTrue("Trigger was not fired even after 10 seconds", triggerFiredLatch.await(10, TimeUnit.SECONDS));

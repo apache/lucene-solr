@@ -18,10 +18,8 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +31,6 @@ import java.util.Set;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
@@ -147,6 +144,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (tag != null && !params.contains(tag.name)) params.add(tag.name);
   }
 
+  boolean isReplicaZero() {
+    return replica != null && replica.getOperand() == EQUAL && 0L == (Long) replica.val;
+  }
+
   class Condition {
     final String name;
     final Object val;
@@ -158,10 +159,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
       this.op = op;
     }
 
+
     boolean isPass(Object inputVal) {
       if (inputVal instanceof ReplicaCount) inputVal = ((ReplicaCount) inputVal).getVal(type);
-      ValidateInfo validator = getValidator(name);
-      if (validator == LazyValidator.INST) { // we don't know the type
+      Suggestion.ConditionType validator = Suggestion.getTagType(name);
+      if (validator == Suggestion.ConditionType.LAZY) { // we don't know the type
         return op.match(parseString(val), parseString(inputVal)) == PASS;
       } else {
         return op.match(val, validate(name, inputVal, false)) == PASS;
@@ -183,13 +185,18 @@ public class Clause implements MapWriter, Comparable<Clause> {
     }
 
     public Long delta(Object val) {
+      if (val instanceof ReplicaCount) val = ((ReplicaCount) val).getVal(type);
       if (this.val instanceof String) {
         if (op == LESS_THAN || op == GREATER_THAN) {
-          return op.delta(Clause.parseDouble(name, this.val), Clause.parseDouble(name, val));
+          return op
+              .opposite(isReplicaZero() && this == tag)
+              .delta(Clause.parseDouble(name, this.val), Clause.parseDouble(name, val));
         } else {
           return 0l;
         }
-      } else return op.delta(this.val, val);
+      } else return op
+          .opposite(isReplicaZero() && this == tag)
+          .delta(this.val, val);
     }
 
     public String getName() {
@@ -235,7 +242,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
 
   public List<Violation> test(List<Row> allRows) {
-    List<Violation> violations = new ArrayList<>();
+    Suggestion.ViolationCtx ctx = new Suggestion.ViolationCtx(this, allRows);
     if (isPerCollectiontag()) {
       Map<String, Map<String, Map<String, ReplicaCount>>> replicaCount = computeReplicaCounts(allRows);
       for (Map.Entry<String, Map<String, Map<String, ReplicaCount>>> e : replicaCount.entrySet()) {
@@ -244,14 +251,15 @@ public class Clause implements MapWriter, Comparable<Clause> {
           if (!shard.isPass(shardVsCount.getKey())) continue;
           for (Map.Entry<String, ReplicaCount> counts : shardVsCount.getValue().entrySet()) {
             if (!replica.isPass(counts.getValue())) {
-              violations.add(new Violation(this,
+              Violation violation = new Violation(this,
                   e.getKey(),
                   shardVsCount.getKey(),
                   tag.name.equals("node") ? counts.getKey() : null,
                   counts.getValue(),
                   replica.delta(counts.getValue()),
-                  counts.getKey()
-              ));
+                  counts.getKey());
+              Suggestion.getTagType(tag.name).addViolatingReplicas(ctx.reset(counts.getKey(), counts.getValue(), violation));
+//              Suggestion.getByTag(tag.name).violationFun.accept(ctx.reset(counts.getKey(), counts.getValue(), violation));
             }
           }
         }
@@ -259,11 +267,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } else {
       for (Row r : allRows) {
         if (!tag.isPass(r)) {
-          violations.add(new Violation(this, null, null, r.node, r.getVal(tag.name), tag.delta(r.getVal(tag.name)), null));
+          Suggestion.ConditionType.CORES.addViolatingReplicas(ctx.reset(null, null,
+              new Violation(this, null, null, r.node, r.getVal(tag.name), tag.delta(r.getVal(tag.name)), null)));
         }
       }
     }
-    return violations;
+    return ctx.allViolations;
 
   }
 
@@ -311,71 +320,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
 
-  static class ValidateInfo {
-    final Class type;
-    final Set<String> vals;
-    final Number min;
-    final Number max;
-
-
-    ValidateInfo(Class type, Set<String> vals, Number min, Number max) {
-      this.type = type;
-      this.vals = vals;
-      this.min = min;
-      if (min != null && !type.isInstance(min))
-        throw new RuntimeException("wrong min value type, expected: " + type.getName() + " actual: " + min.getClass().getName());
-      this.max = max;
-      if (max != null && !type.isInstance(max))
-        throw new RuntimeException("wrong max value type, expected: " + type.getName() + " actual: " + max.getClass().getName());
-    }
-
-    public Object validate(String name, Object val, boolean isRuleVal) {
-      if (type == Double.class) {
-        Double num = parseDouble(name, val);
-        if (isRuleVal) {
-          if (min != null)
-            if (Double.compare(num, (Double) min) == -1)
-              throw new RuntimeException(name + ": " + val + " must be greater than " + min);
-          if (max != null)
-            if (Double.compare(num, (Double) max) == 1)
-              throw new RuntimeException(name + ": " + val + " must be less than " + max);
-        }
-        return num;
-      } else if (type == Long.class) {
-        Long num = parseLong(name, val);
-        if (isRuleVal) {
-          if (min != null)
-            if (num < min.longValue())
-              throw new RuntimeException(name + ": " + val + " must be greater than " + min);
-          if (max != null)
-            if (num > max.longValue())
-              throw new RuntimeException(name + ": " + val + " must be less than " + max);
-        }
-        return num;
-      } else if (type == String.class) {
-        if (isRuleVal && vals != null && !vals.contains(val))
-          throw new RuntimeException(name + ": " + val + " must be one of " + StrUtils.join(vals, ','));
-        return val;
-      } else {
-        throw new RuntimeException("Invalid type ");
-      }
-
-    }
-  }
-
-  static class LazyValidator extends ValidateInfo {
-    static final LazyValidator INST = new LazyValidator();
-
-    LazyValidator() {
-      super(null, null, null, null);
-    }
-
-    @Override
-    public Object validate(String name, Object val, boolean isRuleVal) {
-      return parseString(val);
-    }
-  }
-
   public static String parseString(Object val) {
     return val == null ? null : String.valueOf(val);
   }
@@ -388,16 +332,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
    */
   public static Object  validate(String name, Object val, boolean isRuleVal) {
     if (val == null) return null;
-    ValidateInfo info = getValidator(name);
+    Suggestion.ConditionType info = Suggestion.getTagType(name);
     if (info == null) throw new RuntimeException("Unknown type :" + name);
     return info.validate(name, val, isRuleVal);
-  }
-
-  private static ValidateInfo getValidator(String name) {
-    ValidateInfo info = validatetypes.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get("STRING");
-    if (info == null && name.startsWith(METRICS_PREFIX)) info = LazyValidator.INST;
-    return info;
   }
 
   public static Long parseLong(String name, Object val) {
@@ -425,6 +362,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     throw new RuntimeException(name + ": " + val + "not a valid number");
   }
 
+
   public static Double parseDouble(String name, Object val) {
     if (val == null) return null;
     if (val instanceof Double) return (Double) val;
@@ -448,22 +386,4 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   public static final String METRICS_PREFIX = "metrics:";
 
-  private static final Map<String, ValidateInfo> validatetypes = new HashMap<>();
-
-  static {
-    validatetypes.put("collection", new ValidateInfo(String.class, null, null, null));
-    validatetypes.put("shard", new ValidateInfo(String.class, null, null, null));
-    validatetypes.put("replica", new ValidateInfo(Long.class, null, 0L, null));
-    validatetypes.put(ImplicitSnitch.PORT, new ValidateInfo(Long.class, null, 1L, 65535L));
-    validatetypes.put(ImplicitSnitch.DISK, new ValidateInfo(Double.class, null, 0d, Double.MAX_VALUE));
-    validatetypes.put(ImplicitSnitch.NODEROLE, new ValidateInfo(String.class, Collections.singleton("overseer"), null, null));
-    validatetypes.put(ImplicitSnitch.CORES, new ValidateInfo(Long.class, null, 0L, Long.MAX_VALUE));
-    validatetypes.put(ImplicitSnitch.SYSLOADAVG, new ValidateInfo(Double.class, null, 0d, 100d));
-    validatetypes.put(ImplicitSnitch.HEAPUSAGE, new ValidateInfo(Double.class, null, 0d, null));
-    validatetypes.put("NUMBER", new ValidateInfo(Long.class, null, 0L, Long.MAX_VALUE));//generic number validation
-    validatetypes.put("STRING", new ValidateInfo(String.class, null, null, null));//generic string validation
-    validatetypes.put("node", new ValidateInfo(String.class, null, null, null));
-    validatetypes.put("LAZY", LazyValidator.INST);
-    for (String ip : ImplicitSnitch.IP_SNITCHES) validatetypes.put(ip, new ValidateInfo(Long.class, null, 0L, 255L));
-  }
 }

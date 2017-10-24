@@ -126,8 +126,12 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
               return this;
             }
           });
-        } else if (parts.size() == 3 && DIAGNOSTICS.equals(parts.get(2))) {
-          handleDiagnostics(rsp, autoScalingConf);
+        } else if (parts.size() == 3) {
+          if (DIAGNOSTICS.equals(parts.get(2))) {
+            handleDiagnostics(rsp, autoScalingConf);
+          } else if (SUGGESTIONS.equals(parts.get(2))) {
+            handleSuggestions(rsp, autoScalingConf);
+          }
         }
       } else {
         if (req.getContentStreams() == null) {
@@ -148,7 +152,21 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops) throws KeeperException, InterruptedException, IOException {
+
+  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
+    try (CloudSolrClient build = new CloudSolrClient.Builder()
+        .withHttpClient(container.getUpdateShardHandler().getHttpClient())
+        .withZkHost(container.getZkController().getZkServerAddress()).build()) {
+      DistributedQueueFactory queueFactory = new ZkDistributedQueueFactory(container.getZkController().getZkClient());
+      rsp.getValues().add("suggestions",
+          PolicyHelper.getSuggestions(autoScalingConf, new SolrClientCloudManager(queueFactory, build)));
+    }
+
+
+  }
+
+  public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops)
+      throws KeeperException, InterruptedException, IOException {
     while (true) {
       AutoScalingConfig initialConfig = container.getZkController().zkStateReader.getAutoScalingConfig();
       AutoScalingConfig currentConfig = initialConfig;
@@ -651,7 +669,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
 
   @Override
   public SolrRequestHandler getSubHandler(String path) {
-    if (path.equals("/diagnostics")) return this;
+    if (path.equals("/diagnostics") || path.equals("/suggestions")) return this;
     return null;
   }
 }
