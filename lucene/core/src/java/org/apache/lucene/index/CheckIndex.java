@@ -149,7 +149,7 @@ public final class CheckIndex implements Closeable {
     public boolean partial;
 
     /** The greatest segment name. */
-    public int maxSegmentName;
+    public long maxSegmentName;
 
     /** Whether the SegmentInfos.counter is greater than any of the segments' names. */
     public boolean validCounter; 
@@ -635,7 +635,7 @@ public final class CheckIndex implements Closeable {
 
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = sis.info(i);
-      int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
+      long segmentName = Long.parseLong(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;
       }

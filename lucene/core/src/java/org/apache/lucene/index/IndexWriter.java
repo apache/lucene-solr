@@ -1948,7 +1948,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // problems at least with ConcurrentMergeScheduler.
       changeCount.incrementAndGet();
       segmentInfos.changed();
-      return "_" + Integer.toString(segmentInfos.counter++, Character.MAX_RADIX);
+      return "_" + Long.toString(segmentInfos.counter++, Character.MAX_RADIX);
     }
   }
 

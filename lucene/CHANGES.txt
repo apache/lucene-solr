@@ -11,6 +11,11 @@ Bug Fixes
   a previous boosted field's factor to subsequent unboosted fields.
   (Christine Poerschke)
 
+* LUCENE-7999: Switch from int to long to track the name for the next
+  segment to write, so that very long lived indices with very frequent
+  refreshes or commits, and high indexing thread counts, do not
+  overflow an int (Mykhailo Demianenko via Mike McCandless)
+
 ======================= Lucene 7.1.0 =======================
 
 Changes in Runtime Behavior

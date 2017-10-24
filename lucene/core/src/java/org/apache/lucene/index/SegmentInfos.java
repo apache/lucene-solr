@@ -122,12 +122,13 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int VERSION_53 = 6;
   /** The version that added information about the Lucene version at the time when the index has been created. */
   public static final int VERSION_70 = 7;
+  /** The version that updated segment name counter to be long instead of int. */
+  public static final int VERSION_72 = 8;
 
-  static final int VERSION_CURRENT = VERSION_70;
+  static final int VERSION_CURRENT = VERSION_72;
 
   /** Used to name new segments. */
-  // TODO: should this be a long ...?
-  public int counter;
+  public long counter;
   
   /** Counts how often the index has been changed.  */
   public long version;
@@ -326,7 +327,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     infos.version = input.readLong();
     //System.out.println("READ sis version=" + infos.version);
-    infos.counter = input.readInt();
+    if (format > VERSION_70) {
+      infos.counter = input.readVLong();
+    } else {
+      infos.counter = input.readInt();
+    }
     int numSegments = input.readInt();
     if (numSegments < 0) {
       throw new CorruptIndexException("invalid segment count: " + numSegments, input);
@@ -477,8 +482,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
     out.writeVInt(indexCreatedVersionMajor);
 
-    out.writeLong(version); 
-    out.writeInt(counter); // write counter
+    out.writeLong(version);
+    out.writeVLong(counter); // write counter
     out.writeInt(size());
 
     if (size() > 0) {
