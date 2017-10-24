@@ -255,7 +255,7 @@ final class IndexFileDeleter implements Closeable {
   static void inflateGens(SegmentInfos infos, Collection<String> files, InfoStream infoStream) {
 
     long maxSegmentGen = Long.MIN_VALUE;
-    int maxSegmentName = Integer.MIN_VALUE;
+    long maxSegmentName = Long.MIN_VALUE;
 
     // Confusingly, this is the union of liveDocs, field infos, doc values
     // (and maybe others, in the future) gens.  This is somewhat messy,
@@ -288,7 +288,7 @@ final class IndexFileDeleter implements Closeable {
           continue;
         }
 
-        maxSegmentName = Math.max(maxSegmentName, Integer.parseInt(segmentName.substring(1), Character.MAX_RADIX));
+        maxSegmentName = Math.max(maxSegmentName, Long.parseLong(segmentName.substring(1), Character.MAX_RADIX));
 
         Long curGen = maxPerSegmentGen.get(segmentName);
         if (curGen == null) {

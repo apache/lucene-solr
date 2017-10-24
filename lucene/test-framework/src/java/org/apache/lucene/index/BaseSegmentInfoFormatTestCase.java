@@ -428,7 +428,8 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     for (int i = 0; i < 10; i++) {
       Directory dir = newDirectory();
       Version version = versions[random().nextInt(versions.length)];
-      String name = "_" + Integer.toString(random().nextInt(Integer.MAX_VALUE), Character.MAX_RADIX);
+      long randomSegmentIndex = Math.abs(random().nextLong());
+      String name = "_" + Long.toString(randomSegmentIndex != Long.MIN_VALUE ? randomSegmentIndex : random().nextInt(Integer.MAX_VALUE), Character.MAX_RADIX);
       int docCount = TestUtil.nextInt(random(), 1, IndexWriter.MAX_DOCS);
       boolean isCompoundFile = random().nextBoolean();
       Set<String> files = new HashSet<>();
