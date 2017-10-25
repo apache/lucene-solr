@@ -85,6 +85,7 @@
   <field name="llp" type="llp" indexed="true" docValues="true" />
   <field name="llp_idx" type="llp" indexed="true" docValues="false" />
   <field name="llp_dv" type="llp" indexed="false" docValues="true" />
+  <field name="llpN_dv" type="llp" indexed="false" stored="false" docValues="true" />
 
   <dynamicField name="bboxD_*" type="bbox" indexed="true"/>
   <dynamicField name="str_*" type="string" indexed="true" stored="true"/>
