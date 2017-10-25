@@ -70,6 +70,8 @@ Other Changes
   Updates are delivered to the first in a list.  It's now possible to refer to a comma delimited list
   of them in the path, ex: /solr/colA,colB/select?... (David Smiley)
 
+* SOLR-11165: Ref guide documentation for Autoscaling APIs, triggers, listeners, actions for Solr 7.1
+  (ab, Cassandra Targett, Noble Paul, shalin)
 
 ==================  7.1.0 ==================
 
@@ -108,7 +110,7 @@ Upgrade Notes
 * SOLR-11254: the abstract DocTransformer class now has an abstract score-less transform method variant.
 
 * SOLR-11283: all Stream Evaluators in solrj.io.eval have been refactored to have a simplier and more
-  robust structure. This simplifies and condenses the code required to implement a new Evaluator and 
+  robust structure. This simplifies and condenses the code required to implement a new Evaluator and
   makes it much easier for evaluators to handle differing data types (primitives, objects, arrays,
   lists, and so forth). (Dennis Gove)
 
@@ -336,10 +338,10 @@ Other Changes
 
 * SOLR-11106: TestLBHttpSolrClient.testReliablity takes 30 seconds because of the wrong server name
   (Kensho Hirasawa via Erick Erickson)
-  
+
 * SOLR-10338: Configure SecureRandom non blocking for tests. (Mihaly Toth, hossman, Ishan Chattopadhyaya, via Mark Miller)
 
-* SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster 
+* SOLR-10916: Convert tests that extend LuceneTestCase and use MiniSolrCloudCluster
   to instead extend SolrCloudTestCase. (Steve Rowe)
 
 * SOLR-11131: Document 'assert' as a command option in bin/solr, and bin/solr.cmd scripts.

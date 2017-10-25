@@ -1,4 +1,4 @@
-= SolrCloud AutoScaling Automatically Adding Replicas
+= SolrCloud Autoscaling Automatically Adding Replicas
 :page-shortname: solrcloud-autoscaling-auto-add-replicas
 :page-permalink: solrcloud-autoscaling-auto-add-replicas.html
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -18,4 +18,59 @@
 // specific language governing permissions and limitations
 // under the License.
 
-TODO
+Solr provides a way to automatically add replicas for a collection when the number of active replicas drops below
+the replication factor specified at the time of the creation of the collection.
+
+== `autoAddReplicas` parameter
+
+The boolean `autoAddReplicas` parameter can be passed to the Create Collection API to enable this feature for a given collection.
+
+.Creating a collection with autoAddReplicas feature
+`http://localhost:8983/solr/admin/collections?action=CREATE&name=my_collection&numShards=1&replicationFactor=5&autoAddReplicas=true`
+
+The modify collection API can be used to enable/disable this feature for any collection.
+
+.Modifying collection to disable autoAddReplicas feature
+`http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&name=my_collection&autoAddReplicas=false`
+
+== Implementation using `.autoAddReplicas` trigger
+
+A Trigger named `.autoAddReplicas` is automatically created whenever any collection has the autoAddReplicas feature enabled.
+Only one trigger is sufficient to server all collections having this feature enabled. The `.autoAddReplicas` trigger watches
+for nodes that are lost from the cluster and uses the default TriggerActions to create new replicas to replace the ones
+which were hosted by the lost node. If the old node comes back online, it unloads the moved replicas and is free to host other
+replicas as and when required.
+
+Since the trigger provides the autoAddReplicas feature for all collections, the suspend-trigger and resume-trigger APIs
+can be used to disable and enable this feature for all collections in one API call.
+
+.Suspending autoAddReplicas for all collections
+[source,json]
+----
+{
+  "suspend-trigger": {
+    "name" : ".autoAddReplicas"
+  }
+}
+----
+
+.Resuming autoAddReplicas for all collections
+[source,json]
+----
+{
+  "resume-trigger": {
+    "name" : ".autoAddReplicas"
+  }
+}
+----
+
+== Using cluster property to enable/disable autoAddReplicas
+
+A cluster property, also named `autoAddReplicas`, can be set to `false` to disable this feature for all collections.
+If this cluster property is missing or set to `true` the autoAddReplicas is enabled for all collections.
+
+.Deprecation Warning
+[WARNING]
+====
+Using cluster property to enable/disable autoAddReplicas is deprecated and only supported for back compatibility. Please use the suspend-trigger and resume-trigger APIs instead.
+====
