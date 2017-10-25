@@ -1,7 +1,8 @@
 ---
 layout: default
 ---
-
+{% comment %}NOTE: page_id is also definied in default.html{% endcomment %}
+{% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 <div class="post-header">
    <h1 class="post-title-main">{{ page.title }}</h1>
 </div>
@@ -53,7 +54,7 @@ layout: default
     </div>
 
 <!-- Adds nav links on each page -->
-    {% assign scrollnav = site.data.scrollnav[page.shortname] %}
+    {% assign scrollnav = site.data.scrollnav[page_id] %}
     {% if scrollnav %}
     <div class="scrollnav">
       {% if scrollnav.prev %}
@@ -73,10 +74,10 @@ layout: default
 <div style="font-size: 1.6em; color: #d9411e; padding-top: 30px;">Comments on this Page</div>
 <div class="paragraph"><p>We welcome feedback on Solr documentation. However, we cannot provide application support via comments. If you need help, please send a message to the <a href="https://lucene.apache.org/solr/resources.html#community">Solr User mailing list</a>.</p></div>
 </div>
-<script type="text/javascript" src="https://comments.apache.org/show_comments.lua?site=solr-refguide&style=css/comments.css&page={{ page.shortname }}" async="true">
+<script type="text/javascript" src="https://comments.apache.org/show_comments.lua?site=solr-refguide&style=css/comments.css&page={{ page_id }}" async="true">
 </script>
 <noscript>
-<iframe width="100%" height="500" src="https://comments.apache.org/iframe.lua?site=solr-refguide&style=css/comments.css&page={{ page.shortname }}"></iframe>
+<iframe width="100%" height="500" src="https://comments.apache.org/iframe.lua?site=solr-refguide&style=css/comments.css&page={{ page_id }}"></iframe>
 </noscript>
 
 {% include footer.html %}

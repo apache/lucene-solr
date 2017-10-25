@@ -208,7 +208,7 @@ public class BuildNavAndPDFBody {
   /** Simple struct for modeling the key metadata for dealing with page navigation */
   public static final class Page {
     public final File file;
-    public final String title;
+    public final String title; // NOTE: has html escape codes in it
     public final String shortname;
     public final String permalink;
     public final List<String> kidShortnames;
@@ -218,23 +218,33 @@ public class BuildNavAndPDFBody {
     public final List<Page> kids;
     private final List<Page> mutableKids;
     public Page(File file, DocumentHeader header) {
+      if (! file.getName().endsWith(".adoc")) {
+        throw new RuntimeException(file + " has does not end in '.adoc' - this code can't be used");
+      }
+      
       this.file = file;
       this.title = header.getDocumentTitle().getMain();
+
+      this.shortname = file.getName().replaceAll("\\.adoc$","");
+      this.permalink = this.shortname + ".html";
       
       // TODO: do error checking if attribute metadata we care about is missing
       Map<String,Object> attrs = header.getAttributes();
-      this.shortname = (String) attrs.get("page-shortname");
-      this.permalink = (String) attrs.get("page-permalink");
 
-      // TODO: SOLR-11531: we should eliminate these attributes and not depend on them in jekyll, ...
-      // ...but for now at least be sure they are consistent with the filename
-      if (! file.getName().equals(shortname + ".adoc") ) {
-        throw new RuntimeException(file + " has a mismatched shortname: " + shortname);
+      // TODO: SOLR-11541: we should eliminate these attributes
+      // ...but for now at least be sure they are consistent
+      if (attrs.containsKey("page-shortname")) {
+        String explicit = (String) attrs.get("page-shortname");
+        if (! shortname.equals(explicit)) {
+          throw new RuntimeException(file + " ("+shortname+") has a mismatched page-shortname: " + explicit);
+        }
       }
-      if (! permalink.equals(shortname + ".html") ) {
-        throw new RuntimeException(file + " has a mismatched permalink: " + permalink);
+      if (attrs.containsKey("page-permalink")) {
+        String explicit = (String) attrs.get("page-permalink");
+        if (! permalink.equals(explicit)) {
+          throw new RuntimeException(file + "("+permalink+") has a mismatched permalink: " + explicit);
+        }
       }
-
       
       if (attrs.containsKey("page-children")) {
         String kidsString = ((String) attrs.get("page-children")).trim();

@@ -56,10 +56,10 @@
 
 <!-- set the 'active' class on the current page and ancestors -->
 <!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
-<script>$("#mysidebar a[href='{{ page.shortname }}.html']").parents('li').toggleClass("active", true);</script>
+<script>$("#mysidebar a[href='{{ page_id }}.html']").parents('li').toggleClass("active", true);</script>
 <!-- set the 'current' class on the current page and 'current-tree' on the current page + it's ancestors -->
 <!-- this can let us do css highlighting of the current page in the sidebar even if/when the user clicks around in the sidebar causing other sidebar elements to be 'active' -->
 <script>
-  $("#mysidebar a[href='{{ page.shortname }}.html']").parent('li').toggleClass("current", true);
-  $("#mysidebar a[href='{{ page.shortname }}.html']").parents('li').toggleClass("current-tree", true);
+  $("#mysidebar a[href='{{ page_id }}.html']").parent('li').toggleClass("current", true);
+  $("#mysidebar a[href='{{ page_id }}.html']").parents('li').toggleClass("current-tree", true);
 </script>
