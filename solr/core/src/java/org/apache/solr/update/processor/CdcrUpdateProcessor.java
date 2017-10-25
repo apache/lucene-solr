@@ -67,9 +67,6 @@ public class CdcrUpdateProcessor extends DistributedUpdateProcessor {
       cmd.setFlags(cmd.getFlags() & ~UpdateCommand.PEER_SYNC);
     }
 
-    //additional logging
-    log.info("cdcr: version received at target: " + cmd.getVersion());
-
     return result;
   }
 

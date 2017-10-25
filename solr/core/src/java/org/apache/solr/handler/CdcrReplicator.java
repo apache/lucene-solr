@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -63,9 +62,6 @@ public class CdcrReplicator implements Runnable {
     }
 
     try {
-      // check what's there in target before sending further
-      printDocsFromTargetForAdditionalDebugging();
-
       // create update request
       UpdateRequest req = new UpdateRequest();
       // Add the param to indicate the {@link CdcrUpdateProcessor} to keep the provided version number
@@ -80,10 +76,6 @@ public class CdcrReplicator implements Runnable {
       for (int i = 0; i < batchSize; i++) {
         Object o = subReader.next();
         if (o == null) break; // we have reached the end of the update logs, we should close the batch
-
-        //additional logging
-        List entry = (List) o;
-        log.info("cdcr: current tlog entry in replicator: " + entry);
 
         if (isDelete(o)) {
 
@@ -147,17 +139,6 @@ public class CdcrReplicator implements Runnable {
     }
     state.resetConsecutiveErrors();
   }
-
-
-  private void printDocsFromTargetForAdditionalDebugging() throws IOException, SolrServerException, CdcrReplicatorException {
-    try {
-      log.info("cdcr: docs in target: "+ state + " in replicator: "
-          + state.getClient().query(new SolrQuery("*:*")).getResults());
-    } catch (Exception e) {
-      log.warn("cdcr: exception while querying to target: " + e);
-    }
-  }
-
 
   private boolean isDelete(Object o) {
     List entry = (List) o;
