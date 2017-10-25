@@ -29,7 +29,7 @@ import org.apache.solr.common.util.NamedList;
 /**
  * This class is used to wrap the response messages retrieved from Solr Schema API.
  *
- * @see <a href="https://cwiki.apache.org/confluence/display/solr/Schema+API">Solr Schema API</a>
+ * @see <a href="https://lucene.apache.org/solr/guide/schema-api.html">Solr Schema API</a>
  * @since solr 5.3
  */
 public class SchemaResponse extends SolrResponseBase {
