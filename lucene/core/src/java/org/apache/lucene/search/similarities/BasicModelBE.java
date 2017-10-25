@@ -35,11 +35,11 @@ public class BasicModelBE extends BasicModel {
   public BasicModelBE() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn) {
     double F = stats.getTotalTermFreq() + 1 + tfn;
     // approximation only holds true when F << N, so we use N += F
     double N = F + stats.getNumberOfDocuments();
-    return (float)(-log2((N - 1) * Math.E)
+    return (-log2((N - 1) * Math.E)
         + f(N + F - 1, N + F - tfn - 2) - f(F, F - tfn));
   }
   

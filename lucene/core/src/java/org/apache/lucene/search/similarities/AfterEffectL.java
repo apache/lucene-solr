@@ -29,16 +29,16 @@ public class AfterEffectL extends AfterEffect {
   public AfterEffectL() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn) {
     return 1 / (tfn + 1);
   }
   
   @Override
-  public final Explanation explain(BasicStats stats, float tfn) {
+  public final Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
-        score(stats, tfn),
+        (float) score(stats, tfn),
         getClass().getSimpleName() + ", computed from: ",
-        Explanation.match(tfn, "tfn"));
+        Explanation.match((float) tfn, "tfn"));
   }
   
   @Override

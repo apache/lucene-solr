@@ -51,7 +51,7 @@ import org.apache.lucene.util.Version;
  * items in the list. If a test case fails, the name of the Similarity that
  * caused the failure is returned as part of the assertion error message.</p>
  * <p>Unit testing is performed by constructing statistics manually and calling
- * the {@link SimilarityBase#score(BasicStats, float, float)} method of the
+ * the {@link SimilarityBase#score(BasicStats, double, double)} method of the
  * Similarities. The statistics represent corner cases of corpus distributions.
  * </p>
  * <p>For the integration tests, a small (8-document) collection is indexed. The
@@ -191,17 +191,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   /**
    * The generic test core called by all unit test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
+   * {@link SimilarityBase#score(BasicStats, double, double)} method of all
    * Similarities in {@link #sims} and checks if the score is valid; i.e. it
    * is a finite positive real number.
    */
   private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
       BasicStats realStats = (BasicStats) sim.computeWeight(
-          stats.getBoost(),
+          (float)stats.getBoost(),
           toCollectionStats(stats), 
           toTermStats(stats));
-      float score = sim.score(realStats, freq, docLen);
+      float score = (float)sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
           realStats, 1, Explanation.match(freq, "freq"), docLen).getValue();
       assertFalse("Score infinite: " + sim.toString(), Float.isInfinite(score));
@@ -524,17 +524,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /**
    * The generic test core called by all correctness test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
+   * {@link SimilarityBase#score(BasicStats, double, double)} method of all
    * Similarities in {@link #sims} and compares the score against the manually
    * computed {@code gold}.
    */
   private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
     BasicStats realStats = (BasicStats) sim.computeWeight(
-        stats.getBoost(),
+        (float)stats.getBoost(),
         toCollectionStats(stats), 
         toTermStats(stats));
-    float score = sim.score(realStats, FREQ, DOC_LEN);
+    float score = (float) sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(
         sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);
   }

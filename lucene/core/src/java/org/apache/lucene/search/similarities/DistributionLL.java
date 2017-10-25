@@ -30,8 +30,8 @@ public class DistributionLL extends Distribution {
   public DistributionLL() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn, float lambda) {
-    return (float)-Math.log(lambda / (tfn + lambda));
+  public final double score(BasicStats stats, double tfn, double lambda) {
+    return -Math.log(lambda / (tfn + lambda));
   }
   
   @Override

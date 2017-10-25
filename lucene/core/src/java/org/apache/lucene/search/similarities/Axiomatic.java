@@ -100,7 +100,7 @@ public abstract class Axiomatic extends SimilarityBase {
   }
 
   @Override
-  public float score(BasicStats stats, float freq, float docLen) {
+  public double score(BasicStats stats, double freq, double docLen) {
     return tf(stats, freq, docLen)
         * ln(stats, freq, docLen)
         * tfln(stats, freq, docLen)
@@ -110,19 +110,19 @@ public abstract class Axiomatic extends SimilarityBase {
 
   @Override
   protected void explain(List<Explanation> subs, BasicStats stats, int doc,
-                         float freq, float docLen) {
-    if (stats.getBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getBoost(), "boost"));
+                         double freq, double docLen) {
+    if (stats.getBoost() != 1.0d) {
+      subs.add(Explanation.match((float) stats.getBoost(), "boost"));
     }
 
     subs.add(Explanation.match(this.k, "k"));
     subs.add(Explanation.match(this.s, "s"));
     subs.add(Explanation.match(this.queryLen, "queryLen"));
-    subs.add(Explanation.match(tf(stats, freq, docLen), "tf"));
-    subs.add(Explanation.match(ln(stats, freq, docLen), "ln"));
-    subs.add(Explanation.match(tfln(stats, freq, docLen), "tfln"));
-    subs.add(Explanation.match(idf(stats, freq, docLen), "idf"));
-    subs.add(Explanation.match(gamma(stats, freq, docLen), "gamma"));
+    subs.add(Explanation.match((float) tf(stats, freq, docLen), "tf"));
+    subs.add(Explanation.match((float) ln(stats, freq, docLen), "ln"));
+    subs.add(Explanation.match((float) tfln(stats, freq, docLen), "tfln"));
+    subs.add(Explanation.match((float) idf(stats, freq, docLen), "idf"));
+    subs.add(Explanation.match((float) gamma(stats, freq, docLen), "gamma"));
     super.explain(subs, stats, doc, freq, docLen);
   }
 
@@ -135,25 +135,25 @@ public abstract class Axiomatic extends SimilarityBase {
   /**
    * compute the term frequency component
    */
-  protected abstract float tf(BasicStats stats, float freq, float docLen);
+  protected abstract double tf(BasicStats stats, double freq, double docLen);
 
   /**
    * compute the document length component
    */
-  protected abstract float ln(BasicStats stats, float freq, float docLen);
+  protected abstract double ln(BasicStats stats, double freq, double docLen);
 
   /**
    * compute the mixed term frequency and document length component
    */
-  protected abstract float tfln(BasicStats stats, float freq, float docLen);
+  protected abstract double tfln(BasicStats stats, double freq, double docLen);
 
   /**
    * compute the inverted document frequency component
    */
-  protected abstract float idf(BasicStats stats, float freq, float docLen);
+  protected abstract double idf(BasicStats stats, double freq, double docLen);
 
   /**
    * compute the gamma component (only for F3EXp and F3LOG)
    */
-  protected abstract float gamma(BasicStats stats, float freq, float docLen);
+  protected abstract double gamma(BasicStats stats, double freq, double docLen);
 }

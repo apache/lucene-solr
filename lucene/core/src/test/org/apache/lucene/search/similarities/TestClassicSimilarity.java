@@ -19,6 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -39,11 +40,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.TFIDFSimilarity.IDFStats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-public class TestClassicSimilarity extends LuceneTestCase {
+public class TestClassicSimilarity extends BaseSimilarityTestCase {
   private Directory directory;
   private IndexReader indexReader;
   private IndexSearcher indexSearcher;
@@ -184,5 +184,10 @@ public class TestClassicSimilarity extends LuceneTestCase {
           sim1.computeNorm(state),
           0f);
     }
+  }
+
+  @Override
+  protected Similarity getSimilarity(Random random) {
+    return new ClassicSimilarity();
   }
 }

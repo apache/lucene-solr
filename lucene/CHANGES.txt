@@ -11,7 +11,12 @@ Changes in Runtime Behavior
   will now fail to open even if they have been merged with the previous major
   version. (Adrien Grand)
 
+Improvements
 
+* LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
+  SimilarityBase switches to 64-bit doubles internally to help avoid common numeric issues.
+  Add missing range checks for similarity parameters.
+  Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
 
 ======================= Lucene 7.2.0 =======================
 

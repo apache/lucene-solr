@@ -17,6 +17,7 @@
 package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -32,11 +33,10 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-public class TestBooleanSimilarity extends LuceneTestCase {
+public class TestBooleanSimilarity extends BaseSimilarityTestCase {
 
   public void testTermScoreIsEqualToBoost() throws IOException {
     Directory dir = newDirectory();
@@ -113,5 +113,10 @@ public class TestBooleanSimilarity extends LuceneTestCase {
           sim1.computeNorm(state),
           0f);
     }
+  }
+
+  @Override
+  protected Similarity getSimilarity(Random random) {
+    return new BooleanSimilarity();
   }
 }

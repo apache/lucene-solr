@@ -95,7 +95,7 @@ public class IBSimilarity extends SimilarityBase {
   }
   
   @Override
-  protected float score(BasicStats stats, float freq, float docLen) {
+  protected double score(BasicStats stats, double freq, double docLen) {
     return stats.getBoost() *
         distribution.score(
             stats,
@@ -105,9 +105,9 @@ public class IBSimilarity extends SimilarityBase {
 
   @Override
   protected void explain(
-      List<Explanation> subs, BasicStats stats, int doc, float freq, float docLen) {
-    if (stats.getBoost() != 1.0f) {
-      subs.add(Explanation.match(stats.getBoost(), "boost"));
+      List<Explanation> subs, BasicStats stats, int doc, double freq, double docLen) {
+    if (stats.getBoost() != 1.0d) {
+      subs.add(Explanation.match((float)stats.getBoost(), "boost"));
     }
     Explanation normExpl = normalization.explain(stats, freq, docLen);
     Explanation lambdaExpl = lambda.explain(stats);

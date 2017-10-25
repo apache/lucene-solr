@@ -434,7 +434,7 @@ public final class TestUtil {
 
   /** start and end are BOTH inclusive */
   public static long nextLong(Random r, long start, long end) {
-    assert end >= start;
+    assert end >= start : "start=" + start + ",end=" + end;
     final BigInteger range = BigInteger.valueOf(end).add(BigInteger.valueOf(1)).subtract(BigInteger.valueOf(start));
     if (range.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0) {
       return start + r.nextInt(range.intValue());

@@ -36,6 +36,10 @@ public class NormalizationH1 extends Normalization {
    * normalization with respect to the document length.
    */
   public NormalizationH1(float c) {
+    // unbounded but typical range 0..10 or so
+    if (Float.isFinite(c) == false || c < 0) {
+      throw new IllegalArgumentException("illegal c value: " + c + ", must be a non-negative finite value");
+    }
     this.c = c;
   }
   
@@ -47,8 +51,8 @@ public class NormalizationH1 extends Normalization {
   }
   
   @Override
-  public final float tfn(BasicStats stats, float tf, float len) {
-    return tf * c * stats.getAvgFieldLength() / len;
+  public final double tfn(BasicStats stats, double tf, double len) {
+    return tf * c * (stats.getAvgFieldLength() / len);
   }
 
   @Override

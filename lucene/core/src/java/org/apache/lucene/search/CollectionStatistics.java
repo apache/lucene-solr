@@ -73,4 +73,22 @@ public class CollectionStatistics {
   public final long sumDocFreq() {
     return sumDocFreq;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("field=");
+    sb.append('"');
+    sb.append(field());
+    sb.append('"');
+    sb.append(",maxDoc=");
+    sb.append(maxDoc());
+    sb.append(",docCount=");
+    sb.append(docCount());
+    sb.append(",sumTotalTermFreq=");
+    sb.append(sumTotalTermFreq());
+    sb.append(",sumDocFreq=");
+    sb.append(sumDocFreq);
+    return sb.toString();
+  }
 }

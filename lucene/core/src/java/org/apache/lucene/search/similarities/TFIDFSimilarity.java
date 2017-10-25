@@ -450,7 +450,9 @@ public abstract class TFIDFSimilarity extends Similarity {
     final long df = termStats.docFreq();
     final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
     final float idf = idf(df, docCount);
-    return Explanation.match(idf, "idf(docFreq=" + df + ", docCount=" + docCount + ")");
+    return Explanation.match(idf, "idf(docFreq, docCount)", 
+        Explanation.match(df, "docFreq, number of documents containing term"),
+        Explanation.match(docCount, "docCount, total number of documents with field"));
   }
 
   /**
@@ -643,20 +645,37 @@ public abstract class TFIDFSimilarity extends Similarity {
         "fieldNorm(doc=" + doc + ")");
 
     return Explanation.match(
-        tfExplanation.getValue() * stats.idf.getValue() * fieldNormExpl.getValue(),
+        tfExplanation.getValue() * fieldNormExpl.getValue(),
         "fieldWeight in " + doc + ", product of:",
-        tfExplanation, stats.idf, fieldNormExpl);
+        tfExplanation, fieldNormExpl);
   }
 
   private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
-    Explanation queryExpl = Explanation.match(stats.boost, "boost");
-    Explanation fieldExpl = explainField(doc, freq, stats, norms, normTable);
-    if (stats.boost == 1f) {
-      return fieldExpl;
+    List<Explanation> subs = new ArrayList<Explanation>();
+    if (stats.boost != 1F) {
+      subs.add(Explanation.match(stats.boost, "boost"));
     }
+    subs.add(stats.idf);
+    Explanation tf = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
+    subs.add(tf);
+
+    float norm;
+    if (norms == null) {
+      norm = 1f;
+    } else if (norms.advanceExact(doc) == false) {
+      norm = 0f;
+    } else {
+      norm = normTable[(int) (norms.longValue() & 0xFF)];
+    }
+    
+    Explanation fieldNorm = Explanation.match(
+        norm,
+        "fieldNorm(doc=" + doc + ")");
+    subs.add(fieldNorm);
+    
     return Explanation.match(
-        queryExpl.getValue() * fieldExpl.getValue(),
+        stats.queryWeight * tf.getValue() * norm,
         "score(doc="+doc+",freq="+freq.getValue()+"), product of:",
-        queryExpl, fieldExpl);
+        subs);
   }
 }

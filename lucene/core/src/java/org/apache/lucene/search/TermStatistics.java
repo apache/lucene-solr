@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum; // javadocs
 import org.apache.lucene.util.BytesRef;
 /**
@@ -51,5 +52,19 @@ public class TermStatistics {
    * @see TermsEnum#totalTermFreq() */
   public final long totalTermFreq() {
     return totalTermFreq;
+  }
+  
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("term=");
+    sb.append('"');
+    sb.append(Term.toString(term()));
+    sb.append('"');
+    sb.append(",docFreq=");
+    sb.append(docFreq());
+    sb.append(",totalTermFreq=");
+    sb.append(totalTermFreq());
+    return sb.toString();
   }
 }

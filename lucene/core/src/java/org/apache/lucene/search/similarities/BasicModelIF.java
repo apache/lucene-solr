@@ -29,10 +29,10 @@ public class BasicModelIF extends BasicModel {
   public BasicModelIF() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn) {
+  public final double score(BasicStats stats, double tfn) {
     long N = stats.getNumberOfDocuments();
     long F = stats.getTotalTermFreq();
-    return tfn * (float)(log2(1 + (N + 1) / (F + 0.5)));
+    return tfn * log2(1 + (N + 1) / (F + 0.5));
   }
 
   @Override

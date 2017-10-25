@@ -17,10 +17,9 @@
 package org.apache.lucene.search.similarities;
 
 
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.Random;
 
-public class TestBM25Similarity extends LuceneTestCase {
+public class TestBM25Similarity extends BaseSimilarityTestCase {
   
   public void testIllegalK1() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -61,17 +60,51 @@ public class TestBM25Similarity extends LuceneTestCase {
     assertTrue(expected.getMessage().contains("illegal b value"));
   }
 
-  private static Explanation findExplanation(Explanation expl, String text) {
-    if (expl.getDescription().equals(text)) {
-      return expl;
-    } else {
-      for (Explanation sub : expl.getDetails()) {
-        Explanation match = findExplanation(sub, text);
-        if (match != null) {
-          return match;
-        }
-      }
+  @Override
+  protected Similarity getSimilarity(Random random) {
+    // term frequency normalization parameter k1
+    final float k1;
+    switch (random.nextInt(4)) {
+      case 0:
+        // minimum value
+        k1 = 0;
+        break;
+      case 1:
+        // tiny value
+        k1 = Float.MIN_VALUE;
+        break;
+      case 2:
+        // maximum value
+        // upper bounds on individual term's score is 43.262806 * (k1 + 1) * boost
+        // we just limit the test to "reasonable" k1 values but don't enforce this anywhere.
+        k1 = Integer.MAX_VALUE;
+        break;
+      default:
+        // random value
+        k1 = Integer.MAX_VALUE * random.nextFloat();
+        break;
     }
-    return null;
+    
+    // length normalization parameter b [0 .. 1]
+    final float b;
+    switch (random.nextInt(4)) {
+      case 0:
+        // minimum value
+        b = 0;
+        break;
+      case 1:
+        // tiny value
+        b = Float.MIN_VALUE;
+        break;
+      case 2:
+        // maximum value
+        b = 1;
+        break;
+      default:
+        // random value
+        b = random.nextFloat();
+        break;
+    }
+    return new BM25Similarity(k1, b);
   }
 }

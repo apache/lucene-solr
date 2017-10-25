@@ -34,7 +34,7 @@ import org.apache.lucene.util.SmallFloat;
  * A subclass of {@code Similarity} that provides a simplified API for its
  * descendants. Subclasses are only required to implement the {@link #score}
  * and {@link #toString()} methods. Implementing
- * {@link #explain(List, BasicStats, int, float, float)} is optional,
+ * {@link #explain(List, BasicStats, int, double, double)} is optional,
  * inasmuch as SimilarityBase already provides a basic explanation of the score
  * and the term frequency. However, implementers of a subclass are encouraged to
  * include as much detail about the scoring method as possible.
@@ -93,7 +93,7 @@ public abstract class SimilarityBase extends Similarity {
   }
   
   /** Factory method to return a custom stats object */
-  protected BasicStats newStats(String field, float boost) {
+  protected BasicStats newStats(String field, double boost) {
     return new BasicStats(field, boost);
   }
   
@@ -113,7 +113,7 @@ public abstract class SimilarityBase extends Similarity {
     }
 
     final long numberOfFieldTokens;
-    final float avgFieldLength;
+    final double avgFieldLength;
 
     long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
 
@@ -145,7 +145,7 @@ public abstract class SimilarityBase extends Similarity {
    * @param docLen the document length.
    * @return the score.
    */
-  protected abstract float score(BasicStats stats, float freq, float docLen);
+  protected abstract double score(BasicStats stats, double freq, double docLen);
   
   /**
    * Subclasses should implement this method to explain the score. {@code expl}
@@ -161,16 +161,16 @@ public abstract class SimilarityBase extends Similarity {
    * @param docLen the document length.
    */
   protected void explain(
-      List<Explanation> subExpls, BasicStats stats, int doc, float freq, float docLen) {}
+      List<Explanation> subExpls, BasicStats stats, int doc, double freq, double docLen) {}
   
   /**
    * Explains the score. The implementation here provides a basic explanation
    * in the format <em>score(name-of-similarity, doc=doc-id,
    * freq=term-frequency), computed from:</em>, and
-   * attaches the score (computed via the {@link #score(BasicStats, float, float)}
+   * attaches the score (computed via the {@link #score(BasicStats, double, double)}
    * method) and the explanation for the term frequency. Subclasses content with
    * this format may add additional details in
-   * {@link #explain(List, BasicStats, int, float, float)}.
+   * {@link #explain(List, BasicStats, int, double, double)}.
    *  
    * @param stats the corpus level statistics.
    * @param doc the document id.
@@ -179,12 +179,12 @@ public abstract class SimilarityBase extends Similarity {
    * @return the explanation.
    */
   protected Explanation explain(
-      BasicStats stats, int doc, Explanation freq, float docLen) {
+      BasicStats stats, int doc, Explanation freq, double docLen) {
     List<Explanation> subs = new ArrayList<>();
     explain(subs, stats, doc, freq.getValue(), docLen);
     
     return Explanation.match(
-        score(stats, freq.getValue(), docLen),
+        (float) score(stats, freq.getValue(), docLen),
         "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" + freq.getValue() +"), computed from:",
         subs);
   }
@@ -248,8 +248,8 @@ public abstract class SimilarityBase extends Similarity {
   
   /** Delegates the {@link #score(int, float)} and
    * {@link #explain(int, Explanation)} methods to
-   * {@link SimilarityBase#score(BasicStats, float, float)} and
-   * {@link SimilarityBase#explain(BasicStats, int, Explanation, float)},
+   * {@link SimilarityBase#score(BasicStats, double, double)} and
+   * {@link SimilarityBase#explain(BasicStats, int, Explanation, double)},
    * respectively.
    */
   final class BasicSimScorer extends SimScorer {
@@ -261,9 +261,9 @@ public abstract class SimilarityBase extends Similarity {
       this.norms = norms;
     }
 
-    float getLengthValue(int doc) throws IOException {
+    double getLengthValue(int doc) throws IOException {
       if (norms == null) {
-        return 1F;
+        return 1D;
       }
       if (norms.advanceExact(doc)) {
         return LENGTH_TABLE[Byte.toUnsignedInt((byte) norms.longValue())];
@@ -275,7 +275,7 @@ public abstract class SimilarityBase extends Similarity {
     @Override
     public float score(int doc, float freq) throws IOException {
       // We have to supply something in case norms are omitted
-      return SimilarityBase.this.score(stats, freq, getLengthValue(doc));
+      return (float) SimilarityBase.this.score(stats, freq, getLengthValue(doc));
     }
 
     @Override

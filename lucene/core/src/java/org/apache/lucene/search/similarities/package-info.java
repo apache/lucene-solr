@@ -97,7 +97,7 @@
  * The easiest way to quickly implement a new ranking method is to extend
  * {@link org.apache.lucene.search.similarities.SimilarityBase}, which provides
  * basic implementations for the low level . Subclasses are only required to
- * implement the {@link org.apache.lucene.search.similarities.SimilarityBase#score(BasicStats, float, float)}
+ * implement the {@link org.apache.lucene.search.similarities.SimilarityBase#score(BasicStats, double, double)}
  * and {@link org.apache.lucene.search.similarities.SimilarityBase#toString()}
  * methods.
  * 
