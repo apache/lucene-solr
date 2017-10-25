@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -78,7 +79,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
     for (int i = 1; i <= 2; i++) {
       String coll1ShardiLeader = clusterState.getCollection(TEST_COLLECTION_1).getLeader("shard"+i).getName();
       String coll2ShardiLeader = clusterState.getCollection(TEST_COLLECTION_2).getLeader("shard"+i).getName();
-      String assertMss = String.format("Expect %s and %s each have a replica with same name on shard %s",
+      String assertMss = String.format(Locale.ROOT, "Expect %s and %s each have a replica with same name on shard %s",
           coll1ShardiLeader, coll2ShardiLeader, "shard"+i);
       assertEquals(
           assertMss,
