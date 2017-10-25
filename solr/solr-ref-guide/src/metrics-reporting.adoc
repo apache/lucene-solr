@@ -286,9 +286,139 @@ It take the following arguments, in addition to the common arguments <<Reporter 
 * *port* - (required int) port number for the server
 * *multicast* - (optional bool) when true use multicast UDP communication, otherwise use UDP unicast. Default is false.
 
+=== Shard and Cluster Reporters
+These two reporters can be used for aggregation of metrics reported from replicas to shard leader (the "shard" reporter),
+and from any local registry to the Overseer node.
+
+Metric reports from these reporters are periodically sent as batches of regular SolrInputDocument-s,
+so they can be processed by any Solr handler. By default they are sent to `/admin/metrics/collector` handler
+(an instance of `MetricsCollectorHandler`) on a target node, which aggregates these reports and keeps them in
+additional local metric registries so that they can be accessed using `/admin/metrics` handler,
+and re-reported elsewhere as necessary.
+
+In case of shard reporter the target node is the shard leader, in case of cluster reporter the
+target node is the Overseer leader.
+
+=== Shard reporter
+This reporter uses predefined `shard` group, and the implementing class must be (a subclass of)
+`solr.SolrShardReporter`. It publishes selected metrics from replicas to the node where shard leader is
+located. Reports use a target registry name that is the replica's registry name with a `.leader` suffix, eg. for a
+SolrCore name `collection1_shard1_replica_n3` the target registry name is
+`solr.core.collection1.shard1.replica_n3.leader`.
+
+The following configuration properties are supported:
+
+* *handler* - (optional str) handler path where reports are sent. Default is `/admin/metrics/collector`.
+* *period* - (optional int) how often reports are sent, in seconds. Default is 60. Setting this to 0 disables the reporter.
+* *filter* - (optional multiple str) regex expression(s) matching selected metrics to be reported.
+
+The following filter expressions are used by default:
+[source]
+----
+TLOG.*
+CORE\.fs.*
+REPLICATION.*
+INDEX\.flush.*
+INDEX\.merge\.major.*
+UPDATE\./update/.*requests
+QUERY\./select.*requests
+----
+
+Example configuration:
+[source,xml]
+----
+      <reporter name="test" group="shard" class="solr.SolrShardReporter">
+        <int name="period">11</int>
+        <str name="filter">UPDATE\./update/.*requests</str>
+        <str name="filter">QUERY\./select.*requests</str>
+      </reporter>
+----
+
+=== Cluster reporter
+This reporter uses predefined `cluster` group and the implementing class must be (a subclass of)
+`solr.SolrClusterReporter`. It publishes selected metrics from any local registry to the Overseer leader node.
+
+The following configuration properties are supported:
+
+* *handler* - (optional str) handler path where reports are sent. Default is `/admin/metrics/collector`.
+* *period* - (optional int) how often reports are sent, in seconds. Default is 60. Setting this to 0 disables the reporter.
+* *report* - (optional multiple lst) report configuration(s), see below.
+
+Each report configuration consist of the following properties:
+
+* *registry* - (required str) regex pattern matching local source registries (see `SolrMetricManager.registryNames(String...)`), may contain regex capture groups.
+* *group* - (required str) target registry name where metrics will be grouped. This can be a regex pattern that contains back-references to capture groups collected by registry pattern
+* *label* - (optional str) optional prefix to prepend to metric names, may contain back-references to capture groups collected by registry pattern
+* *filter* - (optional multiple str) regex expression(s) matching selected metrics to be reported.
+
+The following report specifications are used by default (their result is a single additional metric registry in Overseer, called
+`solr.cluster`):
+
+[source]
+----
+   <lst name="report">
+    <str name="group">cluster</str>
+    <str name="registry">solr\.jetty</str>
+    <str name="label">jetty</str>
+   </lst>
+   <lst name="report">
+    <str name="group">cluster</str>
+    <str name="registry">solr\.node</str>
+    <str name="label">node</str>
+    <str name="filter">CONTAINER\.cores\..*</str>
+    <str name="filter">CONTAINER\.fs\..*</str>
+   </lst>
+   <lst name="report">
+     <str name="group">cluster</str>
+     <str name="label">jvm</str>
+     <str name="registry">solr\.jvm</str>
+     <str name="filter">memory\.total\..*</str>
+     <str name="filter">memory\.heap\..*</str>
+     <str name="filter">os\.SystemLoadAverage</str>
+     <str name="filter">os\.FreePhysicalMemorySize</str>
+     <str name="filter">os\.FreeSwapSpaceSize</str>
+     <str name="filter">os\.OpenFileDescriptorCount</str>
+     <str name="filter">threads\.count</str>
+   </lst>
+   <lst name="report">
+    <str name="group">cluster</str>
+    <str name="registry">solr\.core\.(.*)\.leader</str>
+    <str name="label">leader.$1</str>
+    <str name="filter">QUERY\./select/.*</str>
+    <str name="filter">UPDATE\./update/.*</str>
+    <str name="filter">INDEX\..*</str>
+    <str name="filter">TLOG\..*</str>
+   </lst>
+
+----
+
+Example configuration:
+[source,xml]
+----
+         <reporter name="test" group="cluster" class="solr.SolrClusterReporter">
+           <str name="handler">/admin/metrics/collector</str>
+           <int name="period">11</int>
+           <lst name="report">
+             <str name="group">aggregated_jvms</str>
+             <str name="label">jvm</str>
+             <str name="registry">solr\.jvm</str>
+             <str name="filter">memory\.total\..*</str>
+             <str name="filter">memory\.heap\..*</str>
+             <str name="filter">os\.SystemLoadAverage</str>
+             <str name="filter">threads\.count</str>
+           </lst>
+           <lst name="report">
+             <str name="group">aggregated_shard_leaders</str>
+             <str name="registry">solr\.core\.(.*)\.leader</str>
+             <str name="label">leader.$1</str>
+             <str name="filter">UPDATE\./update/.*</str>
+           </lst>
+         </reporter>
+----
+
 == Core Level Metrics
 
-These metrics are available only on a per-core basis. Metrics that are aggregated across cores are not yet available.
+These metrics are available only on a per-core basis. Metrics can be aggregated across cores using Shard and Cluster reporters.
 
 === Index Merge Metrics
 
