@@ -48,11 +48,11 @@ import com.codahale.metrics.MetricFilter;
  *   to 0 disables the reporter.</li>
  *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be reported.</li>
  * </ul>
- * NOTE: this reporter uses predefined "replica" group, and it's always created even if explicit configuration
+ * NOTE: this reporter uses predefined "shard" group, and it's always created even if explicit configuration
  * is missing. Default configuration uses filters defined in {@link #DEFAULT_FILTERS}.
  * <p>Example configuration:</p>
  * <pre>
- *    &lt;reporter name="test" group="replica"&gt;
+ *    &lt;reporter name="test" group="shard" class="solr.SolrShardReporter"&gt;
  *      &lt;int name="period"&gt;11&lt;/int&gt;
  *      &lt;str name="filter"&gt;UPDATE\./update/.*requests&lt;/str&gt;
  *      &lt;str name="filter"&gt;QUERY\./select.*requests&lt;/str&gt;
