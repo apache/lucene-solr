@@ -21,10 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
-
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkOperation;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -205,14 +203,11 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(timeout);
       final long start = System.nanoTime();
       try {
-      zkCmdExecutor.retryOperation(new ZkOperation() {
-        @Override
-        public String execute() throws KeeperException, InterruptedException {
-          if (System.nanoTime() - start > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
-            throw new KeeperException.SessionExpiredException();
-          } 
-          throw new KeeperException.ConnectionLossException();
+      zkCmdExecutor.retryOperation(() -> {
+        if (System.nanoTime() - start > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
+          throw new KeeperException.SessionExpiredException();
         }
+        throw new KeeperException.ConnectionLossException();
       });
       } catch(KeeperException.SessionExpiredException e) {
         
