@@ -176,7 +176,7 @@ public class SolrXmlConfig {
 
     if (config.getVal(xPath, false) != null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-          "\n. Please upgrade your solr.xml: https://cwiki.apache.org/confluence/display/solr/Format+of+solr.xml");
+          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
     }
   }
 
@@ -540,4 +540,3 @@ public class SolrXmlConfig {
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
   }
 }
-
