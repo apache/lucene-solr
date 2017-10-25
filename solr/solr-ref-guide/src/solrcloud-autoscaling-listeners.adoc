@@ -1,4 +1,4 @@
-= SolrCloud AutoScaling Listeners
+= SolrCloud Autoscaling Listeners
 :page-shortname: solrcloud-autoscaling-listeners
 :page-permalink: solrcloud-autoscaling-listeners.html
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -67,11 +67,11 @@ For example:
 [source,json]
 ----
 {
- 'set-listener': {
-  'name': 'foo',
-  'trigger': 'node_lost_trigger',
-  'stage': ['STARTED', 'ABORTED', 'SUCCEEDED', 'FAILED'],
-  'class': 'solr.SystemLogListener'
+ "set-listener": {
+    "name": "foo",
+    "trigger": "node_lost_trigger",
+    "stage": ["STARTED", "ABORTED", "SUCCEEDED", "FAILED"],
+    "class": "solr.SystemLogListener"
  }
 }
 ----
@@ -79,8 +79,8 @@ For example:
 [source,json]
 ----
 {
- 'remove-listener': {
-  'name': 'foo'
+ "remove-listener": {
+    "name": "foo"
  }
 }
 ----
@@ -139,9 +139,9 @@ trigger named `foo`):
 [source,json]
 ----
 {
- 'name' : 'foo.system',
- 'trigger' : 'solr.SystemLogListener',
- 'stage' : ['WAITING', 'STARTED', 'ABORTED', 'SUCCEEDED', 'FAILED', 'BEFORE_ACTION', 'AFTER_ACTION']
+ "name" : "foo.system",
+ "trigger" : "solr.SystemLogListener",
+ "stage" : ["WAITING", "STARTED", "ABORTED", "SUCCEEDED", "FAILED", "BEFORE_ACTION", "AFTER_ACTION"]
 }
 ----
 
@@ -177,17 +177,17 @@ Example configuration:
 [source,json]
 ----
 {
- 'name': 'foo',
- 'trigger': 'node_added_trigger',
- 'class': 'solr.HttpTriggerListener',
- 'url': 'http://foo.com/${config.name:invalidName}/${config.properties.xyz:invalidXyz}/${event.eventType}',
- 'xyz': 'foobar',
- 'header.X-Trigger': '${config.trigger}',
- 'payload': 'actionName=${actionName}, source=${event.source}, type=${event.eventType}',
- 'contentType': 'text/plain',
- 'stage': ['STARTED', 'ABORTED', SUCCEEDED', 'FAILED'],
- 'beforeAction': ['compute_plan', 'execute_plan'],
- 'afterAction': ['compute_plan', 'execute_plan']
+ "name": "foo",
+ "trigger": "node_added_trigger",
+ "class": "solr.HttpTriggerListener",
+ "url": "http://foo.com/${config.name:invalidName}/${config.properties.xyz:invalidXyz}/${event.eventType}",
+ "xyz": "foobar",
+ "header.X-Trigger": "${config.trigger}",
+ "payload": "actionName=${actionName}, source=${event.source}, type=${event.eventType}",
+ "contentType": "text/plain",
+ "stage": ["STARTED", "ABORTED", SUCCEEDED", "FAILED"],
+ "beforeAction": ["compute_plan", "execute_plan"],
+ "afterAction": ["compute_plan", "execute_plan"]
 }
 ----
 This configuration specifies that each time one of the listed stages is reached, or before and after each of the listed

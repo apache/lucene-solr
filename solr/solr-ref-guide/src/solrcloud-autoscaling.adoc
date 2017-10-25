@@ -1,7 +1,7 @@
 = SolrCloud AutoScaling
 :page-shortname: solrcloud-autoscaling
 :page-permalink: solrcloud-autoscaling.html
-:page-children: solrcloud-autoscaling-overview, solrcloud-autoscaling-api, solrcloud-autoscaling-policy-preferences, solrcloud-autoscaling-triggers, solrcloud-autoscaling-listeners, solrcloud-autoscaling-auto-add-replicas
+:page-children: solrcloud-autoscaling-overview, solrcloud-autoscaling-api, solrcloud-autoscaling-policy-preferences, solrcloud-autoscaling-triggers, solrcloud-autoscaling-trigger-actions, solrcloud-autoscaling-listeners, solrcloud-autoscaling-auto-add-replicas, solrcloud-autoscaling-fault-tolerance
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -22,7 +22,7 @@
 [.lead]
 The goal of autoscaling is to make SolrCloud cluster management easier by providing a way for changes to the cluster to be more automatic and more intelligent.
 
-Autoscaling includes an API to manage cluster-wide and collection-specific policies and preferences and a rules syntax to define the guidelines for your cluster. Future Solr releases will include features to utilize the policies and preferences so they perform actions automatically when the rules are violated.
+Autoscaling includes an API to manage cluster-wide and collection-specific policies and preferences and a rules syntax to define the guidelines for your cluster. Also included are features to utilize the policies and preferences so they perform actions automatically when certain conditions are met.
 
 The following sections describe the autoscaling features of SolrCloud:
 
@@ -30,5 +30,7 @@ The following sections describe the autoscaling features of SolrCloud:
 * <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,SolrCloud Autoscaling API>>
 * <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,SolrCloud Autoscaling Policy and Preferences>>
 * <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,SolrCloud AutoScaling Triggers>>
+* <<solrcloud-autoscaling-trigger-actions.adoc#solrcloud-autoscaling-trigger-actions,SolrCloud AutoScaling Trigger Actions>>
 * <<solrcloud-autoscaling-listeners.adoc#solrcloud-autoscaling-listeners,SolrCloud AutoScaling Listeners>>
 * <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud AutoScaling - Automatically Adding Replicas>>
+* <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,SolrCloud AutoScaling Fault Tolerance>>

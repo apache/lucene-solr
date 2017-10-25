@@ -92,6 +92,9 @@ Other Changes
   Updates are delivered to the first in a list.  It's now possible to refer to a comma delimited list
   of them in the path, ex: /solr/colA,colB/select?... (David Smiley)
 
+* SOLR-11165: Ref guide documentation for Autoscaling APIs, triggers, listeners, actions for Solr 7.1
+  (ab, Cassandra Targett, Noble Paul, shalin)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

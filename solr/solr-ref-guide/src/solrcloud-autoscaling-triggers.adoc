@@ -1,4 +1,4 @@
-= SolrCloud AutoScaling Triggers
+= SolrCloud Autoscaling Triggers
 :page-shortname: solrcloud-autoscaling-triggers
 :page-permalink: solrcloud-autoscaling-triggers.html
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -17,6 +17,7 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
+
 Triggers are used by autoscaling API to watch for cluster events such as node joining or leaving,
 and in the future also for other cluster, node and replica events that are important from the
 point of view of cluster performance.
@@ -55,6 +56,8 @@ is automatically created to watch for nodes going away. This trigger produces `n
 which are then processed by configured actions (usually resulting in computing and executing a plan
 to add replicas on the live nodes to maintain the expected replication factor).
 
+You can see the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud AutoScaling Automatically Adding Replicas>> to learn more about how `.autoAddReplicas` work.
+
 == Trigger configuration
 Trigger configurations are managed using autoscaling Write API with commands `set-trigger`, `remove-trigger`,
 `suspend-trigger`, `resume-trigger`.
@@ -75,29 +78,32 @@ Action configuration consists of the following properties:
 * `class` - (string, required) action implementation class
 * additional implementation-specific properties may be provided
 
+If the Action configuration is omitted, then by default, the ComputePlanAction and the ExecutePlanAction are automatically
+added to the trigger configuration.
+
 Example: adding / updating a trigger for `nodeAdded` events. This trigger configuration will
 compute and execute a plan to allocate the resources available on the new node. A custom action
 is also used to possibly modify the plan.
 [source,json]
 ----
 {
- 'set-trigger': {
-  'name' : 'node_lost_trigger',
-  'event' : 'nodeLost',
-  'waitFor' : '1s',
-  'enabled' : true,
-  'actions' : [
+ "set-trigger": {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "1s",
+  "enabled" : true,
+  "actions" : [
    {
-    'name' : 'compute_plan',
-    'class': 'solr.ComputePlanAction'
+    "name" : "compute_plan",
+    "class": "solr.ComputePlanAction"
    },
    {
-    'name' : 'custom_action',
-    'class': 'com.example.CustomAction'
+    "name" : "custom_action",
+    "class": "com.example.CustomAction"
    },
    {
-    'name' : 'execute_plan',
-    'class': 'solr.ExecutePlanAction'
+    "name" : "execute_plan",
+    "class": "solr.ExecutePlanAction"
    }
   ]
  }

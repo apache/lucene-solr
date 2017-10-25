@@ -24,7 +24,7 @@ The Autoscaling API is used to manage autoscaling policies, preferences, trigger
 
 == Read API
 
-The autoscaling Read API is available at `/admin/autoscaling` or `/v2/cluster/autoscaling`. It returns information about the configured cluster preferences, cluster policy, collection-specific policies triggers and listeners.
+The autoscaling Read API is available at `/admin/autoscaling` or `/solr/cluster/autoscaling`. It returns information about the configured cluster preferences, cluster policy, collection-specific policies triggers and listeners.
 
 This API does not take any parameters.
 
@@ -144,9 +144,98 @@ However, since the first node in the first example had more than 1 replica for a
 
 In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
 
+== History API
+History of autoscaling events is available at `/admin/autoscaling/history`. It returns information
+about past autoscaling events and details about their processing. This history is kept in
+the `.system` collection, and populated by a trigger listener `SystemLogListener` - by default this
+listener is added to all new triggers.
+
+History events are regular Solr documents so they can be also accessed directly by
+searching on the `.system` collection. History handler acts as a regular search handler, so all
+query parameters supported by `/select` handler for that collection are supported here too.
+However, the history handler makes this
+process easier by offering a simpler syntax and knowledge of field names
+used by `SystemLogListener` for serialization of event data.
+
+History documents contain also the action context, if it was available, which gives
+further insight into e.g. exact operations that were computed and/or executed.
+
+Specifically, the following query parameters can be used (they are turned into
+filter queries, so an implicit AND is applied):
+
+* `trigger` - trigger name
+* `eventType` - event type / trigger type (eg. `nodeAdded`)
+* `collection` - collection name involved in event processing
+* `stage` - event processing stage
+* `action` - trigger action
+* `node` - node name that the event refers to
+* `beforeAction` - beforeAction stage
+* `afterAction` - afterAction stage
+
+.Example output
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 64
+    },
+    "response": {
+        "numFound": 2,
+        "start": 0,
+        "docs": [
+            {
+                "type": "autoscaling_event",
+                "source_s": "SystemLogListener",
+                "id": "15f53efdf4bT2qlmj80580yuu997vktddfob3",
+                "event.id_s": "14f0d67fe7b97d80T2qlmj80580yuu997vktddfob2",
+                "event.type_s": "NODELOST",
+                "event.source_s": ".auto_add_replicas",
+                "event.time_l": 1508941720006000000,
+                "timestamp": "2017-10-25T14:29:10.091Z",
+                "event.property.eventTimes_ss": [
+                    "1508941720006000000"
+                ],
+                "event.property._enqueue_time__ss": [
+                    "1508941750088000000"
+                ],
+                "event.property.nodeNames_ss": [
+                    "192.168.1.104:7574_solr"
+                ],
+                "stage_s": "STARTED",
+                "event_str": "{\n  \"id\":\"14f0d67fe7b97d80T2qlmj80580yuu997vktddfob2\",\n  \"source\":\".auto_add_replicas\",\n  \"eventTime\":1508941720006000000,\n  \"eventType\":\"NODELOST\",\n  \"properties\":{\n    \"eventTimes\":[1508941720006000000],\n    \"_enqueue_time_\":1508941750088000000,\n    \"nodeNames\":[\"192.168.1.104:7574_solr\"]}}",
+                "_version_": 1582240104552857600
+            },
+            {
+                "type": "autoscaling_event",
+                "source_s": "SystemLogListener",
+                "id": "15f53eff316T2qlmj80580yuu997vktddfob6",
+                "event.id_s": "14f0d67fe7b97d80T2qlmj80580yuu997vktddfob2",
+                "event.type_s": "NODELOST",
+                "event.source_s": ".auto_add_replicas",
+                "event.time_l": 1508941720006000000,
+                "timestamp": "2017-10-25T14:29:15.158Z",
+                "event.property.eventTimes_ss": [
+                    "1508941720006000000"
+                ],
+                "event.property._enqueue_time__ss": [
+                    "1508941750088000000"
+                ],
+                "event.property.nodeNames_ss": [
+                    "192.168.1.104:7574_solr"
+                ],
+                "stage_s": "SUCCEEDED",
+                "event_str": "{\n  \"id\":\"14f0d67fe7b97d80T2qlmj80580yuu997vktddfob2\",\n  \"source\":\".auto_add_replicas\",\n  \"eventTime\":1508941720006000000,\n  \"eventType\":\"NODELOST\",\n  \"properties\":{\n    \"eventTimes\":[1508941720006000000],\n    \"_enqueue_time_\":1508941750088000000,\n    \"nodeNames\":[\"192.168.1.104:7574_solr\"]}}",
+                "_version_": 1582240109859700736
+            }
+        ]
+    }
+}
+----
+
 == Write API
 
-The Write API is available at the same `/admin/autoscaling` and `/v2/cluster/autoscaling` endpoints as the read API but can only be used with the *POST* HTTP verb.
+The Write API is available at the same `/admin/autoscaling` and `/api/cluster/autoscaling` endpoints as the read API but can only be used with the *POST* HTTP verb.
 
 The payload of the POST request is a JSON message with commands to set and remove components. Multiple commands can be specified together in the payload. The commands are executed in the order specified and the changes are atomic, i.e., either all succeed or none.
 
@@ -325,30 +414,91 @@ The `remove-policy` command accepts a policy name to be removed from Solr. The p
 
 If you attempt to remove a policy that is being used by a collection, this command will fail to delete the policy until the collection itself is deleted.
 
-== History API
-History of autoscaling events is available at `/admin/autoscaling/history`. It returs information
-about past autoscaling events and details about their processing. This history is kept in
-the `.system` collection, and populated by a trigger listener `SystemLogListener` - by default this
-listener is added to all new triggers.
+=== Create/Update Trigger
 
-History events are regular Solr documents so they can be also accessed directly by
-searching on the `.system` collection. History handler acts as a regular search handler, so all
-query parameters supported by `/select` handler for that collection are supported here too.
-However, the history handler makes this
-process easier by offering a simpler syntax and knowledge of field names
-used by `SystemLogListener` for serialization of event data.
+The set-trigger command can be used to create a new trigger or overwrite an existing one.
 
-History documents contain also the action context, if it was available, which gives
-further insight into eg. exact operations that were computed and/or executed.
+You can see the section <<solrcloud-autoscaling-triggers.adoc#trigger-configuration,Trigger Configuration>> for a full list of configuration options.
 
-Specifically, the following query parameters can be used (they are turned into
-filter queries, so an implicit AND is applied):
+.Creating a nodeAdded Trigger
+[source,json]
+----
+{
+ "set-trigger": {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "1s"
+ }
+}
+----
 
-* `trigger` - trigger name
-* `eventType` - event type / trigger type (eg. `nodeAdded`)
-* `collection` - collection name involved in event processing
-* `stage` - event processing stage
-* `action` - trigger action
-* `node` - node name that the event refers to
-* `beforeAction` - beforeAction stage
-* `afterAction` - afterAction stage
+.Updating Trigger with waitFor set to 5 seconds
+[source,json]
+----
+{
+ "set-trigger": {
+  "name" : "node_added_trigger",
+  "event" : "nodeAdded",
+  "waitFor" : "5s",
+ }
+}
+----
+
+.Creating a nodeLost Trigger
+[source,json]
+----
+{
+ "set-trigger": {
+  "name" : "node_lost_trigger1",
+  "event" : "nodeLost",
+  "waitFor" : "60s",
+ }
+}
+----
+
+=== Remove Trigger
+
+The remove-trigger command can be used to remove a trigger. It accepts a single parameter: the name of the trigger.
+
+.Removing the nodeLost Trigger
+[source,json]
+----
+{
+ "remove-trigger": {
+  "name" : "node_lost_trigger1"
+ }
+}
+----
+
+=== Create/Update Trigger Listener
+
+The set-listener command can be used to create or modify a listener for a trigger.
+
+You can see the section <<solrcloud-autoscaling-listeners.adoc#listener-configuration,Trigger Listener Configuration>> for a full list of configuration options.
+
+.Creating a listener for the nodeAdded Trigger
+[source,json]
+----
+{
+ "set-listener": {
+    "name": "foo",
+    "trigger": "node_added_trigger",
+    "stage": ["STARTED", "ABORTED", "SUCCEEDED", "FAILED"],
+    "class": "com.example.Listener"
+ }
+}
+----
+
+=== Remove Trigger Listener
+
+The remove-listener command can be used to remove an existing listener. It accepts a single parameter: the name of the listener.
+
+.Removing the foo listener
+[source,json]
+----
+{
+ "remove-listener": {
+    "name": "foo"
+ }
+}
+----

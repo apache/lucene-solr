@@ -44,7 +44,7 @@ We have an easy way to enable this behavior without needing to understand the au
 
 A collection created with `autoAddReplicas=true` will be monitored by Solr such that if a node containing a replica of this collection goes down, Solr will add new replicas on other nodes after waiting for up to thirty seconds for the node to come back.
 
-You can see the section __TODO_FIX_ME__ to learn more about how to enable or disable this feature as well as other details.
+You can see the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud AutoScaling Automatically Adding Replicas>> to learn more about how to enable or disable this feature as well as other details.
 
 The selection of the node that will host the new replica is made according to the default cluster preferences that we will learn more about in the next sections.
 
@@ -83,9 +83,15 @@ You can learn more about collection-specific policies in the section  <<solrclou
 
 Now that we have an idea about how cluster management operations use policy and preferences help Solr keep the cluster balanced and stable, we can talk about when to invoke such operations. Triggers are used to watch for events such as a node joining or leaving the cluster. When the event happens, the trigger executes a set of `actions` that compute and execute a *plan* i.e. a set of operations to change the cluster so that the policy and preferences are respected.
 
-The `autoAddReplicas` parameter passed to the create collection API in the quickstart section automatically creates a trigger that watches for a node going away. When the trigger fires, it computes and executes a plan to move all replicas hosted by the lost node to new nodes in the cluster. The target nodes are chosen based on the policy and preferences.
+The `autoAddReplicas` parameter passed to the create collection API in the quickstart section automatically creates a trigger that watches for a node going away. When the trigger fires, it executes a set of actions that compute and execute a plan to move all replicas hosted by the lost node to new nodes in the cluster. The target nodes are chosen based on the policy and preferences.
 
-You can learn more about Triggers in the section <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,AutoScaling Triggers>>.
+You can learn more about Triggers in the section <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Autoscaling Triggers>>.
+
+== Trigger Actions
+
+A trigger executes *actions* that tell Solr what to do in response to the trigger. Solr ships with two actions that are added to every trigger by default. The first is called the *ComputePlanAction* and the other is *ExecutePlanAction*. The former computes the cluster management operations necessary to stabilize the cluster and the latter executes them on the cluster.
+
+You can learn more about Trigger Actions in the section <<solrcloud-autoscaling-trigger-actions.adoc#solrcloud-autoscaling-trigger-actions,Autoscaling Trigger Actions>>.
 
 == Listeners
 
