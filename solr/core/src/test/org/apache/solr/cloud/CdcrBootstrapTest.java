@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -61,7 +62,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
     try {
       target.waitForAllNodes(30);
-      System.out.println("Target zkHost = " + target.getZkServer().getZkAddress());
+      log.info("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       // start a cluster with no cdcr
@@ -77,21 +78,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .process(source.getSolrClient());
 
         CloudSolrClient sourceSolrClient = source.getSolrClient();
-        sourceSolrClient.setDefaultCollection("cdcr-source");
         int docs = (TEST_NIGHTLY ? 100 : 10);
-        int numDocs = 0;
-        for (int k = 0; k < docs; k++) {
-          UpdateRequest req = new UpdateRequest();
-          for (; numDocs < (k + 1) * 100; numDocs++) {
-            SolrInputDocument doc = new SolrInputDocument();
-            doc.addField("id", "source_" + numDocs);
-            doc.addField("xyz", numDocs);
-            req.add(doc);
-          }
-          req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
-          req.process(sourceSolrClient);
-        }
+        int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
         QueryResponse response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
@@ -129,7 +117,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         cdcrStart(sourceSolrClient);
 
         response = getCdcrQueue(sourceSolrClient);
-        System.out.println("Cdcr queue response: " + response.getResponse());
+        log.info("Cdcr queue response: " + response.getResponse());
         long foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
 
@@ -149,6 +137,23 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
+  private int indexDocs(CloudSolrClient sourceSolrClient, String collection, int batches) throws IOException, SolrServerException {
+    sourceSolrClient.setDefaultCollection(collection);
+    int numDocs = 0;
+    for (int k = 0; k < batches; k++) {
+      UpdateRequest req = new UpdateRequest();
+      for (; numDocs < (k + 1) * 100; numDocs++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", "source_" + numDocs);
+        doc.addField("xyz", numDocs);
+        req.add(doc);
+      }
+      req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+      req.process(sourceSolrClient);
+    }
+    log.info("Adding numDocs=" + numDocs);
+    return numDocs;
+  }
   /**
    * This test start cdcr source, adds data,starts target cluster, verifies replication,
    * stops cdcr replication and buffering, adds more data, re-enables cdcr and verify replication
@@ -171,21 +176,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .process(source.getSolrClient());
 
         CloudSolrClient sourceSolrClient = source.getSolrClient();
-        sourceSolrClient.setDefaultCollection("cdcr-source");
         int docs = (TEST_NIGHTLY ? 100 : 10);
-        int numDocs = 0;
-        for (int k = 0; k < docs; k++) {
-          UpdateRequest req = new UpdateRequest();
-          for (; numDocs < (k + 1) * 100; numDocs++) {
-            SolrInputDocument doc = new SolrInputDocument();
-            doc.addField("id", "source_" + numDocs);
-            doc.addField("xyz", numDocs);
-            req.add(doc);
-          }
-          req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
-          req.process(sourceSolrClient);
-        }
+        int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
         QueryResponse response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
@@ -201,9 +193,15 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         cdcrStart(sourceSolrClient);
 
         response = getCdcrQueue(sourceSolrClient);
-        System.out.println("Cdcr queue response: " + response.getResponse());
+        log.info("Cdcr queue response: " + response.getResponse());
         long foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
+
+        int total_tlogs_in_index = FSDirectory.open(target.getBaseDir().resolve("node1").
+            resolve("cdcr-target_shard1_replica_n1").resolve("data").
+            resolve("tlog")).listAll().length;
+
+        assertEquals("tlogs count should be ZERO",0, total_tlogs_in_index);
 
         cdcrStop(sourceSolrClient);
         cdcrDisableBuffer(sourceSolrClient);
@@ -218,7 +216,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding 100 docs with commit=true, numDocs=" + numDocs);
+          log.info("Adding 100 docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
@@ -244,7 +242,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     MiniSolrCloudCluster target = new MiniSolrCloudCluster(1, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
     target.waitForAllNodes(30);
     try {
-      System.out.println("Target zkHost = " + target.getZkServer().getZkAddress());
+      log.info("Target zkHost = " + target.getZkServer().getZkAddress());
       System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
 
       MiniSolrCloudCluster source = new MiniSolrCloudCluster(1, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
@@ -257,21 +255,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             .process(source.getSolrClient());
 
         CloudSolrClient sourceSolrClient = source.getSolrClient();
-        sourceSolrClient.setDefaultCollection("cdcr-source");
         int docs = (TEST_NIGHTLY ? 100 : 10);
-        int numDocs = 0;
-        for (int k = 0; k < docs; k++) {
-          UpdateRequest req = new UpdateRequest();
-          for (; numDocs < (k + 1) * 100; numDocs++) {
-            SolrInputDocument doc = new SolrInputDocument();
-            doc.addField("id", "source_" + numDocs);
-            doc.addField("xyz", numDocs);
-            req.add(doc);
-          }
-          req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
-          req.process(sourceSolrClient);
-        }
+        int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
 
         QueryResponse response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
@@ -296,7 +281,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
             req.add(doc);
           }
           req.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-          System.out.println("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
+          log.info("Adding " + docs + " docs with commit=true, numDocs=" + numDocs);
           req.process(sourceSolrClient);
         }
 
@@ -304,7 +289,7 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         assertEquals("", numDocs, response.getResults().getNumFound());
 
         response = getCdcrQueue(sourceSolrClient);
-        System.out.println("Cdcr queue response: " + response.getResponse());
+        log.info("Cdcr queue response: " + response.getResponse());
         long foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
 

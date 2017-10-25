@@ -46,6 +46,9 @@ Bug Fixes
 
 * SOLR-11146: Small fixes to the mapping functions in the Analytics Component (Houston Putman)
 
+* SOLR-11326: A bootstrap of a target cluster does not need to download the tlog files from the source cluster
+  (Amrit Sarkar, Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
