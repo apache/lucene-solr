@@ -41,7 +41,7 @@ A Trigger named `.autoAddReplicas` is automatically created whenever any collect
 
 Only one trigger is sufficient to serve all collections having this feature enabled. The `.autoAddReplicas` trigger watches for nodes that are lost from the cluster and uses the default `TriggerActions` to create new replicas to replace the ones which were hosted by the lost node. If the old node comes back online, it unloads the moved replicas and the node is free to host other replicas as and when required.
 
-Since the trigger provides the autoAddReplicas feature for all collections, the `suspend-trigger` and `resume-trigger` Autoscaling API commands can be used to disable and enable this feature for all collections in one API call. See <<solrcloud-autoscaling-auto-add-replicas.adoc#>>
+Since the trigger provides the autoAddReplicas feature for all collections, the `suspend-trigger` and `resume-trigger` Autoscaling API commands can be used to disable and enable this feature for all collections in one API call. 
 
 .Suspending autoAddReplicas for all collections
 [source,json]
