@@ -163,7 +163,7 @@ public class NodeAddedTrigger extends TriggerBase {
       AutoScaling.TriggerEventProcessor processor = processorRef.get();
       if (!nodeNames.isEmpty()) {
         if (processor != null) {
-          log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}", name, nodeNames, times);
+          log.debug("NodeAddedTrigger {} firing registered processor for nodes: {} added at times {}, now={}", name, nodeNames, times, timeSource.getTime());
           if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {

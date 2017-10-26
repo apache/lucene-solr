@@ -78,6 +78,10 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    // todo remove this workaround after SOLR-9440 is fixed
+    zkStateReader.registerCore("testSimple1");
+    zkStateReader.registerCore("testSimple2");
+    zkStateReader.registerCore("testSimple3");
 
     // start the tests
     JettySolrRunner lostJetty = random().nextBoolean() ? cluster.getJettySolrRunner(0) : cluster.getJettySolrRunner(1);

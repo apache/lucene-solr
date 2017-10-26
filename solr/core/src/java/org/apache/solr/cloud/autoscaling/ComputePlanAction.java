@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,6 +29,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.NoneSuggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
@@ -48,14 +48,13 @@ public class ComputePlanAction extends TriggerActionBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void process(TriggerEvent event, ActionContext context) {
+  public void process(TriggerEvent event, ActionContext context) throws Exception {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
     SolrCloudManager cloudManager = context.getCloudManager();
     try {
       AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
       if (autoScalingConf.isEmpty()) {
-        log.error("Action: " + getName() + " executed but no policy is configured");
-        return;
+        throw new Exception("Action: " + getName() + " executed but no policy is configured");
       }
       Policy policy = autoScalingConf.getPolicy();
       Policy.Session session = policy.createSession(cloudManager);
@@ -74,11 +73,9 @@ public class ComputePlanAction extends TriggerActionBase {
         session = suggester.getSession();
         suggester = getSuggester(session, event, cloudManager);
       }
-    } catch (IOException e) {
-      log.error("IOException while processing event: " + event, e);
     } catch (Exception e) {
-      log.error("Unexpected exception while processing event: " + event, e);
-    }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Unexpected exception while processing event: " + event, e);    }
   }
 
   protected Suggester getSuggester(Policy.Session session, TriggerEvent event, SolrCloudManager cloudManager) {

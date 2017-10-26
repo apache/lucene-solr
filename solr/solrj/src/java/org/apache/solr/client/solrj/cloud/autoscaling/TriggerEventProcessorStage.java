@@ -20,11 +20,11 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
  * Enum that represents the stages of trigger event processing.
  */
 public enum TriggerEventProcessorStage {
-  WAITING,
   STARTED,
   ABORTED,
   SUCCEEDED,
   FAILED,
   BEFORE_ACTION,
-  AFTER_ACTION
+  AFTER_ACTION,
+  IGNORED
 }

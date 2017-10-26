@@ -145,6 +145,7 @@ public class SystemLogListenerTest extends SolrCloudTestCase {
         nonOverseerLeaderIndex = i;
       }
     }
+    log.info("Stopping node " + cluster.getJettySolrRunner(nonOverseerLeaderIndex).getNodeName());
     cluster.stopJettySolrRunner(nonOverseerLeaderIndex);
     cluster.waitForAllNodes(30);
     assertTrue("Trigger was not fired ", triggerFiredLatch.await(30, TimeUnit.SECONDS));

@@ -939,6 +939,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     final String actionName;
     final TriggerEvent event;
     final String message;
+    final long timestamp;
 
     TestEvent(AutoScalingConfig.TriggerListenerConfig config, TriggerEventProcessorStage stage, String actionName, TriggerEvent event, String message) {
       this.config = config;
@@ -946,12 +947,14 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       this.actionName = actionName;
       this.event = event;
       this.message = message;
+      this.timestamp = timeSource.getTime();
     }
 
     @Override
     public String toString() {
       return "TestEvent{" +
-          "config=" + config +
+          "timestamp=" + timestamp +
+          ", config=" + config +
           ", stage=" + stage +
           ", actionName='" + actionName + '\'' +
           ", event=" + event +
@@ -974,11 +977,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      List<TestEvent> lst = listenerEvents.get(config.name);
-      if (lst == null) {
-        lst = new ArrayList<>();
-        listenerEvents.put(config.name, lst);
-      }
+      List<TestEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
       lst.add(new TestEvent(config, stage, actionName, event, message));
     }
   }
@@ -1136,5 +1135,78 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     assertEquals(TriggerEventProcessorStage.FAILED, testEvents.get(3).stage);
     assertEquals("test1", testEvents.get(3).actionName);
+  }
+
+  @Test
+  public void testCooldown() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    failDummyAction = false;
+    waitForSeconds = 1;
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'node_added_cooldown_trigger'," +
+        "'event' : 'nodeAdded'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'actions' : [" +
+        "{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}" +
+        "]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand1 = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'bar'," +
+        "'trigger' : 'node_added_cooldown_trigger'," +
+        "'stage' : ['FAILED','SUCCEEDED', 'IGNORED']," +
+        "'class' : '" + TestTriggerListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    listenerCreated = new CountDownLatch(1);
+    listenerEvents.clear();
+
+    JettySolrRunner newNode = cluster.startJettySolrRunner();
+    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+    assertTrue(triggerFired.get());
+    // wait for listener to capture the SUCCEEDED stage
+    Thread.sleep(1000);
+
+    List<TestEvent> capturedEvents = listenerEvents.get("bar");
+    // we may get a few IGNORED events if other tests caused events within cooldown period
+    assertTrue(capturedEvents.toString(), capturedEvents.size() > 0);
+    long prevTimestamp = capturedEvents.get(capturedEvents.size() - 1).timestamp;
+
+    // reset the trigger and captured events
+    listenerEvents.clear();
+    triggerFiredLatch = new CountDownLatch(1);
+    triggerFired.compareAndSet(true, false);
+
+    JettySolrRunner newNode2 = cluster.startJettySolrRunner();
+    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+    // wait for listener to capture the SUCCEEDED stage
+    Thread.sleep(2000);
+
+    // there must be at least one IGNORED event due to cooldown, and one SUCCEEDED event
+    capturedEvents = listenerEvents.get("bar");
+    assertTrue(capturedEvents.toString(), capturedEvents.size() > 1);
+    for (int i = 0; i < capturedEvents.size() - 1; i++) {
+      TestEvent ev = capturedEvents.get(i);
+      assertEquals(ev.toString(), TriggerEventProcessorStage.IGNORED, ev.stage);
+      assertTrue(ev.toString(), ev.message.contains("cooldown"));
+    }
+    TestEvent ev = capturedEvents.get(capturedEvents.size() - 1);
+    assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
+    // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
+    // must be larger than cooldown period
+    assertTrue("timestamp delta is less than default cooldown period", ev.timestamp - prevTimestamp > TimeUnit.MILLISECONDS.toNanos(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_MS));
   }
 }
