@@ -784,7 +784,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
   }
 
   static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String subPath, String message) {
-    boolean useV1 = false;
+    boolean useV1 = random().nextBoolean();
     String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
     path += subPath != null ? subPath : "";
     return useV1
