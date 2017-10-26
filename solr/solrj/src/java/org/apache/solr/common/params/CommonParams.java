@@ -185,6 +185,7 @@ public interface CommonParams {
   String AUTOSCALING_PATH = "/admin/autoscaling";
   String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
+  String AUTOSCALING_SUGGESTIONS_PATH = "/admin/autoscaling/suggestions";
 
   Set<String> ADMIN_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
       CORES_HANDLER_PATH,
@@ -195,7 +196,8 @@ public interface CommonParams {
       METRICS_PATH,
       AUTOSCALING_PATH,
       AUTOSCALING_HISTORY_PATH,
-      AUTOSCALING_DIAGNOSTICS_PATH)));
+      AUTOSCALING_DIAGNOSTICS_PATH,
+      AUTOSCALING_SUGGESTIONS_PATH)));
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
