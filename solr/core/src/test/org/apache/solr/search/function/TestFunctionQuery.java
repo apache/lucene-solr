@@ -29,6 +29,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -503,6 +504,34 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,max)"), "//float[@name='score']='37.0'");
     assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,average)"), "//float[@name='score']='26.0'");
     assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,x,0.0,first)"), "//float[@name='score']='22.0'");
+
+    // Test with debug
+    assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,A)", CommonParams.DEBUG, "true"), "//float[@name='score']='1.0'");
+  }
+
+  @Test
+  public void testRetrievePayloads() throws Exception {
+    clearIndex();
+    int numDocs = 100 + random().nextInt(100);
+    int numLocations = 1000 + random().nextInt(2000);
+    for (int docNum = 0 ; docNum < numDocs ; ++docNum) {
+      StringBuilder amountsBuilder = new StringBuilder();
+      for (int location = 1 ; location <= numLocations ; ++location) {
+        String amount = "" + location + '.' + random().nextInt(100);
+        amountsBuilder.append(location).append('|').append(amount).append(' ');
+      }
+      assertU(adoc("id","" + docNum,
+                   "default_amount_f", "" + (10000 + random().nextInt(10000)) + ".0",
+                   "amounts_dpf", amountsBuilder.toString()));
+    }
+    assertU(commit());
+    assertJQ(req("q","*:*",
+        "fl","id,location:$locationId,amount:$amount",
+        "sort","$amount asc",
+        "amount","payload(amounts_dpf,$locationId,default_amount_f)",
+        "locationId",""+(1+random().nextInt(numLocations)),
+        "wt","json"),
+        "/response/numFound==" + numDocs);
   }
 
   @Test

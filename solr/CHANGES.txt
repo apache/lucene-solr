@@ -70,6 +70,10 @@ Bug Fixes
 
 * SOLR-11326: A bootstrap of a target cluster does not need to download the tlog files from the source cluster
   (Amrit Sarkar, Varun Thacker)
+  
+* SOLR-10874: Fix AIOOBE caused by FloatPayloadValueSource calling PostingsEnum.nextPosition()
+  more than the given term's frequency in overridden FloatDocValues.floatVal().
+  (Michael Kosten, Erik Hatcher, Steve Rowe)
 
 Optimizations
 ----------------------

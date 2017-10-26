@@ -64,6 +64,7 @@ public class FloatPayloadValueSource extends ValueSource {
       PostingsEnum docs ;
       int atDoc;
       int lastDocRequested = -1;
+      float docScore = 0.f;
 
       { reset(); }
 
@@ -141,6 +142,10 @@ public class FloatPayloadValueSource extends ValueSource {
             // out-of-order access.... reset
             reset();
           }
+          else if (doc == lastDocRequested) {
+            return docScore;
+          }
+          
           lastDocRequested = doc;
 
           if (atDoc < doc) {
@@ -150,7 +155,8 @@ public class FloatPayloadValueSource extends ValueSource {
           if (atDoc > doc) {
             // term doesn't match this document... either because we hit the
             // end, or because the next doc is after this doc.
-            return defaultValues.floatVal(doc);
+            docScore =  defaultValues.floatVal(doc);
+            return docScore;
           }
 
           // a match!
@@ -172,8 +178,8 @@ public class FloatPayloadValueSource extends ValueSource {
 
             }
           }
-
-          return (numPayloadsSeen > 0) ? payloadFunction.docScore(doc, indexedField, numPayloadsSeen, currentScore) : defaultValues.floatVal(doc);
+          docScore =  (numPayloadsSeen > 0) ? payloadFunction.docScore(doc, indexedField, numPayloadsSeen, currentScore) : defaultValues.floatVal(doc);
+          return docScore;
         } catch (IOException e) {
           throw new RuntimeException("caught exception in function "+description()+" : doc="+doc, e);
         }
