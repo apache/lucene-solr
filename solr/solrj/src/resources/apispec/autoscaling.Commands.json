@@ -13,7 +13,7 @@
   },
   "commands": {
     "set-trigger": {
-      "type":"object",
+      "type": "object",
       "description": "The set-trigger command allows you to add and update triggers on various system metrics",
       "properties": {
         "name": {
@@ -48,11 +48,10 @@
           }
         }
       },
-        "required": [
-          "name",
-          "event"
-        ]
-      }
+      "required": [
+        "name",
+        "event"
+      ]
     },
     "remove-trigger": {
       "description": "Remove a trigger",
@@ -87,21 +86,21 @@
           "type": "array",
           "description": "The stage of the trigger for which to listen",
           "items": {
-            "type" : "string"
+            "type": "string"
           }
         },
         "beforeAction": {
           "type": "array",
           "description": "The name of the action before which the listener should be notified",
           "items": {
-            "type" : "string"
+            "type": "string"
           }
         },
         "afterAction": {
           "type": "array",
           "description": "The name of the action after which the listener should be notified",
           "items": {
-            "type" : "string"
+            "type": "string"
           }
         },
         "class": {
@@ -159,23 +158,23 @@
         "name"
       ]
     },
-    "set-policy" : {
-      "type":"object",
+    "set-policy": {
+      "type": "object",
       "description": "The set-policy command allows you to add and update policies that apply to collections",
-    /*  "patternProperties": {
-        "^.+$": {
-          "type": "array"
-        }
-      },*/
+      /*  "patternProperties": {
+          "^.+$": {
+            "type": "array"
+          }
+        },*/
       "additionalProperties": true
     },
-    "set-cluster-policy" : {
-      "type" : "array",
-      "description" : "The set-cluster-policy command allows you to add and update cluster-level policy that acts as the base for all collection level policies, if any"
+    "set-cluster-policy": {
+      "type": "array",
+      "description": "The set-cluster-policy command allows you to add and update cluster-level policy that acts as the base for all collection level policies, if any"
     },
-    "set-cluster-preferences" : {
-      "type" : "array",
-      "description" : "The set-cluster-preferences command allows you to add and update cluster-level preferences that are used to sort nodes for selection in cluster operations"
+    "set-cluster-preferences": {
+      "type": "array",
+      "description": "The set-cluster-preferences command allows you to add and update cluster-level preferences that are used to sort nodes for selection in cluster operations"
     },
     "remove-policy": {
       "description": "Remove a policy",
