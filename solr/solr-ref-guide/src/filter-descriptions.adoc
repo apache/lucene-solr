@@ -345,7 +345,7 @@ This filter stems plural English words to their singular form.
 
 == English Possessive Filter
 
-This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g. the *s'* in "divers' snorkels", are not removed by this filter.
+This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not removed by this filter.
 
 *Factory class:* `solr.EnglishPossessiveFilterFactory`
 
@@ -1608,7 +1608,7 @@ This filter splits tokens at word delimiters.
 .Word Delimiter Filter has been Deprecated
 [WARNING]
 ====
-Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g. phrase queries can work correctly.
+Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g., phrase queries can work correctly.
 ====
 
 *Factory class:* `solr.WordDelimiterFilterFactory`

@@ -23,14 +23,14 @@ health and good use of resources.
 
 Currently two implementations are provided: `ComputePlanAction` and `ExecutePlanAction`.
 
-== Compute plan action
+== Compute Plan Action
 
 The `ComputePlanAction` uses the policy and preferences to calculate the optimal set of Collection API
 commands which can re-balance the cluster in response to trigger events.
 
 Currently, it has no configurable parameters.
 
-== Execute plan action
+== Execute Plan Action
 
 The `ExecutePlanAction` executes the Collection API commands emitted by the `ComputePlanAction` against
 the cluster using SolrJ. It executes the commands serially, waiting for each of them to succeed before
@@ -38,9 +38,9 @@ continuing with the next one.
 
 Currently, it has no configurable parameters.
 
-If any one of the command fails, then the complete chain of actions are
-executed again at the next run of the trigger. If the Overseer node fails while ExecutePlanAction is running
-then the new overseer node will run the chain of actions for the same event again after waiting for any
+If any one of the commands fail, then the complete chain of actions are
+executed again at the next run of the trigger. If the Overseer node fails while `ExecutePlanAction` is running,
+then the new Overseer node will run the chain of actions for the same event again after waiting for any
 running Collection API operations belonging to the event to complete.
 
-Please see <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,SolrCloud AutoScaling Fault Tolerance>> for more details on fault tolerance within the Autoscaling framework.
+Please see <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,SolrCloud Autoscaling Fault Tolerance>> for more details on fault tolerance within the autoscaling framework.
