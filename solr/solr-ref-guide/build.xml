@@ -130,6 +130,11 @@
   <target name="build-init" description="Prepares the build's 'content' dir, copying over src files and transforming *.template files in the process">
     <delete dir="${build.content.dir}" />
     <mkdir dir="${build.content.dir}" />
+
+    <echo>Copying all examples to build directory...</echo>
+    <copy todir="${build.content.dir}">
+      <fileset dir="../solrj/src/test/org/apache/solr/client/ref_guide_examples" />
+    </copy>
     <echo>Copying all non template files from src ...</echo>
     <copy todir="${build.content.dir}">
       <fileset dir="src">
