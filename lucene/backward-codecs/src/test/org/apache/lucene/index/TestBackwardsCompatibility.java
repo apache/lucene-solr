@@ -312,6 +312,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "6.6.0-nocfs",
     "6.6.1-cfs",
     "6.6.1-nocfs",
+    "6.6.2-cfs",
+    "6.6.2-nocfs",
     "7.0.0-cfs",
     "7.0.0-nocfs",
     "7.0.1-cfs",
@@ -335,6 +337,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "sorted.6.5.1",
     "sorted.6.6.0",
     "sorted.6.6.1",
+    "sorted.6.6.2",
     "sorted.7.0.0",
     "sorted.7.0.1",
     "sorted.7.1.0"
@@ -560,24 +563,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         expectedVersions.add(v.toString() + "-cfs");
       }
     }
-
-    // BEGIN TRUNK ONLY BLOCK
-    // on trunk, the last release of the prev major release is also untested
-    Version lastPrevMajorVersion = null;
-    for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
-      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
-        Version v = (Version)field.get(Version.class);
-        Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) continue;
-        if (v.major == Version.LATEST.major - 1 &&
-            (lastPrevMajorVersion == null || v.onOrAfter(lastPrevMajorVersion))) {
-          lastPrevMajorVersion = v;
-        }
-      }
-    }
-    assertNotNull(lastPrevMajorVersion);
-    expectedVersions.remove(lastPrevMajorVersion.toString() + "-cfs");
-    // END TRUNK ONLY BLOCK
 
     Collections.sort(expectedVersions);
 

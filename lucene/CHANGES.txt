@@ -385,6 +385,18 @@ Other
   that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
   (David Smiley)
 
+======================= Lucene 6.6.2 =======================
+
+Changes in Runtime Behavior
+
+* Resolving of external entities in queryparser/xml/CoreParser is disallowed
+  by default. See SOLR-11477 for details.
+
+Bug Fixes
+
+* SOLR-11477: Disallow resolving of external entities in queryparser/xml/CoreParser
+  by default. (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
 ======================= Lucene 6.6.1 =======================
 
 Bug Fixes
