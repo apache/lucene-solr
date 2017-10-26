@@ -72,6 +72,14 @@ Pygments has a long selection of lexers available. You can see the full list at 
 
 Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible. When in doubt, choose `text`, or leave it blank.
 
+==== Importing Code Snippets from Other Files
+
+The build system has the ability to "include" code snippets located in other files.
+
+Snippets are bounded by "tag" comments placed at the start and end of the section you would like to import.  Opening tags look like: `// tag::snippetName[]`.  Closing tags follow the format: `// end::snippetName[]`.  Snippets can be dropped into an adoc file using an `include` directive, following a format: `include::PathToFileWithSnippet[tag=snippetName]`.  Note that when relative paths are provided in this directive, that paths are relative to location of the asciidoc file the include appears in.
+
+For more information on the `include` directive, see the documentation http://asciidoctor.org/docs/user-manual/#include-partial[here].
+
 === Block Titles
 
 Titles can be added to most blocks (images, source blocks, tables, etc.) by simply prefacing the title with a period (`.`). For example, to add a title to the source block example above:
