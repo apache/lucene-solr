@@ -77,12 +77,7 @@ If you are worried about the SolrJ libraries expanding the size of your client a
 
 For all its flexibility, SolrJ is built around a few simple interfaces.
 
-<<<<<<< ours
-. A URL with a path pointing to a specific core or collection (e.g., `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL with a generic path pointing to the root Solr path (e.g., `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
-=======
 All requests to Solr are sent by a {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrClient.html[`SolrClient`].  SolrClient's are the main workhorses at the core of SolrJ.  They handle the work of connecting to and communicating with Solr, and are where most of the user configuration happens.
->>>>>>> theirs
 
 Requests are sent in the form of {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrRequest.html[`SolrRequests`], and are returned as {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/SolrResponse.html[`SolrResponses`].
 
