@@ -29,6 +29,7 @@ import org.apache.solr.util.IdUtils;
  * Trigger event.
  */
 public class TriggerEvent implements MapWriter {
+  public static final String COOLDOWN = "cooldown";
   public static final String REPLAYING = "replaying";
   public static final String NODE_NAMES = "nodeNames";
   public static final String EVENT_TIMES = "eventTimes";

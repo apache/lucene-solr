@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
@@ -53,7 +54,7 @@ public class ExecutePlanAction extends TriggerActionBase {
   static final int DEFAULT_TASK_TIMEOUT_SECONDS = 120;
 
   @Override
-  public void process(TriggerEvent event, ActionContext context) {
+  public void process(TriggerEvent event, ActionContext context) throws Exception {
     log.debug("-- processing event: {} with context properties: {}", event, context.getProperties());
     SolrCloudManager dataProvider = context.getCloudManager();
     List<SolrRequest> operations = (List<SolrRequest>) context.getProperty("operations");
@@ -69,6 +70,8 @@ public class ExecutePlanAction extends TriggerActionBase {
           int counter = 0;
           if (operation instanceof CollectionAdminRequest.AsyncCollectionAdminRequest) {
             CollectionAdminRequest.AsyncCollectionAdminRequest req = (CollectionAdminRequest.AsyncCollectionAdminRequest) operation;
+            // waitForFinalState so that the end effects of operations are visible
+            req.setWaitForFinalState(true);
             String asyncId = event.getSource() + '/' + event.getId() + '/' + counter;
             String znode = saveAsyncId(dataProvider.getDistribStateManager(), event, asyncId);
             log.debug("Saved requestId: {} in znode: {}", asyncId, znode);
@@ -116,7 +119,7 @@ public class ExecutePlanAction extends TriggerActionBase {
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unexpected IOException while processing event: " + event, e);
+          "Unexpected exception while processing event: " + event, e);
     }
   }
 
@@ -145,6 +148,9 @@ public class ExecutePlanAction extends TriggerActionBase {
           throw e;
         }
         if (rootCause instanceof TimeoutException && rootCause.getMessage().contains("Could not connect to ZooKeeper")) {
+          throw e;
+        }
+        if (rootCause instanceof SolrServerException) {
           throw e;
         }
         log.error("Unexpected Exception while querying status of requestId=" + requestId, e);

@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
@@ -94,9 +94,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     List<ZkNodeProps> createdReplicas = new ArrayList<>();
 
     AtomicBoolean anyOneFailed = new AtomicBoolean(false);
-    CountDownLatch countDownLatch = new CountDownLatch(sourceReplicas.size());
+    SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ocmh);
 
-    CountDownLatch replicasToRecover = new CountDownLatch(numLeaders);
+    SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ocmh);
 
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       NamedList nl = new NamedList();
@@ -169,7 +169,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     if (anyOneFailed.get()) {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
-      CountDownLatch cleanupLatch = new CountDownLatch(createdReplicas.size());
+      SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ocmh);
       for (ZkNodeProps createdReplica : createdReplicas) {
         NamedList deleteResult = new NamedList();
         try {

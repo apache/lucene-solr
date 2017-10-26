@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
+import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -229,12 +229,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     if (!parallel || waitForFinalState) {
       if (waitForFinalState) {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collection, null, Collections.singletonList(coreName), countDownLatch);
+        SolrCloseableLatch latch = new SolrCloseableLatch(1, ocmh);
+        ActiveReplicaWatcher watcher = new ActiveReplicaWatcher(collection, null, Collections.singletonList(coreName), latch);
         try {
           zkStateReader.registerCollectionStateWatcher(collection, watcher);
           runnable.run();
-          if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
+          if (!latch.await(timeout, TimeUnit.SECONDS)) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting " + timeout + " seconds for replica to become active.");
           }
         } finally {

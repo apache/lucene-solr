@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -36,6 +35,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
@@ -53,7 +53,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
  * Overseer thread responsible for reading triggers from zookeeper and
  * adding/removing them from {@link ScheduledTriggers}
  */
-public class OverseerTriggerThread implements Runnable, Closeable {
+public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -100,6 +100,11 @@ public class OverseerTriggerThread implements Runnable, Closeable {
     IOUtils.closeQuietly(triggerFactory);
     IOUtils.closeQuietly(scheduledTriggers);
     log.debug("OverseerTriggerThread has been closed explicitly");
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 
   @Override

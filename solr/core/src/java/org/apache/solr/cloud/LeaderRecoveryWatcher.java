@@ -17,8 +17,8 @@
 package org.apache.solr.cloud;
 
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
+import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -33,7 +33,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
   String shardId;
   String replicaId;
   String targetCore;
-  CountDownLatch countDownLatch;
+  SolrCloseableLatch latch;
 
   /**
    * Watch for recovery of a replica
@@ -42,25 +42,25 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
    * @param shardId        shard id
    * @param replicaId      source replica name (coreNodeName)
    * @param targetCore     specific target core name - if null then any active replica will do
-   * @param countDownLatch countdown when recovered
+   * @param latch countdown when recovered
    */
-  LeaderRecoveryWatcher(String collectionId, String shardId, String replicaId, String targetCore, CountDownLatch countDownLatch) {
+  LeaderRecoveryWatcher(String collectionId, String shardId, String replicaId, String targetCore, SolrCloseableLatch latch) {
     this.collectionId = collectionId;
     this.shardId = shardId;
     this.replicaId = replicaId;
     this.targetCore = targetCore;
-    this.countDownLatch = countDownLatch;
+    this.latch = latch;
   }
 
   @Override
   public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
     if (collectionState == null) { // collection has been deleted - don't wait
-      countDownLatch.countDown();
+      latch.countDown();
       return true;
     }
     Slice slice = collectionState.getSlice(shardId);
     if (slice == null) { // shard has been removed - don't wait
-      countDownLatch.countDown();
+      latch.countDown();
       return true;
     }
     for (Replica replica : slice.getReplicas()) {
@@ -77,7 +77,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
           continue;
         }
         if (replica.isActive(liveNodes)) { // recovered - stop waiting
-          countDownLatch.countDown();
+          latch.countDown();
           return true;
         }
       }

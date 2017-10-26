@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -44,6 +43,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -99,7 +99,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * A {@link OverseerMessageHandler} that handles Collections API related
  * overseer messages.
  */
-public class OverseerCollectionMessageHandler implements OverseerMessageHandler , Closeable {
+public class OverseerCollectionMessageHandler implements OverseerMessageHandler, SolrCloseable {
 
   public static final String NUM_SLICES = "numShards";
 
@@ -169,6 +169,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   final Map<CollectionAction, Cmd> commandMap;
 
+  private volatile boolean isClosed;
+
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
                                         final ShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
@@ -181,6 +183,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     this.myId = myId;
     this.stats = stats;
     this.overseer = overseer;
+    this.isClosed = false;
     commandMap = new ImmutableMap.Builder<CollectionAction, Cmd>()
         .put(REPLACENODE, new ReplaceNodeCmd(this))
         .put(DELETENODE, new DeleteNodeCmd(this))
@@ -978,11 +981,17 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   @Override
   public void close() throws IOException {
+    this.isClosed = true;
     if (tpe != null) {
       if (!tpe.isShutdown()) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 
   interface Cmd {

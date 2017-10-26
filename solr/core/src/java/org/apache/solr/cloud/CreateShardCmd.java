@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +31,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
+import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -90,7 +90,7 @@ public class CreateShardCmd implements Cmd {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     boolean usePolicyFramework = usePolicyFramework(collection,ocmh);
     List<ReplicaPosition> positions = null;
-    CountDownLatch countDownLatch;
+    SolrCloseableLatch countDownLatch;
     try {
       if (usePolicyFramework) {
         if (collection.getPolicyName() != null) message.getProperties().put(Policy.POLICY, collection.getPolicyName());
@@ -123,7 +123,7 @@ public class CreateShardCmd implements Cmd {
       ocmh.waitForNewShard(collectionName, sliceName);
 
       String async = message.getStr(ASYNC);
-      countDownLatch = new CountDownLatch(totalReplicas);
+      countDownLatch = new SolrCloseableLatch(totalReplicas, ocmh);
       for (ReplicaPosition position : positions) {
         String nodeName = position.node;
         String coreName = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), collection, sliceName, position.type);

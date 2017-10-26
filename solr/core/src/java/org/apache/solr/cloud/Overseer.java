@@ -38,6 +38,7 @@ import org.apache.solr.cloud.overseer.ReplicaMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -63,7 +64,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
  * collections, shards, replicas and setting various properties.
  */
-public class Overseer implements Closeable {
+public class Overseer implements SolrCloseable {
   public static final String QUEUE_OPERATION = "operation";
 
   // System properties are used in tests to make them run fast
@@ -568,6 +569,11 @@ public class Overseer implements Closeable {
     doClose();
     this.closed = true;
     assert ObjectReleaseTracker.release(this);
+  }
+
+  @Override
+  public boolean isClosed() {
+    return closed;
   }
 
   private void doClose() {

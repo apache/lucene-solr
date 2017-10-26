@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud.autoscaling;
+package org.apache.solr.common;
 
 import java.io.Closeable;
 
-import org.apache.solr.util.plugin.MapInitializedPlugin;
-
 /**
- * Interface for actions performed in response to a trigger being activated
+ * A {@link Closeable} that also allows checking whether it's been closed.
  */
-public interface TriggerAction extends MapInitializedPlugin, Closeable {
-  String getName();
+public interface SolrCloseable extends Closeable {
 
-  void process(TriggerEvent event, ActionContext context) throws Exception;
+  default boolean isClosed() {
+    return false;
+  }
 }
