@@ -145,7 +145,7 @@ bin/solr restart -c -p 7574 -z localhost:9983 -s example/cloud/node2/solr
 
 Notice that you need to specify the ZooKeeper address (`-z localhost:9983`) when starting node2 so that it can join the cluster with node1.
 
-=== Adding a node to a cluster
+=== Adding a Node to a Cluster
 
 Adding a node to an existing cluster is a bit advanced and involves a little more understanding of Solr. Once you startup a SolrCloud cluster using the startup scripts, you can add a new node to it by:
 

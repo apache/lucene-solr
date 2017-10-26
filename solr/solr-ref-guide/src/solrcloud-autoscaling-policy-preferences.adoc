@@ -26,17 +26,17 @@ The autoscaling policy and preferences are a set of rules and sorting preference
 
 A preference is a hint to Solr on how to sort nodes based on their utilization. The default cluster preference is to sort by the total number of Solr cores (or replicas) hosted by a node. Therefore, by default, when selecting a node to add a replica, Solr can apply the preferences and choose the node with the least number of cores.
 
-More than one preferences can be added to break ties. For example, we may choose to use free disk space to break ties if the number of cores on two nodes are the same so the node with the higher free disk space can be chosen as the target of the cluster operation.
+More than one preference can be added to break ties. For example, we may choose to use free disk space to break ties if the number of cores on two nodes are the same. The node with the higher free disk space can be chosen as the target of the cluster operation.
 
-Each preference is of the following form:
+Each preference takes the following form:
 
 [source,json]
 {"<sort_order>":"<sort_param>", "precision":"<precision_val>"}
 
 `sort_order`::
-The value can be either `maximize` or `minimize`. `minimize` sorts the nodes with least value as the least loaded. For example, `{"minimize":"cores"}` sorts the nodes with the least number of cores as the least loaded node. A sort order such as `{"maximize":"freedisk"}` sorts the nodes with maximum free disk space as the least loaded node.
+The value can be either `maximize` or `minimize`. Choose `minimize` to sort the nodes with least value as the least loaded. For example, `{"minimize":"cores"}` sorts the nodes with the least number of cores as the least loaded node. A sort order such as `{"maximize":"freedisk"}` sorts the nodes with maximum free disk space as the least loaded node.
 +
-The objective of the system is to make every node the least loaded. So, in case of a `MOVEREPLICA` operation, it usually targets the _most loaded_ node and takes load off of it. In a sort of more loaded to less loaded, `minimize` is akin to sort in descending order and `maximize` is akin to sorting in ascending order.
+The objective of the system is to make every node the least loaded. So, in case of a `MOVEREPLICA` operation, it usually targets the _most loaded_ node and takes load off of it. In a sort of more loaded to less loaded, `minimize` is akin to sorting in descending order and `maximize` is akin to sorting in ascending order.
 +
 This is a required parameter.
 
@@ -53,7 +53,7 @@ Precision tells the system the minimum (absolute) difference between 2 values to
 +
 For example, a precision of 10 for `freedisk` means that two nodes whose free disk space is within 10GB of each other should be treated as equal for the purpose of sorting. This helps create ties without which specifying multiple preferences is not useful. This is an optional parameter whose value must be a positive integer. The maximum value of `precision` must be less than the maximum value of the `sort_value`, if any.
 
-See the section <<solrcloud-autoscaling-api.adoc#create-and-modify-cluster-preferences,set-cluster-preferences API>> for details on how to manage cluster preferences.
+See the section <<solrcloud-autoscaling-api.adoc#create-and-modify-cluster-preferences,Create and Modify Cluster Preferences>> for details on how to manage cluster preferences with the API.
 
 === Examples of Cluster Preferences
 

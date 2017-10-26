@@ -24,7 +24,7 @@ The Autoscaling API is used to manage autoscaling policies, preferences, trigger
 
 == Read API
 
-The autoscaling Read API is available at `/admin/autoscaling` or `/solr/cluster/autoscaling`. It returns information about the configured cluster preferences, cluster policy, collection-specific policies triggers and listeners.
+The autoscaling Read API is available at `/solr/admin/autoscaling` or `/api/cluster/autoscaling` (v2 API style). It returns information about the configured cluster preferences, cluster policy, collection-specific policies triggers and listeners.
 
 This API does not take any parameters.
 
@@ -145,26 +145,27 @@ However, since the first node in the first example had more than 1 replica for a
 In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
 
 == History API
-History of autoscaling events is available at `/admin/autoscaling/history`. It returns information
+
+The history of autoscaling events is available at `/admin/autoscaling/history`. It returns information
 about past autoscaling events and details about their processing. This history is kept in
-the `.system` collection, and populated by a trigger listener `SystemLogListener` - by default this
+the `.system` collection, and is populated by a trigger listener `SystemLogListener`. By default this
 listener is added to all new triggers.
 
 History events are regular Solr documents so they can be also accessed directly by
-searching on the `.system` collection. History handler acts as a regular search handler, so all
+searching on the `.system` collection. The history handler acts as a regular search handler, so all
 query parameters supported by `/select` handler for that collection are supported here too.
 However, the history handler makes this
 process easier by offering a simpler syntax and knowledge of field names
 used by `SystemLogListener` for serialization of event data.
 
-History documents contain also the action context, if it was available, which gives
-further insight into e.g. exact operations that were computed and/or executed.
+History documents contain the action context, if it was available, which gives
+further insight into e.g., exact operations that were computed and/or executed.
 
 Specifically, the following query parameters can be used (they are turned into
 filter queries, so an implicit AND is applied):
 
 * `trigger` - trigger name
-* `eventType` - event type / trigger type (eg. `nodeAdded`)
+* `eventType` - event type / trigger type (e.g., `nodeAdded`)
 * `collection` - collection name involved in event processing
 * `stage` - event processing stage
 * `action` - trigger action
@@ -236,18 +237,18 @@ filter queries, so an implicit AND is applied):
 .Broken v2 API support
 [WARNING]
 ====
-Due to a bug in Solr 7.1.0, the History API is available only at the path /admin/autoscaling/history. Using the /api/cluster/autoscaling/history endpoint returns an error.
+Due to a bug in Solr 7.1.0, the History API is available only at the path `/admin/autoscaling/history`. Using the `/api/cluster/autoscaling/history` endpoint returns an error.
 ====
 
 == Write API
 
-The Write API is available at the same `/admin/autoscaling` and `/api/cluster/autoscaling` endpoints as the read API but can only be used with the *POST* HTTP verb.
+The Write API is available at the same `/admin/autoscaling` and `/api/cluster/autoscaling` endpoints as the Read API but can only be used with the *POST* HTTP verb.
 
 The payload of the POST request is a JSON message with commands to set and remove components. Multiple commands can be specified together in the payload. The commands are executed in the order specified and the changes are atomic, i.e., either all succeed or none.
 
 === Create and Modify Cluster Preferences
 
-Cluster preferences are specified as a list of sort preferences. Multiple sorting preferences can be specified and they are applied in order.
+Cluster preferences are specified as a list of sort preferences. Multiple sorting preferences can be specified and they are applied in the order they are set.
 
 They are defined using the `set-cluster-preferences` command.
 
@@ -336,7 +337,7 @@ Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specificatio
 }
 ----
 
-Output:
+*Output*:
 [source,json]
 ----
 {
@@ -422,7 +423,7 @@ If you attempt to remove a policy that is being used by a collection, this comma
 
 === Create/Update Trigger
 
-The set-trigger command can be used to create a new trigger or overwrite an existing one.
+The `set-trigger` command can be used to create a new trigger or overwrite an existing one.
 
 You can see the section <<solrcloud-autoscaling-triggers.adoc#trigger-configuration,Trigger Configuration>> for a full list of configuration options.
 
@@ -464,7 +465,7 @@ You can see the section <<solrcloud-autoscaling-triggers.adoc#trigger-configurat
 
 === Remove Trigger
 
-The remove-trigger command can be used to remove a trigger. It accepts a single parameter: the name of the trigger.
+The `remove-trigger` command can be used to remove a trigger. It accepts a single parameter: the name of the trigger.
 
 .Removing the nodeLost Trigger
 [source,json]
@@ -478,7 +479,7 @@ The remove-trigger command can be used to remove a trigger. It accepts a single 
 
 === Create/Update Trigger Listener
 
-The set-listener command can be used to create or modify a listener for a trigger.
+The `set-listener` command can be used to create or modify a listener for a trigger.
 
 You can see the section <<solrcloud-autoscaling-listeners.adoc#listener-configuration,Trigger Listener Configuration>> for a full list of configuration options.
 
@@ -497,7 +498,7 @@ You can see the section <<solrcloud-autoscaling-listeners.adoc#listener-configur
 
 === Remove Trigger Listener
 
-The remove-listener command can be used to remove an existing listener. It accepts a single parameter: the name of the listener.
+The `remove-listener` command can be used to remove an existing listener. It accepts a single parameter: the name of the listener.
 
 .Removing the foo listener
 [source,json]

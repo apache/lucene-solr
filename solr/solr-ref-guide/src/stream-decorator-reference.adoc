@@ -22,7 +22,7 @@
 
 == cartesianProduct
 
-The `cartesianProduct` function turns a single tuple with a multi-valued field (ie. an array) into multiple tuples, one for each value in the array field. That is, given a single tuple containing an array of N values for fieldA, the `cartesianProduct` function will output N tuples, each with one value from the original tuple's array. In essence, you can flatten arrays for further processing.
+The `cartesianProduct` function turns a single tuple with a multi-valued field (i.e., an array) into multiple tuples, one for each value in the array field. That is, given a single tuple containing an array of N values for fieldA, the `cartesianProduct` function will output N tuples, each with one value from the original tuple's array. In essence, you can flatten arrays for further processing.
 
 For example, using `cartesianProduct` you can turn this tuple
 [source,text]

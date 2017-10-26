@@ -1545,7 +1545,7 @@ The name of the collection the replica belongs to. This parameter is required.
 The name of the shard the replica belongs to. This parameter is required.
 
 `replica`::
-The replica, e.g. `core_node1`. This parameter is required.
+The replica, e.g., `core_node1`. This parameter is required.
 
 `property`::
 The property to add. This will have the literal `property.` prepended to distinguish it from system-maintained properties. So these two forms are equivalent:

@@ -165,7 +165,7 @@ Expert options:
 
 `caseFirst`:: Valid values are `lower` or `upper`. Useful to control which is sorted first when case is not ignored.
 
-`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g. foobar-9 sorts before foobar-10. The default is false.
+`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10. The default is false.
 
 `variableTop`:: Single character or contraction. Controls what is variable for `alternate`.
 
