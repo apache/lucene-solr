@@ -186,6 +186,7 @@ public interface CommonParams {
   String AUTOSCALING_PATH = "/admin/autoscaling";
   String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
+  String AUTOSCALING_SUGGESTIONS_PATH = "/admin/autoscaling/suggestions";
 
   String STATUS = "status";
 
@@ -202,7 +203,8 @@ public interface CommonParams {
       METRICS_PATH,
       AUTOSCALING_PATH,
       AUTOSCALING_HISTORY_PATH,
-      AUTOSCALING_DIAGNOSTICS_PATH)));
+      AUTOSCALING_DIAGNOSTICS_PATH,
+      AUTOSCALING_SUGGESTIONS_PATH)));
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
