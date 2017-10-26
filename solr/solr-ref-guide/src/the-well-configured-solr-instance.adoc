@@ -1,7 +1,7 @@
 = The Well-Configured Solr Instance
 :page-shortname: the-well-configured-solr-instance
 :page-permalink: the-well-configured-solr-instance.html
-:page-children: configuring-solrconfig-xml, solr-cores-and-solr-xml, configuration-apis, implicit-requesthandlers, solr-plugins, jvm-settings
+:page-children: configuring-solrconfig-xml, solr-cores-and-solr-xml, configuration-apis, implicit-requesthandlers, solr-plugins, jvm-settings, v2-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -34,6 +34,8 @@ This section covers the following topics:
 <<solr-plugins.adoc#solr-plugins,Solr Plugins>>: Introduces Solr plugins with pointers to more information.
 
 <<jvm-settings.adoc#jvm-settings,JVM Settings>>: Gives some guidance on best practices for working with Java Virtual Machines.
+
+<<v2-api.adoc#v2-api,V2 API>>: Describes how to use the new V2 APIs, a redesigned API framework covering most Solr APIs.
 
 [IMPORTANT]
 ====
