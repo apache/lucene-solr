@@ -154,7 +154,7 @@ server/scripts/cloud-scripts/zkcli.sh -zkhost localhost:2181 -cmd clusterprop -n
 server\scripts\cloud-scripts\zkcli.bat -zkhost localhost:2181 -cmd clusterprop -name urlScheme -val https
 ----
 
-If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#zookeeper-chroot,chroot for Solr>>, make sure you use the correct `zkhost` string with `zkcli`, e.g. `-zkhost localhost:2181/solr`.
+If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#zookeeper-chroot,chroot for Solr>>, make sure you use the correct `zkhost` string with `zkcli`, e.g., `-zkhost localhost:2181/solr`.
 
 === Run SolrCloud with SSL
 
@@ -317,7 +317,7 @@ java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../serv
 
 === Query Using curl
 
-Use curl to query the SolrCloud collection created above, from a directory containing the PEM formatted certificate and key created above (e.g. `example/etc/`) - if you have not enabled client authentication (system property `-Djetty.ssl.clientAuth=true)`, then you can remove the `-E solr-ssl.pem:secret` option:
+Use curl to query the SolrCloud collection created above, from a directory containing the PEM formatted certificate and key created above (e.g., `example/etc/`) - if you have not enabled client authentication (system property `-Djetty.ssl.clientAuth=true)`, then you can remove the `-E solr-ssl.pem:secret` option:
 
 [source,bash]
 ----

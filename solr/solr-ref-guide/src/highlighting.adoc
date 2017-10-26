@@ -82,7 +82,7 @@ The default is `<em>`.
 The default is `</em>`.
 
 `hl.encoder`::
-If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HMTL/XML characters will be encoded (e.g. `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
+If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HMTL/XML characters will be encoded (e.g., `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
 
 `hl.maxAnalyzedChars`::
 The character limit to look for highlights, after which no highlighting will be done. This is mostly only a performance concern for an _analysis_ based offset source since it's the slowest. See <<Schema Options and Performance Considerations>>.
@@ -146,7 +146,7 @@ There are four highlighters available that can be chosen at runtime with the `hl
 +
 The Unified Highlighter is the newest highlighter (as of Solr 6.4), which stands out as the most flexible and performant of the options. We recommend that you try this highlighter even though it isn't the default (yet).
 +
-This highlighter supports the most common highlighting parameters and can handle just about any query accurately, even SpanQueries (e.g. as seen from the `surround` parser). A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis. There is little or no such flexibility for the other highlighters. More on this below.
+This highlighter supports the most common highlighting parameters and can handle just about any query accurately, even SpanQueries (e.g., as seen from the `surround` parser). A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis. There is little or no such flexibility for the other highlighters. More on this below.
 
 <<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
 +
@@ -304,7 +304,7 @@ If `true`, multi-valued fields will return all values in the order they were sav
 `hl.payloads`::
 When `hl.usePhraseHighlighter` is `true` and the indexed field has payloads but not term vectors (generally quite rare), the index's payloads will be read into the highlighter's memory index along with the postings.
 +
-If this may happen and you know you don't need them for highlighting (i.e. your queries don't filter by payload) then you can save a little memory by setting this to false.
+If this may happen and you know you don't need them for highlighting (i.e., your queries don't filter by payload) then you can save a little memory by setting this to false.
 
 The Original Highlighter has a plugin architecture that enables new functionality to be registered in `solrconfig.xml`. The "```techproducts```" configset shows most of these settings explicitly. You can use it as a guide to provide your own components to include a `SolrFormatter`, `SolrEncoder`, and `SolrFragmenter.`
 

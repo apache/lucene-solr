@@ -463,7 +463,7 @@ Other collections can share the same configuration by specifying the name of the
 
 ==== Data-driven Schema and Shared Configurations
 
-The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e. data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e. data-driven changes to the schema) for a collection by the following (assuming the collection name is `mycollection`):
+The `_default` schema can mutate as data is indexed, since it has schemaless functionality (i.e., data-driven changes to the schema). Consequently, we recommend that you do not share data-driven configurations between collections unless you are certain that all collections should inherit the changes made when indexing data into one of the collections. You can turn off schemaless functionality (i.e., data-driven changes to the schema) for a collection by the following (assuming the collection name is `mycollection`):
 
 `curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'`
 

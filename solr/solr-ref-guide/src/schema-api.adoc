@@ -40,7 +40,7 @@ When modifying the schema with the API, a core reload will automatically occur i
 .Re-index after schema modifications!
 [IMPORTANT]
 ====
-If you modify your schema, you will likely need to re-index all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g. after replacing a field type.
+If you modify your schema, you will likely need to re-index all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g., after replacing a field type.
 
 Modifying your schema will never modify any documents that are already indexed. You must re-index documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
 ====
@@ -595,7 +595,7 @@ If neither the `fl` query parameter nor the `fieldname` path parameter is specif
 If `false`, the default, matching dynamic fields will not be returned.
 
 `showDefaults`::
-If `true`, all default field properties from each field's field type will be included in the response (e.g. `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
+If `true`, all default field properties from each field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
 
 ==== List Fields Response
 
@@ -670,7 +670,7 @@ The query parameters can be added to the API request after a '?'.
 Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
 `showDefaults`::
-If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g. `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
+If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
 
 ==== List Dynamic Field Response
 
@@ -753,7 +753,7 @@ The query parameters can be added to the API request after a '?'.
 Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
 `showDefaults`::
-If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g. `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
+If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
 
 ==== List Field Type Response
 

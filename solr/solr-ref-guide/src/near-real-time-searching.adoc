@@ -61,7 +61,7 @@ One point of confusion is how much data is contained in a tlog. A tlog does not 
 
 WARNING: Implicit in the above is that transaction logs will grow forever if hard commits are disabled. Therefore it is important that hard commits be enabled when indexing.
 
-=== Configuring commits
+=== Configuring Commits
 
 As mentioned above, it is usually preferable to configure your commits (both hard and soft) in `solrconfig.xml` and avoid sending commits from an external source. Check your `solrconfig.xml` file since the defaults are likely not tuned to your needs. Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 30 seconds. Note that these are _not_ the values in some of the examples!
 

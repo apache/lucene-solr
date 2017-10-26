@@ -299,10 +299,10 @@ and re-reported elsewhere as necessary.
 In case of shard reporter the target node is the shard leader, in case of cluster reporter the
 target node is the Overseer leader.
 
-=== Shard reporter
+=== Shard Reporter
 This reporter uses predefined `shard` group, and the implementing class must be (a subclass of)
 `solr.SolrShardReporter`. It publishes selected metrics from replicas to the node where shard leader is
-located. Reports use a target registry name that is the replica's registry name with a `.leader` suffix, eg. for a
+located. Reports use a target registry name that is the replica's registry name with a `.leader` suffix, e.g., for a
 SolrCore name `collection1_shard1_replica_n3` the target registry name is
 `solr.core.collection1.shard1.replica_n3.leader`.
 
@@ -334,7 +334,7 @@ Example configuration:
       </reporter>
 ----
 
-=== Cluster reporter
+=== Cluster Reporter
 This reporter uses predefined `cluster` group and the implementing class must be (a subclass of)
 `solr.SolrClusterReporter`. It publishes selected metrics from any local registry to the Overseer leader node.
 

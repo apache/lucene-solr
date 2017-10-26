@@ -70,7 +70,7 @@ You must specify parameters `amountLongSuffix` and `codeStrSuffix`, correspondin
            defaultCurrency="USD" currencyConfig="currency.xml" />
 ----
 
-In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e. one that extends `LongValueFieldType`.  The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e. one that is or extends `StrField`.
+In the above example, the raw amount field will use the `"*_l_ns"` dynamic field, which must exist in the schema and use a long field type, i.e., one that extends `LongValueFieldType`.  The currency code field will use the `"*_s_ns"` dynamic field, which must exist in the schema and use a string field type, i.e., one that is or extends `StrField`.
 
 .Atomic Updates won't work if dynamic sub-fields are stored
 [NOTE]

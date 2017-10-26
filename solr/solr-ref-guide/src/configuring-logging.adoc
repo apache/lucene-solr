@@ -58,7 +58,7 @@ Log levels settings are as follows:
 
 Multiple settings at one time are allowed.
 
-=== Log level API
+=== Loglevel API
 
 There is also a way of sending REST commands to the logging endpoint to do the same. Example:
 

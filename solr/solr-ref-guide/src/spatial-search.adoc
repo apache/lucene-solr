@@ -73,7 +73,7 @@ The center point using the format "lat,lon" if latitude & longitude. Otherwise, 
 A spatial indexed field.
 
 `score`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g. as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
+(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
 
 * `none`: A fixed score of 1.0. (the default)
 * `kilometers`: distance in kilometers between the field value and the specified center point
@@ -84,7 +84,7 @@ A spatial indexed field.
 +
 [WARNING]
 ====
-Don't use this for indexed non-point shapes (e.g. polygons). The results will be erroneous. And with RPT, it's only recommended for multi-valued point data, as the implementation doesn't scale very well and for single-valued fields, you should instead use a separate non-RPT field purely for distance sorting.
+Don't use this for indexed non-point shapes (e.g., polygons). The results will be erroneous. And with RPT, it's only recommended for multi-valued point data, as the implementation doesn't scale very well and for single-valued fields, you should instead use a separate non-RPT field purely for distance sorting.
 ====
 +
 When used with `BBoxField`, additional options are supported:
@@ -129,7 +129,7 @@ Here's an example:
 
 `&q=*:*&fq=store:[45,-94 TO 46,-93]`
 
-LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g. `"x y"`.
+LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g., `"x y"`.
 
 
 === Optimizing: Cache or Not
@@ -193,7 +193,7 @@ RPT offers several functional improvements over LatLonPointSpatialField:
 
 * Non-geodetic – geo=false general x & y (_not_ latitude and longitude) -- if desired
 * Query by polygons and other complex shapes, in addition to circles & rectangles
-* Ability to index non-point shapes (e.g. polygons) as well as points – see RptWithGeometrySpatialField
+* Ability to index non-point shapes (e.g., polygons) as well as points – see RptWithGeometrySpatialField
 * Heatmap grid faceting
 
 RPT _shares_ various features in common with `LatLonPointSpatialField`. Some are listed here:
@@ -411,7 +411,7 @@ BBoxField is actually based off of 4 instances of another field type referred to
 
 To index a box, add a field value to a bbox field that's a string in the WKT/CQL ENVELOPE syntax. Example: `ENVELOPE(-10, 20, 15, 10)` which is minX, maxX, maxY, minY order. The parameter ordering is unintuitive but that's what the spec calls for. Alternatively, you could provide a rectangular polygon in WKT (or GeoJSON if you set set `format="GeoJSON"`).
 
-To search, you can use the `{!bbox}` query parser, or the range syntax e.g. `[10,-10 TO 15,20]`, or the ENVELOPE syntax wrapped in parenthesis with a leading search predicate. The latter is the only way to choose a predicate other than Intersects. For example:
+To search, you can use the `{!bbox}` query parser, or the range syntax e.g., `[10,-10 TO 15,20]`, or the ENVELOPE syntax wrapped in parenthesis with a leading search predicate. The latter is the only way to choose a predicate other than Intersects. For example:
 
 [source,plain]
 &q={!field f=bbox}Contains(ENVELOPE(-10, 20, 15, 10))

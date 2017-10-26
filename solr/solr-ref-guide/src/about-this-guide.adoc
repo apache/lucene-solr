@@ -53,7 +53,7 @@ When running the various examples mentioned through out this tutorial (i.e., `bi
 
 Special notes are included throughout these pages. There are several types of notes:
 
-=== Information blocks
+=== Information Blocks
 
 NOTE: These provide additional information that's useful for you to know.
 
