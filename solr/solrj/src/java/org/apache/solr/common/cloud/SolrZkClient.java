@@ -697,7 +697,7 @@ public class SolrZkClient implements Closeable {
    */
   public static Throwable checkInterrupted(Throwable e) {
     if (e instanceof InterruptedException)
-      Thread.interrupted();
+      Thread.currentThread().interrupt();
     return e;
   }
 

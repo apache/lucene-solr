@@ -79,6 +79,8 @@ Bug Fixes
 
 * SOLR-11532: Solr hits NPE when fl only contains DV fields and any of them is a spatial field. (Cao Manh Dat, David Smiley)
 
+* SOLR-11557: Fix SolrZkClient.checkInterrupted (Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
