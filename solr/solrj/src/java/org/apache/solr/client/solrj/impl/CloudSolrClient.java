@@ -607,6 +607,14 @@ public class CloudSolrClient extends SolrClient {
       String name = slice.getName();
       List<String> urls = new ArrayList<>();
       Replica leader = slice.getLeader();
+      if (directUpdatesToLeadersOnly && leader == null) {
+        for (Replica replica : slice.getReplicas(
+            replica -> replica.isActive(getClusterStateProvider().getLiveNodes())
+                && replica.getType() == Replica.Type.NRT)) {
+          leader = replica;
+          break;
+        }
+      }
       if (leader == null) {
         if (directUpdatesToLeadersOnly) {
           continue;
@@ -908,7 +916,7 @@ public class CloudSolrClient extends SolrClient {
               rootCause instanceof NoHttpResponseException ||
               rootCause instanceof SocketException);
 
-      if (wasCommError) {
+      if (wasCommError || (exc instanceof RouteException)) {
         // it was a communication error. it is likely that
         // the node to which the request to be sent is down . So , expire the state
         // so that the next attempt would fetch the fresh state
