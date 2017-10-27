@@ -59,10 +59,6 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +78,7 @@ public class SolrDocumentFetcher {
 
   private final Set<String> allStored;
 
-  private final Set<String> allSingleDV;
+  private final Set<String> dvsCanSubstituteStored;
 
   /** Contains the names/patterns of all docValues=true,stored=false fields in the schema. */
   private final Set<String> allNonStoredDVs;
@@ -112,7 +108,7 @@ public class SolrDocumentFetcher {
     final Set<String> allNonStoredDVs = new HashSet<>();
     final Set<String> nonStoredDVsWithoutCopyTargets = new HashSet<>();
     final Set<String> storedLargeFields = new HashSet<>();
-    final Set<String> allSingleDVs = new HashSet<>();
+    final Set<String> dvsCanSubstituteStored = new HashSet<>();
     final Set<String> allStoreds = new HashSet<>();
 
     for (FieldInfo fieldInfo : searcher.getFieldInfos()) { // can find materialized dynamic fields, unlike using the Solr IndexSchema.
@@ -120,8 +116,8 @@ public class SolrDocumentFetcher {
       if (schemaField == null) {
         continue;
       }
-      if (schemaField.hasDocValues() && !schemaField.multiValued()) {
-        allSingleDVs.add(fieldInfo.name);
+      if (canSubstituteDvForStored(fieldInfo, schemaField)) {
+        dvsCanSubstituteStored.add(fieldInfo.name);
       }
       if (schemaField.stored()) {
         allStoreds.add(fieldInfo.name);
@@ -144,8 +140,20 @@ public class SolrDocumentFetcher {
     this.allNonStoredDVs = Collections.unmodifiableSet(allNonStoredDVs);
     this.nonStoredDVsWithoutCopyTargets = Collections.unmodifiableSet(nonStoredDVsWithoutCopyTargets);
     this.largeFields = Collections.unmodifiableSet(storedLargeFields);
-    this.allSingleDV = Collections.unmodifiableSet(allSingleDVs);
+    this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
+  }
+
+  private boolean canSubstituteDvForStored(FieldInfo fieldInfo, SchemaField schemaField) {
+    if (!schemaField.hasDocValues() || !schemaField.stored()) return false;
+    if (schemaField.multiValued()) return false;
+    DocValuesType docValuesType = fieldInfo.getDocValuesType();
+    NumberType numberType = schemaField.getType().getNumberType();
+    // can not decode a numeric without knowing its numberType
+    if (numberType == null && (docValuesType == DocValuesType.SORTED_NUMERIC || docValuesType == DocValuesType.NUMERIC)) {
+      return false;
+    }
+    return true;
   }
 
   public boolean isLazyFieldLoadingEnabled() {
@@ -416,7 +424,8 @@ public class SolrDocumentFetcher {
    * @param docid
    *          The lucene docid of the document to be populated
    * @param fields
-   *          The list of docValues fields to be decorated
+   *          The fields with docValues to populate the document with.
+   *          DocValues fields which do not exist or not decodable will be ignored.
    */
   public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
       throws IOException {
@@ -425,153 +434,125 @@ public class SolrDocumentFetcher {
     final int localId = docid - leafContexts.get(subIndex).docBase;
     final LeafReader leafReader = leafContexts.get(subIndex).reader();
     for (String fieldName : fields) {
-      final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldName);
-      if (schemaField == null || !schemaField.hasDocValues()) {
-        log.warn("Couldn't decorate docValues for field: [{}], schemaField: [{}]", fieldName, schemaField);
-        continue;
-      }
-      FieldInfo fi = searcher.getFieldInfos().fieldInfo(fieldName);
-      if (fi == null) {
-        continue; // Searcher doesn't have info about this field, hence ignore it.
-      }
-      doc.remove(fieldName);
-      final DocValuesType dvType = fi.getDocValuesType();
-      switch (dvType) {
-        case NUMERIC:
-          final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
-          if (ndv == null) {
-            continue;
-          }
-          Long val;
-          if (ndv.advanceExact(localId)) {
-            val = ndv.longValue();
-          } else {
-            continue;
-          }
-          Object newVal = val;
-          if (schemaField.getType().isPointField()) {
-            // TODO: Maybe merge PointField with TrieFields here
-            NumberType type = schemaField.getType().getNumberType();
-            switch (type) {
-              case INTEGER:
-                newVal = val.intValue();
-                break;
-              case LONG:
-                newVal = val.longValue();
-                break;
-              case FLOAT:
-                newVal = Float.intBitsToFloat(val.intValue());
-                break;
-              case DOUBLE:
-                newVal = Double.longBitsToDouble(val);
-                break;
-              case DATE:
-                newVal = new Date(val);
-                break;
-              default:
-                throw new AssertionError("Unexpected PointType: " + type);
-            }
-          } else {
-            if (schemaField.getType() instanceof TrieIntField) {
-              newVal = val.intValue();
-            } else if (schemaField.getType() instanceof TrieFloatField) {
-              newVal = Float.intBitsToFloat(val.intValue());
-            } else if (schemaField.getType() instanceof TrieDoubleField) {
-              newVal = Double.longBitsToDouble(val);
-            } else if (schemaField.getType() instanceof TrieDateField) {
-              newVal = new Date(val);
-            } else if (schemaField.getType() instanceof AbstractEnumField) {
-              newVal = ((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(val.intValue());
-            }
-          }
-          doc.addField(fieldName, newVal);
-          break;
-        case BINARY:
-          BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
-          if (bdv == null) {
-            continue;
-          }
-          BytesRef value;
-          if (bdv.advanceExact(localId)) {
-            value = BytesRef.deepCopyOf(bdv.binaryValue());
-          } else {
-            continue;
-          }
-          doc.addField(fieldName, value);
-          break;
-        case SORTED:
-          SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-          if (sdv == null) {
-            continue;
-          }
-          if (sdv.advanceExact(localId)) {
-            final BytesRef bRef = sdv.binaryValue();
-            // Special handling for Boolean fields since they're stored as 'T' and 'F'.
-            if (schemaField.getType() instanceof BoolField) {
-              doc.addField(fieldName, schemaField.getType().toObject(schemaField, bRef));
-            } else {
-              doc.addField(fieldName, bRef.utf8ToString());
-            }
-          }
-          break;
-        case SORTED_NUMERIC:
-          final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
-          final NumberType type = schemaField.getType().getNumberType();
-          if (numericDv != null) {
-            if (numericDv.advance(localId) == localId) {
-              final List<Object> outValues = new ArrayList<Object>(numericDv.docValueCount());
-              for (int i = 0; i < numericDv.docValueCount(); i++) {
-                long number = numericDv.nextValue();
-                switch (type) {
-                  case INTEGER:
-                    final int raw = (int)number;
-                    if (schemaField.getType() instanceof AbstractEnumField) {
-                      outValues.add(((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(raw));
-                    } else {
-                      outValues.add(raw);
-                    }
-                    break;
-                  case LONG:
-                    outValues.add(number);
-                    break;
-                  case FLOAT:
-                    outValues.add(NumericUtils.sortableIntToFloat((int)number));
-                    break;
-                  case DOUBLE:
-                    outValues.add(NumericUtils.sortableLongToDouble(number));
-                    break;
-                  case DATE:
-                    outValues.add(new Date(number));
-                    break;
-                  default:
-                    throw new AssertionError("Unexpected PointType: " + type);
-                }
-              }
-              assert outValues.size() > 0;
-              doc.addField(fieldName, outValues);
-            }
-          }
-        case SORTED_SET:
-          final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
-          if (values != null && values.getValueCount() > 0) {
-            if (values.advance(localId) == localId) {
-              final List<Object> outValues = new LinkedList<>();
-              for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-                value = values.lookupOrd(ord);
-                outValues.add(schemaField.getType().toObject(schemaField, value));
-              }
-              assert outValues.size() > 0;
-              doc.addField(fieldName, outValues);
-            }
-          }
-        case NONE:
-          break;
+      Object fieldValue = decodeDVField(localId, leafReader, fieldName);
+      if (fieldValue != null) {
+        doc.setField(fieldName, fieldValue);
       }
     }
   }
 
-  public Set<String> getAllSingleDV() {
-    return allSingleDV;
+  /**
+   * Decode value from DV field for a document
+   * @return null if DV field is not exist or can not decodable
+   */
+  private Object decodeDVField(int localId, LeafReader leafReader, String fieldName) throws IOException {
+    final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldName);
+    FieldInfo fi = searcher.getFieldInfos().fieldInfo(fieldName);
+    if (schemaField == null || !schemaField.hasDocValues() || fi == null) {
+      return null; // Searcher doesn't have info about this field, hence ignore it.
+    }
+
+    final DocValuesType dvType = fi.getDocValuesType();
+    switch (dvType) {
+      case NUMERIC:
+        final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
+        if (ndv == null) {
+          return null;
+        }
+        if (!ndv.advanceExact(localId)) {
+          return null;
+        }
+        Long val = ndv.longValue();
+        return decodeNumberFromDV(schemaField, val, false);
+      case BINARY:
+        BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
+        if (bdv != null && bdv.advanceExact(localId)) {
+          return BytesRef.deepCopyOf(bdv.binaryValue());
+        }
+        return null;
+      case SORTED:
+        SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
+        if (sdv != null && sdv.advanceExact(localId)) {
+          final BytesRef bRef = sdv.binaryValue();
+          // Special handling for Boolean fields since they're stored as 'T' and 'F'.
+          if (schemaField.getType() instanceof BoolField) {
+            return schemaField.getType().toObject(schemaField, bRef);
+          } else {
+            return bRef.utf8ToString();
+          }
+        }
+        return null;
+      case SORTED_NUMERIC:
+        final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
+        if (numericDv != null && numericDv.advance(localId) == localId) {
+          final List<Object> outValues = new ArrayList<>(numericDv.docValueCount());
+          for (int i = 0; i < numericDv.docValueCount(); i++) {
+            long number = numericDv.nextValue();
+            Object value = decodeNumberFromDV(schemaField, number, true);
+            // return immediately if the number is not decodable, hence won't return an empty list.
+            if (value == null) return null;
+            else outValues.add(value);
+          }
+          assert outValues.size() > 0;
+          return outValues;
+        }
+        return null;
+      case SORTED_SET:
+        final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
+        if (values != null && values.getValueCount() > 0 && values.advance(localId) == localId) {
+          final List<Object> outValues = new LinkedList<>();
+          for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
+            BytesRef value = values.lookupOrd(ord);
+            outValues.add(schemaField.getType().toObject(schemaField, value));
+          }
+          assert outValues.size() > 0;
+          return outValues;
+        }
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
+    if (schemaField.getType().getNumberType() == null) {
+      log.warn("Couldn't decode docValues for field: [{}], schemaField: [{}], numberType is unknown",
+          schemaField.getName(), schemaField);
+      return null;
+    }
+
+    switch (schemaField.getType().getNumberType()) {
+      case INTEGER:
+        final int raw = (int)value;
+        if (schemaField.getType() instanceof AbstractEnumField) {
+          return ((AbstractEnumField)schemaField.getType()).getEnumMapping().intValueToStringValue(raw);
+        } else {
+          return raw;
+        }
+      case LONG:
+        return value;
+      case FLOAT:
+        if (sortableNumeric) {
+          return NumericUtils.sortableIntToFloat((int)value);
+        } else {
+          return Float.intBitsToFloat((int)value);
+        }
+      case DOUBLE:
+        if (sortableNumeric) {
+          return NumericUtils.sortableLongToDouble(value);
+        } else {
+          return Double.longBitsToDouble(value);
+        }
+      case DATE:
+        return new Date(value);
+      default:
+        // catched all possible values, this line will never be reached
+        throw new AssertionError();
+    }
+  }
+
+  public Set<String> getDvsCanSubstituteStored() {
+    return dvsCanSubstituteStored;
   }
 
   public Set<String> getAllStored() {
