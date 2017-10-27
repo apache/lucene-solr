@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -95,14 +96,15 @@ public class FieldInfos implements Iterable<FieldInfo> {
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
     this.hasPointValues = hasPointValues;
-    this.values = Collections.unmodifiableCollection(byNumber.values());
-    Integer max = byNumber.isEmpty() ? null : Collections.max(byNumber.keySet());
+    Integer max = byNumber.isEmpty() ? null : byNumber.lastKey();
     
     // Only usee TreeMap in the very sparse case (< 1/16th of the numbers are used),
     // because TreeMap uses ~ 64 (32 bit JVM) or 120 (64 bit JVM w/o compressed oops)
     // overall bytes per entry, but array uses 4 (32 bit JMV) or 8
     // (64 bit JVM w/o compressed oops):
     if (max != null && max < ArrayUtil.MAX_ARRAY_LENGTH && max < 16L*byNumber.size()) {
+      // Pull infos into an arraylist to avoid holding a reference to the TreeMap
+      values = Collections.unmodifiableCollection(new ArrayList<>(byNumber.values()));
       byNumberMap = null;
       byNumberTable = new FieldInfo[max+1];
       for (Map.Entry<Integer,FieldInfo> entry : byNumber.entrySet()) {
@@ -110,6 +112,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     } else {
       byNumberMap = byNumber;
+      values = Collections.unmodifiableCollection(byNumber.values());
       byNumberTable = null;
     }
   }
