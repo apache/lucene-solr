@@ -31,6 +31,11 @@ Bug Fixes
   refreshes or commits, and high indexing thread counts, do not
   overflow an int (Mykhailo Demianenko via Mike McCandless)
 
+Optimizations
+
+* LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
+  references to TreeMap entries. (Julian Vassev via Adrien Grand)
+
 ======================= Lucene 7.1.0 =======================
 
 Changes in Runtime Behavior
