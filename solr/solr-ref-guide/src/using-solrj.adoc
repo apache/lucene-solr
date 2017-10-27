@@ -30,45 +30,45 @@ Most mainstream build systems greatly simplify dependency management, making it 
 
 For projects built with Ant (using http://ant.apache.org/ivy/[Ivy]), place the following in your `ivy.xml`:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
-<dependency org="org.apache.solr" name="solr-solrj" rev="x.y.z"/>
+<dependency org="org.apache.solr" name="solr-solrj" rev="{solr-docs-version}.0"/>
 ----
 
 For projects built with Maven, place the following in your `pom.xml`:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-solrj</artifactId>
-  <version>x.y.z</version>
+  <version>{solr-docs-version}.0</version>
 </dependency>
 ----
 
 For projects built with Gradle, place the following in your `build.gradle`:
 
-[source,groovy]
+[source,groovy,subs="attributes"]
 ----
-compile group: 'org.apache.solr', name: 'solr-solrj', version: 'x.y.z'
+compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-docs-version}.0'
 ----
 
 === Adding SolrJ to the Classpath Manually
 
 If you are not using one of the above build system, it's still easy to add SolrJ to your build.
 
-At build time, all that is required is the SolrJ jar itself: `solr-solrj-x.y.z.jar`.  To compile code manually that uses SolrJ, use a `javac` command similar to:
+At build time, all that is required is the SolrJ jar itself: `solr-solrj-{solr-docs-version}.0.jar`.  To compile code manually that uses SolrJ, use a `javac` command similar to:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-javac -cp .:$SOLR_HOME/dist/solr-solrj-x.y.z.jar ...
+javac -cp .:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
 ----
 
 At runtime, you need a few of SolrJ's dependencies, in addition to SolrJ itself. For convenience, these dependencies are made available in the `dist/solrj-lib` directory.  Run your project with a classpath like:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -cp .:$SOLR_HOME/dist/solrj-lib/*:$SOLR_HOME/dist/solr-solrj-x.y.z.jar ...
+java -cp .:$SOLR_HOME/dist/solrj-lib/*:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
 ----
 
 If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.
@@ -97,8 +97,8 @@ Most SolrJ configuration happens at the `SolrClient` level.  The most common/imp
 ==== Base URLs
 Most `SolrClient` implementations (with the notable exception of `CloudSolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
 
-. A URL with a path pointing to a specific core or collection (e.g. `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL pointing to the root Solr path (e.g. `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
+. A URL with a path pointing to a specific core or collection (e.g., `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
+. A URL pointing to the root Solr path (e.g., `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
 
 Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.  Where more flexibility is required, the collection/core should be excluded.
 
