@@ -61,6 +61,7 @@ Bug Fixes
 
 * SOLR-11484: CloudSolrClient does not invalidate cache or retry for RouteException (noble, hossman)
 
+* SOLR-11532: Solr hits NPE when fl only contains DV fields and any of them is a spatial field. (Cao Manh Dat, David Smiley)
 
 Optimizations
 ----------------------
