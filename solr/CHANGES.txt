@@ -53,6 +53,9 @@ Bug Fixes
   more than the given term's frequency in overridden FloatDocValues.floatVal().
   (Michael Kosten, Erik Hatcher, Steve Rowe)
 
+* SOLR-11484: CloudSolrClient does not invalidate cache or retry for RouteException (noble, hossman)
+
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
