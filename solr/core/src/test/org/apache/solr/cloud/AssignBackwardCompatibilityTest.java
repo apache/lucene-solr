@@ -28,7 +28,9 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,21 +61,22 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
     Set<String> coreNames = new HashSet<>();
     Set<String> coreNodeNames = new HashSet<>();
 
-    int numOperations = random().nextInt(4 * 15);
+    int numOperations = random().nextInt(15) + 15;
     int numLiveReplicas = 4;
 
     boolean clearedCounter = false;
     for (int i = 0; i < numOperations; i++) {
+      log.info("Collection counter={} i={}", getCounter(), i);
       boolean deleteReplica = random().nextBoolean() && numLiveReplicas > 1;
       // No need to clear counter more than one time
-      if (random().nextInt(30) < 5 && !clearedCounter) {
+      if (random().nextBoolean() && i > 5 && !clearedCounter) {
+        log.info("Clear collection counter");
         // clear counter
         cluster.getZkClient().delete("/collections/"+COLLECTION+"/counter", -1, true);
         clearedCounter = true;
       }
       if (deleteReplica) {
-        assertTrue(ClusterStateUtil.waitForLiveAndActiveReplicaCount(
-            cluster.getSolrClient().getZkStateReader(), COLLECTION, numLiveReplicas, 30000));
+        waitForState("Expected " + numLiveReplicas + " active replicas", COLLECTION, clusterShape(1, numLiveReplicas));
         DocCollection dc = getCollectionState(COLLECTION);
         Replica replica = getRandomReplica(dc.getSlice("shard1"), (r) -> r.getState() == Replica.State.ACTIVE);
         CollectionAdminRequest.deleteReplica(COLLECTION, "shard1", replica.getName()).process(cluster.getSolrClient());
@@ -86,6 +89,8 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
             .keySet().iterator().next();
         assertFalse("Core name is not unique coreName=" + coreName + " " + coreNames, coreNames.contains(coreName));
         coreNames.add(coreName);
+        numLiveReplicas++;
+        waitForState("Expected " + numLiveReplicas + " active replicas", COLLECTION, clusterShape(1, numLiveReplicas));
 
         Replica newReplica = getCollectionState(COLLECTION).getReplicas().stream()
             .filter(r -> r.getCoreName().equals(coreName))
@@ -93,9 +98,18 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         String coreNodeName = newReplica.getName();
         assertFalse("Core node name is not unique", coreNodeNames.contains(coreName));
         coreNodeNames.add(coreNodeName);
-
-        numLiveReplicas++;
       }
+    }
+  }
+
+  private int getCounter() throws KeeperException, InterruptedException {
+    try {
+      byte[] data = cluster.getZkClient().getData("/collections/"+COLLECTION+"/counter", null, new Stat(), true);
+      int count = NumberUtils.bytesToInt(data);
+      if (count < 0) throw new AssertionError("Found negative collection counter " + count);
+      return count;
+    } catch (KeeperException e) {
+      return -1;
     }
   }
 }
