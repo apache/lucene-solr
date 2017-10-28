@@ -922,10 +922,12 @@ public class CloudSolrClient extends SolrClient {
         // so that the next attempt would fetch the fresh state
         // just re-read state for all of them, if it has not been retried
         // in retryExpiryTime time
-        for (DocCollection ext : requestedCollections) {
-          ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(ext.getName());
-          if (cacheEntry == null) continue;
-          cacheEntry.maybeStale = true;
+        if (requestedCollections != null) {
+          for (DocCollection ext : requestedCollections) {
+            ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(ext.getName());
+            if (cacheEntry == null) continue;
+            cacheEntry.maybeStale = true;
+          }
         }
         if (retryCount < MAX_STALE_RETRIES) {//if it is a communication error , we must try again
           //may be, we have a stale version of the collection state
