@@ -229,7 +229,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private void logWelcomeBanner() {
     log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
     log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}, Default config dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE), System.getProperty(SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+    log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
     log.info("|___/\\___/_|_|    Start time: {}", Instant.now().toString());
   }
 
