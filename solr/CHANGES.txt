@@ -92,6 +92,8 @@ Other Changes
 * SOLR-11165: Ref guide documentation for Autoscaling APIs, triggers, listeners, actions for Solr 7.1
   (ab, Cassandra Targett, Noble Paul, shalin)
 
+* SOLR-11562: Restore Solr logo ASCII-art in startup log by removing unnecessary default confdir logging (janhoy)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
