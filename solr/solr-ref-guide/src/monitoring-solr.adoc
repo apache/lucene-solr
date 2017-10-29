@@ -1,6 +1,4 @@
 = Monitoring Solr
-:page-shortname: monitoring-solr
-:page-permalink: monitoring-solr.html
 :page-children: metrics-reporting, mbean-request-handler, configuring-logging, using-jmx-with-solr, performance-statistics-reference
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

@@ -1,6 +1,4 @@
 = InitParams in SolrConfig
-:page-shortname: initparams-in-solrconfig
-:page-permalink: initparams-in-solrconfig.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

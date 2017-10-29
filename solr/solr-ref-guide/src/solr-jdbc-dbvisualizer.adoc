@@ -1,6 +1,4 @@
 = Solr JDBC - DbVisualizer
-:page-shortname: solr-jdbc-dbvisualizer
-:page-permalink: solr-jdbc-dbvisualizer.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

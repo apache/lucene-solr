@@ -1,6 +1,4 @@
 = Solr Upgrade Notes
-:page-shortname: solr-upgrade-notes
-:page-permalink: solr-upgrade-notes.html
 :page-children: major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

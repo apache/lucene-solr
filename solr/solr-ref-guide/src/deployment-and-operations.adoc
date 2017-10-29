@@ -1,6 +1,4 @@
 = Deployment and Operations
-:page-shortname: deployment-and-operations
-:page-permalink: deployment-and-operations.html
 :page-children: solr-control-script-reference, solr-configuration-files, taking-solr-to-production, making-and-restoring-backups, running-solr-on-hdfs, upgrading-a-solr-cluster, solr-upgrade-notes
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

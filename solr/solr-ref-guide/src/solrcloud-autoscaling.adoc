@@ -1,6 +1,4 @@
 = SolrCloud Autoscaling
-:page-shortname: solrcloud-autoscaling
-:page-permalink: solrcloud-autoscaling.html
 :page-children: solrcloud-autoscaling-overview, solrcloud-autoscaling-policy-preferences, solrcloud-autoscaling-triggers, solrcloud-autoscaling-trigger-actions, solrcloud-autoscaling-listeners, solrcloud-autoscaling-auto-add-replicas, solrcloud-autoscaling-fault-tolerance, solrcloud-autoscaling-api
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

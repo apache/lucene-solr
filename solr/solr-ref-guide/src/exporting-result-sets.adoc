@@ -1,6 +1,4 @@
 = Exporting Result Sets
-:page-shortname: exporting-result-sets
-:page-permalink: exporting-result-sets.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

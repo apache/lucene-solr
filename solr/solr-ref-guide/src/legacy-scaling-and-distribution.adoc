@@ -1,6 +1,4 @@
 = Legacy Scaling and Distribution
-:page-shortname: legacy-scaling-and-distribution
-:page-permalink: legacy-scaling-and-distribution.html
 :page-children: introduction-to-scaling-and-distribution, distributed-search-with-index-sharding, index-replication, combining-distribution-and-replication, merging-indexes
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

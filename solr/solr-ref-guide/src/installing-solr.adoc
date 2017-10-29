@@ -1,6 +1,4 @@
 = Installing Solr
-:page-shortname: installing-solr
-:page-permalink: installing-solr.html
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

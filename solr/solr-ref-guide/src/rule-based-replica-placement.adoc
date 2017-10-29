@@ -1,6 +1,4 @@
 = Rule-based Replica Placement
-:page-shortname: rule-based-replica-placement
-:page-permalink: rule-based-replica-placement.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

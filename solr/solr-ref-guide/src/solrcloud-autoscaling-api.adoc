@@ -1,6 +1,4 @@
 = Autoscaling API
-:page-shortname: solrcloud-autoscaling-api
-:page-permalink: solrcloud-autoscaling-api.html
 :page-toclevels: 2
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one

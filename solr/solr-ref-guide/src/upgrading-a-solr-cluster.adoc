@@ -1,6 +1,4 @@
 = Upgrading a Solr Cluster
-:page-shortname: upgrading-a-solr-cluster
-:page-permalink: upgrading-a-solr-cluster.html
 :page-children: indexupgrader-tool
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

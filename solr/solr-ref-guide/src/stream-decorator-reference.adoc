@@ -1,6 +1,4 @@
 = Stream Decorator Reference
-:page-shortname: stream-decorator-reference
-:page-permalink: stream-decorator-reference.html
 :page-tocclass: right
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one

@@ -1,6 +1,4 @@
 = Schema API
-:page-shortname: schema-api
-:page-permalink: schema-api.html
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

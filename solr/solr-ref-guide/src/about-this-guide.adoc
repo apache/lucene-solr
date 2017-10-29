@@ -1,6 +1,4 @@
 = About This Guide
-:page-shortname: about-this-guide
-:page-permalink: about-this-guide.html
 :page-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

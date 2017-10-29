@@ -1,6 +1,4 @@
 = Collections API
-:page-shortname: collections-api
-:page-permalink: collections-api.html
 :page-toclevels: 1
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one

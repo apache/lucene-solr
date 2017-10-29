@@ -1,6 +1,4 @@
 = Field Type Definitions and Properties
-:page-shortname: field-type-definitions-and-properties
-:page-permalink: field-type-definitions-and-properties.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

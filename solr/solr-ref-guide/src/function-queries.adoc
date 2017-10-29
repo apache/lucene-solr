@@ -1,6 +1,4 @@
 = Function Queries
-:page-shortname: function-queries
-:page-permalink: function-queries.html
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

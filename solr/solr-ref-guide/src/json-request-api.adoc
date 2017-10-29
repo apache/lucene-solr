@@ -1,6 +1,4 @@
 = JSON Request API
-:page-shortname: json-request-api
-:page-permalink: json-request-api.html
 :page-children: json-query-dsl
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

@@ -1,6 +1,4 @@
 = The DisMax Query Parser
-:page-shortname: the-dismax-query-parser
-:page-permalink: the-dismax-query-parser.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

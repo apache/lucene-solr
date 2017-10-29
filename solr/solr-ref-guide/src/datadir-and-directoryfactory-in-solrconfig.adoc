@@ -1,6 +1,4 @@
 = DataDir and DirectoryFactory in SolrConfig
-:page-shortname: datadir-and-directoryfactory-in-solrconfig
-:page-permalink: datadir-and-directoryfactory-in-solrconfig.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

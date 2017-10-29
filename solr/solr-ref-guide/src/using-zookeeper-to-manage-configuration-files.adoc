@@ -1,6 +1,4 @@
 = Using ZooKeeper to Manage Configuration Files
-:page-shortname: using-zookeeper-to-manage-configuration-files
-:page-permalink: using-zookeeper-to-manage-configuration-files.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

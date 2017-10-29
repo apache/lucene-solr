@@ -1,6 +1,4 @@
 = Searching
-:page-shortname: searching
-:page-permalink: searching.html
 :page-children: overview-of-searching-in-solr, velocity-search-ui, relevance, query-syntax-and-parsing, json-request-api, faceting, highlighting, spell-checking, query-re-ranking, transforming-result-documents, suggester, morelikethis, pagination-of-results, collapse-and-expand-results, result-grouping, result-clustering, spatial-search, the-terms-component, the-term-vector-component, the-stats-component, the-query-elevation-component, response-writers, near-real-time-searching, realtime-get, exporting-result-sets, streaming-expressions, parallel-sql-interface
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

@@ -250,18 +250,10 @@ public class BuildNavAndPDFBody {
       // TODO: do error checking if attribute metadata we care about is missing
       Map<String,Object> attrs = header.getAttributes();
 
-      // TODO: SOLR-11541: we should eliminate these attributes
-      // ...but for now at least be sure they are consistent
-      if (attrs.containsKey("page-shortname")) {
-        String explicit = (String) attrs.get("page-shortname");
-        if (! shortname.equals(explicit)) {
-          throw new RuntimeException(file + " ("+shortname+") has a mismatched page-shortname: " + explicit);
-        }
-      }
-      if (attrs.containsKey("page-permalink")) {
-        String explicit = (String) attrs.get("page-permalink");
-        if (! permalink.equals(explicit)) {
-          throw new RuntimeException(file + "("+permalink+") has a mismatched permalink: " + explicit);
+      // See SOLR-11541: Fail if a user adds new docs with older missleading attributes we don't use/want
+      for (String attr : Arrays.asList("page-shortname", "page-permalink")) {
+        if (attrs.containsKey(attr)) {
+          throw new RuntimeException(file + ": remove the " + attr + " attribute, it's no longer needed, and may confuse readers/editors");
         }
       }
       

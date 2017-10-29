@@ -1,6 +1,4 @@
 = Uploading Data with Index Handlers
-:page-shortname: uploading-data-with-index-handlers
-:page-permalink: uploading-data-with-index-handlers.html
 :page-children: transforming-and-indexing-custom-json
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

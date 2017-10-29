@@ -1,6 +1,4 @@
 = SolrCloud Autoscaling Automatically Adding Replicas
-:page-shortname: solrcloud-autoscaling-auto-add-replicas
-:page-permalink: solrcloud-autoscaling-auto-add-replicas.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
