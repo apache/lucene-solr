@@ -1,6 +1,4 @@
 = SolrCloud Resilience
-:page-shortname: solrcloud-resilience
-:page-permalink: solrcloud-resilience.html
 :page-children: solrcloud-recoveries-and-write-tolerance, solrcloud-query-routing-and-read-tolerance
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

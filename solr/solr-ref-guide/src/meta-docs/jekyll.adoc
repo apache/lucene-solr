@@ -49,8 +49,6 @@ Many guides to Jekyll also say that defining the layout in the front matter is r
 
 The Solr Ref Guide uses the front matter to define some custom attributes on a per page basis:
 
-* `page-shortname` - uniquely identifying the page
-* `page-permalink` - permanent URL of a page,
 * `page-children` - ordered list of child pages, this is used to build the site navigation menu that appears to the left of each page's content (and to order the pages in the PDF)
 
 There are also some optional custom attributes that can be defined in pages to affect the Table of Contents presentation in jekyll:

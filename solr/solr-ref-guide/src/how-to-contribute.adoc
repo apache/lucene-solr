@@ -1,8 +1,6 @@
 = How to Contribute to Solr Documentation
 :page-tocclass: right
 :page-toclevels: 2
-:page-shortname: how-to-contribute
-:page-permalink: how-to-contribute.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

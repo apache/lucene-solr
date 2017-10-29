@@ -156,24 +156,13 @@ To link to _another page_ or a section on another page, you must refer to the fu
 
 Unfortunately, when you want to refer the reader to another page without deep-linking to a section, you cannot simply put the other file name in angle brackets and call it a day. This is due to the PDF conversion - once all the pages are combined into one big page for one big PDF, the lack of a specific reference causes inter-page links to fail.
 
-So, *you must always link to a specific section*. If all you want is a reference to the top of another page, you can use the `page-shortname` attribute found at the top of every page as your anchor reference.
+So, *you must always link to a specific section*. If all you want is a reference to the top of another page, you can use the implicit `id` of the page -- the filename w/o the `.adoc` extension -- as your anchor reference.
 
 Example::
-The file `upgrading-solr.adoc` has a `page-shortname` at the top that looks like this:
-+
-[source]
-----
-= Upgrading Solr
-:page-shortname: upgrading-solr
-:page-permalink: upgrading-solr.html
-----
-+
-To construct a link to this page, we need to refer to the file name (`upgrading-solr.adoc`), then use the `page-shortname` as our anchor reference. As in:
+To construct a link to the `upgrading-solr.adoc` page, we need to refer to the file name (`upgrading-solr.adoc`), then use the page id (`upgrading-solr`) as the anchor reference. As in:
 +
 [source]
 For more information about upgrades, see <<upgrading-solr.adoc#upgrading-solr>>.
-
-TIP: As of July 2017, all pages have a `page-shortname` that is equivalent to the filename (without the `.adoc` part).
 
 ==== Link to a Section on Another Page
 Linking to a section is the same conceptually as linking to the top of a page, you just need to take a little extra care to format the anchor ID in your link reference properly.

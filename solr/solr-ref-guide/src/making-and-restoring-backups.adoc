@@ -1,6 +1,4 @@
 = Making and Restoring Backups
-:page-shortname: making-and-restoring-backups
-:page-permalink: making-and-restoring-backups.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

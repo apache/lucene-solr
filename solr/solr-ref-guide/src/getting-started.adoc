@@ -1,6 +1,4 @@
 = Getting Started
-:page-shortname: getting-started
-:page-permalink: getting-started.html
 :page-children: solr-tutorial, a-quick-overview, solr-system-requirements, installing-solr
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

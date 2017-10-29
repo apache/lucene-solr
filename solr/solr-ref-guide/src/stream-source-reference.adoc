@@ -1,6 +1,4 @@
 = Stream Source Reference
-:page-shortname: stream-source-reference
-:page-permalink: stream-source-reference.html
 :page-tocclass: right
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one

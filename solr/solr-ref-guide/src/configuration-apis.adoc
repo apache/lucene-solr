@@ -1,6 +1,4 @@
 = Configuration APIs
-:page-shortname: configuration-apis
-:page-permalink: configuration-apis.html
 :page-children: blob-store-api, config-api, request-parameters-api, managed-resources
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

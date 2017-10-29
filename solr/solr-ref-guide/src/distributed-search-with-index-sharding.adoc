@@ -1,6 +1,4 @@
 = Distributed Search with Index Sharding
-:page-shortname: distributed-search-with-index-sharding
-:page-permalink: distributed-search-with-index-sharding.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

@@ -1,6 +1,4 @@
 = Adding Custom Plugins in SolrCloud Mode
-:page-shortname: adding-custom-plugins-in-solrcloud-mode
-:page-permalink: adding-custom-plugins-in-solrcloud-mode.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

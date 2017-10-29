@@ -1,6 +1,4 @@
 = Overview of SolrCloud Autoscaling
-:page-shortname: solrcloud-autoscaling-overview
-:page-permalink: solrcloud-autoscaling-overview.html
 :page-toclevels: 1
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one

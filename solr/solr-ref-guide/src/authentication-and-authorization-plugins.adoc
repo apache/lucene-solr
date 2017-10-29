@@ -1,6 +1,4 @@
 = Authentication and Authorization Plugins
-:page-shortname: authentication-and-authorization-plugins
-:page-permalink: authentication-and-authorization-plugins.html
 :page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin, rule-based-authorization-plugin
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

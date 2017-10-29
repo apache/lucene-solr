@@ -1,6 +1,4 @@
 = Indexing and Basic Data Operations
-:page-shortname: indexing-and-basic-data-operations
-:page-permalink: indexing-and-basic-data-operations.html
 :page-children: introduction-to-solr-indexing, post-tool, uploading-data-with-index-handlers, uploading-data-with-solr-cell-using-apache-tika, uploading-structured-data-store-data-with-the-data-import-handler, updating-parts-of-documents, detecting-languages-during-indexing, de-duplication, content-streams, uima-integration
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

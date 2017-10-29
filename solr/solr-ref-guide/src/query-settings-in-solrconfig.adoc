@@ -1,6 +1,4 @@
 = Query Settings in SolrConfig
-:page-shortname: query-settings-in-solrconfig
-:page-permalink: query-settings-in-solrconfig.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

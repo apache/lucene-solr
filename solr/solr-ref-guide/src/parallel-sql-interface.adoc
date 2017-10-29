@@ -1,6 +1,4 @@
 = Parallel SQL Interface
-:page-shortname: parallel-sql-interface
-:page-permalink: parallel-sql-interface.html
 :page-children: solr-jdbc-dbvisualizer, solr-jdbc-squirrel-sql, solr-jdbc-apache-zeppelin, solr-jdbc-python-jython, solr-jdbc-r
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

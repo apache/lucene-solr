@@ -1,6 +1,4 @@
 = Putting the Pieces Together
-:page-shortname: putting-the-pieces-together
-:page-permalink: putting-the-pieces-together.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

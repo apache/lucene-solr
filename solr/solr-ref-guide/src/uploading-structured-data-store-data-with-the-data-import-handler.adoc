@@ -1,6 +1,4 @@
 = Uploading Structured Data Store Data with the Data Import Handler
-:page-shortname: uploading-structured-data-store-data-with-the-data-import-handler
-:page-permalink: uploading-structured-data-store-data-with-the-data-import-handler.html
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

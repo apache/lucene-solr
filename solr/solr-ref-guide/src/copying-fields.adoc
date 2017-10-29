@@ -1,6 +1,4 @@
 = Copying Fields
-:page-shortname: copying-fields
-:page-permalink: copying-fields.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
