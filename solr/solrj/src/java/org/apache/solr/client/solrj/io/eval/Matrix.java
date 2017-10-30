@@ -29,6 +29,10 @@ public class Matrix implements Iterable {
     this.data = data;
   }
 
+  public double[][] getData() {
+    return this.data;
+  }
+
   public Iterator iterator() {
     return new MatrixIterator(data);
   }
