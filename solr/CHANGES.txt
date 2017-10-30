@@ -63,6 +63,9 @@ New Features
 * SOLR-11520: Implement autoscaling suggestions for cores count violations (noble)
 
 
+* SOLR-11003: Support bi-directional syncing of cdcr clusters. We still only support actively into one cluster cluster,
+  but have the ability to switch indexing clusters and cdcr will replicate correctly. (Amrit Sarkar, Varun Thacker)
+
 Bug Fixes
 ----------------------
 

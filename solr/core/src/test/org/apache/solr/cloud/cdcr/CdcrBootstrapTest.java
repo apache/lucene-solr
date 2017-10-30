@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.cloud.cdcr;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.LinkedHashMap;
 
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.SolrTestCaseJ4;
@@ -32,10 +31,11 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.CdcrParams;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -89,11 +89,9 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CommonParams.QT, "/get");
         params.set("getVersions", numDocs);
+        params.set("fingerprint", true);
         response = sourceSolrClient.query(params);
-        List<Long> versions = (List<Long>) response.getResponse().get("versions");
-        for (Long version : versions) {
-          maxVersion = Math.max(maxVersion, version);
-        }
+        maxVersion = (long)(((LinkedHashMap)response.getResponse().get("fingerprint")).get("maxVersionEncountered"));
 
 //       upload the cdcr-enabled config and restart source cluster
         source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
@@ -113,12 +111,12 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);
 
-        cdcrStart(targetSolrClient);
-        cdcrStart(sourceSolrClient);
+        CdcrTestsUtil.cdcrStart(targetSolrClient);
+        CdcrTestsUtil.cdcrStart(sourceSolrClient);
 
-        response = getCdcrQueue(sourceSolrClient);
+        response = CdcrTestsUtil.getCdcrQueue(sourceSolrClient);
         log.info("Cdcr queue response: " + response.getResponse());
-        long foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
+        long foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
 
         params = new ModifiableSolrParams();
@@ -189,12 +187,12 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         CloudSolrClient targetSolrClient = target.getSolrClient();
         targetSolrClient.setDefaultCollection("cdcr-target");
 
-        cdcrStart(targetSolrClient);
-        cdcrStart(sourceSolrClient);
+        CdcrTestsUtil.cdcrStart(targetSolrClient);
+        CdcrTestsUtil.cdcrStart(sourceSolrClient);
 
-        response = getCdcrQueue(sourceSolrClient);
+        response = CdcrTestsUtil.getCdcrQueue(sourceSolrClient);
         log.info("Cdcr queue response: " + response.getResponse());
-        long foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
+        long foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
 
         int total_tlogs_in_index = FSDirectory.open(target.getBaseDir().resolve("node1").
@@ -203,8 +201,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
 
         assertEquals("tlogs count should be ZERO",0, total_tlogs_in_index);
 
-        cdcrStop(sourceSolrClient);
-        cdcrDisableBuffer(sourceSolrClient);
+        CdcrTestsUtil.cdcrStop(sourceSolrClient);
+        CdcrTestsUtil.cdcrDisableBuffer(sourceSolrClient);
 
         int c = 0;
         for (int k = 0; k < 10; k++) {
@@ -223,10 +221,10 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
 
-        cdcrStart(sourceSolrClient);
-        cdcrEnableBuffer(sourceSolrClient);
+        CdcrTestsUtil.cdcrStart(sourceSolrClient);
+        CdcrTestsUtil.cdcrEnableBuffer(sourceSolrClient);
 
-        foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
+        foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
 
       } finally {
@@ -269,8 +267,8 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         targetSolrClient.setDefaultCollection("cdcr-target");
         Thread.sleep(1000);
 
-        cdcrStart(targetSolrClient);
-        cdcrStart(sourceSolrClient);
+        CdcrTestsUtil.cdcrStart(targetSolrClient);
+        CdcrTestsUtil.cdcrStart(sourceSolrClient);
         int c = 0;
         for (int k = 0; k < docs; k++) {
           UpdateRequest req = new UpdateRequest();
@@ -288,9 +286,9 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
         response = sourceSolrClient.query(new SolrQuery("*:*"));
         assertEquals("", numDocs, response.getResults().getNumFound());
 
-        response = getCdcrQueue(sourceSolrClient);
+        response = CdcrTestsUtil.getCdcrQueue(sourceSolrClient);
         log.info("Cdcr queue response: " + response.getResponse());
-        long foundDocs = waitForTargetToSync(numDocs, targetSolrClient);
+        long foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
         assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
 
       } finally {
@@ -301,56 +299,4 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
-  private long waitForTargetToSync(int numDocs, CloudSolrClient targetSolrClient) throws SolrServerException, IOException, InterruptedException {
-    long start = System.nanoTime();
-    QueryResponse response = null;
-    while (System.nanoTime() - start <= TimeUnit.NANOSECONDS.convert(120, TimeUnit.SECONDS)) {
-      try {
-        targetSolrClient.commit();
-        response = targetSolrClient.query(new SolrQuery("*:*"));
-        if (response.getResults().getNumFound() == numDocs) {
-          break;
-        }
-      } catch (Exception e) {
-        log.warn("Exception trying to commit on target. This is expected and safe to ignore.", e);
-      }
-      Thread.sleep(1000);
-    }
-    return response != null ? response.getResults().getNumFound() : 0;
-  }
-
-
-  private void cdcrStart(CloudSolrClient client) throws SolrServerException, IOException {
-    QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.START);
-    assertEquals("started", ((NamedList) response.getResponse().get("status")).get("process"));
-  }
-
-  private void cdcrStop(CloudSolrClient client) throws SolrServerException, IOException {
-    QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.STOP);
-    assertEquals("stopped", ((NamedList) response.getResponse().get("status")).get("process"));
-  }
-
-  private void cdcrEnableBuffer(CloudSolrClient client) throws IOException, SolrServerException {
-    QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.ENABLEBUFFER);
-    assertEquals("enabled", ((NamedList) response.getResponse().get("status")).get("buffer"));
-  }
-
-  private void cdcrDisableBuffer(CloudSolrClient client) throws IOException, SolrServerException {
-    QueryResponse response = invokeCdcrAction(client, CdcrParams.CdcrAction.DISABLEBUFFER);
-    assertEquals("disabled", ((NamedList) response.getResponse().get("status")).get("buffer"));
-  }
-
-  private QueryResponse invokeCdcrAction(CloudSolrClient client, CdcrParams.CdcrAction action) throws IOException, SolrServerException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.QT, "/cdcr");
-    params.set(CommonParams.ACTION, action.toLower());
-    return client.query(params);
-  }
-
-  private QueryResponse getCdcrQueue(CloudSolrClient client) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.QT, "/cdcr");
-    params.set(CommonParams.ACTION, CdcrParams.QUEUES);
-    return client.query(params);
-  }
 }
