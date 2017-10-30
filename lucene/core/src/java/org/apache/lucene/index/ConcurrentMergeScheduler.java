@@ -47,7 +47,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *
  *  <p>If more than {@link #getMaxMergeCount} merges are
  *  requested then this class will forcefully throttle the
- *  incoming threads by pausing until one more more merges
+ *  incoming threads by pausing until one more merges
  *  complete.</p>
  *
  *  <p>This class attempts to detect whether the index is

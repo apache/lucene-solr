@@ -730,8 +730,8 @@ public abstract class ReplicaNode extends Node {
   }
 
   /** Carefully determine if the file on the primary, identified by its {@code String fileName} along with the {@link FileMetaData}
-   * "summarizing" its contents, is precisely the same file that we have locally.  If the file does not exist locally, or if its its header
-   * (inclues the segment id), length, footer (including checksum) differ, then this returns false, else true. */
+   * "summarizing" its contents, is precisely the same file that we have locally.  If the file does not exist locally, or if its header
+   * (includes the segment id), length, footer (including checksum) differ, then this returns false, else true. */
   private boolean fileIsIdentical(String fileName, FileMetaData srcMetaData) throws IOException {
 
     FileMetaData destMetaData = readLocalFileMetaData(fileName);

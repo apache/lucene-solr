@@ -37,7 +37,7 @@ import org.apache.lucene.util.fst.Util;
 
 /** Iterates through terms in this field; this class is public so users
  *  can cast it to call {@link #seekExact(BytesRef, long)} for
- *  optimistic-concurreny, and also {@link #getVersion} to get the
+ *  optimistic-concurrency, and also {@link #getVersion} to get the
  *  version of the currently seek'd term. */
 public final class IDVersionSegmentTermsEnum extends TermsEnum {
 

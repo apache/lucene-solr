@@ -25,7 +25,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
- * Models the basic information related to a single "tolerated" error that occured during updates.  
+ * Models the basic information related to a single "tolerated" error that occurred during updates.  
  * This class is only useful when the <code>TolerantUpdateProcessorFactory</code> is used in an update 
  * processor chain
  */
