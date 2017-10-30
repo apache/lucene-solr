@@ -1,4 +1,4 @@
-= Analytics Expression Sources Reference
+= Analytics Expression Sources
 :page-shortname: analytics-expression-sources
 :page-permalink: analytics-expression-sources.html
 :page-tocclass: right
@@ -70,10 +70,10 @@ Constants do not need to be surrounded by any function to define them, they can 
 
 There are two possible ways of specifying constant strings, as shown below.
 
-. Surrounded by double quotes, inside the quotes both `"` and `\` must be escaped with a `\` character.
+* Surrounded by double quotes, inside the quotes both `"` and `\` must be escaped with a `\` character.
 +
 `"Inside of 'double' \\ \"quotes\""` \=> `Inside of 'double' \ "quotes"`
-. Surrounded by single quotes, inside the quotes both `'` and `\` must be escaped with a `\` character.
+* Surrounded by single quotes, inside the quotes both `'` and `\` must be escaped with a `\` character.
 +
 `'Inside of "single" \\ \'quotes\''` \=> `Inside of "double" \ 'quotes'`
 
