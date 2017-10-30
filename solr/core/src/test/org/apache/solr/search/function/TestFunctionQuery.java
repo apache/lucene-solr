@@ -138,6 +138,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   void doTest(String field) {
+    clearIndex();
+
     // lrf.args.put("version","2.0");
     int[] vals = { 100,-4,0,10,25,5 };
     createIndex(field,vals);
@@ -209,6 +211,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testExternalField() throws Exception {
+    clearIndex();
+
     String field = "foo_extf";
 
     int[] ids = {100,-4,0,10,25,5,77,23,55,-78,-45,-24,63,78,94,22,34,54321,261,-627};
@@ -283,6 +287,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testExternalFileFieldStringKeys() throws Exception {
+    clearIndex();
+
     final String extField = "foo_extfs";
     final String keyField = "sfile_s";
     assertU(adoc("id", "991", keyField, "AAA=AAA"));
@@ -295,6 +301,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testExternalFileFieldNumericKey() throws Exception {
+    clearIndex();
+
     final String extField = "eff_trie";
     final String keyField = "eff_tint";
     assertU(adoc("id", "991", keyField, "91"));
@@ -512,6 +520,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   @Test
   public void testRetrievePayloads() throws Exception {
     clearIndex();
+
     int numDocs = 100 + random().nextInt(100);
     int numLocations = 1000 + random().nextInt(2000);
     for (int docNum = 0 ; docNum < numDocs ; ++docNum) {
@@ -536,6 +545,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testSortByFunc() throws Exception {
+    clearIndex();
+
     assertU(adoc("id",    "1",   "const_s", "xx", 
                  "x_i",   "100", "1_s", "a",
                  "x:x_i", "100", "1-1_s", "a"));
@@ -625,7 +636,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDegreeRads() throws Exception {    
+  public void testDegreeRads() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
     assertU(adoc("id", "2", "x_td", "90", "y_td", String.valueOf(Math.PI / 2)));
     assertU(adoc("id", "3", "x_td", "45", "y_td", String.valueOf(Math.PI / 4)));
@@ -643,6 +656,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testStrDistance() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "x_s", "foil"));
     assertU(commit());
     assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', edit)", "fq", "id:1"), "//float[@name='score']='0.75'");
@@ -683,6 +698,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testFuncs() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "foo_d", "9"));
     assertU(commit());    
 
@@ -777,8 +794,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest(fieldAsFunc, "log(\0)",  1,0); 
   }
 
-    @Test
+  @Test
   public void testBooleanFunctions() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "text", "hello", "foo_s","A", "foo_ti", "0", "foo_tl","0"));
     assertU(adoc("id", "2"                              , "foo_ti","10", "foo_tl","11"));
     assertU(commit());
@@ -844,6 +863,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testPseudoFieldFunctions() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "text", "hello", "foo_s","A", "yak_i", "32"));
     assertU(adoc("id", "2"));
     assertU(commit());
@@ -886,6 +907,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testNumericComparisons() throws Exception {
+    clearIndex();
+
     assertU(adoc("id", "1", "age_i", "35"));
     assertU(adoc("id", "2", "age_i", "25"));
     assertU(commit());
