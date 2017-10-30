@@ -1,4 +1,4 @@
-= Analytics Reduction Functions Reference
+= Analytics Reduction Functions
 :page-shortname: analytics-reduction-functions
 :page-permalink: analytics-reduction-functions.html
 :page-tocclass: right

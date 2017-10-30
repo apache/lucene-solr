@@ -1,4 +1,4 @@
-= Analytics Mapping Functions Reference
+= Analytics Mapping Functions
 :page-shortname: analytics-mapping-functions
 :page-permalink: analytics-mapping-functions.html
 :page-tocclass: right
