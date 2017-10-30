@@ -676,8 +676,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
     String oldLeaderNodeName = oldLeaderJetty.getNodeName();
     ChaosMonkey.kill(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
-    waitForState("Expect new leader", collectionName, (liveNodes, collectionState) ->
-        !collectionState.getLeader("shard1").getNodeName().equals(oldLeaderNodeName)
+    waitForState("Expect new leader", collectionName,
+        (liveNodes, collectionState) -> {
+          Replica leader = collectionState.getLeader("shard1");
+          if (leader == null) return false;
+          return !leader.getNodeName().equals(oldLeaderNodeName);
+        }
     );
     ChaosMonkey.start(oldLeaderJetty);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
