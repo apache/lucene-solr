@@ -260,7 +260,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      int startUpZkTimeOut = Integer.parseInt(System.getProperty("startUpZkTimeOut", "30"));
+      int startUpZkClientTimeOut = Integer.parseInt(System.getProperty("startUpZkClientTimeOut", "30"));
+      log.info("set Start zkTimeOut:"+startUpZkTimeOut+ " and zkClientTimeOut:" + startUpZkClientTimeOut);
+      startUpZkTimeOut *= 1000;
+      startUpZkClientTimeOut *= 1000;
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkClientTimeOut)) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           byte[] data = zkClient.getData("/solr.xml", null, null, true);
