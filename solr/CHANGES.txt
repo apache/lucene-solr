@@ -65,6 +65,8 @@ Bug Fixes
 
 * SOLR-11557: Fix SolrZkClient.checkInterrupted (Tomás Fernández Löbbe)
 
+* SOLR-11413: SolrGraphiteReporter fails to report metrics due to non-thread safe code. (Erik Persson, ab)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr

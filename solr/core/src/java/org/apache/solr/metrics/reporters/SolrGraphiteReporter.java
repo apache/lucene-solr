@@ -75,13 +75,11 @@ public class SolrGraphiteReporter extends FilteringSolrMetricReporter {
     }
     GraphiteSender graphite;
     String id = host + ":" + port + ":" + pickled;
-    graphite = serviceRegistry.getOrCreate(id, () -> {
-      if (pickled) {
-        return new PickledGraphite(host, port);
-      } else {
-        return new Graphite(host, port);
-      }
-    });
+    if (pickled) {
+      graphite = new PickledGraphite(host, port);
+    } else {
+      graphite = new Graphite(host, port);
+    }
     if (instancePrefix == null) {
       instancePrefix = registryName;
     } else {
