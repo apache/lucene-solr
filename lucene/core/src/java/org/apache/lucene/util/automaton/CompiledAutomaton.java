@@ -138,7 +138,7 @@ public class CompiledAutomaton {
    *  to determine whether it is finite.  If simplify is true, we run
    *  possibly expensive operations to determine if the automaton is one
    *  the cases in {@link CompiledAutomaton.AUTOMATON_TYPE}. If simplify
-   *  requires determinizing the autaomaton then only maxDeterminizedStates
+   *  requires determinizing the automaton then only maxDeterminizedStates
    *  will be created.  Any more than that will cause a
    *  TooComplexToDeterminizeException.
    */

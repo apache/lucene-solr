@@ -45,7 +45,7 @@ final public class MinimizationOperations {
 
   /**
    * Minimizes (and determinizes if not already deterministic) the given
-   * automaton using Hopcroft's algorighm.
+   * automaton using Hopcroft's algorithm.
    * @param maxDeterminizedStates maximum number of states determinizing the
    *  automaton can result in.  Set higher to allow more complex queries and
    *  lower to prevent memory exhaustion.

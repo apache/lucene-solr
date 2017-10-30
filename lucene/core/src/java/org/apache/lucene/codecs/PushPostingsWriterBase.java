@@ -30,7 +30,7 @@ import org.apache.lucene.util.FixedBitSet;
 /**
  * Extension of {@link PostingsWriterBase}, adding a push
  * API for writing each element of the postings.  This API
- * is somewhat analagous to an XML SAX API, while {@link
+ * is somewhat analogous to an XML SAX API, while {@link
  * PostingsWriterBase} is more like an XML DOM API.
  * 
  * @see PostingsReaderBase

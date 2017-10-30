@@ -87,7 +87,7 @@ The default is `<em>`.
 The default is `</em>`.
 
 `hl.encoder`::
-If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HMTL/XML characters will be encoded (e.g., `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
+If blank, the default, then the stored text will be returned without any escaping/encoding performed by the highlighter. If set to `html` then special HTML/XML characters will be encoded (e.g., `&` becomes `\&amp;`). The pre/post snippet characters are never encoded.
 
 `hl.maxAnalyzedChars`::
 The character limit to look for highlights, after which no highlighting will be done. This is mostly only a performance concern for an _analysis_ based offset source since it's the slowest. See <<Schema Options and Performance Considerations>>.
