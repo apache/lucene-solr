@@ -1890,7 +1890,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // if we aren't the leader, then we need to check that updates were not re-ordered
             if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
               // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occured.
+              // in this bucket so far, so we know that no reordering has yet occurred.
               bucket.updateHighest(versionOnUpdate);
             } else {
               // there have been updates higher than the current update. we need to check

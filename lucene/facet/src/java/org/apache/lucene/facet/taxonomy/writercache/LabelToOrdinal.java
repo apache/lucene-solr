@@ -52,9 +52,9 @@ public abstract class LabelToOrdinal {
   }
 
   /**
-   * Adds a new label if its not yet in the table.
+   * Adds a new label if it is not yet in the table.
    * Throws an {@link IllegalArgumentException} if the same label with
-   * a different ordinal was previoulsy added to this table.
+   * a different ordinal was previously added to this table.
    */
   public abstract void addLabel(FacetLabel label, int ordinal);
 

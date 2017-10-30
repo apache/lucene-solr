@@ -1369,7 +1369,7 @@ public class CoreContainer {
   }
 
   /**
-   * Returns an immutable Map of Exceptions that occured when initializing 
+   * Returns an immutable Map of Exceptions that occurred when initializing 
    * SolrCores (either at startup, or do to runtime requests to create cores) 
    * keyed off of the name (String) of the SolrCore that had the Exception 
    * during initialization.

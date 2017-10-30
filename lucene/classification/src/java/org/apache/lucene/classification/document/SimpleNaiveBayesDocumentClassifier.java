@@ -62,7 +62,7 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
    * @param indexReader     the reader on the index to be used for classification
    * @param query          a {@link org.apache.lucene.search.Query} to eventually filter the docs used for training the classifier, or {@code null}
    *                       if all the indexed docs should be used
-   * @param classFieldName the name of the field used as the output for the classifier NOTE: must not be havely analyzed
+   * @param classFieldName the name of the field used as the output for the classifier NOTE: must not be heavely analyzed
    *                       as the returned class will be a token indexed for this field
    * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
    */
