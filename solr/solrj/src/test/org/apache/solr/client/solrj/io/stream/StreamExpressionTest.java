@@ -6039,6 +6039,33 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testMatrix() throws Exception {
+    String cexpr = "matrix(array(1, 2, 3), rev(array(4,5,6)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("return-value");
+
+    List<Number> array1 = out.get(0);
+    assertEquals(array1.size(), 3);
+    assertEquals(array1.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(array1.get(1).doubleValue(), 2.0, 0.0);
+    assertEquals(array1.get(2).doubleValue(), 3.0, 0.0);
+
+    List<Number> array2 = out.get(1);
+    assertEquals(array2.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 5.0, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 4.0, 0.0);
+  }
+
+  @Test
   public void testAddAll() throws Exception {
     String cexpr = "addAll(array(1, 2, 3), array(4.5, 5.5, 6.5), array(7,8,9))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
