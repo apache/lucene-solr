@@ -18,7 +18,7 @@
 
 <solr>
  <metrics>
-  <reporter name="test" group="node" class="org.apache.solr.metrics.reporters.SolrGraphiteReporter">
+  <reporter name="test" group="node,core" class="org.apache.solr.metrics.reporters.SolrGraphiteReporter">
     <str name="host">localhost</str>
     <int name="port">${mock-graphite-port}</int>
     <!-- for unit tests this is set to 1 second - DO NOT USE THIS VALUE IN PRODUCTION! -->
