@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -93,13 +94,19 @@ public abstract class SpanWeight extends Weight {
     if (termContexts == null || termContexts.size() == 0 || query.getField() == null)
       return null;
     TermStatistics[] termStats = new TermStatistics[termContexts.size()];
-    int i = 0;
+    int termUpTo = 0;
     for (Term term : termContexts.keySet()) {
-      termStats[i] = searcher.termStatistics(term, termContexts.get(term));
-      i++;
+      TermStatistics termStatistics = searcher.termStatistics(term, termContexts.get(term));
+      if (termStatistics != null) {
+        termStats[termUpTo++] = termStatistics;
+      }
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());
-    return similarity.computeWeight(boost, collectionStats, termStats);
+    if (termUpTo > 0) {
+      return similarity.computeWeight(boost, collectionStats, Arrays.copyOf(termStats, termUpTo));
+    } else {
+      return null; // no terms at all exist, we won't use similarity
+    }
   }
 
   /**

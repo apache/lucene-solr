@@ -72,6 +72,9 @@ public class TermStats {
   }
   
   public TermStatistics toTermStatistics() {
+    if (docFreq == 0) {
+      return null;
+    }
     return new TermStatistics(t.bytes(), docFreq, totalTermFreq);
   }
   

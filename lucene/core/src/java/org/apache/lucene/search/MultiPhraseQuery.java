@@ -203,13 +203,20 @@ public class MultiPhraseQuery extends Query {
             termContext = TermContext.build(context, term);
             termContexts.put(term, termContext);
           }
-          allTermStats.add(searcher.termStatistics(term, termContext));
+          TermStatistics termStatistics = searcher.termStatistics(term, termContext);
+          if (termStatistics != null) {
+            allTermStats.add(termStatistics);
+          }
         }
       }
-      stats = similarity.computeWeight(
+      if (allTermStats.isEmpty()) {
+        stats = null; // none of the terms were found, we won't use sim at all
+      } else {
+        stats = similarity.computeWeight(
           boost,
           searcher.collectionStatistics(field),
           allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+      }
     }
 
     @Override

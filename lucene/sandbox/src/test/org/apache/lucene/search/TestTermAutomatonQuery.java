@@ -965,4 +965,64 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     
     IOUtils.close(w, r, dir);
   }
+  
+  // we query with sun|moon but moon doesn't exist
+  public void testOneTermMissing() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+
+    TermAutomatonQuery q = new TermAutomatonQuery("field");
+    int init = q.createState();
+    int s1 = q.createState();
+    q.addTransition(init, s1, "comes");
+    int s2 = q.createState();
+    q.addAnyTransition(s1, s2);
+    int s3 = q.createState();
+    q.setAccept(s3, true);
+    q.addTransition(s2, s3, "sun");
+    q.addTransition(s2, s3, "moon");
+    q.finish();
+
+    assertEquals(1, s.search(q, 1).totalHits);
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+  
+  // we query with sun|moon but no terms exist for the field
+  public void testFieldMissing() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newTextField("field", "here comes the sun", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r);
+
+    TermAutomatonQuery q = new TermAutomatonQuery("bogusfield");
+    int init = q.createState();
+    int s1 = q.createState();
+    q.addTransition(init, s1, "comes");
+    int s2 = q.createState();
+    q.addAnyTransition(s1, s2);
+    int s3 = q.createState();
+    q.setAccept(s3, true);
+    q.addTransition(s2, s3, "sun");
+    q.addTransition(s2, s3, "moon");
+    q.finish();
+
+    assertEquals(0, s.search(q, 1).totalHits);
+
+    w.close();
+    r.close();
+    dir.close();
+  }
 }

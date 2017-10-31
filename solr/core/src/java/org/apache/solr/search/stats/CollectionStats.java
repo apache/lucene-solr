@@ -74,6 +74,9 @@ public class CollectionStats {
   }
   
   public CollectionStatistics toCollectionStatistics() {
+    if (maxDoc == 0 || docCount == 0) {
+      return null;
+    }
     return new CollectionStatistics(field, maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
   }
   

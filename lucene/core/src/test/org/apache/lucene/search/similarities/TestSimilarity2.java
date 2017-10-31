@@ -262,10 +262,7 @@ public class TestSimilarity2 extends LuceneTestCase {
   
   /** make sure all sims work with spanOR(termX, termY) where termY does not exist */
   public void testCrazySpans() throws Exception {
-    // The problem: "normal" lucene queries create scorers, returning null if terms dont exist
-    // This means they never score a term that does not exist.
-    // however with spans, there is only one scorer for the whole hierarchy:
-    // inner queries are not real queries, their boosts are ignored, etc.
+    // historically this was a problem, but sim's no longer have to score terms that dont exist
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

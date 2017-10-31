@@ -65,13 +65,16 @@ public class TermQuery extends Query {
         collectionStats = searcher.collectionStatistics(term.field());
         termStats = searcher.termStatistics(term, termStates);
       } else {
-        // we do not need the actual stats, use fake stats with docFreq=maxDoc and ttf=-1
-        final int maxDoc = searcher.getIndexReader().maxDoc();
-        collectionStats = new CollectionStatistics(term.field(), maxDoc, -1, -1, -1);
-        termStats = new TermStatistics(term.bytes(), maxDoc, -1);
+        // we do not need the actual stats, use fake stats with docFreq=maxDoc=1 and ttf=-1
+        collectionStats = new CollectionStatistics(term.field(), 1, -1, -1, -1);
+        termStats = new TermStatistics(term.bytes(), 1, -1);
       }
      
-      this.stats = similarity.computeWeight(boost, collectionStats, termStats);
+      if (termStats == null) {
+        this.stats = null; // term doesn't exist in any segment, we won't use similarity at all
+      } else {
+        this.stats = similarity.computeWeight(boost, collectionStats, termStats);
+      }
     }
 
     @Override

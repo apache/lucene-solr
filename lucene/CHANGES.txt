@@ -11,6 +11,11 @@ Changes in Runtime Behavior
   will now fail to open even if they have been merged with the previous major
   version. (Adrien Grand)
 
+* LUCENE-8020: Similarities are no longer passed terms that don't exist by
+  queries such as SpanOrQuery, so scoring formulas no longer require
+  divide-by-zero hacks.  IndexSearcher.termStatistics/collectionStatistics return null
+  instead of returning bogus values for a non-existent term or field. (Robert Muir)
+
 Improvements
 
 * LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.

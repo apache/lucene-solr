@@ -370,12 +370,20 @@ public class PhraseQuery extends Query {
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
+      int termUpTo = 0;
       for (int i = 0; i < terms.length; i++) {
         final Term term = terms[i];
         states[i] = TermContext.build(context, term);
-        termStats[i] = searcher.termStatistics(term, states[i]);
+        TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+        if (termStatistics != null) {
+          termStats[termUpTo++] = termStatistics;
+        }
       }
-      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), termStats);
+      if (termUpTo > 0) {
+        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
+      } else {
+        stats = null; // no terms at all, we won't use similarity
+      }
     }
 
     @Override

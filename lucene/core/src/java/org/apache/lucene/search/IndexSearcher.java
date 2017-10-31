@@ -767,18 +767,24 @@ public class IndexSearcher {
   }
   
   /**
-   * Returns {@link TermStatistics} for a term.
+   * Returns {@link TermStatistics} for a term, or {@code null} if
+   * the term does not exist.
    * 
    * This can be overridden for example, to return a term's statistics
    * across a distributed collection.
    * @lucene.experimental
    */
   public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
-    return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+    if (context.docFreq() == 0) {
+      return null;
+    } else {
+      return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+    }
   }
   
   /**
-   * Returns {@link CollectionStatistics} for a field.
+   * Returns {@link CollectionStatistics} for a field, or {@code null} if
+   * the field does not exist (has no indexed terms)
    * 
    * This can be overridden for example, to return a field's statistics
    * across a distributed collection.
@@ -793,14 +799,12 @@ public class IndexSearcher {
     
     Terms terms = MultiFields.getTerms(reader, field);
     if (terms == null) {
-      docCount = 0;
-      sumTotalTermFreq = 0;
-      sumDocFreq = 0;
-    } else {
-      docCount = terms.getDocCount();
-      sumTotalTermFreq = terms.getSumTotalTermFreq();
-      sumDocFreq = terms.getSumDocFreq();
+      return null;
     }
+
+    docCount = terms.getDocCount();
+    sumTotalTermFreq = terms.getSumTotalTermFreq();
+    sumDocFreq = terms.getSumDocFreq();
 
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }

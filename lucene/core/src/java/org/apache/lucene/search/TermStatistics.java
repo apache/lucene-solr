@@ -17,6 +17,8 @@
 package org.apache.lucene.search;
 
 
+import java.util.Objects;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum; // javadocs
 import org.apache.lucene.util.BytesRef;
@@ -29,9 +31,25 @@ public class TermStatistics {
   private final long docFreq;
   private final long totalTermFreq;
   
+  /**
+   * Creates statistics instance for a term.
+   * @param term Term bytes
+   * @param docFreq number of documents containing the term in the collection.
+   * @param totalTermFreq number of occurrences of the term in the collection.
+   * @throws NullPointerException if {@code term} is {@code null}.
+   * @throws IllegalArgumentException if {@code docFreq} is negative or zero.
+   * @throws IllegalArgumentException if {@code totalTermFreq} is less than {@code docFreq}.
+   */
   public TermStatistics(BytesRef term, long docFreq, long totalTermFreq) {
-    assert docFreq >= 0;
-    assert totalTermFreq == -1 || totalTermFreq >= docFreq; // #positions must be >= #postings
+    Objects.requireNonNull(term);
+    if (docFreq <= 0) {
+      throw new IllegalArgumentException("docFreq must be positive, docFreq: " + docFreq);
+    }
+    if (totalTermFreq != -1) {
+      if (totalTermFreq < docFreq) {
+        throw new IllegalArgumentException("totalTermFreq must be at least docFreq, totalTermFreq: " + totalTermFreq + ", docFreq: " + docFreq);
+      }
+    }
     this.term = term;
     this.docFreq = docFreq;
     this.totalTermFreq = totalTermFreq;
