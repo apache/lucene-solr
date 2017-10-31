@@ -16,18 +16,23 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -39,6 +44,23 @@ import java.nio.charset.StandardCharsets;
  */
 public class RequestWriter {
   public static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+
+  public interface ContentWriter {
+
+    void write(OutputStream os) throws IOException;
+
+    String getContentType();
+  }
+
+  /**
+   * Use this to do a push writing instead of pull. If this method returns null
+   * {@link org.apache.solr.client.solrj.request.RequestWriter#getContentStream(UpdateRequest)} is
+   * invoked to do a pull write.
+   */
+  public ContentWriter getContentWriter(SolrRequest req) {
+    return null;
+  }
 
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
