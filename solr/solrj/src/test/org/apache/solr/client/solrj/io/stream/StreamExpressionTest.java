@@ -6096,6 +6096,40 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(array3.get(1).doubleValue(), 6.0, 0.0);
   }
 
+  @Test
+  public void testUnit() throws Exception {
+    String cexpr = "let(echo=true, a=unit(matrix(array(1,2,3), array(4,5,6))), b=unit(array(4,5,6)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
+    assertEquals(out.size(), 2);
+    List<Number> array1 = out.get(0);
+    assertEquals(array1.size(), 3);
+    assertEquals(array1.get(0).doubleValue(), 0.2672612419124244, 0.0);
+    assertEquals(array1.get(1).doubleValue(), 0.5345224838248488, 0.0);
+    assertEquals(array1.get(2).doubleValue(), 0.8017837257372732, 0.0);
+
+    List<Number> array2 = out.get(1);
+    assertEquals(array2.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 0.4558423058385518, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 0.5698028822981898, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 0.6837634587578276, 0.0);
+
+    List<Number> array3 = (List<Number>)tuples.get(0).get("b");
+    assertEquals(array3.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 0.4558423058385518, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 0.5698028822981898, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 0.6837634587578276, 0.0);
+  }
+
+
 
   @Test
   public void testAddAll() throws Exception {
