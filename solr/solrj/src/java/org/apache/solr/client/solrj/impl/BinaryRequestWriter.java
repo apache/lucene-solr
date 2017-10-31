@@ -40,12 +40,7 @@ public class BinaryRequestWriter extends RequestWriter {
   public ContentWriter getContentWriter(SolrRequest req) {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
-      if (isNull(updateRequest.getDocuments()) &&
-          isNull(updateRequest.getDeleteByIdMap()) &&
-          isNull(updateRequest.getDeleteQuery())
-          && (updateRequest.getDocIterator() == null)) {
-        return null;
-      }
+      if (isEmpty(updateRequest)) return null;
       return new ContentWriter() {
         @Override
         public void write(OutputStream os) throws IOException {
@@ -66,12 +61,7 @@ public class BinaryRequestWriter extends RequestWriter {
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
-      if (isNull(updateRequest.getDocuments()) &&
-              isNull(updateRequest.getDeleteByIdMap()) &&
-              isNull(updateRequest.getDeleteQuery())
-              && (updateRequest.getDocIterator() == null) ) {
-        return null;
-      }
+      if (isEmpty(updateRequest) ) return null;
       throw new RuntimeException("This Should not happen");
     } else {
       return super.getContentStreams(req);
