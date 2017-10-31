@@ -7026,6 +7026,40 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testTriangularDistribution() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "a=describe(sample(triangularDistribution(10, 15, 30),10000)), " +
+        "b=describe(sample(triangularDistribution(10, 25, 30),10000)), " +
+        ")";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Map a = (Map)tuples.get(0).get("a");
+    Map b = (Map)tuples.get(0).get("b");
+
+    Number sa = (Number)a.get("skewness");
+    Number sb = (Number)b.get("skewness");
+
+    Number mina = (Number)a.get("min");
+    Number maxa = (Number)a.get("max");
+
+    assertTrue(sa.doubleValue() > 0);
+    assertTrue(sb.doubleValue() < 0);
+    assertEquals(mina.doubleValue(), 10, .5);
+    assertEquals(maxa.doubleValue(), 30, .5);
+  }
+
+
+
+
+  @Test
   public void testMean() throws Exception {
     String cexpr = "mean(array(1,2,3,4,5))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();

@@ -271,6 +271,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("matrix", MatrixEvaluator.class)
         .withFunctionName("transpose", TransposeEvaluator.class)
         .withFunctionName("unit", UnitEvaluator.class)
+        .withFunctionName("triangularDistribution", TriangularDistributionEvaluator.class)
 
         // Boolean Stream Evaluators
 
