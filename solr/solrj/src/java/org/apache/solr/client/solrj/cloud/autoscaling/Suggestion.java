@@ -186,9 +186,7 @@ public class Suggestion {
         if (ctx.violation.replicaCountDelta > 0) {//there are more replicas than necessary
           for (int i = 0; i < Math.abs(ctx.violation.replicaCountDelta); i++) {
             Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
-                .hint(Suggester.Hint.SRC_NODE, ctx.violation.node)
-                .hint(ctx.violation.shard.equals(ANY) ? Suggester.Hint.COLL : Suggester.Hint.COLL_SHARD,
-                    ctx.violation.shard.equals(ANY) ? ctx.violation.coll : new Pair<>(ctx.violation.coll, ctx.violation.shard));
+                .hint(Suggester.Hint.SRC_NODE, ctx.violation.node);
             ctx.addSuggestion(suggester);
           }
         }

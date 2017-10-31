@@ -1429,14 +1429,46 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("r2", Utils.getObjectByPath(m, true, "operation/command/move-replica/replica"));
     assertEquals("node1", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
 
-//    System.out.println(Utils.toJSONString(l.get(0)));
-//    Map m = l.get(0).toMap(new LinkedHashMap<>());
-    /*assertEquals(1l,Utils.getObjectByPath(m,true,"violation/violation/delta"));
-    assertEquals("POST",Utils.getObjectByPath(m,true,"operation/method"));
-    assertEquals("/c/mycoll1",Utils.getObjectByPath(m,true,"operation/path"));
-    assertNotNull(Utils.getObjectByPath(m,false,"operation/command/move-replica"));
-    assertEquals("10.0.0.6:7574_solr",Utils.getObjectByPath(m,true,"operation/command/move-replica/targetNode"));
-    assertEquals("core_node2",Utils.getObjectByPath(m,true,"operation/command/move-replica/replica"));*/
+
+  }
+
+
+  public void testCoresSuggestions() {
+    String dataproviderdata = "{" +
+        "  'liveNodes':[" +
+        "    '10.0.0.6:7574_solr'," +
+        "    '10.0.0.6:8983_solr']," +
+        "  'replicaInfo':{" +
+        "    '10.0.0.6:7574_solr':{}," +
+        "    '10.0.0.6:8983_solr':{'mycoll1':{" +
+        "        'shard1':[{'core_node1':{'type':'NRT'}}]," +
+        "        'shard2':[{'core_node2':{'type':'NRT'}}]," +
+        "        'shard3':[{'core_node3':{'type':'NRT'}}]," +
+        "        'shard4':[{'core_node4':{'type':'NRT'}}]}}}," +
+        "  'nodeValues':{" +
+        "    '10.0.0.6:7574_solr':{" +
+        "      'node':'10.0.0.6:7574_solr'," +
+        "      'cores':0}," +
+        "    '10.0.0.6:8983_solr':{" +
+        "      'node':'10.0.0.6:8983_solr'," +
+        "      'cores':4}}}";
+    String autoScalingjson = "  { cluster-policy:[" +
+        "    { cores :'<3', node :'#ANY'}]," +
+        "  cluster-preferences :[{ minimize : cores }]}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertFalse(violations.isEmpty());
+    assertEquals(2l, violations.get(0).replicaCountDelta.longValue());
+
+    List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(cfg,
+        cloudManagerWithData(dataproviderdata));
+    assertEquals(2, l.size());
+    for (Suggester.SuggestionInfo suggestionInfo : l) {
+      Map m = suggestionInfo.toMap(new LinkedHashMap<>());
+      assertEquals("10.0.0.6:7574_solr", Utils.getObjectByPath(m, true, "operation/command/move-replica/targetNode"));
+      assertEquals("POST", Utils.getObjectByPath(m, true, "operation/method"));
+      assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
+    }
 
   }
 
