@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -77,10 +78,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    // todo remove this workaround after SOLR-9440 is fixed
-    zkStateReader.registerCore("testSimple1");
-    zkStateReader.registerCore("testSimple2");
-    zkStateReader.registerCore("testSimple3");
 
     // start the tests
     JettySolrRunner lostJetty = random().nextBoolean() ? cluster.getJettySolrRunner(0) : cluster.getJettySolrRunner(1);
@@ -91,6 +88,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 2));
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION1);
     lostJetty.start();
+    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 90000));
 
     // check cluster property is considered
     disableAutoAddReplicasInCluster();

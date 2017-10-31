@@ -89,6 +89,9 @@ Bug Fixes
 
 * SOLR-11413: SolrGraphiteReporter fails to report metrics due to non-thread safe code. (Erik Persson, ab)
 
+* SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
+  never update it causing stale state to be returned in ClusterState. (shalin)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
