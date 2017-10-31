@@ -146,7 +146,10 @@ public class PolicyHelper {
     suggestionCtx.session = policy.createSession(cloudManager);
     List<Violation> violations = suggestionCtx.session.getViolations();
     for (Violation violation : violations) {
-      Suggestion.getTagType(violation.getClause().tag.name).getSuggestions(suggestionCtx.setViolation(violation));
+      Suggestion.getTagType(violation.getClause().isPerCollectiontag() ?
+          violation.getClause().tag.name:
+          violation.getClause().globalTag.name)
+          .getSuggestions(suggestionCtx.setViolation(violation));
       suggestionCtx.violation = null;
     }
     return suggestionCtx.getSuggestions();

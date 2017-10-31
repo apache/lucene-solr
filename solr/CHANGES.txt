@@ -53,12 +53,15 @@ New Features
 
 * SOLR-11524: A new autoscaling/suggestions API end-point which gives autoscaling suggestions (noble)
 
-* SOLR-11519: Implement suggestions for replica count violations (noble)
+* SOLR-11519: Implement autoscaling suggestions for replica count violations (noble)
 
-* SOLR-11518: Implement Suggestions for freedisk violations (noble)
+* SOLR-11518: Implement autoscaling Suggestions for freedisk violations (noble)
 
 * SOLR-10132: A new optional facet.matches parameter to return facet buckets only
   for terms that match a regular expression. (Gus Heck, Christine Poerschke)
+
+* SOLR-11520: Implement autoscaling suggestions for cores count violations (noble)
+
 
 Bug Fixes
 ----------------------

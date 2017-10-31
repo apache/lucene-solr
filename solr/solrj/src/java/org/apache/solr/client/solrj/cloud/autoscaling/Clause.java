@@ -259,16 +259,15 @@ public class Clause implements MapWriter, Comparable<Clause> {
                   replica.delta(counts.getValue()),
                   counts.getKey());
               Suggestion.getTagType(tag.name).addViolatingReplicas(ctx.reset(counts.getKey(), counts.getValue(), violation));
-//              Suggestion.getByTag(tag.name).violationFun.accept(ctx.reset(counts.getKey(), counts.getValue(), violation));
             }
           }
         }
       }
     } else {
       for (Row r : allRows) {
-        if (!tag.isPass(r)) {
+        if (!globalTag.isPass(r)) {
           Suggestion.ConditionType.CORES.addViolatingReplicas(ctx.reset(null, null,
-              new Violation(this, null, null, r.node, r.getVal(tag.name), tag.delta(r.getVal(tag.name)), null)));
+              new Violation(this, null, null, r.node, r.getVal(globalTag.name), globalTag.delta(r.getVal(globalTag.name)), null)));
         }
       }
     }
