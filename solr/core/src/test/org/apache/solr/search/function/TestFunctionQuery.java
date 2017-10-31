@@ -425,6 +425,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
   public void testTFIDFFunctions() {
     clearIndex();
 
@@ -467,6 +468,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   /**
    * test collection-level term stats (new in 4.x indexes)
    */
+  @Test
   public void testTotalTermFreq() throws Exception {  
     clearIndex();
     
@@ -841,6 +843,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   }
 
+  @Test
   public void testConcatFunction() {
     clearIndex();
   
@@ -878,6 +881,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
              , "/response/docs/[0]=={ 'a': 74.0, 'b':32.0 }");
   }
 
+  @Test
   public void testMissingFieldFunctionBehavior() throws Exception {
     clearIndex();
     // add a doc that has no values in any interesting fields
@@ -958,7 +962,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                /*id*/2, /*score*/2);
   }
 
+  @Test
   public void testLongComparisons() {
+    clearIndex();
+
     assertU(adoc("id", "1", "number_of_atoms_in_universe_l", Long.toString(Long.MAX_VALUE)));
     assertU(adoc("id", "2", "number_of_atoms_in_universe_l", Long.toString(Long.MAX_VALUE - 1)));
     assertU(commit());
@@ -971,5 +978,4 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                /*id*/2, /*score*/5,
                /*id*/1, /*score*/2);
   }
-
-  }
+}
