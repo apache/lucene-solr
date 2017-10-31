@@ -73,7 +73,7 @@ public class RequestWriter {
     return req.getContentStreams();
   }
 
-  private boolean isEmpty(UpdateRequest updateRequest) {
+  protected boolean isEmpty(UpdateRequest updateRequest) {
     return isNull(updateRequest.getDocuments()) &&
             isNull(updateRequest.getDeleteByIdMap()) &&
             isNull(updateRequest.getDeleteQuery()) &&
