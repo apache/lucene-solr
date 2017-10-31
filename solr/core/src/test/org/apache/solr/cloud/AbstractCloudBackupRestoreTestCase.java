@@ -323,6 +323,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     assertEquals("Different count of TlogReplica. Backup collection state=" + backupCollection + "\nRestore" +
         " collection state=" + restoreCollection, numTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
 
+    assertEquals("Restore collection should use stateFormat=2", 2, restoreCollection.getStateFormat());
+
 
     // assert added core properties:
     // DWS: did via manual inspection.
