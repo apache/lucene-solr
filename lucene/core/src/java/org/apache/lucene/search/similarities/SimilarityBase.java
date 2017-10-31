@@ -265,16 +265,13 @@ public abstract class SimilarityBase extends Similarity {
       if (norms == null) {
         return 1D;
       }
-      if (norms.advanceExact(doc)) {
-        return LENGTH_TABLE[Byte.toUnsignedInt((byte) norms.longValue())];
-      } else {
-        return 0;
-      }
+      boolean found = norms.advanceExact(doc);
+      assert found;
+      return LENGTH_TABLE[Byte.toUnsignedInt((byte) norms.longValue())];
     }
     
     @Override
     public float score(int doc, float freq) throws IOException {
-      // We have to supply something in case norms are omitted
       return (float) SimilarityBase.this.score(stats, freq, getLengthValue(doc));
     }
 

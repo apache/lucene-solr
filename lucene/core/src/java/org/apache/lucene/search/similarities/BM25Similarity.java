@@ -230,11 +230,9 @@ public class BM25Similarity extends Similarity {
       if (norms == null) {
         norm = k1;
       } else {
-        if (norms.advanceExact(doc)) {
-          norm = cache[((byte) norms.longValue()) & 0xFF];
-        } else {
-          norm = cache[0];
-        }
+        boolean found = norms.advanceExact(doc);
+        assert found;
+        norm = cache[((byte) norms.longValue()) & 0xFF];
       }
       return weightValue * (float) (freq / (freq + norm));
     }
@@ -259,12 +257,9 @@ public class BM25Similarity extends Similarity {
             (float) (freq.getValue() / (freq.getValue() + (double) k1)),
             "tf, computed as freq / (freq + k1) from:", subs);
       } else {
-        byte norm;
-        if (norms.advanceExact(doc)) {
-          norm = (byte) norms.longValue();
-        } else {
-          norm = 0;
-        }
+        boolean found = norms.advanceExact(doc);
+        assert found;
+        byte norm = (byte) norms.longValue();
         float doclen = lengthCache[norm & 0xff];
         subs.add(Explanation.match(b, "b, length normalization parameter"));
         if ((norm & 0xFF) > 39) {

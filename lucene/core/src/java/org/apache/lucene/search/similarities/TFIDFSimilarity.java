@@ -583,12 +583,9 @@ public abstract class TFIDFSimilarity extends Similarity {
       if (norms == null) {
         return raw;
       } else {
-        float normValue;
-        if (norms.advanceExact(doc)) {
-          normValue = normTable[(int) (norms.longValue() & 0xFF)];
-        } else {
-          normValue = 0;
-        }
+        boolean found = norms.advanceExact(doc);
+        assert found;
+        float normValue = normTable[(int) (norms.longValue() & 0xFF)];
         return raw * normValue;  // normalize for field
       }
     }
@@ -629,27 +626,6 @@ public abstract class TFIDFSimilarity extends Similarity {
     }
   }  
 
-  private Explanation explainField(int doc, Explanation freq, IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
-    Explanation tfExplanation = Explanation.match(tf(freq.getValue()), "tf(freq="+freq.getValue()+"), with freq of:", freq);
-    float norm;
-    if (norms == null) {
-      norm = 1f;
-    } else if (norms.advanceExact(doc) == false) {
-      norm = 0f;
-    } else {
-      norm = normTable[(int) (norms.longValue() & 0xFF)];
-    }
-    
-    Explanation fieldNormExpl = Explanation.match(
-        norm,
-        "fieldNorm(doc=" + doc + ")");
-
-    return Explanation.match(
-        tfExplanation.getValue() * fieldNormExpl.getValue(),
-        "fieldWeight in " + doc + ", product of:",
-        tfExplanation, fieldNormExpl);
-  }
-
   private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms, float[] normTable) throws IOException {
     List<Explanation> subs = new ArrayList<Explanation>();
     if (stats.boost != 1F) {
@@ -662,9 +638,9 @@ public abstract class TFIDFSimilarity extends Similarity {
     float norm;
     if (norms == null) {
       norm = 1f;
-    } else if (norms.advanceExact(doc) == false) {
-      norm = 0f;
     } else {
+      boolean found = norms.advanceExact(doc);
+      assert found;
       norm = normTable[(int) (norms.longValue() & 0xFF)];
     }
     
