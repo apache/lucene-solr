@@ -36,6 +36,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
@@ -92,7 +93,6 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 2));
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION1);
     lostJetty.start();
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 90000));
 
     // check cluster property is considered
     disableAutoAddReplicasInCluster();
