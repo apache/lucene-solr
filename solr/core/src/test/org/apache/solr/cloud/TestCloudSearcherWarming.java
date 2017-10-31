@@ -102,7 +102,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
 
     solrClient.setDefaultCollection(collectionName);
-    solrClient.getZkStateReader().registerCore(collectionName);
 
     String addListenerCommand = "{" +
         "'add-listener' : {'name':'newSearcherListener','event':'newSearcher', 'class':'" + SleepingSolrEventListener.class.getName() + "'}" +
@@ -142,7 +141,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
 
     solrClient.setDefaultCollection(collectionName);
-    solrClient.getZkStateReader().registerCore(collectionName);
 
     String addListenerCommand = "{" +
         "'add-listener' : {'name':'newSearcherListener','event':'newSearcher', 'class':'" + SleepingSolrEventListener.class.getName() + "'}" +

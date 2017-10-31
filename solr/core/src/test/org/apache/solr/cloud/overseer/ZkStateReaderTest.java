@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 
 public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
@@ -171,6 +172,56 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       reader.unregisterCore("c1");
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
 
+    } finally {
+      IOUtils.close(reader, zkClient);
+      server.shutdown();
+    }
+  }
+
+  public void testCollectionStateWatcherCaching() throws Exception  {
+    String zkDir = createTempDir("testCollectionStateWatcherCaching").toFile().getAbsolutePath();
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+
+    SolrZkClient zkClient = null;
+    ZkStateReader reader = null;
+
+    try {
+      server.run();
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
+      ZkController.createClusterZkNodes(zkClient);
+
+      reader = new ZkStateReader(zkClient);
+      reader.createClusterStateWatchersAndUpdate();
+
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+
+      ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
+      DocCollection state = new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE + "/c1/state.json");
+      ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+      writer.writePendingUpdates();
+      assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+      reader.waitForState("c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
+
+      state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap("x", "y"), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE + "/c1/state.json");
+      wc = new ZkWriteCommand("c1", state);
+      writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
+      writer.writePendingUpdates();
+
+      boolean found = false;
+      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS);
+      while (!timeOut.hasTimedOut())  {
+        DocCollection c1 = reader.getClusterState().getCollection("c1");
+        if ("y".equals(c1.getStr("x"))) {
+          found = true;
+          break;
+        }
+      }
+      assertTrue("Could not find updated property in collection c1 even after 5 seconds", found);
     } finally {
       IOUtils.close(reader, zkClient);
       server.shutdown();

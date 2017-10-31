@@ -729,8 +729,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Why is this needed? see SOLR-9440 
-    waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas", 
+    waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas",
         collectionName, clusterShape(numShards, numReplicasPerShard));
     return assertNumberOfReplicas(numNrtReplicas*numShards, numTlogReplicas*numShards, numPullReplicas*numShards, false, true);
   }

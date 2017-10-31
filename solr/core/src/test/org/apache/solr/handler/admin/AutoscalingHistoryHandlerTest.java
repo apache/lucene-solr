@@ -179,9 +179,6 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         clusterShape(1, 3));
     waitForState("Timed out wait for collection be active", CollectionAdminParams.SYSTEM_COLL,
         clusterShape(1, 3));
-    // todo remove this workaround after SOLR-9440
-    cluster.getSolrClient().getZkStateReader().registerCore(".system");
-    cluster.getSolrClient().getZkStateReader().registerCore(PREFIX + "_collection");
 
     JettySolrRunner jetty = cluster.startJettySolrRunner();
     String nodeAddedName = jetty.getNodeName();
