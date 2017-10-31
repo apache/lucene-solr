@@ -41,6 +41,8 @@ New Features
 
 * SOLR-11518: Implement Suggestions for freedisk violations (noble)
 
+* SOLR-11520: Implement autoscaling suggestions for cores count violations (noble)
+
 Bug Fixes
 ----------------------
 
