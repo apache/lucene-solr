@@ -95,6 +95,9 @@ Bug Fixes
 * SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
   never update it causing stale state to be returned in ClusterState. (shalin)
 
+* SOLR-11560: Specifying the replicationFactor parameter while restoring a collection would lead to extra tlog
+  and pull replicas being created (Peter Szantai-Kis, Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
