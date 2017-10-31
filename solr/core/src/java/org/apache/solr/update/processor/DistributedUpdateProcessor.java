@@ -23,15 +23,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.BytesRef;
@@ -135,103 +132,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
   }
-      
-  /**
-   * Keeps track of the replication factor achieved for a distributed update request
-   * originated in this distributed update processor.
-   */
-  public static class RequestReplicationTracker {
-    final int minRf;
-    // if a leader is driving the update request, then this will be non-null
-    // however a replica may also be driving the update request (forwards to leaders)
-    // in which case we leave this as null so we only count the rf back from the leaders
-    final String onLeaderShardId;
-    // track number of nodes we sent requests to and how many resulted in errors
-    // there may be multiple requests per node when processing a batch
-    final Map<String,AtomicInteger> nodeErrorTracker;
-    // if not using DirectUpdates, a leader may end up forwarding to other
-    // leaders, so we need to keep the achieved rf for each of those too
-    final Map<String,Integer> otherLeaderRf;
-    
-    private RequestReplicationTracker(String shardId, int minRf) {
-      this.minRf = minRf;
-      this.onLeaderShardId = shardId;
-      this.nodeErrorTracker = new HashMap<>(5);
-      this.otherLeaderRf = new HashMap<>();
-    }
 
-    // gives the replication factor that was achieved for this request
-    public int getAchievedRf() {
-      // look across all shards to find the minimum achieved replication
-      // factor ... unless the client is using direct updates from CloudSolrServer
-      // there may be multiple shards at play here
-      int achievedRf = 1;
-      if (onLeaderShardId != null) {
-        synchronized (nodeErrorTracker) {
-          for (AtomicInteger nodeErrors : nodeErrorTracker.values()) {
-            if (nodeErrors.get() == 0) 
-              ++achievedRf;
-          }
-        }
-      } else {
-        // the node driving this updateRequest is not a leader and so
-        // it only forwards to other leaders, so its local result doesn't count
-        achievedRf = Integer.MAX_VALUE;
-      }
-      
-      // min achieved may come from a request to another leader
-      synchronized (otherLeaderRf) {
-        for (Integer otherRf : otherLeaderRf.values()) {
-          if (otherRf < achievedRf)
-            achievedRf = otherRf;
-        }
-      }
-      
-      return (achievedRf == Integer.MAX_VALUE) ? 1 : achievedRf;
-    }    
-    
-    public void trackRequestResult(Node node, boolean success, Integer rf) {
-      String shardId = node.getShardId();      
-
-      if (log.isDebugEnabled())
-        log.debug("trackRequestResult("+node+"): success? "+success+" rf="+rf+
-            ", shardId="+shardId+" onLeaderShardId="+onLeaderShardId);
-      
-      if (!Objects.equals(onLeaderShardId, shardId)) {
-        // result from another leader that we forwarded to
-        synchronized (otherLeaderRf) {
-          otherLeaderRf.put(shardId, rf != null ? rf : new Integer(1));
-        }
-        return;
-      }
-      
-      if (onLeaderShardId != null) {
-        // track result for this leader
-        String nodeUrl = node.getUrl();
-        AtomicInteger nodeErrors = null;
-        // potentially many results flooding into this method from multiple nodes concurrently
-        synchronized (nodeErrorTracker) {        
-          nodeErrors = nodeErrorTracker.get(nodeUrl);
-          if (nodeErrors == null) {
-            nodeErrors = new AtomicInteger(0);
-            nodeErrorTracker.put(nodeUrl, nodeErrors);      
-          }
-        }  
-        
-        if (!success)
-          nodeErrors.incrementAndGet();
-      }
-    }
-    
-    public String toString() {
-      StringBuilder sb = new StringBuilder("RequestReplicationTracker");
-      sb.append(": onLeaderShardId=").append(String.valueOf(onLeaderShardId));
-      sb.append(", minRf=").append(minRf);
-      sb.append(", achievedRf=").append(getAchievedRf());
-      return sb.toString();
-    }
-  }
-  
   public static final String COMMIT_END_POINT = "commit_end_point";
   public static final String LOG_REPLAY = "log_replay";
 
@@ -273,7 +174,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private UpdateCommand updateCommand;  // the current command this processor is working on.
     
   //used for keeping track of replicas that have processed an add/update from the leader
-  private RequestReplicationTracker replicationTracker = null;
+  private RollupRequestReplicationTracker rollupReplicationTracker = null;
+  private LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
   // should we clone the document before sending it to replicas?
   // this is set to true in the constructor if the next processors in the chain
@@ -454,7 +356,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         return nodes;
 
       } else {
-        // I need to forward onto the leader...
+        // I need to forward on to the leader...
         forwardToLeader = true;
         return Collections.singletonList(
             new RetryNode(new ZkCoreNodeProps(leaderReplica), zkController.getZkStateReader(), collection, shardId));
@@ -681,9 +583,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    
+
     assert TestInjection.injectFailUpdateRequests();
-    
+
     updateCommand = cmd;
 
     if (zkEnabled) {
@@ -692,36 +594,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
-    
-    // check if client has requested minimum replication factor information
-    int minRf = -1; // disabled by default
-    if (replicationTracker != null) {
-      minRf = replicationTracker.minRf; // for subsequent requests in the same batch
-    } else {
-      SolrParams rp = cmd.getReq().getParams();      
-      String distribUpdate = rp.get(DISTRIB_UPDATE_PARAM);
-      // somewhat tricky logic here: we only activate the replication tracker if we're on 
-      // a leader or this is the top-level request processor
-      if (distribUpdate == null || distribUpdate.equals(DistribPhase.TOLEADER.toString())) {
-        String minRepFact = rp.get(UpdateRequest.MIN_REPFACT);
-        if (minRepFact != null) {
-          try {
-            minRf = Integer.parseInt(minRepFact);
-          } catch (NumberFormatException nfe) {
-            minRf = -1;
-          }
-          
-          if (minRf <= 0)
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value "+minRepFact+" for "+UpdateRequest.MIN_REPFACT+
-                "; must be >0 and less than or equal to the collection replication factor.");
-        }
-        
-        if (minRf > 1) {
-          String myShardId = forwardToLeader ? null : cloudDesc.getShardId();
-          replicationTracker = new RequestReplicationTracker(myShardId, minRf);
-        }                
-      }
-    }
+
+    // check if client has requested minimum replication factor information. will set replicationTracker to null if
+    // we aren't the leader or subShardLeader
+    checkReplicationTracker(cmd);
 
     // If we were sent a previous version, set this to the AddUpdateCommand (if not already set)
     if (!cmd.isInPlaceUpdate()) {
@@ -730,9 +606,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: if minRf > 1 and we know the leader is the only active replica, we could fail
     // the request right here but for now I think it is better to just return the status
     // to the client that the minRf wasn't reached and let them handle it    
-    
+
     boolean dropCmd = false;
-    if (!forwardToLeader) {      
+    if (!forwardToLeader) {
       dropCmd = versionAdd(cmd);
     }
 
@@ -764,19 +640,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         cmdDistrib.distribAdd(cmd, nodesByRoutingRules, params, true);
       }
     }
-    
-    ModifiableSolrParams params = null;
+
     if (nodes != null) {
-      params = new ModifiableSolrParams(filterParams(req.getParams()));
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM,
-                 (isLeader || isSubShardLeader ?
-                  DistribPhase.FROMLEADER.toString() :
-                  DistribPhase.TOLEADER.toString()));
+          (isLeader || isSubShardLeader ?
+              DistribPhase.FROMLEADER.toString() :
+              DistribPhase.TOLEADER.toString()));
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
-      
-      if (replicationTracker != null && minRf > 1)
-        params.set(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
+
+      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
+        params.set(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
+      }
 
       if (cmd.isInPlaceUpdate()) {
         params.set(DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
@@ -787,12 +663,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // and the current in-place update (that depends on the previous update), if reordered
         // in the stream, can result in the current update being bottled up behind the previous
         // update in the stream and can lead to degraded performance.
-        cmdDistrib.distribAdd(cmd, nodes, params, true, replicationTracker);
+        cmdDistrib.distribAdd(cmd, nodes, params, true, rollupReplicationTracker, leaderReplicationTracker);
       } else {
-        cmdDistrib.distribAdd(cmd, nodes, params, false, replicationTracker);
+        cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
       }
     }
-    
+
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
       if (addsResponse == null) {
@@ -803,13 +679,56 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       addsResponse.add(scratch.toString(), cmd.getVersion());
     }
-    
+
     // TODO: keep track of errors?  needs to be done at a higher level though since
     // an id may fail before it gets to this processor.
     // Given that, it may also make sense to move the version reporting out of this
     // processor too.
+
   }
-  
+
+  // helper method, processAdd was getting a bit large.
+  // Sets replicationTracker = null if we aren't the leader or don't care abeout minRf
+  // We have three possibilities here:
+  //
+  // 1> there is no min_rf specified: Just return
+  // 2> we are a leader: Allocate a LeaderTracker and, if we're getting the original request, a RollupTracker
+  // 3> we're a follower: allocat a RollupTracker
+  //
+  private void checkReplicationTracker(UpdateCommand cmd) {
+    String repFact = req.getParams().get(UpdateRequest.MIN_REPFACT);
+
+    if (zkEnabled == false || repFact == null) {
+      rollupReplicationTracker = null; // never need one of these in stand-alone
+      leaderReplicationTracker = null;
+      return;
+    }
+
+    int requestedReplicationFactor;
+
+    try {
+      requestedReplicationFactor = Integer.parseInt(repFact);
+    } catch (NumberFormatException nfe) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "MinRF must be an integer, was " + repFact);
+    }
+
+    SolrParams rp = cmd.getReq().getParams();
+    String distribUpdate = rp.get(DISTRIB_UPDATE_PARAM);
+    // Ok,we're receiving the original request, we need a rollup tracker, but only one so we accumulate over the
+    // course of a batch.
+    if ((distribUpdate == null || DistribPhase.NONE.toString().equals(distribUpdate)) &&
+        rollupReplicationTracker == null) {
+      rollupReplicationTracker = new RollupRequestReplicationTracker(repFact);
+    }
+    // If we're a leader, we need a leader replication tracker, so let's do that. If there are multiple docs in
+    // a batch we need to use the _same_ leader replication tracker.
+    if (isLeader && leaderReplicationTracker == null) {
+      leaderReplicationTracker = new LeaderRequestReplicationTracker(
+          req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId(), requestedReplicationFactor);
+    }
+  }
+
+
   @Override
   protected void doClose() {
     if (cmdDistrib != null) {
@@ -820,8 +739,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
     // TODO: if not a forward and replication req is not specified, we could
-    // send in a background thread    
-    
+    // send in a background thread
+
     cmdDistrib.finish();    
     List<Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
@@ -849,9 +768,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // Since it is not a forward request, for each fail, try to tell them to
       // recover - the doc was already added locally, so it should have been
       // legit
-       
-      DistribPhase phase =
-          DistribPhase.parseParam(error.req.uReq.getParams().get(DISTRIB_UPDATE_PARAM));       
+
+      DistribPhase phase = DistribPhase.parseParam(error.req.uReq.getParams().get(DISTRIB_UPDATE_PARAM));
       if (phase != DistribPhase.FROMLEADER)
         continue; // don't have non-leaders try to recovery other nodes
 
@@ -911,7 +829,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
 
         // If the client specified minRf and we didn't achieve the minRf, don't send recovery and let client retry
-        if (replicationTracker != null && replicationTracker.getAchievedRf() < replicationTracker.minRf) {
+        if (leaderReplicationTracker != null &&
+            leaderReplicationTracker.getAchievedRf() < leaderReplicationTracker.getRequestedRf()) {
           continue;
         }
 
@@ -949,14 +868,33 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
+    // in either case, we need to attach the achieved and min rf to the response.
+    if (leaderReplicationTracker != null || rollupReplicationTracker != null) {
+      int achievedRf = Integer.MAX_VALUE;
+      int requestedRf = Integer.MAX_VALUE;
 
-    if (replicationTracker != null) {
-      rsp.getResponseHeader().add(UpdateRequest.REPFACT, replicationTracker.getAchievedRf());
-      rsp.getResponseHeader().add(UpdateRequest.MIN_REPFACT, replicationTracker.minRf);
-      replicationTracker = null;
+      if (leaderReplicationTracker != null) {
+
+        achievedRf = leaderReplicationTracker.getAchievedRf();
+        requestedRf = leaderReplicationTracker.getRequestedRf();
+
+        // Transfer this to the rollup tracker if it exists
+        if (rollupReplicationTracker != null) {
+          rollupReplicationTracker.testAndSetAchievedRf(achievedRf);
+        }
+      }
+
+      // Rollup tracker has accumulated stats.
+      if (rollupReplicationTracker != null) {
+        achievedRf = rollupReplicationTracker.getAchievedRf();
+        requestedRf = rollupReplicationTracker.getRequestedRf();
+      }
+      rsp.getResponseHeader().add(UpdateRequest.MIN_REPFACT, requestedRf);
+      rsp.getResponseHeader().add(UpdateRequest.REPFACT, achievedRf);
+      rollupReplicationTracker = null;
+      leaderReplicationTracker = null;
+
     }
-
-    
     if (0 < errorsForClient.size()) {
       throw new DistributedUpdatesAsyncException(errorsForClient);
     }
@@ -1047,8 +985,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // realtime-get to work reliably.
         // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
         // there may be other reasons in the future for a version on the commands
-
-        boolean checkDeleteByQueries = false;
 
         if (versionsStored) {
 
@@ -1162,9 +1098,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                   log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
                   return true;
                 }
-
-                // also need to re-apply newer deleteByQuery commands
-                checkDeleteByQueries = true;
               }
             }
             if (replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
@@ -1376,21 +1309,32 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (!cmd.isDeleteById()) {
       doDeleteByQuery(cmd);
-      return;
+    } else {
+      doDeleteById(cmd);
     }
+  }
 
+  // Implementing min_rf here was a bit tricky. When a request comes in for a delete by id to a replica that does _not_
+  // have any documents specified by those IDs, the request is not forwarded to any other replicas on that shard. Thus
+  // we have to spoof the replicationTracker and set the achieved rf to the number of active replicas.
+  //
+  private void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
     if (zkEnabled) {
       zkCheck();
       nodes = setupRequest(cmd.getId(), null, cmd.getRoute());
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
-    
+
+    // check if client has requested minimum replication factor information. will set replicationTracker to null if
+    // we aren't the leader or subShardLeader
+    checkReplicationTracker(cmd);
+
     boolean dropCmd = false;
     if (!forwardToLeader) {
       dropCmd  = versionDelete(cmd);
     }
-    
+
     if (dropCmd) {
       // TODO: do we need to add anything to the response?
       return;
@@ -1406,7 +1350,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
-        cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
+        cmdDistrib.distribDelete(cmd, subShardLeaders, params, true, null, null);
       }
 
       final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, cmd.getId(), null);
@@ -1417,22 +1361,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, cloudDesc.getCollectionName());
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
-        cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true);
+        cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, null, null);
       }
     }
 
-
-    ModifiableSolrParams params = null;
     if (nodes != null) {
-
-      params = new ModifiableSolrParams(filterParams(req.getParams()));
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM,
           (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString()
               : DistribPhase.TOLEADER.toString()));
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
 
-      cmdDistrib.distribDelete(cmd, nodes, params);
+      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
+        params.add(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
+      }
+      cmdDistrib.distribDelete(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
     }
 
     // cmd.getIndexId == null when delete by query
@@ -1472,6 +1416,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   public void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+
     // even in non zk mode, tests simulate updates from a leader
     if(!zkEnabled) {
       isLeader = getNonZkLeaderAssumption(req);
@@ -1488,13 +1433,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     //       - log + execute the local DBQ
     // FROM: we are a replica receiving a DBQ from our leader
     //       - log + execute the local DBQ
-    DistribPhase phase = 
-    DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+    DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-    DocCollection coll = zkEnabled 
+    DocCollection coll = zkEnabled
       ? zkController.getClusterState().getCollection(collection) : null;
 
     if (zkEnabled && DistribPhase.NONE == phase) {
+      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null && rollupReplicationTracker == null) {
+        rollupReplicationTracker = new RollupRequestReplicationTracker(req.getParams().get(UpdateRequest.MIN_REPFACT));
+      }
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
 
       ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
@@ -1534,7 +1481,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       outParams.remove("commit"); // this will be distributed from the local commit
-      cmdDistrib.distribDelete(cmd, leaders, outParams);
+
+
+      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
+        // If we've determined that there are no docs on this shard that need to be deleted, then we don't send
+        // sub-requests to any other replicas for this shard. In this case, min_rf is meaningless for this shard
+        // so flag that in replicationTracker
+        outParams.add(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
+      }
+      cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
 
       if (!leaderForAnyShard) {
         return;
@@ -1543,6 +1498,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // change the phase to TOLEADER so we look up and forward to our own replicas (if any)
       phase = DistribPhase.TOLEADER;
     }
+
+    // check if client has requested minimum replication factor information. will set replicationTracker to null if
+    // we aren't the leader or subShardLeader
+    checkReplicationTracker(cmd);
 
     List<Node> replicas = null;
 
@@ -1564,9 +1523,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync = (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     boolean leaderLogic = isLeader && !isReplayOrPeersync;
-
     versionDeleteByQuery(cmd);
-
     if (zkEnabled)  {
       // forward to all replicas
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
@@ -1591,7 +1548,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             for (ZkCoreNodeProps replicaProp : replicaProps) {
               myReplicas.add(new StdNode(replicaProp, collection, myShardId));
             }
-            cmdDistrib.distribDelete(cmd, myReplicas, params);
+            cmdDistrib.distribDelete(cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
             someReplicas = true;
           }
         }
@@ -1599,11 +1556,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
       }
-
       if (leaderLogic) {
         List<Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), null, null);
         if (subShardLeaders != null)  {
-          cmdDistrib.distribDelete(cmd, subShardLeaders, params, true);
+          cmdDistrib.distribDelete(cmd, subShardLeaders, params, true, rollupReplicationTracker, leaderReplicationTracker);
         }
         final List<Node> nodesByRoutingRules = getNodesByRoutingRules(zkController.getClusterState(), coll, null, null);
         if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
@@ -1613,10 +1569,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               zkController.getBaseUrl(), req.getCore().getName()));
           params.set(DISTRIB_FROM_COLLECTION, cloudDesc.getCollectionName());
           params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
-          cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true);
+
+          cmdDistrib.distribDelete(cmd, nodesByRoutingRules, params, true, rollupReplicationTracker, leaderReplicationTracker);
         }
         if (replicas != null) {
-          cmdDistrib.distribDelete(cmd, replicas, params);
+          cmdDistrib.distribDelete(cmd, replicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
           someReplicas = true;
         }
       }
@@ -1691,6 +1648,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   // internal helper method to tell if we are the leader for an add or deleteById update
+  // NOTE: not called by this class!
   boolean isLeader(UpdateCommand cmd) {
     updateCommand = cmd;
 
@@ -1938,9 +1896,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     if (next != null && nodes == null) next.finish();
   }
- 
 
-  
   private List<Node> getCollectionUrls(SolrQueryRequest req, String collection, EnumSet<Replica.Type> types) {
     ClusterState clusterState = req.getCore()
         .getCoreContainer().getZkController().getClusterState();
@@ -2046,6 +2002,126 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
         return buf.toString();
       }
+    }
+  }
+
+
+  //    Keeps track of the replication factor achieved for a distributed update request
+  //    originated in this distributed update processor. A RollupReplicationTracker is the only tracker that will
+  //    persist across sub-requests.
+  //
+  //   Note that the replica that receives the original request has the only RollupReplicationTracker that exists for the
+  //   lifetime of the batch. The leader for each shard keeps track of it's own achieved replicaiton for its shard
+  //   and attaches that to the response to the originating node (i.e. the one with the RollupReplicationTracker).
+  //   Followers in general do not need a tracker of any sort with the sole exception of the RollupReplicationTracker
+  //   allocated on the original node that recieves the top-level request.
+  //
+  //   DeleteById is tricky. Since the docs are sent one at a time, there has to be some fancy dancing. In the
+  //   deleteById case, here are the rules:
+  //
+  //   If I'm leader, there are two possibilities:
+  //     1> I got the original request. This is the hard one. There are two sub-cases:
+  //     a> Some document in the request is deleted from the shard I lead. In this case my computed replication
+  //        factor counts.
+  //     b> No document in the packet is deleted from my shard. In that case I have nothing to say about the
+  //        achieved replication factor.
+  //
+  //     2> I'm a leader and I got the request from some other replica. In this case I can be certain of a couple of things:
+  //       a> The document in the request will be deleted from my shard
+  //       b> my replication factor counts.
+  //
+  //   Even the DeleteById case follows the rules for whether a RollupReplicaitonTracker is allocated.
+  //   This doesn't matter when it comes to delete-by-query since all leaders get the sub-request.
+
+
+  public static class RollupRequestReplicationTracker {
+
+    private int achievedRf = Integer.MAX_VALUE;
+    private final int requestedRf;
+
+    RollupRequestReplicationTracker(String minRepFact) {
+      try {
+        this.requestedRf = Integer.parseInt(minRepFact);
+      } catch (NumberFormatException nfe) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "MinRF must be an integer, was " + minRepFact);
+      }
+    }
+
+    public int getAchievedRf() {
+      return achievedRf;
+    }
+
+    public int getRequestedRf() {
+      return requestedRf;
+    }
+
+    // We want to report only the minimun _ever_ achieved...
+    public void testAndSetAchievedRf(int rf) {
+      this.achievedRf = Math.min(this.achievedRf, rf);
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder("RollupRequestReplicationTracker")
+          .append(", requestedRf: ")
+          .append(requestedRf)
+          .append(" achievedRf: ")
+          .append(achievedRf);
+      return sb.toString();
+    }
+  }
+
+
+  // Allocate a LeaderRequestReplicatinTracker if (and only if) we're a leader. If the request comes in to the leader
+  // at first, allocate both one of these and a RollupRequestReplicationTracker.
+  //
+  // Since these are leader-only, all they really have to do is track the individual update request for this shard
+  // and return it to be added to the rollup tracker. Which is kind of simple since we get an onSuccess method in
+  // SolrCmdDistributor
+
+  public static class LeaderRequestReplicationTracker {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    // Since we only allocate one of these on the leader and, by definition, the leader has been found and is running,
+    // we have a replication factor of one by default.
+    private int achievedRf = 1;
+    private final int requestedRf;
+
+    private final String myShardId;
+
+    int getRequestedRf() {
+      return requestedRf;
+    }
+
+    LeaderRequestReplicationTracker(String shardId, int requestedRf) {
+      this.requestedRf = requestedRf;
+      this.myShardId = shardId;
+    }
+
+    // gives the replication factor that was achieved for this request
+    public int getAchievedRf() {
+      return achievedRf;
+    }
+
+    public void trackRequestResult(Node node, boolean success) {
+      if (log.isDebugEnabled()) {
+        log.debug("trackRequestResult(" + node + "): success? " + success +
+            ", shardId=" + myShardId);
+      }
+
+      if (success) {
+        ++achievedRf;
+      }
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder("LeaderRequestReplicationTracker");
+      sb.append(", achievedRf=")
+          .append(getAchievedRf())
+          .append(" for shard ")
+          .append(myShardId)
+          .append(" requested replication factor: ")
+          .append(requestedRf);
+      return sb.toString();
     }
   }
 }

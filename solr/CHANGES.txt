@@ -46,6 +46,8 @@ New Features
 
 * SOLR-11520: Implement autoscaling suggestions for cores count violations (noble)
 
+* SOLR-11438: Solr should return rf when min_rf is specified for deletes as well as adds (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
