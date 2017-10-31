@@ -57,6 +57,10 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
   protected static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
 
+  int replFactor;
+  int numTlogReplicas;
+  int numPullReplicas;
+
   private static long docsSeed; // see indexDocs()
 
   @BeforeClass
@@ -84,9 +88,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   public void test() throws Exception {
     boolean isImplicit = random().nextBoolean();
     boolean doSplitShardOperation = !isImplicit && random().nextBoolean();
-    int replFactor = TestUtil.nextInt(random(), 1, 2);
-    int numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
-    int numPullReplicas = TestUtil.nextInt(random(), 0, 1);
+    replFactor = TestUtil.nextInt(random(), 1, 2);
+    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
+    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
     
     CollectionAdminRequest.Create create = isImplicit ?
       // NOTE: use shard list with same # of shards as NUM_SHARDS; we assume this later
@@ -241,6 +245,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
 
+
+      //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas .
+      //Value is still the same as the original. maybe test with different values that the original for better test coverage
+      if (random().nextBoolean())  {
+        restore.setReplicationFactor(replFactor);
+      }
       if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
         restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
@@ -305,6 +315,14 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreCollection.getMaxShardsPerNode() ,
           v <= restoreCollection.getMaxShardsPerNode());
     });
+
+    assertEquals("Different count of nrtReplicas. Backup collection state=" + backupCollection + "\nRestore " +
+        "collection state=" + restoreCollection, replFactor, restoreCollection.getNumNrtReplicas().intValue());
+    assertEquals("Different count of pullReplicas. Backup collection state=" + backupCollection + "\nRestore" +
+        " collection state=" + restoreCollection, numPullReplicas, restoreCollection.getNumPullReplicas().intValue());
+    assertEquals("Different count of TlogReplica. Backup collection state=" + backupCollection + "\nRestore" +
+        " collection state=" + restoreCollection, numTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
+
 
     // assert added core properties:
     // DWS: did via manual inspection.
