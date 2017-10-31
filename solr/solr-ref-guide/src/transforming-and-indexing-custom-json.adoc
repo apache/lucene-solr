@@ -172,7 +172,7 @@ Instead of specifying all the field names explicitly, it is possible to specify 
 
 There are two restrictions: wildcards can only be used at the end of the `json-path`, and the split path cannot use wildcards.
 
-A single asterisk `\*` maps only to direct children, and a double asterisk `\*\*` maps recursively to all descendants. The following are example wildcard path mappings:
+A single asterisk `\*` maps only to direct children, and a double asterisk `**` maps recursively to all descendants. The following are example wildcard path mappings:
 
 * `f=$FQN:/**`: maps all fields to the fully qualified name (`$FQN`) of the JSON field. The fully qualified name is obtained by concatenating all the keys in the hierarchy with a period (`.`) as a delimiter. This is the default behavior if no `f` path mappings are specified.
 * `f=/docs/*`: maps all the fields under docs and in the name as given in json
