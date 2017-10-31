@@ -87,7 +87,7 @@ Cursors in Solr are a logical concept that doesn't involve caching any state inf
 
 === Using Cursors
 
-To use a cursor with Solr, specify a `cursorMark` parameter with the value of `\*`. You can think of this being analogous to `start=0` as a way to tell Solr "start at the beginning of my sorted results" except that it also informs Solr that you want to use a Cursor.
+To use a cursor with Solr, specify a `cursorMark` parameter with the value of `*`. You can think of this being analogous to `start=0` as a way to tell Solr "start at the beginning of my sorted results" except that it also informs Solr that you want to use a Cursor.
 
 In addition to returning the top N sorted results (where you can control N using the `rows` parameter) the Solr response will also include an encoded String named `nextCursorMark`. You then take the `nextCursorMark` String value from the response, and pass it back to Solr as the `cursorMark` parameter for your next request. You can repeat this process until you've fetched as many docs as you want, or until the `nextCursorMark` returned matches the `cursorMark` you've already specified -- indicating that there are no more results.
 

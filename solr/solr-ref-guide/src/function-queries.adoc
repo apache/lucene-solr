@@ -499,6 +499,7 @@ Returns `true` if any member of the field exists.
 5 comparison functions: Greater Than, Greater Than or Equal, Less Than, Less Than or Equal, Equal
 
 *Syntax Example*
+
 * `if(lt(ms(mydatefield),315569259747),0.8,1)` translates to this pseudocode: `if mydatefield < 315569259747 then 0.8 else 1`
 
 == Example Function Queries

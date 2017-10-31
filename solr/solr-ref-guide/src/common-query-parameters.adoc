@@ -120,7 +120,7 @@ This table shows some basic examples of how to use `fl`:
 |id score |Return the id field and the score.
 |* |Return all the `stored` fields in each document, as well as any `docValues` fields that have `useDocValuesAsStored="true"`. This is the default value of the fl parameter.
 |* score |Return all the fields in each document, along with each field's score.
-|*,dv_field_name |Return all the `stored` fields in each document, and any `docValues` fields that have `useDocValuesAsStored="true`" and the docValues from dv_field_name even if it has `useDocValuesAsStored="false`"
+|*,dv_field_name |Return all the `stored` fields in each document, and any `docValues` fields that have `useDocValuesAsStored="true"` and the docValues from dv_field_name even if it has `useDocValuesAsStored="false"`
 |===
 
 === Functions with fl
@@ -215,7 +215,7 @@ If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the
 
 If early termination is used, a `segmentTerminatedEarly` header will be included in the `responseHeader`.
 
-Similar to using <<timeAllowed Parameter,the `timeAllowed `Parameter>>, when early segment termination happens values such as `numFound`, <<faceting.adoc#faceting,Facet>> counts, and result <<the-stats-component.adoc#the-stats-component,Stats>> may not be accurate for the entire result set.
+Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when early segment termination happens values such as `numFound`, <<faceting.adoc#faceting,Facet>> counts, and result <<the-stats-component.adoc#the-stats-component,Stats>> may not be accurate for the entire result set.
 
 The default value of this parameter is `false`.
 

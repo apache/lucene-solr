@@ -917,7 +917,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate an boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 
