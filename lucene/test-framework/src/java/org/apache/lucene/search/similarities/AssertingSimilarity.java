@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
 /** wraps a similarity with checks for testing */
@@ -114,10 +115,11 @@ public class AssertingSimilarity extends Similarity {
         assert doc >= 0;
         assert doc < context.reader().maxDoc();
         // payload in bounds
-        assert start >= 0;
-        assert end >= start;
         assert payload.isValid();
-        assert end <= payload.length;
+        // position range in bounds
+        assert start >= 0;
+        assert start != Spans.NO_MORE_POSITIONS;
+        assert end > start;
         // result in bounds
         float payloadFactor = delegateScorer.computePayloadFactor(doc, start, end, payload);
         assert Float.isFinite(payloadFactor);
