@@ -158,7 +158,7 @@ public class ZkStateReader implements Closeable {
 
   private final Runnable securityNodeListener;
 
-  public ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
+  private ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
 
   private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
