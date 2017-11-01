@@ -83,17 +83,21 @@ public class BM25Similarity extends Similarity {
     return 1;
   }
   
-  /** The default implementation computes the average as <code>sumTotalTermFreq / docCount</code>,
-   * or returns <code>1</code> if the index does not store sumTotalTermFreq:
-   * any field that omits frequency information). */
+  /** The default implementation computes the average as <code>sumTotalTermFreq / docCount</code> */
   protected float avgFieldLength(CollectionStatistics collectionStats) {
-    final long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
-    if (sumTotalTermFreq <= 0) {
-      return 1f;       // field does not exist, or stat is unsupported
+    final long sumTotalTermFreq;
+    if (collectionStats.sumTotalTermFreq() == -1) {
+      // frequencies are omitted (tf=1), its # of postings
+      if (collectionStats.sumDocFreq() == -1) {
+        // theoretical case only: remove!
+        return 1f;
+      }
+      sumTotalTermFreq = collectionStats.sumDocFreq();
     } else {
-      final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-      return (float) (sumTotalTermFreq / (double) docCount);
+      sumTotalTermFreq = collectionStats.sumTotalTermFreq();
     }
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    return (float) (sumTotalTermFreq / (double) docCount);
   }
   
   /** 
