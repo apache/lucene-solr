@@ -443,34 +443,19 @@ public class HttpSolrClient extends SolrClient {
       contentStream[0] = content;
       break;
     }
-    if (contentStream[0] instanceof RequestWriter.LazyContentStream) {
-      Long size = contentStream[0].getSize();
-      postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
-        @Override
-        public Header getContentType() {
-          return new BasicHeader("Content-Type", contentStream[0].getContentType());
-        }
+    Long size = contentStream[0].getSize();
+    postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
+      @Override
+      public Header getContentType() {
+        return new BasicHeader("Content-Type", contentStream[0].getContentType());
+      }
 
-        @Override
-        public boolean isRepeatable() {
-          return false;
-        }
+      @Override
+      public boolean isRepeatable() {
+        return false;
+      }
+    });
 
-      });
-    } else {
-      Long size = contentStream[0].getSize();
-      postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
-        @Override
-        public Header getContentType() {
-          return new BasicHeader("Content-Type", contentStream[0].getContentType());
-        }
-
-        @Override
-        public boolean isRepeatable() {
-          return false;
-        }
-      });
-    }
   }
 
   private HttpEntityEnclosingRequestBase fillContentStream(SolrRequest request, Collection<ContentStream> streams, ModifiableSolrParams wparams, boolean isMultipart, LinkedList<NameValuePair> postOrPutParams, String fullQueryUrl) throws IOException {
