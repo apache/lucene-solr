@@ -107,7 +107,7 @@ public abstract class SimilarityBase extends Similarity {
     long docFreq = termStats.docFreq();
     long totalTermFreq = termStats.totalTermFreq();
 
-    // codec does not supply totalTermFreq: substitute docFreq
+    // frequencies are omitted, all postings have tf=1, so totalTermFreq = docFreq
     if (totalTermFreq == -1) {
       totalTermFreq = docFreq;
     }
@@ -115,18 +115,19 @@ public abstract class SimilarityBase extends Similarity {
     final long numberOfFieldTokens;
     final float avgFieldLength;
 
-    long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
-
-    if (sumTotalTermFreq <= 0) {
-      // field does not exist;
-      // We have to provide something if codec doesnt supply these measures,
-      // or if someone omitted frequencies for the field... negative values cause
-      // NaN/Inf for some scorers.
-      numberOfFieldTokens = docFreq;
-      avgFieldLength = 1;
+    if (collectionStats.sumTotalTermFreq() == -1) {
+      // frequencies are omitted, so sumTotalTermFreq = # postings
+      if (collectionStats.sumDocFreq() == -1) {
+        // theoretical case only: remove!
+        numberOfFieldTokens = docFreq;
+        avgFieldLength = 1f;
+      } else {
+        numberOfFieldTokens = collectionStats.sumDocFreq();
+        avgFieldLength = (float) (collectionStats.sumDocFreq() / (double)numberOfDocuments);
+      }
     } else {
-      numberOfFieldTokens = sumTotalTermFreq;
-      avgFieldLength = (float)numberOfFieldTokens / numberOfDocuments;
+      numberOfFieldTokens = collectionStats.sumTotalTermFreq();
+      avgFieldLength = (float) (collectionStats.sumTotalTermFreq() / (double)numberOfDocuments);
     }
  
     // TODO: add sumDocFreq for field (numberOfFieldPostings)
