@@ -19,13 +19,13 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Locale;
 
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.correlation.Covariance;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CovarianceEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+public class CovarianceEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public CovarianceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -33,25 +33,26 @@ public class CovarianceEvaluator extends RecursiveNumericEvaluator implements Tw
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
-    }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
-    }
-    if(!(first instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
-    if(!(second instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
-    }
+  public Object doWork(Object ... values) throws IOException{
 
-    Covariance covariance = new Covariance();
-    
-    return covariance.covariance(
-      ((List)first).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray(),
-      ((List)second).stream().mapToDouble(value -> ((BigDecimal)value).doubleValue()).toArray()
-    );
+    if(values.length == 2) {
+      Object first = values[0];
+      Object second = values[1];
+      Covariance covariance = new Covariance();
+
+      return covariance.covariance(
+          ((List) first).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray(),
+          ((List) second).stream().mapToDouble(value -> ((BigDecimal) value).doubleValue()).toArray()
+      );
+    } else if(values.length == 1) {
+      Matrix matrix = (Matrix) values[0];
+      double[][] data = matrix.getData();
+      Covariance covariance = new Covariance(data, true);
+      RealMatrix coMatrix = covariance.getCovarianceMatrix();
+      double[][] coData = coMatrix.getData();
+      return new Matrix(coData);
+    } else {
+      throw new IOException("The cov function expects either two numeric arrays or a matrix as parameters.");
+    }
   }
 }

@@ -7056,6 +7056,38 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(maxa.doubleValue(), 30, .5);
   }
 
+  @Test
+  public void testCovMatrix() throws Exception {
+    String cexpr = "let(a=array(1,2,3), b=array(2,4,6), c=array(4, 8, 12), d=transpose(matrix(a, b, c)), f=cov(d))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> cm = (List<List<Number>>)tuples.get(0).get("f");
+    assertEquals(cm.size(), 3);
+    List<Number> row1 = cm.get(0);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).longValue(), 1);
+    assertEquals(row1.get(1).longValue(), 2);
+    assertEquals(row1.get(2).longValue(), 4);
+
+    List<Number> row2 = cm.get(1);
+    assertEquals(row2.size(), 3);
+    assertEquals(row2.get(0).longValue(), 2);
+    assertEquals(row2.get(1).longValue(), 4);
+    assertEquals(row2.get(2).longValue(), 8);
+
+    List<Number> row3 = cm.get(2);
+    assertEquals(row3.size(), 3);
+    assertEquals(row3.get(0).longValue(), 4);
+    assertEquals(row3.get(1).longValue(), 8);
+    assertEquals(row3.get(2).longValue(), 16);
+  }
 
 
 
