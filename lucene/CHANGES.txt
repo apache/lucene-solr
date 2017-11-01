@@ -16,7 +16,7 @@ Bug Fixes
   refreshes or commits, and high indexing thread counts, do not
   overflow an int (Mykhailo Demianenko via Mike McCandless)
 
-* LUCENE-8025: Use totalTermFreq=sumDocFreq when scoring DOCS_ONLY fields
+* LUCENE-8025: Use sumTotalTermFreq=sumDocFreq when scoring DOCS_ONLY fields
   that omit term frequency information, as it is equivalent in that case.
   Previously bogus numbers were used, and many similarities would
   completely degrade. (Robert Muir, Adrien Grand)
