@@ -7089,7 +7089,28 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(row3.get(2).longValue(), 16);
   }
 
+  @Test
+  public void testPrecision() throws Exception {
+    String cexpr = "let(echo=true, a=precision(array(1.44445, 1, 2.00006), 4), b=precision(1.44445, 4))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
 
+    List<Number> nums = (List<Number>)tuples.get(0).get("a");
+    assertTrue(nums.size() == 3);
+    assertEquals(nums.get(0).doubleValue(), 1.4445, 0.0);
+    assertEquals(nums.get(1).doubleValue(), 1, 0.0);
+    assertEquals(nums.get(2).doubleValue(), 2.0001, 0.0);
+
+    double num = tuples.get(0).getDouble("b");
+    assertEquals(num, 1.4445, 0.0);
+  }
 
   @Test
   public void testMean() throws Exception {
