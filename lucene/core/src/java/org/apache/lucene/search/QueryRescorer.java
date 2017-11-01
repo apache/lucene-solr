@@ -85,7 +85,7 @@ public abstract class QueryRescorer extends Rescorer {
         scorer = weight.scorer(readerContext);
       }
 
-      if(scorer != null) {
+      if (scorer != null) {
         int targetDoc = docID - docBase;
         int actualDoc = scorer.docID();
         if (actualDoc < targetDoc) {

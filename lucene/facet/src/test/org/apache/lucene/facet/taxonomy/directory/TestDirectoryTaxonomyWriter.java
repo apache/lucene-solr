@@ -65,6 +65,8 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     public boolean isFull() { return true; }
     @Override
     public void clear() {}
+    @Override
+    public int size() { return 0; }
     
   };
   

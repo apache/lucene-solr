@@ -51,6 +51,8 @@ public class TestConcurrentFacetedIndexing extends FacetTestCase {
     public boolean isFull() { return true; }
     @Override
     public void clear() {}
+    @Override
+    public int size() { return 0; }
     
   };
   

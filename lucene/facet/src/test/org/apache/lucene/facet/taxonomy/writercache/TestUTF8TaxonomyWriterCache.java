@@ -45,19 +45,19 @@ public class TestUTF8TaxonomyWriterCache extends FacetTestCase {
       int numParts = TestUtil.nextInt(random(), 1, 5);
       StringBuilder b = new StringBuilder();
       for (int i=0;i<numParts;i++) {
-          String part = null;
-          while (true) {
-            part = TestUtil.randomRealisticUnicodeString(random(), 16);
-            part = part.replace("/", "");
-            if (part.length() > 0) {
-              break;
-            }
+        String part = null;
+        while (true) {
+          part = TestUtil.randomRealisticUnicodeString(random(), 16);
+          part = part.replace("/", "");
+          if (part.length() > 0) {
+            break;
           }
+        }
 
-          if (i > 0) {
-            b.append('/');
-          }
-          b.append(part);
+        if (i > 0) {
+          b.append('/');
+        }
+        b.append(part);
       }
       uniqueValuesSet.add(b.toString());
     }

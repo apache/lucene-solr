@@ -54,20 +54,54 @@ public abstract class TaxonomyFacets extends Facets {
 
   /** Maps parent ordinal to its child, or -1 if the parent
    *  is childless. */
-  protected final int[] children;
+  private int[] children;
 
   /** Maps an ordinal to its sibling, or -1 if there is no
    *  sibling. */
-  protected final int[] siblings;
+  private int[] siblings;
+
+  /** Maps an ordinal to its parent, or -1 if there is no
+   *  parent (root node). */
+  protected final int[] parents;
 
   /** Sole constructor. */
   protected TaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
     this.indexFieldName = indexFieldName;
     this.taxoReader = taxoReader;
     this.config = config;
-    ParallelTaxonomyArrays pta = taxoReader.getParallelTaxonomyArrays();
-    children = pta.children();
-    siblings = pta.siblings();
+    parents = taxoReader.getParallelTaxonomyArrays().parents();
+  }
+
+  /** Returns int[] mapping each ordinal to its first child; this is a large array and
+   *  is computed (and then saved) the first time this method is invoked. */
+  protected int[] getChildren() throws IOException {
+    if (children == null) {
+      children = taxoReader.getParallelTaxonomyArrays().children();
+    }
+    return children;
+  }       
+
+  /** Returns int[] mapping each ordinal to its next sibling; this is a large array and
+   *  is computed (and then saved) the first time this method is invoked. */
+  protected int[] getSiblings() throws IOException {
+    if (siblings == null) {
+      siblings = taxoReader.getParallelTaxonomyArrays().siblings();
+    }
+    return siblings;
+  }
+
+  /** Returns true if the (costly, and lazily initialized) children int[] was initialized.
+   *
+   * @lucene.experimental */
+  public boolean childrenLoaded() {
+    return children != null;
+  }
+
+  /** Returns true if the (costly, and lazily initialized) sibling int[] was initialized.
+   *
+   * @lucene.experimental */
+  public boolean siblingsLoaded() {
+    return children != null;
   }
 
   /** Throws {@code IllegalArgumentException} if the
@@ -83,6 +117,8 @@ public abstract class TaxonomyFacets extends Facets {
 
   @Override
   public List<FacetResult> getAllDims(int topN) throws IOException {
+    int[] children = getChildren();
+    int[] siblings = getSiblings();
     int ord = children[TaxonomyReader.ROOT_ORDINAL];
     List<FacetResult> results = new ArrayList<>();
     while (ord != TaxonomyReader.INVALID_ORDINAL) {
@@ -101,5 +137,4 @@ public abstract class TaxonomyFacets extends Facets {
     Collections.sort(results, BY_VALUE_THEN_DIM);
     return results;
   }
-  
 }
