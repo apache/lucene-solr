@@ -41,6 +41,10 @@ Optimizations
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
   references to TreeMap entries. (Julian Vassev via Adrien Grand)
 
+* LUCENE-7994: Use int/int scatter map to gather facet counts when the
+  number of hits is small relative to the number of unique facet labels
+  (Dawid Weiss, Robert Muir, Mike McCandless)
+
 ======================= Lucene 7.1.0 =======================
 
 Changes in Runtime Behavior

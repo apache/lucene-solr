@@ -42,7 +42,7 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
   /** Create {@code TaxonomyFacetSumIntAssociations} against
    *  the specified index field. */
   public TaxonomyFacetSumIntAssociations(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
-    super(indexFieldName, taxoReader, config);
+    super(indexFieldName, taxoReader, config, fc);
     sumValues(fc.getMatchingDocs());
   }
 
@@ -80,7 +80,7 @@ public class TaxonomyFacetSumIntAssociations extends IntTaxonomyFacets {
               ((bytes[offset+2]&0xFF) << 8) |
               (bytes[offset+3]&0xFF);
             offset += 4;
-            values[ord] += value;
+            increment(ord, value);
           }
         }
       }

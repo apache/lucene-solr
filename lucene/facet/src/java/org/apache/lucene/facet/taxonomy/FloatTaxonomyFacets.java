@@ -29,6 +29,8 @@ import org.apache.lucene.facet.TopOrdAndFloatQueue;
  *  to a per-ords float[]. */
 public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
 
+  // TODO: also use native hash map for sparse collection, like IntTaxonomyFacets
+
   /** Per-ordinal value. */
   protected final float[] values;
 
@@ -41,6 +43,7 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
   /** Rolls up any single-valued hierarchical dimensions. */
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
+    int[] children = getChildren();
     for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       DimConfig ft = ent.getValue();
@@ -52,7 +55,9 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
     }
   }
 
-  private float rollup(int ord) {
+  private float rollup(int ord) throws IOException {
+    int[] children = getChildren();
+    int[] siblings = getSiblings();
     float sum = 0;
     while (ord != TaxonomyReader.INVALID_ORDINAL) {
       float childValue = values[ord] + rollup(children[ord]);
@@ -96,6 +101,9 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
 
     TopOrdAndFloatQueue q = new TopOrdAndFloatQueue(Math.min(taxoReader.getSize(), topN));
     float bottomValue = 0;
+
+    int[] children = getChildren();
+    int[] siblings = getSiblings();
 
     int ord = children[dimOrd];
     float sumValues = 0;

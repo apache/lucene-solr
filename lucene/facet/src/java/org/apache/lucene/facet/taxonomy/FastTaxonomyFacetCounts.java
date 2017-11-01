@@ -50,7 +50,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
    *  FacetsConfig#setIndexFieldName} to change the index
    *  field name for certain dimensions. */
   public FastTaxonomyFacetCounts(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
-    super(indexFieldName, taxoReader, config);
+    super(indexFieldName, taxoReader, config, fc);
     count(fc.getMatchingDocs());
   }
 
@@ -60,7 +60,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
    *  the same result as searching on {@link MatchAllDocsQuery},
    *  but faster */
   public FastTaxonomyFacetCounts(String indexFieldName, IndexReader reader, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
-    super(indexFieldName, taxoReader, config);
+    super(indexFieldName, taxoReader, config, null);
     countAll(reader);
   }
 
@@ -85,7 +85,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
           byte b = bytes[offset++];
           if (b >= 0) {
             prev = ord = ((ord << 7) | b) + prev;
-            ++values[ord];
+            increment(ord);
             ord = 0;
           } else {
             ord = (ord << 7) | (b & 0x7F);
@@ -120,7 +120,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
           byte b = bytes[offset++];
           if (b >= 0) {
             prev = ord = ((ord << 7) | b) + prev;
-            ++values[ord];
+            increment(ord);
             ord = 0;
           } else {
             ord = (ord << 7) | (b & 0x7F);

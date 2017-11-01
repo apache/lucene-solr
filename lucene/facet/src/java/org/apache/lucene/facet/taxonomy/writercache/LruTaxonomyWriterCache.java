@@ -89,6 +89,10 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     cache = null;
   }
 
+  public int size() {
+    return cache.getSize();
+  }
+  
   @Override
   public synchronized int get(FacetLabel categoryPath) {
     Integer res = cache.get(categoryPath);
