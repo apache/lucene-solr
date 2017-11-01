@@ -53,7 +53,7 @@ public class BinaryRequestWriter extends RequestWriter {
         }
       };
     } else {
-      return super.getContentWriter(req);
+      return null;
     }
   }
 
