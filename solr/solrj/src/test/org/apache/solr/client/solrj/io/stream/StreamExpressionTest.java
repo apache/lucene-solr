@@ -7113,6 +7113,68 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testMinMaxScale() throws Exception {
+    String cexpr = "let(echo=true, a=minMaxScale(matrix(array(1,2,3,4,5), array(10,20,30,40,50))), " +
+                                  "b=minMaxScale(matrix(array(1,2,3,4,5), array(10,20,30,40,50)), 0, 100)," +
+                                  "c=minMaxScale(array(1,2,3,4,5))," +
+                                  "d=minMaxScale(array(1,2,3,4,5), 0, 100))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    List<List<Number>> matrix = (List<List<Number>>)tuples.get(0).get("a");
+    List<Number> row1 = matrix.get(0);
+    assertEquals(row1.get(0).doubleValue(), 0,0);
+    assertEquals(row1.get(1).doubleValue(), .25,0);
+    assertEquals(row1.get(2).doubleValue(), .5,0);
+    assertEquals(row1.get(3).doubleValue(), .75, 0);
+    assertEquals(row1.get(4).doubleValue(), 1, 0);
+
+    List<Number> row2 = matrix.get(1);
+    assertEquals(row2.get(0).doubleValue(), 0,0);
+    assertEquals(row2.get(1).doubleValue(), .25,0);
+    assertEquals(row2.get(2).doubleValue(), .5,0);
+    assertEquals(row2.get(3).doubleValue(), .75,0);
+    assertEquals(row2.get(4).doubleValue(), 1,0);
+
+    matrix = (List<List<Number>>)tuples.get(0).get("b");
+    row1 = matrix.get(0);
+    assertEquals(row1.get(0).doubleValue(), 0,0);
+    assertEquals(row1.get(1).doubleValue(), 25,0);
+    assertEquals(row1.get(2).doubleValue(), 50,0);
+    assertEquals(row1.get(3).doubleValue(), 75,0);
+    assertEquals(row1.get(4).doubleValue(), 100,0);
+
+    row2 = matrix.get(1);
+    assertEquals(row2.get(0).doubleValue(), 0,0);
+    assertEquals(row2.get(1).doubleValue(), 25,0);
+    assertEquals(row2.get(2).doubleValue(), 50,0);
+    assertEquals(row2.get(3).doubleValue(), 75,0);
+    assertEquals(row2.get(4).doubleValue(), 100,0);
+
+    List<Number> row3= (List<Number>)tuples.get(0).get("c");
+    assertEquals(row3.get(0).doubleValue(), 0,0);
+    assertEquals(row3.get(1).doubleValue(), .25,0);
+    assertEquals(row3.get(2).doubleValue(), .5,0);
+    assertEquals(row3.get(3).doubleValue(), .75,0);
+    assertEquals(row3.get(4).doubleValue(), 1,0);
+
+    List<Number> row4= (List<Number>)tuples.get(0).get("d");
+    assertEquals(row4.get(0).doubleValue(), 0,0);
+    assertEquals(row4.get(1).doubleValue(), 25,0);
+    assertEquals(row4.get(2).doubleValue(), 50,0);
+    assertEquals(row4.get(3).doubleValue(), 75,0);
+    assertEquals(row4.get(4).doubleValue(), 100,0);
+  }
+
+
+  @Test
   public void testMean() throws Exception {
     String cexpr = "mean(array(1,2,3,4,5))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
