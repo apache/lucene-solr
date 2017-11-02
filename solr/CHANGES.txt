@@ -64,6 +64,9 @@ New Features
 
 * SOLR-11438: Solr should return rf when min_rf is specified for deletes as well as adds (Erick Erickson)
 
+* SOLR-11003: Support bi-directional syncing of cdcr clusters. We still only support actively into one cluster cluster,
+  but have the ability to switch indexing clusters and cdcr will replicate correctly. (Amrit Sarkar, Varun Thacker)
+
 Bug Fixes
 ----------------------
 
