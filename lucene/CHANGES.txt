@@ -29,6 +29,11 @@ Optimizations
 * LUCENE-7994: Use int/int scatter map to gather facet counts when the
   number of hits is small relative to the number of unique facet labels
   (Dawid Weiss, Robert Muir, Mike McCandless)
+  
+Build
+
+* LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
+  jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
 
 ======================= Lucene 7.1.0 =======================
 
