@@ -65,7 +65,10 @@ class GeoExactCircle extends GeoBaseCircle {
       throw new IllegalArgumentException("Cutoff angle out of bounds");
     if (cutoffAngle < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Cutoff angle cannot be effectively zero");
-
+    // We cannot allow exact circles to be large enough so that planes intersect at greater than 180 degrees.  This guarantees it.
+    if (cutoffAngle > Math.PI * 0.5)
+      throw new IllegalArgumentException("Cutoff angle out of bounds");
+    
     this.center = new GeoPoint(planetModel, lat, lon);
     this.cutoffAngle = cutoffAngle;
 
@@ -87,15 +90,18 @@ class GeoExactCircle extends GeoBaseCircle {
     final GeoPoint southPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI);
     final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
     final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
-      
+    
+    final GeoPoint edgePoint;
     if (planetModel.c > planetModel.ab) {
       // z can be greater than x or y, so ellipse is longer in height than width
       slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0));
       slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI));
+      edgePoint = eastPoint;
     } else {
       // z will be less than x or y, so ellipse is shorter than it is tall
       slices.add(new ApproximationSlice(center, northPoint, Math.PI * 2.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
       slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, 0.0, westPoint, Math.PI * 1.5));
+      edgePoint = northPoint;
     }
       
     // Now, iterate over slices until we have converted all of them into safe SidedPlanes.
@@ -131,7 +137,7 @@ class GeoExactCircle extends GeoBaseCircle {
 
     //System.out.println("Number of planes needed: "+circlePlanes.size());
       
-    this.edgePoints = new GeoPoint[]{northPoint};      
+    this.edgePoints = new GeoPoint[]{edgePoint};      
     this.circlePlanes = circlePlanes;
     // Compute bounds
     if (circlePlanes.size() == 1) {
