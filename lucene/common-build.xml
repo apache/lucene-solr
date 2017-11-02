@@ -80,13 +80,15 @@
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
 
-  <property name="ivy.bootstrap.version" value="2.3.0" /> <!-- UPGRADE NOTE: update disallowed.ivy.jars regex in ivy-availability-check -->
+  <property name="ivy.bootstrap.version" value="2.4.0" /> <!-- UPGRADE NOTE: update disallowed_ivy_jars_regex below -->
+  <property name="disallowed_ivy_jars_regex" value="ivy-2\.[0123].*\.jar"/>
+
   <property name="ivy.default.configuration" value="*"/>
 
   <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
   <property name="ivy.sync" value="true"/>
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
-  <property name="ivy.lock-strategy" value="artifact-lock"/>
+  <property name="ivy.lock-strategy" value="artifact-lock-nio"/>
 
   <property name="local.caches" location="${common.dir}/../.caches" />
   <property name="tests.cachedir"  location="${local.caches}/test-stats" />
@@ -413,12 +415,12 @@
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
   <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
-  <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
+  <property name="ivy_checksum_sha1" value="5abe4c24bbe992a9ac07ca563d5bd3e8d569e9ed"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
     <path id="disallowed.ivy.jars">
       <fileset dir="${ivy_install_path}">
-        <filename regex="ivy-2\.[012].*\.jar"/> <!-- TODO: Update this regex to disallow Ivy versions -->
+        <filename regex="${disallowed_ivy_jars_regex}"/>
       </fileset>
     </path>
     <loadresource property="disallowed.ivy.jars.list">
@@ -482,19 +484,20 @@
     <fail>Ivy is not available</fail>
   </target>
 
-  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" depends="ivy-bootstrap1,ivy-bootstrap2,ivy-checksum"/>
+  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" 
+          depends="-ivy-bootstrap1,-ivy-bootstrap2,-ivy-checksum,-ivy-remove-old-versions"/>
 
   <!-- try to download from repo1.maven.org -->
-  <target name="ivy-bootstrap1">
+  <target name="-ivy-bootstrap1">
     <ivy-download src="${ivy_bootstrap_url1}" dest="${ivy_install_path}"/>
     <available file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar" property="ivy.bootstrap1.success" />
   </target> 
 
-  <target name="ivy-bootstrap2" unless="ivy.bootstrap1.success">
+  <target name="-ivy-bootstrap2" unless="ivy.bootstrap1.success">
     <ivy-download src="${ivy_bootstrap_url2}" dest="${ivy_install_path}"/>
   </target>
 
-  <target name="ivy-checksum">
+  <target name="-ivy-checksum">
     <checksum file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar"
               property="${ivy_checksum_sha1}"
               algorithm="SHA"
@@ -504,6 +507,14 @@
         <isfalse value="${ivy.checksum.success}"/>
       </condition>
     </fail>
+  </target>
+  
+  <target name="-ivy-remove-old-versions">
+    <delete verbose="true" failonerror="true">
+      <fileset dir="${ivy_install_path}">
+        <filename regex="${disallowed_ivy_jars_regex}"/>
+      </fileset>
+    </delete>
   </target>
    
   <macrodef name="ivy-download">
