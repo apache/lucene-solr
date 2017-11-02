@@ -1,4 +1,4 @@
-= Publication Process
+= Publication Steps for Each Process
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -92,7 +92,7 @@ Votes must be sent to the lucene-dev mailing list (`dev@lucene.apache.org`).
 . You can add your own +1 to the vote announcement email.
 . If there are issues that need to be resolved, you can start the process over, using RC1, RC2, etc., as needed.
 
-Ideally, the HTML version will also be available for voters to evaluate, see the section <<Publishing HTML Version>> below for details of how to do that.
+NOTE: Ideally, the HTML version will also be available for voters to evaluate. See the section <<Publishing HTML Version>> below for details of how to do that.
 
 === Publish to Production & Archive Old Versions
 
@@ -144,7 +144,24 @@ WARNING: You must send the announcement email from your @apache.org email addres
 
 Always use the link to the download redirector for the announcement, as it will automatically direct users to the closest mirror for download: `https://www.apache.org/dyn/closer.cgi/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y.pdf`.
 
-You could also include a link to the HTML version in your announcement, if the publication process for that has finished.
+You should include a link to the HTML version in your announcement. There are additional steps to modify the website for the HTML version, so see <<Release Steps for HTML Version>> below for details.
+
+.Sample announcement
+[source,text]
+----
+The Lucene PMC is pleased to announce that the Solr Reference Guide
+for 7.0 is now available.
+
+This 1,035-page PDF is the definitive guide to using Apache Solr, the
+search server built on Lucene.
+
+The PDF Guide can be downloaded from:
+https://www.apache.org/dyn/closer.cgi/lucene/solr/ref-guide/apache-solr-ref-guide-7.0.pdf.
+
+It is also available online at https://lucene.apache.org/solr/guide/7_0.
+----
+
+If the Guide is being published more than a day or two after the application itself, you should update the Solr website news page with the announcement (https://lucene.apache.org/solr/news.html).
 
 == Publishing HTML Version
 The steps to publish the Guide differ depending on if it is the first time the Guide has been published or if it is an update to an already published Guide.
@@ -192,13 +209,21 @@ The `extpaths.txt` works by listing paths that should be ignored when the CMS sy
 
 Production URL: https://lucene.apache.org/extpaths.txt
 
-==== Update Ref Guide Landing Page
+=== Release Steps for HTML Version
 
-Update the landing page at https://lucene.apache.org/solr/guide to link to the newest version.
+When the PDF is announced as available, the HTML version should already be available on the Solr website. There are a few steps to take to make the new HTML version the default.
 
-You can use the CMS system for this since it is a small change, or you can edit the file locally and commit it to the staging repo.
+TIP: You can use the CMS system for these changes, or you can edit the file locally and commit it to the staging repo.
 
-=== Update a Published Guide
+. Update the landing page at https://lucene.apache.org/solr/guide (the file is at `content/solr/guide/index.mdtext` in SVN) to link to the newest version.
+. Update the Guide redirect rule that looks like the below in `content/.htaccess` so URLs without a version in the path are redirected to the latest available version.
++
+[source,text]
+RedirectMatch temp /solr/guide/(?!index.html)([a-z].*) /solr/guide/7_0/$1
++
+In the above example, you would change the `7_0` part of the path to the right version (`7_1`, etc.).
+
+=== Updating Files in an Already-Published Guide
 
 If you need to re-publish an existing online copy of the Guide, you will need to checkout the directory in production website repository and overwrite the existing files:
 
