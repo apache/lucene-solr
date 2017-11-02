@@ -273,6 +273,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("unit", UnitEvaluator.class)
         .withFunctionName("triangularDistribution", TriangularDistributionEvaluator.class)
         .withFunctionName("precision", PrecisionEvaluator.class)
+        .withFunctionName("minMaxScale", MinMaxScaleEvaluator.class)
 
         // Boolean Stream Evaluators
 
