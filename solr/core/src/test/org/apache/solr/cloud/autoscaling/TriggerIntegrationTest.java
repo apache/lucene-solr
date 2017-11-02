@@ -32,8 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
@@ -45,6 +47,8 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
@@ -583,11 +587,11 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
           if (TimeUnit.MILLISECONDS.convert(timeSource.getTime() - event.getEventTime(), TimeUnit.NANOSECONDS) <= TimeUnit.MILLISECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
-            fail("NodeAddedListener was fired before the configured waitFor period");
+            fail(event.source + " was fired before the configured waitFor period");
           }
           getTriggerFiredLatch().countDown();
         } else  {
-          fail("NodeAddedTrigger was fired more than once!");
+          fail(event.source + " was fired more than once!");
         }
       } catch (Throwable t) {
         log.debug("--throwable", t);
@@ -1208,5 +1212,101 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
     // must be larger than cooldown period
     assertTrue("timestamp delta is less than default cooldown period", ev.timestamp - prevTimestamp > TimeUnit.MILLISECONDS.toNanos(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_MS));
+  }
+
+  public static class TestSearchRateAction extends TriggerActionBase {
+
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      try {
+        events.add(event);
+        if (TimeUnit.MILLISECONDS.convert(timeSource.getTime() - event.getEventTime(), TimeUnit.NANOSECONDS) <= TimeUnit.MILLISECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+          fail(event.source + " was fired before the configured waitFor period");
+        }
+        getTriggerFiredLatch().countDown();
+      } catch (Throwable t) {
+        log.debug("--throwable", t);
+        throw t;
+      }
+    }
+  }
+
+  @Test
+  public void testSearchRate() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String COLL1 = "collection1";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
+        "conf", 1, 2);
+    create.process(solrClient);
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : 'search_rate_trigger'," +
+        "'event' : 'searchRate'," +
+        "'waitFor' : '" + waitForSeconds + "s'," +
+        "'enabled' : true," +
+        "'rate' : 1.0," +
+        "'actions' : [" +
+        "{'name':'test','class':'" + TestSearchRateAction.class.getName() + "'}" +
+        "]" +
+        "}}";
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String setListenerCommand1 = "{" +
+        "'set-listener' : " +
+        "{" +
+        "'name' : 'foo'," +
+        "'trigger' : 'search_rate_trigger'," +
+        "'stage' : ['FAILED','SUCCEEDED', 'IGNORED']," +
+        "'class' : '" + TestTriggerListener.class.getName() + "'" +
+        "}" +
+        "}";
+    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    SolrParams query = params(CommonParams.Q, "*:*");
+    for (int i = 0; i < 500; i++) {
+      solrClient.query(COLL1, query);
+    }
+    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+    // wait for listener to capture the SUCCEEDED stage
+    Thread.sleep(2000);
+    assertEquals(listenerEvents.toString(), 1, listenerEvents.get("foo").size());
+    TestEvent ev = listenerEvents.get("foo").get(0);
+    long now = timeSource.getTime();
+    // verify waitFor
+    assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) < now - ev.event.getEventTime());
+    Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get("node");
+    assertNotNull("nodeRates", nodeRates);
+    assertTrue(nodeRates.toString(), nodeRates.size() > 0);
+    AtomicDouble totalNodeRate = new AtomicDouble();
+    nodeRates.forEach((n, r) -> totalNodeRate.addAndGet(r));
+    List<ReplicaInfo> replicaRates = (List<ReplicaInfo>)ev.event.getProperties().get("replica");
+    assertNotNull("replicaRates", replicaRates);
+    assertTrue(replicaRates.toString(), replicaRates.size() > 0);
+    AtomicDouble totalReplicaRate = new AtomicDouble();
+    replicaRates.forEach(r -> {
+      assertTrue(r.toString(), r.getVariable("rate") != null);
+      totalReplicaRate.addAndGet((Double)r.getVariable("rate"));
+    });
+    Map<String, Object> shardRates = (Map<String, Object>)ev.event.getProperties().get("shard");
+    assertNotNull("shardRates", shardRates);
+    assertEquals(shardRates.toString(), 1, shardRates.size());
+    shardRates = (Map<String, Object>)shardRates.get(COLL1);
+    assertNotNull("shardRates", shardRates);
+    assertEquals(shardRates.toString(), 1, shardRates.size());
+    AtomicDouble totalShardRate = new AtomicDouble();
+    shardRates.forEach((s, r) -> totalShardRate.addAndGet((Double)r));
+    Map<String, Double> collectionRates = (Map<String, Double>)ev.event.getProperties().get("collection");
+    assertNotNull("collectionRates", collectionRates);
+    assertEquals(collectionRates.toString(), 1, collectionRates.size());
+    Double collectionRate = collectionRates.get(COLL1);
+    assertNotNull(collectionRate);
+    assertTrue(collectionRate > 5.0);
+    assertEquals(collectionRate, totalNodeRate.get(), 5.0);
+    assertEquals(collectionRate, totalShardRate.get(), 5.0);
+    assertEquals(collectionRate, totalReplicaRate.get(), 5.0);
   }
 }

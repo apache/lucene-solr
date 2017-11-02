@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -365,6 +366,8 @@ public class ScheduledTriggers implements Closeable {
       if (stateManager.hasData(statePath)) {
         stateManager.removeData(statePath, -1);
       }
+    } catch (NoSuchElementException e) {
+      // already removed by someone else
     } catch (Exception e) {
       log.warn("Failed to remove state for removed trigger " + statePath, e);
     }
@@ -378,6 +381,8 @@ public class ScheduledTriggers implements Closeable {
         ops.add(Op.delete(eventsPath, -1));
         stateManager.multi(ops);
       }
+    } catch (NoSuchElementException e) {
+      // already removed by someone else
     } catch (Exception e) {
       log.warn("Failed to remove events for removed trigger " + eventsPath, e);
     }

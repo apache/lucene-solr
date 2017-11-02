@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import com.google.common.util.concurrent.AtomicDouble;
@@ -72,7 +73,7 @@ public class SearchRateTrigger extends TriggerBase {
     collection = (String)properties.getOrDefault(AutoScalingParams.COLLECTION, Policy.ANY);
     shard = (String)properties.getOrDefault(AutoScalingParams.SHARD, Policy.ANY);
     if (collection.equals(Policy.ANY) && !shard.equals(Policy.ANY)) {
-      throw new IllegalArgumentException("When 'shard' is other than #ANY collection name must be also other than #ANY");
+      throw new IllegalArgumentException("When 'shard' is other than #ANY then collection name must be also other than #ANY");
     }
     node = (String)properties.getOrDefault(AutoScalingParams.NODE, Policy.ANY);
     handler = (String)properties.getOrDefault(AutoScalingParams.HANDLER, "/select");
@@ -231,7 +232,36 @@ public class SearchRateTrigger extends TriggerBase {
 
     // generate event
 
-    if (processor.process(new SearchRateEvent(getName(), now, hotNodes, hotCollections, hotShards, hotReplicas))) {
+    // find the earliest time when a condition was exceeded
+    final AtomicLong eventTime = new AtomicLong(now);
+    hotCollections.forEach((c, r) -> {
+      long time = lastCollectionEvent.get(c);
+      if (eventTime.get() > time) {
+        eventTime.set(time);
+      }
+    });
+    hotShards.forEach((c, shards) -> {
+      shards.forEach((s, r) -> {
+        long time = lastShardEvent.get(c + "." + s);
+        if (eventTime.get() > time) {
+          eventTime.set(time);
+        }
+      });
+    });
+    hotReplicas.forEach(r -> {
+      long time = lastReplicaEvent.get(r.getCollection() + "." + r.getCore());
+      if (eventTime.get() > time) {
+        eventTime.set(time);
+      }
+    });
+    hotNodes.forEach((n, r) -> {
+      long time = lastNodeEvent.get(n);
+      if (eventTime.get() > time) {
+        eventTime.set(time);
+      }
+    });
+
+    if (processor.process(new SearchRateEvent(getName(), eventTime.get(), hotNodes, hotCollections, hotShards, hotReplicas))) {
       // update lastEvent times
       hotNodes.keySet().forEach(node -> lastNodeEvent.put(node, now));
       hotCollections.keySet().forEach(coll -> lastCollectionEvent.put(coll, now));
@@ -244,7 +274,7 @@ public class SearchRateTrigger extends TriggerBase {
   private boolean waitForElapsed(String name, long now, Map<String, Long> lastEventMap) {
     Long lastTime = lastEventMap.computeIfAbsent(name, s -> now);
     long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
-    log.info("name=" + name + ", lastTime=" + lastTime + ", elapsed=" + elapsed);
+    log.debug("name=" + name + ", lastTime=" + lastTime + ", elapsed=" + elapsed);
     if (TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS) < getWaitForSecond()) {
       return false;
     }
