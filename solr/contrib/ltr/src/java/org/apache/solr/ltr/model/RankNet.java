@@ -27,7 +27,7 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
 /**
- * A scoring model that computes scores using a neural network.
+ * A scoring model that computes document scores using a neural network.
  * <p>
  * Example configuration:
 <pre>{
