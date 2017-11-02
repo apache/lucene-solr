@@ -156,7 +156,7 @@ public class RankNet extends LTRScoringModel {
     for (int layer = 0; layer < weightMatrices.size(); layer++) {
       float[][] weightMatrix = weightMatrices.get(layer);
       int numRows = weightMatrix.length;
-      int numCols = weightMatrix[layer].length;
+      int numCols = weightMatrix[0].length;
       if (layer == 0) {
         modelDescription += String.format("Input has %1$d features.", numCols - 1);
       } else {
