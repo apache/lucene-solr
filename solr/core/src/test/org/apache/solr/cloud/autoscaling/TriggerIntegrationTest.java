@@ -123,6 +123,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     actionInterrupted = new CountDownLatch(1);
     actionCompleted = new CountDownLatch(1);
     events.clear();
+    listenerEvents.clear();
     // clear any persisted auto scaling configuration
     Stat stat = zkClient().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), true);
     log.info(SOLR_AUTOSCALING_CONF_PATH + " reset, new znode version {}", stat.getVersion());
@@ -1256,9 +1257,9 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     String setListenerCommand1 = "{" +
         "'set-listener' : " +
         "{" +
-        "'name' : 'foo'," +
+        "'name' : 'srt'," +
         "'trigger' : 'search_rate_trigger'," +
-        "'stage' : ['FAILED','SUCCEEDED', 'IGNORED']," +
+        "'stage' : ['FAILED','SUCCEEDED']," +
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
@@ -1273,8 +1274,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertTrue("The trigger did not fire at all", await);
     // wait for listener to capture the SUCCEEDED stage
     Thread.sleep(2000);
-    assertEquals(listenerEvents.toString(), 1, listenerEvents.get("foo").size());
-    TestEvent ev = listenerEvents.get("foo").get(0);
+    assertEquals(listenerEvents.toString(), 1, listenerEvents.get("srt").size());
+    TestEvent ev = listenerEvents.get("srt").get(0);
     long now = timeSource.getTime();
     // verify waitFor
     assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) < now - ev.event.getEventTime());
