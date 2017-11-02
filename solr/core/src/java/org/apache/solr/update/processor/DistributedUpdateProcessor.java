@@ -61,7 +61,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -369,7 +368,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  /** For {@link CollectionParams.CollectionAction#SPLITSHARD} */
+  /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#SPLITSHARD} */
   private boolean couldIbeSubShardLeader(DocCollection coll) {
     // Could I be the leader of a shard in "construction/recovery" state?
     String myShardId = cloudDesc.getShardId();
@@ -378,7 +377,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY;
   }
 
-  /** For {@link CollectionParams.CollectionAction#SPLITSHARD} */
+  /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#SPLITSHARD} */
   private boolean amISubShardLeader(DocCollection coll, Slice parentSlice, String id, SolrInputDocument doc) throws InterruptedException {
     // Am I the leader of a shard in "construction/recovery" state?
     String myShardId = cloudDesc.getShardId();
@@ -403,7 +402,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return false;
   }
 
-  /** For {@link CollectionParams.CollectionAction#SPLITSHARD} */
+  /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#SPLITSHARD} */
   private List<Node> getSubShardLeaders(DocCollection coll, String shardId, String docId, SolrInputDocument doc) {
     Collection<Slice> allSlices = coll.getSlices();
     List<Node> nodes = null;
@@ -429,7 +428,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return nodes;
   }
 
-  /** For {@link CollectionParams.CollectionAction#MIGRATE} */
+  /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#MIGRATE} */
   private List<Node> getNodesByRoutingRules(ClusterState cstate, DocCollection coll, String id, SolrInputDocument doc)  {
     DocRouter router = coll.getRouter();
     List<Node> nodes = null;
