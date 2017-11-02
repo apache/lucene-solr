@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.cloud.cdcr;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.common.util.NamedList;

@@ -326,7 +326,7 @@ public class TransactionLog implements Closeable {
     numRecords++;
   }
 
-  private void checkWriteHeader(LogCodec codec, SolrInputDocument optional) throws IOException {
+  protected void checkWriteHeader(LogCodec codec, SolrInputDocument optional) throws IOException {
 
     // Unsynchronized access. We can get away with an unsynchronized access here
     // since we will never get a false non-zero when the position is in fact 0.
