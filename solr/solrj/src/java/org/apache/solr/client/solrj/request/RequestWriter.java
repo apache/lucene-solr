@@ -70,7 +70,7 @@ public class RequestWriter {
         }
       };
     }
-    return null;
+    return req.getContentWriter(ClientUtils.TEXT_XML);
   }
 
   public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {

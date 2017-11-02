@@ -343,6 +343,7 @@ public class CommandOperation {
     }
     ArrayList<CommandOperation> ops = new ArrayList<>();
     for (ContentStream stream : streams) {
+
       if ("application/javabin".equals(stream.getContentType())) {
         ops.addAll(parse(stream.getStream(), singletonCommands));
       } else {
