@@ -135,6 +135,11 @@ public class AutoScalingConfig implements MapWriter {
       if (!afterActions.equals(that.afterActions)) return false;
       return properties.equals(that.properties);
     }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(this);
+    }
   }
 
   /**
@@ -232,6 +237,11 @@ public class AutoScalingConfig implements MapWriter {
         ew.put(entry.getKey(), entry.getValue());
       }
     }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(this);
+    }
   }
 
   /**
@@ -277,6 +287,11 @@ public class AutoScalingConfig implements MapWriter {
       ActionConfig that = (ActionConfig) o;
 
       return properties.equals(that.properties);
+    }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(this);
     }
   }
 
