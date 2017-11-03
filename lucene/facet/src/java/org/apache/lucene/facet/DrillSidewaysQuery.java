@@ -17,8 +17,10 @@
 package org.apache.lucene.facet;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -103,9 +105,9 @@ class DrillSidewaysQuery extends Query {
 
       @Override
       public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        Weight[] weights = new Weight[drillDowns.length + 1];
-        weights[0] = baseWeight;
-        System.arraycopy(drillDowns, 0, weights, 1, drillDowns.length);
+        List<Weight> weights = new ArrayList<>();
+        weights.add(baseWeight);
+        weights.addAll(Arrays.asList(drillDowns));
         return getCacheHelper(context, weights);
       }
 

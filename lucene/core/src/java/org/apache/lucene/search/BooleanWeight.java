@@ -302,7 +302,7 @@ final class BooleanWeight extends Weight {
 
   @Override
   public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-    return getCacheHelper(context, weights.toArray(new Weight[0]));
+    return getCacheHelper(context, weights);
   }
 
   @Override

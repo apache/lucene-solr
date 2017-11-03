@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
@@ -123,14 +124,14 @@ public abstract class Weight {
    * @param weights an array of {@link Weight} to be cached
    * @return an {@link org.apache.lucene.index.IndexReader.CacheHelper} indicating the cache level
    */
-  protected static IndexReader.CacheHelper getCacheHelper(LeafReaderContext context, Weight... weights) {
-    if (weights.length == 0)
+  protected static IndexReader.CacheHelper getCacheHelper(LeafReaderContext context, List<? extends Weight> weights) {
+    if (weights.size() == 0)
       return null;
-    IndexReader.CacheHelper helper = weights[0].getCacheHelper(context);
+    IndexReader.CacheHelper helper = weights.get(0).getCacheHelper(context);
     if (helper == null)
       return null;
-    for (int i = 1; i < weights.length; i++) {
-      IndexReader.CacheHelper nextHelper = weights[i].getCacheHelper(context);
+    for (int i = 1; i < weights.size(); i++) {
+      IndexReader.CacheHelper nextHelper = weights.get(i).getCacheHelper(context);
       if (nextHelper == null || nextHelper != helper)
         return null;
     }
