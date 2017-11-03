@@ -27,7 +27,7 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class NormalizeEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
   
   public NormalizeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -45,8 +45,16 @@ public class NormalizeEvaluator extends RecursiveNumericEvaluator implements One
     }
     else if(value instanceof List){
       return Arrays.stream(StatUtils.normalize(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).mapToObj(Double::new).collect(Collectors.toList());
-    }
-    else{
+    } else if (value instanceof Matrix) {
+      Matrix matrix = (Matrix) value;
+      double[][] data = matrix.getData();
+      double[][] standardized = new double[data.length][];
+      for(int i=0; i<data.length; i++) {
+        double[] row = data[i];
+        standardized[i] = StatUtils.normalize(row);
+      }
+      return new Matrix(standardized);
+    } else {
       return doWork(Arrays.asList((BigDecimal)value));
     }
   }

@@ -6097,8 +6097,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUnit() throws Exception {
-    String cexpr = "let(echo=true, a=unit(matrix(array(1,2,3), array(4,5,6))), b=unit(array(4,5,6)))";
+  public void testUnitize() throws Exception {
+    String cexpr = "let(echo=true, a=unitize(matrix(array(1,2,3), array(4,5,6))), b=unitize(array(4,5,6)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -6129,6 +6129,38 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(2).doubleValue(), 0.6837634587578276, 0.0);
   }
 
+  @Test
+  public void testStandardize() throws Exception {
+    String cexpr = "let(echo=true, a=standardize(matrix(array(1,2,3), array(4,5,6))), b=standardize(array(4,5,6)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
+    assertEquals(out.size(), 2);
+    List<Number> array1 = out.get(0);
+    assertEquals(array1.size(), 3);
+    assertEquals(array1.get(0).doubleValue(), -1, 0.0);
+    assertEquals(array1.get(1).doubleValue(), 0, 0.0);
+    assertEquals(array1.get(2).doubleValue(), 1, 0.0);
+
+    List<Number> array2 = out.get(1);
+    assertEquals(array2.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), -1, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 0, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 1, 0.0);
+
+    List<Number> array3 = (List<Number>)tuples.get(0).get("b");
+    assertEquals(array3.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), -1, 0.0);
+    assertEquals(array2.get(1).doubleValue(), 0, 0.0);
+    assertEquals(array2.get(2).doubleValue(), 1, 0.0);
+  }
 
 
   @Test
@@ -7554,59 +7586,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
     assertTrue(length == 7);
-  }
-
-  @Test
-  public void testNormalize() throws Exception {
-    UpdateRequest updateRequest = new UpdateRequest();
-
-    updateRequest.add(id, "1", "price_f", "100.0", "col_s", "a", "order_i", "1");
-    updateRequest.add(id, "2", "price_f", "200.0", "col_s", "a", "order_i", "2");
-    updateRequest.add(id, "3", "price_f", "300.0", "col_s", "a", "order_i", "3");
-    updateRequest.add(id, "4", "price_f", "100.0", "col_s", "a", "order_i", "4");
-    updateRequest.add(id, "5", "price_f", "200.0", "col_s", "a", "order_i", "5");
-    updateRequest.add(id, "6", "price_f", "400.0", "col_s", "a", "order_i", "6");
-    updateRequest.add(id, "7", "price_f", "600.0", "col_s", "a", "order_i", "7");
-
-    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-    String expr1 = "search("+COLLECTIONORALIAS+", q=\"col_s:a\", fl=\"price_f, order_i\", sort=\"order_i asc\")";
-    String cexpr = "let(a="+expr1+", c=col(a, price_f), tuple(n=normalize(c), c=c))";
-
-    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", cexpr);
-    paramsLoc.set("qt", "/stream");
-
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
-
-    StreamContext context = new StreamContext();
-    solrStream.setStreamContext(context);
-    List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    Tuple tuple = tuples.get(0);
-    List<Double> col = (List<Double>)tuple.get("c");
-    List<Double> normalized = (List<Double>)tuple.get("n");
-
-    assertTrue(col.size() == normalized.size());
-
-    double total = 0.0D;
-
-    for(double d : normalized) {
-      total += d;
-    }
-
-    double mean = total/normalized.size();
-    assert(Math.round(mean) == 0);
-
-    double sd = 0;
-    for (int i = 0; i < normalized.size(); i++)
-    {
-      sd += Math.pow(normalized.get(i) - mean, 2) / normalized.size();
-    }
-    double standardDeviation = Math.sqrt(sd);
-
-    assertTrue(Math.round(standardDeviation) == 1);
   }
 
   @Test
