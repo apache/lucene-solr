@@ -113,6 +113,8 @@ Other Changes
 
 * SOLR-11380: SolrJ must stream docs to server instead of writing to a buffer first (noble)
 
+* SOLR-11603: Remove unused (public) LTRScoringModel.hasParams() method. (Christine Poerschke)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
