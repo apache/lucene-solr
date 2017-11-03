@@ -17,6 +17,7 @@
 package org.apache.lucene.queries;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 
@@ -124,7 +125,7 @@ public class BoostingQuery extends Query {
 
         @Override
         public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return getCacheHelper(context, matchWeight, contextWeight);
+          return getCacheHelper(context, Arrays.asList(matchWeight, contextWeight));
         }
       };
     }

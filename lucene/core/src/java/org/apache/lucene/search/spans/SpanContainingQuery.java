@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
@@ -119,7 +120,7 @@ public final class SpanContainingQuery extends SpanContainQuery {
 
     @Override
     public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return getCacheHelper(context, bigWeight, littleWeight);
+      return getCacheHelper(context, Arrays.asList(bigWeight, littleWeight));
     }
   }
 }
