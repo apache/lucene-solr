@@ -200,7 +200,6 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       // yuge collection
       maxDoc = TestUtil.nextLong(random, 1, MAXDOC_FORTESTING);
     }
-    // TODO: make this a mandatory statistic, or test it with -1
     final long docCount;
     if (random.nextBoolean()) {
       // sparse field
@@ -216,7 +215,6 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
     } catch (ArithmeticException overflow) {
       upperBound = MAXTOKENS_FORTESTING;
     }
-    // TODO: make this a mandatory statistic, or test it with -1
     final long sumDocFreq;
     if (random.nextBoolean()) {
       // shortest possible docs
@@ -228,8 +226,8 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
     final long sumTotalTermFreq;
     switch (random.nextInt(3)) {
       case 0:
-        // unsupported (e.g. omitTF)
-        sumTotalTermFreq = -1;
+        // term frequencies were omitted
+        sumTotalTermFreq = sumDocFreq;
         break;
       case 1:
         // no repetition of terms (except to satisfy this norm)
@@ -259,9 +257,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       docFreq = TestUtil.nextLong(random, 1, corpus.docCount());
     }
     final long totalTermFreq;
-    if (corpus.sumTotalTermFreq() == -1) {
+    if (corpus.sumTotalTermFreq() == corpus.sumDocFreq()) {
       // omitTF
-      totalTermFreq = -1;
+      totalTermFreq = docFreq;
     } else if (random.nextBoolean()) {
       // no repetition
       totalTermFreq = docFreq;
@@ -307,7 +305,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
           for (int l = 0; l < 10; l++) {
             TermStatistics term = newTerm(random, corpus);
             final float freq;
-            if (term.totalTermFreq() == -1) {
+            if (term.totalTermFreq() == term.docFreq()) {
               // omit TF
               freq = 1;
             } else if (term.docFreq() == 1) {
@@ -427,14 +425,8 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       }
       
       // check score(term-1), given the same freq/norm it should be >= score(term) [scores non-decreasing as terms get rarer]
-      if (term.docFreq() > 1 && (term.totalTermFreq() == -1 || freq < term.totalTermFreq())) {
-        final long prevTotalTermFreq;
-        if (term.totalTermFreq() == -1) {
-          prevTotalTermFreq = -1;
-        } else {
-          prevTotalTermFreq = term.totalTermFreq() - 1;
-        }
-        TermStatistics prevTerm = new TermStatistics(term.term(), term.docFreq() - 1, prevTotalTermFreq);
+      if (term.docFreq() > 1 && freq < term.totalTermFreq()) {
+        TermStatistics prevTerm = new TermStatistics(term.term(), term.docFreq() - 1, term.totalTermFreq() - 1);
         SimWeight prevWeight = similarity.computeWeight(boost, corpus, term);
         SimScorer prevTermScorer = similarity.simScorer(prevWeight, NORM_VALUES.get(norm).getContext());
         float prevTermScore = prevTermScorer.score(0, freq);

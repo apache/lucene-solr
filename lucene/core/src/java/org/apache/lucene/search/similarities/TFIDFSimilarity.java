@@ -448,7 +448,7 @@ public abstract class TFIDFSimilarity extends Similarity {
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final long docCount = collectionStats.docCount();
     final float idf = idf(df, docCount);
     return Explanation.match(idf, "idf(docFreq, docCount)", 
         Explanation.match(df, "docFreq, number of documents containing term"),

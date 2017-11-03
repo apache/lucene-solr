@@ -281,18 +281,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           }
         
           long nodeDocFreq = subStats.docFreq();
-          if (docFreq >= 0 && nodeDocFreq >= 0) {
-            docFreq += nodeDocFreq;
-          } else {
-            docFreq = -1;
-          }
+          docFreq += nodeDocFreq;
           
           long nodeTotalTermFreq = subStats.totalTermFreq();
-          if (totalTermFreq >= 0 && nodeTotalTermFreq >= 0) {
-            totalTermFreq += nodeTotalTermFreq;
-          } else {
-            totalTermFreq = -1;
-          }
+          totalTermFreq += nodeTotalTermFreq;
         }
 
         if (docFreq == 0) {
@@ -325,25 +317,13 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           }
           
           long nodeDocCount = nodeStats.docCount();
-          if (docCount >= 0 && nodeDocCount >= 0) {
-            docCount += nodeDocCount;
-          } else {
-            docCount = -1;
-          }
+          docCount += nodeDocCount;
           
           long nodeSumTotalTermFreq = nodeStats.sumTotalTermFreq();
-          if (sumTotalTermFreq >= 0 && nodeSumTotalTermFreq >= 0) {
-            sumTotalTermFreq += nodeSumTotalTermFreq;
-          } else {
-            sumTotalTermFreq = -1;
-          }
+          sumTotalTermFreq += nodeSumTotalTermFreq;
           
           long nodeSumDocFreq = nodeStats.sumDocFreq();
-          if (sumDocFreq >= 0 && nodeSumDocFreq >= 0) {
-            sumDocFreq += nodeSumDocFreq;
-          } else {
-            sumDocFreq = -1;
-          }
+          sumDocFreq += nodeSumDocFreq;
           
           assert nodeStats.maxDoc() >= 0;
           maxDoc += nodeStats.maxDoc();

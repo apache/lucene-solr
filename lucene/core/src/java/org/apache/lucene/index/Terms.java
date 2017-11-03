@@ -99,25 +99,21 @@ public abstract class Terms {
    *  other term measures, this measure does not take deleted 
    *  documents into account. */
   public abstract long size() throws IOException;
-  
+
   /** Returns the sum of {@link TermsEnum#totalTermFreq} for
-   *  all terms in this field, or -1 if this measure isn't
-   *  stored by the codec (or if this fields omits term freq
-   *  and positions).  Note that, just like other term
+   *  all terms in this field. Note that, just like other term
    *  measures, this measure does not take deleted documents
    *  into account. */
   public abstract long getSumTotalTermFreq() throws IOException;
 
   /** Returns the sum of {@link TermsEnum#docFreq()} for
-   *  all terms in this field, or -1 if this measure isn't
-   *  stored by the codec.  Note that, just like other term
+   *  all terms in this field.  Note that, just like other term
    *  measures, this measure does not take deleted documents
    *  into account. */
   public abstract long getSumDocFreq() throws IOException;
 
   /** Returns the number of documents that have at least one
-   *  term for this field, or -1 if this measure isn't
-   *  stored by the codec.  Note that, just like other term
+   *  term for this field.  Note that, just like other term
    *  measures, this measure does not take deleted documents
    *  into account. */
   public abstract int getDocCount() throws IOException;

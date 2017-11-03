@@ -65,9 +65,9 @@ public class TermQuery extends Query {
         collectionStats = searcher.collectionStatistics(term.field());
         termStats = searcher.termStatistics(term, termStates);
       } else {
-        // we do not need the actual stats, use fake stats with docFreq=maxDoc=1 and ttf=-1
-        collectionStats = new CollectionStatistics(term.field(), 1, -1, -1, -1);
-        termStats = new TermStatistics(term.bytes(), 1, -1);
+        // we do not need the actual stats, use fake stats with docFreq=maxDoc=ttf=1
+        collectionStats = new CollectionStatistics(term.field(), 1, 1, 1, 1);
+        termStats = new TermStatistics(term.bytes(), 1, 1);
       }
      
       if (termStats == null) {

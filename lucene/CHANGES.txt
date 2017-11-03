@@ -5,6 +5,14 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 8.0.0 =======================
 
+API Changes
+
+* LUCENE-8007: Index statistics Terms.getSumDocFreq(), Terms.getDocCount() are
+  now required to be stored by codecs. Additionally, TermsEnum.totalTermFreq()
+  and Terms.getSumTotalTermFreq() are now required: if frequencies are not
+  stored they are equal to TermsEnum.docFreq() and Terms.getSumDocFreq(),
+  respectively, because all freq() values equal 1. (Adrien Grand, Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

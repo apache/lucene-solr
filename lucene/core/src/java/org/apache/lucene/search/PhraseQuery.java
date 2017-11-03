@@ -492,14 +492,13 @@ public class PhraseQuery extends Query {
    *  of processing the occurrences of a term
    *  in a document that contains the term.
    *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
-   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    */
   static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
-    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
-    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    long totalTermFreq = termsEnum.totalTermFreq();
+    float expOccurrencesInMatchingDoc = totalTermFreq / (float) docFreq;
     return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 

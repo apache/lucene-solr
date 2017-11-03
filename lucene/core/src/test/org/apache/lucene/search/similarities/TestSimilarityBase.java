@@ -40,6 +40,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 /**
@@ -183,7 +184,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   
   private CollectionStatistics toCollectionStats(BasicStats stats) {
-    return new CollectionStatistics(stats.field, stats.getNumberOfDocuments(), -1, stats.getNumberOfFieldTokens(), -1);
+    long sumTtf = stats.getNumberOfFieldTokens();
+    long sumDf;
+    if (sumTtf == -1) {
+      sumDf = TestUtil.nextLong(random(), stats.getNumberOfDocuments(), 2L * stats.getNumberOfDocuments());
+    } else {
+      sumDf = TestUtil.nextLong(random(), Math.min(stats.getNumberOfDocuments(), sumTtf), sumTtf);
+    }
+    int docCount = Math.toIntExact(Math.min(sumDf, stats.getNumberOfDocuments()));
+    int maxDoc = TestUtil.nextInt(random(), docCount, docCount + 10);
+
+    return new CollectionStatistics(stats.field, maxDoc, docCount, sumTtf, sumDf);
   }
   
   private TermStatistics toTermStats(BasicStats stats) {

@@ -238,13 +238,8 @@ public final class TokenStreamFromTermVector extends TokenStream {
     // Estimate the number of position slots we need from term stats.  We use some estimation factors taken from
     //  Wikipedia that reduce the likelihood of needing to expand the array.
     int sumTotalTermFreq = (int) vector.getSumTotalTermFreq();
-    if (sumTotalTermFreq == -1) {//unfortunately term vectors seem to not have this stat
-      int size = (int) vector.size();
-      if (size == -1) {//doesn't happen with term vectors, it seems, but pick a default any way
-        size = 128;
-      }
-      sumTotalTermFreq = (int)(size * 2.4);
-    }
+    assert sumTotalTermFreq != -1;
+
     final int originalPositionEstimate = (int) (sumTotalTermFreq * 1.5);//less than 1 in 10 docs exceed this
 
     // This estimate is based on maxStartOffset. Err on the side of this being larger than needed.

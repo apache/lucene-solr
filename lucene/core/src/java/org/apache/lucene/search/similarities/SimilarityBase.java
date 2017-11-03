@@ -100,42 +100,16 @@ public abstract class SimilarityBase extends Similarity {
   /** Fills all member fields defined in {@code BasicStats} in {@code stats}. 
    *  Subclasses can override this method to fill additional stats. */
   protected void fillBasicStats(BasicStats stats, CollectionStatistics collectionStats, TermStatistics termStats) {
-    // #positions(field) must be >= #positions(term)
-    assert collectionStats.sumTotalTermFreq() == -1 || collectionStats.sumTotalTermFreq() >= termStats.totalTermFreq();
-    long numberOfDocuments = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    
-    long docFreq = termStats.docFreq();
-    long totalTermFreq = termStats.totalTermFreq();
-
-    // frequencies are omitted, all postings have tf=1, so totalTermFreq = docFreq
-    if (totalTermFreq == -1) {
-      totalTermFreq = docFreq;
-    }
-
-    final long numberOfFieldTokens;
-    final double avgFieldLength;
-
-    if (collectionStats.sumTotalTermFreq() == -1) {
-      // frequencies are omitted, so sumTotalTermFreq = # postings
-      if (collectionStats.sumDocFreq() == -1) {
-        // theoretical case only: remove!
-        numberOfFieldTokens = docFreq;
-        avgFieldLength = 1f;
-      } else {
-        numberOfFieldTokens = collectionStats.sumDocFreq();
-        avgFieldLength = (float) (collectionStats.sumDocFreq() / (double)numberOfDocuments);
-      }
-    } else {
-      numberOfFieldTokens = collectionStats.sumTotalTermFreq();
-      avgFieldLength = (float) (collectionStats.sumTotalTermFreq() / (double)numberOfDocuments);
-    }
+    // TODO: validate this for real, somewhere else
+    assert termStats.totalTermFreq() <= collectionStats.sumTotalTermFreq();
+    assert termStats.docFreq() <= collectionStats.sumDocFreq();
  
     // TODO: add sumDocFreq for field (numberOfFieldPostings)
-    stats.setNumberOfDocuments(numberOfDocuments);
-    stats.setNumberOfFieldTokens(numberOfFieldTokens);
-    stats.setAvgFieldLength(avgFieldLength);
-    stats.setDocFreq(docFreq);
-    stats.setTotalTermFreq(totalTermFreq);
+    stats.setNumberOfDocuments(collectionStats.docCount());
+    stats.setNumberOfFieldTokens(collectionStats.sumTotalTermFreq());
+    stats.setAvgFieldLength(collectionStats.sumTotalTermFreq() / (double) collectionStats.docCount());
+    stats.setDocFreq(termStats.docFreq());
+    stats.setTotalTermFreq(termStats.totalTermFreq());
   }
   
   /**

@@ -140,11 +140,7 @@ public final class SynonymQuery extends Query {
         TermStatistics termStats = searcher.termStatistics(terms[i], termContexts[i]);
         if (termStats != null) {
           docFreq = Math.max(termStats.docFreq(), docFreq);
-          if (termStats.totalTermFreq() == -1) {
-            totalTermFreq = -1;
-          } else if (totalTermFreq != -1) {
-            totalTermFreq += termStats.totalTermFreq();
-          }
+          totalTermFreq += termStats.totalTermFreq();
         }
       }
       this.similarity = searcher.getSimilarity(true);

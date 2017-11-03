@@ -86,17 +86,17 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
 
             @Override
             public long getSumTotalTermFreq() {
-              return -1;
+              throw new UnsupportedOperationException();
             }
 
             @Override
             public long getSumDocFreq() {
-              return -1;
+              throw new UnsupportedOperationException();
             }
 
             @Override
             public int getDocCount() {
-              return -1;
+              throw new UnsupportedOperationException();
             }
 
             @Override

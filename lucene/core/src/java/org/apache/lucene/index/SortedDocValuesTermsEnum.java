@@ -101,7 +101,7 @@ class SortedDocValuesTermsEnum extends TermsEnum {
 
   @Override
   public long totalTermFreq() {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   @Override
