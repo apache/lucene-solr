@@ -14,6 +14,10 @@ API Changes
 * LUCENE-8017: Weight now exposes a getCacheHelper() method to help query caches
   determine whether or not a query can be cached. (Alan Woodward)
 
+* LUCENE-8038: Payload factors for scoring in PayloadScoreQuery are now
+  calculated by a PayloadDecoder, instead of delegating to the Similarity.
+  (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
