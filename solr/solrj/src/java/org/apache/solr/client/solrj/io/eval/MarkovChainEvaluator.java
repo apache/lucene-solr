@@ -20,8 +20,6 @@ import java.io.IOException;
 
 import java.util.Locale;
 import java.util.Random;
-import java.util.List;
-import java.util.ArrayList;
 
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.apache.commons.math3.util.MathArrays;
