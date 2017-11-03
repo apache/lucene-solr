@@ -162,6 +162,11 @@ public class PayloadScoreQuery extends SpanQuery {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return innerWeight.getCacheHelper(context);
+    }
+
+    @Override
     public void extractTerms(Set<Term> terms) {
       innerWeight.extractTerms(terms);
     }

@@ -650,6 +650,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           }
           return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
         }
+
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return null;
+        }
       };
     }
 

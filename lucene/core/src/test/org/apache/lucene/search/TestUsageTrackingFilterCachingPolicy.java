@@ -124,6 +124,11 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(1));
         }
+
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return context.reader().getCoreCacheHelper();
+        }
       };
     }
 

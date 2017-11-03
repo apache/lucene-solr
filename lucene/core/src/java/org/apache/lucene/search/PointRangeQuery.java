@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
@@ -320,6 +321,11 @@ public abstract class PointRangeQuery extends Query {
           return null;
         }
         return scorerSupplier.get(Long.MAX_VALUE);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

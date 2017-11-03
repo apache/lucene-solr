@@ -203,6 +203,11 @@ public class DocValuesTermsQuery extends Query {
 
         });
       }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return getDocValuesCacheHelper(field, context);
+      }
     };
   }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -89,6 +90,11 @@ public abstract class AbstractPrefixTreeQuery extends Query {
           return null;
         }
         return new ConstantScoreScorer(this, score(), disi);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

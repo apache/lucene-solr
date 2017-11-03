@@ -102,6 +102,14 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        Weight[] weights = new Weight[drillDowns.length + 1];
+        weights[0] = baseWeight;
+        System.arraycopy(drillDowns, 0, weights, 1, drillDowns.length);
+        return getCacheHelper(context, weights);
+      }
+
+      @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         Scorer baseScorer = baseWeight.scorer(context);
 

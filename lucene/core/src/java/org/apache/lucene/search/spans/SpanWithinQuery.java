@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -115,6 +116,11 @@ public final class SpanWithinQuery extends SpanContainQuery {
           return NO_MORE_POSITIONS;
         }
       };
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getCacheHelper(context, littleWeight, bigWeight);
     }
   }
 

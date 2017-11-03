@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -94,6 +95,11 @@ public class TermQuery extends Query {
       PostingsEnum docs = termsEnum.postings(null, needsScores ? PostingsEnum.FREQS : PostingsEnum.NONE);
       assert docs != null;
       return new TermScorer(this, docs, similarity.simScorer(stats, context));
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
     }
 
     /**

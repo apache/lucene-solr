@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -79,6 +80,11 @@ public final class FunctionMatchQuery extends Query {
           }
         };
         return new ConstantScoreScorer(this, score(), twoPhase);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return null; // TODO delegate to DoubleValuesSource?
       }
     };
   }

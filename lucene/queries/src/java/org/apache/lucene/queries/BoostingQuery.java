@@ -121,6 +121,11 @@ public class BoostingQuery extends Query {
             }
           };
         }
+
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return getCacheHelper(context, matchWeight, contextWeight);
+        }
       };
     }
 

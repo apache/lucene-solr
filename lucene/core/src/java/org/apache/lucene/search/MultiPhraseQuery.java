@@ -285,6 +285,11 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Scorer scorer = scorer(context);
       if (scorer != null) {

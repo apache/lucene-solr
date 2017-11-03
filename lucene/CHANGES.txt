@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.2.0 =======================
 
+API Changes
+
+* LUCENE-8017: Weight now exposes a getCacheHelper() method to help query caches
+  determine whether or not a query can be cached. (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies

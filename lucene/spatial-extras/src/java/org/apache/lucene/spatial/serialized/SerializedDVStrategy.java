@@ -27,6 +27,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -140,6 +141,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
           DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
           TwoPhaseIterator it = predicateValueSource.iterator(context, approximation);
           return new ConstantScoreScorer(this, score(), it);
+        }
+
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return null; // TODO delegate to PredicateValueSource
         }
       };
     }

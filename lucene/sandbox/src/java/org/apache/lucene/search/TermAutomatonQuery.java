@@ -395,7 +395,12 @@ public class TermAutomatonQuery extends Query {
         return null;
       }
     }
-    
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
+    }
+
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       // TODO

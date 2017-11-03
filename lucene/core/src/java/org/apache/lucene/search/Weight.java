@@ -20,6 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -101,6 +103,55 @@ public abstract class Weight {
    * @throws IOException if there is a low-level I/O error
    */
   public abstract Scorer scorer(LeafReaderContext context) throws IOException;
+
+  /**
+   * Returns an {@link org.apache.lucene.index.IndexReader.CacheHelper} to cache this query against
+   *
+   * Weights that rely only on Terms or Points can return {@code context.reader().getCoreCacheHelper()}.
+   * Weights that use DocValues should call {@link #getDocValuesCacheHelper(String, LeafReaderContext)}
+   * Weights that should not be cached at all should return {@code null}
+   *
+   * @param context the {@link LeafReaderContext} to cache against
+   * @return an {@link org.apache.lucene.index.IndexReader.CacheHelper} indicating the cache level
+   */
+  public abstract IndexReader.CacheHelper getCacheHelper(LeafReaderContext context);
+
+  /**
+   * Given a collection of Weights, return an {@link org.apache.lucene.index.IndexReader.CacheHelper} that will satisfy
+   * the requirements of them all.
+   * @param context the {@link LeafReaderContext} to cache against
+   * @param weights an array of {@link Weight} to be cached
+   * @return an {@link org.apache.lucene.index.IndexReader.CacheHelper} indicating the cache level
+   */
+  protected static IndexReader.CacheHelper getCacheHelper(LeafReaderContext context, Weight... weights) {
+    if (weights.length == 0)
+      return null;
+    IndexReader.CacheHelper helper = weights[0].getCacheHelper(context);
+    if (helper == null)
+      return null;
+    for (int i = 1; i < weights.length; i++) {
+      IndexReader.CacheHelper nextHelper = weights[i].getCacheHelper(context);
+      if (nextHelper == null || nextHelper != helper)
+        return null;
+    }
+    return helper;
+  }
+
+  /**
+   * Returns an {@link org.apache.lucene.index.IndexReader.CacheHelper} for a Weight using doc values
+   *
+   * This will return the core reader for
+   *
+   * @param field the docvalues field
+   * @param ctx   the {@link LeafReaderContext} to cache against
+   * @return an {@link org.apache.lucene.index.IndexReader.CacheHelper} indicating the cache level
+   */
+  public static IndexReader.CacheHelper getDocValuesCacheHelper(String field, LeafReaderContext ctx) {
+    FieldInfo fi = ctx.reader().getFieldInfos().fieldInfo(field);
+    if (fi == null || fi.getDocValuesGen() == -1)
+      return ctx.reader().getCoreCacheHelper();
+    return null;
+  }
 
   /**
    * Optional method.
