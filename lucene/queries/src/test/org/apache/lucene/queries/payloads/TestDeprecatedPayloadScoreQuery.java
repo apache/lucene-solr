@@ -52,7 +52,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestPayloadScoreQuery extends LuceneTestCase {
+public class TestDeprecatedPayloadScoreQuery extends LuceneTestCase {
 
   private static void checkQuery(SpanQuery query, PayloadFunction function, int[] expectedDocs, float[] expectedScores) throws IOException {
     checkQuery(query, function, true, expectedDocs, expectedScores);
@@ -62,7 +62,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
 
     assertTrue("Expected docs and scores arrays must be the same length!", expectedDocs.length == expectedScores.length);
 
-    PayloadScoreQuery psq = new PayloadScoreQuery(query, function, PayloadDecoder.FLOAT_DECODER, includeSpanScore);
+    PayloadScoreQuery psq = new PayloadScoreQuery(query, function, includeSpanScore);
     TopDocs hits = searcher.search(psq, expectedDocs.length);
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -86,7 +86,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     for (PayloadFunction fn
         : new PayloadFunction[]{ new AveragePayloadFunction(), new MaxPayloadFunction(), new MinPayloadFunction() }) {
       checkQuery(q, fn, new int[]{ 118, 218, 18 },
-                        new float[] { 4.0f, 4.0f, 2.0f });
+          new float[] { 4.0f, 4.0f, 2.0f });
     }
 
   }
@@ -95,7 +95,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
   public void testOrQuery() throws IOException {
 
     SpanOrQuery q = new SpanOrQuery(new SpanTermQuery(new Term("field", "eighteen")),
-                                    new SpanTermQuery(new Term("field", "nineteen")));
+        new SpanTermQuery(new Term("field", "nineteen")));
     for (PayloadFunction fn
         : new PayloadFunction[]{ new AveragePayloadFunction(), new MaxPayloadFunction(), new MinPayloadFunction() }) {
       checkQuery(q, fn, new int[]{ 118, 119, 218, 219, 18, 19 },
@@ -113,9 +113,9 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     // one hundred twenty two
 
     SpanNearQuery q = new SpanNearQuery(new SpanQuery[]{
-                        new SpanTermQuery(new Term("field", "twenty")),
-                        new SpanTermQuery(new Term("field", "two"))
-                      }, 0, true);
+        new SpanTermQuery(new Term("field", "twenty")),
+        new SpanTermQuery(new Term("field", "two"))
+    }, 0, true);
 
     checkQuery(q, new MaxPayloadFunction(), new int[]{ 22, 122, 222 }, new float[]{ 4.0f, 4.0f, 4.0f });
     checkQuery(q, new MinPayloadFunction(), new int[]{ 122, 222, 22 }, new float[]{ 4.0f, 4.0f, 2.0f });
@@ -140,7 +140,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     }, 1, true);
 
     // check includeSpanScore makes a difference here
-    searcher.setSimilarity(new ClassicSimilarity());
+    searcher.setSimilarity(new MultiplyingSimilarity());
     try {
       checkQuery(q, new MaxPayloadFunction(), new int[]{ 122, 222 }, new float[]{ 20.901256561279297f, 17.06580352783203f });
       checkQuery(q, new MinPayloadFunction(), new int[]{ 222, 122 }, new float[]{ 17.06580352783203f, 10.450628280639648f });
@@ -179,11 +179,11 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     SpanQuery sq2 = new SpanTermQuery(new Term("field", "two"));
     PayloadFunction minFunc = new MinPayloadFunction();
     PayloadFunction maxFunc = new MaxPayloadFunction();
-    PayloadScoreQuery query1 = new PayloadScoreQuery(sq1, minFunc, PayloadDecoder.FLOAT_DECODER, true);
-    PayloadScoreQuery query2 = new PayloadScoreQuery(sq2, minFunc, PayloadDecoder.FLOAT_DECODER, true);
-    PayloadScoreQuery query3 = new PayloadScoreQuery(sq2, maxFunc, PayloadDecoder.FLOAT_DECODER, true);
-    PayloadScoreQuery query4 = new PayloadScoreQuery(sq2, maxFunc, PayloadDecoder.FLOAT_DECODER, false);
-    PayloadScoreQuery query5 = new PayloadScoreQuery(sq1, minFunc, PayloadDecoder.FLOAT_DECODER);
+    PayloadScoreQuery query1 = new PayloadScoreQuery(sq1, minFunc, true);
+    PayloadScoreQuery query2 = new PayloadScoreQuery(sq2, minFunc, true);
+    PayloadScoreQuery query3 = new PayloadScoreQuery(sq2, maxFunc, true);
+    PayloadScoreQuery query4 = new PayloadScoreQuery(sq2, maxFunc, false);
+    PayloadScoreQuery query5 = new PayloadScoreQuery(sq1, minFunc);
 
     assertEquals(query1, query5);
     assertFalse(query1.equals(query2));
@@ -195,8 +195,8 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
   }
 
   public void testRewrite() throws IOException {
-    SpanMultiTermQueryWrapper xyz = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("field", "xyz*")));
-    PayloadScoreQuery psq = new PayloadScoreQuery(xyz, new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER, false);
+    SpanMultiTermQueryWrapper xyz = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "xyz*")));
+    PayloadScoreQuery psq = new PayloadScoreQuery(xyz, new AveragePayloadFunction(), false);
 
     // if query wasn't rewritten properly, the query would have failed with "Rewrite first!"
     searcher.search(psq, 1);
@@ -255,7 +255,8 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new PayloadAnalyzer())
-            .setMergePolicy(NoMergePolicy.INSTANCE));
+            .setMergePolicy(NoMergePolicy.INSTANCE)
+            .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 300; i++) {
       Document doc = new Document();
@@ -268,7 +269,7 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     writer.close();
 
     searcher = newSearcher(reader);
-    searcher.setSimilarity(new JustScorePayloadSimilarity());
+    searcher.setSimilarity(similarity);
   }
 
   @AfterClass
@@ -280,7 +281,17 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     directory = null;
   }
 
-  static class JustScorePayloadSimilarity extends ClassicSimilarity {
+  static class MultiplyingSimilarity extends ClassicSimilarity {
+
+    @Override
+    public float scorePayload(int docId, int start, int end, BytesRef payload) {
+      //we know it is size 4 here, so ignore the offset/length
+      return payload.bytes[payload.offset];
+    }
+
+  }
+
+  static class JustScorePayloadSimilarity extends MultiplyingSimilarity {
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
