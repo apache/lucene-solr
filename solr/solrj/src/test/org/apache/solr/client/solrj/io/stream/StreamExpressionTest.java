@@ -6162,6 +6162,34 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(array2.get(2).doubleValue(), 1, 0.0);
   }
 
+  @Test
+  public void testMarkovChain() throws Exception {
+    String cexpr = "let(state0=array(.5,.5),\n" +
+                   "    state1=array(.5,.5),\n" +
+                   "    states=matrix(state0, state1),\n" +
+                   "    m=markovChain(states, 0),\n" +
+                   "    s=sample(m, 50000),\n" +
+                   "    f=freqTable(s))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Map<String, Number>> out = (List<Map<String, Number>>)tuples.get(0).get("f");
+    assertEquals(out.size(), 2);
+    Map<String, Number> bin0 = out.get(0);
+    double state0Pct = bin0.get("pct").doubleValue();
+    assertEquals(state0Pct, .5, .015);
+    Map<String, Number> bin1 = out.get(1);
+    double state1Pct = bin1.get("pct").doubleValue();
+    assertEquals(state1Pct, .5, .015);
+  }
+
+
 
   @Test
   public void testAddAll() throws Exception {
