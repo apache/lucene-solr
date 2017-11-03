@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
@@ -152,6 +153,11 @@ final class GlobalOrdinalsQuery extends Query {
       } {
         return new SegmentOrdinalScorer(this, score(), foundOrds, values, approximationScorer.iterator());
       }
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getDocValuesCacheHelper(joinField, context);
     }
 
   }

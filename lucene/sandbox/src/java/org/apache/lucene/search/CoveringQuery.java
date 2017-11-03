@@ -175,6 +175,11 @@ public final class CoveringQuery extends Query {
       }
       return new CoveringScorer(this, scorers, minimumNumberMatch.getValues(context, null), context.reader().maxDoc());
     }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return null; // TODO delegate to LongValuesSource?
+    }
   }
 
 }

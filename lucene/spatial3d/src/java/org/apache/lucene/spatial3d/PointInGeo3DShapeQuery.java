@@ -18,6 +18,7 @@ package org.apache.lucene.spatial3d;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.spatial3d.geom.BasePlanetObject;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
@@ -102,6 +103,11 @@ final class PointInGeo3DShapeQuery extends Query {
         values.intersect(new PointInShapeIntersectVisitor(result, shape, shapeBounds));
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

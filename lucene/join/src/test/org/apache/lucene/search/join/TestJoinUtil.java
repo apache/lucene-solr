@@ -562,6 +562,11 @@ public class TestJoinUtil extends LuceneTestCase {
                 }
               };
             }
+
+            @Override
+            public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+              return null;
+            }
           };
         }
 

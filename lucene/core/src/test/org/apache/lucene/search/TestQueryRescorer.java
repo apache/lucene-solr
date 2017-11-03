@@ -488,6 +488,11 @@ public class TestQueryRescorer extends LuceneTestCase {
         }
 
         @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return null;
+        }
+
+        @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return null;
         }

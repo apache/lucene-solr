@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -74,6 +75,11 @@ public final class NormsFieldExistsQuery extends Query {
         LeafReader reader = context.reader();
         DocIdSetIterator iterator = reader.getNormValues(field);
         return new ConstantScoreScorer(this, score(), iterator);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

@@ -208,6 +208,14 @@ public class CustomScoreQuery extends Query implements Cloneable {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      Weight[] weights = new Weight[valSrcWeights.length + 1];
+      weights[0] = subQueryWeight;
+      System.arraycopy(valSrcWeights, 0, weights, 1, valSrcWeights.length);
+      return getCacheHelper(context, weights);
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Explanation explain = doExplain(context, doc);
       return explain == null ? Explanation.noMatch("no matching docs") : explain;

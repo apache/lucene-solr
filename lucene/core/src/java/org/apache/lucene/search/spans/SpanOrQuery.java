@@ -34,6 +34,7 @@ import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 
 /** Matches the union of its clauses.
@@ -136,6 +137,11 @@ public final class SpanOrQuery extends SpanQuery {
       for (final SpanWeight w: subWeights) {
         w.extractTerms(terms);
       }
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getCacheHelper(context, subWeights.toArray(new Weight[0]));
     }
 
     @Override

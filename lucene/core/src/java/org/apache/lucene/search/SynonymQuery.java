@@ -213,6 +213,11 @@ public final class SynonymQuery extends Query {
         return new SynonymScorer(simScorer, this, subScorers);
       }
     }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
+    }
   }
   
   static class SynonymScorer extends DisjunctionScorer {

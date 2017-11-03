@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -96,6 +97,11 @@ public final class DocValuesFieldExistsQuery extends Query {
         }
 
         return new ConstantScoreScorer(this, score(), iterator);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return getDocValuesCacheHelper(field, context);
       }
     };
   }

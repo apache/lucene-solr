@@ -191,6 +191,11 @@ public final class SpanNotQuery extends SpanQuery {
     public void extractTerms(Set<Term> terms) {
       includeWeight.extractTerms(terms);
     }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getCacheHelper(context, includeWeight, excludeWeight);
+    }
   }
 
   @Override

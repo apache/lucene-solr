@@ -31,6 +31,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DisiPriorityQueue;
@@ -477,6 +478,11 @@ public class LTRScoringQuery extends Query {
       ModelScorer mscorer = new ModelScorer(this, featureScorers);
       return mscorer;
 
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return null;
     }
 
     public class ModelScorer extends Scorer {

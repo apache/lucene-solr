@@ -158,6 +158,11 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           });
         }
+
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return getDocValuesCacheHelper(query.field, context);
+        }
       };
     }
   }

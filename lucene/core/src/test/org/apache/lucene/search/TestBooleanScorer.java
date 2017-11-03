@@ -95,6 +95,11 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return null;
+        }
+
+        @Override
         public BulkScorer bulkScorer(LeafReaderContext context) {
           return new BulkScorer() {
             @Override

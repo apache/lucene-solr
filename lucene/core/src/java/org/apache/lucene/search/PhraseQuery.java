@@ -441,7 +441,12 @@ public class PhraseQuery extends Query {
                                         needsScores, totalMatchCost);
       }
     }
-    
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
+    }
+
     // only called from assert
     private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
       return reader.docFreq(term) == 0;

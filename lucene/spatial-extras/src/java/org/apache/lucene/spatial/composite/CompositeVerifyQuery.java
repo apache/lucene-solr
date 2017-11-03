@@ -96,6 +96,11 @@ public class CompositeVerifyQuery extends Query {
         final TwoPhaseIterator predFuncValues = predicateValueSource.iterator(context, indexQueryScorer.iterator());
         return new ConstantScoreScorer(this, score(), predFuncValues);
       }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return null; // TODO delegate to PredicateValueSource?
+      }
     };
   }
 }

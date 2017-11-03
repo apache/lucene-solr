@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -158,6 +159,11 @@ final class LatLonPointInPolygonQuery extends Query {
                          });
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -138,6 +139,11 @@ class TermsIncludingScoreQuery extends Query {
         } else {
           return new SVInOrderScorer(this, segmentTermsEnum, context.reader().maxDoc(), cost);
         }
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
 
     };
