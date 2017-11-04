@@ -173,6 +173,8 @@ public class ImplicitSnitchTest extends LuceneTestCase {
 
   @Test
   public void testGetTags_withHostNameRequestedTag_ip99999_returns_nothing() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
