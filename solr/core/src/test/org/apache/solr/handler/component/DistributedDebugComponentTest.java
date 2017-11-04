@@ -269,6 +269,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.remove("debug");
     QueryResponse response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
+    assertInDebug(response, "solr-spec-version");
+    assertInDebug(response, "lucene-spec-version");
+    assertInDebug(response, "lucene-match-version");
     assertInDebug(response, "track");
     assertInDebug(response, "rawquerystring");
     assertInDebug(response, "querystring");
@@ -282,6 +285,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.remove("debugQuery");
     response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
+    assertInDebug(response, "solr-spec-version");
+    assertInDebug(response, "lucene-spec-version");
+    assertInDebug(response, "lucene-match-version");
     assertInDebug(response, "track");
     assertInDebug(response, "rawquerystring");
     assertInDebug(response, "querystring");
@@ -294,6 +300,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("debug", "track");
     response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "solr-spec-version");
+    assertNotInDebug(response, "lucene-spec-version");
+    assertNotInDebug(response, "lucene-match-version");
     assertInDebug(response, "track");
     assertNotInDebug(response, "rawquerystring");
     assertNotInDebug(response, "querystring");
@@ -306,6 +315,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("debug", "query");
     response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "solr-spec-version");
+    assertNotInDebug(response, "lucene-spec-version");
+    assertNotInDebug(response, "lucene-match-version");
     assertNotInDebug(response, "track");
     assertInDebug(response, "rawquerystring");
     assertInDebug(response, "querystring");
@@ -318,6 +330,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("debug", "results");
     response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "solr-spec-version");
+    assertNotInDebug(response, "lucene-spec-version");
+    assertNotInDebug(response, "lucene-match-version");
     assertNotInDebug(response, "track");
     assertNotInDebug(response, "rawquerystring");
     assertNotInDebug(response, "querystring");
@@ -330,6 +345,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("debug", "timing");
     response = client.query(query);
     assertFalse(response.getDebugMap().isEmpty());
+    assertNotInDebug(response, "solr-spec-version");
+    assertNotInDebug(response, "lucene-spec-version");
+    assertNotInDebug(response, "lucene-match-version");
     assertNotInDebug(response, "track");
     assertNotInDebug(response, "rawquerystring");
     assertNotInDebug(response, "querystring");
@@ -369,6 +387,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertNull(nonDistribResponse.getDebugMap().get("track"));
     assertEquals(distribResponse.getDebugMap().size() - 1, nonDistribResponse.getDebugMap().size());
     
+    assertSectionEquals(distribResponse, nonDistribResponse, "solr-spec-version");
+    assertSectionEquals(distribResponse, nonDistribResponse, "lucene-spec-version");
+    assertSectionEquals(distribResponse, nonDistribResponse, "lucene-match-version");
     assertSectionEquals(distribResponse, nonDistribResponse, "explain");
     assertSectionEquals(distribResponse, nonDistribResponse, "rawquerystring");
     assertSectionEquals(distribResponse, nonDistribResponse, "querystring");

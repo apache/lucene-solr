@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.LucenePackage;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause;
@@ -50,6 +52,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.RequestParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
@@ -77,8 +80,6 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -278,6 +279,21 @@ public class SolrPluginUtils {
     }
     return debugInterests;
   }
+
+
+  public static void doSolrVersionDebug(NamedList dbg) {
+    Package p = SolrCore.class.getPackage();
+    String specificationVersion = p.getSpecificationVersion();
+    dbg.add("solr-spec-version", specificationVersion == null ? "" : specificationVersion);
+  }
+
+  public static void doLuceneVersionDebug(SolrQueryRequest req,NamedList dbg) {
+    Package p = LucenePackage.class.getPackage();
+    String specificationVersion = p.getSpecificationVersion();
+    dbg.add("lucene-spec-version", specificationVersion == null ? "" : specificationVersion);
+    dbg.add("lucene-match-version", req.getSchema().getDefaultLuceneMatchVersion().toString());
+  }
+
   /**
    * <p>
    * Returns a NamedList containing many "standard" pieces of debugging
@@ -322,10 +338,15 @@ public class SolrPluginUtils {
           Query query,
           DocList results,
           boolean dbgQuery,
-          boolean dbgResults)
+          boolean dbgResults,
+          boolean dbgVersion)
           throws IOException 
   {
     NamedList dbg = new SimpleOrderedMap();
+    if (dbgVersion){
+      doSolrVersionDebug(dbg);
+      doLuceneVersionDebug(req, dbg);
+    }
     doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
     doStandardResultsDebug(req, query, results, dbgResults, dbg);
     return dbg;

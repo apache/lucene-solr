@@ -256,7 +256,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
         if (dbg == true) {
           try {
-            NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
+            NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(),
+                mltDocs.docList, dbgQuery, dbgResults, dbg);
             if (null != dbgInfo) {
               if (null != filters) {
                 dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));
