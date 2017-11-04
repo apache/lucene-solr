@@ -139,6 +139,9 @@ Other Changes
 
 * SOLR-11603: Remove unused (public) LTRScoringModel.hasParams() method. (Christine Poerschke)
 
+* SOLR-11606: Disable tests automatically if Mockito does not work with Java runtime (Java 10).
+  (Uwe Schindler)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

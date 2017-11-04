@@ -104,6 +104,8 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void init_unsupportedFilterQuery_shouldThrowExceptionWithDetailedMessage() {
+    assumeWorkingMockito();
+    
     UpdateRequestProcessor mockProcessor = mock(UpdateRequestProcessor.class);
     SolrQueryRequest mockRequest = mock(SolrQueryRequest.class);
     SolrQueryResponse mockResponse = mock(SolrQueryResponse.class);

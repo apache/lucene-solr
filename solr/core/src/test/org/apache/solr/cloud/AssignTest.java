@@ -62,6 +62,8 @@ public class AssignTest extends SolrTestCaseJ4 {
   
   @Test
   public void testAssignNode() throws Exception {
+    assumeWorkingMockito();
+    
     SolrZkClient zkClient = mock(SolrZkClient.class);
     Map<String, byte[]> zkClientData = new HashMap<>();
     when(zkClient.setData(anyString(), any(), anyInt(), anyBoolean())).then(invocation -> {

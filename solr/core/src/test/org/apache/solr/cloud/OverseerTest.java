@@ -238,6 +238,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
     initCore();
   }
   

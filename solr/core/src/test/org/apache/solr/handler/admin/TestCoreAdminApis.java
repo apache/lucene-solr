@@ -70,6 +70,8 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
   }
 
   public static CoreContainer getCoreContainerMock(final Map<String, Object[]> in,Map<String,Object> out ) {
+    assumeWorkingMockito();
+    
     CoreContainer mockCC = mock(CoreContainer.class);
     when(mockCC.create(any(String.class), any(Path.class) , any(Map.class), anyBoolean())).thenAnswer(invocationOnMock -> {
       in.put("create", invocationOnMock.getArguments());
