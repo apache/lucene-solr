@@ -959,6 +959,12 @@
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
           <istrue value="${tests.useSecurityManager}"/>
         </condition>
+        
+        <!-- additional arguments for Java 9+ -->
+        <local name="tests.runtimespecific.args"/>
+        <condition property="tests.runtimespecific.args" value="" else="--illegal-access=deny">
+          <equals arg1="${build.java.runtime}" arg2="1.8"/>
+        </condition>
 
         <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
@@ -1040,6 +1046,7 @@
             <jvmarg line="${tests.clover.args}"/>
             <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
+            <jvmarg line="${tests.runtimespecific.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>

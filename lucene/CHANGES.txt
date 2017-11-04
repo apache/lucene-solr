@@ -35,6 +35,11 @@ Optimizations
   number of hits is small relative to the number of unique facet labels
   (Dawid Weiss, Robert Muir, Mike McCandless)
   
+Tests
+
+* LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
+  on Java 9+.  (Uwe Schindler)
+
 Build
 
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
