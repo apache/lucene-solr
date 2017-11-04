@@ -122,6 +122,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpOnce() throws Exception {
+    assumeWorkingMockito();
+    
     workQueueMock = mock(OverseerTaskQueue.class);
     runningMapMock = mock(DistributedMap.class);
     completedMapMock = mock(DistributedMap.class);

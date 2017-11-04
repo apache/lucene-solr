@@ -27,10 +27,17 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Utils;
+import org.junit.BeforeClass;
 
 import static org.mockito.Mockito.*;
 
 public class TestClusterStateMutator extends SolrTestCaseJ4 {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeWorkingMockito();
+  }
+  
   public void testCreateCollection() throws Exception {
     ClusterState clusterState = new ClusterState(-1, Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
     DistribStateManager mockStateManager = mock(DistribStateManager.class);
