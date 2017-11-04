@@ -79,6 +79,8 @@ Bug Fixes
 
 * SOLR-11586: Restored collection should use stateFormat=2 instead of 1. (Varun Thacker)
 
+* SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
