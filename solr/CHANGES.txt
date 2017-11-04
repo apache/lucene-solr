@@ -35,6 +35,8 @@ Bug Fixes
 * SOLR-11971: Don't allow referal to external resources in DataImportHandler's dataConfig request parameter.
   (麦 香浓郁, Uwe Schindler)
 
+* SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
+
 ==================  6.6.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
