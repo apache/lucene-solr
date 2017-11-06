@@ -27,10 +27,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
+import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.util.PayloadDecoder;
 
 public class FloatPayloadValueSource extends ValueSource {
   protected final String field;
@@ -167,7 +167,7 @@ public class FloatPayloadValueSource extends ValueSource {
             docs.nextPosition();
             BytesRef payload = docs.getPayload();
             if (payload != null) {
-              float payloadVal = decoder.decode(atDoc, docs.startOffset(), docs.endOffset(), payload);
+              float payloadVal = decoder.computePayloadFactor(payload);
 
               // payloadFunction = null represents "first"
               if (payloadFunction == null) return payloadVal;
