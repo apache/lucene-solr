@@ -17,6 +17,9 @@ API Changes
   stored they are equal to TermsEnum.docFreq() and Terms.getSumDocFreq(),
   respectively, because all freq() values equal 1. (Adrien Grand, Robert Muir)
 
+* LUCENE-8038: Deprecated PayloadScoreQuery constructors have been removed (Alan
+  Woodward)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

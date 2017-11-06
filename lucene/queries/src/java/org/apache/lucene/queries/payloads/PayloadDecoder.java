@@ -25,16 +25,6 @@ import org.apache.lucene.util.BytesRef;
 public interface PayloadDecoder {
 
   /**
-   * Compute a float value based on the doc, position and payload
-   * @deprecated Use {@link #computePayloadFactor(BytesRef)} - doc and position can be taken
-   *             into account in {@link PayloadFunction#currentScore(int, String, int, int, int, float, float)}
-   */
-  @Deprecated
-  default float computePayloadFactor(int docID, int startPosition, int endPosition, BytesRef payload) {
-    return computePayloadFactor(payload);
-  }
-
-  /**
    * Compute a float value for the given payload
    */
   float computePayloadFactor(BytesRef payload);

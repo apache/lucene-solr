@@ -59,20 +59,8 @@ public class PayloadScoreQuery extends SpanQuery {
   public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, PayloadDecoder decoder, boolean includeSpanScore) {
     this.wrappedQuery = Objects.requireNonNull(wrappedQuery);
     this.function = Objects.requireNonNull(function);
-    this.decoder = decoder;
+    this.decoder = Objects.requireNonNull(decoder);
     this.includeSpanScore = includeSpanScore;
-  }
-
-  /**
-   * Creates a new PayloadScoreQuery
-   * @param wrappedQuery the query to wrap
-   * @param function a PayloadFunction to use to modify the scores
-   * @param includeSpanScore include both span score and payload score in the scoring algorithm
-   * @deprecated Use {@link #PayloadScoreQuery(SpanQuery, PayloadFunction, PayloadDecoder, boolean)}
-   */
-  @Deprecated
-  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, boolean includeSpanScore) {
-    this(wrappedQuery, function, null, includeSpanScore);
   }
 
   /**
@@ -82,17 +70,6 @@ public class PayloadScoreQuery extends SpanQuery {
    */
   public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, PayloadDecoder decoder) {
     this(wrappedQuery, function, decoder, true);
-  }
-
-  /**
-   * Creates a new PayloadScoreQuery that includes the underlying span scores
-   * @param wrappedQuery the query to wrap
-   * @param function a PayloadFunction to use to modify the scores
-   * @deprecated Use {@link #PayloadScoreQuery(SpanQuery, PayloadFunction, PayloadDecoder)}
-   */
-  @Deprecated
-  public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function) {
-    this(wrappedQuery, function, true);
   }
 
   @Override
@@ -173,8 +150,7 @@ public class PayloadScoreQuery extends SpanQuery {
       if (spans == null)
         return null;
       SimScorer docScorer = innerWeight.getSimScorer(context);
-      PayloadSpans payloadSpans = new PayloadSpans(spans,
-          decoder == null ? new SimilarityPayloadDecoder(docScorer) : decoder);
+      PayloadSpans payloadSpans = new PayloadSpans(spans, decoder);
       return new PayloadSpanScorer(this, payloadSpans, docScorer);
     }
 
@@ -232,7 +208,7 @@ public class PayloadScoreQuery extends SpanQuery {
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
       BytesRef payload = postings.getPayload();
-      float payloadFactor = decoder.computePayloadFactor(docID(), in.startPosition(), in.endPosition(), payload);
+      float payloadFactor = decoder.computePayloadFactor(payload);
       payloadScore = function.currentScore(docID(), getField(), in.startPosition(), in.endPosition(),
                                             payloadsSeen, payloadScore, payloadFactor);
       payloadsSeen++;
@@ -275,28 +251,6 @@ public class PayloadScoreQuery extends SpanQuery {
       return getPayloadScore();
     }
 
-  }
-
-  @Deprecated
-  private static class SimilarityPayloadDecoder implements PayloadDecoder {
-
-    final Similarity.SimScorer docScorer;
-
-    public SimilarityPayloadDecoder(Similarity.SimScorer docScorer) {
-      this.docScorer = docScorer;
-    }
-
-    @Override
-    public float computePayloadFactor(int docID, int startPosition, int endPosition, BytesRef payload) {
-      if (payload == null)
-        return 0;
-      return docScorer.computePayloadFactor(docID, startPosition, endPosition, payload);
-    }
-
-    @Override
-    public float computePayloadFactor(BytesRef payload) {
-      throw new UnsupportedOperationException();
-    }
   }
 
 }
