@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -49,6 +50,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
@@ -77,7 +79,6 @@ import org.apache.solr.search.function.distance.StringDistanceFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
 import org.apache.solr.search.join.ChildFieldValueSourceParser;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.PayloadDecoder;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -737,8 +738,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
         }
 
-        FieldType fieldType = fp.getReq().getCore().getLatestSchema().getFieldTypeNoEx(tinfo.field);
-        PayloadDecoder decoder = PayloadUtils.getPayloadDecoder(fieldType);
+        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+        PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
 
         if (decoder==null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No payload decoder found for field: " + tinfo.field);

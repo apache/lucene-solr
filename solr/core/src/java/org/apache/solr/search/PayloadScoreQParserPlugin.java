@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.queries.payloads.PayloadScoreQuery;
 import org.apache.lucene.search.Query;
@@ -83,7 +84,8 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
         PayloadFunction payloadFunction = PayloadUtils.getPayloadFunction(func);
         if (payloadFunction == null) throw new SyntaxError("Unknown payload function: " + func);
 
-        return new PayloadScoreQuery(query, payloadFunction, includeSpanScore);
+        PayloadDecoder payloadDecoder = req.getCore().getLatestSchema().getPayloadDecoder(field);
+        return new PayloadScoreQuery(query, payloadFunction, payloadDecoder, includeSpanScore);
       }
     };
   }

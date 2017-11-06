@@ -150,6 +150,9 @@ Other Changes
 
 * SOLR-11628: Add documentation of maxRamMB for filter cache and query result cache. (shalin)
 
+* SOLR-11610: Refactored payload handling to use lucene's PayloadDecoder
+  framework (Alan Woodward)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
