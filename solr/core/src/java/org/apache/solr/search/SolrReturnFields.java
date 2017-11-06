@@ -16,6 +16,14 @@
  */
 package org.apache.solr.search;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -34,126 +42,911 @@ import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 /**
- * The default implementation of return fields parsing for Solr.
+ * Default implementation of {@link ReturnFields}.
+ * Encapsulates parsing logic of {@link CommonParams#FL} parameter and provides methods
+ * for indicating if a given field should be included in response or not.
  */
 public class SolrReturnFields extends ReturnFields {
-  // Special Field Keys
-  public static final String SCORE = "score";
 
-  private final List<String> globs = new ArrayList<>(1);
+  public final static String SCORE = "score";
+  private final static char WILDCARD = '*';
+  private final static char QUESTION_MARK = '?';
+  private final static char OPEN_BRACKET = '[';
+  private final static char CLOSE_BRACKET = ']';
+  private final static char OPEN_PARENTHESIS = '(';
+  private final static char CLOSE_PARENTHESIS = ')';
+  private final static char LEFT_BRACE = '{';
+  private final static char RIGHT_BRACE = '}';
 
-  // The lucene field names to request from the SolrIndexSearcher
-  // This *may* include fields that will not be in the final response
-  private final Set<String> fields = new HashSet<>();
+  private final static char HYPHEN = '-';
+  private final static char QUOTE = '\'';
+  private final static char DQUOTE = '\"';
+  private final static char COLON = ':';
+  private final static char POUND_SIGN = '#';
+  private final static char DOT = '.';
+  private final static char PLUS = '+';
 
-  // Field names that are OK to include in the response.
-  // This will include pseudo fields, lucene fields, and matching globs
-  private Set<String> okFieldNames = new HashSet<>();
+  private final static String ALIAS_VALUE_SEPARATOR = Character.toString(COLON);
+  private final static String ALL_FIELDS = Character.toString(WILDCARD);
+
 
   // The list of explicitly requested fields
   // Order is important for CSVResponseWriter
-  private Set<String> reqFieldNames = null;
-  
+  private Set<String> requestedFieldNames;
+
   protected DocTransformer transformer;
-  protected boolean _wantsScore = false;
-  protected boolean _wantsAllFields = false;
-  protected Map<String,String> renameFields = Collections.emptyMap();
 
+  // Parser state (initial state is "detecting token type").
+  private ParserState currentState;
+  private boolean wantsAllFields;
+
+  private Set<String> luceneFieldNames;
+  private Set<String> inclusions;
+  private Set<String> exclusions;
+  private Set<String> inclusionGlobs;
+  private Set<String> exclusionGlobs;
+  private NamedList<String> aliases;
+
+  private final Map<String, Boolean> cache = new HashMap<>();
+
+  /**
+   * Builds a new {@link SolrReturnFields} with no data.
+   * Basically it returns everything (i.e. *).
+   */
   public SolrReturnFields() {
-    _wantsAllFields = true;
+    this((String[]) null, null);
   }
 
-  public SolrReturnFields(SolrQueryRequest req) {
-    this( req.getParams().getParams(CommonParams.FL), req );
+  /**
+   * Builds a new {@link SolrReturnFields} with the current request.
+   * The {@link CommonParams#FL} is used to get the field list(s).
+   *
+   * @param request the current request.
+   */
+  public SolrReturnFields(final SolrQueryRequest request) {
+    this(request.getParams().getParams(CommonParams.FL), request);
   }
 
-  public SolrReturnFields(String fl, SolrQueryRequest req) {
-//    this( (fl==null)?null:SolrPluginUtils.split(fl), req );
-    if( fl == null ) {
-      parseFieldList((String[])null, req);
-    }
-    else {
-      if( fl.trim().length() == 0 ) {
-        // legacy thing to support fl='  ' => fl=*,score!
-        // maybe time to drop support for this?
-        // See ConvertedLegacyTest
-        _wantsScore = true;
-        _wantsAllFields = true;
-        transformer = new ScoreAugmenter(SCORE);
-      }
-      else {
-        parseFieldList( new String[]{fl}, req);
-      }
-    }
-  }
-
-  public SolrReturnFields(String[] fl, SolrQueryRequest req) {
-    parseFieldList(fl, req);
-  }
-
-  private void parseFieldList(String[] fl, SolrQueryRequest req) {
-    _wantsScore = false;
-    _wantsAllFields = false;
+  /**
+   * Builds a new {@link SolrReturnFields} with the given data.
+   * The {@link CommonParams#FL} is used to get the field list(s).
+   *
+   * @param fl      the field list(s).
+   * @param request the current request.
+   */
+  public SolrReturnFields(final String[] fl, final SolrQueryRequest request) {
+    currentState = detectingTokenType;
     if (fl == null || fl.length == 0 || fl.length == 1 && fl[0].length()==0) {
-      _wantsAllFields = true;
-      return;
+      wantsAllFields = true;
+    } else {
+      try {
+        parse(request, fl);
+      } catch (SyntaxError exception) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exception.getMessage(), exception);
+      }
     }
+  }
 
-    NamedList<String> rename = new NamedList<>();
-    DocTransformers augmenters = new DocTransformers();
-    for (String fieldList : fl) {
-      add(fieldList,rename,augmenters,req);
+  /**
+   * Processes a literal field name that will be included in response.
+   * Important: calling this method cleans any previous requested exclusion list
+   * (both literals and globs).
+   *
+   * @param expressionBuffer the char buffer that holds the literal expression.
+   * @param augmenters       the accumulator for requested transformers.
+   */
+  private void onInclusionLiteralExpression(final StringBuilder expressionBuffer, final DocTransformers augmenters,
+                                            final boolean rename, final boolean isRealField) {
+    final String alias = getExpressionAlias(expressionBuffer);
+    final String fieldname = getExpressionValue(expressionBuffer);
+    final String requestedName = (alias != null) ? alias : fieldname;
+
+    requestedFieldNames().add(requestedName);
+    inclusions().add(requestedName);
+
+    if (SCORE.equals(fieldname)) {
+      augmenters.addTransformer(new ScoreAugmenter((alias == null) ? SCORE : alias));
+    } else {
+      if (isRealField) {
+        luceneFieldNames().add(fieldname);
+        clearExclusions();
+      }
+      if (alias != null && rename) {
+        // We can't add a RenameFieldTransformer yet because we aren't done parsing and we don't know if the field was
+        // requested again separately, meaning we should copy instead of rename
+        aliases().add(fieldname, alias);
+      }
     }
-    for( int i=0; i<rename.size(); i++ ) {
-      String from = rename.getName(i);
-      String to = rename.getVal(i);
-      okFieldNames.add( to );
-      boolean copy = (reqFieldNames!=null && reqFieldNames.contains(from));
-      if(!copy) {
-        // Check that subsequent copy/rename requests have the field they need to copy
-        for(int j=i+1; j<rename.size(); j++) {
-          if(from.equals(rename.getName(j))) {
-            rename.setName(j, to); // copy from the current target
-            if(reqFieldNames==null) {
-              reqFieldNames = new LinkedHashSet<>();
-            }
-            reqFieldNames.add(to); // don't rename our current target
+  }
+
+  /**
+   * Processes a literal value that will be excluded in response.
+   * Note that if some inclusion (literal or glob) has been explicitly requested, then this method won't
+   * have any effect.
+   *
+   * @param fieldNameBuffer the buffer that hold the exclusion literal.
+   * @throws SyntaxError in case the
+   */
+  private void onExclusionLiteralFieldName(final StringBuilder fieldNameBuffer) throws SyntaxError {
+    if (CollectionUtils.isEmpty(inclusions) && CollectionUtils.isEmpty(inclusionGlobs)) {
+      if (getExpressionAlias(fieldNameBuffer) == null) {
+        wantsAllFields = false;
+        exclusions().add(getExpressionValue(fieldNameBuffer));
+      }
+    }
+  }
+
+  /**
+   * Processes a transformer token.
+   * <p>
+   * e.g. [docid]; [shard]; greeting:[value v='hello']; [mytrans5 jf=pinprojectid if=type:Projects mf=project_accessibilitytype]
+   *
+   * @param expressionBuffer the char buffer that holds the transformer expression.
+   * @param request          the current {@link SolrQueryRequest}.
+   * @param augmenters       the transformer collector for the current request.
+   * @throws SyntaxError in case of invalid syntax.
+   */
+  private void onTransformer(final StringBuilder expressionBuffer, final SolrQueryRequest request, final DocTransformers augmenters)
+      throws SyntaxError {
+    if (expressionBuffer != null) {
+      String fl_Content = expressionBuffer.toString();
+      if (fl_Content.contains("[") && fl_Content.contains("]")) {
+
+        final ModifiableSolrParams augmenterArgs = new ModifiableSolrParams();
+        String displayName = null;
+
+        if (fl_Content.indexOf("[") == 0) {
+          //transformers containing token like (:) inside the expression
+          QueryParsing.parseLocalParams(expressionBuffer.toString(), 0, augmenterArgs, request.getParams(), "[", CLOSE_BRACKET);
+
+        } else if (fl_Content.indexOf("[") > 0 && fl_Content.contains(":[")) {
+          //built-in transformers
+          displayName = getExpressionAlias(expressionBuffer);
+          final String transfomerExpression = getExpressionValue(expressionBuffer);
+          QueryParsing.parseLocalParams(transfomerExpression, 0, augmenterArgs, request.getParams(), "[", CLOSE_BRACKET);
+        }
+
+        final String[] augmenterName = augmenterArgs.remove("type");
+        final String alias = (displayName != null) ? displayName : OPEN_BRACKET + augmenterName[0] + CLOSE_BRACKET;
+
+        inclusions().add(alias);
+        requestedFieldNames().add(alias);
+
+        final TransformerFactory factory = request.getCore().getTransformerFactory(augmenterName[0]);
+        if (factory != null) {
+          addAugmenter(request, augmenters, augmenterArgs, alias, factory);
+        }
+      }
+    }
+  }
+
+  private void addAugmenter(SolrQueryRequest request, DocTransformers augmenters, ModifiableSolrParams augmenterArgs, String aliasThatWillBeUsed, TransformerFactory factory) {
+    DocTransformer t = factory.create(aliasThatWillBeUsed, augmenterArgs, request);
+    if(t!=null) {
+      if (!wantsAllFields()) {
+        String[] extra = t.getExtraRequestFields();
+        if (extra != null) {
+          for (String f : extra) {
+            luceneFieldNames().add(f); // also request this field from IndexSearcher
           }
         }
       }
-      augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );
+      augmenters.addTransformer(t);
     }
-    if (rename.size() > 0 ) {
-      renameFields = rename.asShallowMap();
-    }
-    if( !_wantsAllFields && !globs.isEmpty() ) {
-      // TODO??? need to fill up the fields with matching field names in the index
-      // and add them to okFieldNames?
-      // maybe just get all fields?
-      // this would disable field selection optimization... i think that is OK
-      fields.clear(); // this will get all fields, and use wantsField to limit
-    }
+  }
 
-    if( augmenters.size() == 1 ) {
-      transformer = augmenters.getTransformer(0);
-    }
-    else if( augmenters.size() > 1 ) {
-      transformer = augmenters;
+  /**
+   * Processess an inclusion glob.
+   * Basically here we have same rules as
+   * {@link #onInclusionLiteralExpression(StringBuilder, DocTransformers, boolean, boolean)}
+   * <p>
+   * No aliasing is supported. No exception is raised (for backwards compatibility) but aliases are silently ignored.
+   * <p>
+   * That is because we don't know how many actual fields will be matched
+   * by the glob expression.
+   *
+   * @param bufferChar the character buffer that holds the current (glob) expression.
+   */
+  private void onInclusionGlob(final StringBuilder bufferChar) {
+    final String glob = getExpressionValue(bufferChar);
+
+    if (!ALL_FIELDS.equals(glob)) {
+      inclusionGlobs().add(glob);
+      clearExclusions();
+    } else {
+      // Special case: * is seen as an inclusion glob
+      wantsAllFields = CollectionUtils.isEmpty(exclusions) && CollectionUtils.isEmpty(exclusionGlobs);
     }
   }
 
   @Override
   public Map<String,String> getFieldRenames() {
-    return renameFields;
+    return aliases().asShallowMap();
+  }
+
+  /**
+   * Processes an exclusion glob.
+   * Note that
+   * <p>
+   * - if some inclusion (literal or glob) has been explicitly requested, then this method won't
+   * have any effect.
+   * - if an alias has been specified it will be silently ignored
+   * - if the expression is a * (i.e. -*) then it will be silently ignored.
+   *
+   * @param expressionBuffer the glob expression buffer.
+   */
+  private void onExclusionGlobExpression(final StringBuilder expressionBuffer) {
+    if (getExpressionAlias(expressionBuffer) == null) {
+      final String glob = getExpressionValue(expressionBuffer);
+
+      if (!ALL_FIELDS.equals(glob) && CollectionUtils.isEmpty(inclusions) && CollectionUtils.isEmpty(inclusionGlobs)) {
+        wantsAllFields = false;
+        exclusionGlobs().add(glob);
+      }
+    }
+  }
+
+  @Override
+  public Set<String> getLuceneFieldNames() {
+    return getLuceneFieldNames(false);
+  }
+
+  @Override
+  public Set<String> getLuceneFieldNames(boolean ignoreWantsAll) {
+    if (ignoreWantsAll)
+      return luceneFieldNames;
+    else
+      return (wantsAllFields || CollectionUtils.isEmpty(luceneFieldNames)) ? null : luceneFieldNames;
+  }
+
+  @Override
+  public Set<String> getRequestedFieldNames() {
+    return (wantsAllFields || CollectionUtils.isEmpty(requestedFieldNames)) ? null : requestedFieldNames;
+  }
+
+  @Override
+  public boolean wantsField(final String name) {
+    Boolean mustInclude = cache.get(name);
+    if (mustInclude == null) // first time request for this field
+    {
+      if (CollectionUtils.isEmpty(exclusions) && CollectionUtils.isEmpty(exclusionGlobs)) {
+        mustInclude = wantsAllFields() || (inclusions != null && inclusions.contains(name))
+            || (inclusionGlobs != null && wildcardMatch(name, inclusionGlobs))
+            || (aliases != null && aliases.asShallowMap().containsKey(name));
+      } else {
+        mustInclude = !((exclusions != null && exclusions.contains(name)) || (exclusionGlobs != null && wildcardMatch(name,
+            exclusionGlobs)));
+      }
+      cache.put(name, mustInclude);
+    }
+    return mustInclude;
+  }
+
+  @Override
+  public boolean wantsAllFields() {
+    return wantsAllFields;
+  }
+
+  /**
+   * Processes a function.
+   * In case the given string cannot be processed as a valid function, then a search is done on the schema
+   * in order to see if a field with such name exists.
+   *
+   * @param expressionBuffer the char buffer that holds the function expression.
+   * @param augmenters       the transformer collector.
+   * @param request          the current request.
+   * @throws SyntaxError in case the function has a wrong syntax or there's no function neither a field with such name.
+   */
+  private void onFunction(final StringBuilder expressionBuffer, final DocTransformers augmenters, final SolrQueryRequest request)
+      throws SyntaxError {
+
+    final String alias = getExpressionAlias(expressionBuffer);
+    final String function = getExpressionValue(expressionBuffer);
+    final QParser parser = QParser.getParser(function, FunctionQParserPlugin.NAME, request);
+    Query q;
+
+    try {
+      if (parser instanceof FunctionQParser) {
+        FunctionQParser fparser = (FunctionQParser) parser;
+        fparser.setParseMultipleSources(false);
+        fparser.setParseToEnd(false);
+        q = fparser.getQuery();
+      } else {
+        // A QParser that's not for function queries.
+        // It must have been specified via local params.
+        q = parser.getQuery();
+        assert parser.getLocalParams() != null;
+      }
+
+      final ValueSource vs = (q instanceof FunctionQuery) ? ((FunctionQuery) q).getValueSource() : new QueryValueSource(q, 0.0f);
+
+      String aliasThatWillBeUsed = alias;
+      if (alias == null) {
+        final SolrParams localParams = parser.getLocalParams();
+        if (localParams != null) {
+          aliasThatWillBeUsed = localParams.get("key");
+        }
+      }
+
+      aliasThatWillBeUsed = (aliasThatWillBeUsed != null) ? aliasThatWillBeUsed : function;
+
+      // Collect the function as it would be a literal
+      onInclusionLiteralExpression(expressionBuffer, augmenters, false, false);
+      augmenters.addTransformer(new ValueSourceAugmenter(aliasThatWillBeUsed, parser, vs));
+    } catch (SyntaxError exception) {
+      if (request.getSchema().getFieldOrNull(function) != null) {
+        // OK, it was an oddly named field
+        onInclusionLiteralExpression(expressionBuffer, augmenters, true, true);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Error parsing fieldname: " + exception.getMessage(), exception);
+      }
+    }
+  }
+
+  /**
+   * Builds a new {@link SolrReturnFields} with the given data.
+   *
+   * @param fl      the field list.
+   * @param request the current request.
+   */
+  public SolrReturnFields(final String fl, final SolrQueryRequest request) {
+    this(new String[]{fl}, request);
+  }
+
+  @Override
+  public boolean wantsScore() {
+    return inclusions != null && inclusions.contains(SCORE);
+  }
+
+  @Override
+  public boolean hasPatternMatching() {
+    return CollectionUtils.isNotEmpty(inclusionGlobs) || CollectionUtils.isNotEmpty(exclusions)
+        || CollectionUtils.isNotEmpty(exclusionGlobs);
+  }
+
+  @Override
+  public DocTransformer getTransformer() {
+    return transformer;
+  }
+
+  /**
+   * Performs a wildcard match between the given (field) name and the glob list.
+   *
+   * @param name  the (field) name.
+   * @param globs the glob list.
+   * @return true if at least one expression in the list matches the given field name.
+   */
+  private boolean wildcardMatch(final String name, final Set<String> globs) {
+    for (final String glob : globs) {
+      if (FilenameUtils.wildcardMatch(name, glob)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns the expression alias found in given bufferChar.
+   * The alias (if exists) is delimited by colon. If there's not such char then null is returned
+   * meaning that there's no alias.
+   *
+   * @param bufferChar the buffer that contains the current expression.
+   * @return the expression alias or null if no alias is found.
+   */
+  private String getExpressionAlias(final StringBuilder bufferChar) {
+    final int indexOfColon = bufferChar.indexOf(ALIAS_VALUE_SEPARATOR);
+    final int indexOfParen = bufferChar.indexOf(Character.toString(OPEN_PARENTHESIS));
+    if (indexOfColon == -1) {
+      return null;
+    }
+    else {
+      return (indexOfParen == -1 || indexOfColon < indexOfParen) ? bufferChar.substring(0, indexOfColon) : null;
+    }
+  }
+
+  /**
+   * Returns the expression value found in given bufferChar.
+   * The value (if alias exists) starts next to colon (which is the ending char of the alias).
+   * If there's no alias, all buffer content is supposed to be a value.
+   *
+   * @param bufferChar the buffer that contains the current expression.
+   * @return the expression value.
+   */
+  private String getExpressionValue(final StringBuilder bufferChar) {
+    final int indexOfColon = bufferChar.indexOf(ALIAS_VALUE_SEPARATOR);
+    final int indexOfParen = bufferChar.indexOf(Character.toString(OPEN_PARENTHESIS));
+    if (indexOfColon == -1) {
+      return bufferChar.toString();
+    }
+    else {
+      return (indexOfParen == -1 || indexOfColon < indexOfParen) ?
+          bufferChar.substring(indexOfColon + 1) : bufferChar.toString();
+    }
+  }
+
+  /**
+   * Clears any collected exclusion (both literal and globs).
+   */
+  private void clearExclusions() {
+    if (exclusions != null) {
+      exclusions.clear();
+    }
+    if (exclusionGlobs != null) {
+      exclusionGlobs.clear();
+    }
+  }
+
+  /**
+   * Lazily creates the set that will hold inclusions.
+   *
+   * @return the set that will hold inclusions.
+   */
+  private Set<String> inclusions() {
+    if (inclusions == null) {
+      inclusions = new HashSet<>();
+    }
+    return inclusions;
+  }
+
+  /**
+   * Lazily creates the set that will hold inclusion globs.
+   *
+   * @return the set that will hold inclusions globs
+   */
+  private Set<String> inclusionGlobs() {
+    if (inclusionGlobs == null) {
+      inclusionGlobs = new HashSet<>();
+    }
+    return inclusionGlobs;
+  }
+
+  /**
+   * Lazily creates the set that will hold exclusions.
+   *
+   * @return the set that will hold exclusions.
+   */
+  private Set<String> exclusions() {
+    if (exclusions == null) {
+      exclusions = new HashSet<>();
+    }
+    return exclusions;
+  }
+
+  /**
+   * Lazily creates the set that will hold exclusion globs.
+   *
+   * @return the set that will hold exclusion globs.
+   */
+  private Set<String> exclusionGlobs() {
+    if (exclusionGlobs == null) {
+      exclusionGlobs = new HashSet<>();
+    }
+    return exclusionGlobs;
+  }
+
+  /**
+   * Lazily creates the set that will hold lucene field names.
+   *
+   * @return the set that will hold lucene field names.
+   */
+  private Set<String> luceneFieldNames() {
+    if (luceneFieldNames == null) {
+      luceneFieldNames = new HashSet<>();
+    }
+    return luceneFieldNames;
+  }
+
+  /**
+   * Lazily creates the set that will hold requested field names.
+   *
+   * @return the set that will hold requested field names.
+   */
+  private Set<String> requestedFieldNames() {
+    if (requestedFieldNames == null) {
+      requestedFieldNames = new LinkedHashSet<>();
+    }
+    return requestedFieldNames;
+  }
+
+  /**
+   * Lazily creates the map that will hold field aliases.
+   *
+   * @return the map that will hold the aliases.
+   */
+  private NamedList<String> aliases() {
+    if (aliases == null) {
+      aliases = new NamedList<>();
+    }
+    return aliases;
+  }
+
+  /**
+   * FieldList parser state interface. Defines the behaviour that a given parser
+   * state must implement.
+   */
+  private abstract class ParserState {
+
+    /**
+     * Callback method that lets this state process the n-th character.
+     *
+     * @param aChar            the char that is being processed.
+     * @param expressionBuffer the char buffer shared between states. Will hold the parsed expressions.
+     * @param request          the current {@link SolrQueryRequest}.
+     * @param augmenters       holds transformers.
+     * @throws SyntaxError in case this state detects a syntax error in the
+     *                     character stream being processed.
+     */
+    protected abstract void onChar(char aChar, StringBuilder expressionBuffer, SolrQueryRequest request, DocTransformers augmenters)
+        throws SyntaxError;
+
+    /**
+     * Switches the parser to the new given state.
+     *
+     * @param newState the {@link ParserState},
+     */
+    void switchTo(final ParserState newState) {
+      currentState = newState;
+    }
+
+    /**
+     * Resets the parser state.
+     * This method resets the char buffer too.
+     *
+     * @param expressionBuffer the char buffer to reset.
+     */
+    void restartWithNewToken(final StringBuilder expressionBuffer) {
+      expressionBuffer.setLength(0);
+      currentState = detectingTokenType;
+    }
+
+    /**
+     * Determines if the specified character is permissible as the first character in a field list expression.
+     * A character may start a field list expression if and only if one of the following conditions is true:
+     * <p>
+     * <ul>
+     * <li>Character.isJavaIdentifierStart(ch) returns true;</li>
+     * <li>ch is pound sign, hash (#)</li>
+     * </ul>
+     *
+     * @param ch ch the character to be tested.
+     * @return true if the character may start a field list expression; false otherwise.
+     */
+    boolean isFieldListExpressionStart(final char ch) {
+      return Character.isJavaIdentifierPart(ch) || ch == POUND_SIGN || ch == LEFT_BRACE;
+    }
+
+    /**
+     * Determines if the specified character may be part of a field list expression as other than the first character.
+     * A character may be part of a field list expression if any of the following are true:
+     * <p>
+     * <ul>
+     * <li>Character.isJavaIdentifierPart(ch) returns true;</li>
+     * <li>ch is pound sign, hash (#)</li>
+     * <li>ch is colon (:)</li>
+     * <li>ch is dot (.)</li>
+     * </ul>
+     *
+     * @param ch ch the character to be tested.
+     * @return true if the character can be part of a field list expression; false otherwise.
+     */
+    boolean isFieldListExpressionPart(final char ch) {
+      return Character.isJavaIdentifierPart(ch) || ch == DOT || ch == COLON || ch == POUND_SIGN || ch == HYPHEN ||
+          ch == PLUS || ch == LEFT_BRACE || ch == RIGHT_BRACE || ch == '!';
+    }
+
+    /**
+     * Determines if the specified character may be part of a SOLR function as other than the first character.
+     * A character may be part of a SOLR function if any of the following are true:
+     * <p>
+     * <ul>
+     * <li>isSolrIdentifierPart(ch) returns true;</li>
+     * <li>ch is comma (,)</li>
+     * </ul>
+     * <p>
+     * Note that passing this method char by char doesn't mean the whole function string will be valid.
+     *
+     * @param ch ch the character to be tested.
+     * @return true if the character may start a SOLR fieldname; false otherwise.
+     */
+    boolean isSolrFunctionPart(final char ch) {
+      return isFieldListExpressionPart(ch) || ch == ',' || ch == '.' || ch == ' ' || ch == '\'' || ch == '\"' || ch == '='
+          || ch == '-' || ch == '/' || ch == PLUS;
+    }
+
+    /**
+     * Checks if the given buffer contains a value that is a constant.
+     *
+     * @param buffer the char buffer containing the current expression.
+     * @return true if the given buffer contains an expression which is actually a numeric constant.
+     */
+    boolean isConstantOrFunction(final StringBuilder buffer) {
+      if (buffer.indexOf("{!func") != -1) {
+        return true;
+      }
+      int offset = buffer.lastIndexOf(ALIAS_VALUE_SEPARATOR);
+      offset = (offset == -1) ? 0 : offset + 1;
+      for (int i = offset; i < buffer.length(); i++) {
+        final char ch = buffer.charAt(i);
+        if (!(Character.isDigit(ch) || ch == HYPHEN || ch == PLUS || ch == DOT)) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
+  /**
+   * An exclusion glob token is being parsed.
+   * Activated in case an exclusion glob is detected (e.g. -pipp*,-*ippo).
+   */
+  private final ParserState collectingExclusionGlob = new ParserState() {
+    @Override
+    public void onChar(final char aChar, final StringBuilder expressionBuffer, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      if (!isFieldListExpressionPart(aChar)) {
+        if (aChar == WILDCARD || aChar == QUESTION_MARK) {
+          expressionBuffer.append(aChar);
+        }
+        onExclusionGlobExpression(expressionBuffer);
+        restartWithNewToken(expressionBuffer);
+      } else {
+        expressionBuffer.append(aChar);
+      }
+    }
+  };
+
+  /**
+   * An exclusion (literal) token is being parsed.
+   * Activated in case an exclusion literal field name is detected (e.g. -pipp*,-*ippo).
+   */
+  private final ParserState collectingExclusionToken = new ParserState() {
+    @Override
+    public void onChar(final char aChar, final StringBuilder buffer, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      if (aChar == WILDCARD || aChar == QUESTION_MARK) {
+        buffer.append(aChar);
+        switchTo(collectingExclusionGlob);
+      } else if (!isFieldListExpressionPart(aChar)) {
+        if (isConstantOrFunction(buffer)) {
+          onFunction(buffer, augmenters, request);
+        } else {
+          onExclusionLiteralFieldName(buffer);
+        }
+        restartWithNewToken(buffer);
+      } else {
+        buffer.append(aChar);
+      }
+    }
+  };
+
+  /**
+   * A transformer token is being parsed.
+   * Activated in case a transformer is detected (e.g. [docid][explain]).
+   */
+  private final ParserState collectingTransformer = new ParserState() {
+    private int openBracket;
+
+    @Override
+    public void onChar(final char aChar, final StringBuilder expressionBuffer, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      expressionBuffer.append(aChar);
+      switch (aChar) {
+        case OPEN_BRACKET:
+          openBracket++;
+          break;
+
+        case CLOSE_BRACKET:
+          openBracket--;
+          if (openBracket == 0) {
+            onTransformer(expressionBuffer, request, augmenters);
+            restartWithNewToken(expressionBuffer);
+          }
+          break;
+        default:
+      }
+    }
+  };
+
+  /**
+   * An inclusion glob token is being parsed.
+   * Activated in case an inclusion glob is detected (e.g. pipp*,*ippo).
+   */
+  private final ParserState collectingInclusionGlob = new ParserState() {
+    @Override
+    public void onChar(final char aChar, final StringBuilder buffer, final SolrQueryRequest request,
+                       final DocTransformers augmenters) {
+      if (isFieldListExpressionPart(aChar) || aChar == WILDCARD || aChar == QUESTION_MARK) {
+        buffer.append(aChar);
+      } else {
+        onInclusionGlob(buffer);
+        restartWithNewToken(buffer);
+      }
+    }
+  };
+
+  /**
+   * A token that has been classified as function is being parsed.
+   */
+  private final ParserState collectingFunction = new ParserState() {
+    private int openParenthesis;
+
+    @Override
+    public void onChar(final char aChar, final StringBuilder expressionBuffer, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      switch (aChar) {
+        case OPEN_PARENTHESIS:
+          openParenthesis++;
+          expressionBuffer.append(aChar);
+          break;
+
+        case CLOSE_PARENTHESIS:
+          openParenthesis--;
+          expressionBuffer.append(aChar);
+          if (openParenthesis == 0) {
+            onFunction(expressionBuffer, augmenters, request);
+            restartWithNewToken(expressionBuffer);
+          }
+          break;
+        default:
+          if (isSolrFunctionPart(aChar)) {
+            expressionBuffer.append(aChar);
+          }
+      }
+    }
+  };
+
+  /**
+   * A token that has been classified as function is being parsed.
+   */
+  private final ParserState collectingLiteral = new ParserState() {
+    private int quoteCount;
+
+    @Override
+    public void onChar(final char aChar, final StringBuilder expressionBuffer, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      switch (aChar) {
+        case QUOTE:
+        case DQUOTE:
+          quoteCount++;
+          expressionBuffer.append(aChar);
+          if (quoteCount % 2 == 0) {
+            onFunction(expressionBuffer, augmenters, request);
+            restartWithNewToken(expressionBuffer);
+          }
+          break;
+        default:
+          if (isSolrFunctionPart(aChar)) {
+            expressionBuffer.append(aChar);
+          }
+      }
+    }
+  };
+
+  /**
+   * Parser state activated when a token maybe several things: inclusion (literal or glob) and function.
+   */
+  private ParserState maybeInclusionLiteralOrGlobOrFunction = new ParserState() {
+    @Override
+    public void onChar(final char aChar, final StringBuilder builder, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      switch (aChar) {
+        case OPEN_PARENTHESIS:
+          switchTo(collectingFunction);
+          currentState.onChar(aChar, builder, request, augmenters);
+          break;
+        case QUOTE:
+        case DQUOTE:
+          switchTo(collectingLiteral);
+          currentState.onChar(aChar, builder, request, augmenters);
+          break;
+        case QUESTION_MARK:
+        case WILDCARD:
+          builder.append(aChar);
+          switchTo(collectingInclusionGlob);
+          break;
+        case OPEN_BRACKET:
+          switchTo(collectingTransformer);
+          currentState.onChar(aChar, builder, request, augmenters);
+          break;
+        default:
+          if (!isFieldListExpressionPart(aChar)) {
+            if (isConstantOrFunction(builder)) {
+              onFunction(builder, augmenters, request);
+            } else {
+              onInclusionLiteralExpression(builder, augmenters, true, true);
+            }
+            restartWithNewToken(builder);
+          } else {
+            builder.append(aChar);
+          }
+      }
+    }
+  };
+
+  /**
+   * Initial parser state: we know nothing about next (or the first) token.
+   */
+  private final ParserState detectingTokenType = new ParserState() {
+    @Override
+    public void onChar(final char aChar, final StringBuilder builder, final SolrQueryRequest request,
+                       final DocTransformers augmenters) throws SyntaxError {
+      switch (aChar) {
+        case HYPHEN:
+          switchTo(collectingExclusionToken);
+          break;
+        case OPEN_BRACKET:
+          switchTo(collectingTransformer);
+          currentState.onChar(aChar, builder, request, augmenters);////scott
+          break;
+        case QUESTION_MARK:
+        case WILDCARD:
+          builder.append(aChar);
+          switchTo(collectingInclusionGlob);
+          break;
+        case QUOTE:
+        case DQUOTE:
+          switchTo(collectingLiteral);
+          currentState.onChar(aChar, builder, request, augmenters);
+          break;
+        default:
+          if (isFieldListExpressionStart(aChar)) {
+            builder.append(aChar);
+            switchTo(maybeInclusionLiteralOrGlobOrFunction);
+          }
+      }
+    }
+  };
+
+  /**
+   * Field list parsing entry point.
+   *
+   * @param request    the current request.
+   * @param fieldLists the field list(s) that will be parsed.
+   * @throws SyntaxError in case the given field lists contains syntax errors.
+   */
+  void parse(final SolrQueryRequest request, final String... fieldLists) throws SyntaxError {
+    final DocTransformers augmenters = new DocTransformers();
+    final StringBuilder charBuffer = new StringBuilder();
+    for (String fieldList : fieldLists) {
+      for (int i = 0; i < fieldList.length(); i++) {
+        final char aChar = fieldList.charAt(i);
+        currentState.onChar(aChar, charBuffer, request, augmenters);
+      }
+      currentState.onChar(' ', charBuffer, request, augmenters);
+    }
+    for (Map.Entry<String, String> entry : aliases()) {
+      // If we've requested a field explicitly, add all aliases as copies
+      if (inclusions().contains(entry.getKey())) {
+        for (String name : aliases.getAll(entry.getKey())) {
+          augmenters.addTransformer(new RenameFieldTransformer(entry.getKey(), name, true));
+        }
+      } else {
+        // Otherwise add it as a rename
+        List<String> aliasNames = aliases().getAll(entry.getKey());
+        // If we have multiple names for the field add all but the last as copies
+        if (aliasNames.size() > 1) {
+          for (int i = 0; i < aliasNames.size() - 1; i++) {
+            augmenters.addTransformer(new RenameFieldTransformer(entry.getKey(), aliasNames.get(i), true));
+          }
+          augmenters.addTransformer(new RenameFieldTransformer(entry.getKey(), aliasNames.get(aliasNames.size() - 1), false));
+        } else {
+          augmenters.addTransformer(new RenameFieldTransformer(entry.getKey(), aliasNames.get(0), false));
+        }
+      }
+      luceneFieldNames().add(entry.getKey());
+    }
+
+    // At the very end of parsing, if there are inclusion or exclusion globs, indicate to callers that they should use
+    // the wantsField() method for each field individually. Do this by returning an empty luceneFieldNames
+    if (!wantsAllFields && (hasPatternMatching())) luceneFieldNames().clear();
+
+    if (augmenters.size() == 1) {
+      transformer = augmenters.getTransformer(0);
+    } else if (augmenters.size() > 1) {
+      transformer = augmenters;
+    }
   }
 
   // like getId, but also accepts dashes for legacy fields
@@ -172,307 +965,23 @@ public class SolrReturnFields extends ReturnFields {
       }
       return sp.val.substring(id_start, sp.pos);
     }
-
     return null;
-  }
-
-  private void add(String fl, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
-    if( fl == null ) {
-      return;
-    }
-    try {
-      StrParser sp = new StrParser(fl);
-
-      for(;;) {
-        sp.opt(',');
-        sp.eatws();
-        if (sp.pos >= sp.end) break;
-
-        int start = sp.pos;
-
-        // short circuit test for a really simple field name
-        String key = null;
-        String field = getFieldName(sp);
-        char ch = sp.ch();
-
-        if (field != null) {
-          if (sp.opt(':')) {
-            // this was a key, not a field name
-            key = field;
-            field = null;
-            sp.eatws();
-            start = sp.pos;
-          } else {
-            if (Character.isWhitespace(ch) || ch == ',' || ch==0) {
-              addField(field, key, augmenters, false);
-              continue;
-            }
-            // an invalid field name... reset the position pointer to retry
-            sp.pos = start;
-            field = null;
-          }
-        }
-
-        if (key != null) {
-          // we read "key : "
-          field = sp.getId(null);
-          ch = sp.ch();
-          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
-            rename.add(field, key);
-            addField(field, key, augmenters, false);
-            continue;
-          }
-          // an invalid field name... reset the position pointer to retry
-          sp.pos = start;
-          field = null;
-        }
-
-        if (field == null) {
-          // We didn't find a simple name, so let's see if it's a globbed field name.
-          // Globbing only works with field names of the recommended form (roughly like java identifiers)
-
-          field = sp.getGlobbedId(null);
-          ch = sp.ch();
-          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
-            // "*" looks and acts like a glob, but we give it special treatment
-            if ("*".equals(field)) {
-              _wantsAllFields = true;
-            } else {
-              globs.add(field);
-            }
-            continue;
-          }
-
-          // an invalid glob
-          sp.pos = start;
-        }
-
-        String funcStr = sp.val.substring(start);
-
-        // Is it an augmenter of the form [augmenter_name foo=1 bar=myfield]?
-        // This is identical to localParams syntax except it uses [] instead of {!}
-
-        if (funcStr.startsWith("[")) {
-          ModifiableSolrParams augmenterParams = new ModifiableSolrParams();
-          int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterParams, req.getParams(), "[", ']');
-          sp.pos += end;
-
-          // [foo] is short for [type=foo] in localParams syntax
-          String augmenterName = augmenterParams.get("type");
-          augmenterParams.remove("type");
-          String disp = key;
-          if( disp == null ) {
-            disp = '['+augmenterName+']';
-          }
-
-          TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
-          if( factory != null ) {
-            DocTransformer t = factory.create(disp, augmenterParams, req);
-            if(t!=null) {
-              if(!_wantsAllFields) {
-                String[] extra = t.getExtraRequestFields();
-                if(extra!=null) {
-                  for(String f : extra) {
-                    fields.add(f); // also request this field from IndexSearcher
-                  }
-                }
-              }
-              augmenters.addTransformer( t );
-            }
-          }
-          else {
-            //throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown DocTransformer: "+augmenterName);
-          }
-          addField(field, disp, augmenters, true);
-          continue;
-        }
-
-
-        // let's try it as a function instead
-        QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
-        Query q = null;
-        ValueSource vs = null;
-
-        try {
-          if (parser instanceof FunctionQParser) {
-            FunctionQParser fparser = (FunctionQParser)parser;
-            fparser.setParseMultipleSources(false);
-            fparser.setParseToEnd(false);
-
-            q = fparser.getQuery();
-
-            if (fparser.localParams != null) {
-              if (fparser.valFollowedParams) {
-                // need to find the end of the function query via the string parser
-                int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
-              } else {
-                // the value was via the "v" param in localParams, so we need to find
-                // the end of the local params themselves to pick up where we left off
-                sp.pos = start + fparser.localParamsEnd;
-              }
-            } else {
-              // need to find the end of the function query via the string parser
-              int leftOver = fparser.sp.end - fparser.sp.pos;
-              sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
-            }
-          } else {
-            // A QParser that's not for function queries.
-            // It must have been specified via local params.
-            q = parser.getQuery();
-
-            assert parser.getLocalParams() != null;
-            sp.pos = start + parser.localParamsEnd;
-          }
-          funcStr = sp.val.substring(start, sp.pos);
-
-
-          if (q instanceof FunctionQuery) {
-            vs = ((FunctionQuery)q).getValueSource();
-          } else {
-            vs = new QueryValueSource(q, 0.0f);
-          }
-
-          if (key==null) {
-            SolrParams localParams = parser.getLocalParams();
-            if (localParams != null) {
-              key = localParams.get("key");
-            }
-          }
-
-          if (key==null) {
-            key = funcStr;
-          }
-          addField(funcStr, key, augmenters, true);
-          augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
-        }
-        catch (SyntaxError e) {
-          // try again, simple rules for a field name with no whitespace
-          sp.pos = start;
-          field = sp.getSimpleString();
-
-          if (req.getSchema().getFieldOrNull(field) != null) {
-            // OK, it was an oddly named field
-            addField(field, key, augmenters, false);
-            if( key != null ) {
-              rename.add(field, key);
-            }
-          } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname: " + e.getMessage(), e);
-          }
-        }
-
-        // end try as function
-
-      } // end for(;;)
-    } catch (SyntaxError e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname", e);
-    }
-  }
-
-  private void addField(String field, String key, DocTransformers augmenters, boolean isPseudoField)
-  {
-    if(reqFieldNames==null) {
-      reqFieldNames = new LinkedHashSet<>();
-    }
-    
-    if(key==null) {
-      reqFieldNames.add(field);
-    }
-    else {
-      reqFieldNames.add(key);
-    }
-
-    if ( ! isPseudoField) {
-      // fields is returned by getLuceneFieldNames(), to be used to select which real fields
-      // to return, so pseudo-fields should not be added
-      fields.add(field);
-    }
-
-    okFieldNames.add( field );
-    okFieldNames.add( key );
-    // a valid field name
-    if(SCORE.equals(field)) {
-      _wantsScore = true;
-
-      String disp = (key==null) ? field : key;
-      augmenters.addTransformer( new ScoreAugmenter( disp ) );
-    }
-  }
-
-  @Override
-  public Set<String> getLuceneFieldNames()
-  {
-    return getLuceneFieldNames(false);
-  }
-
-  @Override
-  public Set<String> getLuceneFieldNames(boolean ignoreWantsAll)
-  {
-    if (ignoreWantsAll)
-      return fields;
-    else
-      return (_wantsAllFields || fields.isEmpty()) ? null : fields;
-  }
-
-  @Override
-  public Set<String> getRequestedFieldNames() {
-    if(_wantsAllFields || reqFieldNames==null || reqFieldNames.isEmpty()) {
-      return null;
-    }
-    return reqFieldNames;
-  }
-  
-  @Override
-  public boolean hasPatternMatching() {
-    return !globs.isEmpty();
-  }
-
-  @Override
-  public boolean wantsField(String name)
-  {
-    if( _wantsAllFields || okFieldNames.contains( name ) ){
-      return true;
-    }
-    for( String s : globs ) {
-      // TODO something better?
-      if( FilenameUtils.wildcardMatch(name, s) ) {
-        okFieldNames.add(name); // Don't calculate it again
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  @Override
-  public boolean wantsAllFields()
-  {
-    return _wantsAllFields;
-  }
-
-  @Override
-  public boolean wantsScore()
-  {
-    return _wantsScore;
-  }
-
-  @Override
-  public DocTransformer getTransformer()
-  {
-    return transformer;
   }
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("SolrReturnFields=(");
-    sb.append("globs="); sb.append(globs);
-    sb.append(",fields="); sb.append(fields);
-    sb.append(",okFieldNames="); sb.append(okFieldNames);
-    sb.append(",reqFieldNames="); sb.append(reqFieldNames);
-    sb.append(",transformer="); sb.append(transformer);
-    sb.append(",wantsScore="); sb.append(_wantsScore);
-    sb.append(",wantsAllFields="); sb.append(_wantsAllFields);
-    sb.append(')');
-    return sb.toString();
+    return "SolrReturnFields{" +
+        "requestedFieldNames=" + requestedFieldNames +
+        ", wantsAllFields=" + wantsAllFields +
+        ", wantsScore=" + wantsScore() +
+        ", luceneFieldNames=" + luceneFieldNames +
+        ", inclusions=" + inclusions +
+        ", exclusions=" + exclusions +
+        ", inclusionGlobs=" + inclusionGlobs +
+        ", exclusionGlobs=" + exclusionGlobs +
+        ", aliases=" + aliases +
+        ", transformer=" + transformer +
+        '}';
   }
+
 }
