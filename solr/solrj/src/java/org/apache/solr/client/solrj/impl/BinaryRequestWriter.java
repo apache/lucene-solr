@@ -27,6 +27,8 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.ContentStream;
 
+import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
+
 /**
  * A RequestWriter which writes requests in the javabin format
  *
@@ -49,11 +51,11 @@ public class BinaryRequestWriter extends RequestWriter {
 
         @Override
         public String getContentType() {
-          return "application/javabin";
+          return JAVABIN_MIME;
         }
       };
     } else {
-      return req.getContentWriter("application/javabin");
+      return req.getContentWriter(JAVABIN_MIME);
     }
   }
 
@@ -71,7 +73,7 @@ public class BinaryRequestWriter extends RequestWriter {
 
   @Override
   public String getUpdateContentType() {
-    return "application/javabin";
+    return JAVABIN_MIME;
   }
 
   @Override

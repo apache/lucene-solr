@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,11 +42,6 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   @Override
   public SolrParams getParams() {
     return params;
-  }
-
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return contentStreams;
   }
 
   @Override

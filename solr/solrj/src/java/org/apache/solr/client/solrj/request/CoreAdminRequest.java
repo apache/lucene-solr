@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,7 +31,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 
 /**
  * This class is experimental and subject to change.
@@ -567,10 +565,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   //
   //---------------------------------------------------------------------------------------
 
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
-  }
 
   @Override
   protected CoreAdminResponse createResponse(SolrClient client) {

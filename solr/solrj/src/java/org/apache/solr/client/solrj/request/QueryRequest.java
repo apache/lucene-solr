@@ -21,9 +21,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-
-import java.util.Collection;
 
 /**
  * 
@@ -68,11 +65,6 @@ public class QueryRequest extends SolrRequest<QueryResponse> {
   
   //---------------------------------------------------------------------------------
   //---------------------------------------------------------------------------------
-  
-  @Override
-  public Collection<ContentStream> getContentStreams() {
-    return null;
-  }
 
   @Override
   protected QueryResponse createResponse(SolrClient client) {
