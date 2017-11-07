@@ -589,16 +589,6 @@ public abstract class TFIDFSimilarity extends Similarity {
         return raw * normValue;  // normalize for field
       }
     }
-    
-    @Override
-    public float computeSlopFactor(int distance) {
-      return sloppyFreq(distance);
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return scorePayload(doc, start, end, payload);
-    }
 
     @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {

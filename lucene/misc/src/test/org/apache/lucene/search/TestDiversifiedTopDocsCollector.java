@@ -471,7 +471,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     @Override
     public SimScorer simScorer(SimWeight stats, LeafReaderContext context)
         throws IOException {
-      final SimScorer sub = sim.simScorer(stats, context);
+
       final NumericDocValues values = DocValues.getNumeric(context.reader(), scoreValueField);
 
       return new SimScorer() {
@@ -485,17 +485,6 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
           } else {
             return 0f;
           }
-        }
-
-        @Override
-        public float computeSlopFactor(int distance) {
-          return sub.computeSlopFactor(distance);
-        }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end,
-            BytesRef payload) {
-          return sub.computePayloadFactor(doc, start, end, payload);
         }
 
         @Override

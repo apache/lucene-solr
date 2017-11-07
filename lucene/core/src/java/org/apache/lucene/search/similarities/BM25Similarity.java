@@ -73,11 +73,6 @@ public class BM25Similarity extends Similarity {
     return (float) Math.log(1 + (docCount - docFreq + 0.5D)/(docFreq + 0.5D));
   }
   
-  /** Implemented as <code>1 / (distance + 1)</code>. */
-  protected float sloppyFreq(int distance) {
-    return 1.0f / (distance + 1);
-  }
-  
   /** The default implementation returns <code>1</code> */
   protected float scorePayload(int doc, int start, int end, BytesRef payload) {
     return 1;
@@ -267,15 +262,6 @@ public class BM25Similarity extends Similarity {
       }
     }
 
-    @Override
-    public float computeSlopFactor(int distance) {
-      return sloppyFreq(distance);
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return scorePayload(doc, start, end, payload);
-    }
   }
   
   /** Collection statistics for the BM25 model. */

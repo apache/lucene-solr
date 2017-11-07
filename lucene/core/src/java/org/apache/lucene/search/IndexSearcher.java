@@ -31,11 +31,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader; // javadocs
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
@@ -45,9 +45,8 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.NIOFSDirectory;    // javadoc
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements search over a single IndexReader.
@@ -94,22 +93,10 @@ public class IndexSearcher {
     @Override
     public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
       return new SimScorer() {
-
         @Override
         public float score(int doc, float freq) {
           return 0f;
         }
-
-        @Override
-        public float computeSlopFactor(int distance) {
-          return 1f;
-        }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-          return 1f;
-        }
-
       };
     }
 

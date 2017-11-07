@@ -23,8 +23,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.util.BytesRef;
 
 /** wraps a similarity with checks for testing */
 public class AssertingSimilarity extends Similarity {
@@ -95,36 +93,6 @@ public class AssertingSimilarity extends Similarity {
         // TODO: some tests have negative boosts today
         assert score >= 0 || assertingWeight.boost < 0;
         return score;
-      }
-
-      @Override
-      public float computeSlopFactor(int distance) {
-        // distance in bounds
-        assert distance >= 0;
-        // result in bounds
-        float slopFactor = delegateScorer.computeSlopFactor(distance);
-        assert Float.isFinite(slopFactor);
-        assert slopFactor > 0;
-        assert slopFactor <= 1;
-        return slopFactor;
-      }
-
-      @Override
-      public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-        // doc in bounds
-        assert doc >= 0;
-        assert doc < context.reader().maxDoc();
-        // payload in bounds
-        assert payload.isValid();
-        // position range in bounds
-        assert start >= 0;
-        assert start != Spans.NO_MORE_POSITIONS;
-        assert end > start;
-        // result in bounds
-        float payloadFactor = delegateScorer.computePayloadFactor(doc, start, end, payload);
-        assert Float.isFinite(payloadFactor);
-        assert payloadFactor >= 0;
-        return payloadFactor;
       }
 
       @Override
