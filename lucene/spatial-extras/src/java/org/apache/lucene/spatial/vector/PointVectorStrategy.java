@@ -290,9 +290,10 @@ public class PointVectorStrategy extends SpatialStrategy {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return null; // TODO delegate to DoubleValuesSource?
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return distanceSource.isCacheable(ctx);
         }
+
       };
     }
 

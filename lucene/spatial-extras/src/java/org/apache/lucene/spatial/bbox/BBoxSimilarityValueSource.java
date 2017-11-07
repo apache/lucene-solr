@@ -111,6 +111,11 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return bboxValueSource.isCacheable(ctx);
+  }
+
+  @Override
   public boolean needsScores() {
     return false;
   }

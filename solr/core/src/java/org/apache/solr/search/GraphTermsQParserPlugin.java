@@ -332,9 +332,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return context.reader().getCoreCacheHelper();
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
+
       };
     }
 
@@ -631,8 +632,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return context.reader().getCoreCacheHelper();
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
     };
   }

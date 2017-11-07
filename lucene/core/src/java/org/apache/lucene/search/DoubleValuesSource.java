@@ -41,7 +41,7 @@ import org.apache.lucene.index.NumericDocValues;
  * {@link #fromScorer(Scorer)} and passing the resulting DoubleValues to {@link #getValues(LeafReaderContext, DoubleValues)}.
  * The scores can then be accessed using the {@link #SCORES} DoubleValuesSource.
  */
-public abstract class DoubleValuesSource {
+public abstract class DoubleValuesSource implements SegmentCacheable {
 
   /**
    * Returns a {@link DoubleValues} instance for the passed-in LeafReaderContext and scores
@@ -104,22 +104,27 @@ public abstract class DoubleValuesSource {
     }
 
     @Override
-      public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        DoubleValues in = inner.getValues(ctx, scores);
-        return new LongValues() {
-          @Override
-          public long longValue() throws IOException {
-            return (long) in.doubleValue();
-          }
+    public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+      DoubleValues in = inner.getValues(ctx, scores);
+      return new LongValues() {
+        @Override
+        public long longValue() throws IOException {
+          return (long) in.doubleValue();
+        }
 
-          @Override
-          public boolean advanceExact(int doc) throws IOException {
-            return in.advanceExact(doc);
-          }
-        };
-      }
+        @Override
+        public boolean advanceExact(int doc) throws IOException {
+          return in.advanceExact(doc);
+        }
+      };
+    }
 
-      @Override
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return inner.isCacheable(ctx);
+    }
+
+    @Override
       public boolean needsScores() {
         return inner.needsScores();
       }
@@ -201,6 +206,11 @@ public abstract class DoubleValuesSource {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) {
       return scoreExplanation;
     }
@@ -254,6 +264,11 @@ public abstract class DoubleValuesSource {
     @Override
     public boolean needsScores() {
       return false;
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
     }
 
     @Override
@@ -346,6 +361,11 @@ public abstract class DoubleValuesSource {
     @Override
     public boolean needsScores() {
       return false;
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return DocValues.isCacheable(ctx, field);
     }
 
     @Override

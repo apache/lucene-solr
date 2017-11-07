@@ -171,11 +171,12 @@ public final class IndexOrDocValuesQuery extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      public boolean isCacheable(LeafReaderContext ctx) {
         // Both index and dv query should return the same values, so we can use
         // the index query's cachehelper here
-        return indexWeight.getCacheHelper(context);
+        return indexWeight.isCacheable(ctx);
       }
+
     };
   }
 

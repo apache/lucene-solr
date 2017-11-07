@@ -17,11 +17,9 @@
 package org.apache.lucene.queries;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -210,11 +208,14 @@ public class CustomScoreQuery extends Query implements Cloneable {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      List<Weight> weights = new ArrayList<>();
-      weights.add(subQueryWeight);
-      weights.addAll(Arrays.asList(valSrcWeights));
-      return getCacheHelper(context, weights);
+    public boolean isCacheable(LeafReaderContext ctx) {
+      if (subQueryWeight.isCacheable(ctx) == false)
+        return false;
+      for (Weight w : valSrcWeights) {
+        if (w.isCacheable(ctx) == false)
+          return false;
+      }
+      return true;
     }
 
     @Override

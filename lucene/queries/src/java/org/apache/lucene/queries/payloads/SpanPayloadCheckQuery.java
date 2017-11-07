@@ -131,9 +131,10 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return matchWeight.getCacheHelper(context);
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return matchWeight.isCacheable(ctx);
     }
+
   }
 
   private class PayloadChecker implements SpanCollector {

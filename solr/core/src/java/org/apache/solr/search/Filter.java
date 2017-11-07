@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -137,10 +136,9 @@ public abstract class Filter extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return context.reader().getReaderCacheHelper();
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
       }
-
     };
   }
 }

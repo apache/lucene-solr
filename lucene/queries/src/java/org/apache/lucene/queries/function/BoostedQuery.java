@@ -89,8 +89,8 @@ public final class BoostedQuery extends Query {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return null;
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
 
     @Override

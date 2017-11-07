@@ -85,8 +85,8 @@ final class DeleteByQueryWrapper extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return inner.getCacheHelper(context);
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return inner.isCacheable(ctx);
       }
     };
   }

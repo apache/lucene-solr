@@ -138,8 +138,12 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return getCacheHelper(context, weights);
+    public boolean isCacheable(LeafReaderContext ctx) {
+      for (Weight w : weights) {
+        if (w.isCacheable(ctx) == false)
+          return false;
+      }
+      return true;
     }
 
     /** Explain the score we computed for doc */

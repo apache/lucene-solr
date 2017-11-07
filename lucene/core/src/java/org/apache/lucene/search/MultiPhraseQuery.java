@@ -285,8 +285,8 @@ public class MultiPhraseQuery extends Query {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return context.reader().getCoreCacheHelper();
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
     }
 
     @Override

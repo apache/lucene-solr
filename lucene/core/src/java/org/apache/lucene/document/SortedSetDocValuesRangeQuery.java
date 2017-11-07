@@ -183,9 +183,10 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return getDocValuesCacheHelper(field, context);
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
       }
+
     };
   }
 

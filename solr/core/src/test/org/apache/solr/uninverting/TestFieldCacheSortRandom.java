@@ -290,8 +290,8 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return context.reader().getCoreCacheHelper();
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
       };
     }

@@ -37,7 +37,7 @@ import org.apache.lucene.index.NumericDocValues;
  * use {@link DoubleValuesSource#fromFloatField(String)} or {@link DoubleValuesSource#fromDoubleField(String)}
  * and then call {@link DoubleValuesSource#toLongValuesSource()}.
  */
-public abstract class LongValuesSource {
+public abstract class LongValuesSource implements SegmentCacheable {
 
   /**
    * Returns a {@link LongValues} instance for the passed-in LeafReaderContext and scores
@@ -114,6 +114,11 @@ public abstract class LongValuesSource {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
+    @Override
     public boolean needsScores() {
       return false;
     }
@@ -168,6 +173,11 @@ public abstract class LongValuesSource {
     public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       final NumericDocValues values = DocValues.getNumeric(ctx.reader(), field);
       return toLongValues(values);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return DocValues.isCacheable(ctx, field);
     }
 
     @Override

@@ -79,6 +79,11 @@ public class CachingDoubleValueSource extends DoubleValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return source.isCacheable(ctx);
+  }
+
+  @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
     return source.explain(ctx, docId, scoreExplanation);
   }

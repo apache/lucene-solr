@@ -158,6 +158,11 @@ public abstract class ValueSource {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
+    @Override
     public boolean needsScores() {
       return false;
     }
@@ -226,6 +231,11 @@ public abstract class ValueSource {
     @Override
     public boolean needsScores() {
       return true;  // be on the safe side
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
 
     @Override

@@ -18,20 +18,19 @@ package org.apache.lucene.spatial3d;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.spatial3d.geom.BasePlanetObject;
-import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
-import org.apache.lucene.spatial3d.geom.XYZBounds;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.spatial3d.geom.BasePlanetObject;
+import org.apache.lucene.spatial3d.geom.GeoShape;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.util.DocIdSetBuilder;
 
 /** Finds all previously indexed points that fall within the specified polygon.
@@ -106,9 +105,10 @@ final class PointInGeo3DShapeQuery extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return context.reader().getCoreCacheHelper();
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
+
     };
   }
 

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -301,8 +300,12 @@ final class BooleanWeight extends Weight {
   }
 
   @Override
-  public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-    return getCacheHelper(context, weights);
+  public boolean isCacheable(LeafReaderContext ctx) {
+    for (Weight w : weights) {
+      if (w.isCacheable(ctx) == false)
+        return false;
+    }
+    return true;
   }
 
   @Override
