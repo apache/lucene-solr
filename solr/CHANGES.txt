@@ -142,6 +142,8 @@ Other Changes
 * SOLR-11606: Disable tests automatically if Mockito does not work with Java runtime (Java 10).
   (Uwe Schindler)
 
+* SOLR-11618: Tone down verbosity of BackupManager logging (Varun Thacker)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
