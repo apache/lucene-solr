@@ -140,6 +140,11 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       }
 
       @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return in.isCacheable(ctx);
+      }
+
+      @Override
       public int hashCode() {
         return 0;
       }
@@ -177,6 +182,11 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       @Override
       public boolean needsScores() {
         return true;
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return in.isCacheable(ctx);
       }
 
       @Override

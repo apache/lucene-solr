@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 
@@ -124,9 +123,10 @@ public class DocValuesNumbersQuery extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return getDocValuesCacheHelper(field, context);
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
+
     };
   }
 }

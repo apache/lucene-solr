@@ -77,6 +77,12 @@ class BBoxValueSource extends ShapeValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return DocValues.isCacheable(ctx,
+        strategy.field_minX, strategy.field_minY, strategy.field_maxX, strategy.field_maxY);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;

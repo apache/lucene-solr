@@ -168,8 +168,8 @@ public final class ConstantScoreQuery extends Query {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return innerWeight.getCacheHelper(context);
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return innerWeight.isCacheable(ctx);
         }
 
       };

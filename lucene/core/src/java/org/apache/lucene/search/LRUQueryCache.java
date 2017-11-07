@@ -722,8 +722,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         policy.onUse(getQuery());
       }
 
-      final IndexReader.CacheHelper cacheHelper = in.getCacheHelper(context);
-      if (cacheHelper == null) {
+      if (in.isCacheable(context) == false) {
         // this segment is not suitable for caching
         return in.scorerSupplier(context);
       }
@@ -739,6 +738,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.scorerSupplier(context);
       }
 
+      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      if (cacheHelper == null) {
+        // this reader has no cache helper
+        return in.scorerSupplier(context);
+      }
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);
@@ -788,8 +792,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return in.getCacheHelper(context);
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return in.isCacheable(ctx);
     }
 
     @Override
@@ -798,8 +802,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         policy.onUse(getQuery());
       }
 
-      final IndexReader.CacheHelper cacheHelper = in.getCacheHelper(context);
-      if (cacheHelper == null) {
+      if (in.isCacheable(context) == false) {
         // this segment is not suitable for caching
         return in.bulkScorer(context);
       }
@@ -815,6 +818,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return in.bulkScorer(context);
       }
 
+      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      if (cacheHelper == null) {
+        // this reader has no cacheHelper
+        return in.bulkScorer(context);
+      }
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), context, cacheHelper);

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -106,8 +105,8 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return context.reader().getCoreCacheHelper();
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
 
   }

@@ -33,6 +33,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Weight;
 
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
@@ -231,9 +232,14 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return getCacheHelper(context, subWeights);
+    public boolean isCacheable(LeafReaderContext ctx) {
+      for (Weight w : subWeights) {
+        if (w.isCacheable(ctx) == false)
+          return false;
+      }
+      return true;
     }
+
   }
 
   @Override
@@ -326,9 +332,10 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return context.reader().getCoreCacheHelper();
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
+
     }
 
     @Override

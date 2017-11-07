@@ -95,8 +95,8 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return null;
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
         }
 
         @Override

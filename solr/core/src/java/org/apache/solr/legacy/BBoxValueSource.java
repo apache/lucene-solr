@@ -18,6 +18,7 @@ package org.apache.solr.legacy;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -70,6 +71,12 @@ class BBoxValueSource extends ShapeValuesSource {
       }
 
     };
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return DocValues.isCacheable(ctx,
+        strategy.field_maxX, strategy.field_maxY, strategy.field_minX, strategy.field_minY);
   }
 
   @Override

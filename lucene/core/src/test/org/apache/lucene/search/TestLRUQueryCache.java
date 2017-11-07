@@ -43,6 +43,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
@@ -362,8 +363,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return context.reader().getCoreCacheHelper();
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
       };
     }
@@ -956,8 +957,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return context.reader().getCoreCacheHelper();
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
       };
     }
@@ -1310,8 +1311,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return null;
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
         }
       };
     }
@@ -1377,8 +1378,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return context.reader().getCoreCacheHelper();
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
         }
 
         @Override
@@ -1478,8 +1479,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return getDocValuesCacheHelper(field, context);
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return DocValues.isCacheable(ctx, field);
         }
 
       };

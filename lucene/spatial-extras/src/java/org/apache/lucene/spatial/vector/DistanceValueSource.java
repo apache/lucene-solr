@@ -93,6 +93,11 @@ public class DistanceValueSource extends DoubleValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return DocValues.isCacheable(ctx, strategy.getFieldNameX(), strategy.getFieldNameY());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;

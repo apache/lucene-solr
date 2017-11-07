@@ -75,8 +75,8 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-      return null;
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
     }
 
     @Override

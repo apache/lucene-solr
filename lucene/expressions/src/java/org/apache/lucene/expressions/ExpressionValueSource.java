@@ -140,6 +140,15 @@ final class ExpressionValueSource extends DoubleValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    for (DoubleValuesSource v : variables) {
+      if (v.isCacheable(ctx) == false)
+        return false;
+    }
+    return true;
+  }
+
+  @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
     Explanation[] explanations = new Explanation[variables.length];
     DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue()).getValues(ctx, null));

@@ -98,9 +98,10 @@ public class CompositeVerifyQuery extends Query {
       }
 
       @Override
-      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-        return null; // TODO delegate to PredicateValueSource?
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return predicateValueSource.isCacheable(ctx);
       }
+
     };
   }
 }

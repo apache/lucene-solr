@@ -18,6 +18,7 @@ package org.apache.solr.legacy;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -85,6 +86,11 @@ public class DistanceValueSource extends DoubleValuesSource {
   @Override
   public boolean needsScores() {
     return false;
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return DocValues.isCacheable(ctx, strategy.getFieldNameX(), strategy.getFieldNameY());
   }
 
   @Override

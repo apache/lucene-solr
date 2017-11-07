@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 
@@ -57,8 +56,8 @@ public abstract class FilterWeight extends Weight {
   }
 
   @Override
-  public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-    return in.getCacheHelper(context);
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return in.isCacheable(ctx);
   }
 
   @Override

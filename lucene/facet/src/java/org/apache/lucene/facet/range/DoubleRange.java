@@ -173,9 +173,10 @@ public final class DoubleRange extends Range {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return null; // TODO delegate to LongValuesSource?
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return valueSource.isCacheable(ctx);
         }
+
       };
     }
 

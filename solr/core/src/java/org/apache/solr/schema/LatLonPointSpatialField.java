@@ -23,6 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValues;
@@ -245,6 +246,11 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
       @Override
       public boolean needsScores() {
         return false;
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, fieldName);
       }
 
       @Override

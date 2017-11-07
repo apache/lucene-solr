@@ -27,7 +27,6 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -144,9 +143,10 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
         @Override
-        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
-          return null; // TODO delegate to PredicateValueSource
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return predicateValueSource.isCacheable(ctx);
         }
+
       };
     }
 
@@ -202,6 +202,11 @@ public class SerializedDVStrategy extends SpatialStrategy {
         }
 
       };
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return DocValues.isCacheable(ctx, fieldName);
     }
 
     @Override

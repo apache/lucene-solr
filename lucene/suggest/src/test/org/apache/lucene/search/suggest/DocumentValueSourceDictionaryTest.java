@@ -168,6 +168,11 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       }
 
       @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
+      }
+
+      @Override
       public boolean needsScores() {
         return false;
       }
