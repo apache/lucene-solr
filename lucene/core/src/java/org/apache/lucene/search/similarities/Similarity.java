@@ -17,6 +17,9 @@
 package org.apache.lucene.search.similarities;
 
 
+import java.io.IOException;
+import java.util.Collections;
+
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
@@ -28,9 +31,6 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
-
-import java.io.IOException;
-import java.util.Collections;
 
 /** 
  * Similarity defines the components of Lucene scoring.
@@ -142,10 +142,6 @@ public abstract class Similarity {
   /**
    * API for scoring "sloppy" queries such as {@link TermQuery},
    * {@link SpanQuery}, and {@link PhraseQuery}.
-   * <p>
-   * Frequencies are floating-point values: an approximate 
-   * within-document frequency adjusted for "sloppiness" by 
-   * {@link SimScorer#computeSlopFactor(int)}.
    */
   public static abstract class SimScorer {
     
@@ -164,9 +160,11 @@ public abstract class Similarity {
     public abstract float score(int doc, float freq) throws IOException;
 
     /** Computes the amount of a sloppy phrase match, based on an edit distance. */
+    @Deprecated
     public abstract float computeSlopFactor(int distance);
     
     /** Calculate a scoring factor based on the data in the payload. */
+    @Deprecated
     public abstract float computePayloadFactor(int doc, int start, int end, BytesRef payload);
     
     /**
