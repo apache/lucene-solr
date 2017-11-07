@@ -46,6 +46,9 @@ API Changes
   calculated by a PayloadDecoder, instead of delegating to the Similarity.
   (Alan Woodward)
 
+* LUCENE-8014: Similarity.computeSlopFactor() and
+  Similarity.computePayloadFactor() have been deprecated. (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
