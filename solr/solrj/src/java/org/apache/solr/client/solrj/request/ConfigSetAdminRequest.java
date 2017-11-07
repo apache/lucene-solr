@@ -16,11 +16,8 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
-
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -29,7 +26,7 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
+
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
@@ -68,10 +65,6 @@ public abstract class ConfigSetAdminRequest
     return params;
   }
 
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
-  }
 
   @Override
   protected abstract R createResponse(SolrClient client);

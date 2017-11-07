@@ -154,8 +154,19 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public abstract SolrParams getParams();
 
-  public abstract Collection<ContentStream> getContentStreams() throws IOException;
+  /**
+   * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
+   */
+  @Deprecated
+  public Collection<ContentStream> getContentStreams() throws IOException {
+    return null;
+  }
 
+  /**
+   * If a request object wants to do a push write, implement this method.
+   *
+   * @param expectedType This is the type that the RequestWriter would like to get. But, it is OK to send any format
+   */
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return null;
   }

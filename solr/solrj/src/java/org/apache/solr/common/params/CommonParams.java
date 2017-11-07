@@ -277,5 +277,8 @@ public interface CommonParams {
   String VERSION_FIELD="_version_";
 
   String ID = "id";
+  String JSON_MIME = "application/json";
+
+  String JAVABIN_MIME = "application/javabin";
 }
 

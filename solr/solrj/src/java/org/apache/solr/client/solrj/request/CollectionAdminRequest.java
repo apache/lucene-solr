@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +45,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
@@ -86,11 +84,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, action.toString());
     return params;
-  }
-
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
   }
 
   protected void addProperties(ModifiableSolrParams params, Properties props) {

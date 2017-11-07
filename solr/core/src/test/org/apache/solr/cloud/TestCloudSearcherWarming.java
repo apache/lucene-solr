@@ -17,10 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +29,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -40,8 +38,6 @@ import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -55,6 +51,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 
 /**
  * Tests related to SOLR-6086
@@ -346,9 +344,14 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
       return null;
     }
 
-    @Override
+   /* @Override
     public Collection<ContentStream> getContentStreams() throws IOException {
       return message != null ? Collections.singletonList(new ContentStreamBase.StringStream(message)) : null;
+    }*/
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      return message == null? null: new RequestWriter.StringPayloadContentWriter(message, JSON_MIME);
     }
 
     @Override

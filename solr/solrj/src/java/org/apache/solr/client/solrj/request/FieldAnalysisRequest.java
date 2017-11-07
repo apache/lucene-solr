@@ -16,18 +16,15 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
@@ -59,13 +56,6 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     super(METHOD.GET, uri);
   }
 
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
-  }
 
   @Override
   protected FieldAnalysisResponse createResponse(SolrClient client) {

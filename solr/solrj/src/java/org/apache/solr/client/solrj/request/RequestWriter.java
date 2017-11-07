@@ -102,7 +102,27 @@ public class RequestWriter {
 
   public String getUpdateContentType() {
     return ClientUtils.TEXT_XML;
+  }
 
+  public static class StringPayloadContentWriter implements ContentWriter {
+    public final String payload;
+    public final String type;
+
+    public StringPayloadContentWriter(String payload, String type) {
+      this.payload = payload;
+      this.type = type;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      if (payload == null) return;
+      os.write(payload.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public String getContentType() {
+      return type;
+    }
   }
 
   protected boolean isNull(List l) {
