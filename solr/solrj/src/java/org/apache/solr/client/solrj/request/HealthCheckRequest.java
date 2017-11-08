@@ -17,15 +17,11 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
@@ -41,11 +37,6 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
 
   @Override
   public SolrParams getParams() {
-    return null;
-  }
-
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
     return null;
   }
 

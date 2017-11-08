@@ -129,6 +129,11 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       final Similarity.SimScorer docScorer = getSimScorer(context);
       return new SpanScorer(this, spans, docScorer);
     }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return matchWeight.getCacheHelper(context);
+    }
   }
 
   private class PayloadChecker implements SpanCollector {

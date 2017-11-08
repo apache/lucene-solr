@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
@@ -260,6 +261,11 @@ final class JustCompileSearch {
     @Override
     public Scorer scorer(LeafReaderContext context) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return null;
     }
 
   }

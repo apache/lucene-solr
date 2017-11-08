@@ -139,6 +139,11 @@ public final class SpanOrQuery extends SpanQuery {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getCacheHelper(context, subWeights);
+    }
+
+    @Override
     public void extractTermContexts(Map<Term, TermContext> contexts) {
       for (SpanWeight w : subWeights) {
         w.extractTermContexts(contexts);

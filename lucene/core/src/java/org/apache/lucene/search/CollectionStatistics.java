@@ -23,7 +23,27 @@ import org.apache.lucene.index.Terms;       // javadocs
 
 
 /**
- * Contains statistics for a collection (field)
+ * Contains statistics for a collection (field).
+ * <p>
+ * This class holds statistics across all documents for scoring purposes:
+ * <ul>
+ *   <li> {@link #maxDoc()}: number of documents.
+ *   <li> {@link #docCount()}: number of documents that contain this field.
+ *   <li> {@link #sumDocFreq()}: number of postings-list entries.
+ *   <li> {@link #sumTotalTermFreq()}: number of tokens.
+ * </ul>
+ * <p>
+ * The following conditions are always true:
+ * <ul>
+ *   <li> All statistics are positive integers: never zero or negative.
+ *   <li> {@code docCount} &lt;= {@code maxDoc}
+ *   <li> {@code docCount} &lt;= {@code sumDocFreq} &lt;= {@code sumTotalTermFreq}
+ * </ul>
+ * <p>
+ * Values may include statistics on deleted documents that have not yet been merged away.
+ * <p>
+ * Be careful when performing calculations on these values because they are represented
+ * as 64-bit integer values, you may need to cast to {@code double} for your use.
  * @lucene.experimental
  */
 public class CollectionStatistics {
@@ -51,33 +71,23 @@ public class CollectionStatistics {
     if (maxDoc <= 0) {
       throw new IllegalArgumentException("maxDoc must be positive, maxDoc: " + maxDoc);
     }
-    if (docCount != -1) {
-      if (docCount <= 0) {
-        throw new IllegalArgumentException("docCount must be positive, docCount: " + docCount);
-      }
-      if (docCount > maxDoc) {
-        throw new IllegalArgumentException("docCount must not exceed maxDoc, docCount: " + docCount + ", maxDoc: " + maxDoc);
-      }
+    if (docCount <= 0) {
+      throw new IllegalArgumentException("docCount must be positive, docCount: " + docCount);
     }
-    if (sumDocFreq != -1) {
-      if (sumDocFreq <= 0) {
-        throw new IllegalArgumentException("sumDocFreq must be positive, sumDocFreq: " + sumDocFreq);
-      }
-      if (docCount != -1) {
-        if (sumDocFreq < docCount) {
-          throw new IllegalArgumentException("sumDocFreq must be at least docCount, sumDocFreq: " + sumDocFreq + ", docCount: " + docCount);
-        }
-      }
+    if (docCount > maxDoc) {
+      throw new IllegalArgumentException("docCount must not exceed maxDoc, docCount: " + docCount + ", maxDoc: " + maxDoc);
     }
-    if (sumTotalTermFreq != -1) {
-      if (sumTotalTermFreq <= 0) {
-        throw new IllegalArgumentException("sumTotalTermFreq must be positive, sumTotalTermFreq: " + sumTotalTermFreq);
-      }
-      if (sumDocFreq != -1) {
-        if (sumTotalTermFreq < sumDocFreq) {
-          throw new IllegalArgumentException("sumTotalTermFreq must be at least sumDocFreq, sumTotalTermFreq: " + sumTotalTermFreq + ", sumDocFreq: " + sumDocFreq);
-        }
-      }
+    if (sumDocFreq <= 0) {
+      throw new IllegalArgumentException("sumDocFreq must be positive, sumDocFreq: " + sumDocFreq);
+    }
+    if (sumDocFreq < docCount) {
+      throw new IllegalArgumentException("sumDocFreq must be at least docCount, sumDocFreq: " + sumDocFreq + ", docCount: " + docCount);
+    }
+    if (sumTotalTermFreq <= 0) {
+      throw new IllegalArgumentException("sumTotalTermFreq must be positive, sumTotalTermFreq: " + sumTotalTermFreq);
+    }
+    if (sumTotalTermFreq < sumDocFreq) {
+      throw new IllegalArgumentException("sumTotalTermFreq must be at least sumDocFreq, sumTotalTermFreq: " + sumTotalTermFreq + ", sumDocFreq: " + sumDocFreq);
     }
     this.field = field;
     this.maxDoc = maxDoc;
@@ -86,33 +96,65 @@ public class CollectionStatistics {
     this.sumDocFreq = sumDocFreq;
   }
   
-  /** returns the field name */
+  /**
+   * The field's name.
+   * <p>
+   * This value is never {@code null}.
+   * @return field's name, not {@code null}
+   */
   public final String field() {
     return field;
   }
   
-  /** returns the total number of documents, regardless of 
-   * whether they all contain values for this field. 
-   * @see IndexReader#maxDoc() */
+  /**
+   * The total number of documents, regardless of
+   * whether they all contain values for this field.
+   * <p>
+   * This value is always a positive number.
+   * @return total number of documents, in the range [1 .. {@link Long#MAX_VALUE}]
+   * @see IndexReader#maxDoc()
+   */
   public final long maxDoc() {
     return maxDoc;
   }
   
-  /** returns the total number of documents that
-   * have at least one term for this field. 
-   * @see Terms#getDocCount() */
+  /**
+   * The total number of documents that have at least
+   * one term for this field.
+   * <p>
+   * This value is always a positive number, and never
+   * exceeds {@link #maxDoc()}.
+   * @return total number of documents containing this field, in the range [1 .. {@link #maxDoc()}]
+   * @see Terms#getDocCount()
+   */
   public final long docCount() {
     return docCount;
   }
   
-  /** returns the total number of tokens for this field
-   * @see Terms#getSumTotalTermFreq() */
+  /**
+   * The total number of tokens for this field.
+   * This is the "word count" for this field across all documents.
+   * It is the sum of {@link TermStatistics#totalTermFreq()} across all terms.
+   * It is also the sum of each document's field length across all documents.
+   * <p>
+   * This value is always a positive number, and always at least {@link #sumDocFreq()}.
+   * @return total number of tokens in the field, in the range [{@link #sumDocFreq()} .. {@link Long#MAX_VALUE}]
+   * @see Terms#getSumTotalTermFreq()
+   */
   public final long sumTotalTermFreq() {
     return sumTotalTermFreq;
   }
   
-  /** returns the total number of postings for this field 
-   * @see Terms#getSumDocFreq() */
+  /**
+   * The total number of posting list entries for this field.
+   * This is the sum of term-document pairs: the sum of {@link TermStatistics#docFreq()} across all terms.
+   * It is also the sum of each document's unique term count for this field across all documents.
+   * <p>
+   * This value is always a positive number, always at least {@link #docCount()}, and never
+   * exceeds {@link #sumTotalTermFreq()}.
+   * @return number of posting list entries, in the range [{@link #docCount()} .. {@link #sumTotalTermFreq()}]
+   * @see Terms#getSumDocFreq()
+   */
   public final long sumDocFreq() {
     return sumDocFreq;
   }

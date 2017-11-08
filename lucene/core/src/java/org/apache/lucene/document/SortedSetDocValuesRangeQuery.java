@@ -181,6 +181,11 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
         }
         return new ConstantScoreScorer(this, score(), iterator);
       }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return getDocValuesCacheHelper(field, context);
+      }
     };
   }
 

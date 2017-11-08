@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.google.common.collect.Sets;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
@@ -134,6 +135,8 @@ public class ImplicitSnitchTest extends LuceneTestCase {
 
   @Test
   public void testGetTags_withAllHostNameRequestedTags_returns_all_Tags() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
@@ -153,6 +156,8 @@ public class ImplicitSnitchTest extends LuceneTestCase {
 
   @Test
   public void testGetTags_withHostNameRequestedTag_ip3_returns_1_tag() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);
@@ -168,6 +173,8 @@ public class ImplicitSnitchTest extends LuceneTestCase {
 
   @Test
   public void testGetTags_withHostNameRequestedTag_ip99999_returns_nothing() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
+    
     String node = "serv01.dc01.london.uk.apache.org:8983_solr";
 
     SnitchContext context = new ServerSnitchContext(null, node, new HashMap<>(),null);

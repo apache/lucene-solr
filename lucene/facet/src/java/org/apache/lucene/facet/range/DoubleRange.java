@@ -171,6 +171,11 @@ public final class DoubleRange extends Range {
           };
           return new ConstantScoreScorer(this, score(), twoPhase);
         }
+
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return null; // TODO delegate to LongValuesSource?
+        }
       };
     }
 

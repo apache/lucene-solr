@@ -17,8 +17,10 @@
 package org.apache.lucene.facet;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -99,6 +101,14 @@ class DrillSidewaysQuery extends Query {
       public Scorer scorer(LeafReaderContext context) throws IOException {
         // We can only run as a top scorer:
         throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        List<Weight> weights = new ArrayList<>();
+        weights.add(baseWeight);
+        weights.addAll(Arrays.asList(drillDowns));
+        return getCacheHelper(context, weights);
       }
 
       @Override

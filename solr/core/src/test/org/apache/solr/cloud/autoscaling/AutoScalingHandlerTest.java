@@ -17,10 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -34,13 +31,13 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
@@ -52,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
@@ -828,8 +826,8 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return message != null ? Collections.singletonList(new ContentStreamBase.StringStream(message)) : null;
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      return message == null ? null : new StringPayloadContentWriter(message, JSON_MIME);
     }
 
     @Override

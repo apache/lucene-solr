@@ -333,6 +333,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return null;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((SpatialScorer)scorer(context)).explain(super.explain(context, doc), doc);
     }

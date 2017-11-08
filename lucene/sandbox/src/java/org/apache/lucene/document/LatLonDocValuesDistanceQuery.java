@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -125,6 +126,11 @@ final class LatLonDocValuesDistanceQuery extends Query {
 
         };
         return new ConstantScoreScorer(this, boost, iterator);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return getDocValuesCacheHelper(field, context);
       }
     };
   }

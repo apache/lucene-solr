@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,9 +28,11 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
+
+import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   //only for debugging purposes
@@ -64,32 +64,26 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   public RequestWriter.ContentWriter getContentWriter(String s) {
     if (v2Calls.get() != null) v2Calls.get().incrementAndGet();
     if (payload == null) return null;
+    if (payload instanceof String) {
+      return new RequestWriter.StringPayloadContentWriter((String) payload, JSON_MIME);
+
+    }
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        if (payload instanceof String) {
-          os.write(((String) payload).getBytes(StandardCharsets.UTF_8));
+        if (useBinary) {
+          new JavaBinCodec().marshal(payload, os);
         } else {
-          if (useBinary) {
-            new JavaBinCodec().marshal(payload, os);
-          } else {
-            byte[] b = Utils.toJSON(payload);
-            os.write(b);
-          }
+          byte[] b = Utils.toJSON(payload);
+          os.write(b);
         }
       }
 
       @Override
       public String getContentType() {
-        if (payload instanceof String) return "application/json";
-        return useBinary ? "application/javabin" : "application/json";
+        return useBinary ? JAVABIN_MIME : JSON_MIME;
       }
     };
-  }
-
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
   }
 
   public boolean isPerCollectionRequest() {

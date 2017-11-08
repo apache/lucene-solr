@@ -486,6 +486,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         return scorer(weightOrBitSet.set);
       }
     }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
+    }
   }
 }
 

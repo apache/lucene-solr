@@ -16,6 +16,14 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.DocumentAnalysisResponse;
@@ -23,13 +31,8 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
@@ -59,12 +62,26 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
     super(METHOD.POST, uri);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return ClientUtils.toContentStreams(getXML(), ClientUtils.TEXT_XML);
+  public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+
+    return new RequestWriter.ContentWriter() {
+      @Override
+      public void write(OutputStream os) throws IOException {
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(os, UTF_8);
+        try {
+          getXML(outputStreamWriter);
+        } finally {
+          outputStreamWriter.flush();
+        }
+      }
+
+      @Override
+      public String getContentType() {
+        return ClientUtils.TEXT_XML;
+      }
+    };
+
   }
 
   @Override
@@ -94,8 +111,8 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
    *
    * @throws IOException When constructing the xml fails
    */
-  String getXML() throws IOException {
-    StringWriter writer = new StringWriter();
+  String getXML(Writer writer) throws IOException {
+//    StringWriter writer = new StringWriter();
     writer.write("<docs>");
     for (SolrInputDocument document : documents) {
       ClientUtils.writeXML(document, writer);

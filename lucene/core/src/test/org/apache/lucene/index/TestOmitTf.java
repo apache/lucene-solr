@@ -445,7 +445,7 @@ public class TestOmitTf extends LuceneTestCase {
     }
   }
   
-  /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are -1 */
+  /** test that when freqs are omitted, that totalTermFreq and sumTotalTermFreq are docFreq, and sumDocFreq */
   public void testStats() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
@@ -459,8 +459,8 @@ public class TestOmitTf extends LuceneTestCase {
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     iw.close();
-    assertEquals(-1, ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
-    assertEquals(-1, ir.getSumTotalTermFreq("foo"));
+    assertEquals(ir.docFreq(new Term("foo", new BytesRef("bar"))), ir.totalTermFreq(new Term("foo", new BytesRef("bar"))));
+    assertEquals(ir.getSumDocFreq("foo"), ir.getSumTotalTermFreq("foo"));
     ir.close();
     dir.close();
   }

@@ -40,6 +40,7 @@ import org.apache.solr.handler.dataimport.JdbcDataSource.ResultSetIterator;
 import static org.mockito.Mockito.*;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -68,6 +69,11 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
 
   String sysProp = System.getProperty("java.naming.factory.initial");
 
+  @BeforeClass
+  public static void beforeClass() {
+    assumeWorkingMockito();
+  }
+  
   @Override
   @Before
   public void setUp() throws Exception {

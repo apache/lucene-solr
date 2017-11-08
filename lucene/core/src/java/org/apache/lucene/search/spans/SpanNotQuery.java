@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -190,6 +191,11 @@ public final class SpanNotQuery extends SpanQuery {
     @Override
     public void extractTerms(Set<Term> terms) {
       includeWeight.extractTerms(terms);
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getCacheHelper(context, Arrays.asList(includeWeight, excludeWeight));
     }
   }
 

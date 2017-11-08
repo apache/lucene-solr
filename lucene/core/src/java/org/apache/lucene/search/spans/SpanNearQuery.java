@@ -229,6 +229,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
         w.extractTerms(terms);
       }
     }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return getCacheHelper(context, subWeights);
+    }
   }
 
   @Override
@@ -318,6 +323,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       @Override
       public void extractTerms(Set<Term> terms) {
 
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     }
 

@@ -17,9 +17,11 @@
 package org.apache.lucene.queries;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -205,6 +207,14 @@ public class CustomScoreQuery extends Query implements Cloneable {
          valSrcScorers[i] = valSrcWeights[i].scorer(context);
       }
       return new CustomScorer(CustomScoreQuery.this.getCustomScoreProvider(context), this, queryWeight, subQueryScorer, valSrcScorers);
+    }
+
+    @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      List<Weight> weights = new ArrayList<>();
+      weights.add(subQueryWeight);
+      weights.addAll(Arrays.asList(valSrcWeights));
+      return getCacheHelper(context, weights);
     }
 
     @Override

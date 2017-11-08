@@ -87,6 +87,11 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return matchWeight.getCacheHelper(context);
+    }
+
+    @Override
     public void extractTermContexts(Map<Term, TermContext> contexts) {
       matchWeight.extractTermContexts(contexts);
     }

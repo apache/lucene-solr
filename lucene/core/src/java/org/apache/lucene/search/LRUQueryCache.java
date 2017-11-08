@@ -722,8 +722,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         policy.onUse(getQuery());
       }
 
-      // TODO: should it be pluggable, eg. for queries that run on doc values?
-      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      final IndexReader.CacheHelper cacheHelper = in.getCacheHelper(context);
       if (cacheHelper == null) {
         // this segment is not suitable for caching
         return in.scorerSupplier(context);
@@ -789,13 +788,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return in.getCacheHelper(context);
+    }
+
+    @Override
     public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
 
-      // TODO: should it be pluggable, eg. for queries that run on doc values?
-      final IndexReader.CacheHelper cacheHelper = context.reader().getCoreCacheHelper();
+      final IndexReader.CacheHelper cacheHelper = in.getCacheHelper(context);
       if (cacheHelper == null) {
         // this segment is not suitable for caching
         return in.bulkScorer(context);

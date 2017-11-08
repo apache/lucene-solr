@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -149,6 +150,11 @@ public abstract class PointInSetQuery extends Query {
         }
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

@@ -217,7 +217,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("hist", HistogramEvaluator.class)
         .withFunctionName("length", LengthEvaluator.class)
         .withFunctionName("movingAvg", MovingAverageEvaluator.class)
-        .withFunctionName("normalize", NormalizeEvaluator.class)
+        .withFunctionName("standardize", NormalizeEvaluator.class)
         .withFunctionName("percentile", PercentileEvaluator.class)
         .withFunctionName("predict", PredictEvaluator.class)
         .withFunctionName("rank", RankEvaluator.class)
@@ -270,9 +270,18 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("loess", LoessEvaluator.class)
         .withFunctionName("matrix", MatrixEvaluator.class)
         .withFunctionName("transpose", TransposeEvaluator.class)
-        .withFunctionName("unit", UnitEvaluator.class)
+        .withFunctionName("unitize", UnitEvaluator.class)
         .withFunctionName("triangularDistribution", TriangularDistributionEvaluator.class)
         .withFunctionName("precision", PrecisionEvaluator.class)
+        .withFunctionName("minMaxScale", MinMaxScaleEvaluator.class)
+        .withFunctionName("markovChain", MarkovChainEvaluator.class)
+        .withFunctionName("grandSum", GrandSumEvaluator.class)
+        .withFunctionName("scalarAdd", ScalarAddEvaluator.class)
+        .withFunctionName("scalarSubtract", ScalarSubtractEvaluator.class)
+        .withFunctionName("scalarMultiply", ScalarMultiplyEvaluator.class)
+        .withFunctionName("scalarDivide", ScalarDivideEvaluator.class)
+        .withFunctionName("sumRows", SumRowsEvaluator.class)
+        .withFunctionName("sumColumns", SumColumnsEvaluator.class)
 
         // Boolean Stream Evaluators
 

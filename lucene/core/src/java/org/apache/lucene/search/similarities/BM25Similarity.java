@@ -85,19 +85,7 @@ public class BM25Similarity extends Similarity {
   
   /** The default implementation computes the average as <code>sumTotalTermFreq / docCount</code> */
   protected float avgFieldLength(CollectionStatistics collectionStats) {
-    final long sumTotalTermFreq;
-    if (collectionStats.sumTotalTermFreq() == -1) {
-      // frequencies are omitted (tf=1), its # of postings
-      if (collectionStats.sumDocFreq() == -1) {
-        // theoretical case only: remove!
-        return 1f;
-      }
-      sumTotalTermFreq = collectionStats.sumDocFreq();
-    } else {
-      sumTotalTermFreq = collectionStats.sumTotalTermFreq();
-    }
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    return (float) (sumTotalTermFreq / (double) docCount);
+    return (float) (collectionStats.sumTotalTermFreq() / (double) collectionStats.docCount());
   }
   
   /** 
@@ -161,7 +149,7 @@ public class BM25Similarity extends Similarity {
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final long docCount = collectionStats.docCount();
     final float idf = idf(df, docCount);
     return Explanation.match(idf, "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
         Explanation.match(df, "n, number of documents containing term"),

@@ -64,6 +64,9 @@ New Features
 
 * SOLR-11438: Solr should return rf when min_rf is specified for deletes as well as adds (Erick Erickson)
 
+* SOLR-11003: Support bi-directional syncing of cdcr clusters. We still only support active indexing in one cluster,
+  but have the ability to switch indexing clusters and cdcr will replicate correctly. (Amrit Sarkar, Varun Thacker)
+
 Bug Fixes
 ----------------------
 
@@ -98,6 +101,8 @@ Bug Fixes
 
 * SOLR-11586: Restored collection should use stateFormat=2 instead of 1. (Varun Thacker)
 
+* SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
@@ -131,6 +136,15 @@ Other Changes
 * SOLR-11562: Restore Solr logo ASCII-art in startup log by removing unnecessary default confdir logging (janhoy)
 
 * SOLR-11380: SolrJ must stream docs to server instead of writing to a buffer first (noble)
+
+* SOLR-11603: Remove unused (public) LTRScoringModel.hasParams() method. (Christine Poerschke)
+
+* SOLR-11606: Disable tests automatically if Mockito does not work with Java runtime (Java 10).
+  (Uwe Schindler)
+
+* SOLR-11618: Tone down verbosity of BackupManager logging (Varun Thacker)
+
+* SOLR-11621: Fix spurious failures of TriggerIntegrationTest due to timing issues. (shalin)
 
 ==================  7.1.0 ==================
 

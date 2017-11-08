@@ -5,6 +5,14 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 8.0.0 =======================
 
+API Changes
+
+* LUCENE-8007: Index statistics Terms.getSumDocFreq(), Terms.getDocCount() are
+  now required to be stored by codecs. Additionally, TermsEnum.totalTermFreq()
+  and Terms.getSumTotalTermFreq() are now required: if frequencies are not
+  stored they are equal to TermsEnum.docFreq() and Terms.getSumDocFreq(),
+  respectively, because all freq() values equal 1. (Adrien Grand, Robert Muir)
+
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -24,6 +32,11 @@ Improvements
   Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
 
 ======================= Lucene 7.2.0 =======================
+
+API Changes
+
+* LUCENE-8017: Weight now exposes a getCacheHelper() method to help query caches
+  determine whether or not a query can be cached. (Alan Woodward)
 
 Bug Fixes
 
@@ -49,6 +62,16 @@ Optimizations
 * LUCENE-7994: Use int/int scatter map to gather facet counts when the
   number of hits is small relative to the number of unique facet labels
   (Dawid Weiss, Robert Muir, Mike McCandless)
+  
+Tests
+
+* LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
+  on Java 9+.  (Uwe Schindler)
+
+Build
+
+* LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
+  jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
 
 ======================= Lucene 7.1.0 =======================
 

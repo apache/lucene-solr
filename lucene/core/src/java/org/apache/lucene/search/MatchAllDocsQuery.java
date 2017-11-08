@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 
@@ -39,6 +40,12 @@ public final class MatchAllDocsQuery extends Query {
       public Scorer scorer(LeafReaderContext context) throws IOException {
         return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
       }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
+      }
+
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         final float score = score();

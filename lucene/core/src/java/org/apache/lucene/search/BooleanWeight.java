@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -297,6 +298,11 @@ final class BooleanWeight extends Weight {
       return null;
     }
     return scorerSupplier.get(Long.MAX_VALUE);
+  }
+
+  @Override
+  public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+    return getCacheHelper(context, weights);
   }
 
   @Override

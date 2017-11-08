@@ -75,6 +75,11 @@ public class FunctionQuery extends Query {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return null;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       return ((AllScorer)scorer(context)).explain(doc);
     }

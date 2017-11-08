@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -92,6 +93,11 @@ public class SpanTermQuery extends SpanQuery {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return context.reader().getCoreCacheHelper();
+    }
+
+    @Override
     public void extractTermContexts(Map<Term, TermContext> contexts) {
       contexts.put(term, termContext);
     }
@@ -135,7 +141,6 @@ public class SpanTermQuery extends SpanQuery {
   /** Returns an expected cost in simple operations
    *  of processing the occurrences of a term
    *  in a document that contains the term.
-   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    *  <p>
    *  This is a copy of org.apache.lucene.search.PhraseQuery.termPositionsCost().
@@ -146,8 +151,9 @@ public class SpanTermQuery extends SpanQuery {
   static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
-    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
-    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    long totalTermFreq = termsEnum.totalTermFreq();
+    assert totalTermFreq > 0;
+    float expOccurrencesInMatchingDoc = totalTermFreq / (float) docFreq;
     return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 

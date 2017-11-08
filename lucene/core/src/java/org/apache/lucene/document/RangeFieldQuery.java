@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -355,6 +356,11 @@ abstract class RangeFieldQuery extends Query {
           return null;
         }
         return scorerSupplier.get(Long.MAX_VALUE);
+      }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return context.reader().getCoreCacheHelper();
       }
     };
   }

@@ -89,6 +89,11 @@ public final class BoostedQuery extends Query {
     }
 
     @Override
+    public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+      return null;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext readerContext, int doc) throws IOException {
       Explanation subQueryExpl = qWeight.explain(readerContext,doc);
       if (!subQueryExpl.isMatch()) {

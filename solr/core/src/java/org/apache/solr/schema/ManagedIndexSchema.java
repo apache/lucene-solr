@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -61,7 +62,6 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig;
@@ -360,10 +360,6 @@ public final class ManagedIndexSchema extends IndexSchema {
       return remoteVersion;
     }
 
-    @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return null;
-    }
 
     @Override
     protected SolrResponse createResponse(SolrClient client) {

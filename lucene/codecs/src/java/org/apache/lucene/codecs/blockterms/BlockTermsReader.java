@@ -139,8 +139,9 @@ public class BlockTermsReader extends FieldsProducer {
         assert numTerms >= 0;
         final long termsStartPointer = in.readVLong();
         final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
-        final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : in.readVLong();
-        final long sumDocFreq = in.readVLong();
+        final long sumTotalTermFreq = in.readVLong();
+        // when frequencies are omitted, sumDocFreq=totalTermFreq and we only write one value
+        final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
         final int docCount = in.readVInt();
         final int longsSize = in.readVInt();
         if (docCount < 0 || docCount > state.segmentInfo.maxDoc()) { // #docs with field must be <= #docs
@@ -149,7 +150,7 @@ public class BlockTermsReader extends FieldsProducer {
         if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
           throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount, in);
         }
-        if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
+        if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
           throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, in);
         }
         FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount, longsSize));
@@ -810,7 +811,9 @@ public class BlockTermsReader extends FieldsProducer {
             // docFreq, totalTermFreq
             state.docFreq = freqReader.readVInt();
             //System.out.println("    dF=" + state.docFreq);
-            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
+            if (fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+              state.totalTermFreq = state.docFreq; // all postings have tf=1
+            } else {
               state.totalTermFreq = state.docFreq + freqReader.readVLong();
               //System.out.println("    totTF=" + state.totalTermFreq);
             }

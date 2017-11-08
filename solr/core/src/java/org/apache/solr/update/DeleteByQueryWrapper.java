@@ -83,6 +83,11 @@ final class DeleteByQueryWrapper extends Query {
       public Scorer scorer(LeafReaderContext context) throws IOException {
         return inner.scorer(privateContext.getIndexReader().leaves().get(0));
       }
+
+      @Override
+      public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+        return inner.getCacheHelper(context);
+      }
     };
   }
 

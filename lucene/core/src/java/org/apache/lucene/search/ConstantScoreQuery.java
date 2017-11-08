@@ -167,6 +167,11 @@ public final class ConstantScoreQuery extends Query {
           return scorerSupplier.get(Long.MAX_VALUE);
         }
 
+        @Override
+        public IndexReader.CacheHelper getCacheHelper(LeafReaderContext context) {
+          return innerWeight.getCacheHelper(context);
+        }
+
       };
     } else {
       return innerWeight;

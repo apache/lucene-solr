@@ -186,20 +186,26 @@
       }
 
       def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
-          def contentMatcher = contentPattern.matcher(text);
-          if (contentMatcher.find()) {
-            def contentStartPos = contentMatcher.start();
-            def commentMatcher = commentPattern.matcher(text);
-            while (commentMatcher.find()) {
-              if (isLicense(commentMatcher, ratDocument)) {
-                if (commentMatcher.start() < contentStartPos) {
-                  break; // This file is all good, so break loop: license header precedes 'description' definition
-                } else {
-                  reportViolation(f, description+' declaration precedes license header');
-                }
+        def contentMatcher = contentPattern.matcher(text);
+        if (contentMatcher.find()) {
+          def contentStartPos = contentMatcher.start();
+          def commentMatcher = commentPattern.matcher(text);
+          while (commentMatcher.find()) {
+            if (isLicense(commentMatcher, ratDocument)) {
+              if (commentMatcher.start() < contentStartPos) {
+                break; // This file is all good, so break loop: license header precedes 'description' definition
+              } else {
+                reportViolation(f, description+' declaration precedes license header');
               }
             }
           }
+        }
+      }
+
+      def checkMockitoAssume = { f, text ->
+        if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
+          reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
+        }
       }
 
       def checkForUnescapedSymbolSubstitutions = { f, text ->
@@ -265,18 +271,21 @@
               ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
           }
         }
-        if (f.toString().endsWith('.java')) {
+        if (f.name.endsWith('.java')) {
           if (text.contains('org.slf4j.LoggerFactory')) {
             if (!validLoggerPattern.matcher(text).find()) {
               reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
             }
           }
           checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
+          if (f.name.contains("Test")) {
+            checkMockitoAssume(f, text);
+          }
         }
-        if (f.toString().endsWith('.xml') || f.toString().endsWith('.xml.template')) {
+        if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {
           checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
         }
-        if (f.toString().endsWith('.adoc')) {
+        if (f.name.endsWith('.adoc')) {
           checkForUnescapedSymbolSubstitutions(f, text);
         }
       };
