@@ -20,7 +20,7 @@ package org.apache.solr.cloud.cdcr;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
