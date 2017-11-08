@@ -88,6 +88,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   // use the same time source as triggers use
   private static final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
+  private static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
@@ -587,7 +589,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
-          if (TimeUnit.MILLISECONDS.convert(timeSource.getTime() - event.getEventTime(), TimeUnit.NANOSECONDS) <= TimeUnit.MILLISECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+          long currentTimeNanos = timeSource.getTime();
+          long eventTimeNanos = event.getEventTime();
+          long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
+          if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
             fail(event.source + " was fired before the configured waitFor period");
           }
           getTriggerFiredLatch().countDown();
@@ -1221,7 +1226,10 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
         events.add(event);
-        if (TimeUnit.MILLISECONDS.convert(timeSource.getTime() - event.getEventTime(), TimeUnit.NANOSECONDS) <= TimeUnit.MILLISECONDS.convert(waitForSeconds, TimeUnit.SECONDS)) {
+        long currentTimeNanos = timeSource.getTime();
+        long eventTimeNanos = event.getEventTime();
+        long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
+        if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
           fail(event.source + " was fired before the configured waitFor period");
         }
         getTriggerFiredLatch().countDown();
@@ -1278,7 +1286,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     TestEvent ev = listenerEvents.get("srt").get(0);
     long now = timeSource.getTime();
     // verify waitFor
-    assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) < now - ev.event.getEventTime());
+    assertTrue(TimeUnit.SECONDS.convert(waitForSeconds, TimeUnit.NANOSECONDS) - WAIT_FOR_DELTA_NANOS <= now - ev.event.getEventTime());
     Map<String, Double> nodeRates = (Map<String, Double>)ev.event.getProperties().get("node");
     assertNotNull("nodeRates", nodeRates);
     assertTrue(nodeRates.toString(), nodeRates.size() > 0);
