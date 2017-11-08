@@ -7,6 +7,10 @@ http://s.apache.org/luceneversions
 
 API Changes
 
+* LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
+  allows distance calculations, especially for paths, to take into account an
+  "excursion" to include the specified point.
+
 * LUCENE-8007: Index statistics Terms.getSumDocFreq(), Terms.getDocCount() are
   now required to be stored by codecs. Additionally, TermsEnum.totalTermFreq()
   and Terms.getSumTotalTermFreq() are now required: if frequencies are not
