@@ -7,6 +7,10 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
+  allows distance calculations, especially for paths, to take into account an
+  "excursion" to include the specified point.
+
 * LUCENE-7970: Add a shape to Geo3D that consists of multiple planes that
   approximate a true circle, rather than an ellipse, for non-spherical planet models.
   (Karl Wright, Ignacio Vera)
