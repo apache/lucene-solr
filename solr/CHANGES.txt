@@ -144,6 +144,8 @@ Other Changes
 
 * SOLR-11618: Tone down verbosity of BackupManager logging (Varun Thacker)
 
+* SOLR-11621: Fix spurious failures of TriggerIntegrationTest due to timing issues. (shalin)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
