@@ -6067,6 +6067,118 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testMatrixMath() throws Exception {
+    String cexpr = "let(echo=true, a=matrix(array(1.5, 2.5, 3.5), array(4.5,5.5,6.5)), " +
+                                  "b=grandSum(a), " +
+                                  "c=sumRows(a), " +
+                                  "d=sumColumns(a), " +
+                                  "e=scalarAdd(1, a)," +
+                                  "f=scalarSubtract(1, a)," +
+                                  "g=scalarMultiply(1.5, a)," +
+                                  "h=scalarDivide(1.5, a)," +
+                                  "i=scalarAdd(1.5, array(1.5, 2.5, 3.5))," +
+                                  "j=scalarSubtract(1.5, array(1.5, 2.5, 3.5))," +
+                                  "k=scalarMultiply(1.5, array(1.5, 2.5, 3.5))," +
+                                  "l=scalarDivide(1.5, array(1.5, 2.5, 3.5)))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    double grandSum = tuples.get(0).getDouble("b");
+    assertEquals(grandSum, 24, 0.0);
+
+    List<Number> sumRows = (List<Number>)tuples.get(0).get("c");
+    assertEquals(sumRows.size(), 2);
+    assertEquals(sumRows.get(0).doubleValue(), 7.5, 0.0);
+    assertEquals(sumRows.get(1).doubleValue(), 16.5, 0.0);
+
+    List<Number> sumCols = (List<Number>)tuples.get(0).get("d");
+    assertEquals(sumCols.size(), 3);
+    assertEquals(sumCols.get(0).doubleValue(), 6.0, 0.0);
+    assertEquals(sumCols.get(1).doubleValue(), 8.0, 0.0);
+    assertEquals(sumCols.get(2).doubleValue(), 10, 0.0);
+
+    List<List<Number>> scalarAdd = (List<List<Number>>)tuples.get(0).get("e");
+    List<Number> row1 = scalarAdd.get(0);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).doubleValue(), 2.5, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 3.5, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 4.5, 0.0);
+
+    List<Number> row2 = scalarAdd.get(1);
+    assertEquals(row2.get(0).doubleValue(), 5.5, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 6.5, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 7.5, 0.0);
+
+    List<List<Number>> scalarSubtract = (List<List<Number>>)tuples.get(0).get("f");
+    row1 = scalarSubtract.get(0);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).doubleValue(), 0.5, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 1.5, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 2.5, 0.0);
+
+    row2 = scalarSubtract.get(1);
+    assertEquals(row2.get(0).doubleValue(), 3.5, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 4.5, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 5.5, 0.0);
+
+    List<List<Number>> scalarMultiply = (List<List<Number>>)tuples.get(0).get("g");
+    row1 = scalarMultiply.get(0);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).doubleValue(), 2.25, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 3.75, 0.0);
+    assertEquals(row1.get(2).doubleValue(), 5.25, 0.0);
+
+    row2 = scalarMultiply.get(1);
+    assertEquals(row2.get(0).doubleValue(), 6.75, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 8.25, 0.0);
+    assertEquals(row2.get(2).doubleValue(), 9.75, 0.0);
+
+    List<List<Number>> scalarDivide = (List<List<Number>>)tuples.get(0).get("h");
+    row1 = scalarDivide.get(0);
+    assertEquals(row1.size(), 3);
+    assertEquals(row1.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(row1.get(1).doubleValue(), 1.66666666666667, 0.001);
+    assertEquals(row1.get(2).doubleValue(), 2.33333333333333, 0.001);
+
+    row2 = scalarDivide.get(1);
+    assertEquals(row2.get(0).doubleValue(), 3, 0.0);
+    assertEquals(row2.get(1).doubleValue(), 3.66666666666667, 0.001);
+    assertEquals(row2.get(2).doubleValue(), 4.33333333333333, 0.001);
+
+    List<Number> rowA = (List<Number>)tuples.get(0).get("i");
+    assertEquals(rowA.size(), 3);
+    assertEquals(rowA.get(0).doubleValue(), 3.0, 0.0);
+    assertEquals(rowA.get(1).doubleValue(), 4.0, 0.0);
+    assertEquals(rowA.get(2).doubleValue(), 5.0, 0.0);
+
+    rowA = (List<Number>)tuples.get(0).get("j");
+    assertEquals(rowA.size(), 3);
+    assertEquals(rowA.get(0).doubleValue(), 0, 0.0);
+    assertEquals(rowA.get(1).doubleValue(), 1.0, 0.0);
+    assertEquals(rowA.get(2).doubleValue(), 2.0, 0.0);
+
+    rowA = (List<Number>)tuples.get(0).get("k");
+    assertEquals(rowA.size(), 3);
+    assertEquals(rowA.get(0).doubleValue(), 2.25, 0.0);
+    assertEquals(rowA.get(1).doubleValue(), 3.75, 0.0);
+    assertEquals(rowA.get(2).doubleValue(), 5.25, 0.0);
+
+    rowA = (List<Number>)tuples.get(0).get("l");
+    assertEquals(rowA.size(), 3);
+    assertEquals(rowA.get(0).doubleValue(), 1.0, 0.0);
+    assertEquals(rowA.get(1).doubleValue(), 1.66666666666667, 0.001);
+    assertEquals(rowA.get(2).doubleValue(), 2.33333333333333, 0.001);
+  }
+
+  @Test
   public void testTranspose() throws Exception {
     String cexpr = "let(a=matrix(array(1,2,3), array(4,5,6)), b=transpose(a))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();

@@ -275,6 +275,13 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("precision", PrecisionEvaluator.class)
         .withFunctionName("minMaxScale", MinMaxScaleEvaluator.class)
         .withFunctionName("markovChain", MarkovChainEvaluator.class)
+        .withFunctionName("grandSum", GrandSumEvaluator.class)
+        .withFunctionName("scalarAdd", ScalarAddEvaluator.class)
+        .withFunctionName("scalarSubtract", ScalarSubtractEvaluator.class)
+        .withFunctionName("scalarMultiply", ScalarMultiplyEvaluator.class)
+        .withFunctionName("scalarDivide", ScalarDivideEvaluator.class)
+        .withFunctionName("sumRows", SumRowsEvaluator.class)
+        .withFunctionName("sumColumns", SumColumnsEvaluator.class)
 
         // Boolean Stream Evaluators
 

@@ -50,7 +50,7 @@ public class MarkovChainEvaluator extends RecursiveObjectEvaluator implements Ma
       Matrix matrix = (Matrix) values[0];
       return new MarkovChain(matrix, state);
     } else {
-      throw new IOException("matrix parameter expected for transpose function");
+      throw new IOException("matrix parameter expected for markovChain function");
     }
   }
 
@@ -63,7 +63,7 @@ public class MarkovChainEvaluator extends RecursiveObjectEvaluator implements Ma
       double[][] data = matrix.getData();
 
       if(data.length != data[0].length) {
-        throw new IOException("Markov chain must be initialized with a square matrix.");
+        throw new IOException("markovChain must be initialized with a square matrix.");
       }
 
       this.distributions = new EnumeratedIntegerDistribution[data.length];
