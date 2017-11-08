@@ -103,6 +103,8 @@ Bug Fixes
 
 * SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
 
+* SOLR-11619: V2 requests that needed to be forwarded to other nodes would get an NPE. (David Smiley)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr

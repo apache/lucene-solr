@@ -59,6 +59,7 @@ import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.common.util.PathTrie.getPathSegments;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 // class that handle the '/v2' path
 public class V2HttpCall extends HttpSolrCall {
@@ -122,9 +123,11 @@ public class V2HttpCall extends HttpSolrCall {
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {
             //this collection exists , but this node does not have a replica for that collection
-            //todo find a better way to compute remote
-            extractRemotePath(collectionName, origCorename, 0);
-            return;
+            extractRemotePath(collectionName, origCorename);
+            if (action == REMOTEQUERY) {
+              this.path = path = path.substring(prefix.length() + origCorename.length() + 2);
+              return;
+            }
           }
         }
       } else if ("cores".equals(prefix)) {
@@ -159,7 +162,7 @@ public class V2HttpCall extends HttpSolrCall {
       log.error("Error in init()", rte);
       throw rte;
     } finally {
-      if (api == null) action = PROCESS;
+      if (action == null && api == null) action = PROCESS;
       if (solrReq != null) solrReq.getContext().put(CommonParams.PATH, path);
     }
   }
