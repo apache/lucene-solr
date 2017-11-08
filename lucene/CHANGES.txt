@@ -7,6 +7,10 @@ http://s.apache.org/luceneversions
 
 API Changes
 
+* LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
+  allows distance calculations, especially for paths, to take into account an
+  "excursion" to include the specified point.
+
 * LUCENE-8017: Weight now exposes a getCacheHelper() method to help query caches
   determine whether or not a query can be cached. (Alan Woodward)
 
