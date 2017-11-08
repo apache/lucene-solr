@@ -396,7 +396,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               RequestParams.ParamSet old = params.getParams(key);
               if (op.name.equals(UPDATE)) {
                 if (old == null) {
-                  op.addError(formatString("unknown paramset {} cannot update ", key));
+                  op.addError(formatString("unknown paramset {0} cannot update ", key));
                   continue;
                 }
                 params = params.setParams(key, old.update(val));

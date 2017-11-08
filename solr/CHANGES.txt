@@ -87,6 +87,8 @@ Bug Fixes
 * SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
   never update it causing stale state to be returned in ClusterState. (shalin)
 
+* SOLR-11619: V2 requests that needed to be forwarded to other nodes would get an NPE. (David Smiley)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
