@@ -1532,7 +1532,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.updateNumericDocValue(new Term("text", "text"), "field", 2l);
     reader.close();
     reader = DirectoryReader.open(w);
-    searcher = newSearcher(reader, false);  // ParallelReader mucks up updated DVs
+    searcher = newSearcher(reader);
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
     searcher.setQueryCache(cache);
 
