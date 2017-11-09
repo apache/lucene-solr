@@ -194,7 +194,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudSolrClient server = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
-    server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     return server;
   }

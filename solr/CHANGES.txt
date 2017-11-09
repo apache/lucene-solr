@@ -157,6 +157,8 @@ Other Changes
 
 * SOLR-10469: Move CloudSolrClient.setParallelUpdates to its Builder. (David Smiley)
 
+* SOLR-11507: Randomize SolrTestCaseJ4.CloudSolrClientBuilder more, and simplify it. (David Smiley)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

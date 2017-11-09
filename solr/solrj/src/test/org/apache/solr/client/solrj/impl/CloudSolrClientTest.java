@@ -292,8 +292,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertEquals(0, docs.getNumFound());
     
     // Test Multi-Threaded routed updates for UpdateRequest
-    try (CloudSolrClient threadedClient = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
-      threadedClient.setParallelUpdates(true);
+    try (CloudSolrClient threadedClient = new CloudSolrClientBuilder()
+        .withZkHost(cluster.getZkServer().getZkAddress())
+        .withParallelUpdates(true)
+        .build()) {
       threadedClient.setDefaultCollection(COLLECTION);
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {

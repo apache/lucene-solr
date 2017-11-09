@@ -2227,20 +2227,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes receive updates
-   * unless otherwise specified by the caller.
-   *
-   * @see #sendDirectUpdatesToAnyShardReplica
-   * @see #sendDirectUpdatesToShardLeadersOnly
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize
+   * some internal settings.
    */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
 
-    private boolean configuredDUTflag = false;
-
     public CloudSolrClientBuilder() {
-      super();
+      this.directUpdatesToLeadersOnly = random().nextBoolean();
+      this.shardLeadersOnly = random().nextBoolean();
+      this.parallelUpdates = random().nextBoolean();
     }
 
+    /** Randomly chooses the cluster state provider -- either ZK based or HTTP. */
     public CloudSolrClient.Builder withCluster(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
         return withZkHost(cluster.getZkServer().getZkAddress());
@@ -2249,40 +2247,6 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       }
     }
 
-    @Override
-    public CloudSolrClient.Builder sendDirectUpdatesToShardLeadersOnly() {
-      configuredDUTflag = true;
-      return super.sendDirectUpdatesToShardLeadersOnly();
-    }
-
-    @Override
-    public CloudSolrClient.Builder sendDirectUpdatesToAnyShardReplica() {
-      configuredDUTflag = true;
-      return super.sendDirectUpdatesToAnyShardReplica();
-    }
-
-    private void randomlyChooseDirectUpdatesToLeadersOnly() {
-      if (random().nextBoolean()) {
-        sendDirectUpdatesToShardLeadersOnly();
-      } else {
-        sendDirectUpdatesToAnyShardReplica();
-      }
-    }
-
-    @Override
-    public CloudSolrClient build() {
-      if (configuredDUTflag == false) {
-        // flag value not explicitly configured
-        if (random().nextBoolean()) {
-          // so randomly choose a value
-          randomlyChooseDirectUpdatesToLeadersOnly();
-        } else {
-          // or go with whatever the default value is
-          configuredDUTflag = true;
-        }
-      }
-      return super.build();
-    }
   }
 
   /**
