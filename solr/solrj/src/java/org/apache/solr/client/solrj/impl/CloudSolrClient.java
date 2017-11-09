@@ -115,7 +115,7 @@ public class CloudSolrClient extends SolrClient {
   
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
-  private boolean parallelUpdates = true;
+  private boolean parallelUpdates; //TODO final
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
           "CloudSolrClient ThreadPool"));
@@ -279,6 +279,7 @@ public class CloudSolrClient extends SolrClient {
     if (builder.loadBalancedSolrClient == null) builder.loadBalancedSolrClient = createLBHttpSolrClient(builder, myClient);
     this.lbClient = builder.loadBalancedSolrClient;
     this.updatesToLeaders = builder.shardLeadersOnly;
+    this.parallelUpdates = builder.parallelUpdates;
     this.directUpdatesToLeadersOnly = builder.directUpdatesToLeadersOnly;
   }
   
@@ -376,6 +377,17 @@ public class CloudSolrClient extends SolrClient {
     assertZKStateProvider().zkClientTimeout = zkClientTimeout;
   }
 
+  /** Gets whether direct updates are sent in parallel */
+  public boolean isParallelUpdates() {
+    return parallelUpdates;
+  }
+
+  /** @deprecated since 7.2  Use {@link Builder} methods instead. */
+  @Deprecated
+  public void setParallelUpdates(boolean parallelUpdates) {
+    this.parallelUpdates = parallelUpdates;
+  }
+
   /**
    * Connect to the zookeeper ensemble.
    * This is an optional method that may be used to force a connect before any other requests are sent.
@@ -407,10 +419,6 @@ public class CloudSolrClient extends SolrClient {
       TimeUnit.MILLISECONDS.sleep(250);
     }
     throw new TimeoutException("Timed out waiting for cluster");
-  }
-
-  public void setParallelUpdates(boolean parallelUpdates) {
-    this.parallelUpdates = parallelUpdates;
   }
 
   private ZkClientClusterStateProvider assertZKStateProvider() {
@@ -1339,22 +1347,16 @@ public class CloudSolrClient extends SolrClient {
    * Constructs {@link CloudSolrClient} instances from provided configuration.
    */
   public static class Builder extends SolrClientBuilder<Builder> {
-    protected Collection<String> zkHosts;
-    protected List<String> solrUrls;
+    protected Collection<String> zkHosts = new ArrayList<>();
+    protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
     protected LBHttpSolrClient loadBalancedSolrClient;
     protected LBHttpSolrClient.Builder lbClientBuilder;
-    protected boolean shardLeadersOnly;
-    protected boolean directUpdatesToLeadersOnly;
+    protected boolean shardLeadersOnly = true;
+    protected boolean directUpdatesToLeadersOnly = false;
+    protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
 
-
-    public Builder() {
-      this.zkHosts = new ArrayList();
-      this.solrUrls = new ArrayList();
-      this.shardLeadersOnly = true;
-    }
-    
     /**
      * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
      * 
@@ -1466,6 +1468,12 @@ public class CloudSolrClient extends SolrClient {
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
+      return this;
+    }
+
+    /** Should direct updates to shards be done in parallel (the default) or if not then synchronously? */
+    public Builder withParallelUpdates(boolean parallelUpdates) {
+      this.parallelUpdates = parallelUpdates;
       return this;
     }
 
