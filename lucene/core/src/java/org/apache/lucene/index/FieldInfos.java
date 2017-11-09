@@ -403,7 +403,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
    
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber,
                                           boolean storeTermVector,
-                                          boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
+                                          boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
+                                          DocValuesType docValues, long dvGen,
                                           int dimensionCount, int dimensionNumBytes) {
       assert assertNotFinished();
       if (docValues == null) {
@@ -417,7 +418,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues, dimensionCount, dimensionNumBytes);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, -1, new HashMap<>(), dimensionCount, dimensionNumBytes);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, new HashMap<>(), dimensionCount, dimensionNumBytes);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
@@ -435,16 +436,21 @@ public class FieldInfos implements Iterable<FieldInfo> {
           }
 
           fi.setDocValuesType(docValues); // this will also perform the consistency check.
+          fi.setDocValuesGen(dvGen);
         }
       }
       return fi;
     }
 
     public FieldInfo add(FieldInfo fi) {
+      return add(fi, -1);
+    }
+
+    public FieldInfo add(FieldInfo fi, long dvGen) {
       // IMPORTANT - reuse the field number if possible for consistent field numbers across segments
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                                  fi.omitsNorms(), fi.hasPayloads(),
-                                 fi.getIndexOptions(), fi.getDocValuesType(),
+                                 fi.getIndexOptions(), fi.getDocValuesType(), dvGen,
                                  fi.getPointDimensionCount(), fi.getPointNumBytes());
     }
     

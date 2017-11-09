@@ -58,6 +58,9 @@ Bug Fixes
   Previously bogus numbers were used, and many similarities would
   completely degrade. (Robert Muir, Adrien Grand)
 
+* LUCENE-8045: ParallelLeafReader did not correctly report FieldInfo.dvGen
+  (Alan Woodward)
+
 Optimizations
 
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
