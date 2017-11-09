@@ -137,6 +137,8 @@ Other Changes
 
 * SOLR-9120: Reduce log level for inconsequential NoSuchFileException that LukeRequestHandler may encounter (hossman)
 
+* SOLR-10469: Move CloudSolrClient.setParallelUpdates to its Builder. (David Smiley)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
