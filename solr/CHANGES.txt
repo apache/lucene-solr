@@ -132,6 +132,8 @@ Other Changes
 
 * SOLR-11621: Fix spurious failures of TriggerIntegrationTest due to timing issues. (shalin)
 
+* SOLR-11628: Add documentation of maxRamMB for filter cache and query result cache. (shalin)
+
 * SOLR-11610: Refactored payload handling to use lucene's PayloadDecoder
   framework (Alan Woodward)
 
