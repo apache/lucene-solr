@@ -148,6 +148,8 @@ Other Changes
 
 * SOLR-11621: Fix spurious failures of TriggerIntegrationTest due to timing issues. (shalin)
 
+* SOLR-11628: Add documentation of maxRamMB for filter cache and query result cache. (shalin)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

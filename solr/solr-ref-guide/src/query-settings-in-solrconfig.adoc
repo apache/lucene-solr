@@ -59,11 +59,22 @@ The most typical way Solr uses the `filterCache` is to cache results of each `fq
 
 Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`. For a discussion of faceting, see <<searching.adoc#searching,Searching>>.
 
+The filter cache uses a specialized cache named as FastLRUCache which is optimized for fast concurrent access with the trade-off that writes and evictions are costlier than the LRUCache used for query result cache and document cache.
+
 [source,xml]
 ----
-<filterCache class="solr.LRUCache"
+<filterCache class="solr.FastLRUCache"
              size="512"
              initialSize="512"
+             autowarmCount="128"/>
+----
+
+The FastLRUCache used for filter cache also supports a `maxRamMB` parameter which restricts the maximum amount of heap used by this cache. The FastLRUCache only supports evictions by either heap usage or size but not both. Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
+
+[source,xml]
+----
+<filterCache class="solr.FastLRUCache"
+             maxRamMB="1000"
              autowarmCount="128"/>
 ----
 
@@ -71,7 +82,7 @@ Solr also uses this cache for faceting when the configuration parameter `facet.m
 
 This cache holds the results of previous searches: ordered lists of document IDs (DocList) based on a query, a sort, and the range of documents requested.
 
-The `queryResultCache` has an additional (optional) setting to limit the maximum amount of RAM used (`maxRamMB`). This lets you specify the maximum heap size, in megabytes, used by the contents of this cache. When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit.
+The `queryResultCache` has an additional (optional) setting to limit the maximum amount of RAM used (`maxRamMB`). This lets you specify the maximum heap size, in megabytes, used by the contents of this cache. When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit. If a `size` is specified in addition to `maxRamMB` then both heap usage and maximum size limits are respected.
 
 [source,xml]
 ----
