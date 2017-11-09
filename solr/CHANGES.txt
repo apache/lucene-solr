@@ -153,6 +153,8 @@ Other Changes
 * SOLR-11610: Refactored payload handling to use lucene's PayloadDecoder
   framework (Alan Woodward)
 
+* SOLR-9120: Reduce log level for inconsequential NoSuchFileException that LukeRequestHandler may encounter (hossman)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
