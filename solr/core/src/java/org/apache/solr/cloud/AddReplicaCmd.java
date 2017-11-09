@@ -124,7 +124,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       } else {
         node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
-            ocmh.overseer.getSolrCloudManager(), ocmh.overseer.getCoreContainer()).get(0).nodeName;// TODO: use replica type in this logic too
+            ocmh.overseer.getSolrCloudManager()).get(0).nodeName;// TODO: use replica type in this logic too
       }
     }
     log.info("Node Identified {} for creating new replica", node);

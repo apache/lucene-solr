@@ -25,7 +25,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.CANNOT_ASSIGN_FAIL;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NODE_CAN_BE_ASSIGNED;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NOT_APPLICABLE;
@@ -35,6 +34,7 @@ import static org.apache.solr.cloud.rule.Rule.Operand.LESS_THAN;
 import static org.apache.solr.cloud.rule.Rule.Operand.NOT_EQUAL;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
 
 
 public class Rule {
@@ -73,7 +73,8 @@ public class Rule {
     if (o == null) return o;
     if (typ == String.class) return String.valueOf(o);
     if (typ == Integer.class) {
-      return Integer.parseInt(String.valueOf(o));
+      Double v = Double.parseDouble(String.valueOf(o));
+      return v.intValue();
     }
     return o;
   }
