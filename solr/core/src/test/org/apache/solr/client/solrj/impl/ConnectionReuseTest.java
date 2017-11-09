@@ -77,7 +77,6 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
         CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
-        client.setParallelUpdates(random().nextBoolean());
         client.setDefaultCollection(COLLECTION);
         return client;
     }
