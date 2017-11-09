@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@LogLevel("org.apache.solr.cloud=DEBUG")
+@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;")
 public class AddReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
