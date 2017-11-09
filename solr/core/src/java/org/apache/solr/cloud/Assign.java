@@ -32,12 +32,12 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
@@ -49,7 +49,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -284,7 +283,7 @@ public class Assign {
           (List<Map>) message.get(SNITCH),
           new HashMap<>(),//this is a new collection. So, there are no nodes in any shard
           nodeList,
-          ocmh.overseer.getZkController().getCoreContainer(),
+          ocmh.overseer.getSolrCloudManager(),
           clusterState);
 
       Map<ReplicaPosition, String> nodeMappings = replicaAssigner.getNodeMappings();
@@ -327,7 +326,7 @@ public class Assign {
   // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
   public static List<ReplicaCount> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas,
-                                                          Object createNodeSet, SolrCloudManager cloudManager, CoreContainer cc) throws IOException, InterruptedException {
+                                                          Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException {
     log.debug("getNodesForNewReplicas() shard: {} , replicas : {} , createNodeSet {}", shard, nrtReplicas, createNodeSet );
     DocCollection coll = clusterState.getCollection(collectionName);
     Integer maxShardsPerNode = coll.getMaxShardsPerNode();
@@ -360,7 +359,7 @@ public class Assign {
     List<ReplicaPosition> replicaPositions = null;
     if (l != null) {
       // TODO: make it so that this method doesn't require access to CC
-      replicaPositions = getNodesViaRules(clusterState, shard, nrtReplicas, cc, coll, createNodeList, l);
+      replicaPositions = getNodesViaRules(clusterState, shard, nrtReplicas, cloudManager, coll, createNodeList, l);
     }
     String policyName = coll.getStr(POLICY);
     AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
@@ -417,7 +416,7 @@ public class Assign {
   }
 
   private static List<ReplicaPosition> getNodesViaRules(ClusterState clusterState, String shard, int numberOfNodes,
-                                                        CoreContainer cc, DocCollection coll, List<String> createNodeList, List l) {
+                                                        SolrCloudManager cloudManager, DocCollection coll, List<String> createNodeList, List l) {
     ArrayList<Rule> rules = new ArrayList<>();
     for (Object o : l) rules.add(new Rule((Map) o));
     Map<String, Map<String, Integer>> shardVsNodes = new LinkedHashMap<>();
@@ -439,7 +438,7 @@ public class Assign {
         Collections.singletonMap(shard, numberOfNodes),
         snitches,
         shardVsNodes,
-        nodesList, cc, clusterState).getNodeMappings();
+        nodesList, cloudManager, clusterState).getNodeMappings();
 
     return positions.entrySet().stream().map(e -> e.getKey().setNode(e.getValue())).collect(Collectors.toList());// getReplicaCounts(positions);
   }

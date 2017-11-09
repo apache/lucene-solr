@@ -43,7 +43,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-import org.apache.solr.common.cloud.rule.RemoteCallback;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -247,9 +246,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
-    public void invokeRemote(String node, ModifiableSolrParams params, String klas, RemoteCallback callback) {
-
-    }
 
     public SimpleSolrResponse invoke(String solrNode, String path, SolrParams params)
         throws IOException, SolrServerException {

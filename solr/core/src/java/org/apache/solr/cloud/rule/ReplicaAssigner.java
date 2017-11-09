@@ -30,23 +30,27 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.Snitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
-import static org.apache.solr.cloud.rule.Rule.MatchStatus.*;
-import static org.apache.solr.cloud.rule.Rule.Phase.*;
+import static org.apache.solr.cloud.rule.Rule.MatchStatus.NODE_CAN_BE_ASSIGNED;
+import static org.apache.solr.cloud.rule.Rule.MatchStatus.NOT_APPLICABLE;
+import static org.apache.solr.cloud.rule.Rule.Phase.ASSIGN;
+import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_ASSIGN;
+import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_VERIFY;
+import static org.apache.solr.cloud.rule.Rule.Phase.VERIFY;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 public class ReplicaAssigner {
@@ -71,12 +75,12 @@ public class ReplicaAssigner {
                          List snitches,
                          Map<String, Map<String, Integer>> shardVsNodes,
                          List<String> participatingLiveNodes,
-                         CoreContainer cc, ClusterState clusterState) {
+                         SolrCloudManager cloudManager, ClusterState clusterState) {
     this.rules = rules;
     for (Rule rule : rules) tagNames.add(rule.tag.name);
     this.shardVsReplicaCount = shardVsReplicaCount;
     this.participatingLiveNodes = new ArrayList<>(participatingLiveNodes);
-    this.nodeVsTags = getTagsForNodes(cc, snitches);
+    this.nodeVsTags = getTagsForNodes(cloudManager, snitches);
     this.shardVsNodes = getDeepCopy(shardVsNodes, 2);
 
     if (clusterState != null) {
@@ -309,12 +313,12 @@ public class ReplicaAssigner {
     final Snitch snitch;
     final Set<String> myTags = new HashSet<>();
     final Map<String, SnitchContext> nodeVsContext = new HashMap<>();
-    private final CoreContainer cc;
+    private final SolrCloudManager cloudManager;
 
-    SnitchInfoImpl(Map<String, Object> conf, Snitch snitch, CoreContainer cc) {
+    SnitchInfoImpl(Map<String, Object> conf, Snitch snitch, SolrCloudManager cloudManager) {
       super(conf);
       this.snitch = snitch;
-      this.cc = cc;
+      this.cloudManager = cloudManager;
     }
 
     @Override
@@ -328,13 +332,13 @@ public class ReplicaAssigner {
   /**
    * This method uses the snitches and get the tags for all the nodes
    */
-  private Map<String, Map<String, Object>> getTagsForNodes(final CoreContainer cc, List snitchConf) {
+  private Map<String, Map<String, Object>> getTagsForNodes(final SolrCloudManager cloudManager, List snitchConf) {
 
-    Map<Class, SnitchInfoImpl> snitches = getSnitchInfos(cc, snitchConf);
+    Map<Class, SnitchInfoImpl> snitches = getSnitchInfos(cloudManager, snitchConf);
     for (Class c : Snitch.WELL_KNOWN_SNITCHES) {
       if (snitches.containsKey(c)) continue;// it is already specified explicitly , ignore
       try {
-        snitches.put(c, new SnitchInfoImpl(Collections.EMPTY_MAP, (Snitch) c.newInstance(), cc));
+        snitches.put(c, new SnitchInfoImpl(Collections.EMPTY_MAP, (Snitch) c.newInstance(), cloudManager));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error instantiating Snitch " + c.getName());
       }
@@ -358,7 +362,7 @@ public class ReplicaAssigner {
       //now use the Snitch to get the tags
       for (SnitchInfoImpl info : snitches.values()) {
         if (!info.myTags.isEmpty()) {
-          SnitchContext context = getSnitchCtx(node, info, cc);
+          SnitchContext context = getSnitchCtx(node, info, cloudManager);
           info.nodeVsContext.put(node, context);
           try {
             info.snitch.getTags(node, info.myTags, context);
@@ -401,16 +405,16 @@ public class ReplicaAssigner {
 
   private Map<String, Object> snitchSession = new HashMap<>();
 
-  protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, CoreContainer cc) {
-    return new ServerSnitchContext(info, node, snitchSession, cc);
+  protected SnitchContext getSnitchCtx(String node, SnitchInfoImpl info, SolrCloudManager cloudManager) {
+    return new ServerSnitchContext(info, node, snitchSession, cloudManager);
   }
 
-  public static void verifySnitchConf(CoreContainer cc, List snitchConf) {
-    getSnitchInfos(cc, snitchConf);
+  public static void verifySnitchConf(SolrCloudManager cloudManager, List snitchConf) {
+    getSnitchInfos(cloudManager, snitchConf);
   }
 
 
-  static Map<Class, SnitchInfoImpl> getSnitchInfos(CoreContainer cc, List snitchConf) {
+  static Map<Class, SnitchInfoImpl> getSnitchInfos(SolrCloudManager cloudManager, List snitchConf) {
     if (snitchConf == null) snitchConf = Collections.emptyList();
     Map<Class, SnitchInfoImpl> snitches = new LinkedHashMap<>();
     for (Object o : snitchConf) {
@@ -428,10 +432,9 @@ public class ReplicaAssigner {
       }
       try {
         if (klas.indexOf('.') == -1) klas = Snitch.class.getPackage().getName() + "." + klas;
-        Snitch inst = cc == null ?
-            (Snitch) Snitch.class.getClassLoader().loadClass(klas).newInstance() :
-            cc.getResourceLoader().newInstance(klas, Snitch.class);
-        snitches.put(inst.getClass(), new SnitchInfoImpl(map, inst, cc));
+        Snitch inst =
+            (Snitch) Snitch.class.getClassLoader().loadClass(klas).newInstance() ;
+        snitches.put(inst.getClass(), new SnitchInfoImpl(map, inst, cloudManager));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
 

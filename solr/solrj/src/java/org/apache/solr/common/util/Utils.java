@@ -40,6 +40,8 @@ import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -364,6 +366,17 @@ public class Utils {
   private static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
     while (is.read() != -1) {}
+  }
+
+  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
+    VersionedData data = null;
+    try {
+      data = distribStateManager.getData(path);
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyMap();
+    }
+    if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();
+    return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
   /**

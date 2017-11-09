@@ -1103,7 +1103,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
       }
     }
-    ReplicaAssigner.verifySnitchConf(cc, (List) m.get(SNITCH));
+    if (cc != null && cc.isZooKeeperAware())
+      ReplicaAssigner.verifySnitchConf(cc.getZkController().getSolrCloudManager(), (List) m.get(SNITCH));
   }
 
   /**
