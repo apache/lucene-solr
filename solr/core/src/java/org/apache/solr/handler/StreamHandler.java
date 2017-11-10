@@ -282,6 +282,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("scalarDivide", ScalarDivideEvaluator.class)
         .withFunctionName("sumRows", SumRowsEvaluator.class)
         .withFunctionName("sumColumns", SumColumnsEvaluator.class)
+        .withFunctionName("diff", TimeDifferencingEvaluator.class)
 
         // Boolean Stream Evaluators
 

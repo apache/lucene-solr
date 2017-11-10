@@ -6841,6 +6841,90 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testTimeDifferencingDefaultLag() throws Exception {
+    String cexpr = "diff(array(1709.0, 1621.0, 1973.0, 1812.0, 1975.0, 1862.0, 1940.0, 2013.0, 1596.0, 1725.0, 1676.0, 1814.0, 1615.0, 1557.0, 1891.0, 1956.0, 1885.0, 1623.0, 1903.0, 1997.0))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 19);
+    assertEquals(out.get(0).doubleValue(),-88.0, 0.01);
+    assertEquals(out.get(1).doubleValue(),352.0, 0.01);
+    assertEquals(out.get(2).doubleValue(),-161.0, 0.01);
+    assertEquals(out.get(3).doubleValue(),163.0, 0.01);
+    assertEquals(out.get(4).doubleValue(),-113.0, 0.01);
+    assertEquals(out.get(5).doubleValue(),78.0, 0.01);
+    assertEquals(out.get(6).doubleValue(),73.0, 0.01);
+    assertEquals(out.get(7).doubleValue(),-417.0, 0.01);
+    assertEquals(out.get(8).doubleValue(),129.0, 0.01);
+    assertEquals(out.get(9).doubleValue(),-49.0, 0.01);
+    assertEquals(out.get(10).doubleValue(),138.0, 0.01);
+    assertEquals(out.get(11).doubleValue(),-199.0, 0.01);
+    assertEquals(out.get(12).doubleValue(),-58.0, 0.01);
+    assertEquals(out.get(13).doubleValue(),334.0, 0.01);
+    assertEquals(out.get(14).doubleValue(),65.0, 0.01);
+    assertEquals(out.get(15).doubleValue(),-71.0, 0.01);
+    assertEquals(out.get(16).doubleValue(),-262.0, 0.01);
+    assertEquals(out.get(17).doubleValue(),280.0, 0.01);
+    assertEquals(out.get(18).doubleValue(),94.0, 0.01);
+  }
+
+  @Test
+  public void testTimeDifferencingDefinedLag() throws Exception {
+    String cexpr = "diff(array(1709.0, 1621.0, 1973.0, 1812.0, 1975.0, 1862.0, 1940.0, 2013.0, 1596.0, 1725.0, 1676.0, 1814.0, 1615.0, 1557.0, 1891.0, 1956.0, 1885.0, 1623.0, 1903.0, 1997.0), 12)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 8);
+    assertEquals(out.get(0).doubleValue(),-94.0, 0.01);
+    assertEquals(out.get(1).doubleValue(),-64.0, 0.01);
+    assertEquals(out.get(2).doubleValue(),-82.0, 0.01);
+    assertEquals(out.get(3).doubleValue(),144.0, 0.01);
+    assertEquals(out.get(4).doubleValue(),-90.0, 0.01);
+    assertEquals(out.get(5).doubleValue(),-239.0, 0.01);
+    assertEquals(out.get(6).doubleValue(),-37.0, 0.01);
+    assertEquals(out.get(7).doubleValue(),-16.0, 0.01);
+
+  }
+
+  @Test
+  public void testNestedDoubleTimeDifference() throws Exception {
+    String cexpr = "diff(diff(array(1709.0, 1621.0, 1973.0, 1812.0, 1975.0, 1862.0, 1940.0, 2013.0, 1596.0, 1725.0, 1676.0, 1814.0, 1615.0, 1557.0, 1891.0, 1956.0, 1885.0, 1623.0, 1903.0, 1997.0)), 12)";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<Number> out = (List<Number>)tuples.get(0).get("return-value");
+    assertTrue(out.size() == 7);
+    assertEquals(out.get(0).doubleValue(),30.0,0.01);
+    assertEquals(out.get(1).doubleValue(),-18.0,0.01);
+    assertEquals(out.get(2).doubleValue(),226.0,0.01);
+    assertEquals(out.get(3).doubleValue(),-234.0,0.01);
+    assertEquals(out.get(4).doubleValue(),-149.0,0.01);
+    assertEquals(out.get(5).doubleValue(),202.0,0.01);
+    assertEquals(out.get(6).doubleValue(),21.0,0.01);
+  }
+
+  @Test
   public void testResiduals() throws Exception {
     String cexpr = "let(a=array(1,2,3,4,5,6), b=array(2,4,6,8,10,12), c=regress(a,b), tuple(res=residuals(c,a,a)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
