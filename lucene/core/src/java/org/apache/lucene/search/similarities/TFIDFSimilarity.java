@@ -27,7 +27,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
@@ -511,21 +510,6 @@ public abstract class TFIDFSimilarity extends Similarity {
       numTerms = state.getLength();
     return SmallFloat.intToByte4(numTerms);
   }
- 
-  /** Computes the amount of a sloppy phrase match, based on an edit distance.
-   * This value is summed for each sloppy phrase match in a document to form
-   * the frequency to be used in scoring instead of the exact term count.
-   *
-   * <p>A phrase match with a small edit distance to a document passage more
-   * closely matches the document, so implementations of this method usually
-   * return larger values when the edit distance is small and smaller values
-   * when it is large.
-   *
-   * @see PhraseQuery#getSlop()
-   * @param distance the edit distance of this sloppy phrase match
-   * @return the frequency increment for this match
-   */
-  public abstract float sloppyFreq(int distance);
 
   /**
    * Calculate a scoring factor based on the data in the payload.  Implementations
@@ -588,16 +572,6 @@ public abstract class TFIDFSimilarity extends Similarity {
         float normValue = normTable[(int) (norms.longValue() & 0xFF)];
         return raw * normValue;  // normalize for field
       }
-    }
-    
-    @Override
-    public float computeSlopFactor(int distance) {
-      return sloppyFreq(distance);
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return scorePayload(doc, start, end, payload);
     }
 
     @Override

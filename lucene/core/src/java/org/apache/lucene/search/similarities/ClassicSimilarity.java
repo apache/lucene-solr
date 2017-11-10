@@ -46,12 +46,6 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   public float tf(float freq) {
     return (float)Math.sqrt(freq);
   }
-    
-  /** Implemented as <code>1 / (distance + 1)</code>. */
-  @Override
-  public float sloppyFreq(int distance) {
-    return 1.0f / (distance + 1);
-  }
   
   /** The default implementation returns <code>1</code> */
   @Override

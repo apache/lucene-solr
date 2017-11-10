@@ -272,11 +272,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
 
     @Override
-    public float sloppyFreq(int distance) {
-      return 1;
-    }
-
-    @Override
     public float idf(long docFreq, long docCount) {
       return 1;
     }

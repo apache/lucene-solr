@@ -291,11 +291,6 @@ public class TestPayloadScoreQuery extends LuceneTestCase {
     }
 
     @Override
-    public float sloppyFreq(int distance) {
-      return 1.0f;
-    }
-
-    @Override
     public float tf(float freq) {
       return 1.0f;
     }

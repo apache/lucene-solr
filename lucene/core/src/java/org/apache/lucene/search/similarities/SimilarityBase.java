@@ -27,7 +27,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
 
 /**
@@ -255,14 +254,5 @@ public abstract class SimilarityBase extends Similarity {
       return SimilarityBase.this.explain(stats, doc, freq, getLengthValue(doc));
     }
 
-    @Override
-    public float computeSlopFactor(int distance) {
-      return 1.0f / (distance + 1);
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return 1f;
-    }
   }
 }

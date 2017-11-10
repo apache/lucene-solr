@@ -46,7 +46,6 @@ public class TestOmitTf extends LuceneTestCase {
   public static class SimpleSimilarity extends TFIDFSimilarity {
     @Override public float lengthNorm(int length) { return 1; }
     @Override public float tf(float freq) { return freq; }
-    @Override public float sloppyFreq(int distance) { return 2.0f; }
     @Override public float idf(long docFreq, long docCount) { return 1.0f; }
     @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
       return Explanation.match(1.0f, "Inexplicable");
