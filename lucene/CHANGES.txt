@@ -45,8 +45,10 @@ Improvements
 
 API Changes
 
-* LUCENE-8017: Weight now exposes a getCacheHelper() method to help query caches
-  determine whether or not a query can be cached. (Alan Woodward)
+* LUCENE-8017, LUCENE-8042: Weight, DoubleValuesSource and related objects
+  now implement a SegmentCacheable interface, with a single method
+  isCacheable(LeafReaderContext) determining whether or not the object may
+  be cached against a LeafReader. (Alan Woodward, Robert Muir)
 
 * LUCENE-8038: Payload factors for scoring in PayloadScoreQuery are now
   calculated by a PayloadDecoder, instead of delegating to the Similarity.
