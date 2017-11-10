@@ -536,6 +536,7 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @param distance the edit distance of this sloppy phrase match
    * @return the frequency increment for this match
    */
+  @Deprecated
   public abstract float sloppyFreq(int distance);
 
   /**
