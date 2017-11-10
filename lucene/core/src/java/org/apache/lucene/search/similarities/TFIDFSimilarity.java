@@ -28,7 +28,6 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SmallFloat;
 
 
@@ -510,19 +509,6 @@ public abstract class TFIDFSimilarity extends Similarity {
       numTerms = state.getLength();
     return SmallFloat.intToByte4(numTerms);
   }
-
-  /**
-   * Calculate a scoring factor based on the data in the payload.  Implementations
-   * are responsible for interpreting what is in the payload.  Lucene makes no assumptions about
-   * what is in the byte array.
-   *
-   * @param doc The docId currently being scored.
-   * @param start The start position of the payload
-   * @param end The end position of the payload
-   * @param payload The payload byte array to be scored
-   * @return An implementation dependent float to be used as a scoring factor
-   */
-  public abstract float scorePayload(int doc, int start, int end, BytesRef payload);
 
   @Override
   public final SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {

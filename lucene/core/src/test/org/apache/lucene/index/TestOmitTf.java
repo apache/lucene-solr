@@ -50,7 +50,6 @@ public class TestOmitTf extends LuceneTestCase {
     @Override public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics[] termStats) {
       return Explanation.match(1.0f, "Inexplicable");
     }
-    @Override public float scorePayload(int doc, int start, int end, BytesRef payload) { return 1.0f; }
   }
 
   private static final FieldType omitType = new FieldType(TextField.TYPE_NOT_STORED);

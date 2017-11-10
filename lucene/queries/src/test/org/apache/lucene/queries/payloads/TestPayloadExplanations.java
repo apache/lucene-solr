@@ -18,13 +18,11 @@ package org.apache.lucene.queries.payloads;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BaseExplanationTestCase;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * TestExplanations subclass focusing on payload queries
@@ -36,17 +34,6 @@ public class TestPayloadExplanations extends BaseExplanationTestCase {
       new MinPayloadFunction(),
       new MaxPayloadFunction(),
   };
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    searcher.setSimilarity(new ClassicSimilarity() {
-      @Override
-      public float scorePayload(int doc, int start, int end, BytesRef payload) {
-        return 1 + (payload.hashCode() % 10);
-      }
-    });
-  }
 
   /** macro for payloadscorequery */
   private SpanQuery pt(String s, PayloadFunction fn) {

@@ -256,13 +256,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   static class BoostingSimilarity extends ClassicSimilarity {
 
-    // TODO: Remove warning after API has been finalized
-    @Override
-    public float scorePayload(int docId, int start, int end, BytesRef payload) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload.bytes[payload.offset];
-    }
-
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -279,13 +272,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     @Override
     public float tf(float freq) {
       return freq == 0 ? 0 : 1;
-    }
-  }
-
-  static class FullSimilarity extends ClassicSimilarity{
-    public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload[offset];
     }
   }
 
