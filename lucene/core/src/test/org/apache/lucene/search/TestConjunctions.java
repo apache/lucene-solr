@@ -25,8 +25,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -39,6 +39,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -111,6 +112,16 @@ public class TestConjunctions extends LuceneTestCase {
         @Override
         public float score(int doc, float freq) {
           return freq;
+        }
+        
+        @Override
+        public float computeSlopFactor(int distance) {
+          return 1F;
+        }
+
+        @Override
+        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+          return 1F;
         }
       };
     }

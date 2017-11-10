@@ -20,9 +20,6 @@ API Changes
 * LUCENE-8038: Deprecated PayloadScoreQuery constructors have been removed (Alan
   Woodward)
 
-* LUCENE-8014: Similarity.computeSlopFactor() and
-  Similarity.computePayloadFactor() have been removed (Alan Woodward)
-
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version

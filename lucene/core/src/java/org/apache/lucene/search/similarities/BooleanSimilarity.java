@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Simple similarity that gives terms a score that is equal to their query
@@ -79,6 +80,15 @@ public class BooleanSimilarity extends Similarity {
             queryBoostExpl);
       }
 
+      @Override
+      public float computeSlopFactor(int distance) {
+        return 1f;
+      }
+
+      @Override
+      public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+        return 1f;
+      }
     };
   }
 
