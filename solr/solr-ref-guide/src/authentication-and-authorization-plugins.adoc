@@ -148,7 +148,7 @@ All of the content in the `authorization` block of `security.json` would be pass
 
 [IMPORTANT]
 ====
-The authorization plugin is only supported in SolrCloud mode. Also, reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
+Reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
 ====
 
 === Available Authorization Plugins
