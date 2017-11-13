@@ -522,11 +522,6 @@ public class LTRScoringQuery extends Query {
       }
 
       @Override
-      public int freq() throws IOException {
-        return featureTraversalScorer.freq();
-      }
-
-      @Override
       public DocIdSetIterator iterator() {
         return featureTraversalScorer.iterator();
       }
@@ -578,16 +573,6 @@ public class LTRScoringQuery extends Query {
             }
           }
           return makeNormalizedFeaturesAndScore();
-        }
-
-        @Override
-        public int freq() throws IOException {
-          final DisiWrapper subMatches = subScorers.topList();
-          int freq = 1;
-          for (DisiWrapper w = subMatches.next; w != null; w = w.next) {
-            freq += 1;
-          }
-          return freq;
         }
 
         @Override
@@ -679,11 +664,6 @@ public class LTRScoringQuery extends Query {
             children.add(new ChildScorer(scorer, "SHOULD"));
           }
           return children;
-        }
-
-        @Override
-        public int freq() throws IOException {
-          return freq;
         }
 
         @Override

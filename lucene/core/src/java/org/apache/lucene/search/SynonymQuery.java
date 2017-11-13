@@ -168,7 +168,7 @@ public final class SynonymQuery extends Query {
             freq = synScorer.tf(synScorer.getSubMatches());
           } else {
             assert scorer instanceof TermScorer;
-            freq = scorer.freq();
+            freq = ((TermScorer)scorer).freq();
           }
           SimScorer docScorer = similarity.simScorer(simWeight, context);
           Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
@@ -231,7 +231,7 @@ public final class SynonymQuery extends Query {
     final int tf(DisiWrapper topList) throws IOException {
       int tf = 0;
       for (DisiWrapper w = topList; w != null; w = w.next) {
-        tf += w.scorer.freq();
+        tf += ((TermScorer)w.scorer).freq();
       }
       return tf;
     }

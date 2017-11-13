@@ -150,7 +150,6 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     DocIdSetIterator actualIt = actual.iterator();
     while ((doc = expectedIt.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(doc, actualIt.nextDoc());
-      assertEquals(expected.freq(), actual.freq());
       float expectedScore = expected.score();
       float actualScore = actual.score();
       assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
@@ -169,7 +168,6 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     int doc;
     while ((doc = expectedIt.advance(prevDoc+amount)) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(doc, actualIt.advance(prevDoc+amount));
-      assertEquals(expected.freq(), actual.freq());
       float expectedScore = expected.score();
       float actualScore = actual.score();
       assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
@@ -345,11 +343,6 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     public float score() throws IOException {
       assert score != 0 : currentMatched;
       return (float)score;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return currentMatched;
     }
 
     @Override

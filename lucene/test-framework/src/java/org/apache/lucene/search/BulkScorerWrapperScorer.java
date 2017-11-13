@@ -31,7 +31,6 @@ public class BulkScorerWrapperScorer extends Scorer {
   private int next = 0;
 
   private final int[] docs;
-  private final int[] freqs;
   private final float[] scores;
   private int bufferLength;
 
@@ -40,7 +39,6 @@ public class BulkScorerWrapperScorer extends Scorer {
     super(weight);
     this.scorer = scorer;
     docs = new int[bufferSize];
-    freqs = new int[bufferSize];
     scores = new float[bufferSize];
   }
 
@@ -58,7 +56,6 @@ public class BulkScorerWrapperScorer extends Scorer {
         @Override
         public void collect(int doc) throws IOException {
           docs[bufferLength] = doc;
-          freqs[bufferLength] = scorer.freq();
           scores[bufferLength] = scorer.score();
           bufferLength += 1;
         }
@@ -70,11 +67,6 @@ public class BulkScorerWrapperScorer extends Scorer {
   @Override
   public float score() throws IOException {
     return scores[i];
-  }
-
-  @Override
-  public int freq() throws IOException {
-    return freqs[i];
   }
 
   @Override

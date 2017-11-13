@@ -62,11 +62,6 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public int freq() {
-    return scorers.length;
-  }
-
-  @Override
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>();
     for (Scorer scorer : required) {

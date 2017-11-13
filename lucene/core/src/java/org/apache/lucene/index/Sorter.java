@@ -450,7 +450,6 @@ final class Sorter {
 
     float score;
     int doc = -1;
-    int freq = 1;
 
     @Override
     public int docID() {
@@ -459,11 +458,6 @@ final class Sorter {
 
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return freq;
     }
 
     @Override

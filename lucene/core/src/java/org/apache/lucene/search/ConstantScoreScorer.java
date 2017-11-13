@@ -73,10 +73,5 @@ public final class ConstantScoreScorer extends Scorer {
     return score;
   }
 
-  @Override
-  public int freq() throws IOException {
-    return 1;
-  }
-
 }
 

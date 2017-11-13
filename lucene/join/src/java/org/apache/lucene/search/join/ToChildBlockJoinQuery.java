@@ -129,7 +129,6 @@ public class ToChildBlockJoinQuery extends Query {
     private final boolean doScores;
 
     private float parentScore;
-    private int parentFreq = 1;
 
     private int childDoc = -1;
     private int parentDoc = 0;
@@ -199,7 +198,6 @@ public class ToChildBlockJoinQuery extends Query {
                 if (childDoc < parentDoc) {
                   if (doScores) {
                     parentScore = parentScorer.score();
-                    parentFreq = parentScorer.freq();
                   }
                   //System.out.println("  " + childDoc);
                   return childDoc;
@@ -247,7 +245,6 @@ public class ToChildBlockJoinQuery extends Query {
 
             if (doScores) {
               parentScore = parentScorer.score();
-              parentFreq = parentScorer.freq();
             }
           }
 
@@ -281,11 +278,6 @@ public class ToChildBlockJoinQuery extends Query {
     @Override
     public float score() throws IOException {
       return parentScore;
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return parentFreq;
     }
     
     int getParentDoc() {

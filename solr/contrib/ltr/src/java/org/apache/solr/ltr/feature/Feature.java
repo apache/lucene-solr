@@ -298,11 +298,6 @@ public abstract class Feature extends Query {
       }
 
       @Override
-      public int freq() throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
       public int docID() {
         return itr.docID();
       }
