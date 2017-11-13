@@ -315,13 +315,6 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    // we need to know about all matches
-    updateFreq();
-    return freq;
-  }
-
-  @Override
   public float score() throws IOException {
     // we need to know about all matches
     updateFreq();

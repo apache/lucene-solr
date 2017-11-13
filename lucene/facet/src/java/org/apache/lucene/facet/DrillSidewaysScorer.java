@@ -592,11 +592,6 @@ class DrillSidewaysScorer extends BulkScorer {
     }
 
     @Override
-    public int freq() {
-      return 1+dims.length;
-    }
-
-    @Override
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
     }

@@ -60,11 +60,6 @@ public abstract class FilterScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    return in.freq();
-  }
-
-  @Override
   public final int docID() {
     return in.docID();
   }

@@ -176,11 +176,6 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int freq() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
     public int docID() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

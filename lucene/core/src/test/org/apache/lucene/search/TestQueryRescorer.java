@@ -438,11 +438,6 @@ public class TestQueryRescorer extends LuceneTestCase {
             }
 
             @Override
-            public int freq() {
-              return 1;
-            }
-
-            @Override
             public DocIdSetIterator iterator() {
               return new DocIdSetIterator() {
 

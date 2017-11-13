@@ -226,11 +226,6 @@ public class TestTopFieldCollector extends LuceneTestCase {
                     }
 
                     @Override
-                    public int freq() throws IOException {
-                      return scorer.freq();
-                    }
-
-                    @Override
                     public int docID() {
                       return scorer.docID();
                     }

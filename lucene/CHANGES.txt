@@ -57,6 +57,8 @@ API Changes
 * LUCENE-8014: Similarity.computeSlopFactor() and
   Similarity.computePayloadFactor() have been deprecated. (Alan Woodward)
 
+* LUCENE-6278: Scorer.freq() has been removed (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies

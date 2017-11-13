@@ -184,11 +184,6 @@ public class ParentChildrenBlockJoinQuery extends Query {
           }
 
           @Override
-          public int freq() throws IOException {
-            return childrenScorer.freq();
-          }
-
-          @Override
           public DocIdSetIterator iterator() {
             return it;
           }

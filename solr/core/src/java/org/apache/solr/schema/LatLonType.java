@@ -484,11 +484,6 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       return (float)(dist * qWeight);
     }
 
-    @Override
-    public int freq() throws IOException {
-      return 1;
-    }
-
     public Explanation explain(Explanation base, int doc) throws IOException {
       if (base.isMatch() == false) {
         return base;

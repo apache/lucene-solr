@@ -89,9 +89,4 @@ public abstract class ValueSourceScorer extends Scorer {
     return score > Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
   }
 
-  @Override
-  public int freq() throws IOException {
-    return 1;
-  }
-
 }

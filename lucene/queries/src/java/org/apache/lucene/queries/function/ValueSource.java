@@ -107,11 +107,6 @@ public abstract class ValueSource {
     }
 
     @Override
-    public int freq() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }

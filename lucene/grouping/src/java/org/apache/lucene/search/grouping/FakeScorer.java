@@ -25,7 +25,6 @@ class FakeScorer extends Scorer {
 
   float score;
   int doc = -1;
-  int freq = 1;
 
   FakeScorer() {
     super(null);
@@ -39,11 +38,6 @@ class FakeScorer extends Scorer {
   @Override
   public DocIdSetIterator iterator() {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int freq() throws IOException {
-    return freq;
   }
 
   @Override
