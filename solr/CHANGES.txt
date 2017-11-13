@@ -105,6 +105,9 @@ Bug Fixes
 
 * SOLR-11619: V2 requests that needed to be forwarded to other nodes would get an NPE. (David Smiley)
 
+* SOLR-11231: Guard against unset fields when performing language detection.
+  (Chris Beer via Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
