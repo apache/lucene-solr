@@ -212,6 +212,19 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   }
 
   @Test
+  public void testMissingFieldEmptyString() throws Exception {
+    SolrInputDocument doc;
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "no_such_field");
+    parameters.add("langid.langField", "language");
+    parameters.add("langid.enforceSchema", "false");
+    liProcessor = createLangIdProcessor(parameters);
+
+    doc = new SolrInputDocument();
+    assertEquals("", liProcessor.process(doc).getFieldValue("language"));
+  }
+
+  @Test
   public void testFallback() throws Exception {
     SolrInputDocument doc;
     ModifiableSolrParams parameters = new ModifiableSolrParams();
