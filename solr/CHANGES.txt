@@ -107,6 +107,9 @@ Optimizations
 * SOLR-11641: Change `frange` to default to `cost=100` so default behavior is to PostFilter if user specifies
   `cache=false` (hossman)
 
+* SOLR-11595: SolrIndexSearcher.localCollectionStatistics is now faster by leveraging an existing
+  cached MultiFields.  Noticeable when many fields are searched.  (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-11478: Solr should remove itself from live_nodes in zk immediately on shutdown. (Cao Manh Dat)
