@@ -451,12 +451,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
         return new DelegatingNodeStateProvider(null) {
           @Override
           public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-            return (Map<String, Object>) Utils.getObjectByPath(m,false, Arrays.asList("nodeValues", node));
+            Map<String, Object> result = (Map<String, Object>) Utils.getObjectByPath(m, false, Arrays.asList("nodeValues", node));
+            return result == null ? Collections.emptyMap() : result;
           }
 
           @Override
           public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-            return (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m,false, Arrays.asList("replicaInfo", node));
+            Map<String, Map<String, List<ReplicaInfo>>> result = (Map<String, Map<String, List<ReplicaInfo>>>) Utils.getObjectByPath(m, false, Arrays.asList("replicaInfo", node));
+            return result == null ? Collections.emptyMap() : result;
           }
         };
       }
@@ -1470,6 +1472,46 @@ public class TestPolicy extends SolrTestCaseJ4 {
       assertEquals("/c/mycoll1", Utils.getObjectByPath(m, true, "operation/path"));
     }
 
+  }
+
+  public void testSyspropSuggestions() {
+    String autoScalingjson = "{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 3}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': '1', shard:'#EACH', sysprop.fs : 'ssd'}" +
+        "  ]" +
+        "}";
+
+
+    String dataproviderdata = "{" +
+        "  'liveNodes': [" +
+        "    'node1'," +
+        "    'node2'," +
+        "    'node3'" +
+        "  ]," +
+        "  'replicaInfo': {" +
+        "    'node1': {" +
+        "      'c1': {'s1': [{'r1': {'type': 'NRT'}, 'r2': {'type': 'NRT'}}]," +
+        "             's2': [{'r1': {'type': 'NRT'}, 'r2': {'type': 'NRT'}}]}," +
+        "    }" +
+        "  }," +
+        "    'nodeValues': {" +
+        "      'node1': {'cores': 2, 'freedisk': 334, 'sysprop.fs': 'slowdisk'}," +
+        "      'node2': {'cores': 2, 'freedisk': 749, 'sysprop.fs': 'slowdisk'}," +
+        "      'node3': {'cores': 0, 'freedisk': 262, 'sysprop.fs': 'ssd'}" +
+        "    }" +
+        "}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertEquals(2, violations.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
+    assertEquals(2, suggestions.size());
+    for (Suggester.SuggestionInfo suggestion : suggestions) {
+      Utils.getObjectByPath(suggestion ,true, "operation/move-replica/targetNode");
+    }
   }
 
 }

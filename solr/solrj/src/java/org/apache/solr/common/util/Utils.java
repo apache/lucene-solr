@@ -326,11 +326,27 @@ public class Utils {
   }
 
   private static boolean isMapLike(Object o) {
-    return o instanceof Map || o instanceof NamedList;
+    return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
   }
 
   private static Object getVal(Object obj, String key) {
-    if(obj instanceof NamedList) return ((NamedList) obj).get(key);
+    if (obj instanceof MapWriter) {
+      Object[] result = new Object[1];
+      try {
+        ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
+          @Override
+          public MapWriter.EntryWriter put(String k, Object v) throws IOException {
+            if (key.equals(k)) result[0] = v;
+            return this;
+          }
+        });
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return result[0];
+    }
+
+    if (obj instanceof NamedList) return ((NamedList) obj).get(key);
     else if (obj instanceof Map) return ((Map) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
