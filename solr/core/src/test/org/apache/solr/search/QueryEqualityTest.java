@@ -370,8 +370,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                                "myField","foo_i",
                                "myInner","product(4,foo_i)");
     try {
+      // NOTE: unlike most queries, frange defaultsto cost==100
       assertQueryEquals("frange", req, 
                         "{!frange l=0.2 h=20.4}sum(4,5)",
+                        "{!frange l=0.2 h=20.4 cost=100}sum(4,5)",
                         "{!frange l=$low h=$high}sum(4,$myVar)");
     } finally {
       req.close();
