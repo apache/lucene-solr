@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
 
 import java.util.Iterator;
@@ -24,9 +26,22 @@ import java.util.Iterator;
 public class Matrix implements Iterable {
 
   private double[][] data;
+  private Map context = new HashMap();
 
   public Matrix(double[][] data) {
     this.data = data;
+  }
+
+  public Map getContext() {
+    return this.context;
+  }
+
+  public void addToContext(Object key, Object value) {
+    this.context.put(key, value);
+  }
+
+  public Object getContextValue(Object key) {
+    return this.context.get(key);
   }
 
   public double[][] getData() {
