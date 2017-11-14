@@ -1109,6 +1109,16 @@ body.toc2 #header > h1:nth-last-child(2)
         border: none;
         max-width: 300px;
     }
+    #toc.toc-column
+    {
+      -moz-column-count: 3;
+      -moz-column-gap: 20px;
+      -webkit-column-count: 3;
+      -webkit-column-gap: 20px;
+      column-count: 3;
+      column-gap: 20px;
+      margin-top: 1em;
+    }
 }
 .toc > ul
 {
@@ -1149,7 +1159,7 @@ body.toc2 #header > h1:nth-last-child(2)
 
 div.toc ul li {
     margin: 8px 0 8px 22px;
-    list-style: square;
+    list-style: disc;
     line-height: 1.25;
 }
 
@@ -2646,7 +2656,7 @@ p.tableblock
 .exampleblock > .content
 {
     border-color: #e0e0dc;
-    background-color: #fffef7;
+    background-color: transparent;
     -webkit-box-shadow: 0 1px 4px #e0e0dc;
             box-shadow: 0 1px 4px #e0e0dc;
 }
