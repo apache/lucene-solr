@@ -104,6 +104,9 @@ Optimizations
 * SOLR-11320: Lock autoscaling triggers when changes they requested are being made. This helps to
   ensure that cluster is in a stable state before processing any new trigger events. (ab)
 
+* SOLR-11641: Change `frange` to default to `cost=100` so default behavior is to PostFilter if user specifies
+  `cache=false` (hossman)
+
 Other Changes
 ----------------------
 * SOLR-11478: Solr should remove itself from live_nodes in zk immediately on shutdown. (Cao Manh Dat)

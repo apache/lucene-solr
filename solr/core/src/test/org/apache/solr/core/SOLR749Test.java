@@ -83,6 +83,25 @@ public class SOLR749Test extends SolrTestCaseJ4 {
       int count = CountUsageValueSourceParser.getAndClearCount("frange_in_bq");
       assertTrue("frange_in_bq: " + count, (19 <= count && count <= 20));
 
+      // non-cached frange queries should default to post-filtering
+      // (ie: only be computed on candidates of other q/fq restrictions)
+      // regardless of how few/many docs match the frange
+      assertQ("query matching 1 doc w/ implicitly post-filtered frange matching all docs",
+              req("q","{!notfoo cache=false}*:*", // match all...
+                  "fq","{!frange cache=false l=30 u=30}abs(id_i1)", // ...restrict to 1 match
+                  // post filter will happily match all docs, but should only be asked about 1...
+                  "fq","{!frange cache=false l=4.5 u=4.5 v='countUsage(postfilt_match_all,4.5)'})"),
+              "//result[@numFound=1]");
+      assertEquals(1, CountUsageValueSourceParser.getAndClearCount("postfilt_match_all"));
+      //
+      assertQ("query matching all docs w/ implicitly post-filtered frange matching no docs",
+              req("q","{!notfoo cache=false}id_i1:[20 TO 39]", // match some...
+                  "fq","{!frange cache=false cost=0 l=50}abs(id_i1)", // ...regular conjunction filter rules out all
+                  // post filter will happily match all docs, but should never be asked...
+                  "fq","{!frange cache=false l=4.5 u=4.5 v='countUsage(postfilt_match_all,4.5)'})"),
+              "//result[@numFound=0]");
+      assertEquals(0, CountUsageValueSourceParser.getAndClearCount("postfilt_match_all"));
+
     } finally {
       CountUsageValueSourceParser.clearCounters();
     }
