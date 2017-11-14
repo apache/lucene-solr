@@ -1521,4 +1521,61 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
   }
 
+  public void testPortSuggestions() {
+    String autoScalingjson = "{" +
+        "  'cluster-preferences': [" +
+        "    { 'maximize': 'freedisk', 'precision': 50}," +
+        "    { 'minimize': 'cores', 'precision': 3}" +
+        "  ]," +
+        "  'cluster-policy': [" +
+        "    { 'replica': 0, shard:'#EACH', port : '8983'}" +
+        "  ]" +
+        "}";
+
+
+    String dataproviderdata = "{" +
+        "  'liveNodes': [" +
+        "    'node1:8983'," +
+        "    'node2:8984'," +
+        "    'node3:8985'" +
+        "  ]," +
+        "  'replicaInfo': {" +
+        "    'node1:8983': {" +
+        "      'c1': {" +
+        "        's1': [" +
+        "          {'r1': {'type': 'NRT'}}," +
+        "          {'r2': {'type': 'NRT'}}" +
+        "        ]," +
+        "        's2': [" +
+        "          {'r1': {'type': 'NRT'}}," +
+        "          {'r2': {'type': 'NRT'}}" +
+        "        ]" +
+        "      }" +
+        "    }" +
+        "  }," +
+        "  'nodeValues': {" +
+        "    'node1:8983': {" +
+        "      'cores': 4," +
+        "      'freedisk': 334," +
+        "      'port': 8983" +
+        "    }," +
+        "    'node2:8984': {" +
+        "      'cores': 0," +
+        "      'freedisk': 1000," +
+        "      'port': 8984" +
+        "    }," +
+        "    'node3:8985': {" +
+        "      'cores': 0," +
+        "      'freedisk': 1500," +
+        "      'port': 8985" +
+        "    }" +
+        "  }" +
+        "}";
+    AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
+    List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData(dataproviderdata)).getViolations();
+    assertEquals(2, violations.size());
+    List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
+    assertEquals(4, suggestions.size());
+  }
+
 }
