@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.util.ObjectCache;
 
 /**
  * This interface abstracts the access to a SolrCloud cluster, including interactions with Zookeeper, Solr
@@ -40,6 +41,8 @@ public interface SolrCloudManager extends SolrCloseable {
   DistribStateManager getDistribStateManager();
 
   DistributedQueueFactory getDistributedQueueFactory();
+
+  ObjectCache getObjectCache();
 
   // Solr-like methods
 

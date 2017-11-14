@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -1130,6 +1131,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
   private SolrCloudManager getSolrCloudManager(final Map<String, Map> nodeValues, String clusterState) {
     return new SolrCloudManager() {
+      ObjectCache objectCache = new ObjectCache();
+
+      @Override
+      public ObjectCache getObjectCache() {
+        return objectCache;
+      }
       @Override
       public ClusterStateProvider getClusterStateProvider() {
         return new DelegatingClusterStateProvider(null) {
