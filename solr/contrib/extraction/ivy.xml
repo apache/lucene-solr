@@ -43,8 +43,8 @@
     <dependency org="org.apache.pdfbox" name="fontbox" rev="${/org.apache.pdfbox/fontbox}" conf="compile"/>
 
     <dependency org="org.apache.pdfbox" name="jempbox" rev="${/org.apache.pdfbox/jempbox}" conf="compile"/>
-    <dependency org="org.bouncycastle" name="bcmail-jdk15" rev="${/org.bouncycastle/bcmail-jdk15}" conf="compile"/>
-    <dependency org="org.bouncycastle" name="bcprov-jdk15" rev="${/org.bouncycastle/bcprov-jdk15}" conf="compile"/>
+    <dependency org="org.bouncycastle" name="bcmail-jdk15on" rev="${/org.bouncycastle/bcmail-jdk15on}" conf="compile"/>
+    <dependency org="org.bouncycastle" name="bcprov-jdk15on" rev="${/org.bouncycastle/bcprov-jdk15on}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi" rev="${/org.apache.poi/poi}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi-scratchpad" rev="${/org.apache.poi/poi-scratchpad}" conf="compile"/>
     <dependency org="org.apache.poi" name="poi-ooxml" rev="${/org.apache.poi/poi-ooxml}" conf="compile"/>
