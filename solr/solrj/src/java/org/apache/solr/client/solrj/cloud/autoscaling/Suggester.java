@@ -47,6 +47,7 @@ public abstract class Suggester {
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
+  boolean force;
   protected List<Violation> originalViolations = new ArrayList<>();
   private boolean isInitialized = false;
 
@@ -62,6 +63,15 @@ public abstract class Suggester {
     } else {
       hints.put(hint, value == null ? null : String.valueOf(value));
     }
+    return this;
+  }
+
+  /**
+   * Normally, only less loaded nodes are used for moving replicas. If this is a violation and a MOVE must be performed,
+   * set the flag to true.
+   */
+  public Suggester forceOperation(boolean force) {
+    this.force = force;
     return this;
   }
 

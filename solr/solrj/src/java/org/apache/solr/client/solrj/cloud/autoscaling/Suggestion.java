@@ -109,7 +109,7 @@ public class Suggestion {
     COLL("collection", String.class, null, null, null),
     SHARD("shard", String.class, null, null, null),
     REPLICA("replica", Long.class, null, 0L, null),
-    PORT(ImplicitSnitch.PORT, Long.class, null, 1L, 65535L),
+    PORT(ImplicitSnitch.PORT, Long.class, null, 1L, 65535L) ,
     IP_1("ip_1", Long.class, null, 0L, 255L),
     IP_2("ip_2", Long.class, null, 0L, 255L),
     IP_3("ip_3", Long.class, null, 0L, 255L),
@@ -222,13 +222,7 @@ public class Suggestion {
 
       @Override
       public void getSuggestions(SuggestionCtx ctx) {
-        if(ctx.violation == null)return;
-        for (ReplicaInfoAndErr e : ctx.violation.getViolatingReplicas()) {
-          Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
-              .hint(Suggester.Hint.COLL_SHARD, new Pair<>( e.replicaInfo.getCollection(), e.replicaInfo.getShard()))
-              .hint(Suggester.Hint.SRC_NODE, e.replicaInfo.getNode());
-          if (ctx.addSuggestion(suggester) == null) break;
-        }
+        perNodeSuggestions(ctx);
       }
     },;
 
@@ -254,7 +248,7 @@ public class Suggestion {
     }
 
     public void getSuggestions(SuggestionCtx ctx) {
-
+      perNodeSuggestions(ctx);
     }
 
     public void addViolatingReplicas(ViolationCtx ctx) {
@@ -262,6 +256,7 @@ public class Suggestion {
         row.forEachReplica(replica -> {
           if (ctx.clause.replica.isPass(0) && !ctx.clause.tag.isPass(row)) return;
           if (!ctx.clause.replica.isPass(0) && ctx.clause.tag.isPass(row)) return;
+          if(!ctx.currentViolation.matchShard(replica.getShard())) return;
           if (!ctx.clause.collection.isPass(ctx.currentViolation.coll) || !ctx.clause.shard.isPass(ctx.currentViolation.shard))
             return;
           ctx.currentViolation.addReplica(new ReplicaInfoAndErr(replica).withDelta(ctx.clause.tag.delta(row.getVal(ctx.clause.tag.name))));
@@ -305,6 +300,17 @@ public class Suggestion {
         throw new RuntimeException("Invalid type ");
       }
 
+    }
+  }
+
+  private static void perNodeSuggestions(SuggestionCtx ctx) {
+    if (ctx.violation == null) return;
+    for (ReplicaInfoAndErr e : ctx.violation.getViolatingReplicas()) {
+      Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
+          .forceOperation(true)
+          .hint(Suggester.Hint.COLL_SHARD, new Pair<>(e.replicaInfo.getCollection(), e.replicaInfo.getShard()))
+          .hint(Suggester.Hint.SRC_NODE, e.replicaInfo.getNode());
+      if (ctx.addSuggestion(suggester) == null) break;
     }
   }
 

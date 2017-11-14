@@ -34,7 +34,7 @@ public class Violation implements MapWriter {
   final Object tagKey;
   private final int hash;
   private final Clause clause;
-  private List<ReplicaInfoAndErr> violationVsMetaData = new ArrayList<>();
+  private List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
 
   Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long replicaCountDelta, Object tagKey) {
     this.clause = clause;
@@ -48,17 +48,23 @@ public class Violation implements MapWriter {
   }
 
   public Violation addReplica(ReplicaInfoAndErr r) {
-    violationVsMetaData.add(r);
+    replicaInfoAndErrs.add(r);
     return this;
   }
 
   public List<ReplicaInfoAndErr> getViolatingReplicas() {
-    return violationVsMetaData;
+    return replicaInfoAndErrs;
   }
 
   public Clause getClause() {
     return clause;
   }
+
+  public boolean matchShard(String shard) {
+    if (getClause().shard.op == Operand.WILDCARD) return true;
+    return this.shard == null || this.shard.equals(shard);
+  }
+
   static class ReplicaInfoAndErr implements MapWriter{
     final ReplicaInfo replicaInfo;
 
