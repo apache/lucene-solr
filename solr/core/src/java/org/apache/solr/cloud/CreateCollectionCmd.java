@@ -318,7 +318,7 @@ public class CreateCollectionCmd implements Cmd {
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     } finally {
-      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
+      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
     }
   }
 

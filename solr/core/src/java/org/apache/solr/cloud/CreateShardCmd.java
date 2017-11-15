@@ -164,7 +164,7 @@ public class CreateShardCmd implements Cmd {
         });
       }
     } finally {
-      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
+      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
     }
 
     log.debug("Waiting for create shard action to complete");

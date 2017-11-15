@@ -222,7 +222,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       ocmh.waitForCoreNodeName(collection, fnode, fcoreName);
       if (policyVersionAfter.get() > -1) {
         PolicyHelper.REF_VERSION.remove();
-        ocmh.policySessionRef.decref(policyVersionAfter.get());
+        PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()).decref(policyVersionAfter.get());
       }
       if (onComplete != null) onComplete.run();
     };

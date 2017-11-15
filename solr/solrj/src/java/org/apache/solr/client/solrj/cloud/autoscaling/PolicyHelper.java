@@ -223,6 +223,10 @@ public class PolicyHelper {
     if (refVersion != null) policySessionRef.decref(refVersion);
     REF_VERSION.remove();
   }
+  public static PolicyHelper.SessionRef getPolicySessionRef(SolrCloudManager cloudManager){
+    return (SessionRef) cloudManager.getObjectCache().computeIfAbsent(SessionRef.class.getName(), s -> new SessionRef());
+  }
+
 
   public static ThreadLocal<SessionRef> SESSION_REF = new ThreadLocal<>();
 

@@ -350,7 +350,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
     } finally {
-      PolicyHelper.clearFlagAndDecref(ocmh.policySessionRef);
+      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
     }
   }
 
