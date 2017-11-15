@@ -344,7 +344,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       final String debug = "'tab-pane" + (pane.id().isEmpty() ? "" : "#" + pane.id()) + "'";
 
       // no 'active' class on any tab-pane
-      if (pane.classNames​().contains("active")) {
+      if (pane.classNames().contains("active")) {
         System.err.println(file + " contains " + debug + " with 'active' defined -- this must be removed");
         problems++;
       }
