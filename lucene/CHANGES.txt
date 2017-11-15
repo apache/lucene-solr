@@ -25,6 +25,14 @@ API Changes
 
 * LUCENE-6278: Scorer.freq() has been removed (Alan Woodward)
 
+* LUCENE-7736: DoubleValuesSource and LongValuesSource now expose a
+  rewrite(IndexSearcher) function. (Alan Woodward)
+
+New Features
+
+* LUCENE-7736: IndexReaderFunctions expose various IndexReader statistics as
+  DoubleValuesSources. (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
