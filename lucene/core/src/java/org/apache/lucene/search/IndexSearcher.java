@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -778,21 +777,22 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public CollectionStatistics collectionStatistics(String field) throws IOException {
-    final int docCount;
-    final long sumTotalTermFreq;
-    final long sumDocFreq;
-
     assert field != null;
-    
-    Terms terms = MultiFields.getTerms(reader, field);
-    if (terms == null) {
+    long docCount = 0;
+    long sumTotalTermFreq = 0;
+    long sumDocFreq = 0;
+    for (LeafReaderContext leaf : reader.leaves()) {
+      final Terms terms = leaf.reader().terms(field);
+      if (terms == null) {
+        continue;
+      }
+      docCount += terms.getDocCount();
+      sumTotalTermFreq += terms.getSumTotalTermFreq();
+      sumDocFreq += terms.getSumDocFreq();
+    }
+    if (docCount == 0) {
       return null;
     }
-
-    docCount = terms.getDocCount();
-    sumTotalTermFreq = terms.getSumTotalTermFreq();
-    sumDocFreq = terms.getSumDocFreq();
-
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
 }

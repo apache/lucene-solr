@@ -41,6 +41,12 @@ Improvements
   Add missing range checks for similarity parameters.
   Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
 
+Optimizations
+
+* LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
+  (David Smiley, Robert Muir)
+
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
