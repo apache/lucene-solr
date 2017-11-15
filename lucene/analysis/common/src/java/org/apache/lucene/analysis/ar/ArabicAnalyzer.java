@@ -90,7 +90,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   private boolean highAccuracy = false;
 
 
-/**
+  /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
   public ArabicAnalyzer() {
@@ -118,8 +118,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    *          a set of terms not to be stemmed
    */
   public ArabicAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet){
-	  super(stopwords);
-	  this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
   
   public CharArraySet getValidatedStemList() {
@@ -127,23 +127,23 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   }
   
   public void setValidatedStemList(CharArraySet validatedStemList) {
-	this.validatedStemList = validatedStemList;
+    this.validatedStemList = validatedStemList;
   }
   
   public boolean isUseEnhancedStemmer() {
-	return useEnhancedStemmer;
+    return useEnhancedStemmer;
   }
 
   public void setUseEnhancedStemmer(boolean useEnhancedStemmer) {
-	this.useEnhancedStemmer = useEnhancedStemmer;
+    this.useEnhancedStemmer = useEnhancedStemmer;
   }
   
   public boolean isHighAccuracy() {
-	return highAccuracy;
+    return highAccuracy;
   }
 
   public void setHighAccuracy(boolean highAccuracy) {
-	this.highAccuracy = highAccuracy;
+    this.highAccuracy = highAccuracy;
   }
 
   /**
@@ -170,13 +170,13 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     }
     if(!validatedStemList.isEmpty()){
-    	ArabicStemFilter asf = new ArabicStemFilter(result,validatedStemList);
-    	if(useEnhancedStemmer){
-    		asf.setUseEnhancedStemmer(useEnhancedStemmer);
-    		if(highAccuracy)
-    			asf.setHighAccuracy(true);
-    	}
-    	return new TokenStreamComponents(source, asf);
+      ArabicStemFilter asf = new ArabicStemFilter(result,validatedStemList);
+      if(useEnhancedStemmer){
+        asf.setUseEnhancedStemmer(useEnhancedStemmer);
+        if(highAccuracy)
+          asf.setHighAccuracy(true);
+      }
+      return new TokenStreamComponents(source, asf);
     }
     return new TokenStreamComponents(source, new ArabicStemFilter(result));
   }

@@ -43,30 +43,31 @@ public final class ArabicStemFilter extends TokenFilter {
   private boolean highAccuracy = false;
 
 
-public ArabicStemFilter(TokenStream input) {
-	  super(input);
+  public ArabicStemFilter(TokenStream input) {
+    super(input);
   }
   
   public ArabicStemFilter(TokenStream input, CharArraySet validatedStemList) {
-	super(input);
-	stemmer.setValidatedStemList(validatedStemList);
+    super(input);
+    stemmer.setValidatedStemList(validatedStemList);
   }
   
   public boolean isUseEnhancedStemmer() {
-	return useEnhancedStemmer;
+    return useEnhancedStemmer;
   }
 
   public void setUseEnhancedStemmer(boolean useEnhancedStemmer) {
-	this.useEnhancedStemmer = useEnhancedStemmer;
-	stemmer.setUseEnhancedStemmer(useEnhancedStemmer);
+    this.useEnhancedStemmer = useEnhancedStemmer;
+    stemmer.setUseEnhancedStemmer(useEnhancedStemmer);
   }
+  
   public boolean isHighAccuracy() {
-	return highAccuracy;
-  } 
+    return highAccuracy;
+  }
 
   public void setHighAccuracy(boolean highAccuracy) {
-	this.highAccuracy = highAccuracy;
-	stemmer.setHighAccuracy(highAccuracy);
+    this.highAccuracy = highAccuracy;
+    stemmer.setHighAccuracy(highAccuracy);
   }
 
   @Override
@@ -75,7 +76,7 @@ public ArabicStemFilter(TokenStream input) {
       if(!keywordAttr.isKeyword()) {
         final int newlen = stemmer.stem(termAtt.buffer(), termAtt.length());
         if(useEnhancedStemmer)
-        	termAtt.copyBuffer(stemmer.getStr(), 0, newlen);
+          termAtt.copyBuffer(stemmer.getStr(), 0, newlen);
         termAtt.setLength(newlen);
       }
       return true;
@@ -83,4 +84,5 @@ public ArabicStemFilter(TokenStream input) {
       return false;
     }
   }
+  
 }
