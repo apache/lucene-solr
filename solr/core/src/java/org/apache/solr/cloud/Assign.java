@@ -293,7 +293,7 @@ public class Assign {
     } else  {
       if (message.getStr(CREATE_NODE_SET) == null)
         nodeList = Collections.emptyList();// unless explicitly specified do not pass node list to Policy
-      synchronized (ocmh) {
+      synchronized (PolicyHelper.class) {
         PolicyHelper.SESSION_REF.set(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
         try {
           return getPositionsUsingPolicy(collectionName,
