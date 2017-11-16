@@ -68,6 +68,9 @@ API Changes
 * LUCENE-7736: DoubleValuesSource and LongValuesSource now expose a
   rewrite(IndexSearcher) function. (Alan Woodward)
 
+* LUCENE-7998: DoubleValuesSource.fromQuery() allows you to use the scores
+  from a Query as a DoubleValuesSource. (Alan Woodward)
+
 New Features
 
 * LUCENE-7736: IndexReaderFunctions expose various IndexReader statistics as
