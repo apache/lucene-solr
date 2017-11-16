@@ -17,7 +17,10 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -28,10 +31,16 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
 
 public class AliasIntegrationTest extends SolrCloudTestCase {
 
@@ -40,6 +49,130 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+  }
+
+  @Test
+  public void testMetadata() throws Exception {
+    CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
+    waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 1));
+    waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2meta", clusterShape(1, 1));
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    zkStateReader.createClusterStateWatchersAndUpdate();
+    List<String> aliases = zkStateReader.getAliases().resolveAliases("meta1");
+    assertEquals(1, aliases.size());
+    assertEquals("meta1", aliases.get(0));
+    UnaryOperator<Aliases> op6 = a -> a.cloneWithCollectionAlias("meta1", "collection1meta,collection2meta");
+    final ZkStateReader.AliasesManager aliasesHolder = zkStateReader.aliasesHolder;
+
+    aliasesHolder.applyModificationAndExportToZk(op6);
+    aliases = zkStateReader.getAliases().resolveAliases("meta1");
+    assertEquals(2, aliases.size());
+    assertEquals("collection1meta", aliases.get(0));
+    assertEquals("collection2meta", aliases.get(1));
+    //ensure we have the back-compat format in ZK:
+    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null, true);
+    assertTrue(((Map<String,Map<String,?>>)Utils.fromJSON(rawBytes)).get("collection").get("meta1") instanceof String);
+
+    // set metadata
+    UnaryOperator<Aliases> op5 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", "bar");
+    aliasesHolder.applyModificationAndExportToZk(op5);
+    Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    assertNotNull(meta);
+    assertTrue(meta.containsKey("foo"));
+    assertEquals("bar", meta.get("foo"));
+
+    // set more metadata
+    UnaryOperator<Aliases> op4 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foobar", "bazbam");
+    aliasesHolder.applyModificationAndExportToZk(op4);
+    meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    assertNotNull(meta);
+
+    // old metadata still there
+    assertTrue(meta.containsKey("foo"));
+    assertEquals("bar", meta.get("foo"));
+
+    // new metadata added
+    assertTrue(meta.containsKey("foobar"));
+    assertEquals("bazbam", meta.get("foobar"));
+
+    // remove metadata
+    UnaryOperator<Aliases> op3 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", null);
+    aliasesHolder.applyModificationAndExportToZk(op3);
+    meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    assertNotNull(meta);
+
+    // verify key was removed
+    assertFalse(meta.containsKey("foo"));
+
+    // but only the specified key was removed
+    assertTrue(meta.containsKey("foobar"));
+    assertEquals("bazbam", meta.get("foobar"));
+
+    // removal of non existent key should succeed.
+    UnaryOperator<Aliases> op2 = a -> a.cloneWithCollectionAliasMetadata("meta1", "foo", null);
+    aliasesHolder.applyModificationAndExportToZk(op2);
+
+    // chained invocations
+    UnaryOperator<Aliases> op1 = a ->
+        a.cloneWithCollectionAliasMetadata("meta1", "foo2", "bazbam")
+        .cloneWithCollectionAliasMetadata("meta1", "foo3", "bazbam2");
+    aliasesHolder.applyModificationAndExportToZk(op1);
+
+    // some other independent update (not overwritten)
+    UnaryOperator<Aliases> op = a -> a.cloneWithCollectionAlias("meta3", "collection1meta,collection2meta");
+    aliasesHolder.applyModificationAndExportToZk(op);
+
+    // competing went through
+    assertEquals("collection1meta,collection2meta", zkStateReader.getAliases().getCollectionAliasMap().get("meta3"));
+
+    meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+    assertNotNull(meta);
+
+    // old metadata still there
+    assertTrue(meta.containsKey("foobar"));
+    assertEquals("bazbam", meta.get("foobar"));
+
+    // competing update not overwritten
+    assertEquals("collection1meta,collection2meta", zkStateReader.getAliases().getCollectionAliasMap().get("meta3"));
+
+    // new metadata added
+    assertTrue(meta.containsKey("foo2"));
+    assertEquals("bazbam", meta.get("foo2"));
+    assertTrue(meta.containsKey("foo3"));
+    assertEquals("bazbam2", meta.get("foo3"));
+
+    // now check that an independently constructed ZkStateReader can see what we've done.
+    // i.e. the data is really in zookeeper
+    String zkAddress = cluster.getZkServer().getZkAddress();
+    boolean createdZKSR = false;
+    try(SolrZkClient zkClient = new SolrZkClient(zkAddress, 30000)) {
+
+      ZkController.createClusterZkNodes(zkClient);
+
+      zkStateReader = new ZkStateReader(zkClient);
+      createdZKSR = true;
+      zkStateReader.createClusterStateWatchersAndUpdate();
+
+      meta = zkStateReader.getAliases().getCollectionAliasMetadata("meta1");
+      assertNotNull(meta);
+
+      // verify key was removed in independent view
+      assertFalse(meta.containsKey("foo"));
+
+      // but only the specified key was removed
+      assertTrue(meta.containsKey("foobar"));
+      assertEquals("bazbam", meta.get("foobar"));
+
+      Aliases a = zkStateReader.getAliases();
+      Aliases clone = a.cloneWithCollectionAlias("meta1", null);
+      meta = clone.getCollectionAliasMetadata("meta1");
+      assertEquals(0,meta.size());
+    } finally {
+      if (createdZKSR) {
+        zkStateReader.close();
+      }
+    }
   }
   
   @Test

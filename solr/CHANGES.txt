@@ -53,6 +53,9 @@ New Features
 
 * SOLR-11538: Implement suggestions for port,ip_*, nodeRole,sysprop.*, metrics:* (noble)
 
+* SOLR-11487: Collection Aliases may now have metadata (currently an internal feature).
+  (Gus Heck, David Smiley)
+
 Bug Fixes
 ----------------------
 

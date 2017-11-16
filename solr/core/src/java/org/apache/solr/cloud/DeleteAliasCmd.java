@@ -18,23 +18,14 @@
 
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.TimeOut;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
 
   public DeleteAliasCmd(OverseerCollectionMessageHandler ocmh) {
@@ -46,34 +37,7 @@ public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
     String aliasName = message.getStr(NAME);
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    byte[] jsonBytes = zkStateReader.getAliases().cloneWithCollectionAlias(aliasName, null).toJSON();
-    try {
-      zkStateReader.getZkClient().setData(ZkStateReader.ALIASES, jsonBytes, true);
-
-      checkForAliasAbsence(aliasName);
-      // some fudge for other nodes
-      Thread.sleep(100);
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } catch (InterruptedException e) {
-      log.warn("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-
+    zkStateReader.aliasesHolder.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasName, null));
   }
-  private void checkForAliasAbsence(String name) {
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
-    boolean success = false;
-    while (! timeout.hasTimedOut()) {
-      String collections = ocmh.zkStateReader.getAliases().getCollectionAliasMap().get(name);
-      if (collections == null) {
-        success = true;
-        break;
-      }
-    }
-    if (!success) {
-      log.warn("Timeout waiting to be notified of Alias change...");
-    }
-  }
+
 }
