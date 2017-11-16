@@ -94,6 +94,9 @@ Bug Fixes
 * SOLR-11231: Guard against unset fields when performing language detection.
   (Chris Beer via Steve Rowe)
 
+* SOLR-11553: JSON Facet API: facet refinement could use UIF in phase one and DV uninversion in phase 2, resulting
+  in too much memory use. (yonik)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
