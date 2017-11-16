@@ -56,6 +56,10 @@ New Features
 * SOLR-11487: Collection Aliases may now have metadata (currently an internal feature).
   (Gus Heck, David Smiley)
 
+* SOLR-11542: New TimePartitionedUpdateProcessor URP that routes documents to another collection
+  in the same Alias defined set based on a time field (currently an internal feature).
+  (David Smiley)
+
 Bug Fixes
 ----------------------
 
