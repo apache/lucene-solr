@@ -50,6 +50,20 @@ public class CreateAliasCmd implements Cmd {
     validateAllCollectionsExistAndNoDups(collections, zkStateReader);
 
     zkStateReader.aliasesHolder.applyModificationAndExportToZk(aliases -> aliases.cloneWithCollectionAlias(aliasName, collections));
+
+    // Sleep a bit to allow ZooKeeper state propagation.
+    //
+    // THIS IS A KLUDGE.
+    //
+    // Solr's view of the cluster is eventually consistent. *Eventually* all nodes and CloudSolrClients will be aware of
+    // alias changes, but not immediately. If a newly created alias is queried, things should work right away since Solr
+    // will attempt to see if it needs to get the latest aliases when it can't otherwise resolve the name.  However
+    // modifications to an alias will take some time.
+    //
+    // We could levy this requirement on the client but they would probably always add an obligatory sleep, which is
+    // just kicking the can down the road.  Perhaps ideally at this juncture here we could somehow wait until all
+    // Solr nodes in the cluster have the latest aliases?
+    Thread.sleep(100);
   }
 
   private void validateAllCollectionsExistAndNoDups(String collections, ZkStateReader zkStateReader) {
