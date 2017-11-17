@@ -194,67 +194,91 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         .add("id", "10", "a_t", "humpty dumpy3 sat on a walls")
         .commit(cluster.getSolrClient(), "collection2");
 
-    CollectionAdminRequest.createAlias("testalias", "collection1").process(cluster.getSolrClient());
-
+    ///////////////
+    CollectionAdminRequest.createAlias("testalias1", "collection1").process(cluster.getSolrClient());
+    sleepToAllowZkPropagation();
     // ensure that the alias has been registered
     assertEquals("collection1",
-        new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases().get("testalias"));
+        new CollectionAdminRequest.ListAliases().process(cluster.getSolrClient()).getAliases().get("testalias1"));
 
     // search for alias
-    searchSeveralWays("testalias", new SolrQuery("*:*"), 3);
+    searchSeveralWays("testalias1", new SolrQuery("*:*"), 3);
 
     // Use a comma delimited list, one of which is an alias
-    searchSeveralWays("testalias,collection2", new SolrQuery("*:*"), 5);
+    searchSeveralWays("testalias1,collection2", new SolrQuery("*:*"), 5);
 
-    // create alias, collection2 first because it's not on every node
-    CollectionAdminRequest.createAlias("testalias", "collection2,collection1").process(cluster.getSolrClient());
+    ///////////////
+    // test alias pointing to two collections.  collection2 first because it's not on every node
+    CollectionAdminRequest.createAlias("testalias2", "collection2,collection1").process(cluster.getSolrClient());
 
-    searchSeveralWays("testalias", new SolrQuery("*:*"), 5);
-
-    // update alias
-    CollectionAdminRequest.createAlias("testalias", "collection2").process(cluster.getSolrClient());
-
-    searchSeveralWays("testalias", new SolrQuery("*:*"), 2);
-
-    // set alias to two collections
-    CollectionAdminRequest.createAlias("testalias", "collection1,collection2").process(cluster.getSolrClient());
-    searchSeveralWays("testalias", new SolrQuery("*:*"), 5);
-
-    // alias pointing to alias (one level of indirection is supported; more than that is not (may or may not work)
-    // TODO dubious; remove?
-    CollectionAdminRequest.createAlias("testalias2", "testalias").process(cluster.getSolrClient());
     searchSeveralWays("testalias2", new SolrQuery("*:*"), 5);
 
-    // Test 2 aliases pointing to the same collection
-    CollectionAdminRequest.createAlias("testalias", "collection2").process(cluster.getSolrClient());
+    ///////////////
+    // update alias
     CollectionAdminRequest.createAlias("testalias2", "collection2").process(cluster.getSolrClient());
+    sleepToAllowZkPropagation();
 
-    // add one document to testalias, thus to collection2
+    searchSeveralWays("testalias2", new SolrQuery("*:*"), 2);
+
+    ///////////////
+    // alias pointing to alias.  One level of indirection is supported; more than that is not (may or may not work)
+    // TODO dubious; remove?
+    CollectionAdminRequest.createAlias("testalias3", "testalias2").process(cluster.getSolrClient());
+    searchSeveralWays("testalias3", new SolrQuery("*:*"), 2);
+
+    ///////////////
+    // Test 2 aliases pointing to the same collection
+    CollectionAdminRequest.createAlias("testalias4", "collection2").process(cluster.getSolrClient());
+    CollectionAdminRequest.createAlias("testalias5", "collection2").process(cluster.getSolrClient());
+
+    // add one document to testalias4, thus to collection2
     new UpdateRequest()
         .add("id", "11", "a_t", "humpty dumpy4 sat on a walls")
-        .commit(cluster.getSolrClient(), "testalias"); // thus gets added to collection2
+        .commit(cluster.getSolrClient(), "testalias4"); // thus gets added to collection2
 
-    searchSeveralWays("testalias", new SolrQuery("*:*"), 3);
+    searchSeveralWays("testalias4", new SolrQuery("*:*"), 3);
+    //searchSeveralWays("testalias4,testalias5", new SolrQuery("*:*"), 3);
 
-    CollectionAdminRequest.createAlias("testalias", "collection2,collection1").process(cluster.getSolrClient());
+    ///////////////
+    CollectionAdminRequest.createAlias("testalias6", "collection2,collection1").process(cluster.getSolrClient());
 
-    searchSeveralWays("testalias", new SolrQuery("*:*"), 6);
+    searchSeveralWays("testalias6", new SolrQuery("*:*"), 6);
 
-    // add one document to testalias, which will route to collection2 because it's the first
+    // add one document to testalias6, which will route to collection2 because it's the first
     new UpdateRequest()
         .add("id", "12", "a_t", "humpty dumpy5 sat on a walls")
-        .commit(cluster.getSolrClient(), "testalias"); // thus gets added to collection2
+        .commit(cluster.getSolrClient(), "testalias6"); // thus gets added to collection2
     searchSeveralWays("collection2", new SolrQuery("*:*"), 4);
 
-    CollectionAdminRequest.deleteAlias("testalias").process(cluster.getSolrClient());
-    CollectionAdminRequest.deleteAlias("testalias2").process(cluster.getSolrClient());
+    ///////////////
+    for (int i = 1; i <= 6 ; i++) {
+      CollectionAdminRequest.deleteAlias("testalias" + i).process(cluster.getSolrClient());
+    }
+    sleepToAllowZkPropagation();
 
     SolrException e = expectThrows(SolrException.class, () -> {
       SolrQuery q = new SolrQuery("*:*");
-      q.set("collection", "testalias");
+      q.set("collection", "testalias1");
       cluster.getSolrClient().query(q);
     });
-    assertTrue("Unexpected exception message: " + e.getMessage(), e.getMessage().contains("Collection not found: testalias"));
+    assertTrue("Unexpected exception message: " + e.getMessage(), e.getMessage().contains("Collection not found: testalias1"));
+  }
+
+  /**
+   * Sleep a bit to allow Zookeeper state propagation.
+   *
+   * Solr's view of the cluster is eventually consistent. *Eventually* all nodes and CloudSolrClients will be aware of
+   * alias changes, but not immediately. If a newly created alias is queried, things should work right away since Solr
+   * will attempt to see if it needs to get the latest aliases when it can't otherwise resolve the name.  However
+   * modifications to an alias will take some time.
+   */
+  private void sleepToAllowZkPropagation() {
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
 
   private void searchSeveralWays(String collectionList, SolrParams solrQuery, int expectedNumFound) throws IOException, SolrServerException {
