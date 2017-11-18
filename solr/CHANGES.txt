@@ -120,6 +120,10 @@ Bug Fixes
 * SOLR-11553: JSON Facet API: facet refinement could use UIF in phase one and DV uninversion in phase 2, resulting
   in too much memory use. (yonik)
 
+* SOLR-11645: When the java commandline had exact duplicate arguments, the
+  admin UI dashboard would not display any commandline arguments.
+  (Webster Homer via Shawn Heisey)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
