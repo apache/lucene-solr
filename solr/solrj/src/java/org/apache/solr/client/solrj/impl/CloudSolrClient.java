@@ -986,15 +986,11 @@ public class CloudSolrClient extends SolrClient {
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
-        log.warn("Re-trying request to  collection(s) "+inputCollections+" after stale state error from server.");
+        log.warn("Re-trying request to collection(s) "+inputCollections+" after stale state error from server.");
         resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
       } else {
-        if(exc instanceof SolrException) {
+        if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
           throw exc;
-        } if (exc instanceof SolrServerException) {
-          throw (SolrServerException)exc;
-        } else if (exc instanceof IOException) {
-          throw (IOException)exc;
         } else {
           throw new SolrServerException(rootCause);
         }
@@ -1059,6 +1055,9 @@ public class CloudSolrClient extends SolrClient {
       String shardKeys = reqParams.get(ShardParams._ROUTE_);
       for (String collectionName : collectionNames) {
         DocCollection col = getDocCollection(collectionName, null);
+        if (col == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
+        }
         Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
