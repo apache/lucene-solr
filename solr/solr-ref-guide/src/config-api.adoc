@@ -250,7 +250,7 @@ And the same searchComponent with the Config API:
 {
   "add-searchcomponent":{
     "name":"elevator",
-    "class":"QueryElevationComponent",
+    "class":"solr.QueryElevationComponent",
     "queryFieldType":"string",
     "config-file":"elevate.xml"
   }
