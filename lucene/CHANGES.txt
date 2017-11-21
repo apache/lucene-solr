@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 7.1.1 =======================
 
+Bug Fixes
+
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
+  instead of 1. (Simon Willnauer)
+
 Build
 
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
