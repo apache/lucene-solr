@@ -18,6 +18,8 @@ package org.apache.lucene.util;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -31,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -139,6 +142,40 @@ public class TestQueryBuilder extends LuceneTestCase {
   public void testSynonyms() throws Exception {
     SynonymQuery expected = new SynonymQuery(new Term("field", "dogs"), new Term("field", "dog"));
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
+    assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
+    assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
+    assertEquals(expected, builder.createBooleanQuery("field", "dogs", BooleanClause.Occur.MUST));
+    assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
+  }
+
+
+  /** synonym dismax expansion instead of blended */
+  public void testBestSynonyms() throws Exception {
+    List<Query> queries = new ArrayList<Query>();
+    queries.add(new TermQuery(new Term("field", "dogs")));
+    queries.add(new TermQuery(new Term("field", "dog")));
+
+    DisjunctionMaxQuery expected = new DisjunctionMaxQuery(queries, 0.0f);
+    QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
+    builder.setSynQueryType(QueryBuilder.SYN_MATCH_TYPE.BEST_SYN);
+
+    assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
+    assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
+    assertEquals(expected, builder.createBooleanQuery("field", "dogs", BooleanClause.Occur.MUST));
+    assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
+  }
+
+
+  /** synonym boolean expansion instead of blended */
+  public void testMostSynonyms() throws Exception {
+    Query expected = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("field", "dogs")), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("field", "dog")), BooleanClause.Occur.SHOULD)
+        .build();
+
+    QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
+    builder.setSynQueryType(QueryBuilder.SYN_MATCH_TYPE.MOST_SYN);
+
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
     assertEquals(expected, builder.createBooleanQuery("field", "dogs", BooleanClause.Occur.MUST));

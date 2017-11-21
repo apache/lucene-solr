@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -62,6 +63,15 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
+  protected SYN_MATCH_TYPE synQueryType = SYN_MATCH_TYPE.BLENDED;
+
+  public static enum SYN_MATCH_TYPE {
+    BLENDED,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
+    BEST_SYN, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
+    MOST_SYN  /* picks combination (A OR B). The more synonyms the better*/
+  }
+
+  protected boolean blendSynonyms = true;
   
   /** Creates a new QueryBuilder using the given analyzer. */
   public QueryBuilder(Analyzer analyzer) {
@@ -257,6 +267,10 @@ public class QueryBuilder {
   public boolean getEnableGraphQueries() {
     return enableGraphQueries;
   }
+
+  public void setSynQueryType(SYN_MATCH_TYPE v) {  synQueryType = v;}
+
+  public SYN_MATCH_TYPE getSynQueryType() { return synQueryType;}
 
   /**
    * Creates a query from a token stream.
@@ -621,6 +635,20 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
+    if (synQueryType == SYN_MATCH_TYPE.BEST_SYN) {
+        List<Query> currPosnClauses = new ArrayList<Query>();
+        for (Term term : terms) {
+          currPosnClauses.add(newTermQuery(term));
+        }
+        DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
+        return dm;
+    } else if (synQueryType == SYN_MATCH_TYPE.MOST_SYN) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (Term term : terms) {
+        builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+      }
+      return builder.build();
+    }
     return new SynonymQuery(terms);
   }
 
