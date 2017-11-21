@@ -40,7 +40,9 @@ class GeoExactCircle extends GeoBaseCircle {
   /** Planes describing the circle */
   protected final List<SidedPlane> circlePlanes;
   /** Bounds for the planes */
-  protected final Map<SidedPlane, Membership> eitherBounds;
+  protected final Map<Membership, Membership> eitherBounds;
+  /** Back bounds for the planes */
+  protected final Map<Membership, Membership> backBounds;
   /** A point that is on the world and on the circle plane */
   protected final GeoPoint[] edgePoints;
   /** The set of notable points for each edge */
@@ -78,11 +80,6 @@ class GeoExactCircle extends GeoBaseCircle {
       actualAccuracy = accuracy;
     }
     
-    // Since the provide cutoff angle is really a surface distance, we need to use the point-on-bearing even for spheres.
-    final List<SidedPlane> circlePlanes = new ArrayList<>();
-    // If it turns out that there's only one circle plane, this array will be populated but unused
-    final List<GeoPoint[]> notableEdgePoints = new ArrayList<>();
-      
     // We construct approximation planes until we have a low enough error estimate
     final List<ApproximationSlice> slices = new ArrayList<>(100);
     // Construct four cardinal points, and then we'll build the first two planes
@@ -103,7 +100,10 @@ class GeoExactCircle extends GeoBaseCircle {
       slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, Math.PI * 2.0, westPoint, Math.PI * 1.5));
       edgePoint = northPoint;
     }
-      
+    //System.out.println("Edgepoint = " + edgePoint);
+    
+    final List<PlaneDescription> activeSlices = new ArrayList<>();
+    
     // Now, iterate over slices until we have converted all of them into safe SidedPlanes.
     while (slices.size() > 0) {
       // Peel off a slice from the back
@@ -115,12 +115,17 @@ class GeoExactCircle extends GeoBaseCircle {
       final GeoPoint interpPoint1 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint1Bearing);
       final double interpPoint2Bearing = (thisSlice.point2Bearing + thisSlice.middlePointBearing) * 0.5;
       final GeoPoint interpPoint2 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint2Bearing);
+      
       // Is this point on the plane? (that is, is the approximation good enough?)
       if (Math.abs(thisSlice.plane.evaluate(interpPoint1)) < actualAccuracy && Math.abs(thisSlice.plane.evaluate(interpPoint2)) < actualAccuracy) {
-        // Good enough; add it to the list of planes, unless it was identical to the previous plane
-        if (circlePlanes.size() == 0 || !circlePlanes.get(circlePlanes.size()-1).isNumericallyIdentical(thisSlice.plane)) {
-          circlePlanes.add(thisSlice.plane);
-          notableEdgePoints.add(new GeoPoint[]{thisSlice.endPoint1, thisSlice.endPoint2});
+        if (activeSlices.size() == 0 || !activeSlices.get(activeSlices.size()-1).plane.isNumericallyIdentical(thisSlice.plane)) {
+          activeSlices.add(new PlaneDescription(thisSlice.plane, thisSlice.endPoint1, thisSlice.endPoint2, thisSlice.middlePoint));
+          //System.out.println("Point1 bearing = "+thisSlice.point1Bearing);
+        } else if (activeSlices.size() > 0) {
+          // Numerically identical plane; create a new slice to replace the one there.
+          final PlaneDescription oldSlice = activeSlices.remove(activeSlices.size()-1);
+          activeSlices.add(new PlaneDescription(thisSlice.plane, oldSlice.endPoint1, thisSlice.endPoint2, thisSlice.endPoint1));
+          //System.out.println(" new endpoint2 bearing: "+thisSlice.point2Bearing);
         }
       } else {
         // Split the plane into two, and add it back to the end
@@ -135,24 +140,93 @@ class GeoExactCircle extends GeoBaseCircle {
       }
     }
 
+    // Since the provide cutoff angle is really a surface distance, we need to use the point-on-bearing even for spheres.
+    final List<SidedPlane> circlePlanes = new ArrayList<>(activeSlices.size());
+    // If it turns out that there's only one circle plane, this array will be populated but unused
+    final List<GeoPoint[]> notableEdgePoints = new ArrayList<>(activeSlices.size());
+    // Back planes
+    final List<Membership> backPlanes = new ArrayList<>(activeSlices.size());
+    
+    // Compute bounding planes and actual circle planes
+    for (int i = 0; i < activeSlices.size(); i++) {
+      final PlaneDescription pd = activeSlices.get(i);
+      // Calculate the backplane
+      final Membership thisPlane = pd.plane;
+      // Go back through all the earlier points until we find one that's not within
+      GeoPoint backArticulationPoint = null;
+      for (int j = 1; j < activeSlices.size(); j++) {
+        int k = i - j;
+        if (k < 0) {
+          k += activeSlices.size();
+        }
+        final GeoPoint thisPoint = activeSlices.get(k).endPoint1;
+        if (!thisPlane.isWithin(thisPoint)) {
+          // Back up a notch
+          k++;
+          if (k >= activeSlices.size()) {
+            k -= activeSlices.size();
+          }
+          backArticulationPoint = activeSlices.get(k).endPoint1;
+          break;
+        }
+      }
+      // Go forward until we find one that's not within
+      GeoPoint forwardArticulationPoint = null;
+      for (int j = 1; j < activeSlices.size(); j++) {
+        int k = i + j;
+        if (k >= activeSlices.size()) {
+          k -= activeSlices.size();
+        }
+        final GeoPoint thisPoint = activeSlices.get(k).endPoint2;
+        if (!thisPlane.isWithin(thisPoint)) {
+          // back up
+          k--;
+          if (k < 0) {
+            k += activeSlices.size();
+          }
+          forwardArticulationPoint = activeSlices.get(k).endPoint2;
+          break;
+        }
+      }
+      
+      final Membership backPlane;
+      if (backArticulationPoint != null && forwardArticulationPoint != null) {
+        // We want a sided plane that goes through both identified articulation points and the center of the world.
+        backPlane = new SidedPlane(pd.onSidePoint, true, backArticulationPoint, forwardArticulationPoint);
+      } else {
+        backPlane = null;
+      }
+      
+      circlePlanes.add(pd.plane);
+      backPlanes.add(backPlane);
+      notableEdgePoints.add(new GeoPoint[]{pd.endPoint1, pd.endPoint2});
+    }
+
     //System.out.println("Number of planes needed: "+circlePlanes.size());
       
     this.edgePoints = new GeoPoint[]{edgePoint};      
     this.circlePlanes = circlePlanes;
     // Compute bounds
     if (circlePlanes.size() == 1) {
+      this.backBounds = null;
       this.eitherBounds = null;
       this.notableEdgePoints = null;
     } else {
       this.notableEdgePoints = notableEdgePoints;
+      this.backBounds = new HashMap<>(circlePlanes.size());
       this.eitherBounds = new HashMap<>(circlePlanes.size());
       for (int i = 0; i < circlePlanes.size(); i++) {
         final SidedPlane thisPlane = circlePlanes.get(i);
         final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
         final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
+        if (backPlanes.get(i) != null) {
+          backBounds.put(thisPlane, backPlanes.get(i));
+        }
         eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
       }
     }
+    
+    //System.out.println("Is edgepoint within? "+isWithin(edgePoint));
   }
 
 
@@ -222,8 +296,11 @@ class GeoExactCircle extends GeoBaseCircle {
       return true;
     }
     for (final Membership plane : circlePlanes) {
-      if (!plane.isWithin(x, y, z)) {
-        return false;
+      final Membership backPlane = (backBounds==null)?null:backBounds.get(plane);
+      if (backPlane == null || backPlane.isWithin(x, y, z)) {
+        if (!plane.isWithin(x, y, z)) {
+          return false;
+        }
       }
     }
     return true;
@@ -318,14 +395,14 @@ class GeoExactCircle extends GeoBaseCircle {
    */
   protected static class EitherBound implements Membership {
     
-    protected final SidedPlane sideBound1;
-    protected final SidedPlane sideBound2;
+    protected final Membership sideBound1;
+    protected final Membership sideBound2;
     
     /** Constructor.
       * @param sideBound1 is the first side bound.
       * @param sideBound2 is the second side bound.
       */
-    public EitherBound(final SidedPlane sideBound1, final SidedPlane sideBound2) {
+    public EitherBound(final Membership sideBound1, final Membership sideBound2) {
       this.sideBound1 = sideBound1;
       this.sideBound2 = sideBound2;
     }
@@ -346,6 +423,22 @@ class GeoExactCircle extends GeoBaseCircle {
     }
   }
 
+  /** A temporary description of a plane that's part of an exact circle.
+  */
+  protected static class PlaneDescription {
+    public final SidedPlane plane;
+    public final GeoPoint endPoint1;
+    public final GeoPoint endPoint2;
+    public final GeoPoint onSidePoint;
+
+    public PlaneDescription(final SidedPlane plane, final GeoPoint endPoint1, final GeoPoint endPoint2, final GeoPoint onSidePoint) {
+      this.plane = plane;
+      this.endPoint1 = endPoint1;
+      this.endPoint2 = endPoint2;
+      this.onSidePoint = onSidePoint;
+    }
+  }
+  
   /** A temporary description of a section of circle.
    */
   protected static class ApproximationSlice {
@@ -372,8 +465,18 @@ class GeoExactCircle extends GeoBaseCircle {
       if (this.plane == null) {
         throw new IllegalArgumentException("Either circle is too large to fit on ellipsoid or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
       }
+      if (plane.isWithin(center) == false || !plane.evaluateIsZero(endPoint1) || !plane.evaluateIsZero(endPoint2) || !plane.evaluateIsZero(middlePoint))
+        throw new IllegalStateException("SidedPlane constructor built a bad plane!!");
+    }
+
+    @Override
+    public String toString() {
+      return "{end point 1 = " + endPoint1 + " bearing 1 = "+point1Bearing + 
+        " end point 2 = " + endPoint2 + " bearing 2 = " + point2Bearing + 
+        " middle point = " + middlePoint + " middle bearing = " + middlePointBearing + "}";
     }
 
   }
+  
   
 }

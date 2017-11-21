@@ -23,6 +23,18 @@ import org.junit.Test;
 public class GeoCircleTest extends LuceneTestCase {
 
   @Test
+  public void testExactCircleLUCENE8054() {
+    // [junit4]    > Throwable #1: java.lang.AssertionError: circle1: GeoExactCircle: 
+    // {planetmodel=PlanetModel.WGS84, center=[lat=-1.2097332228999564, lon=0.749061883738567([X=0.25823775418663625, Y=0.2401212674846636, Z=-0.9338185278804293])],
+    //  radius=0.20785254459485322(11.909073566339822), accuracy=6.710701666727661E-9}
+    // [junit4]    > circle2: GeoExactCircle: {planetmodel=PlanetModel.WGS84, center=[lat=-1.2097332228999564, lon=0.749061883738567([X=0.25823775418663625, Y=0.2401212674846636, Z=-0.9338185278804293])], 
+    // radius=0.20701584142315682(11.861134005896407), accuracy=1.0E-5}
+    final GeoCircle c1 = new GeoExactCircle(PlanetModel.WGS84, -1.2097332228999564, 0.749061883738567, 0.20785254459485322, 6.710701666727661E-9);
+    final GeoCircle c2 = new GeoExactCircle(PlanetModel.WGS84, -1.2097332228999564, 0.749061883738567, 0.20701584142315682, 1.0E-5);
+    assertTrue("cannot be disjoint", c1.getRelationship(c2) != GeoArea.DISJOINT);
+  }
+  
+  @Test
   public void testExactCircle() {
     GeoCircle c;
     GeoPoint gp;
