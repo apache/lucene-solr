@@ -285,4 +285,29 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
       assertEquals(b.toString(), GeoArea.OVERLAPS, rel);
     }
   }
+
+  /**
+   * in LUCENE-8054 we have problems with exact circles that have
+   * edges that are close together. This test creates those circles with the same
+   * center and slightly different radius. It is able to reproduce
+   * the problem.
+   */
+  @Test
+  @Repeat(iterations = 100)
+  public void testRandom_LUCENE8054() {
+    PlanetModel planetModel = PlanetModel.WGS84;
+    GeoCircle circle1 = (GeoCircle) randomGeoAreaShape(EXACT_CIRCLE, planetModel);
+    // new radius, a bit smaller than the generated one!
+    double radius = circle1.getRadius() *  (1 - 0.01 * random().nextDouble());
+    //circle with same center and new radius
+    GeoCircle circle2 = GeoCircleFactory.makeExactGeoCircle(planetModel,
+        circle1.getCenter().getLatitude(),
+        circle1.getCenter().getLongitude(),
+        radius, 1e-5 );
+    StringBuilder b = new StringBuilder();
+    b.append("circle1: " + circle1 + "\n");
+    b.append("circle2: " + circle2);
+    //It cannot be disjoint, same center!
+    assertTrue(b.toString(), circle1.getRelationship(circle2) != GeoArea.DISJOINT);
+  }
 }

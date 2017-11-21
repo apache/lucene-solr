@@ -110,7 +110,7 @@ abstract class GeoBaseAreaShape extends GeoBaseMembershipShape implements GeoAre
     if (insideGeoAreaShape == ALL_INSIDE && insideShape==ALL_INSIDE) {
       return GeoArea.OVERLAPS;
     }
-
+    
     if (intersects(geoShape)){
       return  GeoArea.OVERLAPS;
     }
