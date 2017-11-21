@@ -41,7 +41,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
-  protected QueryBuilder.SynQueryType synonymQueryType;
+  protected QueryBuilder.ScoreOverlaps scoreOverlapsMethod;
 
   /**
    * Analyzer set by schema for text types to use when searching fields
@@ -74,10 +74,10 @@ public class TextField extends FieldType {
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
 
-    synonymQueryType = QueryBuilder.SynQueryType.BLENDED;
-    String synonymQueryTypeStr = args.remove(SYNONYM_QUERY_TYPE);
-    if (synonymQueryTypeStr != null) {
-      synonymQueryType = QueryBuilder.SynQueryType.valueOf(synonymQueryTypeStr);
+    scoreOverlapsMethod = QueryBuilder.ScoreOverlaps.AS_SAME_TERM;
+    String scoreOverlapsMethod = args.remove(SCORE_OVERLAPS);
+    if (scoreOverlapsMethod != null) {
+      this.scoreOverlapsMethod = QueryBuilder.ScoreOverlaps.valueOf(scoreOverlapsMethod.toUpperCase());
     }
     
     enableGraphQueries = true;
@@ -111,7 +111,7 @@ public class TextField extends FieldType {
     return enableGraphQueries;
   }
 
-  public QueryBuilder.SynQueryType getSynonymQueryType() {return synonymQueryType;}
+  public QueryBuilder.ScoreOverlaps getScoreOverlapsMethod() {return scoreOverlapsMethod;}
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {

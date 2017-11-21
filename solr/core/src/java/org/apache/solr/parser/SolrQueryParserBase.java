@@ -439,14 +439,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                 boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
-                                SynQueryType synQueryType)
+                                ScoreOverlaps scoreOverlaps)
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
+    setScoreOverlaps(scoreOverlaps);
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
-    setSynQueryType(synQueryType);
+    setScoreOverlaps(ScoreOverlaps.AS_SAME_TERM);
     return query;
   }
 
@@ -641,9 +642,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
             boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
 
-            SynQueryType synMatchType = SynQueryType.BLENDED;
+            ScoreOverlaps synMatchType = ScoreOverlaps.AS_SAME_TERM;
             if (ft instanceof TextField) {
-              synMatchType = ((TextField)(ft)).getSynonymQueryType();
+              synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
             }
 
             subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
@@ -964,9 +965,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        SynQueryType synMatchType = SynQueryType.BLENDED;
+        ScoreOverlaps synMatchType = ScoreOverlaps.AS_SAME_TERM;
         if (ft instanceof TextField) {
-          synMatchType = ((TextField)(ft)).getSynonymQueryType();
+          synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
         }
         return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
       } else {
@@ -979,7 +980,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     // default to a normal field query
-    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, SynQueryType.BLENDED);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, ScoreOverlaps.AS_SAME_TERM);
   }
 
   // Assumption: quoted is always false
@@ -1013,9 +1014,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        SynQueryType synMatchType = SynQueryType.BLENDED;
+        ScoreOverlaps synMatchType = ScoreOverlaps.AS_SAME_TERM;
         if (ft instanceof TextField) {
-          synMatchType = ((TextField)(ft)).getSynonymQueryType();
+          synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
         }
         return newFieldQuery
             (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
@@ -1050,7 +1051,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // default to a normal field query
     String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, SynQueryType.BLENDED);
+    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, ScoreOverlaps.AS_SAME_TERM);
   }
 
   protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){

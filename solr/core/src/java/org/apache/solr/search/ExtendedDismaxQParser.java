@@ -1081,7 +1081,7 @@ public class ExtendedDismaxQParser extends QParser {
     @Override
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, 
                                   boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries,
-                                  SynQueryType synMatchType)
+                                  ScoreOverlaps synMatchType)
         throws SyntaxError {
       Analyzer actualAnalyzer;
       if (removeStopFilter) {

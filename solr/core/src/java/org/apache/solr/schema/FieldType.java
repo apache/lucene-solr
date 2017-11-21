@@ -51,7 +51,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.SortedSetSelector;
-import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.Similarity;
@@ -906,7 +905,7 @@ public abstract class FieldType extends FieldProperties {
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
-  protected static final String SYNONYM_QUERY_TYPE = "synonymQueryType";
+  protected static final String SCORE_OVERLAPS = "scoreOverlaps";
 
   /**
    * Get a map of property name -&gt; value for this field type. 
@@ -928,7 +927,7 @@ public abstract class FieldType extends FieldProperties {
       if (this instanceof TextField) {
         namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
         namedPropertyValues.add(ENABLE_GRAPH_QUERIES, ((TextField) this).getEnableGraphQueries());
-        namedPropertyValues.add(SYNONYM_QUERY_TYPE, ((TextField) this).getSynonymQueryType());
+        namedPropertyValues.add(SCORE_OVERLAPS, ((TextField) this).getScoreOverlapsMethod());
       }
       namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
       namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));

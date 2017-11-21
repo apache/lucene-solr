@@ -157,7 +157,7 @@ public class TestQueryBuilder extends LuceneTestCase {
 
     DisjunctionMaxQuery expected = new DisjunctionMaxQuery(queries, 0.0f);
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
-    builder.setSynQueryType(QueryBuilder.SynQueryType.BEST);
+    builder.setScoreOverlaps(QueryBuilder.ScoreOverlaps.PICK_BEST);
 
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
@@ -167,14 +167,14 @@ public class TestQueryBuilder extends LuceneTestCase {
 
 
   /** synonym boolean expansion instead of blended */
-  public void testMostSynonyms() throws Exception {
+  public void testSynonymsDistinct() throws Exception {
     Query expected = new BooleanQuery.Builder()
         .add(new TermQuery(new Term("field", "dogs")), BooleanClause.Occur.SHOULD)
         .add(new TermQuery(new Term("field", "dog")), BooleanClause.Occur.SHOULD)
         .build();
 
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
-    builder.setSynQueryType(QueryBuilder.SynQueryType.MOST);
+    builder.setScoreOverlaps(QueryBuilder.ScoreOverlaps.AS_DISTINCT_TERMS);
 
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));

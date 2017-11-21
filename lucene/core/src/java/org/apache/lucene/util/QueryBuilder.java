@@ -63,12 +63,12 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
-  protected SynQueryType synQueryType = SynQueryType.BLENDED;
+  protected ScoreOverlaps scoreOverlaps = ScoreOverlaps.AS_SAME_TERM;
 
-  public static enum SynQueryType {
-    BLENDED,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
-    BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
-    MOST  /* picks combination (A OR B). The more synonyms the better*/
+  public static enum ScoreOverlaps {
+    AS_SAME_TERM,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
+    PICK_BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
+    AS_DISTINCT_TERMS  /* picks combination (A OR B).*/
   }
 
   protected boolean blendSynonyms = true;
@@ -268,9 +268,9 @@ public class QueryBuilder {
     return enableGraphQueries;
   }
 
-  public void setSynQueryType(SynQueryType v) {  synQueryType = v;}
+  public void setScoreOverlaps(ScoreOverlaps v) {  scoreOverlaps = v;}
 
-  public SynQueryType getSynQueryType() { return synQueryType;}
+  public ScoreOverlaps getScoreOverlaps() { return scoreOverlaps;}
 
   /**
    * Creates a query from a token stream.
@@ -635,14 +635,14 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
-    if (synQueryType == SynQueryType.BEST) {
+    if (scoreOverlaps == ScoreOverlaps.PICK_BEST) {
         List<Query> currPosnClauses = new ArrayList<Query>();
         for (Term term : terms) {
           currPosnClauses.add(newTermQuery(term));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
-    } else if (synQueryType == SynQueryType.MOST) {
+    } else if (scoreOverlaps == ScoreOverlaps.AS_DISTINCT_TERMS) {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (Term term : terms) {
         builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
