@@ -157,7 +157,7 @@ public class TestQueryBuilder extends LuceneTestCase {
 
     DisjunctionMaxQuery expected = new DisjunctionMaxQuery(queries, 0.0f);
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
-    builder.setSynQueryType(QueryBuilder.SYN_MATCH_TYPE.BEST_SYN);
+    builder.setSynQueryType(QueryBuilder.SYN_MATCH_TYPE.BEST);
 
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));
@@ -174,7 +174,7 @@ public class TestQueryBuilder extends LuceneTestCase {
         .build();
 
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
-    builder.setSynQueryType(QueryBuilder.SYN_MATCH_TYPE.MOST_SYN);
+    builder.setSynQueryType(QueryBuilder.SYN_MATCH_TYPE.MOST);
 
     assertEquals(expected, builder.createBooleanQuery("field", "dogs"));
     assertEquals(expected, builder.createPhraseQuery("field", "dogs"));

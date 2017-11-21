@@ -16,6 +16,7 @@
  */
 package org.apache.solr.parser;
 
+import javax.xml.soap.Text;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -438,13 +439,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries) 
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
+                                QueryBuilder.SYN_MATCH_TYPE synQueryType)
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
+    setSynQueryType(synQueryType);
     return query;
   }
 
@@ -639,8 +642,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
             boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
 
+            SYN_MATCH_TYPE synMatchType = SYN_MATCH_TYPE.BLENDED;
+            if (ft instanceof TextField) {
+              synMatchType = ((TextField)(ft)).getSynonymQueryType();
+            }
+
             subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
-                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           } else {
             for (String externalVal : rawq.getExternalVals()) {
@@ -957,7 +965,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+        SYN_MATCH_TYPE synMatchType = SYN_MATCH_TYPE.BLENDED;
+        if (ft instanceof TextField) {
+          synMatchType = ((TextField)(ft)).getSynonymQueryType();
+        }
+        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
       } else {
         if (raw) {
           return new RawQuery(sf, queryText);
@@ -968,7 +980,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     // default to a normal field query
-    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, SYN_MATCH_TYPE.BLENDED);
   }
 
   // Assumption: quoted is always false
@@ -1002,8 +1014,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+        SYN_MATCH_TYPE synMatchType = SYN_MATCH_TYPE.BLENDED;
+        if (ft instanceof TextField) {
+          synMatchType = ((TextField)(ft)).getSynonymQueryType();
+        }
         return newFieldQuery
-            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
       } else {
         if (raw) {
           return new RawQuery(sf, queryTerms);
@@ -1035,7 +1051,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // default to a normal field query
     String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true);
+    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, SYN_MATCH_TYPE.BLENDED);
   }
 
   protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){

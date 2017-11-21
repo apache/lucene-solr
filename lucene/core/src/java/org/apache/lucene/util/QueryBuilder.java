@@ -67,8 +67,8 @@ public class QueryBuilder {
 
   public static enum SYN_MATCH_TYPE {
     BLENDED,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
-    BEST_SYN, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
-    MOST_SYN  /* picks combination (A OR B). The more synonyms the better*/
+    BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
+    MOST  /* picks combination (A OR B). The more synonyms the better*/
   }
 
   protected boolean blendSynonyms = true;
@@ -635,14 +635,14 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
-    if (synQueryType == SYN_MATCH_TYPE.BEST_SYN) {
+    if (synQueryType == SYN_MATCH_TYPE.BEST) {
         List<Query> currPosnClauses = new ArrayList<Query>();
         for (Term term : terms) {
           currPosnClauses.add(newTermQuery(term));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
-    } else if (synQueryType == SYN_MATCH_TYPE.MOST_SYN) {
+    } else if (synQueryType == SYN_MATCH_TYPE.MOST) {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (Term term : terms) {
         builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
