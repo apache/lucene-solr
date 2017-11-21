@@ -38,6 +38,10 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8054: Fix the exact circle case where relationships fail when the
+  planet model has c <= ab, because the planes are constructed incorrectly.
+  (Ignacio Vera)
+
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
   a previous boosted field's factor to subsequent unboosted fields.
   (Christine Poerschke)
@@ -74,11 +78,6 @@ Build
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
   jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
 
-Bug Fixes
-
-* LUCENE-8054: Fix the exact circle case where relationships fail when the
-  planet model has c <= ab, because the planes are constructed incorrectly.
-  (Ignacio Vera)
 
 ======================= Lucene 7.1.0 =======================
 
