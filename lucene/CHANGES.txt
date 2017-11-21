@@ -46,7 +46,6 @@ Optimizations
 * LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
   (David Smiley, Robert Muir)
 
-
 ======================= Lucene 7.2.0 =======================
 
 API Changes
@@ -77,6 +76,10 @@ New Features
   DoubleValuesSources. (Alan Woodward)
 
 Bug Fixes
+
+* LUCENE-8054: Fix the exact circle case where relationships fail when the
+  planet model has c <= ab, because the planes are constructed incorrectly.
+  (Ignacio Vera)
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
   a previous boosted field's factor to subsequent unboosted fields.
