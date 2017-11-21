@@ -19,17 +19,12 @@ package org.apache.solr.core;
 import com.google.common.collect.Lists;
 import org.apache.http.annotation.Experimental;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -539,21 +534,22 @@ class SolrCores implements Observer {
     return false;
   }
 
-  // Let transient cache implementation tell us when it ages out a corel
+  // Let transient cache implementation tell us when it ages out a core
   @Override
   public void update(Observable o, Object arg) {
     synchronized (modifyLock) {
-      SolrCore core = (SolrCore) arg;
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
-      cmd.openSearcher = false;
-      cmd.waitSearcher = false;
-      try {
-        core.getUpdateHandler().commit(cmd);
-      } catch (IOException e) {
-        log.warn("Caught exception trying to close a transient core, ignoring as it should be benign");
-      }
-      pendingCloses.add(core); // Essentially just queue this core up for closing.
+      // Erick Erickson debugging TestLazyCores. With this un-commented, we get no testLazyCores failures.
+//      SolrCore core = (SolrCore) arg;
+//      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+//      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+//      cmd.openSearcher = false;
+//      cmd.waitSearcher = false;
+//      try {
+//        core.getUpdateHandler().commit(cmd);
+//      } catch (IOException e) {
+//        log.warn("Caught exception trying to close a transient core, ignoring as it should be benign");
+//      }
+      pendingCloses.add((SolrCore) arg); // Essentially just queue this core up for closing.
       modifyLock.notifyAll(); // Wakes up closer thread too
     }
   }

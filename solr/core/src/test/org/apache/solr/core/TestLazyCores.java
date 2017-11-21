@@ -786,6 +786,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
+    String infoStream = System.getProperty("solr.tests.infostream");
+    System.setProperty("solr.tests.infostream","true");
+
     CoreContainer cc = init();
     String[] coreList = new String[]{
         "collection2",
@@ -831,6 +834,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       for (SolrCore core : openCores) core.close();
     } finally {
       cc.shutdown();
+    }
+    if (infoStream != null) {
+      System.setProperty("solr.tests.infostream", infoStream);
+    } else {
+      System.clearProperty("solr.tests.infostream");
     }
   }
 
