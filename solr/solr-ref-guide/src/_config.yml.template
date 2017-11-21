@@ -69,6 +69,7 @@ asciidoc: {}
 # NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
 # them to the <asciidoctor:convert/> ant task for building the PDF as well.
 solr-attributes: &solr-attributes-ref
+  solr-root-path: "../../../"
   solr-guide-draft-status: "${solr-guide-draft-status}"
   solr-guide-version: "${solr-guide-version}"
   solr-guide-version-path: "${solr-guide-version-path}"
@@ -79,6 +80,7 @@ solr-attributes: &solr-attributes-ref
   build-year: "${current.year}"
 
 asciidoctor:
+  safe: 0
   attributes:
     <<: *solr-attributes-ref
     icons: "font"

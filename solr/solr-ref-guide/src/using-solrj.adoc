@@ -1,4 +1,6 @@
 = Using SolrJ
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -95,8 +97,8 @@ Most SolrJ configuration happens at the `SolrClient` level.  The most common/imp
 ==== Base URLs
 Most `SolrClient` implementations (with the notable exception of `CloudSolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
 
-. A URL with a path pointing to a specific core or collection (e.g., `http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL pointing to the root Solr path (e.g., `http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
+. A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
+. A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
 
 Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.  Where more flexibility is required, the collection/core should be excluded.
 
@@ -105,7 +107,7 @@ All `SolrClient` implementations allow users to specify the connection and read 
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
 ----
 
 When these values are not explicitly provided, SolrJ falls back to using the defaults for the OS/environment is running on.
@@ -117,14 +119,14 @@ The following snippet uses a SolrClient to query Solr's "techproducts" example c
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-with-raw-solrparams]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-with-raw-solrparams]
 ----
 
 `SolrParams` has a `SolrQuery` subclass, which provides some convenience methods that greatly simplifies query creation.  The following snippet shows how the query from the previous example can be built using some of the convenience methods in `SolrQuery`:
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-with-solrquery]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-with-solrquery]
 ----
 
 == Indexing in SolrJ
@@ -135,7 +137,7 @@ The following example shows how to use SolrJ to add a document to Solr's "techpr
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-index-with-raw-solrinputdoc]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-index-with-raw-solrinputdoc]
 ----
 
 CAUTION: The indexing examples above are intended to show syntax.  For brevity, they break several Solr indexing best-practices.  Under normal circumstances, documents should be indexed in larger batches, instead of one at a time.  It is also suggested that Solr administrators commit documents using Solr's autocommit settings, and not using explicit `commit()` invocations.
@@ -149,21 +151,21 @@ The example snippet below shows an annotated `TechProduct` class that can be use
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-techproduct-value-type]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-techproduct-value-type]
 ----
 
 Application code with access to the annotated `TechProduct` class above can index `TechProduct` objects directly without any conversion, as in the example snippet below:
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-index-bean-value-type]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-index-bean-value-type]
 ----
 
 Similarly, search results can be converted directly into bean objects using the `getBeans()` method on `QueryResponse`:
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-bean-value-type]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-query-bean-value-type]
 ----
 
 == Other APIs
@@ -173,5 +175,5 @@ The example below shows how SolrJ users can call the CLUSTERSTATUS API of SolrCl
 
 [source,java,indent=0]
 ----
-include::UsingSolrJRefGuideExamplesTest.java[tag=solrj-other-apis]
+include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-other-apis]
 ----
