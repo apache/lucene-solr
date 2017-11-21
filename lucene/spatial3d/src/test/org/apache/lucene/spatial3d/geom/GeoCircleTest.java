@@ -500,6 +500,13 @@ public class GeoCircleTest extends LuceneTestCase {
     assertTrue(success);
   }
 
-
+  @Test
+  public void testLUCENE8054(){
+    GeoCircle circle1 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, -1.0394053553992673, -1.9037325881389144, 1.1546166170607672, 4.231100485201301E-4);
+    GeoCircle circle2 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, -1.3165961602008989, -1.887137823746273, 1.432516663588956, 3.172052880854355E-4);
+    // Relationship between circles must be different than DISJOINT as centers are closer than the radius.
+    int rel = circle1.getRelationship(circle2);
+    assertTrue(rel != GeoArea.DISJOINT);
+  }
   
 }
