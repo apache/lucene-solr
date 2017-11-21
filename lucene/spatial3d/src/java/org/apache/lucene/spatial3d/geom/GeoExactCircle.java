@@ -99,8 +99,8 @@ class GeoExactCircle extends GeoBaseCircle {
       edgePoint = eastPoint;
     } else {
       // z will be less than x or y, so ellipse is shorter than it is tall
-      slices.add(new ApproximationSlice(center, northPoint, Math.PI * 2.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
-      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, 0.0, westPoint, Math.PI * 1.5));
+      slices.add(new ApproximationSlice(center, northPoint, 0.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
+      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, Math.PI * 2.0, westPoint, Math.PI * 1.5));
       edgePoint = northPoint;
     }
       
