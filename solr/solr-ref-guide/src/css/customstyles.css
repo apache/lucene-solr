@@ -18,6 +18,10 @@
     margin: 10px 0;
 }
 
+ul.nav.nav-pills li {
+  margin-left: 1px;
+}
+
 .pageSummary {
     font-size:13px;
     display:block;
