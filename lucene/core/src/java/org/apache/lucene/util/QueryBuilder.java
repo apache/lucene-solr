@@ -63,9 +63,9 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
-  protected SYN_MATCH_TYPE synQueryType = SYN_MATCH_TYPE.BLENDED;
+  protected SynQueryType synQueryType = SynQueryType.BLENDED;
 
-  public static enum SYN_MATCH_TYPE {
+  public static enum SynQueryType {
     BLENDED,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
     BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
     MOST  /* picks combination (A OR B). The more synonyms the better*/
@@ -268,9 +268,9 @@ public class QueryBuilder {
     return enableGraphQueries;
   }
 
-  public void setSynQueryType(SYN_MATCH_TYPE v) {  synQueryType = v;}
+  public void setSynQueryType(SynQueryType v) {  synQueryType = v;}
 
-  public SYN_MATCH_TYPE getSynQueryType() { return synQueryType;}
+  public SynQueryType getSynQueryType() { return synQueryType;}
 
   /**
    * Creates a query from a token stream.
@@ -635,14 +635,14 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
-    if (synQueryType == SYN_MATCH_TYPE.BEST) {
+    if (synQueryType == SynQueryType.BEST) {
         List<Query> currPosnClauses = new ArrayList<Query>();
         for (Term term : terms) {
           currPosnClauses.add(newTermQuery(term));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
-    } else if (synQueryType == SYN_MATCH_TYPE.MOST) {
+    } else if (synQueryType == SynQueryType.MOST) {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (Term term : terms) {
         builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);

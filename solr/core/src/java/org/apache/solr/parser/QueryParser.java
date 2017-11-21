@@ -53,7 +53,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   @Override
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                 boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
-                                SYN_MATCH_TYPE synMatchType)
+                                SynQueryType synMatchType)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
     // Don't auto-quote graph-aware field queries 

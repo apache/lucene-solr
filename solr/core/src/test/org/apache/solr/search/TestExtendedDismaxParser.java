@@ -2002,7 +2002,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       @Override
       protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                     boolean quoted, boolean fieldAutoGenPhraseQueries,
-                                    boolean fieldEnableGraphQueries, SYN_MATCH_TYPE synMatchType)
+                                    boolean fieldEnableGraphQueries, SynQueryType synMatchType)
           throws SyntaxError {
         Query q = super.newFieldQuery
             (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
