@@ -205,7 +205,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("cov", CovarianceEvaluator.class)
         .withFunctionName("corr", CorrelationEvaluator.class)
         .withFunctionName("describe", DescribeEvaluator.class)
-        .withFunctionName("distance", EuclideanDistanceEvaluator.class)
+        .withFunctionName("distance", DistanceEvaluator.class)
         .withFunctionName("manhattanDistance", ManhattanDistanceEvaluator.class)
         .withFunctionName("earthMoversDistance", EarthMoversDistanceEvaluator.class)
         .withFunctionName("canberraDistance", CanberraDistanceEvaluator.class)
