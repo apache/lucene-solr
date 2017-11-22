@@ -115,7 +115,7 @@ public final class CoveringQuery extends Query {
     for (Query query : queries) {
       weights.add(searcher.createWeight(query, needsScores, boost));
     }
-    return new CoveringWeight(this, weights, minimumNumberMatch);
+    return new CoveringWeight(this, weights, minimumNumberMatch.rewrite(searcher));
   }
 
   private static class CoveringWeight extends Weight {
