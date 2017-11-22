@@ -1007,7 +1007,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='1']" +
         "/arr[@name='title']/str='Apache Software <em>Foundation</em>'");
     assertQ("hl.q parameter uses localparam parser definition correctly",
-        req("q", "Apache", "defType", "edismax", "qf", "title t_text", "hl", "true", "hl.fl", "title", "hl.q", "{!edismax}Software"),
+        req("q", "Apache", "defType", "edismax", "qf", "title t_text", "hl", "true", "hl.fl", "title", "hl.q", "{!edismax}Software", "hl.qparser", "lucene"),
         "//lst[@name='highlighting']/lst[@name='1']" +
             "/arr[@name='title']/str='Apache <em>Software</em> Foundation'");
     assertQ("hl.q parameter uses defType correctly",

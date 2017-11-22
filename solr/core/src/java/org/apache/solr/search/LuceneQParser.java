@@ -44,6 +44,7 @@ public class LuceneQParser extends QParser {
     lparser.setDefaultOperator(QueryParsing.parseOP(getParam(QueryParsing.OP)));
     lparser.setSplitOnWhitespace(StrUtils.parseBool
       (getParam(QueryParsing.SPLIT_ON_WHITESPACE), SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
+    lparser.setAllowSubQueryParsing(true);
 
     return lparser.parse(qstr);
   }
