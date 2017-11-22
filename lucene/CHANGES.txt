@@ -33,6 +33,9 @@ API Changes
 
 New Features
 
+* LUCENE-8061: Add convenience factory methods to create BBoxes and XYZSolids
+  directly from bounds objects.
+  
 * LUCENE-7736: IndexReaderFunctions expose various IndexReader statistics as
   DoubleValuesSources. (Alan Woodward)
 
