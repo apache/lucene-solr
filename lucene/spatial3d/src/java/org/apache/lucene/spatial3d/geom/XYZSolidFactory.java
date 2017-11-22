@@ -64,4 +64,16 @@ public class XYZSolidFactory {
     return new StandardXYZSolid(planetModel, minX, maxX, minY, maxY, minZ, maxZ);
   }
   
+  /**
+   * Create a XYZSolid of the right kind given (x,y,z) bounds.
+   * @param planetModel is the planet model
+   * @param bounds is the XYZ bounds object.
+   * @return the solid.
+   */
+  public static XYZSolid makeXYZSolid(final PlanetModel planetModel, final XYZBounds bounds) {
+    return makeXYZSolid(planetModel, bounds.getMinimumX(), bounds.getMaximumX(),
+      bounds.getMinimumY(), bounds.getMaximumY(),
+      bounds.getMinimumZ(), bounds.getMaximumZ());
+  }
+
 }

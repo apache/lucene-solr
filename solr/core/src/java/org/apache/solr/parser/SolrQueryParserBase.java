@@ -351,6 +351,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    */
   public ScoreOverlaps getScoreOverlaps() {return this.scoreOverlaps;}
 
+
   /**
    * Set to <code>true</code> to allow leading wildcard characters.
    * <p>
