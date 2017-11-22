@@ -648,39 +648,21 @@ function solr_pid_by_port() {
   echo "$solrPID"
 }
 
-# extract the value of a command line parameter from a running Solr process
-# arg1 - pid of a running Solr process
-# arg2 - parameter to extract e.g. abc.xyz to extract the -Dabc.xyz parameter
-function java_system_property_by_pid() {
+# extract the value of the -Djetty.port parameter from a running Solr process 
+function jetty_port() {
   SOLR_PID="$1"
-  SOLR_ARG="$2"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep $SOLR_ARG`
+  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
       IFS='=' read -a pair <<< "$arg"
-      if [ "${pair[0]}" == "-D$SOLR_ARG" ]; then
-        local arg_val="${pair[1]}"
+      if [ "${pair[0]}" == "-Djetty.port" ]; then
+        local jetty_port="${pair[1]}"
         break
       fi
     done    
-  echo "$arg_val"
-} # end java_system_property_by_pid func
-
-# extract the value of the -Djetty.port parameter from a running Solr process
-function jetty_port() {
-  java_system_property_by_pid "$1" "jetty.port"
+  echo "$jetty_port"
 } # end jetty_port func
-
-# extract the value of the -DSTOP.PORT parameter from a running Solr process
-function stop_port_by_pid() {
-  java_system_property_by_pid "$1" "STOP.PORT"
-} # end stop_port_by_pid func
-
-# extract the value of the -DSTOP.KEY parameter from a running Solr process
-function stop_key_by_pid() {
-  java_system_property_by_pid "$1" "STOP.KEY"
-} # end stop_key_by_pid func
 
 # run a Solr command-line tool using the SolrCLI class; 
 # useful for doing cross-platform work from the command-line using Java
@@ -747,13 +729,11 @@ function stop_solr() {
 
   DIR="$1"
   SOLR_PORT="$2"
-  SOLR_PID="$3"
+  STOP_PORT=`expr $SOLR_PORT - 1000`
+  STOP_KEY="$3"
+  SOLR_PID="$4"
 
   if [ "$SOLR_PID" != "" ]; then
-
-    STOP_PORT=`stop_port_by_pid $SOLR_PID`
-    STOP_KEY=`stop_key_by_pid $SOLR_PID`
-
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
     "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
       (loops=0
@@ -1653,7 +1633,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
         NEXT_PID=`cat "$PIDF"`
         port=`jetty_port "$NEXT_PID"`
         if [ "$port" != "" ]; then
-          stop_solr "$SOLR_SERVER_DIR" "$port" "$NEXT_PID"
+          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
           none_stopped=false
         fi
         rm -f "$PIDF"
@@ -1674,7 +1654,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
       if [ "$CHECK_PID" != "" ]; then
         port=`jetty_port "$CHECK_PID"`
         if [ "$port" != "" ]; then
-          stop_solr "$SOLR_SERVER_DIR" "$port" "$CHECK_PID"
+          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$CHECK_PID"
           none_stopped=false
         fi
       fi
@@ -1730,7 +1710,7 @@ else
     SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
   fi
   if [ "$SOLR_PID" != "" ]; then
-    stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$SOLR_PID"
+    stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
   else
     if [ "$SCRIPT_CMD" == "stop" ]; then
       echo -e "No process found for Solr node running on port $SOLR_PORT"

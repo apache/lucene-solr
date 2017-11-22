@@ -143,8 +143,6 @@ Bug Fixes
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
 
-* SOLR-11161: bin/solr stop_solr function ignored $STOP_PORT used at startup. (Christine Poerschke)
-
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
