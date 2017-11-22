@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-8061: Add convenience factory methods to create BBoxes and XYZSolids
+  directly from bounds objects.
+
 * LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
   allows distance calculations, especially for paths, to take into account an
   "excursion" to include the specified point.
