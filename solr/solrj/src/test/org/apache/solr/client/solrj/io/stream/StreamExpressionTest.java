@@ -5593,55 +5593,143 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testDistance() throws Exception {
-    UpdateRequest updateRequest = new UpdateRequest();
-
-    int i=0;
-    while(i<50) {
-      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2016", "5", "1"), "price_f", "400.00");
-    }
-
-    while(i<100) {
-      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2015", "5", "1"), "price_f", "300.0");
-    }
-
-    while(i<150) {
-      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2014", "5", "1"), "price_f", "500.0");
-    }
-
-    while(i<250) {
-      updateRequest.add(id, "id_"+(++i),"test_dt", getDateString("2013", "5", "1"), "price_f", "100.00");
-    }
-
-    updateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-
-    String expr = "timeseries("+COLLECTIONORALIAS+", q=\"*:*\", start=\"2013-01-01T01:00:00.000Z\", " +
-        "end=\"2016-12-01T01:00:00.000Z\", " +
-        "gap=\"+1YEAR\", " +
-        "field=\"test_dt\", " +
-        "count(*), sum(price_f), max(price_f), min(price_f))";
-
-    String cexpr = "let(a="+expr+", b=select("+expr+",mult(-1, count(*)) as nvalue), c=col(a, count(*)), d=col(b, nvalue), " +
-                   "tuple(colc=c, cold=d, cov=cov(c,d), dist=distance(c,d), " +
-                         "mdist=manhattanDistance(c,d), edist=earthMoversDistance(c, d), cdist=canberraDistance(c,d)," +
-                         "chdist=chebyshevDistance(c,d)))";
+    String cexpr = "let(echo=true, " +
+                       "a=array(1,2,3,4)," +
+                       "b=array(2,3,4,5), " +
+                       "c=array(3,4,5,6), " +
+                       "d=distance(a, b), " +
+                       "e=distance(a, c)," +
+                       "f=distance(b, c)," +
+                       "g=transpose(matrix(a, b, c))," +
+                       "h=distance(g)," +
+                       "i=distance(a, b, type=manhattan), " +
+                       "j=distance(a, c, type=manhattan)," +
+                       "k=distance(b, c, type=manhattan)," +
+                       "l=transpose(matrix(a, b, c))," +
+                       "m=distance(l, type=manhattan)," +
+                       "n=distance(a, b, type=canberra), " +
+                       "o=distance(a, c, type=canberra)," +
+                       "p=distance(b, c, type=canberra)," +
+                       "q=transpose(matrix(a, b, c))," +
+                       "r=distance(q, type=canberra)," +
+                       "s=distance(a, b, type=earthMovers), " +
+                       "t=distance(a, c, type=earthMovers)," +
+                       "u=distance(b, c, type=earthMovers)," +
+                       "w=transpose(matrix(a, b, c))," +
+                       "x=distance(w, type=earthMovers)," +
+                       ")";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
-
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
-
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
-    assertTrue(tuples.get(0).getDouble("cov").equals(-625.0D));
-    assertTrue(tuples.get(0).getDouble("dist").equals(264.5751311064591D));
-    assertTrue(tuples.get(0).getDouble("mdist").equals(500.0D));
-    assertTrue(tuples.get(0).getDouble("cdist").equals(4.0D));
-    assertTrue(tuples.get(0).getDouble("chdist").equals(200.0D));
-    assertTrue(tuples.get(0).getDouble("edist").equals(1400.0D));
+    Number d = (Number)tuples.get(0).get("d");
+    assertEquals(d.doubleValue(), 2.0, 0.0);
+    Number e = (Number)tuples.get(0).get("e");
+    assertEquals(e.doubleValue(), 4.0, 0.0);
+    Number f = (Number)tuples.get(0).get("f");
+    assertEquals(f.doubleValue(), 2.0, 0.0);
+
+    List<List<Number>> h = (List<List<Number>>)tuples.get(0).get("h");
+    assertEquals(h.size(), 3);
+    assertEquals(h.get(0).size(), 3);
+    List<Number> row0 = h.get(0);
+    assertEquals(row0.get(0).doubleValue(), 0, 0);
+    assertEquals(row0.get(1).doubleValue(), 2, 0);
+    assertEquals(row0.get(2).doubleValue(), 4, 0);
+
+    List<Number> row1 = h.get(1);
+    assertEquals(row1.get(0).doubleValue(), 2, 0);
+    assertEquals(row1.get(1).doubleValue(), 0, 0);
+    assertEquals(row1.get(2).doubleValue(), 2, 0);
+
+    List<Number> row2 = h.get(2);
+    assertEquals(row2.get(0).doubleValue(), 4, 0);
+    assertEquals(row2.get(1).doubleValue(), 2, 0);
+    assertEquals(row2.get(2).doubleValue(), 0, 0);
+
+    Number i = (Number)tuples.get(0).get("i");
+    assertEquals(i.doubleValue(), 4.0, 0.0);
+    Number j = (Number)tuples.get(0).get("j");
+    assertEquals(j.doubleValue(), 8.0, 0.0);
+    Number k = (Number)tuples.get(0).get("k");
+    assertEquals(k.doubleValue(), 4.0, 0.0);
+
+    List<List<Number>> m = (List<List<Number>>)tuples.get(0).get("m");
+    assertEquals(m.size(), 3);
+    assertEquals(m.get(0).size(), 3);
+    row0 = m.get(0);
+    assertEquals(row0.get(0).doubleValue(), 0, 0);
+    assertEquals(row0.get(1).doubleValue(), 4, 0);
+    assertEquals(row0.get(2).doubleValue(), 8, 0);
+
+    row1 = m.get(1);
+    assertEquals(row1.get(0).doubleValue(), 4, 0);
+    assertEquals(row1.get(1).doubleValue(), 0, 0);
+    assertEquals(row1.get(2).doubleValue(), 4, 0);
+
+    row2 = m.get(2);
+    assertEquals(row2.get(0).doubleValue(), 8, 0);
+    assertEquals(row2.get(1).doubleValue(), 4, 0);
+    assertEquals(row2.get(2).doubleValue(), 0, 0);
+
+    Number n = (Number)tuples.get(0).get("n");
+    assertEquals(n.doubleValue(), 0.787302, 0.0001);
+    Number o = (Number)tuples.get(0).get("o");
+    assertEquals(o.doubleValue(), 1.283333, 0.0001);
+    Number p = (Number)tuples.get(0).get("p");
+    assertEquals(p.doubleValue(), 0.544877, 0.0001);
+
+    List<List<Number>> r = (List<List<Number>>)tuples.get(0).get("r");
+    assertEquals(r.size(), 3);
+    assertEquals(r.get(0).size(), 3);
+    row0 = r.get(0);
+    assertEquals(row0.get(0).doubleValue(), 0, 0);
+    assertEquals(row0.get(1).doubleValue(), 0.787302, .0001);
+    assertEquals(row0.get(2).doubleValue(), 1.283333, .0001);
+
+    row1 = r.get(1);
+    assertEquals(row1.get(0).doubleValue(), 0.787302, .0001);
+    assertEquals(row1.get(1).doubleValue(), 0, 0);
+    assertEquals(row1.get(2).doubleValue(), 0.544877, .0001);
+
+    row2 = r.get(2);
+    assertEquals(row2.get(0).doubleValue(), 1.283333, .0001);
+    assertEquals(row2.get(1).doubleValue(), 0.544877, .0001);
+    assertEquals(row2.get(2).doubleValue(), 0, 0);
+
+
+    Number s = (Number)tuples.get(0).get("s");
+    assertEquals(s.doubleValue(), 10.0, 0);
+    Number t = (Number)tuples.get(0).get("t");
+    assertEquals(t.doubleValue(), 20.0, 0);
+    Number u = (Number)tuples.get(0).get("u");
+    assertEquals(u.doubleValue(), 10.0, 0);
+
+    List<List<Number>> x = (List<List<Number>>)tuples.get(0).get("x");
+    assertEquals(x.size(), 3);
+    assertEquals(x.get(0).size(), 3);
+    row0 = x.get(0);
+    assertEquals(row0.get(0).doubleValue(), 0, 0);
+    assertEquals(row0.get(1).doubleValue(), 10.0, 0);
+    assertEquals(row0.get(2).doubleValue(), 20, 0);
+
+    row1 = x.get(1);
+    assertEquals(row1.get(0).doubleValue(), 10, 0);
+    assertEquals(row1.get(1).doubleValue(), 0, 0);
+    assertEquals(row1.get(2).doubleValue(), 10, 0);
+
+    row2 = x.get(2);
+    assertEquals(row2.get(0).doubleValue(), 20, 0);
+    assertEquals(row2.get(1).doubleValue(), 10, 0);
+    assertEquals(row2.get(2).doubleValue(), 0, 0);
+
+
   }
 
 
