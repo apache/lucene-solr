@@ -40,6 +40,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8057: Exact circle bounds computation was incorrect.
+  (Ignacio Vera)
+
 * LUCENE-8056: Exact circle segment bounding suffered from precision errors.
   (Karl Wright)
 
