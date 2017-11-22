@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ar;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter; // javadoc @link
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -34,13 +35,24 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * </p>
  * @see SetKeywordMarkerFilter */
 
-public final class ArabicStemFilter extends TokenFilter {
-  private final ArabicStemmer stemmer = new ArabicStemmer();
+public final class ArabicLightStemFilter extends TokenFilter {
+  private final ArabicLightStemmer stemmer = new ArabicLightStemmer();
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-  
-  public ArabicStemFilter(TokenStream input) {
+  private boolean highAccuracy = false;
+
+
+  public ArabicLightStemFilter(TokenStream input) {
     super(input);
+  }
+  
+  public ArabicLightStemFilter(TokenStream input, CharArraySet validatedStemList) {
+    super(input);
+    stemmer.setValidatedStemList(validatedStemList);
+  }
+
+  public void setHighAccuracyRequired(boolean highAccuracyRequired) {
+    stemmer.setHighAccuracyRequired(highAccuracyRequired);
   }
 
   @Override
@@ -48,6 +60,7 @@ public final class ArabicStemFilter extends TokenFilter {
     if (input.incrementToken()) {
       if(!keywordAttr.isKeyword()) {
         final int newlen = stemmer.stem(termAtt.buffer(), termAtt.length());
+        termAtt.copyBuffer(stemmer.getStr(), 0, newlen);
         termAtt.setLength(newlen);
       }
       return true;
@@ -55,4 +68,5 @@ public final class ArabicStemFilter extends TokenFilter {
       return false;
     }
   }
+  
 }

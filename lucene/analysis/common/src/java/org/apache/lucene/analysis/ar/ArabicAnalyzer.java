@@ -43,7 +43,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * The analysis package contains three primary components:
  * <ul>
  *  <li>{@link ArabicNormalizationFilter}: Arabic orthographic normalization.
- *  <li>{@link ArabicStemFilter}: Arabic light stemming
+ *  <li>{@link ArabicStemFilter}: Arabic stemming
  *  <li>Arabic stop words file: a set of default Arabic stop words.
  * </ul>
  * 
@@ -85,10 +85,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   }
   
   private final CharArraySet stemExclusionSet;
-  private CharArraySet validatedStemList;
-  private boolean useEnhancedStemmer = false;
-  private boolean highAccuracy = false;
-
 
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
@@ -121,30 +117,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     super(stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
   }
-  
-  public CharArraySet getValidatedStemList() {
-    return validatedStemList;
-  }
-  
-  public void setValidatedStemList(CharArraySet validatedStemList) {
-    this.validatedStemList = validatedStemList;
-  }
-  
-  public boolean isUseEnhancedStemmer() {
-    return useEnhancedStemmer;
-  }
-
-  public void setUseEnhancedStemmer(boolean useEnhancedStemmer) {
-    this.useEnhancedStemmer = useEnhancedStemmer;
-  }
-  
-  public boolean isHighAccuracy() {
-    return highAccuracy;
-  }
-
-  public void setHighAccuracy(boolean highAccuracy) {
-    this.highAccuracy = highAccuracy;
-  }
 
   /**
    * Creates
@@ -169,15 +141,6 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     if(!stemExclusionSet.isEmpty()) {
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     }
-    if(!validatedStemList.isEmpty()){
-      ArabicStemFilter asf = new ArabicStemFilter(result,validatedStemList);
-      if(useEnhancedStemmer){
-        asf.setUseEnhancedStemmer(useEnhancedStemmer);
-        if(highAccuracy)
-          asf.setHighAccuracy(true);
-      }
-      return new TokenStreamComponents(source, asf);
-    }
     return new TokenStreamComponents(source, new ArabicStemFilter(result));
   }
 
@@ -189,4 +152,3 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     return result;
   }
 }
-
