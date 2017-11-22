@@ -533,5 +533,22 @@ public class GeoCircleTest extends LuceneTestCase {
     assertTrue(bBox.getRelationship(circle) == GeoArea.OVERLAPS);
   }
 
+  @Test
+  public void testExactCircleBounds() {
 
+    GeoPoint center = new GeoPoint(PlanetModel.WGS84, 0, 0);
+    // Construct four cardinal points, and then we'll build the first two planes
+    final GeoPoint northPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, 0.0);
+    final GeoPoint southPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, Math.PI);
+    final GeoPoint eastPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, Math.PI * 0.5);
+    final GeoPoint westPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, Math.PI * 1.5);
+
+    GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0, 0, 1, 1e-6);
+    LatLonBounds bounds = new LatLonBounds();
+    circle.getBounds(bounds);
+    assertEquals(northPoint.getLatitude(), bounds.getMaxLatitude(), 1e-2);
+    assertEquals(southPoint.getLatitude(), bounds.getMinLatitude(), 1e-2);
+    assertEquals(westPoint.getLongitude(), bounds.getLeftLongitude(), 1e-2);
+    assertEquals(eastPoint.getLongitude(), bounds.getRightLongitude(), 1e-2);
+  }
 }
