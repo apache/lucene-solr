@@ -520,5 +520,18 @@ public class GeoCircleTest extends LuceneTestCase {
     int rel = circle1.getRelationship(circle2);
     assertTrue(rel != GeoArea.DISJOINT);
   }
-  
+
+  @Test
+  public void testLUCENE8056(){
+    GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.647941905154693, 0.8542472362428436, 0.8917883700569315, 1.2173787103955335E-8);
+    GeoBBox bBox = GeoBBoxFactory.makeGeoBBox(PlanetModel.WGS84, 0.5890486225480862, 0.4908738521234052, 1.9634954084936207, 2.159844949342983);
+    //Center iis out of the shape
+    assertFalse(circle.isWithin(bBox.getCenter()));
+    //Edge point is in the shape
+    assertTrue(circle.isWithin(bBox.getEdgePoints()[0]));
+    //Shape should intersect!!!
+    assertTrue(bBox.getRelationship(circle) == GeoArea.OVERLAPS);
+  }
+
+
 }

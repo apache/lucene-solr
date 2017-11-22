@@ -77,6 +77,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8056: Exact circle segment bounding suffered from precision errors.
+  (Karl Wright)
+
 * LUCENE-8054: Fix the exact circle case where relationships fail when the
   planet model has c <= ab, because the planes are constructed incorrectly.
   (Ignacio Vera)

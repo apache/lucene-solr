@@ -145,7 +145,9 @@ class GeoExactCircle extends GeoBaseCircle {
     // If it turns out that there's only one circle plane, this array will be populated but unused
     final List<GeoPoint[]> notableEdgePoints = new ArrayList<>(activeSlices.size());
     // Back planes
-    final List<Membership> backPlanes = new ArrayList<>(activeSlices.size());
+    final Map<Membership, Membership> backPlanes = new HashMap<>(activeSlices.size());
+    // Bounds
+    final Map<Membership, Membership> bounds = new HashMap<>(activeSlices.size());
     
     // Compute bounding planes and actual circle planes
     for (int i = 0; i < activeSlices.size(); i++) {
@@ -198,13 +200,15 @@ class GeoExactCircle extends GeoBaseCircle {
       }
       
       circlePlanes.add(pd.plane);
-      backPlanes.add(backPlane);
+      if (backPlane != null) {
+        backPlanes.put(pd.plane, backPlane);
+      }
       notableEdgePoints.add(new GeoPoint[]{pd.endPoint1, pd.endPoint2});
+      bounds.put(pd.plane, new EitherBound(new SidedPlane(pd.onSidePoint, pd.endPoint1, center), new SidedPlane(pd.onSidePoint, pd.endPoint2, center)));
     }
 
     //System.out.println("Number of planes needed: "+circlePlanes.size());
       
-    this.edgePoints = new GeoPoint[]{edgePoint};      
     this.circlePlanes = circlePlanes;
     // Compute bounds
     if (circlePlanes.size() == 1) {
@@ -213,19 +217,11 @@ class GeoExactCircle extends GeoBaseCircle {
       this.notableEdgePoints = null;
     } else {
       this.notableEdgePoints = notableEdgePoints;
-      this.backBounds = new HashMap<>(circlePlanes.size());
-      this.eitherBounds = new HashMap<>(circlePlanes.size());
-      for (int i = 0; i < circlePlanes.size(); i++) {
-        final SidedPlane thisPlane = circlePlanes.get(i);
-        final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
-        final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
-        if (backPlanes.get(i) != null) {
-          backBounds.put(thisPlane, backPlanes.get(i));
-        }
-        eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
-      }
+      this.eitherBounds = bounds;
+      this.backBounds = backPlanes;
     }
     
+    this.edgePoints = new GeoPoint[]{edgePoint};      
     //System.out.println("Is edgepoint within? "+isWithin(edgePoint));
   }
 
