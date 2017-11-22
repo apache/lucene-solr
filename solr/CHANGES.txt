@@ -30,7 +30,8 @@ Apache ZooKeeper 3.4.10
 Jetty 9.3.20.v20170531
 
 
-(No Changes)
+SOLR-11662: You can configure whether SynonymQuery, a Dismax, or BooleanQuery occurs over query terms that overlap
+their position (Doug Turnbull)
 
 ==================  7.2.0 ==================
 
