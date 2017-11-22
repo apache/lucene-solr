@@ -63,16 +63,8 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
-  protected ScoreOverlaps scoreOverlaps = ScoreOverlaps.AS_SAME_TERM;
 
-  public static enum ScoreOverlaps {
-    AS_SAME_TERM,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
-    PICK_BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
-    AS_DISTINCT_TERMS  /* picks combination (A OR B).*/
-  }
 
-  protected boolean blendSynonyms = true;
-  
   /** Creates a new QueryBuilder using the given analyzer. */
   public QueryBuilder(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -267,10 +259,6 @@ public class QueryBuilder {
   public boolean getEnableGraphQueries() {
     return enableGraphQueries;
   }
-
-  public void setScoreOverlaps(ScoreOverlaps v) {  scoreOverlaps = v;}
-
-  public ScoreOverlaps getScoreOverlaps() { return scoreOverlaps;}
 
   /**
    * Creates a query from a token stream.
@@ -635,20 +623,6 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
-    if (scoreOverlaps == ScoreOverlaps.PICK_BEST) {
-        List<Query> currPosnClauses = new ArrayList<Query>();
-        for (Term term : terms) {
-          currPosnClauses.add(newTermQuery(term));
-        }
-        DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
-        return dm;
-    } else if (scoreOverlaps == ScoreOverlaps.AS_DISTINCT_TERMS) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (Term term : terms) {
-        builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
-      }
-      return builder.build();
-    }
     return new SynonymQuery(terms);
   }
 

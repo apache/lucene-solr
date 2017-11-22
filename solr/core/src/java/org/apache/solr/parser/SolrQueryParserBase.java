@@ -34,6 +34,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -77,6 +78,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int MOD_NONE    = 0;
   static final int MOD_NOT     = 10;
   static final int MOD_REQ     = 11;
+
+  protected ScoreOverlaps scoreOverlaps = ScoreOverlaps.AS_SAME_TERM;
+
+  public static enum ScoreOverlaps {
+    AS_SAME_TERM,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
+    PICK_BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
+    AS_DISTINCT_TERMS  /* picks combination (A OR B).*/
+  }
 
   // make it possible to call setDefaultOperator() without accessing
   // the nested class:
@@ -331,6 +340,18 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
+   * Set how overlapping query terms should be scored, as if they're the same term,
+   * picking highest scoring term, or OR'ing them together
+   * @param scoreOverlaps the overlap scorring method
+   */
+  public void setScoreOverlaps(ScoreOverlaps scoreOverlaps) {this.scoreOverlaps = scoreOverlaps;}
+
+  /**
+   * Gets how overlapping query terms should be scored
+   */
+  public ScoreOverlaps getScoreOverlaps() {return this.scoreOverlaps;}
+
+  /**
    * Set to <code>true</code> to allow leading wildcard characters.
    * <p>
    * When set, <code>*</code> or <code>?</code> are allowed as
@@ -540,6 +561,25 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     SchemaField sf = schema.getField(regexp.field());
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
+  }
+
+  @Override
+  protected Query newSynonymQuery(Term terms[]) {
+    if (scoreOverlaps == ScoreOverlaps.PICK_BEST) {
+      List<Query> currPosnClauses = new ArrayList<Query>();
+      for (Term term : terms) {
+        currPosnClauses.add(newTermQuery(term));
+      }
+      DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
+      return dm;
+    } else if (scoreOverlaps == ScoreOverlaps.AS_DISTINCT_TERMS) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (Term term : terms) {
+        builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+      }
+      return builder.build();
+    }
+    return super.newSynonymQuery(terms);
   }
 
   /**

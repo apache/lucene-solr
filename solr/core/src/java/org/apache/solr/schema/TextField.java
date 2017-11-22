@@ -29,6 +29,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.parser.SolrQueryParserBase;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -41,7 +42,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
-  protected QueryBuilder.ScoreOverlaps scoreOverlapsMethod;
+  protected SolrQueryParserBase.ScoreOverlaps scoreOverlapsMethod;
 
   /**
    * Analyzer set by schema for text types to use when searching fields
@@ -74,10 +75,10 @@ public class TextField extends FieldType {
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
 
-    scoreOverlapsMethod = QueryBuilder.ScoreOverlaps.AS_SAME_TERM;
+    scoreOverlapsMethod = SolrQueryParserBase.ScoreOverlaps.AS_SAME_TERM;
     String scoreOverlapsMethod = args.remove(SCORE_OVERLAPS);
     if (scoreOverlapsMethod != null) {
-      this.scoreOverlapsMethod = QueryBuilder.ScoreOverlaps.valueOf(scoreOverlapsMethod.toUpperCase());
+      this.scoreOverlapsMethod = SolrQueryParserBase.ScoreOverlaps.valueOf(scoreOverlapsMethod.toUpperCase());
     }
     
     enableGraphQueries = true;
@@ -111,7 +112,7 @@ public class TextField extends FieldType {
     return enableGraphQueries;
   }
 
-  public QueryBuilder.ScoreOverlaps getScoreOverlapsMethod() {return scoreOverlapsMethod;}
+  public SolrQueryParserBase.ScoreOverlaps getScoreOverlapsMethod() {return scoreOverlapsMethod;}
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {

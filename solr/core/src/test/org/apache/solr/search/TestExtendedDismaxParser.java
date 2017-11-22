@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -96,6 +97,9 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "71", "text_sw", "ties"));
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
+//    assertU(adoc("id", "74", "text_pick_best", "tabby"));
+//    assertU(adoc("id", "74", "text_as_distinct", "persian"));
+
     assertU(commit());
   }
 
@@ -1792,6 +1796,37 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","text_sw:\"wi fi\"", "sow","false")
         , "/response/numFound==1"
     );
+  }
+
+  public void testOverlapTermScoringQueries() throws Exception {
+    ModifiableSolrParams edismaxParams = new ModifiableSolrParams();
+    edismaxParams.add("qf", "t_pick_best_foo");
+
+    QParser qParser = QParser.getParser("tabby", "edismax", req(edismaxParams));
+    Query q = qParser.getQuery();
+    assertEquals("+((t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim))", q.toString());
+
+    edismaxParams = new ModifiableSolrParams();
+    edismaxParams.add("qf", "t_as_distinct_foo");
+    qParser = QParser.getParser("tabby", "edismax", req(edismaxParams));
+    q = qParser.getQuery();
+    assertEquals("+((t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim))", q.toString());
+
+    /*confirm autoGeneratePhraseQueries always builds OR queries*/
+    edismaxParams = new ModifiableSolrParams();
+    edismaxParams.add("qf", "t_as_distinct_foo");
+    edismaxParams.add("sow", "false");
+    qParser = QParser.getParser("jeans", "edismax", req(edismaxParams));
+    q = qParser.getQuery();
+    assertEquals("+(((t_as_distinct_foo:\"denim pant\" t_as_distinct_foo:jean)))", q.toString());
+
+    edismaxParams = new ModifiableSolrParams();
+    edismaxParams.add("qf", "t_pick_best_foo");
+    edismaxParams.add("sow", "false");
+    qParser = QParser.getParser("jeans", "edismax", req(edismaxParams));
+    q = qParser.getQuery();
+    assertEquals("+(((t_pick_best_foo:\"denim pant\" t_pick_best_foo:jean)))", q.toString());
+
   }
 
   public void testAutoGeneratePhraseQueries() throws Exception {
