@@ -29,6 +29,25 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.20.v20170531
 
+Upgrade Notes
+----------------------
+
+* SOLR-11501: Starting a query string with local-params {!myparser ...} is used to switch the query parser to another,
+  and is intended for use by Solr system developers, not end users doing searches.  To reduce negative side-effects of
+  unintended hack-ability, we've limited the cases that local-params will be parsed to only contexts in which the
+  default parser is "lucene" or "func".
+  So if defType=edismax then q={!myparser ...} won't work.  In that example, put the desired query parser into defType.
+  Another example is if deftype=edismax then hl.q={!myparser ...} won't work for the same reason.  In that example,
+  either put the desired query parser into hl.qparser or set hl.qparser=lucene.  Most users won't run into these cases
+  but some will and must change.
+  If you must have full backwards compatibility, use luceneMatchVersion=7.1.0 or something earlier. (David Smiley)
+
+* SOLR-11501: The edismax parser by default no longer allows subqueries that specify a Solr parser using either
+  local-params, or the older _query_ magic field trick.  For example
+  {!prefix f=myfield v=enterp}  or  _query_:"{!prefix f=myfield v=enterp}"   are not supported by default anymore.
+  If you want to allow power-users to do this, set uf=*,_query_ or some other value that includes _query_.
+  If you must have full backwards compatibility, use luceneMatchVersion=7.1.0 or something earlier. (David Smiley)
+
 New Features
 ----------------------
 * SOLR-11448: Implement an option in collection commands to wait for final results. (ab)
