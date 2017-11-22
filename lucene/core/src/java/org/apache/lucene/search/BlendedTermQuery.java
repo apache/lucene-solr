@@ -246,7 +246,7 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public String toString(String field) {
-    StringBuilder builder = new StringBuilder("BLENDED(");
+    StringBuilder builder = new StringBuilder("Blended(");
     for (int i = 0; i < terms.length; ++i) {
       if (i != 0) {
         builder.append(" ");
