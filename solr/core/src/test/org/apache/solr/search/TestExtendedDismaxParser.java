@@ -51,7 +51,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     index();
   }
   
-   public static void index() throws Exception {
+  public static void index() throws Exception {
     assertU(adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious",
             "name", "Zapp Brannigan"));
     assertU(adoc("id", "43" ,
@@ -393,13 +393,22 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     
     // special psuedo-fields like _query_ and _val_
 
-    // special fields (and real field id) should be included by default
+    // _query_ should be excluded by default
     assertQ(req("defType", "edismax", 
                 "mm", "100%",
                 "fq", "id:51",
-                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
-            oner);
-    // should also work when explicitly allowed
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\"",
+                "debugQuery", "true"),
+            nor,
+        "//str[@name='parsedquery_toString'][.='+(((text:queri) (text:\"geofilt d 20 sfield store pt 12 34 56 78\"))~2)']");
+    // again; this time use embedded local-params style
+    assertQ(req("defType", "edismax",
+        "mm", "100%",
+        "fq", "id:51",
+        "q", " {!geofilt d=20 sfield=store pt=12.34,-56.78}"),//notice leading space
+        nor);
+
+    // should work when explicitly allowed
     assertQ(req("defType", "edismax", 
                 "mm", "100%",
                 "fq", "id:51",
@@ -413,6 +422,14 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "uf", "_query_",
                 "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
             oner);
+    // again; this time use embedded local-params style
+    assertQ(req("defType", "edismax",
+        "mm", "100%",
+        "fq", "id:51",
+        "uf", "id",
+        "uf", "_query_",
+        "q", " {!geofilt d=20 sfield=store pt=12.34,-56.78}"),//notice leading space
+        oner);
 
     // should fail when prohibited
     assertQ(req("defType", "edismax", 
@@ -424,7 +441,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType", "edismax", 
                 "mm", "100%",
                 "fq", "id:51",
-                "uf", "id", // excluded by ommision
+                "uf", "id", // excluded by omission
                 "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
             nor);
 
@@ -2046,4 +2063,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
   }
+
+  /** SOLR-11512 */
+  @Test(expected=SolrException.class)
+  public void killInfiniteRecursionParse() throws Exception {
+    assertJQ(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
+  }
+
 }

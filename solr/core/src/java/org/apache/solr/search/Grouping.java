@@ -177,7 +177,7 @@ public class Grouping {
   }
 
   public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
-    QParser parser = QParser.getParser(groupByStr, "func", request);
+    QParser parser = QParser.getParser(groupByStr, FunctionQParserPlugin.NAME, request);
     Query q = parser.getQuery();
     final Grouping.Command gc;
     if (q instanceof FunctionQuery) {
