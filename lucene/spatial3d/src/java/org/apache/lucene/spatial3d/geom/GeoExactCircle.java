@@ -356,8 +356,13 @@ class GeoExactCircle extends GeoBaseCircle {
       return;
     }
     // Add bounds for all circle planes
-    for (final SidedPlane plane : circlePlanes) {
+    for (int edgeIndex = 0; edgeIndex < circlePlanes.size(); edgeIndex++) {
+      final SidedPlane plane = circlePlanes.get(edgeIndex);
       bounds.addPlane(planetModel, plane, eitherBounds.get(plane));
+      final GeoPoint[] points = notableEdgePoints.get(edgeIndex);
+      for (final GeoPoint point : points) {
+        bounds.addPoint(point);
+      }
       // We don't bother to compute the intersection bounds since, unless the planet model is pathological, we expect planes to be intersecting at shallow
       // angles.
     }
