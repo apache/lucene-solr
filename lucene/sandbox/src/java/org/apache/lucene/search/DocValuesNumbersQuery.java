@@ -121,6 +121,12 @@ public class DocValuesNumbersQuery extends Query {
           }
         });
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 }

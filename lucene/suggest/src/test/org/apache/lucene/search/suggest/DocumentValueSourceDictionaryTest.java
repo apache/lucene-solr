@@ -40,6 +40,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.spell.Dictionary;
@@ -168,6 +169,11 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       }
 
       @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
+      }
+
+      @Override
       public boolean needsScores() {
         return false;
       }
@@ -185,6 +191,11 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       @Override
       public String toString() {
         return null;
+      }
+
+      @Override
+      public LongValuesSource rewrite(IndexSearcher searcher) throws IOException {
+        return this;
       }
     };
   }

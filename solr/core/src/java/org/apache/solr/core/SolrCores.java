@@ -534,10 +534,21 @@ class SolrCores implements Observer {
     return false;
   }
 
-  // Let transient cache implementation tell us when it ages out a corel
+  // Let transient cache implementation tell us when it ages out a core
   @Override
   public void update(Observable o, Object arg) {
     synchronized (modifyLock) {
+      // Erick Erickson debugging TestLazyCores. With this un-commented, we get no testLazyCores failures.
+//      SolrCore core = (SolrCore) arg;
+//      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+//      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+//      cmd.openSearcher = false;
+//      cmd.waitSearcher = false;
+//      try {
+//        core.getUpdateHandler().commit(cmd);
+//      } catch (IOException e) {
+//        log.warn("Caught exception trying to close a transient core, ignoring as it should be benign");
+//      }
       pendingCloses.add((SolrCore) arg); // Essentially just queue this core up for closing.
       modifyLock.notifyAll(); // Wakes up closer thread too
     }

@@ -137,6 +137,15 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
       }
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      for (Weight w : weights) {
+        if (w.isCacheable(ctx) == false)
+          return false;
+      }
+      return true;
+    }
+
     /** Explain the score we computed for doc */
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {

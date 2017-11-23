@@ -92,6 +92,7 @@ import org.slf4j.LoggerFactory;
  * See {@link Locale} for a description of acceptable language, country (optional)
  * and variant (optional) values, joined with underscore(s).
  * </p>
+ * @since 4.4.0
  */
 public class ParseDateFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

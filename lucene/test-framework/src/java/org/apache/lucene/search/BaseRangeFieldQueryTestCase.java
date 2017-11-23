@@ -141,12 +141,12 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
             if (x == m) {
               int d = (int)Math.floor(m/2);
               // current could be multivalue but old may not be, so use first box
-              if (even == 0) {
+              if (even == 0) { // even is min
                 ranges[id][0].setMin(d, ranges[oldID][0].getMin(d));
                 if (VERBOSE) {
                   System.out.println("  id=" + id + " box=" + ranges[id] + " (same min[" + d + "] as doc=" + oldID + ")");
                 }
-              } else {
+              } else { // odd is max
                 ranges[id][0].setMax(d, ranges[oldID][0].getMax(d));
                 if (VERBOSE) {
                   System.out.println("  id=" + id + " box=" + ranges[id] + " (same max[" + d + "] as doc=" + oldID + ")");
@@ -184,7 +184,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       doc.add(new NumericDocValuesField("id", id));
       if (ranges[id][0].isMissing == false) {
         for (int n=0; n<ranges[id].length; ++n) {
-          doc.add(newRangeField(ranges[id][n]));
+          addRange(doc, ranges[id][n]);
         }
       }
       w.addDocument(doc);
@@ -291,6 +291,10 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
       }
     }
     IOUtils.close(r, dir);
+  }
+
+  protected void addRange(Document doc, Range box) {
+    doc.add(newRangeField(box));
   }
 
   protected boolean expectedResult(Range queryRange, Range[] range, Range.QueryType queryType) {

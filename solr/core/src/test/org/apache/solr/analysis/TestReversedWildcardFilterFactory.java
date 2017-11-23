@@ -53,6 +53,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
     initCore("solrconfig.xml","schema-reversed.xml");
   }
   

@@ -23,7 +23,14 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FilterScorer;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 
 /**
  * The BoostingQuery class can be used to effectively demote results that match a given query. 
@@ -121,6 +128,12 @@ public class BoostingQuery extends Query {
             }
           };
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return matchWeight.isCacheable(ctx) && contextWeight.isCacheable(ctx);
+        }
+
       };
     }
 

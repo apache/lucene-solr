@@ -1,6 +1,4 @@
 = Collection-Specific Tools
-:page-shortname: collection-specific-tools
-:page-permalink: collection-specific-tools.html
 :page-children: analysis-screen, dataimport-screen, documents-screen, files-screen, query-screen, stream-screen, schema-browser-screen
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

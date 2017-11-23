@@ -256,6 +256,9 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
 
+    assertQ("CUSTOM breakiterator with fragsize 70",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
   }
 
   public void testFragsize() {

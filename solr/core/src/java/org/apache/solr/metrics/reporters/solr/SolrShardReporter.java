@@ -28,6 +28,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
@@ -47,11 +48,11 @@ import com.codahale.metrics.MetricFilter;
  *   to 0 disables the reporter.</li>
  *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be reported.</li>
  * </ul>
- * NOTE: this reporter uses predefined "replica" group, and it's always created even if explicit configuration
+ * NOTE: this reporter uses predefined "shard" group, and it's always created even if explicit configuration
  * is missing. Default configuration uses filters defined in {@link #DEFAULT_FILTERS}.
  * <p>Example configuration:</p>
  * <pre>
- *    &lt;reporter name="test" group="replica"&gt;
+ *    &lt;reporter name="test" group="shard" class="solr.SolrShardReporter"&gt;
  *      &lt;int name="period"&gt;11&lt;/int&gt;
  *      &lt;str name="filter"&gt;UPDATE\./update/.*requests&lt;/str&gt;
  *      &lt;str name="filter"&gt;QUERY\./select.*requests&lt;/str&gt;
@@ -91,6 +92,11 @@ public class SolrShardReporter extends FilteringSolrMetricReporter {
   }
 
   @Override
+  public void init(PluginInfo pluginInfo) {
+    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,SolrCore) instead.");
+  }
+
+  @Override
   protected void doInit() {
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
@@ -116,7 +122,8 @@ public class SolrShardReporter extends FilteringSolrMetricReporter {
     }
   }
 
-  public void setCore(SolrCore core) {
+  public void init(PluginInfo pluginInfo, SolrCore core) {
+    super.init(pluginInfo);
     if (reporter != null) {
       reporter.close();
     }

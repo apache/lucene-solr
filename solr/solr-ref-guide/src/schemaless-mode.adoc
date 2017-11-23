@@ -1,6 +1,4 @@
 = Schemaless Mode
-:page-shortname: schemaless-mode
-:page-permalink: schemaless-mode.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -220,7 +218,7 @@ For example, adding a CSV document will cause unknown fields to be added, with f
 
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update?commit=true" -H "Content-type:application/csv" -d '
+curl "http://localhost:8983/solr/gettingstarted/update?commit=true&wt=xml" -H "Content-type:application/csv" -d '
 id,Artist,Album,Released,Rating,FromDistributor,Sold
 44C,Old Shews,Mead for Walking,1988-08-13,0.01,14,0'
 ----
@@ -303,7 +301,7 @@ Once a field has been added to the schema, its field type is fixed. As a consequ
 
 [source,bash]
 ----
-curl "http://localhost:8983/solr/gettingstarted/update?commit=true" -H "Content-type:application/csv" -d '
+curl "http://localhost:8983/solr/gettingstarted/update?commit=true&wt=xml" -H "Content-type:application/csv" -d '
 id,Description,Sold
 19F,Cassettes by the pound,4.93'
 ----

@@ -1,6 +1,4 @@
 = Errata
-:page-shortname: errata
-:page-permalink: errata.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -24,8 +22,6 @@ Any mistakes found in this documentation after its release will be listed on the
 
 https://lucene.apache.org/solr/guide/{solr-docs-version}/errata.html
 
-== Errata For Past Versions of This Documentation
+=== Errata For Past Versions of This Documentation
 
 Any known mistakes in past releases of this documentation will be noted below.
-
-**v2 API Blob store api path**: The 6.5 guide listed the Blob store api path as `/v2/blob`, but the correct path is `/v2/c/.system/blob`.

@@ -184,7 +184,9 @@ public interface CommonParams {
   String ZK_PATH = "/admin/zookeeper";
   String METRICS_PATH = "/admin/metrics";
   String AUTOSCALING_PATH = "/admin/autoscaling";
+  String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
+  String AUTOSCALING_SUGGESTIONS_PATH = "/admin/autoscaling/suggestions";
 
   String STATUS = "status";
 
@@ -200,7 +202,9 @@ public interface CommonParams {
       AUTHZ_PATH,
       METRICS_PATH,
       AUTOSCALING_PATH,
-      AUTOSCALING_DIAGNOSTICS_PATH)));
+      AUTOSCALING_HISTORY_PATH,
+      AUTOSCALING_DIAGNOSTICS_PATH,
+      AUTOSCALING_SUGGESTIONS_PATH)));
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -240,6 +244,9 @@ public interface CommonParams {
   String TRUE = Boolean.TRUE.toString();
   String FALSE = Boolean.FALSE.toString();
 
+  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. **/
+  String TYPE = "type";
+
   /** Used as a local parameter on queries.  cache=false means don't check any query or filter caches.
    * cache=true is the default.
    */
@@ -277,5 +284,8 @@ public interface CommonParams {
   String VERSION_FIELD="_version_";
 
   String ID = "id";
+  String JSON_MIME = "application/json";
+
+  String JAVABIN_MIME = "application/javabin";
 }
 

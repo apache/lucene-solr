@@ -156,7 +156,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   }
 
   /** IntRange test class implementation - use to validate IntRange */
-  private class IntTestRange extends Range {
+  protected class IntTestRange extends Range {
     int[] min;
     int[] max;
 

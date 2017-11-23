@@ -67,9 +67,21 @@ public class BuildNavAndPDFBody {
     if (null == mainPage) {
       throw new RuntimeException("no main-page found with shortname: " + mainPageShortname);
     }
-    mainPage.buildKidsRecursive(allPages);
+    // NOTE: mainPage claims to be it's own parent to prevent anyone decendent from introducing a loop
+    mainPage.buildPageTreeRecursive(mainPage, allPages);
 
-    // TODO: use depthFirstWalk to prune allPages to validate that we don't have any loops or orphan pages
+    { // validate that there are no orphan pages
+      int orphans = 0;
+      for (Page p : allPages.values()) {
+        if (null == p.getParent()) {
+          orphans++;
+          System.err.println("ERROR: Orphan page: " + p.file);
+        }
+      }
+      if (0 != orphans) {
+        throw new RuntimeException("Found " + orphans + " orphan pages (which are not in the 'page-children' attribute of any other pages)");
+      }
+    }
 
 
     // Build up the PDF file,
@@ -103,7 +115,9 @@ public class BuildNavAndPDFBody {
             }
             previous.set(page);
 
-            
+            // use an explicit anchor, since the auto-generated ID from the "title" might not match
+            // the shortname/filename
+            w.append("[[").append(page.shortname).append("]]\n");
             // HACK: where this file actually lives will determine what we need here...
             w.write("include::../");
             w.write(page.file.getName());
@@ -206,23 +220,42 @@ public class BuildNavAndPDFBody {
   /** Simple struct for modeling the key metadata for dealing with page navigation */
   public static final class Page {
     public final File file;
-    public final String title;
+    public final String title; // NOTE: has html escape codes in it
     public final String shortname;
     public final String permalink;
     public final List<String> kidShortnames;
     /** NOTE: not populated on construction
-     * @see #buildKidsRecursive
+     * @see #buildPageTreeRecursive
+     */
+    private Page parent;
+    public Page getParent() {
+      return parent;
+    }
+    /** NOTE: not populated on construction
+     * @see #buildPageTreeRecursive
      */
     public final List<Page> kids;
     private final List<Page> mutableKids;
     public Page(File file, DocumentHeader header) {
+      if (! file.getName().endsWith(".adoc")) {
+        throw new RuntimeException(file + " has does not end in '.adoc' - this code can't be used");
+      }
+      
       this.file = file;
       this.title = header.getDocumentTitle().getMain();
+
+      this.shortname = file.getName().replaceAll("\\.adoc$","");
+      this.permalink = this.shortname + ".html";
       
       // TODO: do error checking if attribute metadata we care about is missing
       Map<String,Object> attrs = header.getAttributes();
-      this.shortname = (String) attrs.get("page-shortname");
-      this.permalink = (String) attrs.get("page-permalink");
+
+      // See SOLR-11541: Fail if a user adds new docs with older missleading attributes we don't use/want
+      for (String attr : Arrays.asList("page-shortname", "page-permalink")) {
+        if (attrs.containsKey(attr)) {
+          throw new RuntimeException(file + ": remove the " + attr + " attribute, it's no longer needed, and may confuse readers/editors");
+        }
+      }
       
       if (attrs.containsKey("page-children")) {
         String kidsString = ((String) attrs.get("page-children")).trim();
@@ -236,15 +269,26 @@ public class BuildNavAndPDFBody {
       this.kids = Collections.<Page>unmodifiableList(mutableKids);
     }
 
-    /** Recursively populates {@link #kids} from {@link #kidShortnames} via the <code>allPages</code> Map */
-    public void buildKidsRecursive(Map<String,Page> allPages) {
+    /** 
+     * Recursively sets {@link #getParent} and populates {@link #kids} from {@link #kidShortnames} 
+     * via the <code>allPages</code> Map 
+     */
+    public void buildPageTreeRecursive(Page parent, Map<String,Page> allPages) {
+      if (null != parent) {
+        if (null != this.parent) {
+          // as long as we also check (later) that every page has a parent, this check (prior to recusion)
+          // also ensures we never have any loops
+          throw new RuntimeException(file.getName() + " is listed as the child of (at least) 2 pages: '" + parent.shortname + "' and '" + this.parent.shortname + "'");
+        }
+        this.parent = parent;
+      }
       for (String kidShortname : kidShortnames) {
         Page kid = allPages.get(kidShortname);
         if (null == kid) {
           throw new RuntimeException("Unable to locate " + kidShortname + "; child of " + shortname + "("+file.toString());
         }
         mutableKids.add(kid);
-        kid.buildKidsRecursive(allPages);
+        kid.buildPageTreeRecursive(this, allPages);
       }
     }
 

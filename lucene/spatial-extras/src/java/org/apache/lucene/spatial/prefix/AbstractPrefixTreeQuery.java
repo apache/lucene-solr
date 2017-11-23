@@ -90,6 +90,11 @@ public abstract class AbstractPrefixTreeQuery extends Query {
         }
         return new ConstantScoreScorer(this, score(), disi);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
     };
   }
 

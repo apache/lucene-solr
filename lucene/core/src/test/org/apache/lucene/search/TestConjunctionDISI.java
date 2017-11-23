@@ -146,11 +146,6 @@ public class TestConjunctionDISI extends LuceneTestCase {
         return 0;
       }
 
-      @Override
-      public int freq() throws IOException {
-        return 0;
-      }
-
     };
   }
 

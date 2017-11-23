@@ -150,6 +150,7 @@ import org.slf4j.LoggerFactory;
  * &lt;/processor&gt;
  * </pre>
  * 
+ * @since 4.0.0
  */
 public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware {
 

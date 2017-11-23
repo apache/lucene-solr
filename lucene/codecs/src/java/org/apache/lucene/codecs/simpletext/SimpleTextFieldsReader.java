@@ -202,7 +202,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long totalTermFreq() {
-      return indexOptions == IndexOptions.DOCS ? -1 : totalTermFreq;
+      return indexOptions == IndexOptions.DOCS ? docFreq : totalTermFreq;
     }
 
     @Override
@@ -568,12 +568,13 @@ class SimpleTextFieldsReader extends FieldsProducer {
         } else if (StringHelper.startsWith(scratch.get(), DOC)) {
           docFreq++;
           sumDocFreq++;
+          totalTermFreq++;
           scratchUTF16.copyUTF8Bytes(scratch.bytes(), DOC.length, scratch.length()-DOC.length);
           int docID = ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
           visitedDocs.set(docID);
         } else if (StringHelper.startsWith(scratch.get(), FREQ)) {
           scratchUTF16.copyUTF8Bytes(scratch.bytes(), FREQ.length, scratch.length()-FREQ.length);
-          totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length());
+          totalTermFreq += ArrayUtil.parseInt(scratchUTF16.chars(), 0, scratchUTF16.length()) - 1;
         } else if (StringHelper.startsWith(scratch.get(), TERM)) {
           if (lastDocsStart != -1) {
             b.add(Util.toIntsRef(lastTerm.get(), scratchIntsRef), outputs.newPair(lastDocsStart,
@@ -637,7 +638,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     @Override
     public long getSumTotalTermFreq() {
-      return fieldInfo.getIndexOptions() == IndexOptions.DOCS ? -1 : sumTotalTermFreq;
+      return sumTotalTermFreq;
     }
 
     @Override

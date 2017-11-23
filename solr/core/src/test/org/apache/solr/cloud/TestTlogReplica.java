@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,6 +30,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.codahale.metrics.Meter;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -60,8 +63,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.update.UpdateHandler;
-import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -70,8 +71,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 @Slow
 public class TestTlogReplica extends SolrCloudTestCase {
@@ -464,16 +463,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .process(cloudClient, collectionName);
 
     {
-      UpdateHandler updateHandler = getSolrCore(true).get(0).getUpdateHandler();
-      RefCounted<IndexWriter> iwRef = updateHandler.getSolrCoreState().getIndexWriter(null);
-      assertTrue("IndexWriter at leader must see updates ", iwRef.get().hasUncommittedChanges());
-      iwRef.decref();
+      long docsPending = (long) getSolrCore(true).get(0).getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
+      assertEquals("Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),4, docsPending);
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
-      RefCounted<IndexWriter> iwRef = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
-      assertFalse("IndexWriter at replicas must not see updates ", iwRef.get().hasUncommittedChanges());
-      iwRef.decref();
+      long docsPending = (long) solrCore.getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
+      assertEquals("Expected non docs are pending in core " + solrCore.getCoreDescriptor(),0, docsPending);
     }
 
     checkRTG(1, 4, cluster.getJettySolrRunners());
@@ -486,21 +482,34 @@ public class TestTlogReplica extends SolrCloudTestCase {
     // The DBQ is not processed at replicas, so we still can get doc2 and other docs by RTG
     checkRTG(2,4, getSolrRunner(false));
 
+    Map<SolrCore, Long> timeCopyOverPerCores = getTimesCopyOverOldUpdates(getSolrCore(false));
     new UpdateRequest()
         .commit(cloudClient, collectionName);
 
     waitForNumDocsInAllActiveReplicas(2);
-
-    // Update log roll over
-    for (SolrCore solrCore : getSolrCore(false)) {
-      UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
-      assertFalse(updateLog.hasUncommittedChanges());
+    // There are a small delay between new searcher and copy over old updates operation
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut()) {
+      if (assertCopyOverOldUpdates(1, timeCopyOverPerCores)) {
+        break;
+      } else {
+        Thread.sleep(500);
+      }
     }
+    assertTrue("Expect only one copy over updates per cores", assertCopyOverOldUpdates(1, timeCopyOverPerCores));
 
+    boolean firstCommit = true;
     // UpdateLog copy over old updates
     for (int i = 15; i <= 150; i++) {
       cloudClient.add(collectionName, sdoc("id",String.valueOf(i)));
       if (random().nextInt(100) < 15 & i != 150) {
+        if (firstCommit) {
+          // because tlog replicas periodically ask leader for new segments,
+          // therefore the copy over old updates action must not be triggered until
+          // tlog replicas actually get new segments
+          assertTrue("Expect only one copy over updates per cores", assertCopyOverOldUpdates(1, timeCopyOverPerCores));
+          firstCommit = false;
+        }
         cloudClient.commit(collectionName);
       }
     }
@@ -535,7 +544,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     // We skip peerSync, so replica will always trigger commit on leader
     // We query only the non-leader replicas, since we haven't opened a new searcher on the leader yet
-    waitForNumDocsInAllReplicas(4, getNonLeaderReplias(collectionName), 0);// Should be immediate
+    waitForNumDocsInAllReplicas(4, getNonLeaderReplias(collectionName), 10); //timeout for stale collection state
     
     // If I add the doc immediately, the leader fails to communicate with the follower with broken pipe.
     // Options are, wait or retry...
@@ -556,8 +565,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DirectUpdateHandler2.commitOnClose = true;
     ChaosMonkey.start(solrRunner);
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
+    waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10); //timeout for stale collection state
     checkRTG(3,7, cluster.getJettySolrRunners());
-    waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 0);// Should be immediate
     cluster.getSolrClient().commit(collectionName);
 
     // Test replica recovery apply buffer updates
@@ -664,8 +673,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
+    String oldLeaderNodeName = oldLeaderJetty.getNodeName();
     ChaosMonkey.kill(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
+    waitForState("Expect new leader", collectionName,
+        (liveNodes, collectionState) -> {
+          Replica leader = collectionState.getLeader("shard1");
+          if (leader == null) return false;
+          return !leader.getNodeName().equals(oldLeaderNodeName);
+        }
+    );
     ChaosMonkey.start(oldLeaderJetty);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,1, cluster.getJettySolrRunners());
@@ -712,8 +729,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
-    cluster.getSolrClient().getZkStateReader().registerCore(collectionName); //TODO: Why is this needed? see SOLR-9440 
-    waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas", 
+    waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas",
         collectionName, clusterShape(numShards, numReplicasPerShard));
     return assertNumberOfReplicas(numNrtReplicas*numShards, numTlogReplicas*numShards, numPullReplicas*numShards, false, true);
   }
@@ -909,5 +925,25 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     fail("Some replicas are not in sync with leader");
 
+  }
+
+  private boolean assertCopyOverOldUpdates(long delta, Map<SolrCore, Long> timesPerCore) {
+    for (SolrCore core : timesPerCore.keySet()) {
+      if (timesPerCore.get(core) + delta != getTimesCopyOverOldUpdates(core)) return false;
+    }
+    return true;
+  }
+
+  private Map<SolrCore, Long> getTimesCopyOverOldUpdates(List<SolrCore> cores) {
+    Map<SolrCore, Long> timesPerCore = new HashMap<>();
+    for (SolrCore core : cores) {
+      long times = getTimesCopyOverOldUpdates(core);
+      timesPerCore.put(core, times);
+    }
+    return timesPerCore;
+  }
+
+  private long getTimesCopyOverOldUpdates(SolrCore core) {
+    return ((Meter)core.getMetricRegistry().getMetrics().get("TLOG.copyOverOldUpdates.ops")).getCount();
   }
 }

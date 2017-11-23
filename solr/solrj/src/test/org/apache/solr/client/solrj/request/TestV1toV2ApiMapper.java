@@ -22,7 +22,9 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 
 public class TestV1toV2ApiMapper extends LuceneTestCase {
@@ -35,7 +37,7 @@ public class TestV1toV2ApiMapper extends LuceneTestCase {
             .put("p2","v2")
             .build());
     V2Request v2r = V1toV2ApiMapper.convert(cmd).build();
-    Map m = (Map) Utils.fromJSON(v2r.getContentStreams().iterator().next().getStream());
+    Map m = (Map) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
     assertEquals("/c", v2r.getPath());
     assertEquals("v1", Utils.getObjectByPath(m,true,"/create/properties/p1"));
     assertEquals("v2", Utils.getObjectByPath(m,true,"/create/properties/p2"));
@@ -44,7 +46,7 @@ public class TestV1toV2ApiMapper extends LuceneTestCase {
 
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard("mycoll", "shard1");
     v2r = V1toV2ApiMapper.convert(addReplica).build();
-    m = (Map) Utils.fromJSON(v2r.getContentStreams().iterator().next().getStream());
+    m = (Map) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
     assertEquals("/c/mycoll/shards", v2r.getPath());
     assertEquals("shard1", Utils.getObjectByPath(m,true,"/add-replica/shard"));
     assertEquals("NRT", Utils.getObjectByPath(m,true,"/add-replica/type"));

@@ -115,5 +115,11 @@ public final class SpanContainingQuery extends SpanContainQuery {
         }
       };
     }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return bigWeight.isCacheable(ctx) && littleWeight.isCacheable(ctx);
+    }
+
   }
 }

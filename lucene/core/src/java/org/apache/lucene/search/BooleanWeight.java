@@ -300,6 +300,15 @@ final class BooleanWeight extends Weight {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    for (Weight w : weights) {
+      if (w.isCacheable(ctx) == false)
+        return false;
+    }
+    return true;
+  }
+
+  @Override
   public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
     int minShouldMatch = query.getMinimumNumberShouldMatch();
 

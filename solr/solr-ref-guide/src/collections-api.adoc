@@ -1,6 +1,4 @@
 = Collections API
-:page-shortname: collections-api
-:page-permalink: collections-api.html
 :page-toclevels: 1
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -109,7 +107,7 @@ Replica placement rules. See the section <<rule-based-replica-placement.adoc#rul
 `snitch`::
 Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
 
-`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details
+`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
 
 === CREATE Response
 
@@ -121,7 +119,7 @@ The response will include the status of the request and the new core names. If t
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1&wt=xml
 ----
 
 *Output*
@@ -175,6 +173,7 @@ The attributes that can be modified are:
 * collection.configName
 * rule
 * snitch
+* policy
 +
 See the <<create,CREATE action>> section above for details on these attributes.
 
@@ -203,7 +202,7 @@ The response will include the status of the request and the cores that were relo
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt=xml
 ----
 
 *Output*
@@ -283,7 +282,7 @@ Split shard1 of the "anotherCollection" collection.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1&wt=xml
 ----
 
 *Output*
@@ -388,7 +387,7 @@ Create 'shard-z' for the "anImplicitCollection" collection.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z
+http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z&wt=xml
 ----
 
 *Output*
@@ -442,7 +441,7 @@ Delete 'shard1' of the "anotherCollection" collection.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1
+http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1&wt=xml
 ----
 
 *Output*
@@ -495,7 +494,7 @@ Create an alias named "testalias" and link it to the collections named "anotherC
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
 ----
 
 *Output*
@@ -522,6 +521,15 @@ The LISTALIASES action does not take any parameters.
 The output will contain a list of aliases with the corresponding collection names.
 
 === Examples using LISTALIASES
+
+*Input*
+
+List the existing aliases, requesting information as XML from Solr:
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=LISTALIASES&wt=xml
+----
 
 *Output*
 
@@ -564,7 +572,7 @@ Remove the alias named "testalias".
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias&wt=xml
 ----
 
 *Output*
@@ -604,7 +612,7 @@ Delete the collection named "newCollection".
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection
+http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt=xml
 ----
 
 *Output*
@@ -681,7 +689,7 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=test2&shard=shard2&replica=core_node3&wt=xml
 ----
 
 *Output*
@@ -750,7 +758,7 @@ Request ID to track this action which will be <<Asynchronous Calls,processed asy
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr
+http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=test2&shard=shard2&node=192.167.1.2:8983_solr&wt=xml
 ----
 
 *Output*
@@ -799,7 +807,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https&wt=xml
 ----
 
 *Output*
@@ -859,7 +867,7 @@ The response will include the status of the request.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&split.key=a!&target.collection=test2&wt=xml
 ----
 
 *Output*
@@ -1035,7 +1043,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=192.167.1.2:8983_solr
+http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=192.167.1.2:8983_solr&wt=xml
 ----
 
 *Output*
@@ -1076,7 +1084,7 @@ The response will include the status of the request and the properties that were
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=192.167.1.2:8983_solr
+http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=192.167.1.2:8983_solr&wt=xml
 ----
 
 *Output*
@@ -1283,7 +1291,7 @@ The user defined request ID for the request. This can be used to track the statu
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000&wt=xml
 ----
 
 *Output*
@@ -1306,7 +1314,7 @@ http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004
+http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004&wt=xml
 ----
 
 *Output*
@@ -1346,7 +1354,7 @@ Set to `true` to clear all stored completed and failed async request responses.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo&wt=xml
 ----
 
 *Output*
@@ -1366,7 +1374,7 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=foo
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar&wt=xml
 ----
 
 *Output*
@@ -1386,7 +1394,7 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=bar
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true
+http://localhost:8983/solr/admin/collections?action=DELETESTATUS&flush=true&wt=xml
 ----
 
 *Output*
@@ -1482,7 +1490,7 @@ This command would set the "preferredLeader" property (`property.preferredLeader
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true
+http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&property.value=true&wt=xml
 ----
 
 *Output*
@@ -1535,7 +1543,7 @@ The name of the collection the replica belongs to. This parameter is required.
 The name of the shard the replica belongs to. This parameter is required.
 
 `replica`::
-The replica, e.g. `core_node1`. This parameter is required.
+The replica, e.g., `core_node1`. This parameter is required.
 
 `property`::
 The property to add. This will have the literal `property.` prepended to distinguish it from system-maintained properties. So these two forms are equivalent:
@@ -1558,7 +1566,7 @@ This command would delete the preferredLeader (`property.preferredLeader`) from 
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader
+http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&shard=shard1&collection=collection1&replica=core_node1&property=preferredLeader&wt=xml
 ----
 
 *Output*
@@ -1606,9 +1614,9 @@ Either of these commands would put the "preferredLeader" property on one replica
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=preferredLeader
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=preferredLeader&wt=xml
 
-http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=property.preferredLeader
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=collection1&property=property.preferredLeader&wt=xml
 ----
 
 *Output*
@@ -1663,8 +1671,8 @@ Either of these commands would cause all the active replicas that had the `prefe
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1
-http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&wt=xml
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=collection1&maxAtOnce=5&maxWaitSeconds=30&wt=xml
 ----
 
 *Output*
@@ -1877,7 +1885,7 @@ Time in seconds to wait until new replicas are created, and until leader replica
 ====
 This operation does not hold necessary locks on the replicas that belong to on the source node. So don't perform other collection operations in this period.
 ====
-
+[[movereplica]]
 == MOVEREPLICA: Move a Replica to a New Node
 
 This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` will be reused.
@@ -1916,7 +1924,7 @@ As of now, REQUESTSTATUS does not automatically clean up the tracking data struc
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collection1&shard=shard1&async=1000&wt=xml
 ----
 
 *Output*

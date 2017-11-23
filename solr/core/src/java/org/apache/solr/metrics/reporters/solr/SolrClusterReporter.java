@@ -33,6 +33,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -63,11 +64,11 @@ import static org.apache.solr.common.params.CommonParams.ID;
  *   capture groups collected by <code>registry</code> pattern</li>
  *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be reported.</li>
  * </ul>
- * NOTE: this reporter uses predefined "overseer" group, and it's always created even if explicit configuration
+ * NOTE: this reporter uses predefined "cluster" group, and it's always created even if explicit configuration
  * is missing. Default configuration uses report specifications from {@link #DEFAULT_REPORTS}.
  * <p>Example configuration:</p>
  * <pre>
- *       &lt;reporter name="test" group="overseer"&gt;
+ *       &lt;reporter name="test" group="cluster" class="solr.SolrClusterReporter"&gt;
  *         &lt;str name="handler"&gt;/admin/metrics/collector&lt;/str&gt;
  *         &lt;int name="period"&gt;11&lt;/int&gt;
  *         &lt;lst name="report"&gt;
@@ -114,7 +115,7 @@ public class SolrClusterReporter extends SolrMetricReporter {
           add("CONTAINER\\.cores\\..*");
           add("CONTAINER\\.fs\\..*");
         }}));
-    add(new SolrReporter.Report(CLUSTER_GROUP, "leader.$1", "solr\\.collection\\.(.*)\\.leader",
+    add(new SolrReporter.Report(CLUSTER_GROUP, "leader.$1", "solr\\.core\\.(.*)\\.leader",
         new HashSet<String>(){{
           add("UPDATE\\./update/.*");
           add("QUERY\\./select.*");
@@ -169,6 +170,11 @@ public class SolrClusterReporter extends SolrMetricReporter {
   }
 
   @Override
+  public void init(PluginInfo pluginInfo) {
+    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,CoreContainer) instead.");
+  }
+
+  @Override
   protected void doInit() {
     if (reports.isEmpty()) { // set defaults
       reports = DEFAULT_REPORTS;
@@ -187,7 +193,8 @@ public class SolrClusterReporter extends SolrMetricReporter {
     }
   }
 
-  public void setCoreContainer(CoreContainer cc) {
+  public void init(PluginInfo pluginInfo, CoreContainer cc) {
+    super.init(pluginInfo);
     if (reporter != null) {
       reporter.close();;
     }

@@ -1,6 +1,4 @@
 = Overview of Searching in Solr
-:page-shortname: overview-of-searching-in-solr
-:page-permalink: overview-of-searching-in-solr.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -44,7 +42,7 @@ To help users zero in on the content they're looking for, Solr supports two spec
 
 <<faceting.adoc#faceting,*Faceting*>> is the arrangement of search results into categories (which are based on indexed terms). Within each category, Solr reports on the number of hits for relevant term, which is called a facet constraint. Faceting makes it easy for users to explore search results on sites such as movie sites and product review sites, where there are many categories and many items within a category.
 
-The screen shot below shows an example of faceting from the CNET Web site (CBS Interactive Inc.) , which was the first site to use Solr.
+The screen shot below shows an example of faceting from the CNET Web site (CBS Interactive Inc.), which was the first site to use Solr.
 
 image::images/overview-of-searching-in-solr/worddav88969a784fb8a63d8c46e9c043f5f953.png[image,width=600,height=300]
 

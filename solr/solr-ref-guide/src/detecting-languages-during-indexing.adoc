@@ -1,6 +1,4 @@
 = Detecting Languages During Indexing
-:page-shortname: detecting-languages-during-indexing
-:page-permalink: detecting-languages-during-indexing.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

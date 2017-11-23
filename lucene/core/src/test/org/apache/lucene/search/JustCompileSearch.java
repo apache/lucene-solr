@@ -176,11 +176,6 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int freq() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
     public int docID() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -259,6 +254,11 @@ final class JustCompileSearch {
 
     @Override
     public Scorer scorer(LeafReaderContext context) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

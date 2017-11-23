@@ -1,7 +1,5 @@
 = Getting Started
-:page-shortname: getting-started
-:page-permalink: getting-started.html
-:page-children: a-quick-overview, solr-system-requirements, installing-solr, solr-configuration-files, solr-upgrade-notes, taking-solr-to-production, upgrading-a-solr-cluster
+:page-children: solr-tutorial, a-quick-overview, solr-system-requirements, installing-solr
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -24,16 +22,10 @@ Solr makes it easy for programmers to develop sophisticated, high-performance se
 
 This section introduces you to the basic Solr architecture and features to help you get up and running quickly. It covers the following topics:
 
+<<solr-tutorial.adoc#solr-tutorial,Solr Tutorial>>: This tutorial covers getting Solr up and running
+
 <<a-quick-overview.adoc#a-quick-overview,A Quick Overview>>: A high-level overview of how Solr works.
 
+<<solr-system-requirements.adoc#solr-system-requirements,Solr System Requirements>>: Solr System Requirement
+
 <<installing-solr.adoc#installing-solr,Installing Solr>>: A walkthrough of the Solr installation process.
-
-<<solr-configuration-files.adoc#solr-configuration-files,Solr Configuration Files>>: Overview of the installation layout and major configuration files.
-
-<<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>>: Information about changes made in Solr releases.
-
-<<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>: Detailed steps to help you install Solr as a service and take your application to production.
-
-<<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>: Information for upgrading a production SolrCloud cluster.
-
-TIP: Solr includes a Quick Start tutorial which will be helpful if you are just starting out with Solr. You can find it in this Guide at <<solr-tutorial.adoc#solr-tutorial,Solr Tutorial>>.

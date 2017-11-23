@@ -103,7 +103,41 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @Test
   public void testRptWithGeometryField() throws Exception {
-    String fieldName = "srptgeom"; //note: fails with "srpt_geohash" because it's not as precise
+    testRptWithGeometryField("srptgeom");//note: fails with "srpt_geohash" because it's not as precise
+  }
+
+  @Test
+  public void testRptWithGeometryGeo3dField() throws Exception {
+    String fieldName = "srptgeom_geo3d";
+    testRptWithGeometryField(fieldName);
+
+    // show off that Geo3D supports polygons
+    String polygonWKT = "POLYGON((-11 12, 10.5 12, -11 11, -11 12))"; //right-angle triangle
+    assertJQ(req(
+        "q", "{!cache=false field f=" + fieldName + "}Intersects(" + polygonWKT + ")",
+        "sort", "id asc"), "/response/numFound==2");
+  }
+  
+  @Test
+  public void testLatLonRetrieval() throws Exception {
+    assertU(adoc("id", "0",
+        "llp_1_dv_st", "-75,41",
+        "llp_1_dv", "-80,20",
+        "llp_1_dv_dvasst", "10,-30"));
+    assertU(commit());
+    assertJQ(req("q","*:*", "fl","*"),
+        "response/docs/[0]/llp_1_dv_st=='-75,41'",
+        // Right now we do not support decoding point value from dv field
+        "!response/docs/[0]/llp_1_dv=='-80,20'",
+        "!response/docs/[0]/llp_1_dv_dvasst=='10,-30'");
+    assertJQ(req("q","*:*", "fl","llp_1_dv_st, llp_1_dv, llp_1_dv_dvasst"),
+        "response/docs/[0]/llp_1_dv_st=='-75,41'",
+        // Even when these fields are specified, we won't return them
+        "!response/docs/[0]/llp_1_dv=='-80,20'",
+        "!response/docs/[0]/llp_1_dv_dvasst=='10,-30'");
+  }
+
+  private void testRptWithGeometryField(String fieldName) throws Exception {
     assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
     assertU(optimize());// one segment.
@@ -118,7 +152,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // The tricky thing is verifying the cache works correctly...
 
-    MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_srptgeom");
+    MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
     assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
     assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 
@@ -140,7 +174,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
     // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
-    // Checking equality for the first reader's cache key indicates wether the cache should still be valid.
+    // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
     Object leafKey2 = getFirstLeafReaderKey();
     assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
 

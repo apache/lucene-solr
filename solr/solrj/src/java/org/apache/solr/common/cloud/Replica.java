@@ -99,7 +99,11 @@ public class Replica extends ZkNodeProps {
      * replicas can’t become shard leaders (i.e., if there are only pull replicas in the collection at some point, updates will fail
      * same as if there is no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL
+    PULL;
+
+    public static Type get(String name){
+      return name == null ? Type.NRT : Type.valueOf(name);
+    }
   }
 
   private final String name;
@@ -117,13 +121,7 @@ public class Replica extends ZkNodeProps {
       this.state = State.ACTIVE;                         //Default to ACTIVE
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
-    String typeString = (String)propMap.get(ZkStateReader.REPLICA_TYPE);
-    if (typeString == null) {
-      this.type = Type.NRT;
-    } else {
-      this.type = Type.valueOf(typeString);
-    }
-
+    type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
   }
 
   public String getName() {

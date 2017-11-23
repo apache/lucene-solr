@@ -102,6 +102,8 @@ public class CollectionApiMapping {
             "target.collection", "target",
             "forward.timeout", "forwardTimeout"
         )),
+    MOVE_REPLICA(PER_COLLECTION,
+        POST, MOVEREPLICA, "move-replica", null),
     REBALANCE_LEADERS(PER_COLLECTION,
         POST,
         REBALANCELEADERS,
@@ -177,6 +179,10 @@ public class CollectionApiMapping {
         POST,
         CLUSTERPROP,
         "set-property",null),
+    UTILIZE_NODE(CLUSTER_CMD,
+        POST,
+        UTILIZENODE,
+        "utilize-node",null),
 
     BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,

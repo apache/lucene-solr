@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -370,5 +371,30 @@ public class TestParallelLeafReader extends LuceneTestCase {
     new ParallelLeafReader(false, getOnlyLeafReader(r1), getOnlyLeafReader(r2)).close();
     new ParallelLeafReader(false, getOnlyLeafReader(r2), getOnlyLeafReader(r1)).close();
     IOUtils.close(r1, dir1, r2, dir2);
+  }
+
+  public void testWithDocValuesUpdates() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+    Document d = new Document();
+    d.add(newTextField("name", "billy", Field.Store.NO));
+    d.add(new NumericDocValuesField("age", 21));
+    w1.addDocument(d);
+    w1.commit();
+    w1.updateNumericDocValue(new Term("name", "billy"), "age", 22);
+    w1.close();
+
+    IndexReader r1 = DirectoryReader.open(dir1);
+    LeafReader lr = new ParallelLeafReader(false, getOnlyLeafReader(r1));
+
+    NumericDocValues dv = lr.getNumericDocValues("age");
+    assertEquals(0, dv.nextDoc());
+    assertEquals(22, dv.longValue());
+
+    assertEquals(1, lr.getFieldInfos().fieldInfo("age").getDocValuesGen());
+
+    IOUtils.close(lr, r1, dir1);
+
   }
 }

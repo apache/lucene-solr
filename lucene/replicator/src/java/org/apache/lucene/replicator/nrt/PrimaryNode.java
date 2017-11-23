@@ -252,7 +252,7 @@ public abstract class PrimaryNode extends Node {
       for(String fileName : info.files()) {
         FileMetaData metaData = readLocalFileMetaData(fileName);
         // NOTE: we hold a refCount on this infos, so this file better exist:
-        assert metaData != null;
+        assert metaData != null: "file \"" + fileName + "\" is missing metadata";
         assert filesMetaData.containsKey(fileName) == false;
         filesMetaData.put(fileName, metaData);
       }

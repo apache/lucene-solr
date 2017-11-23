@@ -90,8 +90,7 @@ final class ExactPhraseScorer extends Scorer {
     return "ExactPhraseScorer(" + weight + ")";
   }
 
-  @Override
-  public int freq() {
+  final int freq() {
     return freq;
   }
 

@@ -277,11 +277,7 @@ public final class BlendedTermQuery extends Query {
     long ttf = 0;
     for (TermContext ctx : contexts) {
       df = Math.max(df, ctx.docFreq());
-      if (ctx.totalTermFreq() == -1L) {
-        ttf = -1L;
-      } else if (ttf != -1L) {
-        ttf += ctx.totalTermFreq();
-      }
+      ttf += ctx.totalTermFreq();
     }
 
     for (int i = 0; i < contexts.length; ++i) {

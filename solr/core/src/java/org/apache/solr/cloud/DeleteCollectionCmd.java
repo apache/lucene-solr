@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -57,6 +58,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     final String collection = message.getStr(NAME);
+    DocCollection coll = state.getCollectionOrNull(collection);
+    String policy = coll == null ? null : coll.getPolicyName();
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
       // should be taken care of as part of collection delete operation.

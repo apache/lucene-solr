@@ -35,7 +35,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  */
 public class DocCountFunction extends AbstractLongValue implements ReductionFunction {
   private CountCollector collector;
-  public static final String name = "docCount";
+  public static final String name = "doc_count";
   private final String exprStr;
   public static final CreatorFunction creatorFunction = (params -> {
     if (params.length == 0) {

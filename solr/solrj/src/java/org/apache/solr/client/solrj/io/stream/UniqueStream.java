@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * The UniqueStream emits a unique stream of Tuples based on a Comparator.
  *
  * Note: The sort order of the underlying stream must match the Comparator.
+ * @since 5.1.0
  **/
 
 public class UniqueStream extends TupleStream implements Expressible {

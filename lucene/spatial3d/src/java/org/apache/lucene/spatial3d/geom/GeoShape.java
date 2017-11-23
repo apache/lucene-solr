@@ -23,7 +23,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public interface GeoShape extends Membership, PlanetObject {
+public interface GeoShape extends Bounded, Membership, PlanetObject {
 
   /**
    * Return a sample point that is on the outside edge/boundary of the shape.
@@ -52,13 +52,5 @@ public interface GeoShape extends Membership, PlanetObject {
    * @return true if there's such an intersection, false if not.
    */
   public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds);
-
-  /**
-   * Compute bounds for the shape.
-   *
-   * @param bounds is the input bounds object.
-   *             The input object will be modified.
-   */
-  public void getBounds(final Bounds bounds);
 
 }

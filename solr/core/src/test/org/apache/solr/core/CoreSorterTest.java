@@ -101,6 +101,8 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer getMockContainer() {
+    assumeWorkingMockito();
+    
     CoreContainer mockCC = mock(CoreContainer.class);
     ZkController mockZKC = mock(ZkController.class);
     ClusterState mockClusterState = mock(ClusterState.class);

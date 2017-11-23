@@ -70,6 +70,8 @@ public class FieldValueEvaluator extends SourceEvaluator {
           list.add(obj);
         }
         return list;
+      } else if(value instanceof Matrix) {
+        return value;
       }
       else if(value instanceof Iterable && !(value instanceof List<?>)){
         Iterable<?> iter = (Iterable<?>)value;

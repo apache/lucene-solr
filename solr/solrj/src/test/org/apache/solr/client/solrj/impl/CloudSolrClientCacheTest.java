@@ -17,13 +17,12 @@
 
 package org.apache.solr.client.solrj.impl;
 
-
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,15 +31,23 @@ import java.util.function.Function;
 import com.google.common.collect.ImmutableSet;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
+
 import static org.mockito.Mockito.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeWorkingMockito();
+  }
 
   public void testCaching() throws Exception {
     String collName = "gettingstarted";
@@ -119,42 +126,24 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
   private ClusterStateProvider getStateProvider(Set<String> livenodes,
                                                                 Map<String, ClusterState.CollectionRef> colls) {
-    return new ClusterStateProvider() {
+    return new DelegatingClusterStateProvider(null) {
       @Override
       public ClusterState.CollectionRef getState(String collection) {
         return colls.get(collection);
       }
 
       @Override
-      public Set<String> liveNodes() {
+      public Set<String> getLiveNodes() {
         return livenodes;
       }
 
       @Override
-      public String getAlias(String collection) {
-        return collection;
+      public List<String> resolveAlias(String collection) {
+        return Collections.singletonList(collection);
       }
 
       @Override
-      public String getCollectionName(String name) {
-        return name;
-      }
-
-      @Override
-      public void connect() { }
-
-      @Override
-      public void close() throws IOException {
-
-      }
-
-      @Override
-      public Object getClusterProperty(String propertyName) {
-        return null;
-      }
-
-      @Override
-      public Object getClusterProperty(String propertyName, String def) {
+      public <T> T getClusterProperty(String propertyName, T def) {
         return def;
       }
     };

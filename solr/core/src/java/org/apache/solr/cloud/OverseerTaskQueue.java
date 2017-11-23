@@ -35,20 +35,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link DistributedQueue} augmented with helper methods specific to the overseer task queues.
+ * A {@link ZkDistributedQueue} augmented with helper methods specific to the overseer task queues.
  * Methods specific to this subclass ignore superclass internal state and hit ZK directly.
  * This is inefficient!  But the API on this class is kind of muddy..
  */
-public class OverseerTaskQueue extends DistributedQueue {
+public class OverseerTaskQueue extends ZkDistributedQueue {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final String RESPONSE_PREFIX = "qnr-" ;
 
   public OverseerTaskQueue(SolrZkClient zookeeper, String dir) {
-    this(zookeeper, dir, new Overseer.Stats());
+    this(zookeeper, dir, new Stats());
   }
 
-  public OverseerTaskQueue(SolrZkClient zookeeper, String dir, Overseer.Stats stats) {
+  public OverseerTaskQueue(SolrZkClient zookeeper, String dir, Stats stats) {
     super(zookeeper, dir, stats);
   }
   

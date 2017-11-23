@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.io.stream.JDBCStream;
  * Used with o.a.s.Handler.SQLHandler.
  * 
  * @lucene.internal
+ * @since 7.0.0
  */
 public class CalciteJDBCStream extends JDBCStream {
   private static final long serialVersionUID = 1L;

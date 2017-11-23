@@ -164,11 +164,14 @@ public class ExactStatsCache extends StatsCache {
         TermContext termContext = TermContext.build(context, t);
 
         if (!colMap.containsKey(t.field())) { // collection stats for this field
-          colMap.put(t.field(), new CollectionStats(searcher.localCollectionStatistics(t.field())));
+          CollectionStatistics collectionStatistics = searcher.localCollectionStatistics(t.field());
+          if (collectionStatistics != null) {
+            colMap.put(t.field(), new CollectionStats(collectionStatistics));
+          }
         }
 
         TermStatistics tst = searcher.localTermStatistics(t, termContext);
-        if (tst.docFreq() == 0) { // skip terms that are not present here
+        if (tst == null) { // skip terms that are not present here
           continue;
         }
 

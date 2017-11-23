@@ -140,6 +140,11 @@ class TermsIncludingScoreQuery extends Query {
         }
       }
 
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 
@@ -178,11 +183,6 @@ class TermsIncludingScoreQuery extends Query {
     @Override
     public float score() throws IOException {
       return scores[docID()];
-    }
-
-    @Override
-    public int freq() throws IOException {
-      return 1;
     }
 
     @Override

@@ -1,6 +1,4 @@
 = Result Clustering
-:page-shortname: result-clustering
-:page-permalink: result-clustering.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -55,7 +53,7 @@ bin/solr start -e techproducts -Dsolr.clustering.enabled=true
 
 You can now try out the clustering handler by opening the following URL in a browser:
 
-`\http://localhost:8983/solr/techproducts/clustering?q=*:*&rows=100`
+`\http://localhost:8983/solr/techproducts/clustering?q=*:*&rows=100&wt=xml`
 
 The output XML should include search hits and an array of automatically discovered clusters at the end, resembling the output shown here:
 

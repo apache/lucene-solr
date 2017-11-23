@@ -107,7 +107,7 @@ final class SloppyPhraseScorer extends Scorer {
       }
       if (pp.position > next) { // done minimizing current match-length 
         if (matchLength <= slop) {
-          freq += docScorer.computeSlopFactor(matchLength); // score match
+          freq += (1.0 / (1.0 + matchLength)); // score match
           numMatches++;
           if (!needsScores) {
             return freq;
@@ -125,7 +125,7 @@ final class SloppyPhraseScorer extends Scorer {
       }
     }
     if (matchLength <= slop) {
-      freq += docScorer.computeSlopFactor(matchLength); // score match
+      freq += (1.0 / (1.0 + matchLength)); // score match
       numMatches++;
     }    
     return freq;
@@ -516,8 +516,7 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  @Override
-  public int freq() {
+  int freq() {
     return numMatches;
   }
 

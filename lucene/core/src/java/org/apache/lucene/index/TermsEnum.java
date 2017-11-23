@@ -131,8 +131,7 @@ public abstract class TermsEnum implements BytesRefIterator {
 
   /** Returns the total number of occurrences of this term
    *  across all documents (the sum of the freq() for each
-   *  doc that has this term).  This will be -1 if the
-   *  codec doesn't support this measure.  Note that, like
+   *  doc that has this term). Note that, like
    *  other term measures, this measure does not take
    *  deleted documents into account. */
   public abstract long totalTermFreq() throws IOException;

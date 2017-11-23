@@ -359,14 +359,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     };
 
     Thread monkeyThread = null;
-    /*
-     somehow the cluster state object inside this zk state reader has static copy of the collection which is never updated
-     so any call to waitForRecoveriesToFinish just keeps looping until timeout.
-     We workaround by explicitly registering the collection as an interesting one so that it is watched by ZkStateReader
-     see SOLR-9440. Todo remove this hack after SOLR-9440 is fixed.
-    */
-    cloudClient.getZkStateReader().registerCore(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-
     monkeyThread = new Thread(monkey);
     monkeyThread.start();
     try {
@@ -1021,4 +1013,3 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     return client;
   }
 }
-

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * {@link TokenFilterFactory} for {@link MinHashFilter}.
+ * @since 6.2.0
  */
 public class MinHashFilterFactory extends TokenFilterFactory {
   private int hashCount = MinHashFilter.DEFAULT_HASH_COUNT;

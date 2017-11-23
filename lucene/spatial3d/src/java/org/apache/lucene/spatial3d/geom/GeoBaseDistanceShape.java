@@ -49,8 +49,26 @@ public abstract class GeoBaseDistanceShape extends GeoBaseAreaShape implements G
     return distance(distanceStyle, x, y, z);
   }
 
-  /** Called by a {@code computeDistance} method if X/Y/Z is not within this shape. */
+  /** Called by a {@code computeDistance} method if X/Y/Z is within this shape. */
   protected abstract double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
+
+  @Override
+  public double computeDeltaDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
+    return computeDeltaDistance(distanceStyle, point.x, point.y, point.z);
+  }
+
+  @Override
+  public double computeDeltaDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    if (!isWithin(x,y,z)) {
+      return Double.POSITIVE_INFINITY;
+    }
+    return deltaDistance(distanceStyle, x, y, z);
+  }
+
+  /** Called by a {@code computeDeltaDistance} method if X/Y/Z is within this shape. */
+  protected double deltaDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distance(distanceStyle, x, y, z) * 2.0;
+  }
 
   @Override
   public void getDistanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {

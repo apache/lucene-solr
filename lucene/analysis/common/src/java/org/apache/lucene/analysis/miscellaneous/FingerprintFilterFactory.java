@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * See
  * {@link FingerprintFilter} for an explanation of its use.
  * </pre>
+ * @since 5.4.0
  */
 public class FingerprintFilterFactory extends TokenFilterFactory {
 

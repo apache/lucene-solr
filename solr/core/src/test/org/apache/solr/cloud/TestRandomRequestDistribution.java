@@ -98,7 +98,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
           String registry = core.getCoreMetricManager().getRegistryName();
           Counter cnt = metricManager.counter(null, registry, "requests", "QUERY./select");
           // sanity check
-          assertEquals(core.getName() + " has already recieved some requests?",
+          assertEquals(core.getName() + " has already received some requests?",
                        0, cnt.getCount());
           counters.put(core.getName(), cnt);
         }
@@ -179,7 +179,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
 
     log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
-    DistributedQueue q = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
+    ZkDistributedQueue q = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
     q.offer(Utils.toJSON(m));
 
     verifyReplicaStatus(cloudClient.getZkStateReader(), "football", "shard1", notLeader.getName(), Replica.State.DOWN);

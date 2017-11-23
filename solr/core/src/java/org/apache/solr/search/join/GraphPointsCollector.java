@@ -60,6 +60,7 @@ public class GraphPointsCollector extends GraphEdgeCollector {
     if (valuesDoc == doc) {
       int count = values.docValueCount();
       for (int i = 0; i < count; i++) {
+        // duplicates may be produced for a single doc, but won't matter here.
         long v = values.nextValue();
         set.add(v);
       }

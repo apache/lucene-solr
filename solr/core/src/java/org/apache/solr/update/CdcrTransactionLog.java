@@ -24,10 +24,13 @@ import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.util.Collection;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.update.processor.CdcrUpdateProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +105,147 @@ public class CdcrTransactionLog extends TransactionLog {
       log.error("Error while reading number of records in tlog " + this, e);
     }
     return 0;
+  }
+
+  @Override
+  public long write(AddUpdateCommand cmd, long prevPointer, int flags) {
+    assert (-1 <= prevPointer && (cmd.isInPlaceUpdate() || (-1 == prevPointer)));
+
+    LogCodec codec = new LogCodec(resolver);
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
+
+    try {
+      checkWriteHeader(codec, sdoc);
+
+      // adaptive buffer sizing
+      int bufSize = lastAddSize;    // unsynchronized access of lastAddSize should be fine
+      bufSize = Math.min(1024*1024, bufSize+(bufSize>>3)+256);
+
+      MemOutputStream out = new MemOutputStream(new byte[bufSize]);
+      codec.init(out);
+      if (cmd.isInPlaceUpdate()) {
+        codec.writeTag(JavaBinCodec.ARR, 6);
+        codec.writeInt(UpdateLog.UPDATE_INPLACE | flags);  // should just take one byte
+        codec.writeLong(cmd.getVersion());
+        codec.writeLong(prevPointer);
+        codec.writeLong(cmd.prevVersion);
+        if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
+          // if the update is received via cdcr source; add boolean entry
+          // CdcrReplicator.isTargetCluster() checks that particular boolean to accept or discard the update
+          // to forward to its own target cluster
+          codec.writePrimitive(true);
+        } else {
+          codec.writePrimitive(false);
+        }
+        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+
+      } else {
+        codec.writeTag(JavaBinCodec.ARR, 4);
+        codec.writeInt(UpdateLog.ADD | flags);  // should just take one byte
+        codec.writeLong(cmd.getVersion());
+        if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
+          // if the update is received via cdcr source; add extra boolean entry
+          // CdcrReplicator.isTargetCluster() checks that particular boolean to accept or discard the update
+          // to forward to its own target cluster
+          codec.writePrimitive(true);
+        } else {
+          codec.writePrimitive(false);
+        }
+        codec.writeSolrInputDocument(cmd.getSolrInputDocument());
+      }
+      lastAddSize = (int)out.size();
+
+      synchronized (this) {
+        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        assert pos != 0;
+
+        /***
+         System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+         if (pos != fos.size()) {
+         throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+         }
+         ***/
+
+        out.writeAll(fos);
+        endRecord(pos);
+        // fos.flushBuffer();  // flush later
+        return pos;
+      }
+
+    } catch (IOException e) {
+      // TODO: reset our file pointer back to "pos", the start of this record.
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error logging add", e);
+    }
+  }
+
+  @Override
+  public long writeDelete(DeleteUpdateCommand cmd, int flags) {
+    LogCodec codec = new LogCodec(resolver);
+
+    try {
+      checkWriteHeader(codec, null);
+
+      BytesRef br = cmd.getIndexedId();
+
+      MemOutputStream out = new MemOutputStream(new byte[20 + br.length]);
+      codec.init(out);
+      codec.writeTag(JavaBinCodec.ARR, 4);
+      codec.writeInt(UpdateLog.DELETE | flags);  // should just take one byte
+      codec.writeLong(cmd.getVersion());
+      codec.writeByteArray(br.bytes, br.offset, br.length);
+      if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
+        // if the update is received via cdcr source; add extra boolean entry
+        // CdcrReplicator.isTargetCluster() checks that particular boolean to accept or discard the update
+        // to forward to its own target cluster
+        codec.writePrimitive(true);
+      } else {
+        codec.writePrimitive(false);
+      }
+
+      synchronized (this) {
+        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        assert pos != 0;
+        out.writeAll(fos);
+        endRecord(pos);
+        // fos.flushBuffer();  // flush later
+        return pos;
+      }
+
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
+  @Override
+  public long writeDeleteByQuery(DeleteUpdateCommand cmd, int flags) {
+    LogCodec codec = new LogCodec(resolver);
+    try {
+      checkWriteHeader(codec, null);
+
+      MemOutputStream out = new MemOutputStream(new byte[20 + (cmd.query.length())]);
+      codec.init(out);
+      codec.writeTag(JavaBinCodec.ARR, 4);
+      codec.writeInt(UpdateLog.DELETE_BY_QUERY | flags);  // should just take one byte
+      codec.writeLong(cmd.getVersion());
+      codec.writeStr(cmd.query);
+      if (cmd.getReq().getParamString().contains(CdcrUpdateProcessor.CDCR_UPDATE)) {
+        // if the update is received via cdcr source; add extra boolean entry
+        // CdcrReplicator.isTargetCluster() checks that particular boolean to accept or discard the update
+        // to forward to its own target cluster
+        codec.writePrimitive(true);
+      } else {
+        codec.writePrimitive(false);
+      }
+      synchronized (this) {
+        long pos = fos.size();   // if we had flushed, this should be equal to channel.position()
+        out.writeAll(fos);
+        endRecord(pos);
+        // fos.flushBuffer();  // flush later
+        return pos;
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   @Override

@@ -33,11 +33,11 @@ public class DistributionSPL extends Distribution {
   public DistributionSPL() {}
 
   @Override
-  public final float score(BasicStats stats, float tfn, float lambda) {
-    if (lambda == 1f) {
-      lambda = 0.99f;
+  public final double score(BasicStats stats, double tfn, double lambda) {
+    if (lambda == 1d) {
+      lambda = 0.99d;
     }
-    return (float)-Math.log(
+    return -Math.log(
         (Math.pow(lambda, (tfn / (tfn + 1))) - lambda) / (1 - lambda));
   }
   

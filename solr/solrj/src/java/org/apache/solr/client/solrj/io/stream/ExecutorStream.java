@@ -50,6 +50,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
  *  executor(thread=10, topic(storedExpressions, q="*:*", fl="expr_s, id", id="topic1"))
  *
  *  The Streaming Expression to execute is taken from the expr field in the Tuples.
+ * @since 6.3.0
  */
 
 public class ExecutorStream extends TupleStream implements Expressible {

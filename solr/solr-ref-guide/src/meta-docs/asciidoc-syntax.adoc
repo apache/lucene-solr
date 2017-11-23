@@ -64,6 +64,22 @@ If your code block will include line breaks, put 4 hyphens (`----`) before and a
 
 More info: http://asciidoctor.org/docs/user-manual/#source-code-blocks
 
+==== Source Block Syntax Highlighting
+
+The PDF and HTML outputs use Pygments to add syntax highlighting to code examples. This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
+
+Pygments has a long selection of lexers available. You can see the full list at http://pygments.org/docs/lexers. Use one of the valid short names to get syntax highlighting for that language.
+
+Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible. When in doubt, choose `text`, or leave it blank.
+
+==== Importing Code Snippets from Other Files
+
+The build system has the ability to "include" code snippets located in other files.
+
+Snippets are bounded by "tag" comments placed at the start and end of the section you would like to import.  Opening tags look like: `// tag::snippetName[]`.  Closing tags follow the format: `// end::snippetName[]`.  Snippets can be dropped into an adoc file using an `include` directive, following a format: `include::PathToFileWithSnippet[tag=snippetName]`.  Note that when relative paths are provided in this directive, that paths are relative to location of the asciidoc file the include appears in.
+
+For more information on the `include` directive, see the documentation http://asciidoctor.org/docs/user-manual/#include-partial[here].
+
 === Block Titles
 
 Titles can be added to most blocks (images, source blocks, tables, etc.) by simply prefacing the title with a period (`.`). For example, to add a title to the source block example above:
@@ -140,24 +156,13 @@ To link to _another page_ or a section on another page, you must refer to the fu
 
 Unfortunately, when you want to refer the reader to another page without deep-linking to a section, you cannot simply put the other file name in angle brackets and call it a day. This is due to the PDF conversion - once all the pages are combined into one big page for one big PDF, the lack of a specific reference causes inter-page links to fail.
 
-So, *you must always link to a specific section*. If all you want is a reference to the top of another page, you can use the `page-shortname` attribute found at the top of every page as your anchor reference.
+So, *you must always link to a specific section*. If all you want is a reference to the top of another page, you can use the implicit `id` of the page -- the filename w/o the `.adoc` extension -- as your anchor reference.
 
 Example::
-The file `upgrading-solr.adoc` has a `page-shortname` at the top that looks like this:
-+
-[source]
-----
-= Upgrading Solr
-:page-shortname: upgrading-solr
-:page-permalink: upgrading-solr.html
-----
-+
-To construct a link to this page, we need to refer to the file name (`upgrading-solr.adoc`), then use the `page-shortname` as our anchor reference. As in:
+To construct a link to the `upgrading-solr.adoc` page, we need to refer to the file name (`upgrading-solr.adoc`), then use the page id (`upgrading-solr`) as the anchor reference. As in:
 +
 [source]
 For more information about upgrades, see <<upgrading-solr.adoc#upgrading-solr>>.
-
-TIP: As of July 2017, all pages have a `page-shortname` that is equivalent to the filename (without the `.adoc` part).
 
 ==== Link to a Section on Another Page
 Linking to a section is the same conceptually as linking to the top of a page, you just need to take a little extra care to format the anchor ID in your link reference properly.
@@ -197,7 +202,7 @@ For more information, see the section <<schema-api.adoc#modify-the-schema,Modify
 
 More info: http://asciidoctor.org/docs/user-manual/#inter-document-cross-references
 
-== Lists
+== Ordered and Unordered Lists
 
 AsciiDoc supports three types of lists:
 

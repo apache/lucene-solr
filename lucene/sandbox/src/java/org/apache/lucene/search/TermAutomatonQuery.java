@@ -347,12 +347,19 @@ public class TermAutomatonQuery extends Query {
       for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();
         if (ent.getValue() != null) {
-          allTermStats.add(searcher.termStatistics(new Term(field, ent.getValue()), termStates.get(termID)));
+          TermStatistics stats = searcher.termStatistics(new Term(field, ent.getValue()), termStates.get(termID));
+          if (stats != null) {
+            allTermStats.add(stats);
+          }
         }
       }
 
-      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field),
-                                       allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+      if (allTermStats.isEmpty()) {
+        stats = null; // no terms matched at all, will not use sim
+      } else {
+        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field),
+                                         allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+      }
     }
 
     @Override
@@ -395,7 +402,12 @@ public class TermAutomatonQuery extends Query {
         return null;
       }
     }
-    
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       // TODO

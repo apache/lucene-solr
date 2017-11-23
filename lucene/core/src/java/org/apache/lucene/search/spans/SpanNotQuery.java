@@ -178,7 +178,7 @@ public final class SpanNotQuery extends SpanQuery {
           }
 
           // exclude end position far enough in current doc, check start position:
-          if (candidate.endPosition() + post <= excludeSpans.startPosition()) {
+          if (excludeSpans.startPosition() - post >= candidate.endPosition()) {
             return AcceptStatus.YES;
           } else {
             return AcceptStatus.NO;
@@ -191,6 +191,12 @@ public final class SpanNotQuery extends SpanQuery {
     public void extractTerms(Set<Term> terms) {
       includeWeight.extractTerms(terms);
     }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return includeWeight.isCacheable(ctx) && excludeWeight.isCacheable(ctx);
+    }
+
   }
 
   @Override

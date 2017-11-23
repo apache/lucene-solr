@@ -26,6 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,6 +75,7 @@ public class ReplicateFromLeader {
 
       NamedList<Object> slaveConfig = new NamedList<>();
       slaveConfig.add("fetchFromLeader", Boolean.TRUE);
+      slaveConfig.add(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, switchTransactionLog);
       slaveConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("slave", slaveConfig);
@@ -85,10 +87,11 @@ public class ReplicateFromLeader {
 
       replicationProcess = new ReplicationHandler();
       if (switchTransactionLog) {
-        replicationProcess.setPollListener((solrCore, pollSuccess) -> {
-          if (pollSuccess) {
+        replicationProcess.setPollListener((solrCore, fetchResult) -> {
+          if (fetchResult == IndexFetcher.IndexFetchResult.INDEX_FETCH_SUCCESS) {
             String commitVersion = getCommitVersion(core);
             if (commitVersion == null) return;
+            if (Long.parseLong(commitVersion) == lastVersion) return;
             UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());

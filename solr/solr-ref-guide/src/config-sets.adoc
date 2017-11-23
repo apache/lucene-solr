@@ -1,6 +1,4 @@
 = Config Sets
-:page-shortname: config-sets
-:page-permalink: config-sets.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

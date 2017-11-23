@@ -43,6 +43,7 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  *   &lt;/lst&gt;
  * &lt;/processor&gt;</pre>
  *
+ * @since 4.0.0
  */
 public final class RemoveBlankFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 

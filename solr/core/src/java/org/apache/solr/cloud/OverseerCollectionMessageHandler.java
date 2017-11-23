@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -36,12 +35,14 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -97,7 +98,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * A {@link OverseerMessageHandler} that handles Collections API related
  * overseer messages.
  */
-public class OverseerCollectionMessageHandler implements OverseerMessageHandler , Closeable {
+public class OverseerCollectionMessageHandler implements OverseerMessageHandler, SolrCloseable {
 
   public static final String NUM_SLICES = "numShards";
 
@@ -143,7 +144,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   String adminPath;
   ZkStateReader zkStateReader;
   String myId;
-  Overseer.Stats stats;
+  Stats stats;
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
@@ -167,10 +168,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   final Map<CollectionAction, Cmd> commandMap;
 
+  private volatile boolean isClosed;
+
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
                                         final ShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
-                                        Overseer.Stats stats,
+                                        Stats stats,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerPrioritizer) {
     this.zkStateReader = zkStateReader;
@@ -179,6 +182,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     this.myId = myId;
     this.stats = stats;
     this.overseer = overseer;
+    this.isClosed = false;
     commandMap = new ImmutableMap.Builder<CollectionAction, Cmd>()
         .put(REPLACENODE, new ReplaceNodeCmd(this))
         .put(DELETENODE, new DeleteNodeCmd(this))
@@ -210,6 +214,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
         .put(ADDREPLICA, new AddReplicaCmd(this))
         .put(MOVEREPLICA, new MoveReplicaCmd(this))
+        .put(UTILIZENODE, new UtilizeNodeCmd(this))
         .build()
     ;
   }
@@ -320,7 +325,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, NamedList results)
-      throws KeeperException, InterruptedException {
+      throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
     DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
@@ -331,7 +336,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     inQueue.offer(Utils.toJSON(m));
   }
 
-  private void balanceProperty(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
+  private void balanceProperty(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     if (StringUtils.isBlank(message.getStr(COLLECTION_PROP)) || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
@@ -419,28 +424,22 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
     TimeOut timeout = new TimeOut(timeoutms, TimeUnit.MILLISECONDS);
-    // TODO: remove this workaround for SOLR-9440
-    zkStateReader.registerCore(collectionName);
-    try {
-      while (! timeout.hasTimedOut()) {
-        Thread.sleep(100);
-        DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
-        if (docCollection == null) { // someone already deleted the collection
-          return true;
-        }
-        Slice slice = docCollection.getSlice(shard);
-        if(slice == null || slice.getReplica(replicaName) == null) {
-          return true;
-        }
+    while (! timeout.hasTimedOut()) {
+      Thread.sleep(100);
+      DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
+      if (docCollection == null) { // someone already deleted the collection
+        return true;
       }
-      // replica still exists after the timeout
-      return false;
-    } finally {
-      zkStateReader.unregisterCore(collectionName);
+      Slice slice = docCollection.getSlice(shard);
+      if(slice == null || slice.getReplica(replicaName) == null) {
+        return true;
+      }
     }
+    // replica still exists after the timeout
+    return false;
   }
 
-  void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws KeeperException, InterruptedException {
+  void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
         ZkStateReader.CORE_NAME_PROP, core,
@@ -461,8 +460,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   //TODO should we not remove in the next release ?
-  private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results)
-      throws KeeperException, InterruptedException {
+  private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     final String collectionName = message.getStr(COLLECTION_PROP);
 
     boolean firstLoop = true;
@@ -633,7 +631,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
 
   private void modifyCollection(ClusterState clusterState, ZkNodeProps message, NamedList results)
-      throws KeeperException, InterruptedException {
+      throws Exception {
     
     final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     //the rest of the processing is based on writing cluster state properties
@@ -667,6 +665,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       if (areChangesVisible) break;
       Thread.sleep(100);
     }
+
     if (!areChangesVisible)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
   }
@@ -702,7 +701,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         log.debug("Expecting {} cores but found {}", coreNames.size(), result.size());
       }
       if (timeout.hasTimedOut()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state.");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + coll);
       }
       
       Thread.sleep(100);
@@ -710,7 +709,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   ZkNodeProps addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
-      throws KeeperException, InterruptedException {
+      throws Exception {
 
     return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, message, results, onComplete);
   }
@@ -972,13 +971,20 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     );
   }
 
+
   @Override
   public void close() throws IOException {
+    this.isClosed = true;
     if (tpe != null) {
       if (!tpe.isShutdown()) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 
   interface Cmd {

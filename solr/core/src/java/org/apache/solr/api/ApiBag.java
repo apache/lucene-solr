@@ -327,6 +327,10 @@ public class ApiBag {
     public List<Map> getErrs() {
       return errs;
     }
+
+    public String toString() {
+      return super.toString() + ", errors: " + getErrs() + ", ";
+    }
   }
 
   public static class LazyLoadedApi extends Api {

@@ -33,6 +33,7 @@ import java.util.Map;
  *     &lt;filter class="solr.BengaliNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 7.1.0
  */
 public class BengaliNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 

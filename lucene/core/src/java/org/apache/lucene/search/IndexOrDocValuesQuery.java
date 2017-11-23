@@ -169,6 +169,14 @@ public final class IndexOrDocValuesQuery extends Query {
         }
         return scorerSupplier.get(Long.MAX_VALUE);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        // Both index and dv query should return the same values, so we can use
+        // the index query's cachehelper here
+        return indexWeight.isCacheable(ctx);
+      }
+
     };
   }
 

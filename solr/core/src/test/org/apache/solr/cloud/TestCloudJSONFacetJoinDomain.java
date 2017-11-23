@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,10 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-  
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,7 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-
+import org.apache.solr.search.facet.FacetField;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -62,17 +60,19 @@ import org.slf4j.LoggerFactory;
  * 
  * @see TestCloudPivotFacet
  */
-@SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10939")
 public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
+  private static final int DEFAULT_LIMIT = FacetField.DEFAULT_FACET_LIMIT;
   private static final int MAX_FIELD_NUM = 15;
   private static final int UNIQUE_FIELD_VALS = 20;
-  private static final int FACET_LIMIT = UNIQUE_FIELD_VALS + 1;
+
+  // NOTE: set to 'true' to see if refinement testing is adequate (should get fails occasionally)
+  private static final boolean FORCE_DISABLE_REFINEMENT = false;
   
   /** Multivalued string field suffixes that can be randomized for testing diff facet/join code paths */
   private static final String[] STR_FIELD_SUFFIXES = new String[] { "_ss", "_sds", "_sdsS" };
@@ -92,8 +92,6 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
     // sanity check constants
-    assertTrue("bad test constants: must have UNIQUE_FIELD_VALS < FACET_LIMIT since refinement not currently supported",
-               UNIQUE_FIELD_VALS < FACET_LIMIT);
     assertTrue("bad test constants: some suffixes will never be tested",
                (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
     
@@ -139,6 +137,12 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         }
       }
       CLOUD_CLIENT.add(doc);
+      if (random().nextInt(100) < 1) {
+        CLOUD_CLIENT.commit();  // commit 1% of the time to create new segments
+      }
+      if (random().nextInt(100) < 5) {
+        CLOUD_CLIENT.add(doc);  // duplicate the doc 5% of the time to create deleted docs
+      }
     }
     CLOUD_CLIENT.commit();
   }
@@ -168,14 +172,14 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /**
    * Given a (random) field number, returns a random (integer based) value for that field.
    * NOTE: The number of unique values in each field is constant acording to {@link #UNIQUE_FIELD_VALS}
-   * but the cise pr<em>range</em> of values will vary for each unique field number, such that cross field joins 
+   * but the precise <em>range</em> of values will vary for each unique field number, such that cross field joins 
    * will match fewer documents based on how far apart the field numbers are.
    *
    * @see #UNIQUE_FIELD_VALS
    * @see #field
    */
   private static String randFieldValue(final int fieldNum) {
-    return "" + (fieldNum + TestUtil.nextInt(random(), 0, UNIQUE_FIELD_VALS));
+    return "" + (fieldNum + TestUtil.nextInt(random(), 1, UNIQUE_FIELD_VALS));
   }
 
   
@@ -299,11 +303,69 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
 
     }
+
+    { // low limits, explicit refinement
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      TermFacet top = new TermFacet(strfield(9),
+                                    new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"),
+                                    5, 0, true);
+      top.subFacets.put("facet_5", new TermFacet(strfield(11),
+                                                 new JoinDomain(strfield(8), strfield(8), null),
+                                                 10, 0, true));
+      facets.put("facet_4", top);
+      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+    }
+    
+    { // low limit, high overrequest
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      TermFacet top = new TermFacet(strfield(9),
+                                    new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"),
+                                    5, UNIQUE_FIELD_VALS + 10, false);
+      top.subFacets.put("facet_5", new TermFacet(strfield(11),
+                                                 new JoinDomain(strfield(8), strfield(8), null),
+                                                 10, UNIQUE_FIELD_VALS + 10, false));
+      facets.put("facet_4", top);
+      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+    }
+    
+    { // low limit, low overrequest, explicit refinement
+      Map<String,TermFacet> facets = new LinkedHashMap<>();
+      TermFacet top = new TermFacet(strfield(9),
+                                    new JoinDomain(strfield(5), strfield(9), strfield(9)+":[* TO *]"),
+                                    5, 7, true);
+      top.subFacets.put("facet_5", new TermFacet(strfield(11),
+                                                 new JoinDomain(strfield(8), strfield(8), null),
+                                                 10, 7, true));
+      facets.put("facet_4", top);
+      assertFacetCountsAreCorrect(facets, "("+strfield(7)+":6 OR "+strfield(9)+":6 OR "+strfield(6)+":19 OR "+strfield(0)+":11)");
+    }
+    
+  }
+
+  public void testTheTestRandomRefineParam() {
+    // sanity check that randomRefineParam never violates isRefinementNeeded
+    // (should be imposisble ... unless someone changes/breaks the randomization logic in the future)
+    final int numIters = atLeast(100);
+    for (int iter = 0; iter < numIters; iter++) {
+      final Integer limit = TermFacet.randomLimitParam(random());
+      final Integer overrequest = TermFacet.randomOverrequestParam(random());
+      final Boolean refine = TermFacet.randomRefineParam(random(), limit, overrequest);
+      if (TermFacet.isRefinementNeeded(limit, overrequest)) {
+        assertEquals("limit: " + limit + ", overrequest: " + overrequest + ", refine: " + refine,
+                     Boolean.TRUE, refine);
+      }
+    }
+  }
+  
+  public void testTheTestTermFacetShouldFreakOutOnBadRefineOptions() {
+    expectThrows(AssertionError.class, () -> {
+        final TermFacet bogus = new TermFacet("foo", null, 5, 0, false);
+      });
   }
 
   public void testRandom() throws Exception {
 
-    final int numIters = atLeast(3);
+    final int numIters = atLeast(10);
     for (int iter = 0; iter < numIters; iter++) {
       assertFacetCountsAreCorrect(TermFacet.buildRandomFacets(), buildRandomQuery());
     }
@@ -421,10 +483,25 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     public final String field;
     public final Map<String,TermFacet> subFacets = new LinkedHashMap<>();
     public final JoinDomain domain; // may be null
+    public final Integer limit; // may be null
+    public final Integer overrequest; // may be null
+    public final Boolean refine; // may be null
+
+    /** Simplified constructor asks for limit = # unique vals */
     public TermFacet(String field, JoinDomain domain) {
+      this(field, domain, UNIQUE_FIELD_VALS, 0, false);
+    }
+    public TermFacet(String field, JoinDomain domain, Integer limit, Integer overrequest, Boolean refine) {
       assert null != field;
       this.field = field;
       this.domain = domain;
+      this.limit = limit;
+      this.overrequest = overrequest;
+      this.refine = refine;
+      if (isRefinementNeeded(limit, overrequest)) {
+        assertEquals("Invalid refine param based on limit & overrequest: " + this.toString(),
+                     Boolean.TRUE, refine);
+      }
     }
 
     /** 
@@ -453,8 +530,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * recursively generates the <code>json.facet</code> param value to use for testing this facet
      */
     private CharSequence toJSONFacetParamValue() {
-      // NOTE: since refinement isn't supported, we have to use the max cardinality of the field as limit
-      StringBuilder sb = new StringBuilder("{ type:terms, field:" + field + ", limit: " + FACET_LIMIT);
+      final String limitStr = (null == limit) ? "" : (", limit:" + limit);
+      final String overrequestStr = (null == overrequest) ? "" : (", overrequest:" + overrequest);
+      final String refineStr = (null == refine) ? "" : ", refine:" + refine;
+      final StringBuilder sb = new StringBuilder("{ type:terms, field:" + field + limitStr + overrequestStr + refineStr);
       if (! subFacets.isEmpty()) {
         sb.append(", facet:");
         sb.append(toJSONFacetParamValue(subFacets));
@@ -500,6 +579,91 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       return buildRandomFacets(keyCounter, maxDepth);
     }
 
+    /**
+     * picks a random value for the "limit" param, biased in favor of interesting test cases
+     *
+     * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
+     * @see #UNIQUE_FIELD_VALS
+     */
+    public static Integer randomLimitParam(Random r) {
+      final int limit = r.nextInt(UNIQUE_FIELD_VALS * 2);
+      if (limit >= UNIQUE_FIELD_VALS && r.nextBoolean()) {
+        return -1; // unlimited
+      } else if (limit == DEFAULT_LIMIT && r.nextBoolean()) { 
+        return null; // sometimes, don't specify limit if it's the default
+      }
+      return limit;
+    }
+    
+    /**
+     * picks a random value for the "overrequest" param, biased in favor of interesting test cases
+     *
+     * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
+     * @see #UNIQUE_FIELD_VALS
+     */
+    public static Integer randomOverrequestParam(Random r) {
+      switch(r.nextInt(10)) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+          return 0; // 40% of the time, no overrequest to better stress refinement
+        case 4:
+        case 5:
+          return r.nextInt(UNIQUE_FIELD_VALS); // 20% ask for less them what's needed
+        case 6:
+          return r.nextInt(Integer.MAX_VALUE); // 10%: completley random value, statisticaly more then enough
+        default: break;
+      }
+      // else.... either leave param unspecified (or redundently specify the -1 default)
+      return r.nextBoolean() ? null : -1;
+    }
+
+    /**
+     * picks a random value for the "refine" param, that is garunteed to be suitable for
+     * the specified limit &amp; overrequest params.
+     *
+     * @return a value to specify in the request, or null to specify nothing (trigger default behavior)
+     * @see #randomLimitParam
+     * @see #randomOverrequestParam
+     * @see #UNIQUE_FIELD_VALS
+     */
+    public static Boolean randomRefineParam(Random r, Integer limitParam, Integer overrequestParam) {
+      if (isRefinementNeeded(limitParam, overrequestParam)) {
+        return true;
+      }
+
+      // refinement is not required
+      if (0 == r.nextInt(10)) { // once in a while, turn on refinement even if it isn't needed.
+        return true;
+      }
+      // explicitly or implicitly indicate refinement is not needed
+      return r.nextBoolean() ? false : null;
+    }
+    
+    /**
+     * Deterministicly identifies if the specified limit &amp; overrequest params <b>require</b> 
+     * a "refine:true" param be used in the the request, in order for the counts to be 100% accurate.
+     * 
+     * @see #UNIQUE_FIELD_VALS
+     */
+    public static boolean isRefinementNeeded(Integer limitParam, Integer overrequestParam) {
+
+      if (FORCE_DISABLE_REFINEMENT) {
+        return false;
+      }
+      
+      // use the "effective" values if the params are null
+      final int limit = null == limitParam ? DEFAULT_LIMIT : limitParam;
+      final int overrequest = null == overrequestParam ? 0 : overrequestParam;
+
+      return
+        // don't presume how much overrequest will be done by default, just check the limit
+        (overrequest < 0 && limit < UNIQUE_FIELD_VALS)
+        // if the user specified overrequest is not "enough" to get all unique values 
+        || (overrequest >= 0 && (long)limit + overrequest < UNIQUE_FIELD_VALS);
+    }
+    
     /** 
      * recursive helper method for building random facets
      *
@@ -512,9 +676,12 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       for (int i = 0; i < numFacets; i++) {
         final JoinDomain domain = JoinDomain.buildRandomDomain();
         assert null != domain;
+        final Integer limit = randomLimitParam(random());
+        final Integer overrequest = randomOverrequestParam(random());
         final TermFacet facet =  new TermFacet(field(random().nextBoolean() ? STR_FIELD_SUFFIXES : INT_FIELD_SUFFIXES,
                                                      random().nextInt(MAX_FIELD_NUM)),
-                                               domain);
+                                               domain, limit, overrequest,
+                                               randomRefineParam(random(), limit, overrequest));
         results.put("facet_" + keyCounter.incrementAndGet(), facet);
         if (0 < maxDepth) {
           // if we're going wide, don't go deep
@@ -600,9 +767,21 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       final String[] suffixes = random().nextBoolean() ? STR_FIELD_SUFFIXES : INT_FIELD_SUFFIXES;
       
       final boolean noJoin = random().nextBoolean();
-      final String from = noJoin ? null : field(suffixes, random().nextInt(MAX_FIELD_NUM));
-      final String to = noJoin ? null : field(suffixes, random().nextInt(MAX_FIELD_NUM));
-      
+
+      String from = null;
+      String to = null;
+      for (;;) {
+        if (noJoin) break;
+        from = field(suffixes, random().nextInt(MAX_FIELD_NUM));
+        to = field(suffixes, random().nextInt(MAX_FIELD_NUM));
+        // HACK: joined numeric point fields need docValues.. for now just skip _is fields if we are dealing with points.
+        if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) && (from.endsWith("_is") || to.endsWith("_is")))
+        {
+            continue;
+        }
+        break;
+      }
+
       // keep it simple, only filter on string fields - not point of test
       final String filterField = strfield(random().nextInt(MAX_FIELD_NUM));
       

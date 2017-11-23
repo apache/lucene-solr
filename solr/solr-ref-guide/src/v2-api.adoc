@@ -1,6 +1,4 @@
 = v2 API
-:page-shortname: v2-api
-:page-permalink: v2-api.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,11 +15,6 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
-// TODO: most of the sample introspection calls below include cwiki.apache.org URLs that should be replaced...
-// TODO: ...but they come directly from the API.
-// TODO: so first the core/src/resources/apispec/*.json files need updated, then update the docs to match
-// TODO: What URLs shold the apispec files even point to? version specific or something general?
 
 
 The v2 API is a modernized self-documenting API interface covering most current Solr APIs. It is anticipated that once the v2 API reaches full coverage, and Solr-internal API usages like SolrJ and the Admin UI have been converted from the old API to the v2 API, the old API will eventually be retired.
@@ -66,13 +59,13 @@ To limit the introspect output to include just one particular HTTP method, add r
 
 `\http://localhost:8983/api/c/_introspect?method=POST`
 
-Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_` .
+Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_`.
 
 `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 
 === Interpreting the Introspect Output
 
-Example : `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
+Example: `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 
 [source,json]
 ----
@@ -100,12 +93,12 @@ Example : `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 
 Description of some of the keys in the above example:
 
-* `**documentation**` : URL to the online Solr reference guide section for this API
-* `**description**` : A text description of the feature/variable/command etc.
-* `**spec/methods**` : HTTP methods supported by this API
-* `**spec/url/paths**` : URL paths supported by this API
-* `**spec/url/params**` : List of supported URL request params
-* `**availableSubPaths**` : List of valid URL subpaths and the HTTP method(s) each supports
+* `**documentation**`: URL to the online Solr reference guide section for this API
+* `**description**`: A text description of the feature/variable/command etc.
+* `**spec/methods**`: HTTP methods supported by this API
+* `**spec/url/paths**`: URL paths supported by this API
+* `**spec/url/params**`: List of supported URL request params
+* `**availableSubPaths**`: List of valid URL subpaths and the HTTP method(s) each supports
 
 Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 

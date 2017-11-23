@@ -100,7 +100,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         .withConnectionTimeout(30000)
         .withSocketTimeout(60000)
         .build();
-    client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     return client;
   }

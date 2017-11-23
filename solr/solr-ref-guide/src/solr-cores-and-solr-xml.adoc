@@ -1,6 +1,4 @@
 = Solr Cores and solr.xml
-:page-shortname: solr-cores-and-solr-xml
-:page-permalink: solr-cores-and-solr-xml.html
 :page-children: format-of-solr-xml, defining-core-properties, coreadmin-api, config-sets
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

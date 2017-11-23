@@ -18,6 +18,10 @@
     margin: 10px 0;
 }
 
+ul.nav.nav-pills li {
+  margin-left: 1px;
+}
+
 .pageSummary {
     font-size:13px;
     display:block;
@@ -446,7 +450,6 @@ div#toc ul li ul li {
 
 .tab-content {
     padding: 15px;
-    background-color: #FAFAFA;
 }
 
 span.tagTitle {font-weight: 500;}

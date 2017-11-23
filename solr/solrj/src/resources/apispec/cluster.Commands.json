@@ -69,6 +69,28 @@
         "name",
         "val"
       ]
+    },
+    "utilize-node": {
+      "type": "object",
+      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#utilizenode",
+      "description": "use a replica to reduce load",
+      "properties": {
+        "node": {
+          "type": "string",
+          "description": "The name of the node"
+        },
+        "async": {
+          "type": [
+            "string",
+            "boolean",
+            "null"
+          ],
+          "description": "The value of the property. If the value is empty or null, the property is unset."
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   }
 }

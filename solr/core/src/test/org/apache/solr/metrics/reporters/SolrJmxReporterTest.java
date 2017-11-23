@@ -80,7 +80,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     coreMetricManager = core.getCoreMetricManager();
     metricManager = core.getCoreContainer().getMetricManager();
     PluginInfo pluginInfo = createReporterPluginInfo(rootName, true);
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
         pluginInfo, coreMetricManager.getTag());
 
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
@@ -165,7 +165,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     h.getCoreContainer().reload(h.getCore().getName());
     PluginInfo pluginInfo = createReporterPluginInfo(rootName, true);
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
         pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));
     coreMetricManager.registerMetricProducer(scope, producer);
 
@@ -214,13 +214,13 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   public void testEnabled() throws Exception {
     String root1 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
     PluginInfo pluginInfo1 = createReporterPluginInfo(root1, true);
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
         pluginInfo1, coreMetricManager.getTag());
 
     String root2 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
     assertFalse(root2.equals(root1));
     PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
-    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore().getResourceLoader(),
+    metricManager.loadReporter(coreMetricManager.getRegistryName(), coreMetricManager.getCore(),
         pluginInfo2, coreMetricManager.getTag());
 
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());

@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * A TupleStream that allows a single Tuple to be pushed back onto the stream after it's been read.
  * This is a useful class when building streams that maintain the order of Tuples between multiple
  * substreams.
+ * @since 5.1.0
  **/
 
 public class PushBackStream extends TupleStream implements Expressible {

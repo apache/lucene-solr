@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  * --data-binary {"id": 1,"title": "titleA"}
  * </p>
  * currently supports all types of atomic updates
+ * @since 6.6.0
  */
 
 public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory implements SolrCoreAware {

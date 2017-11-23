@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -95,7 +96,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     String dqZNode = "/distqueue/test";
     byte[] data = "hello world".getBytes(UTF8);
 
-    DistributedQueue consumer = makeDistributedQueue(dqZNode);
+    ZkDistributedQueue consumer = makeDistributedQueue(dqZNode);
     DistributedQueue producer = makeDistributedQueue(dqZNode);
     DistributedQueue producer2 = makeDistributedQueue(dqZNode);
 
@@ -104,7 +105,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     producer.offer(data);
     consumer.poll();
 
-    assertEquals(2, consumer.getStats().getQueueLength());
+    assertEquals(2, consumer.getZkStats().getQueueLength());
     producer.offer(data);
     producer2.offer(data);
     consumer.poll();
@@ -113,10 +114,10 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       Thread.sleep(20);
     }
     // DQ still have elements in their queue, so we should not fetch elements path from Zk
-    assertEquals(1, consumer.getStats().getQueueLength());
+    assertEquals(1, consumer.getZkStats().getQueueLength());
     consumer.poll();
     consumer.peek();
-    assertEquals(2, consumer.getStats().getQueueLength());
+    assertEquals(2, consumer.getZkStats().getQueueLength());
   }
 
   @Test
@@ -124,7 +125,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     String dqZNode = "/distqueue/test";
     String testData = "hello world";
 
-    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
 
     assertNull(dq.peek());
     Future<String> future = executor.submit(() -> new String(dq.peek(true), UTF8));
@@ -171,7 +172,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   @Test
   public void testLeakChildWatcher() throws Exception {
     String dqZNode = "/distqueue/test";
-    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
     assertTrue(dq.peekElements(1, 1, s1 -> true).isEmpty());
     assertEquals(1, dq.watcherCount());
     assertFalse(dq.isDirty());
@@ -207,7 +208,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   @Test
   public void testLocallyOffer() throws Exception {
     String dqZNode = "/distqueue/test";
-    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
     dq.peekElements(1, 1, s -> true);
     for (int i = 0; i < 100; i++) {
       byte[] data = String.valueOf(i).getBytes(UTF8);
@@ -224,7 +225,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     String dqZNode = "/distqueue/test";
     byte[] data = "hello world".getBytes(UTF8);
 
-    DistributedQueue dq = makeDistributedQueue(dqZNode);
+    ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
 
     // Populate with data.
     dq.offer(data);
@@ -280,8 +281,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertFalse(sessionId == zkClient.getSolrZooKeeper().getSessionId());
   }
 
-  protected DistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
-    return new DistributedQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
+  protected ZkDistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
+    return new ZkDistributedQueue(zkClient, setupNewDistributedQueueZNode(dqZNode));
   }
 
   private static class QueueChangerThread extends Thread {

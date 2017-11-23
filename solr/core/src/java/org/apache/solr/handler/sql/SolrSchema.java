@@ -58,10 +58,8 @@ class SolrSchema extends AbstractSchema {
       }
 
       Aliases aliases = zkStateReader.getAliases();
-      if(aliases.collectionAliasSize() > 0) {
-        for (Map.Entry<String, String> alias : aliases.getCollectionAliasMap().entrySet()) {
-          builder.put(alias.getKey(), new SolrTable(this, alias.getValue()));
-        }
+      for (String alias : aliases.getCollectionAliasListMap().keySet()) {
+        builder.put(alias, new SolrTable(this, alias));
       }
 
       return builder.build();

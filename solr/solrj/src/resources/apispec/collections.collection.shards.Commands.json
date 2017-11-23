@@ -37,6 +37,11 @@
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously when this is defined. This command can be long-running, so running it asynchronously is recommended."
+        },
+        "waitForFinalState": {
+          "type": "boolean",
+          "description": "If true then request will complete only when all affected replicas become active.",
+          "default": false
         }
       }
     },
@@ -63,6 +68,11 @@
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously when this is defined."
+        },
+        "waitForFinalState": {
+          "type": "boolean",
+          "description": "If true then request will complete only when all affected replicas become active.",
+          "default": false
         }
       },
       "required":["shard"]
@@ -106,6 +116,11 @@
           "type": "string",
           "enum":["NRT", "TLOG", "PULL"],
           "description": "The type of replica to add. NRT (default), TLOG or PULL"
+        },
+        "waitForFinalState": {
+          "type": "boolean",
+          "description": "If true then request will complete only when all affected replicas become active.",
+          "default": false
         }
       },
       "required":["shard"]

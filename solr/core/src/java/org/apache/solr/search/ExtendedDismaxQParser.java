@@ -146,6 +146,7 @@ public class ExtendedDismaxQParser extends QParser {
       addAliasesFromRequest(up, config.tiebreaker);
       up.setPhraseSlop(config.qslop);     // slop for explicit user phrase queries
       up.setAllowLeadingWildcard(true);
+      up.setAllowSubQueryParsing(config.userFields.isAllowed(MagicFieldName.QUERY.field));
       
       // defer escaping and only do if lucene parsing fails, or we need phrases
       // parsing fails.  Need to sloppy phrase queries anyway though.
@@ -618,85 +619,7 @@ public class ExtendedDismaxQParser extends QParser {
     }
     debugInfo.add("boostfuncs", getReq().getParams().getParams(DisMaxParams.BF));
   }
-  
-  
-  // FIXME: Not in use
-  //  public static CharSequence partialEscape(CharSequence s) {
-  //    StringBuilder sb = new StringBuilder();
-  //
-  //    int len = s.length();
-  //    for (int i = 0; i < len; i++) {
-  //      char c = s.charAt(i);
-  //      if (c == ':') {
-  //        // look forward to make sure it's something that won't
-  //        // cause a parse exception (something that won't be escaped... like
-  //        // +,-,:, whitespace
-  //        if (i+1<len && i>0) {
-  //          char ch = s.charAt(i+1);
-  //          if (!(Character.isWhitespace(ch) || ch=='+' || ch=='-' || ch==':')) {
-  //            // OK, at this point the chars after the ':' will be fine.
-  //            // now look back and try to determine if this is a fieldname
-  //            // [+,-]? [letter,_] [letter digit,_,-,.]*
-  //            // This won't cover *all* possible lucene fieldnames, but we should
-  //            // only pick nice names to begin with
-  //            int start, pos;
-  //            for (start=i-1; start>=0; start--) {
-  //              ch = s.charAt(start);
-  //              if (Character.isWhitespace(ch)) break;
-  //            }
-  //
-  //            // skip whitespace
-  //            pos = start+1;
-  //
-  //            // skip leading + or -
-  //            ch = s.charAt(pos);
-  //            if (ch=='+' || ch=='-') {
-  //              pos++;
-  //            }
-  //
-  //            // we don't need to explicitly check for end of string
-  //            // since ':' will act as our sentinal
-  //
-  //              // first char can't be '-' or '.'
-  //              ch = s.charAt(pos++);
-  //              if (Character.isJavaIdentifierPart(ch)) {
-  //
-  //                for(;;) {
-  //                  ch = s.charAt(pos++);
-  //                  if (!(Character.isJavaIdentifierPart(ch) || ch=='-' || ch=='.')) {
-  //                    break;
-  //                  }
-  //                }
-  //
-  //                if (pos<=i) {
-  //                  // OK, we got to the ':' and everything looked like a valid fieldname, so
-  //                  // don't escape the ':'
-  //                  sb.append(':');
-  //                  continue;  // jump back to start of outer-most loop
-  //                }
-  //
-  //              }
-  //
-  //
-  //          }
-  //        }
-  //
-  //        // we fell through to here, so we should escape this like other reserved chars.
-  //        sb.append('\\');
-  //      }
-  //      else if (c == '\\' || c == '!' || c == '(' || c == ')' ||
-  //          c == '^' || c == '[' || c == ']' ||
-  //          c == '{'  || c == '}' || c == '~' || c == '*' || c == '?'
-  //          )
-  //      {
-  //        sb.append('\\');
-  //      }
-  //      sb.append(c);
-  //    }
-  //    return sb;
-  //  }
-  
-  
+
   protected static class Clause {
     
     boolean isBareWord() {
@@ -1509,7 +1432,7 @@ public class ExtendedDismaxQParser extends QParser {
     private DynamicField[] dynamicUserFields;
     private DynamicField[] negativeDynamicUserFields;
     
-    UserFields(Map<String,Float> ufm) {
+    UserFields(Map<String, Float> ufm, boolean forbidSubQueryByDefault) {
       userFieldsMap = ufm;
       if (0 == userFieldsMap.size()) {
         userFieldsMap.put("*", null);
@@ -1525,6 +1448,10 @@ public class ExtendedDismaxQParser extends QParser {
           else
             dynUserFields.add(new DynamicField(f));
         }
+      }
+      // unless "_query_" was expressly allowed, we forbid it.
+      if (forbidSubQueryByDefault && !userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
+        userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
       Collections.sort(dynUserFields);
       dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
@@ -1674,7 +1601,8 @@ public class ExtendedDismaxQParser extends QParser {
         SolrParams params, SolrQueryRequest req) {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       minShouldMatch = DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams); // req.getSearcher() here causes searcher refcount imbalance
-      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
+      final boolean forbidSubQueryByDefault = req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_7_2_0);
+      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)), forbidSubQueryByDefault);
       try {
         queryFields = DisMaxQParser.parseQueryFields(req.getSchema(), solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {

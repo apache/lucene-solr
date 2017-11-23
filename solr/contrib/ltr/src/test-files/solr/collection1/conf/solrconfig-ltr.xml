@@ -11,7 +11,7 @@
  language governing permissions and limitations under the License. -->
 
 <config>
-    <luceneMatchVersion>6.0.0</luceneMatchVersion>
+    <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
  <dataDir>${solr.data.dir:}</dataDir>
  <directoryFactory name="DirectoryFactory"
   class="${solr.directoryFactory:solr.RAMDirectoryFactory}" />

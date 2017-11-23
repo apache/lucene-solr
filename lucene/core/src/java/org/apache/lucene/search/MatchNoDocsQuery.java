@@ -58,6 +58,10 @@ public class MatchNoDocsQuery extends Query {
         return null;
       }
 
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
     };
   }
 

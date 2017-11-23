@@ -1484,7 +1484,7 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       @Override
-      protected float score(BasicStats stats, float freq, float docLen) {
+      protected double score(BasicStats stats, double freq, double docLen) {
         return freq;
       }
     };

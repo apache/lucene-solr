@@ -28,16 +28,15 @@ import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
-import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
+import org.apache.lucene.spatial3d.geom.GeoAreaShape;
+import org.apache.lucene.spatial3d.geom.GeoPath;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.RandomGeo3dShapeGenerator;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
@@ -45,11 +44,10 @@ import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIA
 
 public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
 
+  private PlanetModel planetModel;
+  private RandomGeo3dShapeGenerator shapeGenerator;
   private SpatialPrefixTree grid;
   private RecursivePrefixTreeStrategy rptStrategy;
-  {
-    this.ctx = SpatialContext.GEO;
-  }
 
   private void setupGeohashGrid() {
     this.grid = new GeohashPrefixTree(ctx, 2);//A fairly shallow grid
@@ -64,7 +62,12 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   private void setupStrategy() {
-    //setup
+    shapeGenerator = new RandomGeo3dShapeGenerator();
+    planetModel = shapeGenerator.randomPlanetModel();
+    Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
+    factory.planetModel = planetModel;
+    ctx = factory.newSpatialContext();
+
     setupGeohashGrid();
 
     SerializedDVStrategy serializedDVStrategy = new SerializedDVStrategy(ctx, getClass().getSimpleName() + "_sdv");
@@ -76,12 +79,12 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   public void testFailure1() throws IOException {
     setupStrategy();
     final List<GeoPoint> points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
 
-    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points),ctx);
+    final Shape triangle = new Geo3dShape(GeoPolygonFactory.makeGeoPolygon(planetModel, points),ctx);
     final Rectangle rect = ctx.makeRectangle(-49, -45, 73, 86);
     testOperation(rect,SpatialOperation.Intersects,triangle, false);
   }
@@ -91,16 +94,16 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     setupStrategy();
 
     final List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, 18 * DEGREES_TO_RADIANS, -27 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(planetModel, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
     final GeoPoint[] pathPoints = new GeoPoint[] {
-      new GeoPoint(PlanetModel.SPHERE, 55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS),
-      new GeoPoint(PlanetModel.SPHERE, -90.0 * DEGREES_TO_RADIANS, 0.0),
-      new GeoPoint(PlanetModel.SPHERE, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
-      new GeoPoint(PlanetModel.SPHERE, -90.0 * DEGREES_TO_RADIANS, 0.0)};
-    final GeoShape path = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 29 * DEGREES_TO_RADIANS, pathPoints);
+      new GeoPoint(planetModel, 55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS),
+      new GeoPoint(planetModel, -90.0 * DEGREES_TO_RADIANS, 0.0),
+      new GeoPoint(planetModel, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
+      new GeoPoint(planetModel, -90.0 * DEGREES_TO_RADIANS, 0.0)};
+    final GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 29 * DEGREES_TO_RADIANS, pathPoints);
     final Shape shape = new Geo3dShape(path,ctx);
     final Rectangle rect = ctx.makeRectangle(131, 143, 39, 54);
     testOperation(rect,SpatialOperation.Intersects,shape,true);
@@ -114,111 +117,57 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     testOperationRandomShapes(SpatialOperation.Intersects);
   }
 
-  private Shape makeTriangle(double x1, double y1, double x2, double y2, double x3, double y3) {
-    final List<GeoPoint> geoPoints = new ArrayList<>();
-    geoPoints.add(new GeoPoint(PlanetModel.SPHERE, y1 * DEGREES_TO_RADIANS, x1 * DEGREES_TO_RADIANS));
-    geoPoints.add(new GeoPoint(PlanetModel.SPHERE, y2 * DEGREES_TO_RADIANS, x2 * DEGREES_TO_RADIANS));
-    geoPoints.add(new GeoPoint(PlanetModel.SPHERE, y3 * DEGREES_TO_RADIANS, x3 * DEGREES_TO_RADIANS));
-    final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, geoPoints);
-    return new Geo3dShape(shape, ctx);
-  }
-
   @Override
   protected Shape randomIndexedShape() {
-    return randomRectangle();
+    int type = shapeGenerator.randomShapeType();
+    GeoAreaShape areaShape = shapeGenerator.randomGeoAreaShape(type, planetModel);
+    return new Geo3dShape<>(areaShape, ctx);
   }
 
   @Override
   protected Shape randomQueryShape() {
-    final int shapeType = random().nextInt(4);
-    switch (shapeType) {
-    case 0: {
-        // Polygons
-        final int vertexCount = random().nextInt(3) + 3;
-        while (true) {
-          final List<GeoPoint> geoPoints = new ArrayList<>();
-          while (geoPoints.size() < vertexCount) {
-            final Point point = randomPoint();
-            final GeoPoint gPt = new GeoPoint(PlanetModel.SPHERE, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
-            geoPoints.add(gPt);
-          }
-          final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
-          try {
-            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, geoPoints);
-            if (shape == null) {
-              continue;
-            }
-            return new Geo3dShape(shape, ctx);
-          } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
-            continue;
-          }
-        }
-      }
-    case 1: {
-        // Circles
-        while (true) {
-          final int circleRadius = random().nextInt(179) + 1;
-          final Point point = randomPoint();
-          try {
-            final GeoShape shape = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS,
-              circleRadius * DEGREES_TO_RADIANS);
-            return new Geo3dShape(shape, ctx);
-          } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
-            continue;
-          }
-        }
-      }
-    case 2: {
-        // Rectangles
-        while (true) {
-          Point ulhcPoint = randomPoint();
-          Point lrhcPoint = randomPoint();
-          if (ulhcPoint.getY() < lrhcPoint.getY()) {
-            //swap
-            Point temp = ulhcPoint;
-            ulhcPoint = lrhcPoint;
-            lrhcPoint = temp;
-          }
-          try {
-            final GeoShape shape = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, ulhcPoint.getY() * DEGREES_TO_RADIANS,
-              lrhcPoint.getY() * DEGREES_TO_RADIANS,
-              ulhcPoint.getX() * DEGREES_TO_RADIANS,
-              lrhcPoint.getX() * DEGREES_TO_RADIANS);
-            //System.err.println("Trial rectangle shape: "+shape);
-            return new Geo3dShape(shape, ctx);
-          } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
-            continue;
-          }
-        }
-      }
-    case 3: {
-        // Paths
-        final int pointCount = random().nextInt(5) + 1;
-        final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
-        final GeoPoint[] points = new GeoPoint[pointCount];
-        while (true) {
-          for (int i = 0; i < pointCount; i++) {
-            final Point nextPoint = randomPoint();
-            points[i] = new GeoPoint(PlanetModel.SPHERE, nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
-          }
-          try {
-            final GeoShape path = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, width, points);
-            return new Geo3dShape(path, ctx);
-          } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
-            continue;
-          }
-        }
-      }
-    default:
-      throw new IllegalStateException("Unexpected shape type");
-    }
+    int type = shapeGenerator.randomShapeType();
+    GeoAreaShape areaShape = shapeGenerator.randomGeoAreaShape(type, planetModel);
+    return new Geo3dShape<>(areaShape, ctx);
+  }
+
+  //TODO move to a new test class?
+  @Test
+  public void testWKT() throws Exception {
+    Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
+    SpatialContext ctx = factory.newSpatialContext();
+    String wkt = "POLYGON ((20.0 -60.4, 20.1 -60.4, 20.1 -60.3, 20.0  -60.3,20.0 -60.4))";
+    Shape s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "POINT (30 10)";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "LINESTRING (30 10, 10 30, 40 40)";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "MULTIPOINT ((10 40), (40 30), (20 20), (30 10))";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "MULTILINESTRING ((10 10, 20 20, 10 40),(40 40, 30 30, 40 20, 30 10))";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), ((20 35, 10 30, 10 10, 30 5, 45 20, 20 35),(30 20, 20 15, 20 25, 30 20)))";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "ENVELOPE(1, 2, 4, 3)";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    wkt = "BUFFER(POINT(-10 30), 5.2)";
+    s = ctx.getFormats().getWktReader().read(wkt);
+    assertTrue(s instanceof  Geo3dShape<?>);
+    //wkt = "BUFFER(LINESTRING(1 2, 3 4), 0.5)";
+    //s = ctx.getFormats().getWktReader().read(wkt);
+    //assertTrue(s instanceof  Geo3dShape<?>);
   }
 }

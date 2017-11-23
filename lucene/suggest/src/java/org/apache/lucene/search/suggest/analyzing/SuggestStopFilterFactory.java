@@ -70,6 +70,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *      for details.
  *  </li>
  * </ul>
+ * @since 5.0.0
  */
   public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
   /** the default format, one word per line, whole line comments start with "#" */

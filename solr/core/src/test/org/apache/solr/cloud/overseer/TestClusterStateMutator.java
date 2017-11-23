@@ -19,21 +19,32 @@ package org.apache.solr.cloud.overseer;
 import java.util.Collections;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.MockZkStateReader;
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Utils;
+import org.junit.BeforeClass;
+
+import static org.mockito.Mockito.*;
 
 public class TestClusterStateMutator extends SolrTestCaseJ4 {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeWorkingMockito();
+  }
+  
   public void testCreateCollection() throws Exception {
-    ClusterState state = new ClusterState(-1, Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
-    MockZkStateReader zkStateReader = new MockZkStateReader(state, Collections.<String>emptySet());
+    ClusterState clusterState = new ClusterState(-1, Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
+    DistribStateManager mockStateManager = mock(DistribStateManager.class);
+    SolrCloudManager dataProvider = mock(SolrCloudManager.class);
+    when(dataProvider.getDistribStateManager()).thenReturn(mockStateManager);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    ClusterStateMutator mutator = new ClusterStateMutator(zkStateReader);
+    ClusterStateMutator mutator = new ClusterStateMutator(dataProvider);
     ZkNodeProps message = new ZkNodeProps(Utils.makeMap(
         "name", "xyz",
         "numShards", "1"
@@ -44,7 +55,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertEquals(1, collection.getSlicesMap().size());
     assertEquals(1, collection.getMaxShardsPerNode());
 
-    state = new ClusterState(-1, Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
+    ClusterState state = new ClusterState(-1, Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
     message = new ZkNodeProps(Utils.makeMap(
         "name", "abc",
         "numShards", "2",

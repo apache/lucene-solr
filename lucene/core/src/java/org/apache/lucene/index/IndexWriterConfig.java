@@ -459,7 +459,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
                                                                                      SortField.Type.FLOAT);
 
   /**
-   * Set the {@link Sort} order to use when merging segments.
+   * Set the {@link Sort} order to use for all (flushed and merged) segments.
    */
   public IndexWriterConfig setIndexSort(Sort sort) {
     for(SortField sortField : sort.getSort()) {

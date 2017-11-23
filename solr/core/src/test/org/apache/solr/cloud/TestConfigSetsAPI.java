@@ -328,18 +328,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testUploadWithRunExecutableListener() throws Exception {
-    String suffix = "-untrusted";
-    uploadConfigSet("with-run-executable-listener", suffix, null, null);
-    // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp = createCollection("newcollection3", "with-run-executable-listener" + suffix, 1, 1, solrCluster.getSolrClient());
-    log.info("Client saw errors: "+resp.getErrorMessages());
-    assertTrue(resp.getErrorMessages() != null && resp.getErrorMessages().size() > 0);
-    assertTrue(resp.getErrorMessages().getVal(0).
-        contains("The configset for this collection was uploaded without any authentication"));
-  }
-
-  @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
     for (boolean withAuthorization: Arrays.asList(false, true)) {
       String suffix;

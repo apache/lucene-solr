@@ -69,6 +69,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
@@ -457,7 +458,21 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .add("id", "7")
         .add("id", "8")
         .commit(cluster.getSolrClient(), collectionName);
-    assertEquals(3, cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
+    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS);
+    while (!timeOut.hasTimedOut()) {
+      try {
+        long numFound = cluster.getSolrClient().query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
+        assertEquals(3, numFound);
+        break;
+      } catch (Exception e) {
+        // Query node can have stale clusterstate
+        log.info("Error when query " + collectionName, e);
+        Thread.sleep(500);
+      }
+    }
+    if (timeOut.hasTimedOut()) {
+      fail("Timeout on query " + collectionName);
+    }
 
     checkNoTwoShardsUseTheSameIndexDir();
   }
@@ -593,6 +608,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LogLevel("org.apache.solr.cloud=DEBUG")
   public void addReplicaTest() throws Exception {
     String collectionName = "addReplicaColl";
 

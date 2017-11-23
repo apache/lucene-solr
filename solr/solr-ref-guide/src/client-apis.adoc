@@ -1,6 +1,4 @@
 = Client APIs
-:page-shortname: client-apis
-:page-permalink: client-apis.html
 :page-children: introduction-to-client-apis, choosing-an-output-format, client-api-lineup, using-javascript, using-python, using-solrj, using-solr-from-ruby
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

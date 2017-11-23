@@ -133,6 +133,12 @@ public class IntersectsRPTVerifyQuery extends Query {
 
         return new ConstantScoreScorer(this, score(), twoPhaseIterator);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return predicateValueSource.isCacheable(ctx);
+      }
+
     };
   }
 

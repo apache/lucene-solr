@@ -37,7 +37,7 @@ public abstract class BasicModel {
   public BasicModel() {}
 
   /** Returns the informative content score. */
-  public abstract float score(BasicStats stats, float tfn);
+  public abstract double score(BasicStats stats, double tfn);
   
   /**
    * Returns an explanation for the score.
@@ -46,9 +46,9 @@ public abstract class BasicModel {
    * explanation for such models. Subclasses that use other statistics must
    * override this method.</p>
    */
-  public Explanation explain(BasicStats stats, float tfn) {
+  public Explanation explain(BasicStats stats, double tfn) {
     return Explanation.match(
-        score(stats, tfn),
+        (float) score(stats, tfn),
         getClass().getSimpleName() + ", computed from: ",
         Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"),
         Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"));

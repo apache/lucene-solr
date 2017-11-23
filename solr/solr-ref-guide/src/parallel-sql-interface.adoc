@@ -1,6 +1,4 @@
 = Parallel SQL Interface
-:page-shortname: parallel-sql-interface
-:page-permalink: parallel-sql-interface.html
 :page-children: solr-jdbc-dbvisualizer, solr-jdbc-squirrel-sql, solr-jdbc-apache-zeppelin, solr-jdbc-python-jython, solr-jdbc-r
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -431,4 +429,4 @@ Examples of using Python and Jython for connecting to Solr with the Solr JDBC dr
 
 === R
 
-Examples of using R for connecting to Solr with the Solr JDBC driver are available in the section <<solr-jdbc-r.adoc#solr-jdbc-r,Solr JDBC - R>> .
+Examples of using R for connecting to Solr with the Solr JDBC driver are available in the section <<solr-jdbc-r.adoc#solr-jdbc-r,Solr JDBC - R>>.

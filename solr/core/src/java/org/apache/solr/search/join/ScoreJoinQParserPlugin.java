@@ -17,7 +17,7 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.index.DocValuesType;
@@ -275,10 +275,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
   public static String getCoreName(final String fromIndex, CoreContainer container) {
     if (container.isZooKeeperAware()) {
       ZkController zkController = container.getZkController();
-      final String resolved =
-        zkController.getClusterState().hasCollection(fromIndex)
-          ? fromIndex : resolveAlias(fromIndex, zkController);
-      if (resolved == null) {
+      final String resolved = resolveAlias(fromIndex, zkController);
+      // TODO DWS: no need for this since later, clusterState.getCollection will throw a reasonable error
+      if (!zkController.getClusterState().hasCollection(resolved)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: Collection '" + fromIndex + "' not found!");
       }
@@ -289,21 +288,14 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   private static String resolveAlias(String fromIndex, ZkController zkController) {
     final Aliases aliases = zkController.getZkStateReader().getAliases();
-    if (aliases != null) {
-      final String resolved;
-      Map<String, String> collectionAliases = aliases.getCollectionAliasMap();
-      resolved = (collectionAliases != null) ? collectionAliases.get(fromIndex) : null;
-      if (resolved != null) {
-        if (resolved.split(",").length > 1) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "SolrCloud join: Collection alias '" + fromIndex +
-                  "' maps to multiple collections (" + resolved +
-                  "), which is not currently supported for joins.");
-        }
-        return resolved;
-      }
+    List<String> collections = aliases.resolveAliases(fromIndex); // if not an alias, returns input
+    if (collections.size() != 1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "SolrCloud join: Collection alias '" + fromIndex +
+              "' maps to multiple collections (" + collections +
+              "), which is not currently supported for joins.");
     }
-    return null;
+    return collections.get(0);
   }
 
   private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {

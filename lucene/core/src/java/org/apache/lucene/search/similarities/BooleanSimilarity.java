@@ -23,7 +23,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Simple similarity that gives terms a score that is equal to their query
@@ -73,22 +72,13 @@ public class BooleanSimilarity extends Similarity {
 
       @Override
       public Explanation explain(int doc, Explanation freq) throws IOException {
-        Explanation queryBoostExpl = Explanation.match(boost, "query boost");
+        Explanation queryBoostExpl = Explanation.match(boost, "boost");
         return Explanation.match(
             queryBoostExpl.getValue(),
             "score(" + getClass().getSimpleName() + ", doc=" + doc + "), computed from:",
             queryBoostExpl);
       }
 
-      @Override
-      public float computeSlopFactor(int distance) {
-        return 1f;
-      }
-
-      @Override
-      public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-        return 1f;
-      }
     };
   }
 

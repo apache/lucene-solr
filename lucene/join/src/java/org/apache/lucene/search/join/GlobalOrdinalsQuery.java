@@ -154,6 +154,11 @@ final class GlobalOrdinalsQuery extends Query {
       }
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return DocValues.isCacheable(ctx, joinField);
+    }
+
   }
 
   final static class OrdinalMapScorer extends BaseGlobalOrdinalScorer {

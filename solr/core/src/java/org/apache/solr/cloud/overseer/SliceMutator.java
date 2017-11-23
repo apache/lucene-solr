@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.cloud.Assign;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.cloud.ClusterState;
@@ -48,11 +50,12 @@ public class SliceMutator {
 
   public static final Set<String> SLICE_UNIQUE_BOOLEAN_PROPERTIES = ImmutableSet.of(PREFERRED_LEADER_PROP);
 
+  protected final SolrCloudManager dataProvider;
+  protected final DistribStateManager stateManager;
 
-  protected final ZkStateReader zkStateReader;
-
-  public SliceMutator(ZkStateReader zkStateReader) {
-    this.zkStateReader = zkStateReader;
+  public SliceMutator(SolrCloudManager dataProvider) {
+    this.dataProvider = dataProvider;
+    this.stateManager = dataProvider.getDistribStateManager();
   }
 
   public ZkWriteCommand addReplica(ClusterState clusterState, ZkNodeProps message) {
@@ -70,7 +73,7 @@ public class SliceMutator {
     if (message.getStr(ZkStateReader.CORE_NODE_NAME_PROP) != null) {
       coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     } else {
-      coreNodeName = Assign.assignNode(zkStateReader.getZkClient(), collection);
+      coreNodeName = Assign.assignNode(stateManager, collection);
     }
     Replica replica = new Replica(coreNodeName,
         makeMap(
@@ -138,9 +141,9 @@ public class SliceMutator {
       String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getStr(ZkStateReader.BASE_URL_PROP), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(zkStateReader).unsetLeader(replica);
+        replica = new ReplicaMutator(dataProvider).unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
-        replica = new ReplicaMutator(zkStateReader).setLeader(replica);
+        replica = new ReplicaMutator(dataProvider).setLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);

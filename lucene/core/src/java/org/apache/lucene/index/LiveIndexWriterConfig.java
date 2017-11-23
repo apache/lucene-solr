@@ -413,8 +413,7 @@ public class LiveIndexWriterConfig {
   }
 
   /**
-   * Set the index-time {@link Sort} order. Merged segments will be written
-   * in this order.
+   * Get the index-time {@link Sort} order, applied to all (flushed and merged) segments.
    */
   public Sort getIndexSort() {
     return indexSort;

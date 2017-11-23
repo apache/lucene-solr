@@ -45,6 +45,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *   &lt;str name="value"&gt;unknown&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
+ * @since 4.0.0
  */
 public class DefaultValueUpdateProcessorFactory
   extends AbstractDefaultValueUpdateProcessorFactory {

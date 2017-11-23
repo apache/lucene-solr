@@ -315,6 +315,12 @@ public class TermInSetQuery extends Query implements Accountable {
           return scorer(weightOrBitSet.set);
         }
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
     };
   }
 }

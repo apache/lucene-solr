@@ -129,6 +129,7 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
       for (String fieldContent : fieldValues) {
         mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(fieldContent)), BooleanClause.Occur.SHOULD));
       }
+      mlt.setBoostFactor(1);// restore neutral boost for next field
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));

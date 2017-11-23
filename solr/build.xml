@@ -191,22 +191,6 @@
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
 
-  <target name="generate-website-quickstart"
-          description="Generate a version of the quickstart tutorial suitable for the website, at build/website/quickstart.mdtext">
-    <copy file="${common-solr.dir}/site/quickstart.mdtext" tofile="${common-solr.dir}/build/website/quickstart.mdtext"
-          overwrite="false" encoding="UTF-8">
-      <filterchain>
-        <tokenfilter>
-          <filetokenizer/>
-          <!-- Website images are under /solr/assets/images/ -->
-          <replaceregex pattern="src\s*=\s*&quot;images/" replace="src=&quot;/solr/assets/images/" flags="gs"/>
-          <!-- Redirect to the website's version-specific system requirements page -->
-          <replaceregex pattern="\(SYSTEM_REQUIREMENTS.html\)" replace="(/solr/api/SYSTEM_REQUIREMENTS.html)" flags="gs"/>
-        </tokenfilter>
-      </filterchain>
-    </copy>
-  </target>
-  
   <target name="documentation-online" description="Generate a link to the online documentation"
       depends="define-solr-javadoc-url">
     <xslt in="${ant.file}" out="${javadoc-online.dir}/index.html" style="site/online-link.xsl" force="true">
@@ -226,6 +210,16 @@
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
+
+    <loadresource property="doc-solr-guide-version-path">
+      <propertyresource name="version"/>
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <replaceregex pattern="^(\d+)\.(\d+).*" replace="\1_\2"/>
+        </tokenfilter>
+      </filterchain>
+    </loadresource>
     <!--
       The XSL input file is ignored completely, but XSL expects one to be given,
       so we pass ourself (${ant.file}) here. The list of module build.xmls is given
@@ -239,6 +233,7 @@
       <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
       <param name="luceneJavadocUrl" expression="${lucene.javadoc.url}"/>
+      <param name="solrGuideVersion" expression="${doc-solr-guide-version-path}"/>
     </xslt>
     
     <markdown todir="${javadoc.dir}">
@@ -676,7 +671,7 @@
        <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
             javadocs generates invalid XML if you deprecate a method that takes a parameter
             with a generic type -->
-      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html,quickstart.html"/>
+      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
     </jtidy-macro>
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>

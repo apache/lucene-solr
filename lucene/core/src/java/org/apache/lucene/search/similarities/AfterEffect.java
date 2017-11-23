@@ -38,10 +38,10 @@ public abstract class AfterEffect {
   public AfterEffect() {}
 
   /** Returns the aftereffect score. */
-  public abstract float score(BasicStats stats, float tfn);
+  public abstract double score(BasicStats stats, double tfn);
   
   /** Returns an explanation for the score. */
-  public abstract Explanation explain(BasicStats stats, float tfn);
+  public abstract Explanation explain(BasicStats stats, double tfn);
 
   /** Implementation used when there is no aftereffect. */
   public static final class NoAfterEffect extends AfterEffect {
@@ -50,12 +50,12 @@ public abstract class AfterEffect {
     public NoAfterEffect() {}
     
     @Override
-    public final float score(BasicStats stats, float tfn) {
-      return 1f;
+    public double score(BasicStats stats, double tfn) {
+      return 1.0;
     }
 
     @Override
-    public final Explanation explain(BasicStats stats, float tfn) {
+    public Explanation explain(BasicStats stats, double tfn) {
       return Explanation.match(1, "no aftereffect");
     }
     

@@ -34,13 +34,13 @@ public abstract class Distribution {
   public Distribution() {}
 
   /** Computes the score. */
-  public abstract float score(BasicStats stats, float tfn, float lambda);
+  public abstract double score(BasicStats stats, double tfn, double lambda);
   
   /** Explains the score. Returns the name of the model only, since
    * both {@code tfn} and {@code lambda} are explained elsewhere. */
-  public Explanation explain(BasicStats stats, float tfn, float lambda) {
-    return Explanation.match(
-        score(stats, tfn, lambda), getClass().getSimpleName());
+  public Explanation explain(BasicStats stats, double tfn, double lambda) {
+    return Explanation.match((float)score(stats, tfn, lambda), 
+                             getClass().getSimpleName());
   }
   
   /**

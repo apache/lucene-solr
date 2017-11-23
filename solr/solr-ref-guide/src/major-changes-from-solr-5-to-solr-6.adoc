@@ -1,6 +1,4 @@
 = Major Changes from Solr 5 to Solr 6
-:page-shortname: major-changes-from-solr-5-to-solr-6
-:page-permalink: major-changes-from-solr-5-to-solr-6.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

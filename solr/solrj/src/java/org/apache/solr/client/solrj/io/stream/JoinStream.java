@@ -35,7 +35,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/** Defines a JoinStream which can hold N streams, all joined with the same equalitor */
+/** 
+ * Defines a JoinStream which can hold N streams, all joined with the same equalitor 
+ * @since 6.0.0
+ */
 public abstract class JoinStream extends TupleStream implements Expressible {
   
   private static final long serialVersionUID = 1;

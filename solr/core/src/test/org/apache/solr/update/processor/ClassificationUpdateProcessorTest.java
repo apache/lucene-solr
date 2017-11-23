@@ -61,6 +61,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeWorkingMockito();
     System.setProperty("enable.update.log", "false");
     initCore("solrconfig-classification.xml", "schema-classification.xml");
   }

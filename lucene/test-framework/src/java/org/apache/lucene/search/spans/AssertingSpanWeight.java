@@ -73,6 +73,11 @@ public class AssertingSpanWeight extends SpanWeight {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return in.isCacheable(ctx);
+  }
+
+  @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     return in.explain(context, doc);
   }

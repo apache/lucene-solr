@@ -135,6 +135,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
   }
 
   private ZkController createZkController(SolrZkClient client) throws KeeperException, InterruptedException {
+    assumeWorkingMockito();
     
     CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class, 
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));

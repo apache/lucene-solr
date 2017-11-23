@@ -242,7 +242,7 @@ class GeoStandardPath extends GeoBasePath {
     double bestDistance = Double.POSITIVE_INFINITY;
     int segmentIndex = 0;
     
-    for (SegmentEndpoint endpoint : endPoints) {
+    for (final SegmentEndpoint endpoint : endPoints) {
       final double endpointPathCenterDistance = endpoint.pathCenterDistance(distanceStyle, x, y, z);
       if (endpointPathCenterDistance < minPathCenterDistance) {
         // Use this endpoint
@@ -268,27 +268,69 @@ class GeoStandardPath extends GeoBasePath {
     // Algorithm:
     // (1) If the point is within any of the segments along the path, return that value.
     // (2) If the point is within any of the segment end circles along the path, return that value.
+    // The algorithm loops over the whole path to get the shortest distance
+    double bestDistance = Double.POSITIVE_INFINITY;
+    
     double currentDistance = 0.0;
-    for (PathSegment segment : segments) {
+    for (final PathSegment segment : segments) {
       double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
-      if (distance != Double.POSITIVE_INFINITY)
-        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
+      if (distance != Double.POSITIVE_INFINITY) {
+        final double thisDistance = distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
+        if (thisDistance < bestDistance) {
+          bestDistance = thisDistance;
+        }
+      }
       currentDistance = distanceStyle.aggregateDistances(currentDistance, segment.fullPathDistance(distanceStyle));
     }
 
     int segmentIndex = 0;
     currentDistance = 0.0;
-    for (SegmentEndpoint endpoint : endPoints) {
+    for (final SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
-      if (distance != Double.POSITIVE_INFINITY)
-        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
+      if (distance != Double.POSITIVE_INFINITY) {
+        final double thisDistance = distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
+        if (thisDistance < bestDistance) {
+          bestDistance = thisDistance;
+        }
+      }
       if (segmentIndex < segments.size())
         currentDistance = distanceStyle.aggregateDistances(currentDistance, segments.get(segmentIndex++).fullPathDistance(distanceStyle));
     }
 
-    return Double.POSITIVE_INFINITY;
+    return bestDistance;
   }
 
+  @Override
+  protected double deltaDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    // Algorithm:
+    // (1) If the point is within any of the segments along the path, return that value.
+    // (2) If the point is within any of the segment end circles along the path, return that value.
+    // Finds best distance
+    double bestDistance = Double.POSITIVE_INFINITY;
+    
+    for (final PathSegment segment : segments) {
+      final double distance = segment.pathDeltaDistance(planetModel, distanceStyle, x, y, z);
+      if (distance != Double.POSITIVE_INFINITY) {
+        final double thisDistance = distanceStyle.fromAggregationForm(distance);
+        if (thisDistance < bestDistance) {
+          bestDistance = thisDistance;
+        }
+      }
+    }
+
+    for (final SegmentEndpoint endpoint : endPoints) {
+      final double distance = endpoint.pathDeltaDistance(distanceStyle, x, y, z);
+      if (distance != Double.POSITIVE_INFINITY) {
+        final double thisDistance = distanceStyle.fromAggregationForm(distance);
+        if (thisDistance < bestDistance) {
+          bestDistance = thisDistance;
+        }
+      }
+    }
+
+    return bestDistance;
+  }
+  
   @Override
   protected void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
     // TBD: Compute actual bounds based on distance
@@ -596,6 +638,20 @@ class GeoStandardPath extends GeoBasePath {
         }
       }
       return true;
+    }
+
+    /** Compute delta path distance.
+     *@param distanceStyle is the distance style.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return the distance metric, in aggregation form.
+     */
+    public double pathDeltaDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      if (!isWithin(x,y,z))
+        return Double.POSITIVE_INFINITY;
+      final double theDistance = distanceStyle.toAggregationForm(distanceStyle.computeDistance(this.point, x, y, z));
+      return distanceStyle.aggregateDistances(theDistance, theDistance);
     }
 
     /** Compute interior path distance.
@@ -935,7 +991,52 @@ class GeoStandardPath extends GeoBasePath {
       return distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z));
     }
       
+    /** Compute delta path distance.
+     *@param planetModel is the planet model.
+     *@param distanceStyle is the distance style.
+     *@param x is the point x.
+     *@param y is the point y.
+     *@param z is the point z.
+     *@return the distance metric, in aggregation form, or Double.POSITIVE_INFINITY if outside the segment.
+     */
+    public double pathDeltaDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      if (!isWithin(x,y,z))
+        return Double.POSITIVE_INFINITY;
+      // (1) Compute normalizedPerpPlane.  If degenerate, then return point distance from start to point.
+      // Want no allocations or expensive operations!  so we do this the hard way
+      final double perpX = normalizedConnectingPlane.y * z - normalizedConnectingPlane.z * y;
+      final double perpY = normalizedConnectingPlane.z * x - normalizedConnectingPlane.x * z;
+      final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
+      final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
+      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION) {
+        final double theDistance = distanceStyle.computeDistance(start, x,y,z);
+        return distanceStyle.aggregateDistances(theDistance, theDistance);
+      }
+      final double normFactor = 1.0/magnitude;
+      final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
+      
+      // Old computation: too expensive, because it calculates the intersection point twice.
+      //return distanceStyle.computeDistance(planetModel, normalizedConnectingPlane, x, y, z, startCutoffPlane, endCutoffPlane) +
+      //  distanceStyle.computeDistance(planetModel, normalizedPerpPlane, start.x, start.y, start.z, upperConnectingPlane, lowerConnectingPlane);
 
+      final GeoPoint[] intersectionPoints = normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
+      GeoPoint thePoint;
+      if (intersectionPoints.length == 0)
+        throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
+      else if (intersectionPoints.length == 1)
+        thePoint = intersectionPoints[0];
+      else {
+        if (startCutoffPlane.isWithin(intersectionPoints[0]) && endCutoffPlane.isWithin(intersectionPoints[0]))
+          thePoint = intersectionPoints[0];
+        else if (startCutoffPlane.isWithin(intersectionPoints[1]) && endCutoffPlane.isWithin(intersectionPoints[1]))
+          thePoint = intersectionPoints[1];
+        else
+          throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
+      }
+      final double theDistance = distanceStyle.toAggregationForm(distanceStyle.computeDistance(thePoint, x, y, z));
+      return distanceStyle.aggregateDistances(theDistance, theDistance);
+    }
+    
     /** Compute interior path distance.
      *@param planetModel is the planet model.
      *@param distanceStyle is the distance style.

@@ -19,9 +19,9 @@ package org.apache.lucene.spatial3d.geom;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -55,6 +55,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
   final protected static int COLLECTION = 8;
   final protected static int POINT = 9;
   final protected static int LINE = 10;
+  final protected static int EXACT_CIRCLE = 11;
 
   /* Helper shapes for generating constraints whch are just three sided polygons */
   final protected static int CONVEX_SIMPLE_POLYGON = 500;
@@ -87,7 +88,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
    * @return a random generated shape code
    */
   public int randomShapeType(){
-    return random().nextInt(11);
+    return random().nextInt(12);
   }
 
   /**
@@ -100,7 +101,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
    * @return a random generated polygon code
    */
   public int randomGeoAreaShapeType(){
-    return random().nextInt(11);
+    return random().nextInt(12);
   }
 
   /**
@@ -284,6 +285,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       case CONCAVE_SIMPLE_POLYGON: {
         return concaveSimplePolygon(planetModel, constraints);
       }
+      case EXACT_CIRCLE: {
+        return exactCircle(planetModel, constraints);
+      }
       default:
         throw new IllegalStateException("Unexpected shape type");
     }
@@ -339,6 +343,38 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       try {
 
         GeoCircle circle = GeoCircleFactory.makeGeoCircle(planetModel, center.getLatitude(), center.getLongitude(), radius);
+        if (!constraints.valid(circle)) {
+          continue;
+        }
+        return circle;
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Method that returns a random generated a GeoCircle under given constraints. Returns
+   * NULL if it cannot build the GeoCircle under the given constraints.
+   *
+   * @param planetModel The planet model.
+   * @param constraints The given constraints.
+   * @return The random generated GeoCircle.
+   */
+  private GeoCircle exactCircle(PlanetModel planetModel , Constraints constraints) {
+    int iterations=0;
+    while (iterations < MAX_SHAPE_ITERATIONS) {
+      iterations++;
+      final GeoPoint center = randomGeoPoint(planetModel, constraints);
+      if (center == null){
+        continue;
+      }
+      final double radius = randomCutoffAngle();
+      final int pow = random().nextInt(10) +3;
+      final double accuracy = random().nextDouble() * Math.pow(10, (-1) * pow);
+      try {
+        GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(planetModel, center.getLatitude(), center.getLongitude(), radius, accuracy);
         if (!constraints.valid(circle)) {
           continue;
         }
@@ -816,84 +852,38 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
   /**
    * Method that orders a lit of points anti-clock-wise to prevent crossing edges.
    *
-   * @param originalPoints The points to order.
+   * @param points The points to order.
    * @return The list of ordered points anti-clockwise.
    */
-  private List<GeoPoint> orderPoints(List<GeoPoint> originalPoints){
-    List<GeoPoint> points = new ArrayList<>(originalPoints.size());
-    points.addAll(originalPoints); //make a copy
-    GeoPoint lPoint = getPointLefLon(points);
-    points.remove(lPoint);
-    GeoPoint rPoint = getPointRigthLon(points);
-    points.remove(rPoint);
-    List<GeoPoint> APoints = getPointsBelowAndSort(points, lPoint);
-    List<GeoPoint> BPoints = getPointsAboveAndsort(points, lPoint);
-    List<GeoPoint> result = new ArrayList<>();
-    result.add(lPoint);
-    result.addAll(APoints);
-    result.add(rPoint);
-    result.addAll(BPoints);
-    return result;
-  }
-
-  private List<GeoPoint> getPointsAboveAndsort(List<GeoPoint> points,GeoPoint lPoint) {
-    List<GeoPoint> BPoints = new ArrayList<>();
-    for (GeoPoint point : points){
-      if(point.getLatitude() > lPoint.getLatitude()){
-        BPoints.add(point);
-      }
+  private List<GeoPoint> orderPoints(List<GeoPoint> points) {
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    //get center of mass
+    for (GeoPoint point : points) {
+      x += point.x;
+      y += point.y;
+      z += point.z;
     }
-    Collections.sort(BPoints, new Comparator<GeoPoint>() {
-      public int compare(GeoPoint idx1, GeoPoint idx2) {
-        return Double.compare(idx1.getLongitude(), idx2.getLongitude());
-      }
-    });
-    return BPoints;
-  }
-
-  private List<GeoPoint> getPointsBelowAndSort(List<GeoPoint> points,GeoPoint lPoint) {
-    List<GeoPoint> APoints = new ArrayList<>();
-    for (GeoPoint point : points){
-      if(point.getLatitude() < lPoint.getLatitude()){
-        APoints.add(point);
-      }
+    Map<Double, GeoPoint> pointWithAngle = new HashMap<>();
+    //get angle respect center of mass
+    for (GeoPoint point : points) {
+      GeoPoint center = new GeoPoint(x / points.size(), y / points.size(), z / points.size());
+      double cs = Math.sin(center.getLatitude()) * Math.sin(point.getLatitude())
+          + Math.cos(center.getLatitude()) * Math.cos(point.getLatitude())  * Math.cos(point.getLongitude() - center.getLongitude());
+      double posAng = Math.atan2(Math.cos(center.getLatitude()) * Math.cos(point.getLatitude()) * Math.sin(point.getLongitude() - center.getLongitude()),
+          Math.sin(point.getLatitude()) - Math.sin(center.getLatitude())*cs);
+      pointWithAngle.put(posAng, point);
     }
-    Collections.sort(APoints, new Comparator<GeoPoint>() {
-      public int compare(GeoPoint idx1, GeoPoint idx2) {
-        return Double.compare(idx1.getLongitude(), idx2.getLongitude());
-      }
-    });
-    return APoints;
-  }
-
-  private GeoPoint getPointLefLon(List<GeoPoint> points)  {
-    GeoPoint lPoint = null;
-    for (GeoPoint point : points){
-      if(lPoint == null ){
-        lPoint = point;
-      }
-      else{
-        if (lPoint.getLongitude() > point.getLongitude()){
-          lPoint = point;
-        }
-      }
+    //order points
+    List<Double> angles = new ArrayList<>(pointWithAngle.keySet());
+    Collections.sort(angles);
+    Collections.reverse(angles);
+    List<GeoPoint> orderedPoints = new ArrayList<>();
+    for (Double d : angles) {
+      orderedPoints.add(pointWithAngle.get(d));
     }
-    return lPoint;
-  }
-
-  private GeoPoint getPointRigthLon(List<GeoPoint> points) {
-    GeoPoint rPoint = null;
-    for (GeoPoint point : points){
-      if(rPoint == null ){
-        rPoint = point;
-      }
-      else{
-        if (rPoint.getLongitude() < point.getLongitude()){
-          rPoint = point;
-        }
-      }
-    }
-    return rPoint;
+    return orderedPoints;
   }
 
   /**

@@ -39,6 +39,9 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
+/**
+ * @since 7.0.0
+ */
 public class SqlStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -73,12 +76,7 @@ public class SqlStream extends TupleStream implements Expressible {
 
     // Collection Name
     if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
-    }
-
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
-    if(expression.getParameters().size() != 1 + namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
+      collectionName = factory.getDefaultCollection();
     }
 
     // Named parameters - passed directly to solr as solrparams

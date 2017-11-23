@@ -42,6 +42,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// Related tests:
+//   TestCloudJSONFacetJoinDomain for random field faceting tests with domain modifications
+//   TestJsonFacetRefinement for refinement tests
+
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
 public class TestJsonFacets extends SolrTestCaseHS {
 
@@ -206,6 +210,28 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
     client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5"),null);
     client.commit();
+  }
+
+  @Test
+  public void testRepeatedNumerics() throws Exception {
+    Client client = Client.localClient();
+    String field = "num_is"; // docValues of multi-valued points field can contain duplicate values... make sure they don't mess up our counts.
+    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2", "val_b", "true", "sparse_s", "one", field,"0", field,"0"), null);
+    client.commit();
+
+    client.testJQ(params("q", "id:1", "field", field
+        , "json.facet", "{" +
+            "f1:{terms:${field}}" +
+            ",f2:'hll(${field})'" +
+            ",f3:{type:range, field:${field}, start:0, end:1, gap:1}" +
+            "}"
+        )
+        , "facets=={count:1, " +
+            "f1:{buckets:[{val:0, count:1}]}" +
+            ",f2:1" +
+            ",f3:{buckets:[{val:0, count:1}]}" +
+            "}"
+    );
   }
 
   public void testDomainJoinSelf() throws Exception {

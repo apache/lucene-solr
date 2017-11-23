@@ -235,6 +235,7 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     protected void collectValues(int doc, HLL hll) throws IOException {
       for (int i = 0; i < values.docValueCount(); i++) {
+        // duplicates may be produced for a single doc, but won't matter here.
         long val = values.nextValue();
         long hash = Hash.fmix64(val);
         hll.addRaw(hash);

@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
 * Merges two or more streams together ordering the Tuples based on a Comparator.
 * All streams must be sorted by the fields being compared - this will be validated on construction.
+* @since 5.1.0
 **/
 public class MergeStream extends TupleStream implements Expressible {
 

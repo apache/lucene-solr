@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.Random;
 
 import junit.framework.Assert;
@@ -318,6 +319,8 @@ public class CheckHits {
   public static float explainToleranceDelta(float f1, float f2) {
     return Math.max(EXPLAIN_SCORE_TOLERANCE_MINIMUM, Math.max(Math.abs(f1), Math.abs(f2)) * EXPLAIN_SCORE_TOLERANCE_DELTA);
   }
+  
+  private static final Pattern COMPUTED_FROM_PATTERN = Pattern.compile(".*, computed as .* from:");
 
   /** 
    * Assert that an explanation has the expected score, and optionally that its
@@ -335,9 +338,12 @@ public class CheckHits {
                                        boolean deep,
                                        Explanation expl) {
     float value = expl.getValue();
-    Assert.assertEquals(q+": score(doc="+doc+")="+score+
-        " != explanationScore="+value+" Explanation: "+expl,
-        score,value,explainToleranceDelta(score, value));
+    // TODO: clean this up if we use junit 5 (the assert message is costly)
+    try {
+      Assert.assertEquals(score, value, explainToleranceDelta(score, value));
+    } catch (Exception e) {
+      Assert.fail(q+": score(doc="+doc+")="+score+" != explanationScore="+value+" Explanation: "+expl);
+    }
 
     if (!deep) return;
 
@@ -368,7 +374,7 @@ public class CheckHits {
         boolean productOf = descr.endsWith("product of:");
         boolean sumOf = descr.endsWith("sum of:");
         boolean maxOf = descr.endsWith("max of:");
-        boolean computedOf = descr.matches(".*, computed as .* from:");
+        boolean computedOf = descr.indexOf("computed as") > 0 && COMPUTED_FROM_PATTERN.matcher(descr).matches();
         boolean maxTimesOthers = false;
         if (!(productOf || sumOf || maxOf || computedOf)) {
           // maybe 'max plus x times others'
@@ -386,11 +392,12 @@ public class CheckHits {
           }
         }
         // TODO: this is a TERRIBLE assertion!!!!
-        Assert.assertTrue(
-            q+": multi valued explanation description=\""+descr
-            +"\" must be 'max of plus x times others', 'computed as x from:' or end with 'product of'"
-            +" or 'sum of:' or 'max of:' - "+expl,
-            productOf || sumOf || maxOf || computedOf || maxTimesOthers);
+        if (false == (productOf || sumOf || maxOf || computedOf || maxTimesOthers)) {
+          Assert.fail(
+              q+": multi valued explanation description=\""+descr
+              +"\" must be 'max of plus x times others', 'computed as x from:' or end with 'product of'"
+              +" or 'sum of:' or 'max of:' - "+expl);
+        }
         float sum = 0;
         float product = 1;
         float max = 0;
@@ -414,9 +421,13 @@ public class CheckHits {
           Assert.assertTrue("should never get here!", computedOf);
           combined = value;
         }
-        Assert.assertEquals(q+": actual subDetails combined=="+combined+
-            " != value="+value+" Explanation: "+expl,
-            combined,value,explainToleranceDelta(combined, value));
+        // TODO: clean this up if we use junit 5 (the assert message is costly)
+        try {
+          Assert.assertEquals(combined, value, explainToleranceDelta(combined, value));
+        } catch (Exception e) {
+          Assert.fail(q+": actual subDetails combined=="+combined+
+              " != value="+value+" Explanation: "+expl);
+        }
       }
     }
   }

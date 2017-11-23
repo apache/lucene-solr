@@ -288,6 +288,12 @@ public class PointVectorStrategy extends SpatialStrategy {
           };
           return new ConstantScoreScorer(this, score(), twoPhase);
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return distanceSource.isCacheable(ctx);
+        }
+
       };
     }
 
