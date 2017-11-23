@@ -95,6 +95,8 @@ New Features
   in the same Alias defined set based on a time field (currently an internal feature).
   (David Smiley)
 
+* SOLR-9743: A new  UTILIZENODE command (noble)
+
 Bug Fixes
 ----------------------
 

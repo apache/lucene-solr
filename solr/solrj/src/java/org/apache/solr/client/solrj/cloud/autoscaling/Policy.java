@@ -440,4 +440,9 @@ public class Policy implements MapWriter {
   static int compareRows(Row r1, Row r2, Policy policy) {
     return policy.clusterPreferences.get(0).compare(r1, r2, true);
   }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
+  }
 }

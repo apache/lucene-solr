@@ -1576,6 +1576,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals(2, violations.size());
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(cfg, cloudManagerWithData(dataproviderdata));
     assertEquals(4, suggestions.size());
+    for (Suggester.SuggestionInfo suggestionInfo : suggestions) {
+      assertEquals(suggestionInfo.operation.getPath(), "/c/c1");
+    }
   }
 
 }
