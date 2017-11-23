@@ -225,6 +225,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
   }
 
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
+  }
+
   static class ClientSnitchCtx
       extends SnitchContext {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

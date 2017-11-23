@@ -16,6 +16,22 @@ In this release, there is an example Solr server including a bundled
 servlet container in the directory named "example".
 See the Solr tutorial at https://lucene.apache.org/solr/guide/solr-tutorial.html
 
+==================  8.0.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.16
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.10
+Jetty 9.3.20.v20170531
+
+
+(No Changes)
+
 ==================  7.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -56,9 +72,9 @@ New Features
 
 * SOLR-11524: A new autoscaling/suggestions API end-point which gives autoscaling suggestions (noble)
 
-* SOLR-11519: Implement suggestions for replica count violations (noble)
+* SOLR-11519: Implement autoscaling suggestions for replica count violations (noble)
 
-* SOLR-11518: Implement Suggestions for freedisk violations (noble)
+* SOLR-11518: Implement autoscaling Suggestions for freedisk violations (noble)
 
 * SOLR-10132: A new optional facet.matches parameter to return facet buckets only
   for terms that match a regular expression. (Gus Heck, Christine Poerschke)
@@ -75,17 +91,11 @@ New Features
 * SOLR-11487: Collection Aliases may now have metadata (currently an internal feature).
   (Gus Heck, David Smiley)
 
-* SOLR-11542: New TimeRoutedAliasUpdateProcessor URP that routes documents to another collection
+* SOLR-11542: New TimePartitionedUpdateProcessor URP that routes documents to another collection
   in the same Alias defined set based on a time field (currently an internal feature).
   (David Smiley)
 
-* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
-
-* SOLR-11250: A new DefaultWrapperModel class for loading of large and/or externally stored
-  LTRScoringModel definitions. (Yuki Yano, shalin, Christine Poerschke)
-
-* SOLR-11662: New synonymQueryStyle option to configure whether SynonymQuery, a DisjunctionMaxQuery, or BooleanQuery
-  occurs over query terms that overlap their position. (Doug Turnbull, David Smiley)
+* SOLR-9743: A new  UTILIZENODE command (noble)
 
 Bug Fixes
 ----------------------
@@ -113,15 +123,15 @@ Bug Fixes
 
 * SOLR-11413: SolrGraphiteReporter fails to report metrics due to non-thread safe code. (Erik Persson, ab)
 
+* SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
+  never update it causing stale state to be returned in ClusterState. (shalin)
+
 * SOLR-11560: Specifying the replicationFactor parameter while restoring a collection would lead to extra tlog
   and pull replicas being created (Peter Szantai-Kis, Varun Thacker)
 
 * SOLR-11586: Restored collection should use stateFormat=2 instead of 1. (Varun Thacker)
 
 * SOLR-11503: Collections created with legacyCloud=true cannot be opened if legacyCloud=false (Erick Erickson)
-
-* SOLR-9440: The ZkStateReader.removeCollectionStateWatcher method can cache a DocCollection reference and
-  never update it causing stale state to be returned in ClusterState. (shalin)
 
 * SOLR-11619: V2 requests that needed to be forwarded to other nodes would get an NPE. (David Smiley)
 
@@ -134,18 +144,6 @@ Bug Fixes
 * SOLR-11645: When the java commandline had exact duplicate arguments, the
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
-
-* SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
-  (Jason Gerlowski via Anshum Gupta)
-
-* SOLR-11256: The queue size for ConcurrentUpdateSolrClient should default to 10 instead of throwing an
-  IllegalArgumentException. (Jason Gerlowski, Anshum Gupta)
-
-* SOLR-11616: Snapshot the segments more robustly such that segments created during a backup does does not fail the
-  operation (Varun Thacker)
-
-* SOLR-11687: SolrCore.getNewIndexDir falsely returns {dataDir}/index on any IOException reading index.properties
-  (Nikolay Martynov, Erick Erickson)
 
 Optimizations
 ----------------------
@@ -207,11 +205,6 @@ Other Changes
 
 * SOLR-11507: SOLR-11638: Randomize SolrTestCaseJ4.CloudSolrClientBuilder more, and simplify it.
   (Jason Gerlowski, David Smiley)
-
-* SOLR-11291: Factor out abstract metrics/SolrCore[Container]Reporter classes.
-  (Omar Abdelnabi, Christine Poerschke)
-
-* SOLR-11713: Fixed CdcrUpdateLogTest.testSubReader() failure which was a test bug (Varun Thacker, Amrit Sarkar)
 
 ==================  7.1.0 ==================
 
@@ -360,6 +353,8 @@ New Features
 
 Bug Fixes
 ----------------------
+
+* SOLR-11423: Overseer queue needs a hard cap (maximum size) that clients respect (Scott Blum, Joshua Humphries, Noble Paul)
 
 * SOLR-10602: Triggers should be able to restore state from old instances when taking over. (shalin)
 
@@ -921,7 +916,7 @@ Bug Fixes
 * SOLR-11073: Fix overflow in interval faceting when querying Long limits (e.g. (Long.MAX_VALUE TO Long.MAX_VALUE])
   (Tomás Fernández Löbbe)
 
-* SOLR-11057: Fix overflow in point range queries when querying the type limits
+* SOLR-11057: Fix overflow in point range queries when querying the type limits 
   (e.g. q=field_i:{Integer.MAX_VALUE TO Integer.MAX_VALUE]) (Tomás Fernández Löbbe)
 
 * SOLR-11136: Fix solrj XMLResponseParser when nested docs transformer is used with indented XML (hossman)
@@ -1135,7 +1130,7 @@ Other Changes
 
 * SOLR-10807: Randomize Points based numeric field types in all existing tests & test schemas
   where Trie numerics were previously hardcoded. (hossman, Steve Rowe, Anshum Gupta)
-
+  
 * SOLR-6807: Changed requestDispatcher's handleSelect to default to false, thus ignoring "qt".
   Simplified configs to not refer to handleSelect or "qt".  Switch all tests that assumed true to assume false
   (added leading '/' in request handlers). Switch all tests referring to "standard" request handler to
@@ -1161,11 +1156,11 @@ Other Changes
 * SOLR-11068: MOVEREPLICA and REPLACENODE API parameter names are now 'sourceNode' and 'targetNode'. The old names
   viz. 'fromNode' for MOVEREPLICA and 'source', 'target' for REPLACENODE have been deprecated. (shalin)
 
+* SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
+
 * SOLR-11037: Refactor to provide NodeConfig.getSolrDataHome internal API. (ab, janhoy, shalin)
 
 * SOLR-11119: Switch from Trie to Points field types in the .system collection schema. (Steve Rowe)
-
-* SOLR-11088: Fix sporadic failures of MetricsHandlerTest.testPropertyFilter on jenkins (shalin)
 
 * SOLR-10494: Make default response format JSON (wt=json), and also indent text responses formats
   (indent=on) by default (Trey Grainger & Cassandra Targett via hossman)

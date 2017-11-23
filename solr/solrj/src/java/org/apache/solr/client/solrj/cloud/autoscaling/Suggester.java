@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
 
 /* A suggester is capable of suggesting a collection operation
  * given a particular session. Before it suggests a new operation,
@@ -146,6 +147,11 @@ public abstract class Suggester {
       ew.put("type", violation == null ? "improvement" : "violation");
       ew.putIfNotNull("violation", violation);
       ew.put("operation", operation);
+    }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(this);
     }
   }
 
