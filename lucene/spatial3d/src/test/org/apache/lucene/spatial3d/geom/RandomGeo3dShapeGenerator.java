@@ -440,6 +440,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       iterations++;
       int vertexCount =  random().nextInt(2) + 2;
       List<GeoPoint> geoPoints = points(vertexCount, planetModel, constraints);
+      if (geoPoints.size() < 2){
+        continue;
+      }
       try {
         GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 0, geoPoints.toArray(new GeoPoint[geoPoints.size()]));
         if (!constraints.valid(path)) {
@@ -467,6 +470,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       iterations++;
       int vertexCount =  random().nextInt(2) + 2;
       List<GeoPoint> geoPoints = points(vertexCount, planetModel, constraints);
+      if (geoPoints.size() < 2){
+        continue;
+      }
       double width =randomCutoffAngle();
       try {
         GeoPath path = GeoPathFactory.makeGeoPath(planetModel, width, geoPoints.toArray(new GeoPoint[geoPoints.size()]));
@@ -523,6 +529,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
     while (iterations < MAX_SHAPE_ITERATIONS) {
       iterations++;
       List<GeoPoint> geoPoints = points(vertexCount,planetModel, constraints);
+      if (geoPoints.size() < 3){
+        continue;
+      }
       List<GeoPoint> orderedGeoPoints = orderPoints(geoPoints);
       try {
         GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, orderedGeoPoints);
@@ -551,6 +560,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
     while (iterations < MAX_SHAPE_ITERATIONS) {
       iterations++;
       List<GeoPoint> geoPoints = points(vertexCount,planetModel, constraints);
+      if (geoPoints.size() < 3){
+        continue;
+      }
       List<GeoPoint> orderedGeoPoints = orderPoints(geoPoints);
       try {
         GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, orderedGeoPoints);
@@ -572,7 +584,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
         pointsConstraints.put(polygon,GeoArea.WITHIN);
         pointsConstraints.putAll(constraints.getContains());
         pointsConstraints.putAll(constraints.getDisjoint());
-        List<GeoPolygon> holes = concavePolygonHoles(planetModel, holeConstraints, pointsConstraints);
+        List<GeoPolygon> holes = concavePolygonHoles(planetModel, polygon, holeConstraints, pointsConstraints);
         //we should have at least one hole
         if (holes.size() == 0){
           continue;
@@ -594,11 +606,13 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
    * use to generate convex holes. Note that constraints for points and holes are different,
    *
    * @param planetModel The planet model.
+   * @param polygon The polygon where the holes are within.
    * @param holeConstraints The given constraints that a hole must comply.
    * @param pointConstraints The given constraints that a point must comply.
    * @return The random generated GeoPolygon.
    */
   private List<GeoPolygon> concavePolygonHoles(PlanetModel planetModel,
+                                               GeoPolygon polygon,
                                                Constraints holeConstraints,
                                                Constraints pointConstraints) {
     int iterations =0;
@@ -608,7 +622,16 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       iterations++;
       int vertexCount = random().nextInt(3) + 3;
       List<GeoPoint> geoPoints = points(vertexCount, planetModel, pointConstraints);
+      if (geoPoints.size() < 3){
+        continue;
+      }
       geoPoints = orderPoints(geoPoints);
+      GeoPolygon inversePolygon  = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
+      //The convex polygon must be within
+      if (inversePolygon == null || polygon.getRelationship(inversePolygon) != GeoArea.WITHIN) {
+        continue;
+      }
+      //make it concave
       Collections.reverse(geoPoints);
       try {
         GeoPolygon hole = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
@@ -642,6 +665,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
     while (iterations < MAX_SHAPE_ITERATIONS) {
       iterations++;
       List<GeoPoint> geoPoints = points(vertexCount,planetModel, constraints);
+      if (geoPoints.size() < 3){
+        continue;
+      }
       List<GeoPoint> orderedGeoPoints = orderPoints(geoPoints);
       Collections.reverse(orderedGeoPoints);
       try {
@@ -681,15 +707,23 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       if (hole == null){
         continue;
       }
-      // Now we get points for polygon. Must we with in the hole
+      // Now we get points for polygon. Must we within the hole
       // and we add contain constraints
       Constraints pointConstraints = new Constraints();
       pointConstraints.put(hole, GeoArea.WITHIN);
       pointConstraints.putAll(constraints.getContains());
       List<GeoPoint> geoPoints = points(vertexCount,planetModel, pointConstraints);
-      List<GeoPoint> orderedGeoPoints = orderPoints(geoPoints);
-      Collections.reverse(orderedGeoPoints);
+      if (geoPoints.size() < 3){
+        continue;
+      }
       try {
+        List<GeoPoint> orderedGeoPoints = orderPoints(geoPoints);
+        GeoPolygon inversePolygon  = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
+        //The convex polygon must be within the hole
+        if (inversePolygon == null || hole.getRelationship(inversePolygon) != GeoArea.WITHIN) {
+          continue;
+        }
+        Collections.reverse(orderedGeoPoints);
         GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, orderedGeoPoints, Collections.singletonList(hole));
         //final polygon must be convex
         if (!constraints.valid(polygon) || isConcave(planetModel,polygon)) {
@@ -720,6 +754,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
       while(polDescription.size() < polygonsCount){
         int vertexCount = random().nextInt(14) + 3;
         List<GeoPoint> geoPoints = points(vertexCount,planetModel, constraints);
+        if (geoPoints.size() < 3){
+          continue;
+        }
         orderPoints(geoPoints);
         polDescription.add(new GeoPolygonFactory.PolygonDescription(geoPoints));
       }
@@ -750,6 +787,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
     while (iterations < MAX_SHAPE_ITERATIONS) {
       iterations++;
       List<GeoPoint> points = points(3,planetModel,constraints);
+      if (points.size() < 3){
+        continue;
+      }
       points = orderPoints(points);
       try {
         GeoPolygon polygon =  GeoPolygonFactory.makeGeoConvexPolygon(planetModel, points);
@@ -778,6 +818,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
     while (iterations < MAX_SHAPE_ITERATIONS) {
       iterations++;
       List<GeoPoint> points = points(3, planetModel, constraints);
+      if (points.size() < 3){
+        continue;
+      }
       points = orderPoints(points);
       Collections.reverse(points);
       try {
@@ -794,8 +837,8 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
   }
 
   /**
-   * Method that returns a random list of generated GeoPoints under given constraints. If it cannot
-   * find a point it will add a point that might not comply with the constraints.
+   * Method that returns a random list of generated GeoPoints under given constraints. The
+   * number of points returned might be lower than the requested.
    *
    * @param count The number of points
    * @param planetModel The planet model.
@@ -806,10 +849,9 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
     List<GeoPoint> geoPoints = new ArrayList<>(count);
     for(int i= 0; i< count; i++) {
       GeoPoint point = randomGeoPoint(planetModel, constraints);
-      if (point == null){
-        point = randomGeoPoint(planetModel, new Constraints());
+      if (point != null){
+        geoPoints.add(point);
       }
-      geoPoints.add(point);
     }
     return  geoPoints;
   }
