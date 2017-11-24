@@ -221,7 +221,11 @@ class GeoExactCircle extends GeoBaseCircle {
       this.backBounds = backPlanes;
     }
     
-    this.edgePoints = new GeoPoint[]{edgePoint};      
+    this.edgePoints = new GeoPoint[]{edgePoint};
+    
+    if (!isWithin(northPoint) || !isWithin(southPoint) || !isWithin(eastPoint) || !isWithin(westPoint)) {
+      throw new IllegalArgumentException("Exact circle cannot be constructed this large given the planet model provided");
+    }
     //System.out.println("Is edgepoint within? "+isWithin(edgePoint));
   }
 

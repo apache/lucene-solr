@@ -551,4 +551,19 @@ public class GeoCircleTest extends LuceneTestCase {
     assertEquals(westPoint.getLongitude(), bounds.getLeftLongitude(), 1e-2);
     assertEquals(eastPoint.getLongitude(), bounds.getRightLongitude(), 1e-2);
   }
+
+  @Test
+  public void testLUCENE8065(){
+    boolean isIllegal = false;
+    try {
+      GeoCircle circle1 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.03186456479560385, -2.2254294002683617, 1.5702573535090856, 8.184299676008562E-6);
+    } catch (IllegalArgumentException e) {
+      isIllegal = true;
+    }
+    assertTrue(isIllegal);
+    /*
+    GeoCircle circle2 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.03186456479560385, -2.2254294002683617 , 1.5698163157923914, 1.0E-5);
+    assertTrue(circle1.getRelationship(circle2) != GeoArea.DISJOINT);
+    */
+  }
 }
