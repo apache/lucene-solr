@@ -186,8 +186,8 @@ Optimizations
 
 Bug Fixes
 
-* LUCENE-8065: It was still possible to construct a concave GeoExactCircle, so add
-   a check to prevent that. (Karl Wright)
+* LUCENE-8066: It was still possible to construct a concave GeoExactCircle, so use
+   a sector approach to prevent that. (Ignacio Vera)
 
 * LUCENE-7967: The GeoDegeneratePoint isWithin() method needed allowance for
    numerical precision. (Karl Wright)
