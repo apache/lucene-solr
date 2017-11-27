@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *  Merges segments of approximately equal size, subject to
@@ -287,8 +288,8 @@ public class TieredMergePolicy extends MergePolicy {
     if (infos.size() == 0) {
       return null;
     }
-    final Collection<SegmentCommitInfo> merging = writer.getMergingSegments();
-    final Collection<SegmentCommitInfo> toBeMerged = new HashSet<>();
+    final Set<SegmentCommitInfo> merging = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> toBeMerged = new HashSet<>();
 
     final List<SegmentCommitInfo> infosSorted = new ArrayList<>(infos.asList());
 
@@ -519,7 +520,7 @@ public class TieredMergePolicy extends MergePolicy {
 
     List<SegmentCommitInfo> eligible = new ArrayList<>();
     boolean forceMergeRunning = false;
-    final Collection<SegmentCommitInfo> merging = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> merging = writer.getMergingSegments();
     boolean segmentIsOriginal = false;
     for(SegmentCommitInfo info : infos) {
       final Boolean isOriginal = segmentsToMerge.get(info);
@@ -594,7 +595,7 @@ public class TieredMergePolicy extends MergePolicy {
       message("findForcedDeletesMerges infos=" + writer.segString(infos) + " forceMergeDeletesPctAllowed=" + forceMergeDeletesPctAllowed, writer);
     }
     final List<SegmentCommitInfo> eligible = new ArrayList<>();
-    final Collection<SegmentCommitInfo> merging = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> merging = writer.getMergingSegments();
     for(SegmentCommitInfo info : infos) {
       double pctDeletes = 100.*((double) writer.numDeletedDocs(info))/info.info.maxDoc();
       if (pctDeletes > forceMergeDeletesPctAllowed && !merging.contains(info)) {
