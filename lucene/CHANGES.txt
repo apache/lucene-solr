@@ -23,9 +23,6 @@ API Changes
 * LUCENE-8014: Similarity.computeSlopFactor() and
   Similarity.computePayloadFactor() have been removed (Alan Woodward)
 
-* LUCENE-8049: IndexWriter.getMergingSegments()'s return type was changed from
-  Collection to Set to more accurately reflect it's nature. (David Smiley)
-
 Changes in Runtime Behavior
 
 * LUCENE-7837: Indices that were created before the previous major version
@@ -72,6 +69,9 @@ API Changes
 
 * LUCENE-7998: DoubleValuesSource.fromQuery() allows you to use the scores
   from a Query as a DoubleValuesSource. (Alan Woodward)
+
+* LUCENE-8049: IndexWriter.getMergingSegments()'s return type was changed from
+  Collection to Set to more accurately reflect it's nature. (David Smiley)
 
 New Features
 
