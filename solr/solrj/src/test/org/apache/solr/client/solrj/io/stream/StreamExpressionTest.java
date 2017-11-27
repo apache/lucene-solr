@@ -6326,10 +6326,54 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     List<Number> array3 = (List<Number>)tuples.get(0).get("b");
     assertEquals(array3.size(), 3);
-    assertEquals(array2.get(0).doubleValue(), 0.4558423058385518, 0.0);
-    assertEquals(array2.get(1).doubleValue(), 0.5698028822981898, 0.0);
-    assertEquals(array2.get(2).doubleValue(), 0.6837634587578276, 0.0);
+    assertEquals(array3.get(0).doubleValue(), 0.4558423058385518, 0.0);
+    assertEquals(array3.get(1).doubleValue(), 0.5698028822981898, 0.0);
+    assertEquals(array3.get(2).doubleValue(), 0.6837634587578276, 0.0);
   }
+
+
+  @Test
+  public void testNormalizeSum() throws Exception {
+    String cexpr = "let(echo=true, " +
+                       "a=normalizeSum(matrix(array(1,2,3), array(4,5,6))), " +
+                       "b=normalizeSum(array(1,2,3))," +
+                       "c=normalizeSum(array(1,2,3), 100))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    List<List<Number>> out = (List<List<Number>>)tuples.get(0).get("a");
+    assertEquals(out.size(), 2);
+    List<Number> array1 = out.get(0);
+    assertEquals(array1.size(), 3);
+    assertEquals(array1.get(0).doubleValue(), 0.16666666666666666, 0.0001);
+    assertEquals(array1.get(1).doubleValue(), 0.3333333333333333, 0.00001);
+    assertEquals(array1.get(2).doubleValue(), 0.5, 0.0001);
+
+    List<Number> array2 = out.get(1);
+    assertEquals(array2.size(), 3);
+    assertEquals(array2.get(0).doubleValue(), 0.26666666666666666, 0.0001);
+    assertEquals(array2.get(1).doubleValue(), 0.3333333333333333, 0.0001);
+    assertEquals(array2.get(2).doubleValue(), 0.4, 0.0001);
+
+    List<Number> array3 = (List<Number>)tuples.get(0).get("b");
+    assertEquals(array3.size(), 3);
+    assertEquals(array3.get(0).doubleValue(), 0.16666666666666666, 0.0001);
+    assertEquals(array3.get(1).doubleValue(), 0.3333333333333333, 0.0001);
+    assertEquals(array3.get(2).doubleValue(), 0.5, 0.0001);
+
+    List<Number> array4 = (List<Number>)tuples.get(0).get("c");
+    assertEquals(array4.size(), 3);
+    assertEquals(array4.get(0).doubleValue(), 16.666666666666666, 0.0001);
+    assertEquals(array4.get(1).doubleValue(), 33.33333333333333, 0.00001);
+    assertEquals(array4.get(2).doubleValue(), 50, 0.0001);
+  }
+
 
   @Test
   public void testStandardize() throws Exception {
