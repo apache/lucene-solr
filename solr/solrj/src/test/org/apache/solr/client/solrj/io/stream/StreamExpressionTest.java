@@ -6431,6 +6431,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testProbabilityRange() throws Exception {
+    String cexpr = "let(a=normalDistribution(500, 20), " +
+                       "b=probability(a, 520, 530))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number prob = (Number)tuples.get(0).get("b");
+    assertEquals(prob.doubleValue(),  0.09184805266259899, 0.0);
+  }
+
+      @Test
   public void testDistributions() throws Exception {
     String cexpr = "let(a=normalDistribution(10, 2), " +
                        "b=sample(a, 250), " +
