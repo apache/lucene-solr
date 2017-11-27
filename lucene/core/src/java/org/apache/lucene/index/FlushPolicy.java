@@ -104,31 +104,8 @@ abstract class FlushPolicy {
   protected ThreadState findLargestNonPendingWriter(
       DocumentsWriterFlushControl control, ThreadState perThreadState) {
     assert perThreadState.dwpt.getNumDocsInRAM() > 0;
-    long maxRamSoFar = perThreadState.bytesUsed;
     // the dwpt which needs to be flushed eventually
-    ThreadState maxRamUsingThreadState = perThreadState;
-    assert !perThreadState.flushPending : "DWPT should have flushed";
-    Iterator<ThreadState> activePerThreadsIterator = control.allActiveThreadStates();
-    int count = 0;
-    while (activePerThreadsIterator.hasNext()) {
-      ThreadState next = activePerThreadsIterator.next();
-      if (!next.flushPending) {
-        final long nextRam = next.bytesUsed;
-        if (nextRam > 0 && next.dwpt.getNumDocsInRAM() > 0) {
-          if (infoStream.isEnabled("FP")) {
-            infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.dwpt.getNumDocsInRAM());
-          }
-          count++;
-          if (nextRam > maxRamSoFar) {
-            maxRamSoFar = nextRam;
-            maxRamUsingThreadState = next;
-          }
-        }
-      }
-    }
-    if (infoStream.isEnabled("FP")) {
-      infoStream.message("FP", count + " in-use non-flushing threads states");
-    }
+    ThreadState maxRamUsingThreadState = control.findLargestNonPendingWriter();
     assert assertMessage("set largest ram consuming thread pending on lower watermark");
     return maxRamUsingThreadState;
   }

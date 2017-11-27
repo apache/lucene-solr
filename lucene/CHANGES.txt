@@ -85,6 +85,13 @@ New Features
 * LUCENE-7736: IndexReaderFunctions expose various IndexReader statistics as
   DoubleValuesSources. (Alan Woodward)
 
+* LUCENE-8068: Allow IndexWriter to write a single DWPT to disk Adds a
+  flushNextBuffer method to IndexWriter that allows the caller to
+  synchronously move the next pending or the biggest non-pending index buffer to
+  disk. This enables flushing selected buffer to disk without highjacking an
+  indexing thread. This is for instance useful if more than one IW (shards) must
+  be maintained in a single JVM / system. (Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-8057: Exact circle bounds computation was incorrect.
