@@ -79,6 +79,8 @@ New Features
   in the same Alias defined set based on a time field (currently an internal feature).
   (David Smiley)
 
+* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
+
 Bug Fixes
 ----------------------
 

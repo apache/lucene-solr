@@ -189,6 +189,11 @@
       "required": [
         "name"
       ]
+    },
+    "set-properties": {
+      "type": "object",
+      "description": "The set-properties command allows you to add and update properties used by autoscaling framework itself",
+      "additionalProperties": true
     }
   }
 }

@@ -51,6 +51,7 @@ public class AutoScalingConfig implements MapWriter {
   private Policy policy;
   private Map<String, TriggerConfig> triggers;
   private Map<String, TriggerListenerConfig> listeners;
+  private Map<String, Object> properties;
 
   private final int zkVersion;
 
@@ -324,11 +325,12 @@ public class AutoScalingConfig implements MapWriter {
   }
 
   private AutoScalingConfig(Policy policy, Map<String, TriggerConfig> triggerConfigs, Map<String,
-      TriggerListenerConfig> listenerConfigs, int zkVersion) {
+      TriggerListenerConfig> listenerConfigs, Map<String, Object> properties, int zkVersion) {
     this.policy = policy;
     this.triggers = triggerConfigs != null ? Collections.unmodifiableMap(triggerConfigs) : null;
     this.listeners = listenerConfigs != null ? Collections.unmodifiableMap(listenerConfigs) : null;
     this.jsonMap = null;
+    this.properties = properties != null ? Collections.unmodifiableMap(properties) : null;
     this.zkVersion = zkVersion;
     this.empty = policy == null &&
         (triggerConfigs == null || triggerConfigs.isEmpty()) &&
@@ -422,13 +424,38 @@ public class AutoScalingConfig implements MapWriter {
     return listeners;
   }
 
+  public Map<String, Object> getProperties()  {
+    if (properties == null) {
+      if (jsonMap != null)  {
+        Map<String, Object> map = (Map<String, Object>) jsonMap.get("properties");
+        if (map == null) {
+          this.properties = Collections.emptyMap();
+        } else  {
+          this.properties = new HashMap<>(map);
+        }
+      } else  {
+        this.properties = Collections.emptyMap();
+      }
+    }
+    return properties;
+  }
+
+  /**
+   * Create a copy of the config with replaced properties.
+   * @param properties the new properties map
+   * @return modified copy of the configuration
+   */
+  public AutoScalingConfig withProperties(Map<String, Object> properties) {
+    return new AutoScalingConfig(policy, getTriggerConfigs(), getTriggerListenerConfigs(), properties, zkVersion);
+  }
+
   /**
    * Create a copy of the config with replaced policy.
    * @param policy new policy
    * @return modified copy of the configuration
    */
   public AutoScalingConfig withPolicy(Policy policy) {
-    return new AutoScalingConfig(policy, getTriggerConfigs(), getTriggerListenerConfigs(), zkVersion);
+    return new AutoScalingConfig(policy, getTriggerConfigs(), getTriggerListenerConfigs(), getProperties(), zkVersion);
   }
 
   /**
@@ -437,7 +464,7 @@ public class AutoScalingConfig implements MapWriter {
    * @return modified copy of the configuration
    */
   public AutoScalingConfig withTriggerConfigs(Map<String, TriggerConfig> configs) {
-    return new AutoScalingConfig(getPolicy(), configs, getTriggerListenerConfigs(), zkVersion);
+    return new AutoScalingConfig(getPolicy(), configs, getTriggerListenerConfigs(), getProperties(), zkVersion);
   }
 
   /**
@@ -468,7 +495,7 @@ public class AutoScalingConfig implements MapWriter {
    * @return modified copy of the configuration
    */
   public AutoScalingConfig withTriggerListenerConfigs(Map<String, TriggerListenerConfig> configs) {
-    return new AutoScalingConfig(getPolicy(), getTriggerConfigs(), configs, zkVersion);
+    return new AutoScalingConfig(getPolicy(), getTriggerConfigs(), configs, getProperties(), zkVersion);
   }
 
   /**
@@ -508,6 +535,7 @@ public class AutoScalingConfig implements MapWriter {
 
     ew.put("triggers", getTriggerConfigs());
     ew.put("listeners", getTriggerListenerConfigs());
+    ew.put("properties", getProperties());
   }
 
   public String toString() {
@@ -523,7 +551,8 @@ public class AutoScalingConfig implements MapWriter {
 
     if (!getPolicy().equals(that.getPolicy())) return false;
     if (!getTriggerConfigs().equals(that.getTriggerConfigs())) return false;
-    return getTriggerListenerConfigs().equals(that.getTriggerListenerConfigs());
+    if (!getTriggerListenerConfigs().equals(that.getTriggerListenerConfigs())) return false;
+    return getProperties().equals(that.getProperties());
   }
 
   private static List<Object> getList(String key, Map<String, Object> properties) {

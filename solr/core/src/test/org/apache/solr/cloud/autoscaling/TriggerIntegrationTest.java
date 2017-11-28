@@ -19,6 +19,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,10 +48,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.TimeSource;
@@ -116,6 +119,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
+    throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS));
     waitForSeconds = 1 + random().nextInt(3);
     actionConstructorCalled = new CountDownLatch(1);
     actionInitCalled = new CountDownLatch(1);
@@ -251,6 +255,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   static AtomicLong lastActionExecutedAt = new AtomicLong(0);
+  static AtomicLong throttlingDelayMs = new AtomicLong(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS));
   static ReentrantLock lock = new ReentrantLock();
   public static class ThrottlingTesterAction extends TestTriggerAction {
     // nanos are very precise so we need a delta for comparison with ms
@@ -268,8 +273,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       }
       try {
         if (lastActionExecutedAt.get() != 0)  {
-          log.info("last action at " + lastActionExecutedAt.get() + " time = " + timeSource.getTime());
-          if (TimeUnit.MILLISECONDS.convert(timeSource.getTime() - lastActionExecutedAt.get(), TimeUnit.NANOSECONDS) < ScheduledTriggers.DEFAULT_MIN_MS_BETWEEN_ACTIONS - DELTA_MS) {
+          log.info("last action at " + lastActionExecutedAt.get() + " time = " + timeSource.getTime() + " expected diff: " + TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS));
+          if (timeSource.getTime() - lastActionExecutedAt.get() < TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS)) {
             log.info("action executed again before minimum wait time from {}", event.getSource());
             fail("TriggerListener was fired before the throttling period");
           }
@@ -1217,7 +1222,182 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
     // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
     // must be larger than cooldown period
-    assertTrue("timestamp delta is less than default cooldown period", ev.timestamp - prevTimestamp > TimeUnit.MILLISECONDS.toNanos(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_MS));
+    assertTrue("timestamp delta is less than default cooldown period", ev.timestamp - prevTimestamp > TimeUnit.SECONDS.toNanos(ScheduledTriggers.DEFAULT_COOLDOWN_PERIOD_SECONDS));
+    prevTimestamp = ev.timestamp;
+
+    long modifiedCooldownPeriodSeconds = 7;
+    String setPropertiesCommand = "{\n" +
+        "\t\"set-properties\" : {\n" +
+        "\t\t\"" + AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS + "\" : " + modifiedCooldownPeriodSeconds + "\n" +
+        "\t}\n" +
+        "}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+
+    // reset the trigger and captured events
+    listenerEvents.clear();
+    triggerFiredLatch = new CountDownLatch(1);
+    triggerFired.compareAndSet(true, false);
+
+    JettySolrRunner newNode3 = cluster.startJettySolrRunner();
+    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
+    assertTrue("The trigger did not fire at all", await);
+    // wait for listener to capture the SUCCEEDED stage
+    Thread.sleep(2000);
+
+    // there must be at least one IGNORED event due to cooldown, and one SUCCEEDED event
+    capturedEvents = listenerEvents.get("bar");
+    assertTrue(capturedEvents.toString(), capturedEvents.size() > 1);
+    for (int i = 0; i < capturedEvents.size() - 1; i++) {
+      ev = capturedEvents.get(i);
+      assertEquals(ev.toString(), TriggerEventProcessorStage.IGNORED, ev.stage);
+      assertTrue(ev.toString(), ev.message.contains("cooldown"));
+    }
+    ev = capturedEvents.get(capturedEvents.size() - 1);
+    assertEquals(ev.toString(), TriggerEventProcessorStage.SUCCEEDED, ev.stage);
+    // the difference between timestamps of the first SUCCEEDED and the last SUCCEEDED
+    // must be larger than the modified cooldown period
+    assertTrue("timestamp delta is less than default cooldown period", ev.timestamp - prevTimestamp > TimeUnit.SECONDS.toNanos(modifiedCooldownPeriodSeconds));
+  }
+
+  public void testSetProperties() throws Exception  {
+    JettySolrRunner runner = cluster.getJettySolrRunner(0);
+    SolrResourceLoader resourceLoader = runner.getCoreContainer().getResourceLoader();
+    SolrCloudManager solrCloudManager = runner.getCoreContainer().getZkController().getSolrCloudManager();
+    AtomicLong diff = new AtomicLong(0);
+    triggerFiredLatch = new CountDownLatch(2); // have the trigger run twice to capture time difference
+    try (ScheduledTriggers scheduledTriggers = new ScheduledTriggers(resourceLoader, solrCloudManager)) {
+      AutoScalingConfig config = new AutoScalingConfig(Collections.emptyMap());
+      scheduledTriggers.setAutoScalingConfig(config);
+      scheduledTriggers.add(new TriggerBase(TriggerEventType.NODELOST, "x", Collections.emptyMap(), resourceLoader, solrCloudManager) {
+        @Override
+        protected Map<String, Object> getState() {
+          return Collections.singletonMap("x","y");
+        }
+
+        @Override
+        protected void setState(Map<String, Object> state) {
+
+        }
+
+        @Override
+        public void restoreState(AutoScaling.Trigger old) {
+
+        }
+
+        @Override
+        public void run() {
+          if (getTriggerFiredLatch().getCount() == 0)  return;
+          long l = diff.get();
+          diff.set(timeSource.getTime() - l);
+          getTriggerFiredLatch().countDown();
+        }
+      });
+      assertTrue(getTriggerFiredLatch().await(4, TimeUnit.SECONDS));
+      assertTrue(diff.get() - TimeUnit.SECONDS.toNanos(ScheduledTriggers.DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS) >= 0);
+
+      // change schedule delay
+      config = config.withProperties(Collections.singletonMap(AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS, 4));
+      scheduledTriggers.setAutoScalingConfig(config);
+      triggerFiredLatch = new CountDownLatch(2);
+      assertTrue("Timed out waiting for latch to fire", getTriggerFiredLatch().await(10, TimeUnit.SECONDS));
+      assertTrue(diff.get() - TimeUnit.SECONDS.toNanos(4) >= 0);
+
+      // reset with default properties
+      scheduledTriggers.remove("x"); // remove the old trigger
+      config = config.withProperties(ScheduledTriggers.DEFAULT_PROPERTIES);
+      scheduledTriggers.setAutoScalingConfig(config);
+
+      // test core thread count
+      List<AutoScaling.Trigger> triggerList = new ArrayList<>();
+      final Set<String> threadNames = Collections.synchronizedSet(new HashSet<>());
+      final Set<String> triggerNames = Collections.synchronizedSet(new HashSet<>());
+      triggerFiredLatch = new CountDownLatch(8);
+      for (int i = 0; i < 8; i++) {
+        triggerList.add(new MockTrigger(TriggerEventType.NODELOST, "x" + i, Collections.emptyMap(), resourceLoader, solrCloudManager)  {
+          @Override
+          public void run() {
+            try {
+              // If core pool size is increased then new threads won't be started if existing threads
+              // aren't busy with tasks. So we make this thread wait longer than necessary
+              // so that the pool is forced to start threads for other triggers
+              Thread.sleep(5000);
+            } catch (InterruptedException e) {
+            }
+            if (triggerNames.add(getName()))  {
+              getTriggerFiredLatch().countDown();
+              threadNames.add(Thread.currentThread().getName());
+            }
+          }
+        });
+        scheduledTriggers.add(triggerList.get(i));
+      }
+      assertTrue("Timed out waiting for latch to fire", getTriggerFiredLatch().await(20, TimeUnit.SECONDS));
+      assertEquals("Expected 8 triggers but found: " + triggerNames,8, triggerNames.size());
+      assertEquals("Expected " + ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE
+          + " threads but found: " + threadNames,
+          ScheduledTriggers.DEFAULT_TRIGGER_CORE_POOL_SIZE, threadNames.size());
+
+      // change core pool size
+      config = config.withProperties(Collections.singletonMap(AutoScalingParams.TRIGGER_CORE_POOL_SIZE, 6));
+      scheduledTriggers.setAutoScalingConfig(config);
+      triggerFiredLatch = new CountDownLatch(8);
+      threadNames.clear();
+      triggerNames.clear();
+      assertTrue(getTriggerFiredLatch().await(20, TimeUnit.SECONDS));
+      assertEquals("Expected 8 triggers but found: " + triggerNames,8, triggerNames.size());
+      assertEquals("Expected 6 threads but found: " + threadNames,6, threadNames.size());
+
+      // reset
+      for (int i = 0; i < 8; i++) {
+        scheduledTriggers.remove(triggerList.get(i).getName());
+      }
+
+      config = config.withProperties(Collections.singletonMap(AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS, 6));
+      scheduledTriggers.setAutoScalingConfig(config);
+      lastActionExecutedAt.set(0);
+      throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(6));
+      triggerFiredLatch = new CountDownLatch(2);
+      Map<String, Object> props = map("waitFor", 0L, "actions", Collections.singletonList(map("name","throttler", "class", ThrottlingTesterAction.class.getName())));
+      scheduledTriggers.add(new NodeAddedTrigger("y1", props, resourceLoader, solrCloudManager));
+      scheduledTriggers.add(new NodeAddedTrigger("y2", props, resourceLoader, solrCloudManager));
+      JettySolrRunner newNode = cluster.startJettySolrRunner();
+      assertTrue(getTriggerFiredLatch().await(10, TimeUnit.SECONDS));
+      for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+        if (cluster.getJettySolrRunner(i) == newNode) {
+          cluster.stopJettySolrRunner(i);
+          break;
+        }
+      }
+    }
+  }
+
+  public static class MockTrigger extends TriggerBase {
+
+    public MockTrigger(TriggerEventType eventType, String name, Map<String, Object> properties, SolrResourceLoader loader, SolrCloudManager cloudManager) {
+      super(eventType, name, properties, loader, cloudManager);
+    }
+
+    @Override
+    protected Map<String, Object> getState() {
+      return Collections.emptyMap();
+    }
+
+    @Override
+    protected void setState(Map<String, Object> state) {
+
+    }
+
+    @Override
+    public void restoreState(AutoScaling.Trigger old) {
+
+    }
+
+    @Override
+    public void run() {
+
+    }
   }
 
   public static class TestSearchRateAction extends TriggerActionBase {

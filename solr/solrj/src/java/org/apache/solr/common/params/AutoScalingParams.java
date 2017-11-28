@@ -58,4 +58,11 @@ public interface AutoScalingParams {
   String CMD_REMOVE_POLICY = "remove-policy";
   String CMD_SET_CLUSTER_PREFERENCES = "set-cluster-preferences";
   String CMD_SET_CLUSTER_POLICY = "set-cluster-policy";
+  String CMD_SET_PROPERTIES = "set-properties";
+
+  // properties
+  String TRIGGER_SCHEDULE_DELAY_SECONDS = "triggerScheduleDelaySeconds";
+  String TRIGGER_COOLDOWN_PERIOD_SECONDS = "triggerCooldownPeriodSeconds";
+  String TRIGGER_CORE_POOL_SIZE = "triggerCorePoolSize";
+  String ACTION_THROTTLE_PERIOD_SECONDS = "actionThrottlePeriodSeconds";
 }
