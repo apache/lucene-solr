@@ -121,6 +121,8 @@ Optimizations
 * LUCENE-7994: Use int/int scatter map to gather facet counts when the
   number of hits is small relative to the number of unique facet labels
   (Dawid Weiss, Robert Muir, Mike McCandless)
+
+* LUCENE-8062: GlobalOrdinalsQuery is no longer eligible for caching. (Jim Ferenczi)
   
 Tests
 
