@@ -54,8 +54,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.metrics.reporters.solr.SolrClusterReporter;
-import org.apache.solr.metrics.reporters.solr.SolrShardReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -875,10 +873,10 @@ public class SolrMetricManager {
         new Object[]{this, registry}
     );
     try {
-      if (reporter instanceof SolrShardReporter) {
-        ((SolrShardReporter)reporter).init(pluginInfo, solrCore);
-      } else if (reporter instanceof SolrClusterReporter) {
-        ((SolrClusterReporter)reporter).init(pluginInfo, coreContainer);
+      if (reporter instanceof SolrCoreReporter) {
+        ((SolrCoreReporter)reporter).init(pluginInfo, solrCore);
+      } else if (reporter instanceof SolrCoreContainerReporter) {
+        ((SolrCoreContainerReporter)reporter).init(pluginInfo, coreContainer);
       } else {
         reporter.init(pluginInfo);
       }
