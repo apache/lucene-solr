@@ -16,51 +16,10 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class GeoCircleTest extends LuceneTestCase {
-
-  @Test
-  public void testExactCircleLUCENE8054() {
-    // [junit4]    > Throwable #1: java.lang.AssertionError: circle1: GeoExactCircle: 
-    // {planetmodel=PlanetModel.WGS84, center=[lat=-1.2097332228999564, lon=0.749061883738567([X=0.25823775418663625, Y=0.2401212674846636, Z=-0.9338185278804293])],
-    //  radius=0.20785254459485322(11.909073566339822), accuracy=6.710701666727661E-9}
-    // [junit4]    > circle2: GeoExactCircle: {planetmodel=PlanetModel.WGS84, center=[lat=-1.2097332228999564, lon=0.749061883738567([X=0.25823775418663625, Y=0.2401212674846636, Z=-0.9338185278804293])], 
-    // radius=0.20701584142315682(11.861134005896407), accuracy=1.0E-5}
-    final GeoCircle c1 = new GeoExactCircle(PlanetModel.WGS84, -1.2097332228999564, 0.749061883738567, 0.20785254459485322, 6.710701666727661E-9);
-    final GeoCircle c2 = new GeoExactCircle(PlanetModel.WGS84, -1.2097332228999564, 0.749061883738567, 0.20701584142315682, 1.0E-5);
-    assertTrue("cannot be disjoint", c1.getRelationship(c2) != GeoArea.DISJOINT);
-  }
-  
-  @Test
-  public void testExactCircle() {
-    GeoCircle c;
-    GeoPoint gp;
-    
-    // Construct a variety of circles to see how many actual planes are involved
-    c = new GeoExactCircle(PlanetModel.WGS84, 0.0, 0.0, 0.1, 1e-6);
-    gp = new GeoPoint(PlanetModel.WGS84, 0.0, 0.2);
-    assertTrue(!c.isWithin(gp));
-    gp = new GeoPoint(PlanetModel.WGS84, 0.0, 0.0);
-    assertTrue(c.isWithin(gp));
-    
-    c = new GeoExactCircle(PlanetModel.WGS84, 0.1, 0.0, 0.1, 1e-6);
-
-    c = new GeoExactCircle(PlanetModel.WGS84, 0.2, 0.0, 0.1, 1e-6);
-
-    c = new GeoExactCircle(PlanetModel.WGS84, 0.3, 0.0, 0.1, 1e-6);
-
-    c = new GeoExactCircle(PlanetModel.WGS84, 0.4, 0.0, 0.1, 1e-6);
-
-    c = new GeoExactCircle(PlanetModel.WGS84, Math.PI * 0.5, 0.0, 0.1, 1e-6);
-    gp = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5 - 0.2, 0.0);
-    assertTrue(!c.isWithin(gp));
-    gp = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5, 0.0);
-    assertTrue(c.isWithin(gp));
-
-  }
   
   @Test
   public void testCircleDistance() {
@@ -458,112 +417,5 @@ public class GeoCircleTest extends LuceneTestCase {
     
     assert gc.isWithin(gp)?solid.isWithin(gp):true;
     
-  }
-
-  @Test
-  @Repeat(iterations = 100)
-  public void RandomPointBearingWGS84Test(){
-    PlanetModel planetModel = PlanetModel.WGS84;
-    RandomGeo3dShapeGenerator generator = new RandomGeo3dShapeGenerator();
-    GeoPoint center = generator.randomGeoPoint(planetModel);
-    double radius = random().nextDouble() * Math.PI;
-    checkBearingPoint(planetModel, center, radius, 0);
-    checkBearingPoint(planetModel, center, radius, 0.5 * Math.PI);
-    checkBearingPoint(planetModel, center, radius, Math.PI);
-    checkBearingPoint(planetModel, center, radius, 1.5 * Math.PI);
-  }
-
-  @Test
-  @Repeat(iterations = 10000)
-  public void RandomPointBearingCardinalTest(){
-    double ab = random().nextDouble() * 0.6 + 0.9;
-    double c = random().nextDouble() * 0.6  + 0.9 ;
-    PlanetModel planetModel = new PlanetModel(ab, c);
-    RandomGeo3dShapeGenerator generator = new RandomGeo3dShapeGenerator();
-    GeoPoint center = generator.randomGeoPoint(planetModel);
-    double radius =  random().nextDouble() * 0.9 * Math.PI;
-    checkBearingPoint(planetModel, center, radius, 0);
-    checkBearingPoint(planetModel, center, radius, 0.5 * Math.PI);
-    checkBearingPoint(planetModel, center, radius, Math.PI);
-    checkBearingPoint(planetModel, center, radius, 1.5 * Math.PI);
-  }
-
-  private void checkBearingPoint(PlanetModel planetModel, GeoPoint center, double radius, double bearingAngle) {
-    GeoPoint point = planetModel.surfacePointOnBearing(center, radius, bearingAngle);
-    double surfaceDistance = planetModel.surfaceDistance(center, point);
-    assertTrue(planetModel.toString() + " " + Double.toString(surfaceDistance - radius) + " " + Double.toString(radius), surfaceDistance - radius < Vector.MINIMUM_ANGULAR_RESOLUTION);
-  }
-
-  @Test
-  public void exactCircleLargeTest(){
-    boolean success = true;
-    try {
-      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(new PlanetModel(0.5, 0.7), 0.25 * Math.PI,  0,0.35 * Math.PI, 1e-12);
-    } catch (IllegalArgumentException e) {
-      success = false;
-    }
-    assertTrue(success);
-    success = false;
-    try {
-      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.25 * Math.PI,  0,0.9996 * Math.PI, 1e-12);
-    } catch (IllegalArgumentException e) {
-      success = true;
-    }
-    assertTrue(success);
-  }
-
-  @Test
-  public void testLUCENE8054(){
-    GeoCircle circle1 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, -1.0394053553992673, -1.9037325881389144, 1.1546166170607672, 4.231100485201301E-4);
-    GeoCircle circle2 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, -1.3165961602008989, -1.887137823746273, 1.432516663588956, 3.172052880854355E-4);
-    // Relationship between circles must be different than DISJOINT as centers are closer than the radius.
-    int rel = circle1.getRelationship(circle2);
-    assertTrue(rel != GeoArea.DISJOINT);
-  }
-
-  @Test
-  public void testLUCENE8056(){
-    GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.647941905154693, 0.8542472362428436, 0.8917883700569315, 1.2173787103955335E-8);
-    GeoBBox bBox = GeoBBoxFactory.makeGeoBBox(PlanetModel.WGS84, 0.5890486225480862, 0.4908738521234052, 1.9634954084936207, 2.159844949342983);
-    //Center iis out of the shape
-    assertFalse(circle.isWithin(bBox.getCenter()));
-    //Edge point is in the shape
-    assertTrue(circle.isWithin(bBox.getEdgePoints()[0]));
-    //Shape should intersect!!!
-    assertTrue(bBox.getRelationship(circle) == GeoArea.OVERLAPS);
-  }
-
-  @Test
-  public void testExactCircleBounds() {
-
-    GeoPoint center = new GeoPoint(PlanetModel.WGS84, 0, 0);
-    // Construct four cardinal points, and then we'll build the first two planes
-    final GeoPoint northPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, 0.0);
-    final GeoPoint southPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, Math.PI);
-    final GeoPoint eastPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, Math.PI * 0.5);
-    final GeoPoint westPoint = PlanetModel.WGS84.surfacePointOnBearing(center, 1, Math.PI * 1.5);
-
-    GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0, 0, 1, 1e-6);
-    LatLonBounds bounds = new LatLonBounds();
-    circle.getBounds(bounds);
-    assertEquals(northPoint.getLatitude(), bounds.getMaxLatitude(), 1e-2);
-    assertEquals(southPoint.getLatitude(), bounds.getMinLatitude(), 1e-2);
-    assertEquals(westPoint.getLongitude(), bounds.getLeftLongitude(), 1e-2);
-    assertEquals(eastPoint.getLongitude(), bounds.getRightLongitude(), 1e-2);
-  }
-
-  @Test
-  public void testLUCENE8065(){
-    //boolean isIllegal = false;
-    //try {
-      GeoCircle circle1 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.03186456479560385, -2.2254294002683617, 1.5702573535090856, 8.184299676008562E-6);
-    //} catch (IllegalArgumentException e) {
-    //  isIllegal = true;
-    //}
-    //assertTrue(isIllegal);
-
-    GeoCircle circle2 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 0.03186456479560385, -2.2254294002683617 , 1.5698163157923914, 1.0E-5);
-    assertTrue(circle1.getRelationship(circle2) != GeoArea.DISJOINT);
-
   }
 }
