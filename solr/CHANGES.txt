@@ -99,6 +99,9 @@ New Features
 
 * SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
 
+* SOLR-11250: A new DefaultWrapperModel class for loading of large and/or externally stored
+  LTRScoringModel definitions. (Yuki Yano, shalin, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
