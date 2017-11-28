@@ -127,7 +127,7 @@ public class JdbcDataSource extends
           props.putAll(initProps);
           String password = null;
           try {
-            password = CryptoKeys.decodeAES(initProps.getProperty("password"), new String(chars, 0, len)).trim();
+            password = CryptoKeys.decodeAES(initProps.getProperty("password"), new String(chars, 0, len-1)).trim();
           } catch (SolrException se) {
             throw new DataImportHandlerException(SEVERE, "Error decoding password", se.getCause());
           }
