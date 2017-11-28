@@ -62,6 +62,8 @@ import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
+import static org.apache.solr.parser.SolrQueryParserBase.ScoreOverlaps.*;
+
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file.
  */
@@ -79,12 +81,37 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int MOD_NOT     = 10;
   static final int MOD_REQ     = 11;
 
-  protected ScoreOverlaps scoreOverlaps = ScoreOverlaps.AS_SAME_TERM;
+  protected ScoreOverlaps scoreOverlaps = AS_SAME_TERM;
 
+  /**
+   *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
+   *  consider if pants and khakis are query time synonyms
+   *
+   *  <li>{@link #AS_SAME_TERM}</li>
+   *  <li>{@link #PICK_BEST}</li>
+   *  <li>{@link #AS_DISTINCT_TERMS}</li>
+   */
   public static enum ScoreOverlaps {
-    AS_SAME_TERM,  /* default, blends doc freq for terms in same posn: SynonymQuery(A B)*/
-    PICK_BEST, /* picks dismax over synonyms, choosing best scoring per doc: (A | B) */
-    AS_DISTINCT_TERMS  /* picks combination (A OR B).*/
+    /** (default) synonym terms share doc freq
+     *  so if "pants" has df 500, and "khakis" a df of 50, uses 500 df when scoring both terms
+     *  appropriate for exact synonyms
+     *  see {@link org.apache.lucene.search.SynonymQuery}
+     * */
+    AS_SAME_TERM,
+
+    /** highest scoring term match chosen (ie dismax)
+     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher
+     *  appropriate when more specific synonyms should score higher
+     * */
+    PICK_BEST,
+
+    /** each synonym scored indepedently, then added together (ie boolean query)
+     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher but
+     *  summed with any "pants" matches
+     *  appropriate when more specific synonyms should score higher, but we don't want to ignore
+     *  less specific synonyms
+     * */
+    AS_DISTINCT_TERMS
   }
 
   // make it possible to call setDefaultOperator() without accessing
@@ -491,7 +518,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
-    setScoreOverlaps(ScoreOverlaps.AS_SAME_TERM);
+    setScoreOverlaps(AS_SAME_TERM);
     return query;
   }
 
@@ -566,21 +593,23 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   @Override
   protected Query newSynonymQuery(Term terms[]) {
-    if (scoreOverlaps == ScoreOverlaps.PICK_BEST) {
-      List<Query> currPosnClauses = new ArrayList<Query>();
-      for (Term term : terms) {
-        currPosnClauses.add(newTermQuery(term));
-      }
-      DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
-      return dm;
-    } else if (scoreOverlaps == ScoreOverlaps.AS_DISTINCT_TERMS) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (Term term : terms) {
-        builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
-      }
-      return builder.build();
+    switch (scoreOverlaps) {
+      case PICK_BEST:
+        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
+        for (Term term : terms) {
+          currPosnClauses.add(newTermQuery(term));
+        }
+        DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
+        return dm;
+      case AS_DISTINCT_TERMS:
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for (Term term : terms) {
+          builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
+        }
+        return builder.build();
+      default:
+        return super.newSynonymQuery(terms);
     }
-    return super.newSynonymQuery(terms);
   }
 
   /**
@@ -705,7 +734,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
             boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
 
-            ScoreOverlaps synMatchType = ScoreOverlaps.AS_SAME_TERM;
+            ScoreOverlaps synMatchType = AS_SAME_TERM;
             if (ft instanceof TextField) {
               synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
             }
@@ -1028,7 +1057,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        ScoreOverlaps synMatchType = ScoreOverlaps.AS_SAME_TERM;
+        ScoreOverlaps synMatchType = AS_SAME_TERM;
         if (ft instanceof TextField) {
           synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
         }
@@ -1043,7 +1072,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     // default to a normal field query
-    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, ScoreOverlaps.AS_SAME_TERM);
+    return newFieldQuery(getAnalyzer(), field, queryText, quoted, false, true, AS_SAME_TERM);
   }
 
   // Assumption: quoted is always false
@@ -1077,7 +1106,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        ScoreOverlaps synMatchType = ScoreOverlaps.AS_SAME_TERM;
+        ScoreOverlaps synMatchType = AS_SAME_TERM;
         if (ft instanceof TextField) {
           synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
         }
@@ -1114,7 +1143,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
     // default to a normal field query
     String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, ScoreOverlaps.AS_SAME_TERM);
+    return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, AS_SAME_TERM);
   }
 
   protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){
