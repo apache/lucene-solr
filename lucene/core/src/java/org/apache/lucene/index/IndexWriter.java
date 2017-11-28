@@ -2285,9 +2285,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  (which you do when IndexWriter invokes the
    *  MergePolicy).
    *
-   *  <p>Do not alter the returned collection! */
-  public synchronized Collection<SegmentCommitInfo> getMergingSegments() {
-    return mergingSegments;
+   *  <p>The Set is unmodifiable. */
+  public synchronized Set<SegmentCommitInfo> getMergingSegments() {
+    return Collections.unmodifiableSet(mergingSegments);
   }
 
   /**

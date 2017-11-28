@@ -72,11 +72,6 @@ public class UtilizeNodeCmd implements OverseerCollectionMessageHandler.Cmd {
         continue;
       }
       log.info("coll: " + coll);
-      state.getCollection(coll).forEachReplica((s, r) -> {
-        if (Objects.equals(r.getName(), r.getName())) {
-          log.info("replica to be moved " + r);
-        }
-      });
       if (suggestionInfo.getOperation() instanceof V2Request) {
         String targetNode = (String) Utils.getObjectByPath(suggestionInfo.getOperation(), true, "command/move-replica/targetNode");
         if (Objects.equals(targetNode, nodeName)) {

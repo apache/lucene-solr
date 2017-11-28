@@ -70,6 +70,9 @@ API Changes
 * LUCENE-7998: DoubleValuesSource.fromQuery() allows you to use the scores
   from a Query as a DoubleValuesSource. (Alan Woodward)
 
+* LUCENE-8049: IndexWriter.getMergingSegments()'s return type was changed from
+  Collection to Set to more accurately reflect it's nature. (David Smiley)
+
 New Features
 
 * LUCENE-8061: Add convenience factory methods to create BBoxes and XYZSolids
