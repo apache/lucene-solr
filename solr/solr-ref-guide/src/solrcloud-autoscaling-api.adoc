@@ -507,3 +507,42 @@ The `remove-listener` command can be used to remove an existing listener. It acc
  }
 }
 ----
+
+=== Change AutoScaling Properties
+
+The `set-properties` command can be used to change the default properties used by the Autoscaling framework.
+
+The following well known properties can be specified in the payload:
+
+* `triggerScheduleDelaySeconds` (defaults to 1 second): This is the delay in seconds between two executions of a trigger. Every trigger is scheduled using Java's ScheduledThreadPoolExecutor with this delay.
+* `triggerCooldownPeriodSeconds` (defaults to 5 seconds): Solr pauses all other triggers for this cool down period after a trigger fires so that the system can stabilize before running triggers again.
+* `triggerCorePoolSize` (defaults to 4 threads): The core pool size of the `ScheduledThreadPoolExecutor` used to schedule triggers.
+* `actionThrottlePeriodSeconds` (defaults to 5 seconds): This is the minimum throttling delay between executing actions for triggers. It is guaranteed that actions for two trigger events are executed after this delay period.
+
+The command allows setting arbitrary properties in addition to the above well-known properties. Such arbitrary properties can be useful in custom `TriggerAction` instances.
+
+.Change default triggerScheduleDelaySeconds
+[source.json]
+----
+{
+  "set-properties": {
+    "triggerScheduleDelaySeconds": 8
+  }
+}
+----
+
+The set-properties command replaces older values if present. So using set-properties to set the same value twice will overwrite the old value.
+If a property is not specified then it retains the last set value or the default, if no change was made.
+A changed value can be unset by using a null value.
+
+.Revert changed value of triggerScheduleDelaySeconds to default value
+[source.json]
+----
+{
+  "set-properties": {
+    "triggerScheduleDelaySeconds": null
+  }
+}
+----
+
+The changed values of these properties, if any, can be read using the Autoscaling Read API in the `properties` section.

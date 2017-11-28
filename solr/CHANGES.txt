@@ -97,6 +97,8 @@ New Features
 
 * SOLR-9743: A new  UTILIZENODE command (noble)
 
+* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
+
 Bug Fixes
 ----------------------
 

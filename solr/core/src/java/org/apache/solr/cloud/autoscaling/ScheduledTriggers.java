@@ -38,7 +38,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.autoscaling.ExecutePlanAction.waitForTaskToFinish;
+import static org.apache.solr.common.params.AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS;
+import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS;
+import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_CORE_POOL_SIZE;
+import static org.apache.solr.common.params.AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS;
 
 /**
  * Responsible for scheduling active triggers, starting and stopping them and
@@ -73,8 +79,18 @@ import static org.apache.solr.cloud.autoscaling.ExecutePlanAction.waitForTaskToF
 public class ScheduledTriggers implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final int DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS = 1;
-  static final int DEFAULT_MIN_MS_BETWEEN_ACTIONS = 5000;
-  static final int DEFAULT_COOLDOWN_PERIOD_MS = 5000;
+  static final int DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS = 5;
+  static final int DEFAULT_COOLDOWN_PERIOD_SECONDS = 5;
+  static final int DEFAULT_TRIGGER_CORE_POOL_SIZE = 4;
+
+  static final Map<String, Object> DEFAULT_PROPERTIES = new HashMap<>();
+
+  static {
+    DEFAULT_PROPERTIES.put(TRIGGER_SCHEDULE_DELAY_SECONDS, DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
+    DEFAULT_PROPERTIES.put(TRIGGER_COOLDOWN_PERIOD_SECONDS, DEFAULT_COOLDOWN_PERIOD_SECONDS);
+    DEFAULT_PROPERTIES.put(TRIGGER_CORE_POOL_SIZE, DEFAULT_TRIGGER_CORE_POOL_SIZE);
+    DEFAULT_PROPERTIES.put(ACTION_THROTTLE_PERIOD_SECONDS, DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS);
+  }
 
   private final Map<String, ScheduledTrigger> scheduledTriggers = new ConcurrentHashMap<>();
 
@@ -96,9 +112,11 @@ public class ScheduledTriggers implements Closeable {
 
   private final AtomicLong cooldownStart = new AtomicLong();
 
-  private final AtomicLong cooldownPeriod = new AtomicLong(TimeUnit.MILLISECONDS.toNanos(DEFAULT_COOLDOWN_PERIOD_MS));
+  private final AtomicLong cooldownPeriod = new AtomicLong(TimeUnit.SECONDS.toNanos(DEFAULT_COOLDOWN_PERIOD_SECONDS));
 
-  private final ActionThrottle actionThrottle;
+  private final AtomicInteger triggerDelay = new AtomicInteger(DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS);
+
+  private final AtomicReference<ActionThrottle> actionThrottle;
 
   private final SolrCloudManager dataProvider;
 
@@ -113,34 +131,72 @@ public class ScheduledTriggers implements Closeable {
   private AutoScalingConfig autoScalingConfig;
 
   public ScheduledTriggers(SolrResourceLoader loader, SolrCloudManager dataProvider) {
-    // todo make the core pool size configurable
-    // it is important to use more than one because a time taking trigger can starve other scheduled triggers
-    // ideally we should have as many core threads as the number of triggers but firstly, we don't know beforehand
-    // how many triggers we have and secondly, that many threads will always be instantiated and kept around idle
-    // so it is wasteful as well. Hopefully 4 is a good compromise.
-    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(4,
+    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(DEFAULT_TRIGGER_CORE_POOL_SIZE,
         new DefaultSolrThreadFactory("ScheduledTrigger"));
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     actionExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new DefaultSolrThreadFactory("AutoscalingActionExecutor"));
-    // todo make the wait time configurable
-    actionThrottle = new ActionThrottle("action", DEFAULT_MIN_MS_BETWEEN_ACTIONS);
+    actionThrottle = new AtomicReference<>(new ActionThrottle("action", TimeUnit.SECONDS.toMillis(DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS)));
     this.dataProvider = dataProvider;
     this.stateManager = dataProvider.getDistribStateManager();
     this.loader = loader;
     queueStats = new Stats();
     listeners = new TriggerListeners();
     // initialize cooldown timer
-    // todo: make the cooldownPeriod configurable
     cooldownStart.set(System.nanoTime() - cooldownPeriod.get());
   }
 
   /**
    * Set the current autoscaling config. This is invoked by {@link OverseerTriggerThread} when autoscaling.json is updated,
-   * and it re-initializes trigger listeners.
+   * and it re-initializes trigger listeners and other properties used by the framework
    * @param autoScalingConfig current autoscaling.json
    */
   public void setAutoScalingConfig(AutoScalingConfig autoScalingConfig) {
+    Map<String, Object> currentProps = new HashMap<>(DEFAULT_PROPERTIES);
+    if (this.autoScalingConfig != null) {
+      currentProps.putAll(this.autoScalingConfig.getProperties());
+    }
+    for (Map.Entry<String, Object> entry : currentProps.entrySet()) {
+      Map<String, Object> newProps = autoScalingConfig.getProperties();
+      String key = entry.getKey();
+      if (newProps.containsKey(key) && !entry.getValue().equals(newProps.get(key))) {
+        log.debug("Changing value of autoscaling property: {} from: {} to: {}", key, entry.getValue(), newProps.get(key));
+        switch (key) {
+          case TRIGGER_SCHEDULE_DELAY_SECONDS:
+            triggerDelay.set(((Number) newProps.get(key)).intValue());
+            synchronized (this) {
+              scheduledTriggers.forEach((s, scheduledTrigger) -> {
+                if (scheduledTrigger.scheduledFuture.cancel(false)) {
+                  scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(
+                      scheduledTrigger, 0, triggerDelay.get(), TimeUnit.SECONDS);
+                } else  {
+                  log.debug("Failed to cancel scheduled task: {}", s);
+                }
+              });
+            }
+            break;
+          case TRIGGER_COOLDOWN_PERIOD_SECONDS:
+            cooldownPeriod.set(TimeUnit.SECONDS.toNanos(((Number) newProps.get(key)).longValue()));
+            break;
+          case TRIGGER_CORE_POOL_SIZE:
+            this.scheduledThreadPoolExecutor.setCorePoolSize(((Number) newProps.get(key)).intValue());
+            break;
+          case ACTION_THROTTLE_PERIOD_SECONDS:
+            long minMsBetweenActions = TimeUnit.SECONDS.toMillis(((Number) newProps.get(key)).longValue());
+            ActionThrottle oldThrottle = this.actionThrottle.get();
+            ActionThrottle newThrottle = null;
+            if (oldThrottle.getLastActionStartedAt() != null) {
+              newThrottle = new ActionThrottle("action",
+                  minMsBetweenActions,
+                  oldThrottle.getLastActionStartedAt());
+            } else  {
+              newThrottle = new ActionThrottle("action", minMsBetweenActions);
+            }
+            this.actionThrottle.set(newThrottle);
+            break;
+        }
+      }
+    }
     this.autoScalingConfig = autoScalingConfig;
     listeners.setAutoScalingConfig(autoScalingConfig);
   }
@@ -232,6 +288,7 @@ public class ScheduledTriggers implements Closeable {
             log.debug("-- processing actions for " + event);
             try {
               // let the action executor thread wait instead of the trigger thread so we use the throttle here
+              ActionThrottle actionThrottle = this.actionThrottle.get();
               actionThrottle.minimumWaitBetweenActions();
               actionThrottle.markAttemptingAction();
 
@@ -285,7 +342,7 @@ public class ScheduledTriggers implements Closeable {
       }
     });
     newTrigger.init(); // mark as ready for scheduling
-    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0, DEFAULT_SCHEDULED_TRIGGER_DELAY_SECONDS, TimeUnit.SECONDS);
+    scheduledTrigger.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(scheduledTrigger, 0, triggerDelay.get(), TimeUnit.SECONDS);
   }
 
   private void waitForPendingTasks(AutoScaling.Trigger newTrigger, List<TriggerAction> actions) throws AlreadyClosedException {
@@ -454,36 +511,43 @@ public class ScheduledTriggers implements Closeable {
       // note this is not fool proof e.g. it does not prevent an action being executed while a trigger
       // is still executing. There is additional protection against that scenario in the event listener.
       if (!hasPendingActions.get())  {
-        // replay accumulated events on first run, if any
-        if (replay) {
-          TriggerEvent event;
-          // peek first without removing - we may crash before calling the listener
-          while ((event = queue.peekEvent()) != null) {
-            // override REPLAYING=true
-            event.getProperties().put(TriggerEvent.REPLAYING, true);
-            if (! trigger.getProcessor().process(event)) {
-              log.error("Failed to re-play event, discarding: " + event);
+        // this synchronization is usually never under contention
+        // but the only reason to have it here is to ensure that when the set-properties API is used
+        // to change the schedule delay, we can safely cancel the old scheduled task
+        // and create another one with the new delay without worrying about concurrent
+        // execution of the same trigger instance
+        synchronized (ScheduledTrigger.this) {
+          // replay accumulated events on first run, if any
+          if (replay) {
+            TriggerEvent event;
+            // peek first without removing - we may crash before calling the listener
+            while ((event = queue.peekEvent()) != null) {
+              // override REPLAYING=true
+              event.getProperties().put(TriggerEvent.REPLAYING, true);
+              if (! trigger.getProcessor().process(event)) {
+                log.error("Failed to re-play event, discarding: " + event);
+              }
+              queue.pollEvent(); // always remove it from queue
             }
-            queue.pollEvent(); // always remove it from queue
+            // now restore saved state to possibly generate new events from old state on the first run
+            try {
+              trigger.restoreState();
+            } catch (Exception e) {
+              // log but don't throw - see below
+              log.error("Error restoring trigger state " + trigger.getName(), e);
+            }
+            replay = false;
           }
-          // now restore saved state to possibly generate new events from old state on the first run
           try {
-            trigger.restoreState();
+            trigger.run();
           } catch (Exception e) {
-            // log but don't throw - see below
-            log.error("Error restoring trigger state " + trigger.getName(), e);
+            // log but do not propagate exception because an exception thrown from a scheduled operation
+            // will suppress future executions
+            log.error("Unexpected exception from trigger: " + trigger.getName(), e);
+          } finally {
+            // checkpoint after each run
+            trigger.saveState();
           }
-          replay = false;
-        }
-        try {
-          trigger.run();
-        } catch (Exception e) {
-          // log but do not propagate exception because an exception thrown from a scheduled operation
-          // will suppress future executions
-          log.error("Unexpected exception from trigger: " + trigger.getName(), e);
-        } finally {
-          // checkpoint after each run
-          trigger.saveState();
         }
       }
     }
