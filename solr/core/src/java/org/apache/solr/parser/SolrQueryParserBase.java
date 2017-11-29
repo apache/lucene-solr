@@ -367,7 +367,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
-   * Set how overlapping query terms should be scored, as if they're the same term,
+   * Set how overlapping query terms (ie synonyms) should be scored, as if they're the same term,
    * picking highest scoring term, or OR'ing them together
    * @param scoreOverlaps the overlap scorring method
    */
