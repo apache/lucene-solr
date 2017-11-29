@@ -152,7 +152,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
       assertEquals(doc, actualIt.nextDoc());
       float expectedScore = expected.score();
       float actualScore = actual.score();
-      assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
+      assertEquals(expectedScore, actualScore, 0d);
     }
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, actualIt.nextDoc());
   }
@@ -170,7 +170,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
       assertEquals(doc, actualIt.advance(prevDoc+amount));
       float expectedScore = expected.score();
       float actualScore = actual.score();
-      assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
+      assertEquals(expectedScore, actualScore, 0d);
       prevDoc = doc;
     }
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, actualIt.advance(prevDoc+amount));

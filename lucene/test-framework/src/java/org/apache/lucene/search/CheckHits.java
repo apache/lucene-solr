@@ -33,21 +33,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * Utility class for asserting expected hits in tests.
  */
 public class CheckHits {
-  
-  /**
-   * Some explains methods calculate their values though a slightly
-   * different  order of operations from the actual scoring method ...
-   * this allows for a small amount of relative variation
-   */
-  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.001f;
-  
-  /**
-   * In general we use a relative epsilon, but some tests do crazy things
-   * like boost documents with 0, creating tiny tiny scores where the
-   * relative difference is large but the absolute difference is tiny.
-   * we ensure the the epsilon is always at least this big.
-   */
-  public static float EXPLAIN_SCORE_TOLERANCE_MINIMUM = 1e-6f;
     
   /**
    * Tests that all documents up to maxDoc which are *not* in the
@@ -313,12 +298,6 @@ public class CheckHits {
                     (query, defaultFieldName, searcher, deep));
 
   }
-
-  /** returns a reasonable epsilon for comparing two floats,
-   *  where minor differences are acceptable such as score vs. explain */
-  public static float explainToleranceDelta(float f1, float f2) {
-    return Math.max(EXPLAIN_SCORE_TOLERANCE_MINIMUM, Math.max(Math.abs(f1), Math.abs(f2)) * EXPLAIN_SCORE_TOLERANCE_DELTA);
-  }
   
   private static final Pattern COMPUTED_FROM_PATTERN = Pattern.compile(".*, computed as .* from:");
 
@@ -340,7 +319,7 @@ public class CheckHits {
     float value = expl.getValue();
     // TODO: clean this up if we use junit 5 (the assert message is costly)
     try {
-      Assert.assertEquals(score, value, explainToleranceDelta(score, value));
+      Assert.assertEquals(score, value, 0d);
     } catch (Exception e) {
       Assert.fail(q+": score(doc="+doc+")="+score+" != explanationScore="+value+" Explanation: "+expl);
     }
@@ -398,32 +377,42 @@ public class CheckHits {
               +"\" must be 'max of plus x times others', 'computed as x from:' or end with 'product of'"
               +" or 'sum of:' or 'max of:' - "+expl);
         }
-        float sum = 0;
+        double sum = 0;
         float product = 1;
-        float max = 0;
+        float max = Float.NEGATIVE_INFINITY;
+        double maxError = 0;
         for (int i=0; i<detail.length; i++) {
           float dval = detail[i].getValue();
           verifyExplanation(q,doc,dval,deep,detail[i]);
           product *= dval;
           sum += dval;
           max = Math.max(max,dval);
+
+          if (sumOf) {
+            // "sum of" is used by BooleanQuery. Making it accurate is not
+            // easy since ReqOptSumScorer casts some intermediate
+            // contributions to the score to a float before doing another sum.
+            // So we introduce some (reasonable) leniency.
+            // TODO: remove this leniency
+            maxError += Math.ulp(dval) * 2;
+          }
         }
-        float combined = 0;
+        float combined;
         if (productOf) {
           combined = product;
         } else if (sumOf) {
-          combined = sum;
+          combined = (float) sum;
         } else if (maxOf) {
           combined = max;
         } else if (maxTimesOthers) {
-          combined = max + x * (sum - max);
+          combined = (float) (max + x * (sum - max));
         } else {
           Assert.assertTrue("should never get here!", computedOf);
           combined = value;
         }
         // TODO: clean this up if we use junit 5 (the assert message is costly)
         try {
-          Assert.assertEquals(combined, value, explainToleranceDelta(combined, value));
+          Assert.assertEquals(combined, value, maxError);
         } catch (Exception e) {
           Assert.fail(q+": actual subDetails combined=="+combined+
               " != value="+value+" Explanation: "+expl);
