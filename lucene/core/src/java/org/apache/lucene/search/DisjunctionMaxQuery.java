@@ -139,6 +139,12 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
+      if (weights.size() > TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD) {
+        // Disallow caching large dismax queries to not encourage users
+        // to build large dismax queries as a workaround to the fact that
+        // we disallow caching large TermInSetQueries.
+        return false;
+      }
       for (Weight w : weights) {
         if (w.isCacheable(ctx) == false)
           return false;
