@@ -90,18 +90,17 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       }
     }
     if (singleSortedSegment) {
-      // because of deletions, there might still be a single flush segment in
-      // the index, although want want a sorted segment so it needs to be merged
-      iw.getReader().close(); // refresh
-      iw.addDocument(new Document());
-      iw.commit();
-      iw.addDocument(new Document());
       iw.forceMerge(1);
     }
     else if (random().nextBoolean()) {
       iw.forceMerge(FORCE_MERGE_MAX_SEGMENT_COUNT);
     }
     reader = iw.getReader();
+    if (reader.maxDoc() == 0) {
+      iw.addDocument(new Document());
+      reader.close();
+      reader = iw.getReader();
+    }
   }
   
   private void closeIndex() throws IOException {
@@ -131,6 +130,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         final int numHits = TestUtil.nextInt(random(), 1, numDocs);
         FieldDoc after;
         if (paging) {
+          assert searcher.getIndexReader().maxDoc() > 0;
           TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
           after = (FieldDoc) td.scoreDocs[td.scoreDocs.length - 1];
         } else {
