@@ -6766,6 +6766,45 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testGeometricDistribution() throws Exception {
+    String cexpr = "let(a=geometricDistribution(.2)," +
+        "               b=geometricDistribution(.5)," +
+        "               c=geometricDistribution(.8)," +
+        "               d=sample(a, 10000)," +
+        "               e=sample(b, 10000)," +
+        "               f=sample(c, 10000)," +
+        "               g=freqTable(d)," +
+        "               h=freqTable(e)," +
+        "               i=freqTable(f)," +
+        "               tuple(g=g, h=h, i=i))";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    List<Map> listg = (List<Map>)tuples.get(0).get("g");
+    Map mapg = listg.get(0);
+    double pctg = (double) mapg.get("pct");
+    assertEquals(pctg, .2, .02 );
+
+    List<Map> listh = (List<Map>)tuples.get(0).get("h");
+    Map maph = listh.get(0);
+    double pcth = (double)maph.get("pct");
+    assertEquals(pcth, .5, .02 );
+
+    List<Map> listi = (List<Map>)tuples.get(0).get("i");
+    Map mapi = listi.get(0);
+    double pcti = (double)mapi.get("pct");
+    assertEquals(pcti, .8, .02 );
+  }
+
+  @Test
   public void testBinomialDistribution() throws Exception {
     String cexpr = "let(a=binomialDistribution(100, .50)," +
         "               b=sample(a, 10000)," +
