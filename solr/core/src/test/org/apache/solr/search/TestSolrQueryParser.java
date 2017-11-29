@@ -1059,7 +1059,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
 
-  public void testOverlapTermScoringQueries() throws Exception {
+  public void testSynonymQueryStyle() throws Exception {
     ModifiableSolrParams edismaxParams = params("qf", "t_pick_best_foo");
 
     QParser qParser = QParser.getParser("tabby", "edismax", req(edismaxParams));

@@ -168,7 +168,7 @@
   </fieldType>
 
 
-  <fieldType name="text_pick_best" class="solr.TextField" positionIncrementGap="100" scoreOverlaps="pick_best" autoGeneratePhraseQueries="true">
+  <fieldType name="text_pick_best" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.StopFilterFactory"
@@ -198,7 +198,7 @@
   </fieldType>
 
 
-  <fieldType name="text_as_distinct" class="solr.TextField" positionIncrementGap="100"  scoreOverlaps="as_distinct_terms" autoGeneratePhraseQueries="true">
+  <fieldType name="text_as_distinct" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
       <filter class="solr.StopFilterFactory"

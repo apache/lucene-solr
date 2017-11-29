@@ -62,7 +62,7 @@ import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 
-import static org.apache.solr.parser.SolrQueryParserBase.ScoreOverlaps.*;
+import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.*;
 
 /** This class is overridden by QueryParser in QueryParser.jj
  * and acts to separate the majority of the Java code from the .jj grammar file.
@@ -81,7 +81,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int MOD_NOT     = 10;
   static final int MOD_REQ     = 11;
 
-  protected ScoreOverlaps scoreOverlaps = AS_SAME_TERM;
+  protected SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
 
   /**
    *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
@@ -91,7 +91,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    *  <li>{@link #PICK_BEST}</li>
    *  <li>{@link #AS_DISTINCT_TERMS}</li>
    */
-  public static enum ScoreOverlaps {
+  public static enum SynonymQueryStyle {
     /** (default) synonym terms share doc freq
      *  so if "pants" has df 500, and "khakis" a df of 50, uses 500 df when scoring both terms
      *  appropriate for exact synonyms
@@ -369,14 +369,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /**
    * Set how overlapping query terms (ie synonyms) should be scored, as if they're the same term,
    * picking highest scoring term, or OR'ing them together
-   * @param scoreOverlaps the overlap scorring method
+   * @param synonymQueryStyle how to score terms that overlap see {{@link SynonymQueryStyle}}
    */
-  public void setScoreOverlaps(ScoreOverlaps scoreOverlaps) {this.scoreOverlaps = scoreOverlaps;}
+  public void setSynonymQueryStyle(SynonymQueryStyle synonymQueryStyle) {this.synonymQueryStyle = synonymQueryStyle;}
 
   /**
    * Gets how overlapping query terms should be scored
    */
-  public ScoreOverlaps getScoreOverlaps() {return this.scoreOverlaps;}
+  public SynonymQueryStyle getSynonymQueryStyle() {return this.synonymQueryStyle;}
 
 
   /**
@@ -510,15 +510,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                 boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
-                                ScoreOverlaps scoreOverlaps)
+                                SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
-    setScoreOverlaps(scoreOverlaps);
+    setSynonymQueryStyle(synonymQueryStyle);
     Query query = createFieldQuery(analyzer, occur, field, queryText,
         quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
     setEnableGraphQueries(true); // reset back to default
-    setScoreOverlaps(AS_SAME_TERM);
+    setSynonymQueryStyle(AS_SAME_TERM);
     return query;
   }
 
@@ -593,7 +593,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   @Override
   protected Query newSynonymQuery(Term terms[]) {
-    switch (scoreOverlaps) {
+    switch (synonymQueryStyle) {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
         for (Term term : terms) {
@@ -734,13 +734,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
             boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
 
-            ScoreOverlaps synMatchType = AS_SAME_TERM;
+            SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
             if (ft instanceof TextField) {
-              synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
+              synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
             }
 
             subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
-                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
+                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           } else {
             for (String externalVal : rawq.getExternalVals()) {
@@ -1057,11 +1057,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       if (ft.isTokenized() && sf.indexed()) {
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        ScoreOverlaps synMatchType = AS_SAME_TERM;
+        SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
         if (ft instanceof TextField) {
-          synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
+          synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
         }
-        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
+        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryText);
@@ -1106,12 +1106,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
         boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
         boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
-        ScoreOverlaps synMatchType = AS_SAME_TERM;
+        SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
         if (ft instanceof TextField) {
-          synMatchType = ((TextField)(ft)).getScoreOverlapsMethod();
+          synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
         }
         return newFieldQuery
-            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synMatchType);
+            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryTerms);

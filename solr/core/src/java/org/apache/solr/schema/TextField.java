@@ -42,7 +42,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TextField extends FieldType {
   protected boolean autoGeneratePhraseQueries;
   protected boolean enableGraphQueries;
-  protected SolrQueryParserBase.ScoreOverlaps scoreOverlapsMethod;
+  protected SolrQueryParserBase.SynonymQueryStyle synonymQueryStyle;
 
   /**
    * Analyzer set by schema for text types to use when searching fields
@@ -75,10 +75,10 @@ public class TextField extends FieldType {
     if (autoGeneratePhraseQueriesStr != null)
       autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
 
-    scoreOverlapsMethod = SolrQueryParserBase.ScoreOverlaps.AS_SAME_TERM;
-    String scoreOverlapsMethod = args.remove(SCORE_OVERLAPS);
-    if (scoreOverlapsMethod != null) {
-      this.scoreOverlapsMethod = SolrQueryParserBase.ScoreOverlaps.valueOf(scoreOverlapsMethod.toUpperCase());
+    synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
+    String synonymQueryStyle = args.remove(SYNONYM_QUERY_STYLE);
+    if (synonymQueryStyle != null) {
+      this.synonymQueryStyle = SolrQueryParserBase.SynonymQueryStyle.valueOf(synonymQueryStyle.toUpperCase());
     }
     
     enableGraphQueries = true;
@@ -112,7 +112,7 @@ public class TextField extends FieldType {
     return enableGraphQueries;
   }
 
-  public SolrQueryParserBase.ScoreOverlaps getScoreOverlapsMethod() {return scoreOverlapsMethod;}
+  public SolrQueryParserBase.SynonymQueryStyle getSynonymQueryStyle() {return synonymQueryStyle;}
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
