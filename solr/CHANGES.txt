@@ -150,6 +150,9 @@ Bug Fixes
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
 
+* SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
+  (Jason Gerlowski via Anshum Gupta)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
