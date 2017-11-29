@@ -64,6 +64,10 @@ Upgrade Notes
   If you want to allow power-users to do this, set uf=*,_query_ or some other value that includes _query_.
   If you must have full backwards compatibility, use luceneMatchVersion=7.1.0 or something earlier. (David Smiley)
 
+* SOLR-11508: coreRootDirectory now defaults to $SOLR_DATA_HOME, if defined. If you have configured $SOLR_DATA_HOME and
+  have not configured an explicit value for coreRootDirectory in solr.xml, you may need to manually migrate the
+  core.properties files stored in server/solr to $SOLR_DATA_HOME or core discovery for pre-7.2 cores will fail.
+
 New Features
 ----------------------
 * SOLR-11448: Implement an option in collection commands to wait for final results. (ab)
@@ -149,6 +153,9 @@ Bug Fixes
 * SOLR-11645: When the java commandline had exact duplicate arguments, the
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
+
+* SOLR-11508: core.properties files are now stored in solr.data.home along with the rest of the core data.
+  (Marc Morissette)
 
 Optimizations
 ----------------------

@@ -70,7 +70,7 @@ As above, for custom InfoHandler implementations.
 Specifies the number of threads that will be assigned to load cores in parallel.
 
 `coreRootDirectory`::
-The root of the core discovery tree, defaults to `$SOLR_HOME` (by default, `server/solr`).
+The root of the core discovery tree. Defaults to `$SOLR_DATA_HOME` if it is defined, or `$SOLR_HOME` otherwise (if $SOLR_HOME is undefined, it defaults to `server/solr`.)
 
 `managementPath`::
 Currently non-operational.
