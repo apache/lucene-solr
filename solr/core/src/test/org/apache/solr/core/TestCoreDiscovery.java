@@ -385,6 +385,25 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAlternateCoreViaSolrDataHome() throws Exception {
+    File alt = createTempDir().toFile();
+    System.setProperty("solr.data.home", alt.getAbsolutePath());
+    setMeUp(null);
+    addCoreWithProps(makeCoreProperties("core1", false, true, "dataDir=core1"),
+        new File(alt, "core1" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+    addCoreWithProps(makeCoreProperties("core2", false, false, "dataDir=core2"),
+        new File(alt, "core2" + File.separator + CorePropertiesLocator.PROPERTIES_FILENAME));
+    CoreContainer cc = init();
+    try (SolrCore core1 = cc.getCore("core1");
+         SolrCore core2 = cc.getCore("core2")) {
+      assertNotNull(core1);
+      assertNotNull(core2);
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  @Test
   public void testAlternateRelativeCoreDir() throws Exception {
 
     String relative = "relativeCoreDir";

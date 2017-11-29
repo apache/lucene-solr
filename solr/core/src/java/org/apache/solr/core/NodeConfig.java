@@ -262,7 +262,7 @@ public class NodeConfig {
       // always init from sysprop because <solrDataHome> config element may be missing
       String dataHomeProperty = System.getProperty(SolrXmlConfig.SOLR_DATA_HOME);
       if (dataHomeProperty != null && !dataHomeProperty.isEmpty()) {
-        solrDataHome = loader.getInstancePath().resolve(dataHomeProperty);
+        coreRootDirectory = solrDataHome = loader.getInstancePath().resolve(dataHomeProperty);
       }
       this.configSetBaseDirectory = loader.getInstancePath().resolve("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
