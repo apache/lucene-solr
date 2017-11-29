@@ -34,6 +34,10 @@ API Changes
 * LUCENE-8049: IndexWriter.getMergingSegments()'s return type was changed from
   Collection to Set to more accurately reflect it's nature. (David Smiley)
 
+* LUCENE-8059: TopFieldDocCollector can now early terminate collection when
+  the sort order is compatible with the index order. As a consequence,
+  EarlyTerminatingSortingCollector is now deprecated. (Adrien Grand)
+
 New Features
 
 * LUCENE-8061: Add convenience factory methods to create BBoxes and XYZSolids

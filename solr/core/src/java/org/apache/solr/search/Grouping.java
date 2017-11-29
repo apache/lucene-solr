@@ -881,7 +881,7 @@ public class Grouping {
       if (sort == null || sort.equals(Sort.RELEVANCE)) {
         return TopScoreDocCollector.create(groupDocsToCollect);
       } else {
-        return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores);
+        return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores, true);
       }
     }
 
