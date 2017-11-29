@@ -84,6 +84,10 @@ Optimizations
   (Dawid Weiss, Robert Muir, Mike McCandless)
 
 * LUCENE-8062: GlobalOrdinalsQuery is no longer eligible for caching. (Jim Ferenczi)
+
+* LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
+  caching as they could break memory accounting of the query cache.
+  (Adrien Grand)
   
 Tests
 
