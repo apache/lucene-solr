@@ -71,7 +71,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, false,
-          false, false);
+          false, false, true);
       
       is.search(q, tdc);
       
@@ -90,7 +90,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, false,
-          false);
+          false, true);
       
       is.search(q, tdc);
       
@@ -110,7 +110,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false);
+          false, true);
       
       is.search(q, tdc);
       
@@ -131,7 +131,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          false);
+          false, true);
 
       is.search(q, tdc);
       
@@ -151,7 +151,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for(int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
       TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
-          true);
+          true, true);
       
       is.search(q, tdc);
       
@@ -169,7 +169,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for(int i = 0; i < sort.length; i++) {
-      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
       TopDocs td = tdc.topDocs();
       assertEquals(0, td.totalHits);
       assertTrue(Float.isNaN(td.getMaxScore()));
@@ -204,7 +204,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for (Sort sort : new Sort[] {new Sort(SortField.FIELD_SCORE), new Sort(new SortField("f", SortField.Type.SCORE))}) {
       for (boolean doDocScores : new boolean[] {false, true}) {
         for (boolean doMaxScore : new boolean[] {false, true}) {
-          final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), true, doDocScores, doMaxScore);
+          final TopFieldCollector topCollector = TopFieldCollector.create(sort, TestUtil.nextInt(random(), 1, 2), true, doDocScores, doMaxScore, true);
           final Collector assertingCollector = new Collector() {
             @Override
             public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {

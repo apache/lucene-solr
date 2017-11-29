@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,7 +28,9 @@ import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 /**
@@ -49,10 +51,11 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * hit count} will be vastly underestimated since not all matching documents will have
  * been collected.
  *
+ * @deprecated Use {@link TopFieldCollector} and set trackTotalHits to false.
  * @lucene.experimental
  */
-
-public class EarlyTerminatingSortingCollector extends FilterCollector {
+@Deprecated
+final class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /** Returns whether collection can be early-terminated if it sorts with the
    *  provided {@link Sort} and if segments are merged with the provided
