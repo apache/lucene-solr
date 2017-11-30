@@ -10,6 +10,10 @@ Bug Fixes
 * LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
   instead of 1. (Simon Willnauer)
 
+* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
+  documents. Once this happens, Lucene refuses to open the index and throws a
+  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless) 
+
 Build
 
 * LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy

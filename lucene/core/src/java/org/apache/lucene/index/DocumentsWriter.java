@@ -534,7 +534,6 @@ final class DocumentsWriter implements Closeable, Accountable {
         try {
           // Each flush is assigned a ticket in the order they acquire the ticketQueue lock
           ticket = ticketQueue.addFlushTicket(flushingDWPT);
-  
           final int flushingDocsInRam = flushingDWPT.getNumDocsInRAM();
           boolean dwptSuccess = false;
           try {
@@ -666,7 +665,9 @@ final class DocumentsWriter implements Closeable, Accountable {
         ticketQueue.addDeletes(flushingDeleteQueue);
       }
       ticketQueue.forcePurge(writer);
-      assert !flushingDeleteQueue.anyChanges() && !ticketQueue.hasTickets();
+      // we can't assert that we don't have any tickets in teh queue since we might add a DocumentsWriterDeleteQueue
+      // concurrently if we have very small ram buffers this happens quite frequently
+      assert !flushingDeleteQueue.anyChanges();
     } finally {
       assert flushingDeleteQueue == currentFullFlushDelQueue;
     }
