@@ -66,7 +66,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
  *
  * @since 7.2.0
  */
-public class TimePartitionedUpdateProcessor extends UpdateRequestProcessor {
+public class TimeRoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   //TODO do we make this more generic to others who want to partition collections using something else?
 
   // TODO auto add new collection partitions when cross a timestamp boundary.  That needs to be coordinated to avoid
@@ -111,11 +111,11 @@ public class TimePartitionedUpdateProcessor extends UpdateRequestProcessor {
       // if shardDistribPhase is not NONE, then the phase is after the scope of this URP
       return next;
     } else {
-      return new TimePartitionedUpdateProcessor(req, rsp, next, timePartitionAliasName, aliasDistribPhase);
+      return new TimeRoutedAliasUpdateProcessor(req, rsp, next, timePartitionAliasName, aliasDistribPhase);
     }
   }
 
-  protected TimePartitionedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next,
+  protected TimeRoutedAliasUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next,
                                            String aliasName,
                                            DistribPhase aliasDistribPhase) {
     super(next);

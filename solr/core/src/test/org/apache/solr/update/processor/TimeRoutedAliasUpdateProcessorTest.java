@@ -48,7 +48,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TimePartitionedUpdateProcessorTest extends SolrCloudTestCase {
+public class TimeRoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   static final String configName = "timeConfig";
   static final String alias = "myalias";
@@ -103,7 +103,7 @@ public class TimePartitionedUpdateProcessorTest extends SolrCloudTestCase {
     // start with one collection and an alias for it
     final String col23rd = alias + "_2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 1, 1)
-        .withProperty(TimePartitionedUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, alias)
+        .withProperty(TimeRoutedAliasUpdateProcessor.TIME_PARTITION_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
 
     assertEquals("We only expect 2 configSets",
@@ -112,7 +112,7 @@ public class TimePartitionedUpdateProcessorTest extends SolrCloudTestCase {
     CollectionAdminRequest.createAlias(alias, col23rd).process(solrClient);
     //TODO use SOLR-11617 client API to set alias metadata
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    UnaryOperator<Aliases> op = a -> a.cloneWithCollectionAliasMetadata(alias, TimePartitionedUpdateProcessor.ROUTER_FIELD_METADATA, timeField);
+    UnaryOperator<Aliases> op = a -> a.cloneWithCollectionAliasMetadata(alias, TimeRoutedAliasUpdateProcessor.ROUTER_FIELD_METADATA, timeField);
     zkStateReader.aliasesHolder.applyModificationAndExportToZk(op);
 
 
@@ -223,7 +223,7 @@ public class TimePartitionedUpdateProcessorTest extends SolrCloudTestCase {
     int totalNumFound = 0;
     Instant colEndInstant = null; // exclusive end
     for (String col : cols) {
-      final Instant colStartInstant = TimePartitionedUpdateProcessor.parseInstantFromCollectionName(alias, col);
+      final Instant colStartInstant = TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, col);
       //TODO do this in parallel threads
       final QueryResponse colStatsResp = solrClient.query(col, params(
           "q", "*:*",
@@ -254,13 +254,13 @@ public class TimePartitionedUpdateProcessorTest extends SolrCloudTestCase {
   @Test
   public void testParse() {
     assertEquals(Instant.parse("2017-10-02T03:04:05Z"),
-      TimePartitionedUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04_05"));
+      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04_05"));
     assertEquals(Instant.parse("2017-10-02T03:04:00Z"),
-      TimePartitionedUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04"));
+      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03_04"));
     assertEquals(Instant.parse("2017-10-02T03:00:00Z"),
-      TimePartitionedUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03"));
+      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02_03"));
     assertEquals(Instant.parse("2017-10-02T00:00:00Z"),
-      TimePartitionedUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02"));
+      TimeRoutedAliasUpdateProcessor.parseInstantFromCollectionName(alias, alias + "_2017-10-02"));
   }
 
   public static class IncrementURPFactory extends FieldMutatingUpdateProcessorFactory {
