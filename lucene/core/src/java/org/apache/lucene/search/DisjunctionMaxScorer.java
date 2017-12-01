@@ -47,7 +47,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
 
   @Override
   protected float score(DisiWrapper topList) throws IOException {
-    float scoreSum = 0;
+    double scoreSum = 0;
     float scoreMax = Float.NEGATIVE_INFINITY;
     for (DisiWrapper w = topList; w != null; w = w.next) {
       final float subScore = w.scorer.score();
@@ -56,6 +56,6 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
         scoreMax = subScore;
       }
     }
-    return scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier; 
+    return (float) (scoreMax + (scoreSum - scoreMax) * tieBreakerMultiplier); 
   }
 }

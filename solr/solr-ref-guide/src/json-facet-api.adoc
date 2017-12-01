@@ -1,0 +1,461 @@
+= JSON Facet API
+
+[[JSONFacetAPI]]
+== Facet & Analytics Module
+
+The new Facet & Analytics Module exposed via the JSON Facet API is a rewrite of Solr's previous faceting capabilities, with the following goals:
+
+* First class native JSON API to control faceting and analytics
+** The structured nature of nested sub-facets are more naturally expressed in JSON rather than the flat nanemspace provided by normal query parameters.
+* First class integrated analytics support
+* Nest any facet type under any other facet type (such as range facet, field facet, query facet)
+* Ability to sort facet buckets by any calculated metric
+* Easier programmatic construction of complex nested facet commands
+* Support a more canonical response format that is easier for clients to parse
+* Support a cleaner way to implement distributed faceting
+* Support better integration with other search features
+* Full integration with the JSON Request API
+
+[[FacetedSearch]]
+== Faceted Search
+
+Faceted search is about aggregating data and calculating metrics about that data.
+
+There are two main types of facets:
+
+* Facets that partition or categorize data (the domain) into multiple *buckets*
+* Facets that calculate data for a given bucket (normally a metric, statistic or analytic function)
+
+[[MetricsExample]]
+=== Metrics Example
+
+By default, the *domain* for facets starts with all documents that match the base query and any filters. Here's an example that requests various metrics about the root domain:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+q=memory&
+fq=inStock:true&
+json.facet={
+  "avg_price" : "avg(price)",
+  "num_suppliers" : "unique(manu_exact)",
+  "median_weight" : "percentile(weight,50)"
+}'
+----
+
+The response to the facet request above will start with documents matching the root domain (docs containing "memory" with inStock:true) then calculate and return the requested metrics:
+
+[...]
+[source,java]
+----
+ "facets" : {
+    "count" : 4,
+    "avg_price" : 109.9950008392334,
+    "num_suppliers" : 3,
+    "median_weight" : 352.0
+  }
+----
+
+[[BucketingFacetExample]]
+=== Bucketing Facet Example
+
+Here's an example of a bucketing facet, that partitions documents into bucket based on the `cat` field (short for category), and returns the top 5 buckets:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&
+json.facet={
+  categories : {
+    type : terms,
+    field : cat,    // bucket documents based on the "cat" field
+    limit : 3       // retrieve the top 3 buckets ranked by the number of docs in each bucket
+  }
+}'
+----
+
+The response below shows us that 32 documents match the default root domain. and 12 documents have `cat:electronics`, 4 documents have `cat:currency`, etc.
+
+[source,java]
+----
+[...]
+  "facets":{
+    "count":32,
+    "categories":{
+      "buckets":[{
+          "val":"electronics",
+          "count":12},
+        {
+          "val":"currency",
+          "count":4},
+        {
+          "val":"memory",
+          "count":3},
+      ]
+    }
+  }
+----
+
+[[MakingaFacetRequest]]
+=== Making a Facet Request
+
+In this guide, we will often just present the **facet command block**:
+
+[source,java]
+----
+{
+  x : "average(mul(price,popularity))"
+}
+----
+
+To execute a facet command block such as this, you'll need to use the `json.facet` parameter, and provide at least a base query such as `q=\*:*`
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&json.facet=
+{
+  x : "avg(mul(price,popularity))"
+}
+'
+----
+
+Another option is to use the JSON Request API to provide the entire request in JSON:
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  query : "*:*",                        // this is the base query
+  filter : [ "inStock:true" ],          // a list of filters
+  facet : {
+    x : "avg(mul(price,popularity))"    // and our funky metric of average of price * popularity
+ }
+}
+'
+----
+
+[[JSONExtensions]]
+=== JSON Extensions
+
+The *Noggit* JSON parser that is used by Solr accepts a number of JSON extensions such as
+
+* bare words can be left unquoted
+* single line comments using either `//` or `#`
+* Multi-line comments using C style /* comments in here */
+* Single quoted strings
+* Allow backslash escaping of any character
+* Allow trailing commas and extra commas. Example: [9,4,3,]
+* Handle nbsp (non-break space, \u00a0) as whitespace.
+
+[[TermsFacet]]
+== Terms Facet
+
+The terms facet (or field facet) buckets the domain based on the unique terms / values of a field.
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d 'q=*:*&
+json.facet={
+  categories:{ terms: {
+    field : cat,    // bucket documents based on the "cat" field
+    limit : 5       // retrieve the top 5 buckets ranked by the number of docs in each bucket
+}'
+----
+
+// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
+
+[width="100%",cols="10%,90%",options="header",]
+|===
+|Parameter |Description
+|field |The field name to facet over.
+|offset |Used for paging, this skips the first N buckets. Defaults to 0.
+|limit |Limits the number of buckets returned. Defaults to 10.
+|refine |If true, turns on distributed facet refining. This uses a second phase to retrieve selected stats from shards so that every shard contributes to every returned bucket in this facet and any sub-facets.  This makes stats for returned buckets exact.
+|overrequest |Number of buckets beyond the limit to request internally during distributed search. -1 means default.
+|mincount |Only return buckets with a count of at least this number. Defaults to 1.
+|sort |Specifies how to sort the buckets produced. “count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any facet function / statistic that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
+|missing |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to false.
+|numBuckets |A boolean. If true, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to false.
+|allBuckets |A boolean. If true, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different than a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to false.
+|prefix |Only produce buckets for terms starting with the specified prefix.
+|facet |Aggregations, metrics or nested facets that will be calculated for every returned bucket
+|method a|
+This parameter indicates the facet algorithm to use:
+
+* "dv" DocValues, collect into ordinal array
+* "uif" UnInvertedField, collect into ordinal array
+* "dvhash" DocValues, collect into hash - improves efficiency over high cardinality fields
+* "enum" TermsEnum then intersect DocSet (stream-able)
+* "stream" Presently equivalent to "enum"
+* "smart" Pick the best method for the field type (this is the default)
+
+|===
+
+[[QueryFacet]]
+== Query Facet
+
+The query facet produces a single bucket of documents that match the domain as well as the specified query.
+
+An example of the simplest form of the query facet is `"query":"query string"`.
+
+[source,java]
+----
+{
+  high_popularity : { query : "popularity:[8 TO 10]" }
+}
+----
+
+An expanded form allows for more parameters and a facet command block to specify sub-facets (either nested facets or metrics):
+
+[source,java]
+----
+{
+  high_popularity : {
+    type: query,
+    q : "popularity:[8 TO 10]",
+    facet : { average_price : "avg(price)" }
+  }
+}
+----
+
+Example response:
+
+[source,java]
+----
+"high_popularity" : {
+  "count" : 36,
+  "average_price" : 36.75
+}
+----
+
+[[RangeFacet]]
+== Range Facet
+
+The range facet produces multiple buckets over a date field or numeric field.
+
+Example:
+
+[source,java]
+----
+{
+  prices : {
+    type: range,
+    field : price,
+    start : 0,
+    end : 100,
+    gap : 20
+  }
+}
+----
+
+[source,java]
+----
+"prices":{
+  "buckets":[
+    {
+      "val":0.0,  // the bucket value represents the start of each range.  This bucket covers 0-20
+      "count":5},
+    {
+      "val":20.0,
+      "count":3},
+    {
+      "val":40.0,
+      "count":2},
+    {
+      "val":60.0,
+      "count":1},
+    {
+      "val":80.0,
+      "count":1}
+  ]
+}
+----
+
+[[RangeFacetParameters]]
+=== Range Facet Parameters
+
+To ease migration, the range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
+
+// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
+
+[width="100%",cols="10%,90%",options="header",]
+|===
+|Parameter |Description
+|field |The numeric field or date field to produce range buckets from.
+|start |Lower bound of the ranges.
+|end |Upper bound of the ranges.
+|gap |Size of each range bucket produced.
+|hardend |A boolean, which if true means that the last bucket will end at “end” even if it is less than “gap” wide. If false, the last bucket will be “gap” wide, which may extend past “end”.
+|other a|
+This parameter indicates that in addition to the counts for each range constraint between `start` and `end`, counts should also be computed for…
+
+* "before" all records with field values lower then lower bound of the first range
+* "after" all records with field values greater then the upper bound of the last range
+* "between" all records with field values between the start and end bounds of all ranges
+* "none" compute none of this information
+* "all" shortcut for before, between, and after
+
+|include a|
+By default, the ranges used to compute range faceting between `start` and `end` are inclusive of their lower bounds and exclusive of the upper bounds. The “before” range is exclusive and the “after” range is inclusive. This default, equivalent to "lower" below, will not result in double counting at the boundaries. The `include` parameter may be any combination of the following options:
+
+* "lower" all gap based ranges include their lower bound
+* "upper" all gap based ranges include their upper bound
+* "edge" the first and last gap ranges include their edge bounds (ie: lower for the first one, upper for the last one) even if the corresponding upper/lower option is not specified
+* "outer" the “before” and “after” ranges will be inclusive of their bounds, even if the first or last ranges already include those boundaries.
+* "all" shorthand for lower, upper, edge, outer
+
+|facet |Aggregations, metrics, or nested facets that will be calculated for every returned bucket
+|===
+
+[[FilteringFacets]]
+== Filtering Facets
+
+One can filter the domain *before* faceting via the `filter` keyword in the `domain` block of the facet.
+
+Example:
+[source,java]
+----
+{
+  categories : {
+     type : terms,
+     field : cat,
+     domain : { filter : "popularity:[5 TO 10]" } 
+   } 
+}
+----
+The value of `filter` can be a single query to treat as a filter, or a list of filter queries.  Each one can be:
+
+* a string containing a query in solr query syntax
+* a reference to a request parameter containing solr query syntax, of the form: `{param : <request_param_name>}`
+
+[[AggregationFunctions]]
+== Aggregation Functions
+
+Aggregation functions, also called *facet functions, analytic functions,* or **metrics**, calculate something interesting over a domain (each facet bucket).
+
+[width="100%",cols="10%,30%,60%",options="header",]
+|===
+|Aggregation |Example |Description
+|sum |sum(sales) |summation of numeric values
+|avg |avg(popularity) |average of numeric values
+|min |min(salary) |minimum value
+|max |max(mul(price,popularity)) |maximum value
+|unique |unique(author) |number of unique values
+|hll |hll(author) |distributed cardinality estimate via hyper-log-log algorithm
+|percentile |percentile(salary,50,75,99,99.9) |Percentile estimates via t-digest algorithm. When sorting by this metric, the first percentile listed is used as the sort value.
+|sumsq |sumsq(rent) |sum of squares of field or function
+|variance |variance(rent) |variance of numeric field or function
+|stddev |stddev(rent) |standard deviation of field or function
+|===
+
+Numeric aggregation functions such as `avg` can be on any numeric field, or on another function of multiple numeric fields such as `avg(mul(price,popularity))`.
+
+[[FacetSorting]]
+=== Facet Sorting
+
+The default sort for a field or terms facet is by bucket count descending. We can optionally sort ascending or descending by any facet function that appears in each bucket.
+
+[source,java]
+----
+{
+  categories:{
+    type : terms      // terms facet creates a bucket for each indexed term in the field
+    field : cat,
+    sort : "x desc",  // can also use sort:{x:desc}
+    facet : {
+      x : "avg(price)",     // x = average price for each facet bucket
+      y : "max(popularity)" // y = max popularity value in each facet bucket
+    }
+  }
+}
+----
+
+[[NestedFacets]]
+== Nested Facets
+
+Nested facets, or **sub-facets**, allow one to nest bucketing facet commands like **terms**, **range**, or *query* facets under other facet commands. The syntax is identical to top-level facets - just add the facet command to the facet command block of the parent facet. Technically, every facet command is actually a sub-facet since we start off with a single facet bucket with a domain defined by the main query and filters.
+
+[[Nestedfacetexample]]
+=== Nested facet example
+
+Let's start off with a simple non-nested terms facet on the genre field:
+
+[source,java]
+----
+ top_genres:{
+    type: terms
+    field: genre,
+    limit: 5
+  }
+----
+
+Now if we wanted to add a nested facet to find the top 2 authors for each genre bucket:
+
+[source,java]
+----
+  top_genres:{
+    type: terms,
+    field: genre,
+    limit: 5,
+    facet:{
+      top_authors:{ 
+        type: terms, // nested terms facet on author will be calculated for each parent bucket (genre)
+        field: author,
+        limit: 2
+      }
+    }
+  }
+----
+
+And the response will look something like:
+
+[source,java]
+----
+  [...]
+  "facets":{
+    "top_genres":{
+      "buckets":[
+        {
+          "val":"Fantasy",
+          "count":5432,
+          "top_authors":{  // these are the top authors in the "Fantasy" genre
+            "buckets":[{
+                "val":"Mercedes Lackey",
+                "count":121},
+              {
+                "val":"Piers Anthony",
+                "count":98}
+            ]
+          }
+        },
+        {
+          "val":"Mystery",
+          "count":4322,
+          "top_authors":{  // these are the top authors in the "Mystery" genre
+            "buckets":[{
+                "val":"James Patterson",
+                "count":146},
+              {
+                "val":"Patricia Cornwell",
+                "count":132}
+            ]
+          }
+        },
+        [...]
+ 
+----
+
+By default "top authors" is defined by simple document count descending, but we could use our aggregation functions to sort by more interesting metrics.
+
+[[References]]
+== References
+
+This documentation was originally adapted largely from the following blog pages:
+
+http://yonik.com/json-facet-api/
+
+http://yonik.com/solr-facet-functions/
+
+http://yonik.com/solr-subfacets/
+
+http://yonik.com/percentiles-for-solr-faceting/
+

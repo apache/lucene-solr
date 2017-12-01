@@ -196,7 +196,15 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
-  
+
+  public void testSpanNotNoOverflowOnLargeSpans() throws Exception {
+    SpanQuery near = spanNearOrderedQuery("field", 4, "eight", "one");
+    SpanQuery query = spanNotQuery(near, spanTermQuery("field", "forty"), Integer.MAX_VALUE, Integer.MAX_VALUE);
+
+    checkHits(query, new int[]
+        {801, 821, 831, 851, 861, 871, 881, 891, 1801, 1821, 1831, 1851, 1861, 1871, 1881, 1891});
+  }
+
   public void testSpanWithMultipleNotSingle() throws Exception {
     SpanQuery near = spanNearOrderedQuery("field", 4, "eight", "one");
     SpanQuery or = spanOrQuery("field", "forty");

@@ -516,8 +516,7 @@ final class SloppyPhraseScorer extends Scorer {
     return tg;
   }
 
-  @Override
-  public int freq() {
+  int freq() {
     return numMatches;
   }
 

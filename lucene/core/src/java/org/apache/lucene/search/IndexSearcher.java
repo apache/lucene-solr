@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -529,13 +528,15 @@ public class IndexSearcher {
           + after.doc + " limit=" + limit);
     }
     final int cappedNumHits = Math.min(numHits, limit);
+    final Sort rewrittenSort = sort.rewrite(this);
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
         final boolean fillFields = true;
-        return TopFieldCollector.create(sort, cappedNumHits, after, fillFields, doDocScores, doMaxScore);
+        // TODO: don't pay the price for accurate hit counts by default
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, fillFields, doDocScores, doMaxScore, true);
       }
 
       @Override
@@ -545,7 +546,7 @@ public class IndexSearcher {
         for (TopFieldCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(sort, 0, cappedNumHits, topDocs, true);
+        return TopDocs.merge(rewrittenSort, 0, cappedNumHits, topDocs, true);
       }
 
     };
@@ -778,21 +779,22 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public CollectionStatistics collectionStatistics(String field) throws IOException {
-    final int docCount;
-    final long sumTotalTermFreq;
-    final long sumDocFreq;
-
     assert field != null;
-    
-    Terms terms = MultiFields.getTerms(reader, field);
-    if (terms == null) {
+    long docCount = 0;
+    long sumTotalTermFreq = 0;
+    long sumDocFreq = 0;
+    for (LeafReaderContext leaf : reader.leaves()) {
+      final Terms terms = leaf.reader().terms(field);
+      if (terms == null) {
+        continue;
+      }
+      docCount += terms.getDocCount();
+      sumTotalTermFreq += terms.getSumTotalTermFreq();
+      sumDocFreq += terms.getSumDocFreq();
+    }
+    if (docCount == 0) {
       return null;
     }
-
-    docCount = terms.getDocCount();
-    sumTotalTermFreq = terms.getSumTotalTermFreq();
-    sumDocFreq = terms.getSumDocFreq();
-
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
 }

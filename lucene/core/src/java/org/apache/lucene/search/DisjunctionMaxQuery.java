@@ -139,6 +139,12 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
+      if (weights.size() > TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD) {
+        // Disallow caching large dismax queries to not encourage users
+        // to build large dismax queries as a workaround to the fact that
+        // we disallow caching large TermInSetQueries.
+        return false;
+      }
       for (Weight w : weights) {
         if (w.isCacheable(ctx) == false)
           return false;
@@ -150,7 +156,8 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       boolean match = false;
-      float max = Float.NEGATIVE_INFINITY, sum = 0.0f;
+      float max = Float.NEGATIVE_INFINITY;
+      double sum = 0;
       List<Explanation> subs = new ArrayList<>();
       for (Weight wt : weights) {
         Explanation e = wt.explain(context, doc);
@@ -162,7 +169,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
         }
       }
       if (match) {
-        final float score = max + (sum - max) * tieBreakerMultiplier;
+        final float score = (float) (max + (sum - max) * tieBreakerMultiplier);
         final String desc = tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:";
         return Explanation.match(score, desc, subs);
       } else {

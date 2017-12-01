@@ -2285,9 +2285,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  (which you do when IndexWriter invokes the
    *  MergePolicy).
    *
-   *  <p>Do not alter the returned collection! */
-  public synchronized Collection<SegmentCommitInfo> getMergingSegments() {
-    return mergingSegments;
+   *  <p>The Set is unmodifiable. */
+  public synchronized Set<SegmentCommitInfo> getMergingSegments() {
+    return Collections.unmodifiableSet(mergingSegments);
   }
 
   /**
@@ -3161,6 +3161,31 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       maybeMerge(config.getMergePolicy(), MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);      
     }
     return pendingSeqNo;
+  }
+
+  /**
+   * <p>Expert: Flushes the next pending writer per thread buffer if available or the largest active
+   * non-pending writer per thread buffer in the calling thread.
+   * This can be used to flush documents to disk outside of an indexing thread. In contrast to {@link #flush()}
+   * this won't mark all currently active indexing buffers as flush-pending.
+   *
+   * Note: this method is best-effort and might not flush any segments to disk. If there is a full flush happening
+   * concurrently multiple segments might have been flushed.
+   * Users of this API can access the IndexWriters current memory consumption via {@link #ramBytesUsed()}
+   * </p>
+   * @return <code>true</code> iff this method flushed at least on segment to disk.
+   * @lucene.experimental
+   */
+  public final boolean flushNextBuffer() throws IOException {
+    try {
+      if (docWriter.flushOneDWPT()) {
+        processEvents(true, false);
+        return true; // we wrote a segment
+      }
+    } catch (AbortingException | VirtualMachineError tragedy) {
+      tragicEvent(tragedy, "flushNextBuffer");
+    }
+    return false;
   }
 
   private long prepareCommitInternal() throws IOException {

@@ -79,7 +79,8 @@ An Authentication API allows modifying user IDs and passwords. The API provides 
 
 === API Entry Point
 
-`admin/authentication`
+* v1: `\http://localhost:8983/solr/admin/authentication`
+* v2: `\http://localhost:8983/api/cluster/security/authentication`
 
 This endpoint is not collection-specific, so users are created for the entire Solr cluster. If users need to be restricted to a specific collection, that can be done with the authorization rules.
 
@@ -87,34 +88,81 @@ This endpoint is not collection-specific, so users are created for the entire So
 
 The `set-user` command allows you to add users and change their passwords. For example, the following defines two users and their passwords:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1set-user]
+====
+[.tab-label]*V1 API*
+
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d '{
-  "set-user": {"tom" : "TomIsCool" ,
-               "harry":"HarrysSecret"}}'
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
 ----
+====
+
+[example.tab-pane#v2set-user]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
+----
+====
+--
 
 === Delete a User
 
 The `delete-user` command allows you to remove a user. The user password does not need to be sent to remove a user. In the following example, we've asked that user IDs 'tom' and 'harry' be removed from the system.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-user]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{
- "delete-user": ["tom","harry"]}'
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
 ----
+====
+
+[example.tab-pane#v2delete-user]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
+----
+====
+--
 
 === Set a Property
 
-Set arbitrary properties for authentication plugin. The only supported property is `'blockUnknown'`
+Set properties for the authentication plugin. The only currently supported property for the Basic Authentication plugin is `blockUnknown`.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1set-property]
+====
+[.tab-label]*V1 API*
 
 [source,bash]
 ----
-curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{
- "set-property": {"blockUnknown":false}}'
+curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
 ----
+====
 
-=== Using BasicAuth with SolrJ
+[example.tab-pane#v2set-property]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
+----
+====
+--
+
+=== Using Basic Auth with SolrJ
 
 In SolrJ, the basic authentication credentials need to be set for each request as in this example:
 
@@ -134,7 +182,7 @@ req.setBasicAuthCredentials(userName, password);
 QueryResponse rsp = req.process(solrClient);
 ----
 
-=== Using Command Line scripts with BasicAuth
+=== Using the Solr Control Script with Basic Auth
 
 Add the following line to the `solr.in.sh` or `solr.in.cmd` file. This example tells the `bin/solr` command line to to use "basic" as the type of authentication, and to pass credentials with the user-name "solr" and password "SolrRocks":
 

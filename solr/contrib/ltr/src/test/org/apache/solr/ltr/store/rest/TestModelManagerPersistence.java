@@ -16,12 +16,19 @@
  */
 package org.apache.solr.ltr.store.rest;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
+import org.apache.solr.ltr.model.DefaultWrapperModel;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.junit.BeforeClass;
@@ -184,5 +191,74 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/models/==[]");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "/features/==[]");
+  }
+
+  private static void doWrapperModelPersistenceChecks(String modelName,
+      String featureStoreName, String baseModelFileName) throws Exception {
+    // note that the wrapper and the wrapped model always have the same name
+    assertJQ(ManagedModelStore.REST_END_POINT,
+        // the wrapped model shouldn't be registered
+        "!/models/[1]/name=='"+modelName+"'",
+        // but the wrapper model should be registered
+        "/models/[0]/name=='"+modelName+"'",
+        "/models/[0]/class=='" + DefaultWrapperModel.class.getCanonicalName() + "'",
+        "/models/[0]/store=='" + featureStoreName + "'",
+        // the wrapper model shouldn't contain the definitions of the wrapped model
+        "/models/[0]/features/==[]",
+        // but only its own parameters
+        "/models/[0]/params=={resource:'"+baseModelFileName+"'}");
+  }
+
+  @Test
+  public void testWrapperModelPersistence() throws Exception {
+    final String modelName = "linear";
+    final String FS_NAME = "testWrapper";
+
+    // check whether models and features are empty
+    assertJQ(ManagedModelStore.REST_END_POINT,
+             "/models/==[]");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME,
+             "/features/==[]");
+
+    // setup features
+    loadFeature("popularity", FieldValueFeature.class.getCanonicalName(), FS_NAME, "{\"field\":\"popularity\"}");
+    loadFeature("const", ValueFeature.class.getCanonicalName(), FS_NAME, "{\"value\":5}");
+
+    // setup base model
+    String baseModelJson = getModelInJson(modelName, LinearModel.class.getCanonicalName(),
+                                          new String[] {"popularity", "const"}, FS_NAME,
+                                          "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
+    File baseModelFile = new File(tmpConfDir, "baseModelForPersistence.json");
+    try (BufferedWriter writer = new BufferedWriter(
+        new OutputStreamWriter(new FileOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
+      writer.write(baseModelJson);
+    }
+    baseModelFile.deleteOnExit();
+
+    // setup wrapper model
+    String wrapperModelJson = getModelInJson(modelName, DefaultWrapperModel.class.getCanonicalName(),
+                                             new String[0], FS_NAME,
+                                             "{\"resource\":\"" + baseModelFile.getName() + "\"}");
+    assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
+    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getName());
+
+    // check persistence after reload
+    restTestHarness.reload();
+    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getName());
+
+    // check persistence after restart
+    jetty.stop();
+    jetty.start();
+    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getName());
+
+    // delete test settings
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME);
+    assertJQ(ManagedModelStore.REST_END_POINT,
+             "/models/==[]");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME,
+             "/features/==[]");
+
+    // NOTE: we don't test the persistence of the deletion here because it's tested in testFilePersistence
   }
 }

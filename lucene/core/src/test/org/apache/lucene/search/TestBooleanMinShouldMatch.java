@@ -380,7 +380,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
                 + CheckHits.topdocsString(top1,0,0)
                 + CheckHits.topdocsString(top2,0,0)
                 + "for query:" + q.toString(),
-                score, otherScore, CheckHits.explainToleranceDelta(score, otherScore));
+                score, otherScore, 0d);
           }
         }
 

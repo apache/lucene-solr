@@ -41,6 +41,11 @@ Improvements
   Add missing range checks for similarity parameters.
   Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
 
+Optimizations
+
+* LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
+  (David Smiley, Robert Muir)
+
 ======================= Lucene 7.2.0 =======================
 
 API Changes
@@ -57,7 +62,47 @@ API Changes
 * LUCENE-8014: Similarity.computeSlopFactor() and
   Similarity.computePayloadFactor() have been deprecated. (Alan Woodward)
 
+* LUCENE-6278: Scorer.freq() has been removed (Alan Woodward)
+
+* LUCENE-7736: DoubleValuesSource and LongValuesSource now expose a
+  rewrite(IndexSearcher) function. (Alan Woodward)
+
+* LUCENE-7998: DoubleValuesSource.fromQuery() allows you to use the scores
+  from a Query as a DoubleValuesSource. (Alan Woodward)
+
+* LUCENE-8049: IndexWriter.getMergingSegments()'s return type was changed from
+  Collection to Set to more accurately reflect it's nature. (David Smiley)
+
+* LUCENE-8059: TopFieldDocCollector can now early terminate collection when
+  the sort order is compatible with the index order. As a consequence,
+  EarlyTerminatingSortingCollector is now deprecated. (Adrien Grand)
+
+New Features
+
+* LUCENE-8061: Add convenience factory methods to create BBoxes and XYZSolids
+  directly from bounds objects.
+  
+* LUCENE-7736: IndexReaderFunctions expose various IndexReader statistics as
+  DoubleValuesSources. (Alan Woodward)
+
+* LUCENE-8068: Allow IndexWriter to write a single DWPT to disk Adds a
+  flushNextBuffer method to IndexWriter that allows the caller to
+  synchronously move the next pending or the biggest non-pending index buffer to
+  disk. This enables flushing selected buffer to disk without highjacking an
+  indexing thread. This is for instance useful if more than one IW (shards) must
+  be maintained in a single JVM / system. (Simon Willnauer)
+
 Bug Fixes
+
+* LUCENE-8057: Exact circle bounds computation was incorrect.
+  (Ignacio Vera)
+
+* LUCENE-8056: Exact circle segment bounding suffered from precision errors.
+  (Karl Wright)
+
+* LUCENE-8054: Fix the exact circle case where relationships fail when the
+  planet model has c <= ab, because the planes are constructed incorrectly.
+  (Ignacio Vera)
 
 * LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
   a previous boosted field's factor to subsequent unboosted fields.
@@ -76,6 +121,9 @@ Bug Fixes
 * LUCENE-8045: ParallelLeafReader did not correctly report FieldInfo.dvGen
   (Alan Woodward)
 
+* LUCENE-8034: Use subtraction instead of addition to sidestep int
+  overflow in SpanNotQuery.  (Hari Menon via Mike McCandless)
+
 Optimizations
 
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
@@ -84,11 +132,24 @@ Optimizations
 * LUCENE-7994: Use int/int scatter map to gather facet counts when the
   number of hits is small relative to the number of unique facet labels
   (Dawid Weiss, Robert Muir, Mike McCandless)
+
+* LUCENE-8062: GlobalOrdinalsQuery is no longer eligible for caching. (Jim Ferenczi)
+
+* LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
+  caching as they could break memory accounting of the query cache.
+  (Adrien Grand)
   
 Tests
 
 * LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
   on Java 9+.  (Uwe Schindler)
+
+======================= Lucene 7.1.1 =======================
+
+Bug Fixes
+
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents 
+  instead of 1. (Simon Willnauer)
 
 Build
 
@@ -182,6 +243,9 @@ Optimizations
   when minPrefixChar=0 (Mikhail Khludnev)
 
 Bug Fixes
+
+* LUCENE-8066: It was still possible to construct a concave GeoExactCircle, so use
+   a sector approach to prevent that. (Ignacio Vera)
 
 * LUCENE-7967: The GeoDegeneratePoint isWithin() method needed allowance for
    numerical precision. (Karl Wright)

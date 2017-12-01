@@ -293,15 +293,14 @@ public class Assign {
     } else  {
       if (message.getStr(CREATE_NODE_SET) == null)
         nodeList = Collections.emptyList();// unless explicitly specified do not pass node list to Policy
-      synchronized (ocmh) {
-        PolicyHelper.SESSION_REF.set(ocmh.policySessionRef);
+      synchronized (PolicyHelper.class) {
+        PolicyHelper.SESSION_REF.set(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
         try {
           return getPositionsUsingPolicy(collectionName,
               shardNames, numNrtReplicas, numTlogReplicas, numPullReplicas, policyName, ocmh.overseer.getSolrCloudManager(), nodeList);
         } finally {
           PolicyHelper.SESSION_REF.remove();
         }
-
       }
     }
   }

@@ -134,10 +134,6 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
           public float score() throws IOException {
             return 0f;
           }
-          @Override
-          public int freq() throws IOException {
-            return 0;
-          }
         };
       }
 

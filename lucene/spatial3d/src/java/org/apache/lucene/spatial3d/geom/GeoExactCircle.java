@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import java.util.Map;
 import java.util.List;
-import java.util.HashMap;
 import java.util.ArrayList;
 
 import java.io.IOException;
@@ -37,16 +35,10 @@ class GeoExactCircle extends GeoBaseCircle {
   protected final double cutoffAngle;
   /** Actual accuracy */
   protected final double actualAccuracy;
-  /** Planes describing the circle */
-  protected final List<SidedPlane> circlePlanes;
-  /** Bounds for the planes */
-  protected final Map<SidedPlane, Membership> eitherBounds;
   /** A point that is on the world and on the circle plane */
   protected final GeoPoint[] edgePoints;
-  /** The set of notable points for each edge */
-  protected final List<GeoPoint[]> notableEdgePoints;
-  /** Notable points for a circle -- there aren't any */
-  protected static final GeoPoint[] circlePoints = new GeoPoint[0];
+  /** Slices of the circle. */
+  protected final List<CircleSlice> circleSlices;
 
   /** Constructor.
    *@param planetModel is the planet model.
@@ -65,10 +57,9 @@ class GeoExactCircle extends GeoBaseCircle {
       throw new IllegalArgumentException("Cutoff angle out of bounds");
     if (cutoffAngle < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Cutoff angle cannot be effectively zero");
-    // We cannot allow exact circles to be large enough so that planes intersect at greater than 180 degrees.  This guarantees it.
-    if (cutoffAngle > Math.PI * 0.5)
-      throw new IllegalArgumentException("Cutoff angle out of bounds");
-    
+    if (planetModel.minimumPoleDistance - cutoffAngle  < Vector.MINIMUM_RESOLUTION)
+      throw new IllegalArgumentException("Cutoff angle out of bounds. It cannot be bigger than " +  planetModel.minimumPoleDistance + " for this planet model");
+
     this.center = new GeoPoint(planetModel, lat, lon);
     this.cutoffAngle = cutoffAngle;
 
@@ -77,12 +68,7 @@ class GeoExactCircle extends GeoBaseCircle {
     } else {
       actualAccuracy = accuracy;
     }
-    
-    // Since the provide cutoff angle is really a surface distance, we need to use the point-on-bearing even for spheres.
-    final List<SidedPlane> circlePlanes = new ArrayList<>();
-    // If it turns out that there's only one circle plane, this array will be populated but unused
-    final List<GeoPoint[]> notableEdgePoints = new ArrayList<>();
-      
+
     // We construct approximation planes until we have a low enough error estimate
     final List<ApproximationSlice> slices = new ArrayList<>(100);
     // Construct four cardinal points, and then we'll build the first two planes
@@ -90,20 +76,24 @@ class GeoExactCircle extends GeoBaseCircle {
     final GeoPoint southPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI);
     final GeoPoint eastPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 0.5);
     final GeoPoint westPoint = planetModel.surfacePointOnBearing(center, cutoffAngle, Math.PI * 1.5);
-    
+
+    final boolean mustSplit = cutoffAngle > Math.PI * 0.5;
     final GeoPoint edgePoint;
     if (planetModel.c > planetModel.ab) {
       // z can be greater than x or y, so ellipse is longer in height than width
-      slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0));
-      slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI));
+      slices.add(new ApproximationSlice(center, eastPoint, Math.PI * 0.5, westPoint, Math.PI * -0.5, northPoint, 0.0, mustSplit));
+      slices.add(new ApproximationSlice(center, westPoint, Math.PI * 1.5, eastPoint, Math.PI * 0.5, southPoint, Math.PI, mustSplit));
       edgePoint = eastPoint;
     } else {
       // z will be less than x or y, so ellipse is shorter than it is tall
-      slices.add(new ApproximationSlice(center, northPoint, Math.PI * 2.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5));
-      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, 0.0, westPoint, Math.PI * 1.5));
+      slices.add(new ApproximationSlice(center, northPoint, 0.0, southPoint, Math.PI, eastPoint, Math.PI * 0.5, mustSplit));
+      slices.add(new ApproximationSlice(center, southPoint, Math.PI, northPoint, Math.PI * 2.0, westPoint, Math.PI * 1.5, mustSplit));
       edgePoint = northPoint;
     }
-      
+    //System.out.println("Edgepoint = " + edgePoint);
+
+    this.circleSlices = new ArrayList<>();
+    
     // Now, iterate over slices until we have converted all of them into safe SidedPlanes.
     while (slices.size() > 0) {
       // Peel off a slice from the back
@@ -115,44 +105,27 @@ class GeoExactCircle extends GeoBaseCircle {
       final GeoPoint interpPoint1 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint1Bearing);
       final double interpPoint2Bearing = (thisSlice.point2Bearing + thisSlice.middlePointBearing) * 0.5;
       final GeoPoint interpPoint2 = planetModel.surfacePointOnBearing(center, cutoffAngle, interpPoint2Bearing);
+      
       // Is this point on the plane? (that is, is the approximation good enough?)
-      if (Math.abs(thisSlice.plane.evaluate(interpPoint1)) < actualAccuracy && Math.abs(thisSlice.plane.evaluate(interpPoint2)) < actualAccuracy) {
-        // Good enough; add it to the list of planes, unless it was identical to the previous plane
-        if (circlePlanes.size() == 0 || !circlePlanes.get(circlePlanes.size()-1).isNumericallyIdentical(thisSlice.plane)) {
-          circlePlanes.add(thisSlice.plane);
-          notableEdgePoints.add(new GeoPoint[]{thisSlice.endPoint1, thisSlice.endPoint2});
-        }
+      if (!thisSlice.mustSplit && Math.abs(thisSlice.plane.evaluate(interpPoint1)) < actualAccuracy && Math.abs(thisSlice.plane.evaluate(interpPoint2)) < actualAccuracy) {
+        circleSlices.add(new CircleSlice(thisSlice.plane, thisSlice.endPoint1, thisSlice.endPoint2, center, thisSlice.middlePoint));
+        //assert thisSlice.plane.isWithin(center);
       } else {
         // Split the plane into two, and add it back to the end
         slices.add(new ApproximationSlice(center,
           thisSlice.endPoint1, thisSlice.point1Bearing, 
           thisSlice.middlePoint, thisSlice.middlePointBearing, 
-          interpPoint1, interpPoint1Bearing));
+          interpPoint1, interpPoint1Bearing, false));
         slices.add(new ApproximationSlice(center,
           thisSlice.middlePoint, thisSlice.middlePointBearing,
           thisSlice.endPoint2, thisSlice.point2Bearing,
-          interpPoint2, interpPoint2Bearing));
+          interpPoint2, interpPoint2Bearing, false));
       }
     }
+    
+    this.edgePoints = new GeoPoint[]{edgePoint};
 
-    //System.out.println("Number of planes needed: "+circlePlanes.size());
-      
-    this.edgePoints = new GeoPoint[]{edgePoint};      
-    this.circlePlanes = circlePlanes;
-    // Compute bounds
-    if (circlePlanes.size() == 1) {
-      this.eitherBounds = null;
-      this.notableEdgePoints = null;
-    } else {
-      this.notableEdgePoints = notableEdgePoints;
-      this.eitherBounds = new HashMap<>(circlePlanes.size());
-      for (int i = 0; i < circlePlanes.size(); i++) {
-        final SidedPlane thisPlane = circlePlanes.get(i);
-        final SidedPlane previousPlane = (i == 0)?circlePlanes.get(circlePlanes.size()-1):circlePlanes.get(i-1);
-        final SidedPlane nextPlane = (i == circlePlanes.size()-1)?circlePlanes.get(0):circlePlanes.get(i+1);
-        eitherBounds.put(thisPlane, new EitherBound(previousPlane, nextPlane));
-      }
-    }
+    //System.out.println("Is edgepoint within? "+isWithin(edgePoint));
   }
 
 
@@ -200,15 +173,9 @@ class GeoExactCircle extends GeoBaseCircle {
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    if (circlePlanes == null) {
-      return 0.0;
-    }
-    if (circlePlanes.size() == 1) {
-      return distanceStyle.computeDistance(planetModel, circlePlanes.get(0), x, y, z);
-    }
     double outsideDistance = Double.POSITIVE_INFINITY;
-    for (final SidedPlane plane : circlePlanes) {
-      final double distance = distanceStyle.computeDistance(planetModel, plane, x, y, z, eitherBounds.get(plane));
+    for (final CircleSlice slice : circleSlices) {
+      final double distance = distanceStyle.computeDistance(planetModel, slice.circlePlane, x, y, z, slice.plane1, slice.plane2);
       if (distance < outsideDistance) {
         outsideDistance = distance;
       }
@@ -218,15 +185,12 @@ class GeoExactCircle extends GeoBaseCircle {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    if (circlePlanes == null) {
-      return true;
-    }
-    for (final Membership plane : circlePlanes) {
-      if (!plane.isWithin(x, y, z)) {
-        return false;
+    for (final CircleSlice slice : circleSlices) {
+      if (slice.circlePlane.isWithin(x, y, z) && slice.plane1.isWithin(x, y, z) && slice.plane2.isWithin(x, y, z)) {
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
   @Override
@@ -236,16 +200,8 @@ class GeoExactCircle extends GeoBaseCircle {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    if (circlePlanes == null) {
-      return false;
-    }
-    if (circlePlanes.size() == 1) {
-      return circlePlanes.get(0).intersects(planetModel, p, notablePoints, circlePoints, bounds);
-    }
-    for (int edgeIndex = 0; edgeIndex < circlePlanes.size(); edgeIndex++) {
-      final SidedPlane edge = circlePlanes.get(edgeIndex);
-      final GeoPoint[] points = notableEdgePoints.get(edgeIndex);
-      if (edge.intersects(planetModel, p, notablePoints, points, bounds, eitherBounds.get(edge))) {
+    for (final CircleSlice slice : circleSlices) {
+      if (slice.circlePlane.intersects(planetModel, p, notablePoints, slice.notableEdgePoints, bounds, slice.plane1, slice.plane2)) {
         return true;
       }
     }
@@ -254,16 +210,8 @@ class GeoExactCircle extends GeoBaseCircle {
 
   @Override
   public boolean intersects(GeoShape geoShape) {
-    if (circlePlanes == null) {
-      return false;
-    }
-    if (circlePlanes.size() == 1) {
-      return geoShape.intersects(circlePlanes.get(0), circlePoints);
-    }
-    for (int edgeIndex = 0; edgeIndex < circlePlanes.size(); edgeIndex++) {
-      final SidedPlane edge = circlePlanes.get(edgeIndex);
-      final GeoPoint[] points = notableEdgePoints.get(edgeIndex);
-      if (geoShape.intersects(edge, points, eitherBounds.get(edge))) {
+    for (final CircleSlice slice : circleSlices) {
+      if (geoShape.intersects(slice.circlePlane, slice.notableEdgePoints, slice.plane1, slice.plane2)) {
         return true;
       }
     }
@@ -274,19 +222,12 @@ class GeoExactCircle extends GeoBaseCircle {
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
-    if (circlePlanes == null) {
-      return;
-    }
     bounds.addPoint(center);
-    if (circlePlanes.size() == 1) {
-      bounds.addPlane(planetModel, circlePlanes.get(0));
-      return;
-    }
-    // Add bounds for all circle planes
-    for (final SidedPlane plane : circlePlanes) {
-      bounds.addPlane(planetModel, plane, eitherBounds.get(plane));
-      // We don't bother to compute the intersection bounds since, unless the planet model is pathological, we expect planes to be intersecting at shallow
-      // angles.
+    for (final CircleSlice slice : circleSlices) {
+      bounds.addPlane(planetModel, slice.circlePlane, slice.plane1, slice.plane2);
+      for (final GeoPoint point : slice.notableEdgePoints) {
+        bounds.addPoint(point);
+      }
     }
   }
 
@@ -314,38 +255,6 @@ class GeoExactCircle extends GeoBaseCircle {
     return "GeoExactCircle: {planetmodel=" + planetModel+", center=" + center + ", radius=" + cutoffAngle + "(" + cutoffAngle * 180.0 / Math.PI + "), accuracy=" + actualAccuracy + "}";
   }
   
-  /** A membership implementation representing edges that must apply.
-   */
-  protected static class EitherBound implements Membership {
-    
-    protected final SidedPlane sideBound1;
-    protected final SidedPlane sideBound2;
-    
-    /** Constructor.
-      * @param sideBound1 is the first side bound.
-      * @param sideBound2 is the second side bound.
-      */
-    public EitherBound(final SidedPlane sideBound1, final SidedPlane sideBound2) {
-      this.sideBound1 = sideBound1;
-      this.sideBound2 = sideBound2;
-    }
-
-    @Override
-    public boolean isWithin(final Vector v) {
-      return sideBound1.isWithin(v) && sideBound2.isWithin(v);
-    }
-
-    @Override
-    public boolean isWithin(final double x, final double y, final double z) {
-      return sideBound1.isWithin(x,y,z) && sideBound2.isWithin(x,y,z);
-    }
-    
-    @Override
-    public String toString() {
-      return "(" + sideBound1 + "," + sideBound2 + ")";
-    }
-  }
-
   /** A temporary description of a section of circle.
    */
   protected static class ApproximationSlice {
@@ -356,24 +265,55 @@ class GeoExactCircle extends GeoBaseCircle {
     public final double point2Bearing;
     public final GeoPoint middlePoint;
     public final double middlePointBearing;
+    public final boolean mustSplit;
     
     public ApproximationSlice(final GeoPoint center,
       final GeoPoint endPoint1, final double point1Bearing,
       final GeoPoint endPoint2, final double point2Bearing,
-      final GeoPoint middlePoint, final double middlePointBearing) {
+      final GeoPoint middlePoint, final double middlePointBearing, final boolean mustSplit) {
       this.endPoint1 = endPoint1;
       this.point1Bearing = point1Bearing;
       this.endPoint2 = endPoint2;
       this.point2Bearing = point2Bearing;
       this.middlePoint = middlePoint;
       this.middlePointBearing = middlePointBearing;
+      this.mustSplit = mustSplit;
       // Construct the plane going through the three given points
       this.plane = SidedPlane.constructNormalizedThreePointSidedPlane(center, endPoint1, endPoint2, middlePoint);
       if (this.plane == null) {
-        throw new IllegalArgumentException("Either circle is too large to fit on ellipsoid or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
+        throw new IllegalArgumentException("Either circle is too small or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
       }
+      if (plane.isWithin(center) == false || !plane.evaluateIsZero(endPoint1) || !plane.evaluateIsZero(endPoint2) || !plane.evaluateIsZero(middlePoint))
+        throw new IllegalStateException("SidedPlane constructor built a bad plane!!");
     }
 
+    @Override
+    public String toString() {
+      return "{end point 1 = " + endPoint1 + " bearing 1 = "+point1Bearing + 
+        " end point 2 = " + endPoint2 + " bearing 2 = " + point2Bearing + 
+        " middle point = " + middlePoint + " middle bearing = " + middlePointBearing + "}";
+    }
   }
-  
+
+  /** A  description of a section of circle.
+   */
+  protected static class CircleSlice {
+    final GeoPoint[] notableEdgePoints;
+    public final SidedPlane circlePlane;
+    public final SidedPlane plane1;
+    public final SidedPlane plane2;
+
+    public CircleSlice(SidedPlane circlePlane, GeoPoint endPoint1, GeoPoint endPoint2, GeoPoint center, GeoPoint check) {
+      this.circlePlane = circlePlane;
+      this.plane1 = new SidedPlane(check, endPoint1, center);
+      this.plane2 = new SidedPlane(check, endPoint2, center);
+      this.notableEdgePoints = new GeoPoint[] {endPoint1, endPoint2};
+    }
+
+    @Override
+    public String toString() {
+      return "{circle plane = " + circlePlane + " plane 1 = "+plane1 +
+          " plane 2 = " + plane2 + " notable edge points = " + notableEdgePoints  + "}";
+    }
+  }
 }

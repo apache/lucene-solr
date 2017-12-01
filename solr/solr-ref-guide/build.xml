@@ -133,10 +133,6 @@
     <delete dir="${build.content.dir}" />
     <mkdir dir="${build.content.dir}" />
 
-    <echo>Copying all examples to build directory...</echo>
-    <copy todir="${build.content.dir}">
-      <fileset dir="../solrj/src/test/org/apache/solr/client/ref_guide_examples" />
-    </copy>
     <echo>Copying all non template files from src ...</echo>
     <copy todir="${build.content.dir}">
       <fileset dir="src">
@@ -210,6 +206,7 @@
         <!-- NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
              them to the _config.yml.template file for building the jekyll site as well
         -->
+        <attribute key="solr-root-path" value="../../../" />
         <attribute key="solr-guide-draft-status" value="${solr-guide-draft-status}" />
         <attribute key="solr-guide-version" value="${solr-guide-version}" />
         <attribute key="solr-docs-version" value="${solr-docs-version}" />

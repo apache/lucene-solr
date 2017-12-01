@@ -60,7 +60,7 @@ public final class FunctionScoreQuery extends Query {
     Weight inner = in.createWeight(searcher, needsScores && source.needsScores(), 1f);
     if (needsScores == false)
       return inner;
-    return new FunctionScoreWeight(this, inner, source, boost);
+    return new FunctionScoreWeight(this, inner, source.rewrite(searcher), boost);
   }
 
   @Override
@@ -115,8 +115,6 @@ public final class FunctionScoreQuery extends Query {
         return Explanation.noMatch("No match");
       Explanation scoreExplanation = inner.explain(context, doc);
       Explanation expl = valueSource.explain(context, doc, scoreExplanation);
-      if (boost == 1f)
-        return expl;
       return Explanation.match(expl.getValue() * boost, "product of:",
           Explanation.match(boost, "boost"), expl);
     }
@@ -140,7 +138,7 @@ public final class FunctionScoreQuery extends Query {
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
-      return valueSource.isCacheable(ctx);
+      return inner.isCacheable(ctx) && valueSource.isCacheable(ctx);
     }
 
   }

@@ -108,11 +108,6 @@ public class OriginalScoreFeature extends Feature {
       }
 
       @Override
-      public int freq() throws IOException {
-        return originalScorer.freq();
-      }
-
-      @Override
       public int docID() {
         return originalScorer.docID();
       }

@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.common.util.ObjectCache;
 
 /**
  * Base class for overriding some behavior of {@link SolrCloudManager}.
@@ -52,6 +53,11 @@ public class DelegatingCloudManager implements SolrCloudManager {
   @Override
   public DistributedQueueFactory getDistributedQueueFactory() {
     return delegate.getDistributedQueueFactory();
+  }
+
+  @Override
+  public ObjectCache getObjectCache() {
+    return delegate.getObjectCache();
   }
 
   @Override

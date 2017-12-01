@@ -45,7 +45,7 @@ Levels should be appropriately nested. During the build, validation occurs to en
 
 More info: http://asciidoctor.org/docs/user-manual/#sections
 
-=== Code Examples
+== Code Examples
 
 Use backticks ``` for text that should be monospaced, such as code or a class name in the body of a paragraph.
 
@@ -64,7 +64,7 @@ If your code block will include line breaks, put 4 hyphens (`----`) before and a
 
 More info: http://asciidoctor.org/docs/user-manual/#source-code-blocks
 
-==== Source Block Syntax Highlighting
+=== Source Block Syntax Highlighting
 
 The PDF and HTML outputs use Pygments to add syntax highlighting to code examples. This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
 
@@ -72,13 +72,47 @@ Pygments has a long selection of lexers available. You can see the full list at 
 
 Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible. When in doubt, choose `text`, or leave it blank.
 
-==== Importing Code Snippets from Other Files
+=== Importing Code Snippets from Other Files
 
-The build system has the ability to "include" code snippets located in other files.
+The build system has the ability to "include" snippets located in other files -- even non-AsciiDoc files such as `*.java` source code files.
 
-Snippets are bounded by "tag" comments placed at the start and end of the section you would like to import.  Opening tags look like: `// tag::snippetName[]`.  Closing tags follow the format: `// end::snippetName[]`.  Snippets can be dropped into an adoc file using an `include` directive, following a format: `include::PathToFileWithSnippet[tag=snippetName]`.  Note that when relative paths are provided in this directive, that paths are relative to location of the asciidoc file the include appears in.
+Snippets are bounded by "tag" comments placed at the start and end of the section you would like to import.  Opening tags look like: `// tag::snippetName[]`.  Closing tags follow the format: `// end::snippetName[]`.  Snippets can be dropped into an `.adoc` file using an `include` directive, following the format: `include::PathToFileWithSnippet[tag=snippetName]`.  Note that when relative paths are provided in these directives, those paths are resolved relative to the location of the AsciiDoc file that the `include` appears in.
 
-For more information on the `include` directive, see the documentation http://asciidoctor.org/docs/user-manual/#include-partial[here].
+Snippets can be included directly from any file in the Lucene/Solr GIT repo by refering to a `solr-root-path` variable prior to the file path, for example:
+
+[source]
+--
+[source,java,indent=0]
+----
+\include::{solr-root-path}core/src/java/org/apache/solr/core/SolrCore.java[tag=something]
+----
+--
+
+When building the PDF or HTML versions of the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `build/solr-ref-guide/content` directory used by Ant.
+
+In order for editors (such as ATOM) to be able to offer "live preview" of the `*.adoc` files using these includes, the `solr-root-path` attribute must also be set as a document level attribute in each file, with the correct relative path.
+
+For example, `using-solrj.adoc` sets `solr-root-path` in it's header, along with an `example-source-dir` attribute (that depends on `solr-root-path`) in order to reduce redundancy in the many `include::` directives it specifies...
+
+[source]
+--
+= Using SolrJ
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+...
+[source,java,indent=0]
+----
+\include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
+----
+...
+[source,java,indent=0]
+----
+\include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-other-apis]
+----
+...
+--
+
+For more information on the `include` directive, see the documentation at http://asciidoctor.org/docs/user-manual/#include-partial.
 
 === Block Titles
 

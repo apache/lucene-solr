@@ -134,12 +134,6 @@ public class SpanScorer extends Scorer {
     return scoreCurrentDoc();
   }
 
-  @Override
-  public final int freq() throws IOException {
-    ensureFreq();
-    return numMatches;
-  }
-
   /** Returns the intermediate "sloppy freq" adjusted for edit distance
    *  @lucene.internal */
   final float sloppyFreq() throws IOException {

@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
 
 /* A suggester is capable of suggesting a collection operation
  * given a particular session. Before it suggests a new operation,
@@ -47,6 +48,7 @@ public abstract class Suggester {
   protected final EnumMap<Hint, Object> hints = new EnumMap<>(Hint.class);
   Policy.Session session;
   SolrRequest operation;
+  boolean force;
   protected List<Violation> originalViolations = new ArrayList<>();
   private boolean isInitialized = false;
 
@@ -62,6 +64,15 @@ public abstract class Suggester {
     } else {
       hints.put(hint, value == null ? null : String.valueOf(value));
     }
+    return this;
+  }
+
+  /**
+   * Normally, only less loaded nodes are used for moving replicas. If this is a violation and a MOVE must be performed,
+   * set the flag to true.
+   */
+  public Suggester forceOperation(boolean force) {
+    this.force = force;
     return this;
   }
 
@@ -136,6 +147,11 @@ public abstract class Suggester {
       ew.put("type", violation == null ? "improvement" : "violation");
       ew.putIfNotNull("violation", violation);
       ew.put("operation", operation);
+    }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(this);
     }
   }
 

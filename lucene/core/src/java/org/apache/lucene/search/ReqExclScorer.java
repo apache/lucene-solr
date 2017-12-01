@@ -72,11 +72,6 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    return reqScorer.freq();
-  }
-
-  @Override
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }

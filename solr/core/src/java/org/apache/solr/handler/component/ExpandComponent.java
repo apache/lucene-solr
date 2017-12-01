@@ -537,7 +537,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
         groups.put(group, collector);
       }
 
@@ -629,7 +629,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
         groups.put(cursor.value, collector);
       }
 

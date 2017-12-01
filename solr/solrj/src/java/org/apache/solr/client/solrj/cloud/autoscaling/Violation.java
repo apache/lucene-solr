@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 
 public class Violation implements MapWriter {
@@ -35,7 +34,7 @@ public class Violation implements MapWriter {
   final Object tagKey;
   private final int hash;
   private final Clause clause;
-  private List<Pair<ReplicaInfo, ViolationMeta>> violationVsMetaData = new ArrayList<>();
+  private List<ReplicaInfoAndErr> replicaInfoAndErrs = new ArrayList<>();
 
   Violation(Clause clause, String coll, String shard, String node, Object actualVal, Long replicaCountDelta, Object tagKey) {
     this.clause = clause;
@@ -48,17 +47,42 @@ public class Violation implements MapWriter {
     hash = ("" + coll + " " + shard + " " + node + " " + String.valueOf(tagKey) + " " + Utils.toJSONString(getClause().toMap(new HashMap<>()))).hashCode();
   }
 
-  public Violation addReplica(ReplicaInfo r, ViolationMeta meta) {
-    violationVsMetaData.add(new Pair<>(r, meta));
+  public Violation addReplica(ReplicaInfoAndErr r) {
+    replicaInfoAndErrs.add(r);
     return this;
   }
 
-  public List<Pair<ReplicaInfo, ViolationMeta>> getViolatingReplicas() {
-    return violationVsMetaData;
+  public List<ReplicaInfoAndErr> getViolatingReplicas() {
+    return replicaInfoAndErrs;
   }
 
   public Clause getClause() {
     return clause;
+  }
+
+  public boolean matchShard(String shard) {
+    if (getClause().shard.op == Operand.WILDCARD) return true;
+    return this.shard == null || this.shard.equals(shard);
+  }
+
+  static class ReplicaInfoAndErr implements MapWriter{
+    final ReplicaInfo replicaInfo;
+
+    ReplicaInfoAndErr(ReplicaInfo replicaInfo) {
+      this.replicaInfo = replicaInfo;
+    }
+    Long delta;
+
+    public ReplicaInfoAndErr withDelta(Long delta) {
+      this.delta = delta;
+      return this;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("replica", replicaInfo);
+      ew.putIfNotNull("delta",delta );
+    }
   }
 
   @Override
@@ -101,24 +125,5 @@ public class Violation implements MapWriter {
       ew1.putIfNotNull("delta", replicaCountDelta);
     });
     ew.put("clause", getClause());
-  }
-
-  static class ViolationMeta implements MapWriter {
-    Long delta;
-
-    public ViolationMeta withDelta(Long delta) {
-      this.delta = delta;
-      return this;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.putIfNotNull("delta", delta);
-    }
-
-    @Override
-    public String toString() {
-      return Utils.toJSONString(this);
-    }
   }
 }

@@ -405,12 +405,6 @@
  *                 {@link org.apache.lucene.search.similarities.Similarity.SimScorer#score(int, float) SimScorer.score(int doc, float freq)}.
  *             </li>
  *             <li>
- *                 {@link org.apache.lucene.search.Scorer#freq freq()} &mdash; Returns the number of matches
- *                 for the current document. This value can be determined in any appropriate way for an application. For instance, the
- *                 {@link org.apache.lucene.search.TermScorer TermScorer} simply defers to the term frequency from the inverted index:
- *                 {@link org.apache.lucene.index.PostingsEnum#freq PostingsEnum.freq()}.
- *             </li>
- *             <li>
  *                 {@link org.apache.lucene.search.Scorer#getChildren getChildren()} &mdash; Returns any child subscorers
  *                 underneath this scorer. This allows for users to navigate the scorer hierarchy and receive more fine-grained
  *                 details on the scoring process.

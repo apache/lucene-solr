@@ -82,13 +82,6 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    assert needsScores;
-    assert iterating();
-    return in.freq();
-  }
-
-  @Override
   public int docID() {
     return in.docID();
   }

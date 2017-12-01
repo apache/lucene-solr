@@ -30,8 +30,8 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MockRandomMergePolicy;
-import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
@@ -41,7 +41,7 @@ import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
-public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
+public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
 
   private int numDocs;
   private List<String> terms;
@@ -90,18 +90,17 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       }
     }
     if (singleSortedSegment) {
-      // because of deletions, there might still be a single flush segment in
-      // the index, although want want a sorted segment so it needs to be merged
-      iw.getReader().close(); // refresh
-      iw.addDocument(new Document());
-      iw.commit();
-      iw.addDocument(new Document());
       iw.forceMerge(1);
     }
     else if (random().nextBoolean()) {
       iw.forceMerge(FORCE_MERGE_MAX_SEGMENT_COUNT);
     }
     reader = iw.getReader();
+    if (reader.maxDoc() == 0) {
+      iw.addDocument(new Document());
+      reader.close();
+      reader = iw.getReader();
+    }
   }
   
   private void closeIndex() throws IOException {
@@ -111,18 +110,37 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   }
 
   public void testEarlyTermination() throws IOException {
+    doTestEarlyTermination(false);
+  }
+
+  public void testEarlyTerminationWhenPaging() throws IOException {
+    doTestEarlyTermination(true);
+  }
+
+  private void doTestEarlyTermination(boolean paging) throws IOException {
     final int iters = atLeast(8);
     for (int i = 0; i < iters; ++i) {
       createRandomIndex(false);
+      int maxSegmentSize = 0;
+      for (LeafReaderContext ctx : reader.leaves()) {
+        maxSegmentSize = Math.max(ctx.reader().numDocs(), maxSegmentSize);
+      }
       for (int j = 0; j < iters; ++j) {
         final IndexSearcher searcher = newSearcher(reader);
         final int numHits = TestUtil.nextInt(random(), 1, numDocs);
-        final Sort sort = new Sort(new SortField("ndv1", SortField.Type.LONG, false));
+        FieldDoc after;
+        if (paging) {
+          assert searcher.getIndexReader().maxDoc() > 0;
+          TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+          after = (FieldDoc) td.scoreDocs[td.scoreDocs.length - 1];
+        } else {
+          after = null;
+        }
         final boolean fillFields = random().nextBoolean();
         final boolean trackDocScores = random().nextBoolean();
         final boolean trackMaxScore = random().nextBoolean();
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, fillFields, trackDocScores, trackMaxScore);
-        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, fillFields, trackDocScores, trackMaxScore);
+        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, fillFields, trackDocScores, trackMaxScore, true);
+        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, fillFields, trackDocScores, trackMaxScore, false);
 
         final Query query;
         if (random().nextBoolean()) {
@@ -131,56 +149,55 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
           query = new MatchAllDocsQuery();
         }
         searcher.search(query, collector1);
-        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits));
-        assertTrue(collector1.getTotalHits() >= collector2.getTotalHits());
-        assertTopDocsEquals(collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
+        searcher.search(query, collector2);
+        TopDocs td1 = collector1.topDocs();
+        TopDocs td2 = collector2.topDocs();
+
+        assertFalse(collector1.isEarlyTerminated());
+        if (trackMaxScore == false && paging == false && maxSegmentSize >= numHits && query instanceof MatchAllDocsQuery) {
+          // Make sure that we sometimes early terminate
+          assertTrue(collector2.isEarlyTerminated());
+        }
+        if (collector2.isEarlyTerminated()) {
+          assertTrue(td2.totalHits >= td1.scoreDocs.length);
+          assertTrue(td2.totalHits <= reader.maxDoc());
+        } else {
+          assertEquals(td2.totalHits, td1.totalHits);
+        }
+        assertTopDocsEquals(td1.scoreDocs, td2.scoreDocs);
       }
       closeIndex();
     }
   }
   
   public void testCanEarlyTerminate() {
-    assertTrue(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG))));
 
-    assertTrue(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
 
-    assertTrue(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
 
-    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG, true)),
         new Sort(new SortField("a", SortField.Type.LONG, false))));
 
-    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("a", SortField.Type.LONG))));
 
-    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("c", SortField.Type.STRING))));
 
-    assertFalse(EarlyTerminatingSortingCollector.canEarlyTerminate(
+    assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("c", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
-  }
-
-  public void testEarlyTerminationDifferentSorter() throws IOException {
-    createRandomIndex(true);
-
-    Sort sort = new Sort(new SortField("ndv2", SortField.Type.LONG, false));
-    Collector c = new EarlyTerminatingSortingCollector(TopFieldCollector.create(sort, 10, true, true, true), sort, 10);
-    IndexSearcher searcher = newSearcher(reader);
-    Exception e = expectThrows(IllegalStateException.class,
-                               () -> {
-                                 searcher.search(new MatchAllDocsQuery(), c);
-                               });
-    assertEquals("Cannot early terminate with sort order <long: \"ndv2\"> if segments are sorted with <long: \"ndv1\">", e.getMessage());
-    closeIndex();
   }
 
   private static void assertTopDocsEquals(ScoreDoc[] scoreDocs1, ScoreDoc[] scoreDocs2) {
@@ -189,57 +206,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       final ScoreDoc scoreDoc1 = scoreDocs1[i];
       final ScoreDoc scoreDoc2 = scoreDocs2[i];
       assertEquals(scoreDoc1.doc, scoreDoc2.doc);
-      assertEquals(scoreDoc1.score, scoreDoc2.score, 0.001f);
-    }
-  }
-
-  private static class TestTerminatedEarlySimpleCollector extends SimpleCollector {
-    private boolean collectedSomething;
-    public boolean collectedSomething() {
-      return collectedSomething;
-    }
-    @Override
-    public void collect(int doc) throws IOException {
-      collectedSomething = true;
-    }
-    @Override
-    public boolean needsScores() {
-      return false;
-    }
-  }
-
-  private static class TestEarlyTerminatingSortingcollectorQueryTimeout implements QueryTimeout {
-    final private boolean shouldExit;
-    public TestEarlyTerminatingSortingcollectorQueryTimeout(boolean shouldExit) {
-      this.shouldExit = shouldExit;
-    }
-    public boolean shouldExit() {
-      return shouldExit;
-    }
-  }
-
-  public void testTerminatedEarly() throws IOException {
-    final int iters = atLeast(8);
-    for (int i = 0; i < iters; ++i) {
-      createRandomIndex(true);
-
-      final IndexSearcher searcher = new IndexSearcher(reader); // future TODO: use newSearcher(reader);
-      final Query query = new MatchAllDocsQuery(); // search for everything/anything
-
-      final TestTerminatedEarlySimpleCollector collector1 = new TestTerminatedEarlySimpleCollector();
-      searcher.search(query, collector1);
-
-      final TestTerminatedEarlySimpleCollector collector2 = new TestTerminatedEarlySimpleCollector();
-      final EarlyTerminatingSortingCollector etsCollector = new EarlyTerminatingSortingCollector(collector2, sort, 1);
-      searcher.search(query, etsCollector);
-
-      assertTrue("collector1="+collector1.collectedSomething()+" vs. collector2="+collector2.collectedSomething(), collector1.collectedSomething() == collector2.collectedSomething());
-
-      if (collector1.collectedSomething()) {
-        // we collected something and since we modestly asked for just one document we should have terminated early
-        assertTrue("should have terminated early (searcher.reader="+searcher.reader+")", etsCollector.terminatedEarly());
-      }
-      closeIndex();
+      assertEquals(scoreDoc1.score, scoreDoc2.score, 0f);
     }
   }
 

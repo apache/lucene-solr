@@ -350,11 +350,6 @@ class TermAutomatonScorer extends Scorer {
   }
 
   @Override
-  public int freq() {
-    return freq;
-  }
-
-  @Override
   public int docID() {
     return docID;
   }
@@ -363,6 +358,11 @@ class TermAutomatonScorer extends Scorer {
   public float score() throws IOException {
     // TODO: we could probably do better here, e.g. look @ freqs of actual terms involved in this doc and score differently
     return docScorer.score(docID, freq);
+  }
+
+  // for tests
+  final int freq() {
+    return freq;
   }
 
   static class TermRunAutomaton extends RunAutomaton {

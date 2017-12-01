@@ -145,6 +145,11 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       }
 
       @Override
+      public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+        return function(in.rewrite(searcher), function);
+      }
+
+      @Override
       public int hashCode() {
         return 0;
       }
@@ -187,6 +192,11 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         return in.isCacheable(ctx);
+      }
+
+      @Override
+      public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+        return scoringFunction(in.rewrite(searcher), function);
       }
 
       @Override

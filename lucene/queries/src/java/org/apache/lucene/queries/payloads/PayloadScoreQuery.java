@@ -170,7 +170,7 @@ public class PayloadScoreQuery extends SpanQuery {
       if (scorer == null || scorer.iterator().advance(doc) != doc)
         return Explanation.noMatch("No match");
 
-      scorer.freq();  // force freq calculation
+      scorer.score();  // force freq calculation
       Explanation payloadExpl = scorer.getPayloadExplanation();
 
       if (includeSpanScore) {

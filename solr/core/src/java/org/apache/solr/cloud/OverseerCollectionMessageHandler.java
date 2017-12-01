@@ -36,7 +36,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -215,6 +214,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
         .put(ADDREPLICA, new AddReplicaCmd(this))
         .put(MOVEREPLICA, new MoveReplicaCmd(this))
+        .put(UTILIZENODE, new UtilizeNodeCmd(this))
         .build()
     ;
   }
@@ -701,7 +701,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         log.debug("Expecting {} cores but found {}", coreNames.size(), result.size());
       }
       if (timeout.hasTimedOut()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state.");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + coll);
       }
       
       Thread.sleep(100);
@@ -971,7 +971,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     );
   }
 
-  public final PolicyHelper.SessionRef policySessionRef = new PolicyHelper.SessionRef();
 
   @Override
   public void close() throws IOException {

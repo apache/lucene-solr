@@ -94,10 +94,6 @@ public final class ConstantScoreQuery extends Query {
             public float score() throws IOException {
               return theScore;
             }
-            @Override
-            public int freq() throws IOException {
-              return 1;
-            }
           });
         }
       };
@@ -139,10 +135,6 @@ public final class ConstantScoreQuery extends Query {
                 @Override
                 public float score() throws IOException {
                   return score;
-                }
-                @Override
-                public int freq() throws IOException {
-                  return 1;
                 }
                 @Override
                 public Collection<ChildScorer> getChildren() {

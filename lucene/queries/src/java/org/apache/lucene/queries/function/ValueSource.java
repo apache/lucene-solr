@@ -107,11 +107,6 @@ public abstract class ValueSource {
     }
 
     @Override
-    public int freq() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
     public DocIdSetIterator iterator() {
       throw new UnsupportedOperationException();
     }
@@ -185,6 +180,11 @@ public abstract class ValueSource {
       return in.toString();
     }
 
+    @Override
+    public LongValuesSource rewrite(IndexSearcher searcher) throws IOException {
+      return this;
+    }
+
   }
 
   /**
@@ -197,6 +197,7 @@ public abstract class ValueSource {
   private static class WrappedDoubleValuesSource extends DoubleValuesSource {
 
     private final ValueSource in;
+    private IndexSearcher searcher;
 
     private WrappedDoubleValuesSource(ValueSource in) {
       this.in = in;
@@ -207,6 +208,7 @@ public abstract class ValueSource {
       Map context = new HashMap<>();
       FakeScorer scorer = new FakeScorer();
       context.put("scorer", scorer);
+      context.put("searcher", searcher);
       FunctionValues fv = in.getValues(context, ctx);
       return new DoubleValues() {
 
@@ -244,8 +246,15 @@ public abstract class ValueSource {
       FakeScorer scorer = new FakeScorer();
       scorer.score = scoreExplanation.getValue();
       context.put("scorer", scorer);
+      context.put("searcher", searcher);
       FunctionValues fv = in.getValues(context, ctx);
       return fv.explain(docId);
+    }
+
+    @Override
+    public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+      this.searcher = searcher;
+      return this;
     }
 
     @Override
@@ -284,7 +293,14 @@ public abstract class ValueSource {
     public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
       Scorer scorer = (Scorer) context.get("scorer");
       DoubleValues scores = scorer == null ? null : DoubleValuesSource.fromScorer(scorer);
-      DoubleValues inner = in.getValues(readerContext, scores);
+
+      IndexSearcher searcher = (IndexSearcher) context.get("searcher");
+      DoubleValues inner;
+      if (searcher != null)
+        inner = in.rewrite(searcher).getValues(readerContext, scores);
+      else
+        inner = in.getValues(readerContext, scores);
+
       return new FunctionValues() {
         @Override
         public String toString(int doc) throws IOException {
@@ -329,6 +345,7 @@ public abstract class ValueSource {
     public String description() {
       return in.toString();
     }
+
   }
 
   //

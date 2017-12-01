@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -36,6 +38,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -45,12 +48,14 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -100,6 +105,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
     create.setMaxShardsPerNode(2);
     cloudClient.request(create);
+
+    addDocs(coll, 100);
 
     Replica replica = getRandomReplica(coll, cloudClient);
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -180,6 +187,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertTrue("replica never fully recovered", recovered);
 
+    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+
     Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
     assertEquals(watchers, newWatchers);
 
@@ -225,6 +234,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertEquals(watchers, newWatchers);
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
   public void testFailedMove() throws Exception {
     String coll = "movereplicatest_failed_coll";
@@ -236,6 +246,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
     cloudClient.request(create);
+
+    addDocs(coll, 100);
 
     Replica replica = getRandomReplica(coll, cloudClient);
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -274,6 +286,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
     assertEquals(watchers, newWatchers);
+    log.info("--- current collection state: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
   private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode, String shardId) {
@@ -351,4 +365,14 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
   }
-}
+
+  protected void addDocs(String collection, int numDocs) throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    for (int docId = 1; docId <= numDocs; docId++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", docId);
+      solrClient.add(collection, doc);
+    }
+    solrClient.commit(collection);
+    Thread.sleep(5000);
+  }}

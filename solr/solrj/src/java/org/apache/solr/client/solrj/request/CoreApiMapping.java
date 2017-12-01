@@ -45,7 +45,7 @@ public class CoreApiMapping {
     RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
     STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, "status", null),
     SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Utils.makeMap("other", "with")),
-    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", null),
+    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Utils.makeMap("other", "to")),
     MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
     SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Utils.makeMap("split.key", "splitKey")),
     PREPRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.PREPRECOVERY, "prep-recovery", null),

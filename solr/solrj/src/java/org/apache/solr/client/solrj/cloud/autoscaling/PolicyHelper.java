@@ -146,10 +146,10 @@ public class PolicyHelper {
     suggestionCtx.session = policy.createSession(cloudManager);
     List<Violation> violations = suggestionCtx.session.getViolations();
     for (Violation violation : violations) {
-      Suggestion.getTagType(violation.getClause().isPerCollectiontag() ?
-          violation.getClause().tag.name:
-          violation.getClause().globalTag.name)
-          .getSuggestions(suggestionCtx.setViolation(violation));
+      Suggestion.ConditionType tagType = Suggestion.getTagType(violation.getClause().isPerCollectiontag() ?
+          violation.getClause().tag.name :
+          violation.getClause().globalTag.name);
+      tagType.getSuggestions(suggestionCtx.setViolation(violation));
       suggestionCtx.violation = null;
     }
     return suggestionCtx.getSuggestions();
@@ -223,6 +223,10 @@ public class PolicyHelper {
     if (refVersion != null) policySessionRef.decref(refVersion);
     REF_VERSION.remove();
   }
+  public static PolicyHelper.SessionRef getPolicySessionRef(SolrCloudManager cloudManager){
+    return (SessionRef) cloudManager.getObjectCache().computeIfAbsent(SessionRef.class.getName(), s -> new SessionRef());
+  }
+
 
   public static ThreadLocal<SessionRef> SESSION_REF = new ThreadLocal<>();
 

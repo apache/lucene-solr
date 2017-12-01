@@ -45,6 +45,25 @@ Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.10
 Jetty 9.3.20.v20170531
 
+Upgrade Notes
+----------------------
+
+* SOLR-11501: Starting a query string with local-params {!myparser ...} is used to switch the query parser to another,
+  and is intended for use by Solr system developers, not end users doing searches.  To reduce negative side-effects of
+  unintended hack-ability, we've limited the cases that local-params will be parsed to only contexts in which the
+  default parser is "lucene" or "func".
+  So if defType=edismax then q={!myparser ...} won't work.  In that example, put the desired query parser into defType.
+  Another example is if deftype=edismax then hl.q={!myparser ...} won't work for the same reason.  In that example,
+  either put the desired query parser into hl.qparser or set hl.qparser=lucene.  Most users won't run into these cases
+  but some will and must change.
+  If you must have full backwards compatibility, use luceneMatchVersion=7.1.0 or something earlier. (David Smiley)
+
+* SOLR-11501: The edismax parser by default no longer allows subqueries that specify a Solr parser using either
+  local-params, or the older _query_ magic field trick.  For example
+  {!prefix f=myfield v=enterp}  or  _query_:"{!prefix f=myfield v=enterp}"   are not supported by default anymore.
+  If you want to allow power-users to do this, set uf=*,_query_ or some other value that includes _query_.
+  If you must have full backwards compatibility, use luceneMatchVersion=7.1.0 or something earlier. (David Smiley)
+
 New Features
 ----------------------
 * SOLR-11448: Implement an option in collection commands to wait for final results. (ab)
@@ -66,6 +85,22 @@ New Features
 
 * SOLR-11003: Support bi-directional syncing of cdcr clusters. We still only support active indexing in one cluster,
   but have the ability to switch indexing clusters and cdcr will replicate correctly. (Amrit Sarkar, Varun Thacker)
+
+* SOLR-11538: Implement suggestions for port,ip_*, nodeRole,sysprop.*, metrics:* (noble)
+
+* SOLR-11487: Collection Aliases may now have metadata (currently an internal feature).
+  (Gus Heck, David Smiley)
+
+* SOLR-11542: New TimeRoutedAliasUpdateProcessor URP that routes documents to another collection
+  in the same Alias defined set based on a time field (currently an internal feature).
+  (David Smiley)
+
+* SOLR-9743: A new UTILIZENODE command (noble)
+
+* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
+
+* SOLR-11250: A new DefaultWrapperModel class for loading of large and/or externally stored
+  LTRScoringModel definitions. (Yuki Yano, shalin, Christine Poerschke)
 
 Bug Fixes
 ----------------------
@@ -108,6 +143,16 @@ Bug Fixes
 * SOLR-11231: Guard against unset fields when performing language detection.
   (Chris Beer via Steve Rowe)
 
+* SOLR-11553: JSON Facet API: facet refinement could use UIF in phase one and DV uninversion in phase 2, resulting
+  in too much memory use. (yonik)
+
+* SOLR-11645: When the java commandline had exact duplicate arguments, the
+  admin UI dashboard would not display any commandline arguments.
+  (Webster Homer via Shawn Heisey)
+
+* SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
+  (Jason Gerlowski via Anshum Gupta)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
@@ -117,6 +162,12 @@ Optimizations
 
 * SOLR-11320: Lock autoscaling triggers when changes they requested are being made. This helps to
   ensure that cluster is in a stable state before processing any new trigger events. (ab)
+
+* SOLR-11641: Change `frange` to default to `cost=100` so default behavior is to PostFilter if user specifies
+  `cache=false` (hossman)
+
+* SOLR-11595: SolrIndexSearcher.localCollectionStatistics is now faster by leveraging an existing
+  cached MultiFields.  Noticeable when many fields are searched.  (David Smiley)
 
 Other Changes
 ----------------------
@@ -162,6 +213,9 @@ Other Changes
 
 * SOLR-11507: SOLR-11638: Randomize SolrTestCaseJ4.CloudSolrClientBuilder more, and simplify it.
   (Jason Gerlowski, David Smiley)
+
+* SOLR-11291: Factor out abstract metrics/SolrCore[Container]Reporter classes.
+  (Omar Abdelnabi, Christine Poerschke)
 
 ==================  7.1.0 ==================
 

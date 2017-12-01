@@ -182,7 +182,6 @@ final class BooleanScorer extends BulkScorer {
     final FakeScorer fakeScorer = this.fakeScorer;
     final Bucket bucket = buckets[i];
     if (bucket.freq >= minShouldMatch) {
-      fakeScorer.freq = bucket.freq;
       fakeScorer.score = (float) bucket.score;
       final int doc = base | i;
       fakeScorer.doc = doc;

@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.V2RequestSupport;
+import org.apache.solr.client.solrj.cloud.autoscaling.Violation.ReplicaInfoAndErr;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
@@ -42,7 +43,7 @@ public class Suggestion {
 
   public static ConditionType getTagType(String name) {
     ConditionType info = validatetypes.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = validatetypes.get("STRING");
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = ConditionType.LAZY;
     if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = ConditionType.LAZY;
     return info;
   }
@@ -108,7 +109,7 @@ public class Suggestion {
     COLL("collection", String.class, null, null, null),
     SHARD("shard", String.class, null, null, null),
     REPLICA("replica", Long.class, null, 0L, null),
-    PORT(ImplicitSnitch.PORT, Long.class, null, 1L, 65535L),
+    PORT(ImplicitSnitch.PORT, Long.class, null, 1L, 65535L) ,
     IP_1("ip_1", Long.class, null, 0L, 255L),
     IP_2("ip_2", Long.class, null, 0L, 255L),
     IP_3("ip_3", Long.class, null, 0L, 255L),
@@ -132,7 +133,7 @@ public class Suggestion {
           List<Row> matchingNodes = ctx.session.matrix.stream().filter(
               row -> ctx.violation.getViolatingReplicas()
                   .stream()
-                  .anyMatch(p -> row.node.equals(p.first().getNode())))
+                  .anyMatch(p -> row.node.equals(p.replicaInfo.getNode())))
               .sorted(rowComparator)
               .collect(Collectors.toList());
 
@@ -173,8 +174,8 @@ public class Suggestion {
       public void addViolatingReplicas(ViolationCtx ctx) {
         for (Row r : ctx.allRows) {
           if (!ctx.clause.tag.isPass(r)) {
-            r.forEachReplica(replicaInfo -> ctx.currentViolation.addReplica(replicaInfo,
-                new Violation.ViolationMeta().withDelta(ctx.clause.tag.delta(r.getVal(ImplicitSnitch.CORES)))));
+            r.forEachReplica(replicaInfo -> ctx.currentViolation
+                .addReplica(new ReplicaInfoAndErr(replicaInfo).withDelta(ctx.clause.tag.delta(r.getVal(ImplicitSnitch.CORES)))));
           }
         }
 
@@ -218,6 +219,11 @@ public class Suggestion {
       public Object validate(String name, Object val, boolean isRuleVal) {
         return Clause.parseString(val);
       }
+
+      @Override
+      public void getSuggestions(SuggestionCtx ctx) {
+        perNodeSuggestions(ctx);
+      }
     },;
 
     final Class type;
@@ -242,7 +248,7 @@ public class Suggestion {
     }
 
     public void getSuggestions(SuggestionCtx ctx) {
-
+      perNodeSuggestions(ctx);
     }
 
     public void addViolatingReplicas(ViolationCtx ctx) {
@@ -250,9 +256,10 @@ public class Suggestion {
         row.forEachReplica(replica -> {
           if (ctx.clause.replica.isPass(0) && !ctx.clause.tag.isPass(row)) return;
           if (!ctx.clause.replica.isPass(0) && ctx.clause.tag.isPass(row)) return;
+          if(!ctx.currentViolation.matchShard(replica.getShard())) return;
           if (!ctx.clause.collection.isPass(ctx.currentViolation.coll) || !ctx.clause.shard.isPass(ctx.currentViolation.shard))
             return;
-          ctx.currentViolation.addReplica(replica, new Violation.ViolationMeta().withDelta(ctx.clause.tag.delta(row.getVal(ctx.clause.tag.name))));
+          ctx.currentViolation.addReplica(new ReplicaInfoAndErr(replica).withDelta(ctx.clause.tag.delta(row.getVal(ctx.clause.tag.name))));
         });
       }
     }
@@ -293,6 +300,17 @@ public class Suggestion {
         throw new RuntimeException("Invalid type ");
       }
 
+    }
+  }
+
+  private static void perNodeSuggestions(SuggestionCtx ctx) {
+    if (ctx.violation == null) return;
+    for (ReplicaInfoAndErr e : ctx.violation.getViolatingReplicas()) {
+      Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
+          .forceOperation(true)
+          .hint(Suggester.Hint.COLL_SHARD, new Pair<>(e.replicaInfo.getCollection(), e.replicaInfo.getShard()))
+          .hint(Suggester.Hint.SRC_NODE, e.replicaInfo.getNode());
+      if (ctx.addSuggestion(suggester) == null) break;
     }
   }
 

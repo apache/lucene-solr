@@ -36,8 +36,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
+import org.apache.solr.metrics.SolrCoreContainerReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +90,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * </pre>
  *
  */
-public class SolrClusterReporter extends SolrMetricReporter {
+public class SolrClusterReporter extends SolrCoreContainerReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String CLUSTER_GROUP = SolrMetricManager.overridableRegistryName(SolrInfoBean.Group.cluster.toString());
@@ -170,11 +170,6 @@ public class SolrClusterReporter extends SolrMetricReporter {
   }
 
   @Override
-  public void init(PluginInfo pluginInfo) {
-    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,CoreContainer) instead.");
-  }
-
-  @Override
   protected void doInit() {
     if (reports.isEmpty()) { // set defaults
       reports = DEFAULT_REPORTS;
@@ -193,8 +188,9 @@ public class SolrClusterReporter extends SolrMetricReporter {
     }
   }
 
+  @Override
   public void init(PluginInfo pluginInfo, CoreContainer cc) {
-    super.init(pluginInfo);
+    super.init(pluginInfo, cc);
     if (reporter != null) {
       reporter.close();;
     }

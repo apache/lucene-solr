@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
-import org.apache.solr.metrics.FilteringSolrMetricReporter;
+import org.apache.solr.metrics.SolrCoreReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ import com.codahale.metrics.MetricFilter;
  *    &lt;/reporter&gt;
  * </pre>
  */
-public class SolrShardReporter extends FilteringSolrMetricReporter {
+public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
@@ -92,11 +92,6 @@ public class SolrShardReporter extends FilteringSolrMetricReporter {
   }
 
   @Override
-  public void init(PluginInfo pluginInfo) {
-    throw new UnsupportedOperationException(getClass().getCanonicalName()+".init(PluginInfo) is not supported, use init(PluginInfo,SolrCore) instead.");
-  }
-
-  @Override
   protected void doInit() {
     if (filters.isEmpty()) {
       filters = DEFAULT_FILTERS;
@@ -122,8 +117,9 @@ public class SolrShardReporter extends FilteringSolrMetricReporter {
     }
   }
 
+  @Override
   public void init(PluginInfo pluginInfo, SolrCore core) {
-    super.init(pluginInfo);
+    super.init(pluginInfo, core);
     if (reporter != null) {
       reporter.close();
     }

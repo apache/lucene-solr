@@ -59,8 +59,7 @@ public abstract class Query {
    * <p>
    * Only implemented by primitive queries, which re-write to themselves.
    *
-   * @param needsScores   True if document scores ({@link Scorer#score}) or match
-   *                      frequencies ({@link Scorer#freq}) are needed.
+   * @param needsScores   True if document scores ({@link Scorer#score}) are needed.
    * @param boost         The boost that is propagated by the parent queries.
    */
   public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {

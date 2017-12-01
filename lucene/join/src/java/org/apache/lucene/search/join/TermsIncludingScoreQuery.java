@@ -186,11 +186,6 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     @Override
-    public int freq() throws IOException {
-      return 1;
-    }
-
-    @Override
     public int docID() {
       return matchingDocsIterator.docID();
     }
