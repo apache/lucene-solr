@@ -153,6 +153,9 @@ Bug Fixes
 * SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
   (Jason Gerlowski via Anshum Gupta)
 
+* SOLR-11256: The queue size for ConcurrentUpdateSolrClient should default to 10 instead of throwing an
+  IllegalArgumentException. (Jason Gerlowski, Anshum Gupta)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
