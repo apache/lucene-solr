@@ -279,6 +279,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("diff", TimeDifferencingEvaluator.class)
         .withFunctionName("corrPValues", CorrelationSignificanceEvaluator.class)
         .withFunctionName("normalizeSum", NormalizeSumEvaluator.class)
+        .withFunctionName("geometricDistribution", GeometricDistributionEvaluator.class)
 
         // Boolean Stream Evaluators
 

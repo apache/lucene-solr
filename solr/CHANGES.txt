@@ -79,6 +79,8 @@ New Features
   in the same Alias defined set based on a time field (currently an internal feature).
   (David Smiley)
 
+* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
+
 Bug Fixes
 ----------------------
 
@@ -126,6 +128,9 @@ Bug Fixes
 * SOLR-11645: When the java commandline had exact duplicate arguments, the
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
+
+* SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
+  (Jason Gerlowski via Anshum Gupta)
 
 Optimizations
 ----------------------

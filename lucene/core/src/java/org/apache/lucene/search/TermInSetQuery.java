@@ -318,7 +318,9 @@ public class TermInSetQuery extends Query implements Accountable {
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
-        return true;
+        // Only cache instances that have a reasonable size. Otherwise it might cause memory issues
+        // with the query cache if most memory ends up being spent on queries rather than doc id sets.
+        return ramBytesUsed() <= LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
       }
 
     };

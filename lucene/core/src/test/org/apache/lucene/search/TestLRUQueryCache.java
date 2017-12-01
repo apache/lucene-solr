@@ -77,15 +77,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
   };
 
-  public void testFilterRamBytesUsed() {
-    final Query simpleQuery = new TermQuery(new Term("some_field", "some_term"));
-    final long actualRamBytesUsed = RamUsageTester.sizeOf(simpleQuery);
-    final long ramBytesUsed = LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
-    // we cannot assert exactly that the constant is correct since actual
-    // memory usage depends on JVM implementations and settings (eg. UseCompressedOops)
-    assertEquals(actualRamBytesUsed, ramBytesUsed, actualRamBytesUsed / 2);
-  }
-
   public void testConcurrency() throws Throwable {
     final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(20), 1 + random().nextInt(10000), context -> random().nextBoolean());
     Directory dir = newDirectory();
@@ -282,7 +273,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return queryCache.ramBytesUsed((Query) o);
+          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o instanceof IndexReader || o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not take readers or core cache keys into account
@@ -403,7 +394,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return queryCache.ramBytesUsed((Query) o);
+          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not follow references to core cache keys
@@ -1498,7 +1489,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     searcher.setQueryCachingPolicy(QueryCachingPolicy.ALWAYS_CACHE);
 
-    LRUQueryCache cache = new LRUQueryCache(1, 1000, context -> true);
+    LRUQueryCache cache = new LRUQueryCache(1, 10000, context -> true);
     searcher.setQueryCache(cache);
 
     DVCacheQuery query = new DVCacheQuery("field");

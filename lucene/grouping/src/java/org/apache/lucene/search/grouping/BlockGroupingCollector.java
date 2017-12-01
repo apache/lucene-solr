@@ -305,7 +305,7 @@ public class BlockGroupingCollector extends SimpleCollector {
         collector = TopScoreDocCollector.create(maxDocsPerGroup);
       } else {
         // Sort by fields
-        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores);
+        collector = TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, needsScores, needsScores, true); // TODO: disable exact counts?
       }
 
       LeafCollector leafCollector = collector.getLeafCollector(og.readerContext);

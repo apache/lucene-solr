@@ -58,7 +58,7 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
 
     TestCollectionAPIs.makeCall(apiBag, "/cores/core1", SolrRequest.METHOD.POST,
         "{rename:{to: core2}}", mockCC);
-    params = calls.get("swap");
+    params = calls.get("rename");
     assertEquals("core1" ,params[0]);
     assertEquals("core2" ,params[1]);
 
