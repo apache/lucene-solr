@@ -77,6 +77,8 @@ public class PlanetModel implements SerializableObject {
   public final GeoPoint MIN_Y_POLE;
   /** Max Y pole */
   public final GeoPoint MAX_Y_POLE;
+  /** Minimum surface distance between poles */
+  public final double minimumPoleDistance;
   
   /** Constructor.
    * @param ab is the x/y scaling factor.
@@ -97,6 +99,7 @@ public class PlanetModel implements SerializableObject {
     this.MAX_X_POLE = new GeoPoint(ab, 1.0, 0.0, 0.0, 0.0, 0.0);
     this.MIN_Y_POLE = new GeoPoint(ab, 0.0, -1.0, 0.0, 0.0, -Math.PI * 0.5);
     this.MAX_Y_POLE = new GeoPoint(ab, 0.0, 1.0, 0.0, 0.0, Math.PI * 0.5);
+    this.minimumPoleDistance  = Math.min(surfaceDistance(NORTH_POLE, SOUTH_POLE), surfaceDistance(MIN_X_POLE, MAX_X_POLE));
   }
 
   /** Deserialization constructor.

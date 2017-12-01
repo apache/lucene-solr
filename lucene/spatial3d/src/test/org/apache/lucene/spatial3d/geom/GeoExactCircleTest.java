@@ -122,6 +122,18 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
     assertTrue(success);
   }
 
+  @Test
+  public void testExactCircleDoesNotFit() {
+    boolean exception = false;
+    try {
+      GeoCircle circle = GeoCircleFactory.makeExactGeoCircle(PlanetModel.WGS84, 1.5633796542562415, -1.0387149580695152,3.1409865861032844, 1e-12);
+    } catch (IllegalArgumentException e) {
+      exception = true;
+    }
+    assertTrue(exception);
+  }
+
+
   /**
    * in LUCENE-8054 we have problems with exact circles that have
    * edges that are close together. This test creates those circles with the same
