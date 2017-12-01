@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search.similarities;
 
+import org.apache.lucene.search.Explanation;
+
 /**
  * F1LOG is defined as Sum(tf(term_doc_freq)*ln(docLen)*IDF(term))
  * where IDF(t) = ln((N+1)/df(t)) N=total num of docs, df=doc freq
@@ -85,4 +87,36 @@ public class AxiomaticF1LOG extends Axiomatic {
   protected double gamma(BasicStats stats, double freq, double docLen) {
     return 0.0;
   }
+
+  @Override
+  protected Explanation tfExplain(BasicStats stats, double freq, double docLen){
+    return Explanation.match((float) tf(stats, freq, docLen),
+        "tf, term frequency computed as 1 + log(1 + log(freq)) from:",
+        Explanation.match((float) freq,
+            "freq, number of occurrences of term in the document"));
+  };
+
+  @Override
+  protected Explanation lnExplain(BasicStats stats, double freq, double docLen){
+    return Explanation.match((float) ln(stats, freq, docLen),
+        "ln, document length computed as (avgdl + s) / (avgdl + dl * s) from:",
+        Explanation.match((float) stats.getAvgFieldLength(),
+            "avgdl, average length of field across all documents"),
+        Explanation.match((float) docLen,
+            "dl, length of field"));
+  };
+
+  protected Explanation tflnExplain(BasicStats stats, double freq, double docLen){
+    return Explanation.match((float) tfln(stats, freq, docLen),
+        "tfln, mixed term frequency and document length, equals to 1");
+  };
+
+  protected Explanation idfExplain(BasicStats stats, double freq, double docLen){
+    return Explanation.match((float) idf(stats, freq, docLen),
+        "idf, inverted document frequency computed as log((N + 1) / n) from:",
+        Explanation.match((float) stats.getNumberOfDocuments(),
+            "N, total number of documents with field"),
+        Explanation.match((float) stats.getDocFreq(),
+            "n, number of documents containing term"));
+  };
 }

@@ -118,16 +118,19 @@ public abstract class Axiomatic extends SimilarityBase {
   protected void explain(List<Explanation> subs, BasicStats stats, int doc,
                          double freq, double docLen) {
     if (stats.getBoost() != 1.0d) {
-      subs.add(Explanation.match((float) stats.getBoost(), "boost"));
+      subs.add(Explanation.match((float) stats.getBoost(),
+          "boost, query boost"));
     }
 
-    subs.add(Explanation.match(this.k, "k"));
-    subs.add(Explanation.match(this.s, "s"));
-    subs.add(Explanation.match(this.queryLen, "queryLen"));
-    subs.add(Explanation.match((float) tf(stats, freq, docLen), "tf"));
-    subs.add(Explanation.match((float) ln(stats, freq, docLen), "ln"));
-    subs.add(Explanation.match((float) tfln(stats, freq, docLen), "tfln"));
-    subs.add(Explanation.match((float) idf(stats, freq, docLen), "idf"));
+    subs.add(Explanation.match(this.k,
+        "k, hyperparam for the primitive weighting function"));
+    subs.add(Explanation.match(this.s,
+        "s, hyperparam for the growth function"));
+    subs.add(Explanation.match(this.queryLen, "queryLen, query length"));
+    subs.add(tfExplain(stats, freq, docLen));
+    subs.add(lnExplain(stats, freq, docLen));
+    subs.add(tflnExplain(stats, freq, docLen));
+    subs.add(idfExplain(stats, freq, docLen));
     subs.add(Explanation.match((float) gamma(stats, freq, docLen), "gamma"));
     super.explain(subs, stats, doc, freq, docLen);
   }
@@ -162,4 +165,13 @@ public abstract class Axiomatic extends SimilarityBase {
    * compute the gamma component (only for F3EXp and F3LOG)
    */
   protected abstract double gamma(BasicStats stats, double freq, double docLen);
+
+  protected abstract Explanation tfExplain(BasicStats stats, double freq, double docLen);
+
+  protected abstract Explanation lnExplain(BasicStats stats, double freq, double docLen);
+
+  protected abstract Explanation tflnExplain(BasicStats stats, double freq, double docLen);
+
+  protected abstract Explanation idfExplain(BasicStats stats, double freq, double docLen);
+
 }

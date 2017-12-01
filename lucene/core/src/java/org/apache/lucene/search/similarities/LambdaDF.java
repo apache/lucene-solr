@@ -37,9 +37,12 @@ public class LambdaDF extends Lambda {
   public final Explanation explain(BasicStats stats) {
     return Explanation.match(
         lambda(stats),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match(stats.getDocFreq(), "docFreq"),
-        Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"));
+        getClass().getSimpleName()
+            + ", computed as (n + 1) / (N + 1) from:",
+        Explanation.match(stats.getDocFreq(),
+            "n, number of documents containing term"),
+        Explanation.match(stats.getNumberOfDocuments(),
+            "N, total number of documents with field"));
   }
   
   @Override
