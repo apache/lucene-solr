@@ -33,15 +33,17 @@ public class LambdaTTF extends Lambda {
     return (stats.getTotalTermFreq()+1F) / (stats.getNumberOfDocuments()+1F);
   }
 
-  @Override
   public final Explanation explain(BasicStats stats) {
     return Explanation.match(
         lambda(stats),
-        getClass().getSimpleName() + ", computed from: ",
-        Explanation.match(stats.getTotalTermFreq(), "totalTermFreq"),
-        Explanation.match(stats.getNumberOfDocuments(), "numberOfDocuments"));
+        getClass().getSimpleName()
+            + ", computed as (F + 1) / (N + 1) from:",
+        Explanation.match(stats.getTotalTermFreq(),
+            "F, total number of occurrences of term across all documents"),
+        Explanation.match(stats.getNumberOfDocuments(),
+            "N, total number of documents with field"));
   }
-  
+
   @Override
   public String toString() {
     return "L";
