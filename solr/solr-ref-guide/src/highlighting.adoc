@@ -74,7 +74,7 @@ Specifies the approximate size, in characters, of fragments to consider for high
 +
 The default is `<em>`.
 
-`hl.tag.post`:: </em> |
+`hl.tag.post`::
 (`hl.simple.post` for the Original Highlighter) Specifies the “tag” to use after a highlighted term. This can be any string, but is most often an HTML or XML tag.
 +
 The default is `</em>`.
@@ -196,7 +196,7 @@ This adds substantial weight to the index – similar in size to the compressed 
 
 The Unified Highlighter supports these following additional parameters to the ones listed earlier:
 
-`hl.offsetSource`:: _(blank)_ |
+`hl.offsetSource`::
 By default, the Unified Highlighter will usually pick the right offset source (see above). However it may be ambiguous such as during a migration from one offset source to another that hasn't completed.
 +
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
@@ -273,15 +273,15 @@ If set to `false`, or if there is no match in the alternate field either, the al
 `hl.formatter`::
 Selects a formatter for the highlighted output. Currently the only legal value is `simple`, which surrounds a highlighted term with a customizable pre- and post-text snippet.
 
-`hl.simple.prehl.simple.post`::
-Specifies the text that should appear before (`hl.simple.pre`) and after (`hl.simple.post`) a highlighted term, when using the simple formatter. The default is `<em>` and `</em>`.
+`hl.simple.pre`, `hl.simple.post`::
+Specifies the text that should appear before (`hl.simple.pre`) and after (`hl.simple.post`) a highlighted term, when using the `simple` formatter. The default is `<em>` and `</em>`.
 
 `hl.fragmenter`::
 Specifies a text snippet generator for highlighted text. The standard (default) fragmenter is `gap`, which creates fixed-sized fragments with gaps for multi-valued fields.
 +
 Another option is `regex`, which tries to create fragments that resemble a specified regular expression.
 
-`hl.regex.slop`:: 0.6 |
+`hl.regex.slop`::
 When using the regex fragmenter (`hl.fragmenter=regex`), this parameter defines the factor by which the fragmenter can stray from the ideal fragment size (given by `hl.fragsize`) to accommodate a regular expression.
 +
 For instance, a slop of `0.2` with `hl.fragsize=100` should yield fragments between 80 and 120 characters in length. It is usually good to provide a slightly smaller `hl.fragsize` value when using the regex fragmenter.
@@ -291,7 +291,7 @@ The default is `0.6`.
 `hl.regex.pattern`::
 Specifies the regular expression for fragmenting. This could be used to extract sentences.
 
-`hl.regex.maxAnalyzedChars`:: 10000 |
+`hl.regex.maxAnalyzedChars`::
 Instructs Solr to analyze only this many characters from a field when using the regex fragmenter (after which, the fragmenter produces fixed-sized fragments). The default is `10000`.
 +
 Note, applying a complicated regex to a huge field is computationally expensive.
@@ -318,13 +318,13 @@ In addition to the initial listed parameters, the following parameters documente
 
 And here are additional parameters supported by the FVH:
 
-`hl.fragListBuilder`:: weighted |
+`hl.fragListBuilder`::
 The snippet fragmenting algorithm. The `weighted` fragListBuilder uses IDF-weights to order fragments. This fragListBuilder is the default.
 +
 Other options are `single`, which returns the entire field contents as one snippet, or `simple`. You can select a fragListBuilder with this parameter, or modify an existing implementation in `solrconfig.xml` to be the default by adding "default=true".
 
 `hl.fragmentsBuilder`::
-The fragments builder is responsible for formatting the fragments, which uses`<em>` and `</em>` markup by default (if `hl.tag.pre` and `hl.tag.post` are not defined).
+The fragments builder is responsible for formatting the fragments, which uses `<em>` and `</em>` markup by default (if `hl.tag.pre` and `hl.tag.post` are not defined).
 +
 Another pre-configured choice is `colored`, which is an example of how to use the fragments builder to insert HTML into the snippets for colored highlights if you choose. You can also implement your own if you'd like. You can select a fragments builder with this parameter, or modify an existing implementation in `solrconfig.xml` to be the default by adding "default=true".
 
@@ -365,14 +365,14 @@ Possible values for the `hl.bs.type` parameter are WORD, LINE, SENTENCE, and CHA
 
 ==== The simple Boundary Scanner
 
-The `simple` boundary scanner scans term boundaries for a specified maximum character value (`hl.bs.maxScan`) and for common delimiters such as punctuation marks (`hl.bs.chars`). The `simple` boundary scanner may be useful for some custom To implement the `simple` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the values as appropriate to your application:
+The `simple` boundary scanner scans term boundaries for a specified maximum character value (`hl.bs.maxScan`) and for common delimiters such as punctuation marks (`hl.bs.chars`). To implement the `simple` boundary scanner, add this code to the `highlighting` section of your `solrconfig.xml` file, adjusting the values as appropriate to your application:
 
 [source,xml]
 ----
 <boundaryScanner name="simple" class="solr.highlight.SimpleBoundaryScanner" default="true">
    <lst name="defaults">
-     <str name="hl.bs.maxScan">10</str >
-     <str name="hl.bs.chars">.,!?\t\n</str >
-   </lst >
+     <str name="hl.bs.maxScan">10</str>
+     <str name="hl.bs.chars">.,!?\t\n</str>
+   </lst>
 </boundaryScanner>
 ----
