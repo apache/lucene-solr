@@ -133,6 +133,14 @@ public class GeoExactCircleTest extends RandomGeo3dShapeGenerator{
     assertTrue(exception);
   }
 
+  public void testBigCircleInSphere() {
+    //In Planet model Sphere if circle is close to Math.PI we can get the situation where
+    //circle slice planes are bigger than half of a hemisphere. We need to make
+    //sure we divide the circle in at least 4 slices.
+    GeoCircle circle1 = GeoCircleFactory.makeExactGeoCircle(PlanetModel.SPHERE, 1.1306735252307394, -0.7374283438171261, 3.1415760537549234, 4.816939220262406E-12);
+    GeoPoint point = new GeoPoint(PlanetModel.SPHERE, -1.5707963267948966, 0.0);
+    assertTrue(circle1.isWithin(point));
+  }
 
   /**
    * in LUCENE-8054 we have problems with exact circles that have
