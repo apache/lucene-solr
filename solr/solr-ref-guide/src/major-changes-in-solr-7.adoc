@@ -88,8 +88,26 @@ TIP: Because copy field rules can slow indexing and increase index size, it's re
 
 Automatic field creation can be disabled with the `update.autoCreateFields` property. To do this, you can use the Config API with a command such as:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1setprop]
+====
+[.tab-label]*V1 API*
 [source,bash]
+----
 curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+----
+====
+
+[example.tab-pane#v2setprop]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl http://host:8983/api/collections/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+----
+====
+--
 
 === Changes to Default Behaviors
 * JSON is now the default response format. If you rely on XML responses, you must now define `wt=xml` in your request. In addition, line indentation is enabled by default (`indent=on`).

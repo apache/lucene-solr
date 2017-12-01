@@ -823,7 +823,7 @@ Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Fil
 
 *Factory class:* `solr.ManagedSynonymFilterFactory`
 
-For arguments and examples, see the <<Managed Synonym Graph Filter>> below.
+For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
@@ -852,7 +852,7 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 
-See <<Managed Synonym Filter>> for example input/output.
+See <<Synonym Graph Filter>> below for example input/output.
 
 == N-Gram Filter
 

@@ -19,7 +19,7 @@
 }
 
 ul.nav.nav-pills li {
-  margin-left: 1px;
+  margin-left: 5px;
 }
 
 .pageSummary {
@@ -233,7 +233,7 @@ background-color: #347DBE;
 }
 
 .nav > li > a {
-    line-height: 20px;
+    line-height: 30px;
     padding: 4px 10px;
 }
 
@@ -411,7 +411,7 @@ i.border {
 }
 
 a[data-toggle] {
-    color: #248EC2;
+    color: #305CB3;
 }
 
 .summary {

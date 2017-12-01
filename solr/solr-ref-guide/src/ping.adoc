@@ -25,13 +25,13 @@ The search executed by a Ping is configured with the <<request-parameters-api.ad
 
 The Ping option doesn't open a page, but the status of the request can be seen on the core overview page shown when clicking on a collection name. The length of time the request has taken is displayed next to the Ping option, in milliseconds.
 
-== API Examples
+== Ping API Examples
 
 While the UI screen makes it easy to see the ping response time, the underlying ping command can be more useful when executed by remote monitoring tools:
 
 *Input*
 
-[source,text]
+[source,bash]
 ----
 http://localhost:8983/solr/<core-name>/admin/ping
 ----
@@ -40,9 +40,9 @@ This command will ping the core name for a response.
 
 *Input*
 
-[source,text]
+[source,bash]
 ----
-  http://localhost:8983/solr/<collection-name>/admin/ping?distrib=true&wt=xml
+http://localhost:8983/solr/<collection-name>/admin/ping?distrib=true&wt=xml
 ----
 
 This command will ping all replicas of the given collection name for a response
