@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import java.util.Iterator;
-
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
