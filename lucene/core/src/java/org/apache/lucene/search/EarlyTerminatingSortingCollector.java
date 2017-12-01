@@ -49,9 +49,9 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * hit count} will be vastly underestimated since not all matching documents will have
  * been collected.
  *
- * @lucene.experimental
+ * @deprecated Pass trackTotalHits=false to {@link TopFieldCollector} instead of using this class.
  */
-
+@Deprecated
 public class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /** Returns whether collection can be early-terminated if it sorts with the
