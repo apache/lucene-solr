@@ -97,6 +97,11 @@ New Features
 
 * SOLR-9743: A new  UTILIZENODE command (noble)
 
+* SOLR-11202: Implement a set-property command for AutoScaling API. (ab, shalin)
+
+* SOLR-11250: A new DefaultWrapperModel class for loading of large and/or externally stored
+  LTRScoringModel definitions. (Yuki Yano, shalin, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 
@@ -144,6 +149,9 @@ Bug Fixes
 * SOLR-11645: When the java commandline had exact duplicate arguments, the
   admin UI dashboard would not display any commandline arguments.
   (Webster Homer via Shawn Heisey)
+
+* SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
+  (Jason Gerlowski via Anshum Gupta)
 
 Optimizations
 ----------------------
@@ -205,6 +213,9 @@ Other Changes
 
 * SOLR-11507: SOLR-11638: Randomize SolrTestCaseJ4.CloudSolrClientBuilder more, and simplify it.
   (Jason Gerlowski, David Smiley)
+
+* SOLR-11291: Factor out abstract metrics/SolrCore[Container]Reporter classes.
+  (Omar Abdelnabi, Christine Poerschke)
 
 ==================  7.1.0 ==================
 

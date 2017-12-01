@@ -19,15 +19,15 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.math3.distribution.GeometricDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class PoissonDistributionEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
+public class GeometricDistributionEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
 
   private static final long serialVersionUID = 1;
 
-  public PoissonDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GeometricDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
@@ -37,8 +37,8 @@ public class PoissonDistributionEvaluator extends RecursiveNumericEvaluator impl
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
     }
 
-    Number mean = (Number)first;
+    Number prob = (Number)first;
 
-    return new PoissonDistribution(mean.doubleValue());
+    return new GeometricDistribution(prob.doubleValue());
   }
 }

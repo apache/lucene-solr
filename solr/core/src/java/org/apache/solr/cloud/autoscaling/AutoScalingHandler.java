@@ -202,6 +202,9 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
           case CMD_SET_CLUSTER_POLICY:
             currentConfig = handleSetClusterPolicy(req, rsp, op, currentConfig);
             break;
+          case CMD_SET_PROPERTIES:
+            currentConfig = handleSetProperties(req, rsp, op, currentConfig);
+            break;
           default:
             op.addError("Unknown command: " + op.name);
         }
@@ -226,6 +229,17 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
     }
     rsp.getValues().add("result", "success");
+  }
+
+  private AutoScalingConfig handleSetProperties(SolrQueryRequest req, SolrQueryResponse rsp, CommandOperation op, AutoScalingConfig currentConfig) {
+    Map<String, Object> map = op.getDataMap() == null ? Collections.emptyMap() : op.getDataMap();
+    Map<String, Object> configProps = new HashMap<>(currentConfig.getProperties());
+    configProps.putAll(map);
+    // remove a key which is set to null
+    map.forEach((k, v) -> {
+      if (v == null)  configProps.remove(k);
+    });
+    return currentConfig.withProperties(configProps);
   }
 
   private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {

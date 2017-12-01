@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -56,8 +57,9 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  * Test for AutoScalingHandler
  */
 public class AutoScalingHandlerTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   final static String CONFIGSET_NAME = "conf";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
@@ -88,6 +90,19 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     if (timeOut.hasTimedOut()) {
       fail("Timeout waiting for .auto_add_replicas being created");
     }
+  }
+
+  public static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String message) {
+    return createAutoScalingRequest(m, null, message);
+  }
+
+  static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String subPath, String message) {
+    boolean useV1 = random().nextBoolean();
+    String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
+    path += subPath != null ? subPath : "";
+    return useV1
+        ? new AutoScalingRequest(m, path, message)
+        : new V2Request.Builder(path).withMethod(m).withPayload(message).build();
   }
 
   @Before
@@ -174,7 +189,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    List<String> changed = (List<String>)response.get("changed");
+    List<String> changed = (List<String>) response.get("changed");
     assertEquals(1, changed.size());
     assertTrue(changed.contains("node_added_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -197,7 +212,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    changed = (List<String>)response.get("changed");
+    changed = (List<String>) response.get("changed");
     assertEquals(1, changed.size());
     assertTrue(changed.contains("node_added_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -220,7 +235,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, resumeTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    changed = (List<String>)response.get("changed");
+    changed = (List<String>) response.get("changed");
     assertEquals(1, changed.size());
     assertTrue(changed.contains("node_lost_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -244,7 +259,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    changed = (List<String>)response.get("changed");
+    changed = (List<String>) response.get("changed");
     assertEquals(1, changed.size());
     assertTrue(changed.contains("node_lost_trigger"));
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
@@ -799,17 +814,82 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     solrClient.request(CollectionAdminRequest.deleteCollection("COLL1"));
   }
 
-  public static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String message) {
-    return createAutoScalingRequest(m, null, message);
-  }
+  @Test
+  public void testSetProperties() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String setPropertiesCommand = "{\n" +
+        "\t\"set-properties\" : {\n" +
+        "\t\t\"pqr\" : \"abc\"\n" +
+        "\t}\n" +
+        "}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    NamedList<Object> response = solrClient.request(req);
+    Map properties = (Map) response.get("properties");
+    assertNotNull(properties);
+    assertEquals(1, properties.size());
+    assertEquals("abc", properties.get("pqr"));
 
-  static SolrRequest createAutoScalingRequest(SolrRequest.METHOD m, String subPath, String message) {
-    boolean useV1 = random().nextBoolean();
-    String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
-    path += subPath != null ? subPath : "";
-    return useV1
-        ? new AutoScalingRequest(m, path, message)
-        : new V2Request.Builder(path).withMethod(m).withPayload(message).build();
+    setPropertiesCommand = "{\n" +
+        "\t\"set-properties\" : {\n" +
+        "\t\t\"xyz\" : 123\n" +
+        "\t}\n" +
+        "}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+    properties = (Map) response.get("properties");
+    assertNotNull(properties);
+    assertEquals(2, properties.size());
+    assertEquals("abc", properties.get("pqr"));
+    assertEquals(123L, properties.get("xyz"));
+
+    setPropertiesCommand = "{\n" +
+        "\t\"set-properties\" : {\n" +
+        "\t\t\"xyz\" : 456\n" +
+        "\t}\n" +
+        "}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+    properties = (Map) response.get("properties");
+    assertNotNull(properties);
+    assertEquals(2, properties.size());
+    assertEquals("abc", properties.get("pqr"));
+    assertEquals(456L, properties.get("xyz"));
+
+    setPropertiesCommand = "{\n" +
+        "\t\"set-properties\" : {\n" +
+        "\t\t\"xyz\" : null\n" +
+        "\t}\n" +
+        "}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+    properties = (Map) response.get("properties");
+    assertNotNull(properties);
+    assertEquals(1, properties.size());
+    assertEquals("abc", properties.get("pqr"));
+
+    setPropertiesCommand = "{\n" +
+        "\t\"set-properties\" : {\n" +
+        "\t\t\"" + AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS + "\" : 5\n" +
+        "\t\t\"" + AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS + "\" : 10\n" +
+        "\t\t\"" + AutoScalingParams.TRIGGER_CORE_POOL_SIZE + "\" : 10\n" +
+        "\t\t\"" + AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS + "\" : 5\n" +
+        "\t}\n" +
+        "}";
+    solrClient.request(createAutoScalingRequest(SolrRequest.METHOD.POST, setPropertiesCommand));
+    req = createAutoScalingRequest(SolrRequest.METHOD.GET, null);
+    response = solrClient.request(req);
+    properties = (Map) response.get("properties");
+    assertNotNull(properties);
+    assertEquals(5, properties.size());
+    assertEquals("abc", properties.get("pqr"));
+    assertEquals(5L, properties.get(AutoScalingParams.TRIGGER_SCHEDULE_DELAY_SECONDS));
+    assertEquals(10L, properties.get(AutoScalingParams.TRIGGER_COOLDOWN_PERIOD_SECONDS));
+    assertEquals(10L, properties.get(AutoScalingParams.TRIGGER_CORE_POOL_SIZE));
+    assertEquals(5L, properties.get(AutoScalingParams.ACTION_THROTTLE_PERIOD_SECONDS));
   }
 
   static class AutoScalingRequest extends SolrRequest {

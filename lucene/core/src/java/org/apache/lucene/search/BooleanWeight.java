@@ -71,7 +71,6 @@ final class BooleanWeight extends Weight {
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     final int minShouldMatch = query.getMinimumNumberShouldMatch();
     List<Explanation> subs = new ArrayList<>();
-    float sum = 0.0f;
     boolean fail = false;
     int matchCount = 0;
     int shouldMatchCount = 0;
@@ -83,7 +82,6 @@ final class BooleanWeight extends Weight {
       if (e.isMatch()) {
         if (c.isScoring()) {
           subs.add(e);
-          sum += e.getValue();
         } else if (c.isRequired()) {
           subs.add(Explanation.match(0f, "match on required clause, product of:",
               Explanation.match(0f, Occur.FILTER + " clause"), e));
@@ -109,8 +107,15 @@ final class BooleanWeight extends Weight {
     } else if (shouldMatchCount < minShouldMatch) {
       return Explanation.noMatch("Failure to match minimum number of optional clauses: " + minShouldMatch, subs);
     } else {
-      // we have a match
-      return Explanation.match(sum, "sum of:", subs);
+      // Replicating the same floating-point errors as the scorer does is quite
+      // complex (essentially because of how ReqOptSumScorer casts intermediate
+      // contributions to the score to floats), so in order to make sure that
+      // explanations have the same value as the score, we pull a scorer and
+      // use it to compute the score.
+      Scorer scorer = scorer(context);
+      int advanced = scorer.iterator().advance(doc);
+      assert advanced == doc;
+      return Explanation.match(scorer.score(), "sum of:", subs);
     }
   }
 
@@ -301,6 +306,12 @@ final class BooleanWeight extends Weight {
 
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
+    if (weights.size() > TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD) {
+      // Disallow caching large boolean queries to not encourage users
+      // to build large boolean queries as a workaround to the fact that
+      // we disallow caching large TermInSetQueries.
+      return false;
+    }
     for (Weight w : weights) {
       if (w.isCacheable(ctx) == false)
         return false;

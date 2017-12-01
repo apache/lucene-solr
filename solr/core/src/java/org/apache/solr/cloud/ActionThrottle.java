@@ -45,6 +45,13 @@ public class ActionThrottle {
     this.minMsBetweenActions = minMsBetweenActions;
     this.timeSource = timeSource;
   }
+
+  public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt)  {
+    this.name = name;
+    this.minMsBetweenActions = minMsBetweenActions;
+    this.lastActionStartedAt = lastActionStartedAt;
+    this.timeSource = TimeSource.NANO_TIME;
+  }
   
   public void markAttemptingAction() {
     lastActionStartedAt = timeSource.getTime();
@@ -74,5 +81,9 @@ public class ActionThrottle {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  public Long getLastActionStartedAt() {
+    return lastActionStartedAt;
   }
 }

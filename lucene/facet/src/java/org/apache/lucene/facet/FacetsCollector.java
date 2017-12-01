@@ -232,7 +232,8 @@ public class FacetsCollector extends SimpleCollector implements Collector {
                                                  (FieldDoc) after,
                                                  fillFields,
                                                  doDocScores,
-                                                 doMaxScore);
+                                                 doMaxScore,
+                                                 true); // TODO: can we disable exact hit counts
       } else {
         hitsCollector = TopScoreDocCollector.create(n, after);
       }
