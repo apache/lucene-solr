@@ -62,7 +62,9 @@ class GeoExactCircle extends GeoBaseCircle {
       throw new IllegalArgumentException("Cutoff angle out of bounds");
     if (cutoffAngle < Vector.MINIMUM_RESOLUTION)
       throw new IllegalArgumentException("Cutoff angle cannot be effectively zero");
-    
+    if (planetModel.minimumPoleDistance - cutoffAngle  < Vector.MINIMUM_RESOLUTION)
+      throw new IllegalArgumentException("Cutoff angle out of bounds. It cannot be bigger than " +  planetModel.minimumPoleDistance + " for this planet model");
+
     this.center = new GeoPoint(planetModel, lat, lon);
     this.cutoffAngle = cutoffAngle;
 
@@ -310,7 +312,7 @@ class GeoExactCircle extends GeoBaseCircle {
       // Construct the plane going through the three given points
       this.plane = SidedPlane.constructNormalizedThreePointSidedPlane(center, endPoint1, endPoint2, middlePoint);
       if (this.plane == null) {
-        throw new IllegalArgumentException("Either circle is too large to fit on ellipsoid or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
+        throw new IllegalArgumentException("Either circle is too small or accuracy is too high; could not construct a plane with endPoint1="+endPoint1+" bearing "+point1Bearing+", endPoint2="+endPoint2+" bearing "+point2Bearing+", middle="+middlePoint+" bearing "+middlePointBearing);
       }
       if (plane.isWithin(center) == false || !plane.evaluateIsZero(endPoint1) || !plane.evaluateIsZero(endPoint2) || !plane.evaluateIsZero(middlePoint))
         throw new IllegalStateException("SidedPlane constructor built a bad plane!!");
@@ -322,7 +324,6 @@ class GeoExactCircle extends GeoBaseCircle {
         " end point 2 = " + endPoint2 + " bearing 2 = " + point2Bearing + 
         " middle point = " + middlePoint + " middle bearing = " + middlePointBearing + "}";
     }
-
   }
 
   /** A  description of a section of circle.
