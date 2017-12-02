@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.net.URI;
 import java.util.Optional;
 
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -34,11 +33,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
-    ZkController zkController = it.handler.coreContainer.getZkController();
-    if (zkController == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Internal SolrCloud API");
-    }
-
     final SolrParams params = it.req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
     if (cname == null) {

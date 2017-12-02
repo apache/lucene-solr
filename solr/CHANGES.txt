@@ -138,6 +138,9 @@ Bug Fixes
 * SOLR-11256: The queue size for ConcurrentUpdateSolrClient should default to 10 instead of throwing an
   IllegalArgumentException. (Jason Gerlowski, Anshum Gupta)
 
+* SOLR-11616: Snapshot the segments more robustly such that segments created during a backup does does not fail the
+  operation (Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
