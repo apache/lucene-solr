@@ -87,9 +87,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
    *  consider if pants and khakis are query time synonyms
    *
-   *  <li>{@link #AS_SAME_TERM}</li>
-   *  <li>{@link #PICK_BEST}</li>
-   *  <li>{@link #AS_DISTINCT_TERMS}</li>
+   *  {@link #AS_SAME_TERM}
+   *  {@link #PICK_BEST}
+   *  {@link #AS_DISTINCT_TERMS}
    */
   public static enum SynonymQueryStyle {
     /** (default) synonym terms share doc freq
@@ -607,8 +607,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           builder.add(newTermQuery(term), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
-      default:
+      case AS_SAME_TERM:
         return super.newSynonymQuery(terms);
+      default:
+        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
     }
   }
 
