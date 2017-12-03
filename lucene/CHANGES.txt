@@ -43,6 +43,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8076: Normalize Vincenti distance calculation for planet models that aren't normalized.
+  (Ignacio Vera)
+
 * LUCENE-8066: It was still possible to construct a concave GeoExactCircle, so use
    a sector approach to prevent that. (Ignacio Vera)
 
