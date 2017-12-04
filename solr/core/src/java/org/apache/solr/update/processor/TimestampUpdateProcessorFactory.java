@@ -44,6 +44,7 @@ import org.apache.solr.common.params.CommonParams; // javadoc
  * 
  * @see Date
  * @see CommonParams#NOW
+ * @since 4.0.0
  */
 public class TimestampUpdateProcessorFactory
   extends AbstractDefaultValueUpdateProcessorFactory {

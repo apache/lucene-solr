@@ -67,6 +67,9 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
+/**
+ * @since 6.0.0
+ */
 public class TopicStream extends CloudSolrStream implements Expressible  {
 
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

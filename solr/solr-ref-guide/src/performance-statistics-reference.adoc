@@ -1,6 +1,4 @@
 = Performance Statistics Reference
-:page-shortname: performance-statistics-reference
-:page-permalink: performance-statistics-reference.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -36,7 +34,7 @@ You can request update request handler statistics with an API request such as `\
 
 === Search Request Handler
 
-Can be useful to measure and track number of search queries, response times, etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler , the realtime handler “get”, or any other handler similar statistics can be found for that as well.
+Can be useful to measure and track number of search queries, response times, etc. If you are not using the “select” handler then the path needs to be changed appropriately. Similarly if you are using the “sql” handler or “export” handler, the realtime handler “get”, or any other handler similar statistics can be found for that as well.
 
 *Registry & Path*: `solr.<core>:QUERY./select`
 
@@ -59,10 +57,10 @@ To get request times, specifically, you can send an API request such as:
 |Attribute |Description
 |15minRate |Requests per second received over the past 15 minutes.
 |5minRate |Requests per second received over the past 5 minutes.
-|p75_ms |Request processing time for the request which belongs to the 75th Percentile. E.g., if 100 requests are received, then the 75th fastest request time will be reported by this statistic.
-|p95_ms |Request processing time in milliseconds for the request which belongs to the 95th Percentile. E.g., if 80 requests are received, then the 76th fastest request time will be reported in this statistic.
-|p999_ms |Request processing time in milliseconds for the request which belongs to the 99.9th Percentile. E.g., if 1000 requests are received, then the 999th fastest request time will be reported in this statistic.
-|p99_ms |Request processing time in milliseconds for the request which belongs to the 99th Percentile. E.g., if 200 requests are received, then the 198th fastest request time will be reported in this statistic.
+|p75_ms |Request processing time for the request which belongs to the 75^th^ Percentile. E.g., if 100 requests are received, then the 75^th^ fastest request time will be reported by this statistic.
+|p95_ms |Request processing time in milliseconds for the request which belongs to the 95^th^ Percentile. E.g., if 100 requests are received, then the 95^th^ fastest request time will be reported in this statistic.
+|p999_ms |Request processing time in milliseconds for the request which belongs to the 99.9^th^ Percentile. E.g., if 1000 requests are received, then the 999^th^ fastest request time will be reported in this statistic.
+|p99_ms |Request processing time in milliseconds for the request which belongs to the 99^th^ Percentile. E.g., if 100 requests are received, then the 99^th^ fastest request time will be reported in this statistic.
 |count |Total number of requests made since the Solr process was started.
 |median_ms |Median of all the request processing time.
 

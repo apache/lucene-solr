@@ -1,6 +1,4 @@
 = Filter Descriptions
-:page-shortname: filter-descriptions
-:page-permalink: filter-descriptions.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -189,7 +187,7 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 *Arguments:*
 
-`inject` :: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
+`inject`:: (true/false) If true (the default), then new phonetic tokens are added to the stream. Otherwise, tokens are replaced with the phonetic equivalent. Setting this to false will enable phonetic matching, but the exact spelling of the target word may not match.
 
 *Example:*
 
@@ -345,7 +343,7 @@ This filter stems plural English words to their singular form.
 
 == English Possessive Filter
 
-This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g. the *s'* in "divers' snorkels", are not removed by this filter.
+This filter removes singular possessives (trailing *'s*) from words. Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not removed by this filter.
 
 *Factory class:* `solr.EnglishPossessiveFilterFactory`
 
@@ -825,7 +823,7 @@ Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Fil
 
 *Factory class:* `solr.ManagedSynonymFilterFactory`
 
-For arguments and examples, see the <<Managed Synonym Graph Filter>> below.
+For arguments and examples, see the <<Synonym Graph Filter>> below.
 
 == Managed Synonym Graph Filter
 
@@ -854,7 +852,7 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 
-See <<Managed Synonym Filter>> for example input/output.
+See <<Synonym Graph Filter>> below for example input/output.
 
 == N-Gram Filter
 
@@ -1608,7 +1606,7 @@ This filter splits tokens at word delimiters.
 .Word Delimiter Filter has been Deprecated
 [WARNING]
 ====
-Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g. phrase queries can work correctly.
+Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g., phrase queries can work correctly.
 ====
 
 *Factory class:* `solr.WordDelimiterFilterFactory`

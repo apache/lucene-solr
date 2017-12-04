@@ -20,11 +20,12 @@ package org.apache.lucene.spatial;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.SegmentCacheable;
 
 /**
  * Produces {@link ShapeValues} per-segment
  */
-public abstract class ShapeValuesSource {
+public abstract class ShapeValuesSource implements SegmentCacheable {
 
   /**
    * Get a {@link ShapeValues} instance for the given leaf reader context

@@ -44,11 +44,8 @@ public class OrdinalCalculator {
     for (int ord : ordinals) {
       ords[i++] = ord;
     }
-    Arrays.sort(ords);
+    ords = Arrays.stream(ords).sorted().filter( ord -> ord >= 0 && ord < size).toArray();
 
-    if (ords[0] < 0 || ords[ords.length - 1] > size - 1) {
-      throw new IllegalArgumentException();
-    }
     distributeAndFind(list, ords, 0, ords.length - 1);
   }
 

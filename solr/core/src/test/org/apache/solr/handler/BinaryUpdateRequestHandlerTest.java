@@ -16,11 +16,15 @@
  */
 package org.apache.solr.handler;
 
+import java.io.ByteArrayOutputStream;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -54,8 +58,11 @@ public class BinaryUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     ContentStreamLoader csl = handler.newLoader(req, p);
 
-    csl.load(req, rsp, brw.getContentStream(ureq), p);
-
+    RequestWriter.ContentWriter cw = brw.getContentWriter(ureq);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    cw.write(baos);
+    ContentStreamBase.ByteArrayStream cs = new ContentStreamBase.ByteArrayStream(baos.toByteArray(), null, "application/javabin");
+    csl.load(req, rsp, cs, p);
     AddUpdateCommand add = p.addCommands.get(0);
     System.out.println(add.solrDoc);
     assertEquals(false, add.overwrite);

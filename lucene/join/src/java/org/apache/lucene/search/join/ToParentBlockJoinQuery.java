@@ -236,7 +236,6 @@ public class ToParentBlockJoinQuery extends Query {
     private final ParentApproximation parentApproximation;
     private final ParentTwoPhase parentTwoPhase;
     private float score;
-    private int freq;
 
     public BlockJoinScorer(Weight weight, Scorer childScorer, BitSet parentBits, ScoreMode scoreMode) {
       super(weight);
@@ -286,12 +285,6 @@ public class ToParentBlockJoinQuery extends Query {
       setScoreAndFreq();
       return score;
     }
-    
-    @Override
-    public int freq() throws IOException {
-      setScoreAndFreq();
-      return freq;
-    }
 
     private void setScoreAndFreq() throws IOException {
       if (childApproximation.docID() >= parentApproximation.docID()) {
@@ -330,7 +323,6 @@ public class ToParentBlockJoinQuery extends Query {
         score /= freq;
       }
       this.score = (float) score;
-      this.freq = freq;
     }
 
     public Explanation explain(LeafReaderContext context, Weight childWeight) throws IOException {
@@ -350,7 +342,6 @@ public class ToParentBlockJoinQuery extends Query {
         }
       }
 
-      assert freq() == matches;
       return Explanation.match(score(), String.format(Locale.ROOT,
           "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
       );

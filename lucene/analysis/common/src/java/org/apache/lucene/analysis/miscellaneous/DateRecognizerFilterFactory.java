@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * The {@code datePattern} is optional. If omitted, {@link DateRecognizerFilter} will be created with the default date
  * format of the system. The {@code locale} is optional and if omitted the filter will be created with
  * {@link Locale#ENGLISH}.
+ * @since 5.5.0
  */
 public class DateRecognizerFilterFactory extends TokenFilterFactory {
 

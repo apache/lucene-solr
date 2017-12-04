@@ -1,6 +1,4 @@
 = Introduction to Client APIs
-:page-shortname: introduction-to-client-apis
-:page-permalink: introduction-to-client-apis.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

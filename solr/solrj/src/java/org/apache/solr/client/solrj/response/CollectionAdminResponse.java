@@ -18,8 +18,10 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.util.NamedList;
 
 public class CollectionAdminResponse extends SolrResponseBase
@@ -74,6 +76,11 @@ public class CollectionAdminResponse extends SolrResponseBase
       return ((Map<String, String>)response.get("aliases"));
     }
     return Collections.emptyMap();
+  }
+
+  public Map<String, List<String>> getAliasesAsLists() {
+    // TODO we compute on each call... should this be done once & cached?
+    return Aliases.convertMapOfCommaDelimitedToMapOfList(getAliases());
   }
 
   @SuppressWarnings("unchecked")

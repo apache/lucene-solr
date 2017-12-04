@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -41,7 +41,7 @@ import org.apache.solr.common.util.StrUtils;
  *
  *
  */
-public abstract class SolrParams implements Serializable, MapSerializable {
+public abstract class SolrParams implements Serializable, MapWriter {
 
   /** returns the String value of a param, or null if not set */
   public abstract String get(String param);
@@ -550,11 +550,17 @@ public abstract class SolrParams implements Serializable, MapSerializable {
   }
 
   @Override
-  public Map toMap(Map<String, Object> map) {
+  public void writeMap(EntryWriter ew) throws IOException {
     toNamedList().forEach((k, v) -> {
       if (v == null || "".equals(v)) return;
-      map.put(k, v);
+      try {
+        ew.put(k, v);
+      } catch (IOException e) {
+        throw new RuntimeException("Error serializing", e);
+      }
     });
-    return map;
+
   }
+
+
 }

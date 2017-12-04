@@ -139,4 +139,15 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
       return false;
     }
   }
+  
+  @Test
+  public void testCheckInterrupted() {
+    assertFalse(Thread.currentThread().isInterrupted());
+    SolrZkClient.checkInterrupted(new RuntimeException());
+    assertFalse(Thread.currentThread().isInterrupted());
+    SolrZkClient.checkInterrupted(new InterruptedException());
+    assertTrue(Thread.currentThread().isInterrupted());
+  }
+  
+  
 }

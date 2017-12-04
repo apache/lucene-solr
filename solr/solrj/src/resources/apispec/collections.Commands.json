@@ -101,6 +101,11 @@
             "type": "string"
           }
         },
+        "policy": {
+          "type": "string",
+          "documentation": "https://lucene.apache.org/solr/guide/solrcloud-autoscaling-policy-preferences.html",
+          "description": "Name of the collection-level policy"
+        },
         "properties": {
           "type": "object",
           "documentation": "https://lucene.apache.org/solr/guide/defining-core-properties.html",
@@ -110,6 +115,11 @@
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
+        },
+        "waitForFinalState": {
+          "type": "boolean",
+          "description": "If true then request will complete only when all affected replicas become active.",
+          "default": false
         }
       },
       "required": [

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -581,7 +582,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     IndexCommit indexCommit = reader.getIndexCommit();
     String segmentsFileName = indexCommit.getSegmentsFileName();
     indexInfo.add("segmentsFile", segmentsFileName);
-    indexInfo.add("segmentsFileSizeInBytes", getFileLength(indexCommit.getDirectory(), segmentsFileName));
+    indexInfo.add("segmentsFileSizeInBytes", getSegmentsFileLength(indexCommit));
     Map<String,String> userData = indexCommit.getUserData();
     indexInfo.add("userData", userData);
     String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
@@ -605,15 +606,28 @@ public class LukeRequestHandler extends RequestHandlerBase
   }
 
 
-
-  private static long getFileLength(Directory dir, String filename) {
+  /**
+   * <p>A helper method that attempts to determine the file length of the the segments file for the 
+   * specified IndexCommit from it's Directory.
+   * </p>
+   * <p>
+   * If any sort of {@link IOException} occurs, this method will return "-1" and swallow the exception since 
+   * this may be normal if the IndexCommit is no longer "on disk".  The specific type of the Exception will 
+   * affect how severely it is logged: {@link NoSuchFileException} is considered more "acceptible" then other 
+   * types of IOException which may indicate an actual problem with the Directory.
+   */
+  private static long getSegmentsFileLength(IndexCommit commit) {
     try {
-      return dir.fileLength(filename);
-    } catch (IOException e) {
-      // Whatever the error is, only log it and return -1.
-      log.warn("Error getting file length for [{}]", filename, e);
-      return -1;
+      return commit.getDirectory().fileLength(commit.getSegmentsFileName());
+    } catch (NoSuchFileException okException) {
+      log.debug("Unable to determine the (optional) fileSize for the current IndexReader's segments file because it is "
+                + "no longer in the Directory, this can happen if there are new commits since the Reader was opened",
+                okException);
+    } catch (IOException strangeException) {
+      log.warn("Ignoring IOException wile attempting to determine the (optional) fileSize stat for the current IndexReader's segments file",
+               strangeException);
     }
+    return -1;
   }
 
   /** Returns the sum of RAM bytes used by each segment */

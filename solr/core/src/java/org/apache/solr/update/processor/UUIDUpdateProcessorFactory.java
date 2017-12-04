@@ -65,6 +65,7 @@ import org.apache.solr.schema.SchemaField;
  *
  *
  * @see UUID
+ * @since 4.0.0
  */
 public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 

@@ -1,6 +1,4 @@
 = Uploading Data with Index Handlers
-:page-shortname: uploading-data-with-index-handlers
-:page-permalink: uploading-data-with-index-handlers.html
 :page-children: transforming-and-indexing-custom-json
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -164,7 +162,7 @@ Short requests can also be sent using a HTTP GET command, if enabled in <<reques
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/my_collection/update?stream.body=%3Ccommit/%3E
+curl http://localhost:8983/solr/my_collection/update?stream.body=%3Ccommit/%3E&wt=xml
 ----
 
 Responses from Solr take the form shown here:
@@ -398,7 +396,7 @@ curl 'http://localhost:8983/solr/my_collection/update?commit=true' --data-binary
 
 === CSV Update Parameters
 
-The CSV handler allows the specification of many parameters in the URL in the form: `f._parameter_._optional_fieldname_=_value_` .
+The CSV handler allows the specification of many parameters in the URL in the form: `f._parameter_._optional_fieldname_=_value_`.
 
 The table below describes the parameters for the update handler.
 
@@ -442,7 +440,7 @@ This parameter is global; for per-field usage, see `split`.
 Example: `encapsulator="`
 
 `escape`:: The character used for escaping CSV separators or other reserved characters. If an escape is specified, the encapsulator is not used unless also explicitly specified since most formats use either encapsulation or escaping, not both. |g |
-
++
 Example: `escape=\`
 
 `keepEmpty`::

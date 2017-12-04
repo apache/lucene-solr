@@ -43,8 +43,6 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository.PathType;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,35 +149,57 @@ public class SnapShooter {
   }
 
   public NamedList createSnapshot() throws Exception {
-    RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher();
-    try {
-      if (commitName != null) {
-        SolrSnapshotMetaDataManager snapshotMgr = solrCore.getSnapshotMetaDataManager();
-        Optional<IndexCommit> commit = snapshotMgr.getIndexCommitByName(commitName);
-        if(commit.isPresent()) {
-          return createSnapshot(commit.get());
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to find an index commit with name " + commitName +
-            " for core " + solrCore.getName());
-      } else {
-        //TODO should we try solrCore.getDeletionPolicy().getLatestCommit() first?
-        IndexDeletionPolicyWrapper deletionPolicy = solrCore.getDeletionPolicy();
-        IndexCommit indexCommit = searcher.get().getIndexReader().getIndexCommit();
-        deletionPolicy.saveCommitPoint(indexCommit.getGeneration());
-        try {
-          return createSnapshot(indexCommit);
-        } finally {
-          deletionPolicy.releaseCommitPoint(indexCommit.getGeneration());
-        }
+    IndexCommit indexCommit;
+    if (commitName != null) {
+      indexCommit = getIndexCommitFromName();
+      return createSnapshot(indexCommit);
+    } else {
+      indexCommit = getIndexCommit();
+      IndexDeletionPolicyWrapper deletionPolicy = solrCore.getDeletionPolicy();
+      deletionPolicy.saveCommitPoint(indexCommit.getGeneration());
+      try {
+        return createSnapshot(indexCommit);
+      } finally {
+        deletionPolicy.releaseCommitPoint(indexCommit.getGeneration());
       }
-    } finally {
-      searcher.decref();
     }
   }
 
-  public void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, Consumer<NamedList> result) {
-    solrCore.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
+  private IndexCommit getIndexCommit() throws IOException {
+    IndexDeletionPolicyWrapper delPolicy = solrCore.getDeletionPolicy();
+    IndexCommit indexCommit = delPolicy.getLatestCommit();
 
+    if (indexCommit == null) {
+      indexCommit = solrCore.getSearcher().get().getIndexReader().getIndexCommit();
+    }
+    return indexCommit;
+  }
+
+  private IndexCommit getIndexCommitFromName() throws IOException {
+    assert commitName !=null;
+    IndexCommit indexCommit;
+    SolrSnapshotMetaDataManager snapshotMgr = solrCore.getSnapshotMetaDataManager();
+    Optional<IndexCommit> commit = snapshotMgr.getIndexCommitByName(commitName);
+    if (commit.isPresent()) {
+      indexCommit = commit.get();
+    } else {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an index commit with name " + commitName +
+          " for core " + solrCore.getName());
+    }
+    return indexCommit;
+  }
+
+  public void createSnapAsync(final int numberToKeep, Consumer<NamedList> result) throws IOException {
+    IndexCommit indexCommit;
+    if (commitName != null) {
+      indexCommit = getIndexCommitFromName();
+    } else {
+      indexCommit = getIndexCommit();
+    }
+    createSnapAsync(indexCommit, numberToKeep, result);
+  }
+
+  private void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, Consumer<NamedList> result) {
     //TODO should use Solr's ExecutorUtil
     new Thread(() -> {
       try {
@@ -187,7 +207,7 @@ public class SnapShooter {
       } catch (Exception e) {
         LOG.error("Exception while creating snapshot", e);
         NamedList snapShootDetails = new NamedList<>();
-        snapShootDetails.add("snapShootException", e.getMessage());
+        snapShootDetails.add("exception", e.getMessage());
         result.accept(snapShootDetails);
       } finally {
         solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
@@ -205,6 +225,7 @@ public class SnapShooter {
 
   // note: remember to reserve the indexCommit first so it won't get deleted concurrently
   protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
+    assert indexCommit != null;
     LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + baseSnapDirPath);
     boolean success = false;
     try {

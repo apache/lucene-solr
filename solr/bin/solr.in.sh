@@ -60,6 +60,9 @@
 # for production SolrCloud environments to control the hostname exposed to cluster state
 #SOLR_HOST="192.168.1.1"
 
+# By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+#SOLR_WAIT_FOR_ZK="30"
+
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
 

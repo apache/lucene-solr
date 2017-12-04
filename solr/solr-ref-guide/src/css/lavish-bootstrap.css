@@ -3071,10 +3071,13 @@ textarea.input-group-sm > .input-group-btn > .btn {
   clear: both;
 }
 .tab-content > .tab-pane,
-.pill-content > .pill-pane {
+.tab-content > .content > .tab-pane,
+.pill-content > .pill-pane,
+.tab-content > .content > .tab-pane {
   display: none;
 }
 .tab-content > .active,
+.tab-content > .content > .active,
 .pill-content > .active {
   display: block;
 }

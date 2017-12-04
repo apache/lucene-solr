@@ -1,6 +1,4 @@
 = How SolrCloud Works
-:page-shortname: how-solrcloud-works
-:page-permalink: how-solrcloud-works.html
 :page-children: shards-and-indexing-data-in-solrcloud, distributed-requests
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

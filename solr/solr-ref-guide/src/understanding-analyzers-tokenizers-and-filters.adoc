@@ -1,6 +1,4 @@
 = Understanding Analyzers, Tokenizers, and Filters
-:page-shortname: understanding-analyzers-tokenizers-and-filters
-:page-permalink: understanding-analyzers-tokenizers-and-filters.html
 :page-children: analyzers, about-tokenizers, about-filters, tokenizers, filter-descriptions, charfilterfactories, language-analysis, phonetic-matching, running-your-analyzer
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

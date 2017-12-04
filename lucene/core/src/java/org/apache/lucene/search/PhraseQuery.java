@@ -370,12 +370,20 @@ public class PhraseQuery extends Query {
       final IndexReaderContext context = searcher.getTopReaderContext();
       states = new TermContext[terms.length];
       TermStatistics termStats[] = new TermStatistics[terms.length];
+      int termUpTo = 0;
       for (int i = 0; i < terms.length; i++) {
         final Term term = terms[i];
         states[i] = TermContext.build(context, term);
-        termStats[i] = searcher.termStatistics(term, states[i]);
+        TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+        if (termStatistics != null) {
+          termStats[termUpTo++] = termStatistics;
+        }
       }
-      stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), termStats);
+      if (termUpTo > 0) {
+        stats = similarity.computeWeight(boost, searcher.collectionStatistics(field), Arrays.copyOf(termStats, termUpTo));
+      } else {
+        stats = null; // no terms at all, we won't use similarity
+      }
     }
 
     @Override
@@ -433,7 +441,12 @@ public class PhraseQuery extends Query {
                                         needsScores, totalMatchCost);
       }
     }
-    
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
     // only called from assert
     private boolean termNotInReader(LeafReader reader, Term term) throws IOException {
       return reader.docFreq(term) == 0;
@@ -445,7 +458,7 @@ public class PhraseQuery extends Query {
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
-          float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
+          float freq = slop == 0 ? ((ExactPhraseScorer)scorer).freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
           SimScorer docScorer = similarity.simScorer(stats, context);
           Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
@@ -484,14 +497,13 @@ public class PhraseQuery extends Query {
    *  of processing the occurrences of a term
    *  in a document that contains the term.
    *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
-   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    */
   static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
-    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
-    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    long totalTermFreq = termsEnum.totalTermFreq();
+    float expOccurrencesInMatchingDoc = totalTermFreq / (float) docFreq;
     return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 

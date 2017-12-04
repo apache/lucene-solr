@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link StempelFilter} using a Polish stemming table.
+ * @since 3.1.0
  */
 public class StempelPolishStemFilterFactory extends TokenFilterFactory {  
   

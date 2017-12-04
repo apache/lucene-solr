@@ -53,11 +53,13 @@ import org.apache.solr.common.util.PathTrie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.common.util.PathTrie.getPathSegments;
+import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
 // class that handle the '/v2' path
 public class V2HttpCall extends HttpSolrCall {
@@ -105,28 +107,32 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       if ("c".equals(prefix) || "collections".equals(prefix)) {
-        String collectionName = origCorename = corename = pieces.get(1);
+        origCorename = pieces.get(1);
+
+        collectionsList = resolveCollectionListOrAlias(queryParams.get(COLLECTION_PROP, origCorename));
+        String collectionName = collectionsList.get(0); // first
+        //TODO try the other collections if can't find a local replica of the first?
+
         DocCollection collection = getDocCollection(collectionName);
         if (collection == null) {
-           if ( ! path.endsWith(CommonParams.INTROSPECT)) {
+          if ( ! path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
           }
         } else {
-          boolean isPreferLeader = false;
-          if (path.endsWith("/update") || path.contains("/update/")) {
-            isPreferLeader = true;
-          }
+          boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {
             //this collection exists , but this node does not have a replica for that collection
-            //todo find a better way to compute remote
-            extractRemotePath(corename, origCorename, 0);
-            return;
+            extractRemotePath(collectionName, origCorename);
+            if (action == REMOTEQUERY) {
+              this.path = path = path.substring(prefix.length() + origCorename.length() + 2);
+              return;
+            }
           }
         }
       } else if ("cores".equals(prefix)) {
-        origCorename = corename = pieces.get(1);
-        core = cores.getCore(corename);
+        origCorename = pieces.get(1);
+        core = cores.getCore(origCorename);
       }
       if (core == null) {
         log.error(">> path: '" + path + "'");
@@ -134,7 +140,7 @@ public class V2HttpCall extends HttpSolrCall {
           initAdminRequest(path);
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no core retrieved for " + corename);
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no core retrieved for " + origCorename);
         }
       }
 
@@ -148,9 +154,7 @@ public class V2HttpCall extends HttpSolrCall {
       MDCLoggingContext.setCore(core);
       parseRequest();
 
-      if (usingAliases) {
-        processAliases(aliases, collectionsList);
-      }
+      addCollectionParamIfNeeded(getCollectionsList());
 
       action = PROCESS;
       // we are done with a valid handler
@@ -158,7 +162,7 @@ public class V2HttpCall extends HttpSolrCall {
       log.error("Error in init()", rte);
       throw rte;
     } finally {
-      if (api == null) action = PROCESS;
+      if (action == null && api == null) action = PROCESS;
       if (solrReq != null) solrReq.getContext().put(CommonParams.PATH, path);
     }
   }
@@ -180,17 +184,12 @@ public class V2HttpCall extends HttpSolrCall {
     if (solrReq == null) solrReq = parser.parse(core, path, req);
   }
 
-  protected DocCollection getDocCollection(String collectionName) {
+  protected DocCollection getDocCollection(String collectionName) { // note: don't send an alias; resolve it first
     if (!cores.isZooKeeperAware()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-    if (collection == null) {
-      collectionName = corename = lookupAliases(collectionName);
-      collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-    }
-    return collection;
+    return zkStateReader.getClusterState().getCollectionOrNull(collectionName);
   }
 
   public static Api getApiInfo(PluginBag<SolrRequestHandler> requestHandlers,

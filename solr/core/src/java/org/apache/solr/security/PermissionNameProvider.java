@@ -49,6 +49,7 @@ public interface PermissionNameProvider {
     METRICS_READ_PERM("metrics-read", null),
     AUTOSCALING_READ_PERM("autoscaling-read", null),
     AUTOSCALING_WRITE_PERM("autoscaling-write", null),
+    AUTOSCALING_HISTORY_READ_PERM("autoscaling-history-read", null),
     ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
     ;
     final String name;

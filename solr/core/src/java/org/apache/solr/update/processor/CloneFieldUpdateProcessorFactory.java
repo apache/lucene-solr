@@ -161,6 +161,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * 
  * @see FieldValueSubsetUpdateProcessorFactory
+ * @since 4.0.0
  */
 public class CloneFieldUpdateProcessorFactory 
   extends UpdateRequestProcessorFactory implements SolrCoreAware {

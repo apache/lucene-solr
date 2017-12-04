@@ -95,6 +95,11 @@ public class TestBooleanScorer extends LuceneTestCase {
         }
 
         @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
+
+        @Override
         public BulkScorer bulkScorer(LeafReaderContext context) {
           return new BulkScorer() {
             @Override

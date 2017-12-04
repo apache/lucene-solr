@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.common.params.CommonParams.SORT;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -40,56 +37,7 @@ import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.stream.CalculatorStream;
-import org.apache.solr.client.solrj.io.stream.CartesianProductStream;
-import org.apache.solr.client.solrj.io.stream.CellStream;
-import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.CommitStream;
-import org.apache.solr.client.solrj.io.stream.ComplementStream;
-import org.apache.solr.client.solrj.io.stream.DaemonStream;
-import org.apache.solr.client.solrj.io.stream.EchoStream;
-import org.apache.solr.client.solrj.io.stream.EvalStream;
-import org.apache.solr.client.solrj.io.stream.ExceptionStream;
-import org.apache.solr.client.solrj.io.stream.ExecutorStream;
-import org.apache.solr.client.solrj.io.stream.FacetStream;
-import org.apache.solr.client.solrj.io.stream.FeaturesSelectionStream;
-import org.apache.solr.client.solrj.io.stream.FetchStream;
-import org.apache.solr.client.solrj.io.stream.GetStream;
-import org.apache.solr.client.solrj.io.stream.HashJoinStream;
-import org.apache.solr.client.solrj.io.stream.HavingStream;
-import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
-import org.apache.solr.client.solrj.io.stream.IntersectStream;
-import org.apache.solr.client.solrj.io.stream.JDBCStream;
-import org.apache.solr.client.solrj.io.stream.KnnStream;
-import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
-import org.apache.solr.client.solrj.io.stream.LetStream;
-import org.apache.solr.client.solrj.io.stream.ListStream;
-import org.apache.solr.client.solrj.io.stream.MergeStream;
-import org.apache.solr.client.solrj.io.stream.ModelStream;
-import org.apache.solr.client.solrj.io.stream.NullStream;
-import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
-import org.apache.solr.client.solrj.io.stream.ParallelStream;
-import org.apache.solr.client.solrj.io.stream.PlotStream;
-import org.apache.solr.client.solrj.io.stream.PriorityStream;
-import org.apache.solr.client.solrj.io.stream.RandomStream;
-import org.apache.solr.client.solrj.io.stream.RankStream;
-import org.apache.solr.client.solrj.io.stream.ReducerStream;
-import org.apache.solr.client.solrj.io.stream.RollupStream;
-import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
-import org.apache.solr.client.solrj.io.stream.SelectStream;
-import org.apache.solr.client.solrj.io.stream.ShuffleStream;
-import org.apache.solr.client.solrj.io.stream.SignificantTermsStream;
-import org.apache.solr.client.solrj.io.stream.SortStream;
-import org.apache.solr.client.solrj.io.stream.SqlStream;
-import org.apache.solr.client.solrj.io.stream.StatsStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TextLogitStream;
-import org.apache.solr.client.solrj.io.stream.TimeSeriesStream;
-import org.apache.solr.client.solrj.io.stream.TopicStream;
-import org.apache.solr.client.solrj.io.stream.TupStream;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.UniqueStream;
-import org.apache.solr.client.solrj.io.stream.UpdateStream;
+import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -119,6 +67,12 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.SORT;
+
+/**
+ * @since 5.1.0
+ */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
@@ -250,20 +204,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("copyOf", CopyOfEvaluator.class)
         .withFunctionName("cov", CovarianceEvaluator.class)
         .withFunctionName("corr", CorrelationEvaluator.class)
-        .withFunctionName("kendallsCorr", KendallsCorrelationEvaluator.class)
-        .withFunctionName("spearmansCorr", SpearmansCorrelationEvaluator.class)
         .withFunctionName("describe", DescribeEvaluator.class)
-        .withFunctionName("distance", EuclideanDistanceEvaluator.class)
-        .withFunctionName("manhattanDistance", ManhattanDistanceEvaluator.class)
-        .withFunctionName("earthMoversDistance", EarthMoversDistanceEvaluator.class)
-        .withFunctionName("canberraDistance", CanberraDistanceEvaluator.class)
-        .withFunctionName("chebyshevDistance", ChebyshevDistanceEvaluator.class)
+        .withFunctionName("distance", DistanceEvaluator.class)
         .withFunctionName("empiricalDistribution", EmpiricalDistributionEvaluator.class)
         .withFunctionName("finddelay", FindDelayEvaluator.class)
         .withFunctionName("hist", HistogramEvaluator.class)
         .withFunctionName("length", LengthEvaluator.class)
         .withFunctionName("movingAvg", MovingAverageEvaluator.class)
-        .withFunctionName("normalize", NormalizeEvaluator.class)
+        .withFunctionName("standardize", NormalizeEvaluator.class)
         .withFunctionName("percentile", PercentileEvaluator.class)
         .withFunctionName("predict", PredictEvaluator.class)
         .withFunctionName("rank", RankEvaluator.class)
@@ -299,6 +247,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("primes", PrimesEvaluator.class)
         .withFunctionName("factorial", FactorialEvaluator.class)
         .withFunctionName("movingMedian", MovingMedianEvaluator.class)
+        .withFunctionName("binomialCoefficient", BinomialCoefficientEvaluator.class)
+        .withFunctionName("expMovingAvg", ExponentialMovingAverageEvaluator.class)
         .withFunctionName("monteCarlo", MonteCarloEvaluator.class)
         .withFunctionName("constantDistribution", ConstantDistributionEvaluator.class)
         .withFunctionName("weibullDistribution", WeibullDistributionEvaluator.class)
@@ -308,6 +258,28 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         .withFunctionName("zipFDistribution", ZipFDistributionEvaluator.class)
         .withFunctionName("gammaDistribution", GammaDistributionEvaluator.class)
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
+        .withFunctionName("polyfit", PolyFitEvaluator.class)
+        .withFunctionName("polyfitDerivative", PolyFitDerivativeEvaluator.class)
+        .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
+        .withFunctionName("loess", LoessEvaluator.class)
+        .withFunctionName("matrix", MatrixEvaluator.class)
+        .withFunctionName("transpose", TransposeEvaluator.class)
+        .withFunctionName("unitize", UnitEvaluator.class)
+        .withFunctionName("triangularDistribution", TriangularDistributionEvaluator.class)
+        .withFunctionName("precision", PrecisionEvaluator.class)
+        .withFunctionName("minMaxScale", MinMaxScaleEvaluator.class)
+        .withFunctionName("markovChain", MarkovChainEvaluator.class)
+        .withFunctionName("grandSum", GrandSumEvaluator.class)
+        .withFunctionName("scalarAdd", ScalarAddEvaluator.class)
+        .withFunctionName("scalarSubtract", ScalarSubtractEvaluator.class)
+        .withFunctionName("scalarMultiply", ScalarMultiplyEvaluator.class)
+        .withFunctionName("scalarDivide", ScalarDivideEvaluator.class)
+        .withFunctionName("sumRows", SumRowsEvaluator.class)
+        .withFunctionName("sumColumns", SumColumnsEvaluator.class)
+        .withFunctionName("diff", TimeDifferencingEvaluator.class)
+        .withFunctionName("corrPValues", CorrelationSignificanceEvaluator.class)
+        .withFunctionName("normalizeSum", NormalizeSumEvaluator.class)
+        .withFunctionName("geometricDistribution", GeometricDistributionEvaluator.class)
 
         // Boolean Stream Evaluators
 

@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <p>
  * The {@code consumeAllTokens} property is optional and defaults to {@code false}.  
  * See {@link LimitTokenCountFilter} for an explanation of its use.
+ * @since 3.1.0
  */
 public class LimitTokenCountFilterFactory extends TokenFilterFactory {
 

@@ -240,7 +240,7 @@ public class DrillSideways {
 
                   @Override
                   public TopFieldCollector newCollector() throws IOException {
-                    return TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore);
+                    return TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore, true);
                   }
 
                   @Override
@@ -259,7 +259,7 @@ public class DrillSideways {
       } else {
 
         final TopFieldCollector hitCollector =
-                TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore);
+                TopFieldCollector.create(sort, fTopN, after, true, doDocScores, doMaxScore, true);
         DrillSidewaysResult r = search(query, hitCollector);
         return new DrillSidewaysResult(r.facets, hitCollector.topDocs());
       }

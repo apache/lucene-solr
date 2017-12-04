@@ -33,6 +33,7 @@ import java.util.Map;
  *     &lt;filter class="solr.ScandinavianFoldingFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ * @since 4.4.0
  */
 public class ScandinavianFoldingFilterFactory extends TokenFilterFactory
     implements MultiTermAwareComponent {

@@ -437,4 +437,16 @@ public final class DocValues {
     }
     return dv;
   }
+
+  /**
+   * Returns {@code true} if the specified docvalues fields have not been updated
+   */
+  public static boolean isCacheable(LeafReaderContext ctx, String... fields) {
+    for (String field : fields) {
+      FieldInfo fi = ctx.reader().getFieldInfos().fieldInfo(field);
+      if (fi != null && fi.getDocValuesGen() > -1)
+        return false;
+    }
+    return true;
+  }
 }

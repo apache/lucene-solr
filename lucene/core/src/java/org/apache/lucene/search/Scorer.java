@@ -67,9 +67,6 @@ public abstract class Scorer {
    */
   public abstract float score() throws IOException;
 
-  /** Returns the freq of this Scorer on the current document */
-  public abstract int freq() throws IOException;
-
   /** returns parent Weight
    * @lucene.experimental
    */

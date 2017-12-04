@@ -20,15 +20,15 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
@@ -62,6 +63,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     if (source == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "sourceNode and targetNode are required params" );
     }
@@ -80,20 +82,21 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     // how many leaders are we moving? for these replicas we have to make sure that either:
     // * another existing replica can become a leader, or
     // * we wait until the newly created replica completes recovery (and can become the new leader)
+    // If waitForFinalState=true we wait for all replicas
     int numLeaders = 0;
     for (ZkNodeProps props : sourceReplicas) {
-      if (props.getBool(ZkStateReader.LEADER_PROP, false)) {
+      if (props.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
         numLeaders++;
       }
     }
     // map of collectionName_coreNodeName to watchers
-    Map<String, RecoveryWatcher> watchers = new HashMap<>();
+    Map<String, CollectionStateWatcher> watchers = new HashMap<>();
     List<ZkNodeProps> createdReplicas = new ArrayList<>();
 
     AtomicBoolean anyOneFailed = new AtomicBoolean(false);
-    CountDownLatch countDownLatch = new CountDownLatch(sourceReplicas.size());
+    SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ocmh);
 
-    CountDownLatch replicasToRecover = new CountDownLatch(numLeaders);
+    SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ocmh);
 
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       NamedList nl = new NamedList();
@@ -122,15 +125,24 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
       if (addedReplica != null) {
         createdReplicas.add(addedReplica);
-        if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false)) {
+        if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
           String shardName = sourceReplica.getStr(SHARD_ID_PROP);
           String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
           String collectionName = sourceReplica.getStr(COLLECTION_PROP);
           String key = collectionName + "_" + replicaName;
-          RecoveryWatcher watcher = new RecoveryWatcher(collectionName, shardName, replicaName,
-              addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
+          CollectionStateWatcher watcher;
+          if (waitForFinalState) {
+            watcher = new ActiveReplicaWatcher(collectionName, null,
+                Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)), replicasToRecover);
+          } else {
+            watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName,
+                addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
+          }
           watchers.put(key, watcher);
+          log.debug("--- adding " + key + ", " + watcher);
           zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
+        } else {
+          log.debug("--- not waiting for " + addedReplica);
         }
       }
     }
@@ -152,12 +164,12 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       log.debug("Finished waiting for leader replicas to recover");
     }
     // remove the watchers, we're done either way
-    for (RecoveryWatcher watcher : watchers.values()) {
-      zkStateReader.removeCollectionStateWatcher(watcher.collectionId, watcher);
+    for (Map.Entry<String, CollectionStateWatcher> e : watchers.entrySet()) {
+      zkStateReader.removeCollectionStateWatcher(e.getKey(), e.getValue());
     }
     if (anyOneFailed.get()) {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
-      CountDownLatch cleanupLatch = new CountDownLatch(createdReplicas.size());
+      SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ocmh);
       for (ZkNodeProps createdReplica : createdReplicas) {
         NamedList deleteResult = new NamedList();
         try {
@@ -211,68 +223,4 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     return sourceReplicas;
   }
 
-  // we use this watcher to wait for replicas to recover
-  static class RecoveryWatcher implements CollectionStateWatcher {
-    String collectionId;
-    String shardId;
-    String replicaId;
-    String targetCore;
-    CountDownLatch countDownLatch;
-    Replica recovered;
-
-    /**
-     * Watch for recovery of a replica
-     * @param collectionId collection name
-     * @param shardId shard id
-     * @param replicaId source replica name (coreNodeName)
-     * @param targetCore specific target core name - if null then any active replica will do
-     * @param countDownLatch countdown when recovered
-     */
-    RecoveryWatcher(String collectionId, String shardId, String replicaId, String targetCore, CountDownLatch countDownLatch) {
-      this.collectionId = collectionId;
-      this.shardId = shardId;
-      this.replicaId = replicaId;
-      this.targetCore = targetCore;
-      this.countDownLatch = countDownLatch;
-    }
-
-    @Override
-    public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-      if (collectionState == null) { // collection has been deleted - don't wait
-        countDownLatch.countDown();
-        return true;
-      }
-      Slice slice = collectionState.getSlice(shardId);
-      if (slice == null) { // shard has been removed - don't wait
-        countDownLatch.countDown();
-        return true;
-      }
-      for (Replica replica : slice.getReplicas()) {
-        // check if another replica exists - doesn't have to be the one we're moving
-        // as long as it's active and can become a leader, in which case we don't have to wait
-        // for recovery of specifically the one that we've just added
-        if (!replica.getName().equals(replicaId)) {
-          if (replica.getType().equals(Replica.Type.PULL)) { // not eligible for leader election
-            continue;
-          }
-          // check its state
-          String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-          if (targetCore != null && !targetCore.equals(coreName)) {
-            continue;
-          }
-          if (replica.isActive(liveNodes)) { // recovered - stop waiting
-            recovered = replica;
-            countDownLatch.countDown();
-            return true;
-          }
-        }
-      }
-      // set the watch again to wait for the new replica to recover
-      return false;
-    }
-
-    public Replica getRecoveredReplica() {
-      return recovered;
-    }
-  }
 }

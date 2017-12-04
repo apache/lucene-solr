@@ -67,7 +67,9 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     Explanation e1 = searcher.explain(q, 0);
     Explanation e = searcher.explain(csq, 0);
 
-    assertEquals(e, e1);
+    assertEquals(e.getValue(), e1.getValue(), 0.00001);
+    assertEquals(e.getDetails()[1], e1);
+
   }
 
   public void testSubExplanations() throws IOException {
@@ -76,8 +78,9 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     searcher.setSimilarity(new BM25Similarity());
 
     Explanation expl = searcher.explain(query, 0);
-    assertEquals("constant(5.0)", expl.getDescription());
-    assertEquals(0, expl.getDetails().length);
+    Explanation subExpl = expl.getDetails()[1];
+    assertEquals("constant(5.0)", subExpl.getDescription());
+    assertEquals(0, subExpl.getDetails().length);
 
     query = new BoostQuery(query, 2);
     expl = searcher.explain(query, 0);

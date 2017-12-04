@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * upper case character represents more than one lower case character. Use this filter
  * when you require uppercase tokens.  Use the {@link LowerCaseFilterFactory} for 
  * general search matching
+ * @since 4.7.0
  */
 public class UpperCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   

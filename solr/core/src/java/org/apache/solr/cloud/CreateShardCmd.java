@@ -17,20 +17,29 @@
 package org.apache.solr.cloud;
 
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
+import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -39,12 +48,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.Assign.getNodesForNewReplicas;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class CreateShardCmd implements Cmd {
@@ -59,6 +69,7 @@ public class CreateShardCmd implements Cmd {
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String collectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
 
     log.info("Create shard invoked: {}", message);
     if (collectionName == null || sliceName == null)
@@ -75,67 +86,85 @@ public class CreateShardCmd implements Cmd {
     }
     
     Object createNodeSetStr = message.get(OverseerCollectionMessageHandler.CREATE_NODE_SET);
-    List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, totalReplicas,
-        createNodeSetStr, ocmh.overseer.getZkController().getCoreContainer());
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
-    // wait for a while until we see the shard
-    ocmh.waitForNewShard(collectionName, sliceName);
-
-    String async = message.getStr(ASYNC);
-    
-    int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
-    CountDownLatch countDownLatch = new CountDownLatch(totalReplicas);
-    for (int j = 1; j <= totalReplicas; j++) {
-      Replica.Type typeToCreate;
-      if (createdNrtReplicas < numNrtReplicas) {
-        createdNrtReplicas++;
-        typeToCreate = Replica.Type.NRT;
-      } else if (createdTlogReplicas < numTlogReplicas) {
-        createdTlogReplicas++;
-        typeToCreate = Replica.Type.TLOG;
+    boolean usePolicyFramework = usePolicyFramework(collection,ocmh);
+    List<ReplicaPosition> positions = null;
+    SolrCloseableLatch countDownLatch;
+    try {
+      if (usePolicyFramework) {
+        if (collection.getPolicyName() != null) message.getProperties().put(Policy.POLICY, collection.getPolicyName());
+        positions = Assign.identifyNodes(ocmh,
+            clusterState,
+            Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, RANDOM),
+            collectionName,
+            message,
+            Collections.singletonList(sliceName),
+            numNrtReplicas,
+            numTlogReplicas,
+            numPullReplicas);
       } else {
-        createdPullReplicas++;
-        typeToCreate = Replica.Type.PULL;
-      }
-      String nodeName = sortedNodeList.get(((j - 1)) % sortedNodeList.size()).nodeName;
-      String coreName = Assign.buildCoreName(ocmh.zkStateReader.getZkClient(), collection, sliceName, typeToCreate);
-//      String coreName = collectionName + "_" + sliceName + "_replica" + j;
-      log.info("Creating replica " + coreName + " as part of slice " + sliceName + " of collection " + collectionName
-          + " on " + nodeName);
-
-      // Need to create new params for each request
-      ZkNodeProps addReplicasProps = new ZkNodeProps(
-          COLLECTION_PROP, collectionName,
-          SHARD_ID_PROP, sliceName,
-          CoreAdminParams.REPLICA_TYPE, typeToCreate.name(),
-          CoreAdminParams.NODE, nodeName,
-          CoreAdminParams.NAME, coreName);
-      Map<String, Object> propertyParams = new HashMap<>();
-      ocmh.addPropertyParams(message, propertyParams);;
-      addReplicasProps = addReplicasProps.plus(propertyParams);
-      if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
-      final NamedList addResult = new NamedList();
-      ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, ()-> {
-        countDownLatch.countDown();
-        Object addResultFailure = addResult.get("failure");
-        if (addResultFailure != null) {
-          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-          if (failure == null) {
-            failure = new SimpleOrderedMap();
-            results.add("failure", failure);
+        List<Assign.ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, totalReplicas,
+            createNodeSetStr, ocmh.overseer.getSolrCloudManager());
+        int i = 0;
+        positions = new ArrayList<>();
+        for (Map.Entry<Replica.Type, Integer> e : ImmutableMap.of(Replica.Type.NRT, numNrtReplicas,
+            Replica.Type.TLOG, numTlogReplicas,
+            Replica.Type.PULL, numPullReplicas
+        ).entrySet()) {
+          for (int j = 0; j < e.getValue(); j++) {
+            positions.add(new ReplicaPosition(sliceName, j + 1, e.getKey(), sortedNodeList.get(i % sortedNodeList.size()).nodeName));
+            i++;
           }
-          failure.addAll((NamedList) addResultFailure);
-        } else {
-          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-          if (success == null) {
-            success = new SimpleOrderedMap();
-            results.add("success", success);
-          }
-          success.addAll((NamedList) addResult.get("success"));
         }
-      });
+      }
+      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+      // wait for a while until we see the shard
+      ocmh.waitForNewShard(collectionName, sliceName);
+
+      String async = message.getStr(ASYNC);
+      countDownLatch = new SolrCloseableLatch(totalReplicas, ocmh);
+      for (ReplicaPosition position : positions) {
+        String nodeName = position.node;
+        String coreName = Assign.buildCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(), collection, sliceName, position.type);
+        log.info("Creating replica " + coreName + " as part of slice " + sliceName + " of collection " + collectionName
+            + " on " + nodeName);
+
+        // Need to create new params for each request
+        ZkNodeProps addReplicasProps = new ZkNodeProps(
+            COLLECTION_PROP, collectionName,
+            SHARD_ID_PROP, sliceName,
+            ZkStateReader.REPLICA_TYPE, position.type.name(),
+            CoreAdminParams.NODE, nodeName,
+            CoreAdminParams.NAME, coreName,
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
+        Map<String, Object> propertyParams = new HashMap<>();
+        ocmh.addPropertyParams(message, propertyParams);
+        addReplicasProps = addReplicasProps.plus(propertyParams);
+        if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
+        final NamedList addResult = new NamedList();
+        ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
+          countDownLatch.countDown();
+          Object addResultFailure = addResult.get("failure");
+          if (addResultFailure != null) {
+            SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+            if (failure == null) {
+              failure = new SimpleOrderedMap();
+              results.add("failure", failure);
+            }
+            failure.addAll((NamedList) addResultFailure);
+          } else {
+            SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+            if (success == null) {
+              success = new SimpleOrderedMap();
+              results.add("success", success);
+            }
+            success.addAll((NamedList) addResult.get("success"));
+          }
+        });
+      }
+    } finally {
+      PolicyHelper.clearFlagAndDecref(PolicyHelper.getPolicySessionRef(ocmh.overseer.getSolrCloudManager()));
     }
 
     log.debug("Waiting for create shard action to complete");
@@ -144,5 +173,11 @@ public class CreateShardCmd implements Cmd {
 
     log.info("Finished create command on all shards for collection: " + collectionName);
 
+  }
+
+  static boolean usePolicyFramework(DocCollection collection, OverseerCollectionMessageHandler ocmh)
+      throws IOException, InterruptedException {
+    AutoScalingConfig autoScalingConfig = ocmh.overseer.getSolrCloudManager().getDistribStateManager().getAutoScalingConfig();
+    return !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || collection.getPolicyName() != null;
   }
 }

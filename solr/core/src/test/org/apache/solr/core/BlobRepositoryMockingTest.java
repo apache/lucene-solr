@@ -25,8 +25,10 @@ import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.mockito.Mockito.*;
@@ -53,6 +55,11 @@ public class BlobRepositoryMockingTest {
   ByteBuffer blobData = ByteBuffer.wrap(BLOBSTR.getBytes(UTF8));
   boolean blobFetched = false;
   String blobKey = "";
+  
+  @BeforeClass
+  public static void beforeClass() {
+    SolrTestCaseJ4.assumeWorkingMockito();
+  }
 
   @Before
   public void setUp() throws IllegalAccessException, NoSuchFieldException {

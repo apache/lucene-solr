@@ -208,6 +208,17 @@ public class CustomScoreQuery extends Query implements Cloneable {
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      if (subQueryWeight.isCacheable(ctx) == false)
+        return false;
+      for (Weight w : valSrcWeights) {
+        if (w.isCacheable(ctx) == false)
+          return false;
+      }
+      return true;
+    }
+
+    @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       Explanation explain = doExplain(context, doc);
       return explain == null ? Explanation.noMatch("no matching docs") : explain;

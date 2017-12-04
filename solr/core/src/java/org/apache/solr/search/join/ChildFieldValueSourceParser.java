@@ -162,8 +162,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     final Query query;
     if (fp.hasMoreArguments()){
       query = fp.parseNestedQuery();
-    }else{
-      query = fp.subQuery(fp.getParam(CommonParams.Q), BlockJoinParentQParserPlugin.NAME).getQuery();
+    } else {
+      query = fp.subQuery(fp.getParam(CommonParams.Q), null).getQuery();
     }
     
     BitSetProducer parentFilter;

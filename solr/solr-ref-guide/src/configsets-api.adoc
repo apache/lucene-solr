@@ -1,6 +1,4 @@
 = ConfigSets API
-:page-shortname: configsets-api
-:page-permalink: configsets-api.html
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -66,7 +64,7 @@ Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false
+http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false&wt=xml
 ----
 
 *Output*
@@ -105,7 +103,7 @@ Delete ConfigSet 'myConfigSet'
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet
+http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet&wt=xml
 ----
 
 *Output*
@@ -155,7 +153,6 @@ http://localhost:8983/solr/admin/configs?action=LIST
 
 Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
 
- * RunExecutableListener does not initialize, if specified in the ConfigSet.
  * DataImportHandler's ScriptTransformer does not initialize, if specified in the ConfigSet.
  * XSLT transformer (tr parameter) cannot be used at request processing time.
  * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.
@@ -173,7 +170,7 @@ The output will include the status of the request. If the status is anything oth
 
 === Upload ConfigSet Examples
 
-Create a config set named 'myConfigSet' from the zipped file myconfigset.zip. The zip file must be created from within the conf directory (i.e. the solrconfig.xml must be the top level entry in the zip file). Here is an example on how to create the zip file and upload it.
+Create a config set named 'myConfigSet' from the zipped file myconfigset.zip. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file). Here is an example on how to create the zip file and upload it:
 
 [source,text]
 ----
@@ -182,7 +179,7 @@ $ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *
 $ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
 ----
 
-The same can be achieved using a unix pipe, without creating an intermediate zip file, as follows:
+The same can be achieved using a Unix pipe, without creating an intermediate zip file, as follows:
 
 [source,text]
 ----

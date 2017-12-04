@@ -1,6 +1,4 @@
 = A Quick Overview
-:page-shortname: a-quick-overview
-:page-permalink: a-quick-overview.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

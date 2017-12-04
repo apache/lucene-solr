@@ -43,6 +43,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 *  The ModelStream retrieves a stored model from a Solr Cloud collection.
 *
 *  Syntax: model(collection, id="modelID")
+* @since 6.3.0
 **/
 
 public class ModelStream extends TupleStream implements Expressible {

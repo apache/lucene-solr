@@ -94,10 +94,6 @@ public final class ConstantScoreQuery extends Query {
             public float score() throws IOException {
               return theScore;
             }
-            @Override
-            public int freq() throws IOException {
-              return 1;
-            }
           });
         }
       };
@@ -141,10 +137,6 @@ public final class ConstantScoreQuery extends Query {
                   return score;
                 }
                 @Override
-                public int freq() throws IOException {
-                  return 1;
-                }
-                @Override
                 public Collection<ChildScorer> getChildren() {
                   return Collections.singleton(new ChildScorer(innerScorer, "constant"));
                 }
@@ -165,6 +157,11 @@ public final class ConstantScoreQuery extends Query {
             return null;
           }
           return scorerSupplier.get(Long.MAX_VALUE);
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return innerWeight.isCacheable(ctx);
         }
 
       };

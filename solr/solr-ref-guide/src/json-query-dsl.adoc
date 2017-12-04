@@ -1,0 +1,170 @@
+= JSON Query DSL
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The JSON Query DSL provides a simple yet powerful query language for the JSON Request API.
+
+== Structure of JSON Query DSL
+A JSON query can be:
+
+* A valid <<the-standard-query-parser.adoc#the-standard-query-parser,query string>> for default `deftype` (the standard query parser in most cases), as in, `title:solr`.
+
+* A valid <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters>> query string, as in, `{!dismax qf=myfield}solr rocks`.
+
+* A JSON object with query parser name and arguments.
+The special key `v` in local parameters is replaced by key `query` in JSON object query, as in this example:
+
+[source,json]
+{
+  "query-parser-name" : {
+     "param1": "value1",
+     "param2": "value2",
+     "query": "a-json-query",
+     "another-param": "another-json-query"
+  }
+}
+
+== Basic Examples
+The four requests below are equivalent for searching for `solr lucene` in a field named `content`:
+
+. Passing all parameters on URI, with "lucene" as the default query parser.
++
+[source,bash]
+curl -XGET "http://localhost:8983/solr/books/query?q=content:(solr lucene)"
+
+. Using the JSON Query DSL with valid query string for default `deftype`, with "lucene" as default query parser.
++
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{"query": "content:(solr lucene)"}'
+
+. Using JSON Query DSL with valid local parameters query defining the "lucene" query parser.
++
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{"query": "{!lucene df=content v='solr lucene'}"}'
+
+
+. Using JSON Query DSL in verbose way, as a valid JSON object with parser name and arguments.
++
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{"query": {"lucene": {
+            "df": "content",
+            "query": "solr lucene"
+        }
+    }}'
+
+Note that the JSON query in the examples above is provided under the key `query` of <<json-request-api.adoc#json-request-api,JSON Request API>>.
+
+== Nested Queries
+Some query parsers accept a query as an argument. JSON Query DSL makes it easier to write and read such complex query.
+
+The three requests below are equivalent for wrapping the above example query (searching for `solr lucene` in field `content`) with a boost query:
+
+. Passing all parameters on URI.
++
+[source,bash]
+http://localhost:8983/solr/books/query?q={!boost b=log(popularity) v='{!lucene df=content}(lucene solr)'}
+
+. Converted into JSON Query DSL with use of local parameters.
+As you can see, the special key `v` is replaced by key `query`.
++
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{
+    "query" : {
+        "boost": {
+            "query": {!lucene df=content}(lucene solr),
+            "b": "log(popularity)"
+        }
+    }
+}'
+
+. Using a verbose JSON Query DSL without local parameters.
++
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{
+    "query": {
+        "boost": {
+            "query": {
+                "lucene": {
+                    "df": "content",
+                    "query": "solr lucene"
+                }
+            },
+            "b": "log(popularity)"
+        }
+    }
+}'
+
+== Compound Queries
+With the support of the <<other-parsers.adoc#boolean-query-parser,BoolQParser>>, the JSON Query DSL can create a very powerful nested query.
+
+This query searches for books where `content` contains `lucene` or `solr`, `title` contains `solr` and their `ranking` must larger than 3.0:
+
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{
+    "query": {
+        "bool": {
+            "must": [
+                "title:solr",
+                {"lucene": {"df: "content", query: "lucene solr"}}
+            ],
+            "must_not": [
+                {"frange": {"u": "3.0", query: "ranking"}}
+            ]
+        }
+    }
+}'
+
+If lucene is the default query parser query, the above can be rewritten in much less verbose way as in:
+
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{
+    "query": {
+        "bool": {
+            "must": [
+                "title:solr",
+                "content:(lucene solr)"
+            ],
+            "must_not": "{!frange u:3.0}ranking"
+        }
+    }
+}'
+
+== Use JSON Query DSL in JSON Request API
+JSON Query DSL is not only supported with the key `query` but also with the key `filter` of the <<json-request-api.adoc#json-request-api,JSON Request API>>.
+
+For example, the above query can be rewritten using filter clause like this:
+
+[source,bash]
+curl -XGET http://localhost:8983/solr/books/query -d '
+{
+    "query": {
+        "bool": {
+            "must_not": "{!frange u:3.0}ranking"
+        }
+    },
+    "filter: [
+        "title:solr",
+        { "lucene" : {"df: "content", query : "lucene solr" }}
+    ]
+}'

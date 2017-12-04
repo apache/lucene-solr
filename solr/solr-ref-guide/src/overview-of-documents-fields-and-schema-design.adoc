@@ -1,6 +1,4 @@
 = Overview of Documents, Fields, and Schema Design
-:page-shortname: overview-of-documents-fields-and-schema-design
-:page-permalink: overview-of-documents-fields-and-schema-design.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information

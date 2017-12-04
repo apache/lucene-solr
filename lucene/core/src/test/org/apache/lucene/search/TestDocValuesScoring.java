@@ -32,7 +32,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -172,16 +171,6 @@ public class TestDocValuesScoring extends LuceneTestCase {
         @Override
         public float score(int doc, float freq) throws IOException {
           return getValueForDoc(doc) * sub.score(doc, freq);
-        }
-        
-        @Override
-        public float computeSlopFactor(int distance) {
-          return sub.computeSlopFactor(distance);
-        }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-          return sub.computePayloadFactor(doc, start, end, payload);
         }
 
         @Override

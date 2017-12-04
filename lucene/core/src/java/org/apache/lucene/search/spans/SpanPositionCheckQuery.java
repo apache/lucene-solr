@@ -87,6 +87,11 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return matchWeight.isCacheable(ctx);
+    }
+
+    @Override
     public void extractTermContexts(Map<Term, TermContext> contexts) {
       matchWeight.extractTermContexts(contexts);
     }

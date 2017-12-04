@@ -187,12 +187,18 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
+      while (this.scorer instanceof AssertingScorer) {
+        this.scorer = ((AssertingScorer)this.scorer).getIn();
+      }
     }
 
     @Override
     public void collect(int doc) throws IOException {
       totalHits++;
-      max = Math.max(max, scorer.freq());
+      if (scorer instanceof SloppyPhraseScorer)
+        max = Math.max(max, ((SloppyPhraseScorer)scorer).freq());
+      else
+        max = Math.max(max, ((ExactPhraseScorer)scorer).freq());
     }
     
     @Override
@@ -209,11 +215,14 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
       @Override
       public void setScorer(Scorer scorer) {
         this.scorer = scorer;
+        while (this.scorer instanceof AssertingScorer) {
+          this.scorer = ((AssertingScorer)this.scorer).getIn();
+        }
       }
       
       @Override
       public void collect(int doc) throws IOException {
-        assertFalse(Float.isInfinite(scorer.freq()));
+        assertFalse(Float.isInfinite(((SloppyPhraseScorer)scorer).freq()));
         assertFalse(Float.isInfinite(scorer.score()));
       }
       

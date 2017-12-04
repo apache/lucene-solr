@@ -205,7 +205,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
         createPluginInfo("core_foo", "core", null)
     };
     String tag = "xyz";
-    metricManager.loadReporters(plugins, loader, tag, SolrInfoBean.Group.node);
+    metricManager.loadReporters(plugins, loader, null, null, tag, SolrInfoBean.Group.node);
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(
         SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
     assertEquals(4, reporters.size());
@@ -214,7 +214,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     assertTrue(reporters.containsKey("node_foo@" + tag));
     assertTrue(reporters.containsKey("multiregistry_foo@" + tag));
 
-    metricManager.loadReporters(plugins, loader, tag, SolrInfoBean.Group.core, "collection1");
+    metricManager.loadReporters(plugins, loader, null, null, tag, SolrInfoBean.Group.core, "collection1");
     reporters = metricManager.getReporters(
         SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, "collection1"));
     assertEquals(5, reporters.size());
@@ -224,7 +224,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     assertTrue(reporters.containsKey("core_foo@" + tag));
     assertTrue(reporters.containsKey("multiregistry_foo@" + tag));
 
-    metricManager.loadReporters(plugins, loader, tag, SolrInfoBean.Group.jvm);
+    metricManager.loadReporters(plugins, loader, null, null, tag, SolrInfoBean.Group.jvm);
     reporters = metricManager.getReporters(
         SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
     assertEquals(2, reporters.size());

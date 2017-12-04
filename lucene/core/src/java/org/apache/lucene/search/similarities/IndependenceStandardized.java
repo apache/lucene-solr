@@ -34,8 +34,8 @@ public class IndependenceStandardized extends Independence {
   public IndependenceStandardized() {}
   
   @Override
-  public float score(float freq, float expected) {
-    return (freq - expected) / (float) Math.sqrt(expected);
+  public double score(double freq, double expected) {
+    return (freq - expected) / Math.sqrt(expected);
   }
 
   @Override

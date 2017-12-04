@@ -66,6 +66,7 @@ import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSe
  *     &lt;str&gt;No&lt;/str&gt;
  *   &lt;/arr&gt;
  * &lt;/processor&gt;</pre>
+ * @since 4.4.0
  */
 public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   private static final String TRUE_VALUES_PARAM = "trueValue";

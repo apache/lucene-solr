@@ -102,6 +102,17 @@ class DrillSidewaysQuery extends Query {
       }
 
       @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        if (baseWeight.isCacheable(ctx) == false)
+          return false;
+        for (Weight w : drillDowns) {
+          if (w.isCacheable(ctx) == false)
+            return false;
+        }
+        return true;
+      }
+
+      @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         Scorer baseScorer = baseWeight.scorer(context);
 

@@ -59,6 +59,9 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
+/**
+ * @since 6.1.0
+ */
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   private StreamFactory streamFactory = new StreamFactory();

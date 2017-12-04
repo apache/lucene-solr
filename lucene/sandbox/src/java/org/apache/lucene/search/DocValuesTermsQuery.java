@@ -203,6 +203,12 @@ public class DocValuesTermsQuery extends Query {
 
         });
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
+      }
+
     };
   }
 

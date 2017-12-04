@@ -17,6 +17,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.common.cloud.ClusterState;
@@ -32,28 +35,46 @@ public interface ClusterStateProvider extends Closeable {
   /**
    * Obtain set of live_nodes for the cluster.
    */
-  Set<String> liveNodes();
+  Set<String> getLiveNodes();
 
   /**
-   * Given an alias, returns the collection name that this alias points to
+   * Given a collection alias, returns a list of collections it points to, or returns a singleton list of the input if
+   * it's not an alias.
    */
-  String getAlias(String alias);
+  List<String> resolveAlias(String alias);
 
   /**
-   * Given a name, returns the collection name if an alias by that name exists, or
-   * returns the name itself, if no alias exists.
+   * Obtain the current cluster state.
    */
-  String getCollectionName(String name);
+  ClusterState getClusterState() throws IOException;
 
   /**
-   * Obtain a cluster property, or null if it doesn't exist.
+   * Obtain cluster properties.
+   * @return configured cluster properties, or an empty map, never null.
    */
-  Object getClusterProperty(String propertyName);
+  Map<String, Object> getClusterProperties();
 
   /**
    * Obtain a cluster property, or the default value if it doesn't exist.
    */
-  Object getClusterProperty(String propertyName, String def);
+  default <T> T getClusterProperty(String key, T defaultValue) {
+    T value = (T) getClusterProperties().get(key);
+    if (value == null)
+      return defaultValue;
+    return value;
+  }
+
+  /**
+   * Obtain a cluster property, or null if it doesn't exist.
+   */
+  default <T> T getClusterProperty(String propertyName) {
+    return (T) getClusterProperties().get(propertyName);
+  }
+
+  /**
+   * Get the collection-specific policy
+   */
+  String getPolicyNameByCollection(String coll);
 
   void connect();
 }

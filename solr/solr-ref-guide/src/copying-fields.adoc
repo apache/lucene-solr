@@ -1,6 +1,4 @@
 = Copying Fields
-:page-shortname: copying-fields
-:page-permalink: copying-fields.html
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -47,7 +45,7 @@ Both the source and the destination of `copyField` can contain either leading or
 The `copyField` command can use a wildcard (*) character in the `dest` parameter only if the `source` parameter contains one as well. `copyField` uses the matching glob from the source field for the `dest` field name into which the source content is copied.
 ====
 
-Copying is done at the stream source level and no copy feeds into another copy. This means that copy fields cannot be chained i.e. _you cannot_ copy from `here` to `there` and then from `there` to `elsewhere`. However, the same source field can be copied to multiple destination fields:
+Copying is done at the stream source level and no copy feeds into another copy. This means that copy fields cannot be chained i.e., _you cannot_ copy from `here` to `there` and then from `there` to `elsewhere`. However, the same source field can be copied to multiple destination fields:
 
 [source,xml]
 ----

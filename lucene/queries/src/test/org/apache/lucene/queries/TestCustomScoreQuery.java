@@ -34,7 +34,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -60,8 +59,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
    */
   @Test
   public void testCustomScoreInt() throws Exception {
-    doTestCustomScore(INT_VALUESOURCE, 1.0);
-    doTestCustomScore(INT_VALUESOURCE, 4.0);
+    doTestCustomScore(INT_VALUESOURCE, 1f);
+    doTestCustomScore(INT_VALUESOURCE, 4f);
   }
 
   /**
@@ -69,8 +68,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
    */
   @Test
   public void testCustomScoreFloat() throws Exception {
-    doTestCustomScore(FLOAT_VALUESOURCE, 1.0);
-    doTestCustomScore(FLOAT_VALUESOURCE, 6.0);
+    doTestCustomScore(FLOAT_VALUESOURCE, 1f);
+    doTestCustomScore(FLOAT_VALUESOURCE, 6f);
   }
 
   // must have static class otherwise serialization tests fail
@@ -225,8 +224,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
   
   // Test that FieldScoreQuery returns docs with expected score.
-  private void doTestCustomScore(ValueSource valueSource, double dboost) throws Exception {
-    float boost = (float) dboost;
+  private void doTestCustomScore(ValueSource valueSource, float boost) throws Exception {
     FunctionQuery functionQuery = new FunctionQuery(valueSource);
     IndexReader r = DirectoryReader.open(dir);
     IndexSearcher s = newSearcher(r);
@@ -242,11 +240,11 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     // custom query, that should score the same as q1.
     BooleanQuery.Builder q2CustomNeutralB = new BooleanQuery.Builder();
     Query q2CustomNeutralInner = new CustomScoreQuery(q1);
-    q2CustomNeutralB.add(new BoostQuery(q2CustomNeutralInner, (float)Math.sqrt(dboost)), BooleanClause.Occur.SHOULD);
+    q2CustomNeutralB.add(new BoostQuery(q2CustomNeutralInner, (float)Math.sqrt(boost)), BooleanClause.Occur.SHOULD);
     // a little tricky: we split the boost across an outer BQ and CustomScoreQuery
     // this ensures boosting is correct across all these functions (see LUCENE-4935)
     Query q2CustomNeutral = q2CustomNeutralB.build();
-    q2CustomNeutral = new BoostQuery(q2CustomNeutral, (float)Math.sqrt(dboost));
+    q2CustomNeutral = new BoostQuery(q2CustomNeutral, (float)Math.sqrt(boost));
     log(q2CustomNeutral);
 
     // custom query, that should (by default) multiply the scores of q1 by that of the field
@@ -328,19 +326,19 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       
       float score2 = h2customNeutral.get(doc);
       logResult("score2=", s, q2, doc, score2);
-      assertEquals("same score (just boosted) for neutral", boost * score1, score2, CheckHits.explainToleranceDelta(boost * score1, score2));
+      assertEquals("same score (just boosted) for neutral", boost * score1, score2, Math.scalb(score2, -15));
 
       float score3 = h3CustomMul.get(doc);
       logResult("score3=", s, q3, doc, score3);
-      assertEquals("new score for custom mul", boost * fieldScore * score1, score3, CheckHits.explainToleranceDelta(boost * fieldScore * score1, score3));
+      assertEquals("new score for custom mul", boost * fieldScore * score1, score3, Math.scalb(score3, -15));
       
       float score4 = h4CustomAdd.get(doc);
       logResult("score4=", s, q4, doc, score4);
-      assertEquals("new score for custom add", boost * (fieldScore + score1), score4, CheckHits.explainToleranceDelta(boost * (fieldScore + score1), score4));
+      assertEquals("new score for custom add", boost * (fieldScore + score1), score4, Math.scalb(score4, -15));
       
       float score5 = h5CustomMulAdd.get(doc);
       logResult("score5=", s, q5, doc, score5);
-      assertEquals("new score for custom mul add", boost * fieldScore * (score1 + fieldScore), score5, CheckHits.explainToleranceDelta(boost * fieldScore * (score1 + fieldScore), score5));
+      assertEquals("new score for custom mul add", boost * fieldScore * (score1 + fieldScore), score5, Math.scalb(score5, -15));
     }
   }
 

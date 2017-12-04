@@ -1,6 +1,4 @@
 = Core-Specific Tools
-:page-shortname: core-specific-tools
-:page-permalink: core-specific-tools.html
 :page-children: ping, plugins-stats-screen, replication-screen, segments-info
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

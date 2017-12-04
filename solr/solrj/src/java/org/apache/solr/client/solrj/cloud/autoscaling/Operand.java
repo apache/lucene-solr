@@ -17,14 +17,14 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.util.Objects;
+
+import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
+
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.FAIL;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.NOT_APPLICABLE;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus.PASS;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.ANY;
-
-import java.util.Objects;
-
-import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
 
 
 public enum Operand {
@@ -37,7 +37,7 @@ public enum Operand {
   },
   EQUAL("", 0) {
     @Override
-    public int _delta(int expected, int actual) {
+    public long _delta(long expected, long actual) {
       return expected - actual;
     }
   },
@@ -48,7 +48,7 @@ public enum Operand {
     }
 
     @Override
-    public int _delta(int expected, int actual) {
+    public long _delta(long expected, long actual) {
       return expected - actual;
     }
 
@@ -57,6 +57,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
         return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == 1 ? PASS : FAIL;
       }
@@ -64,7 +65,12 @@ public enum Operand {
     }
 
     @Override
-    protected int _delta(int expected, int actual) {
+    public Operand opposite(boolean flag) {
+      return flag ? LESS_THAN : GREATER_THAN;
+    }
+
+    @Override
+    protected long _delta(long expected, long actual) {
       return actual > expected ? 0 : (expected + 1) - actual;
     }
   },
@@ -72,6 +78,7 @@ public enum Operand {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
       if (testVal == null) return NOT_APPLICABLE;
+      if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
         return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == -1 ? PASS : FAIL;
       }
@@ -79,21 +86,25 @@ public enum Operand {
     }
 
     @Override
-    protected int _delta(int expected, int actual) {
-      return actual < expected ? 0 : (expected ) - actual;
+    protected long _delta(long expected, long actual) {
+      return actual < expected ? 0 : (actual + 1) - expected;
     }
 
+    @Override
+    public Operand opposite(boolean flag) {
+      return flag ? GREATER_THAN : this;
+    }
   };
+
+  public Operand opposite(boolean flag) {
+    return this;
+  }
   public final String operand;
   final int priority;
 
   Operand(String val, int priority) {
     this.operand = val;
     this.priority = priority;
-  }
-
-  public String toStr(Object expectedVal) {
-    return operand + expectedVal.toString();
   }
 
   public TestStatus match(Object ruleVal, Object testVal) {
@@ -107,17 +118,18 @@ public enum Operand {
 
   }
 
-  public Integer delta(Object expected, Object actual) {
-    try {
-      Integer expectedInt = Integer.parseInt(String.valueOf(expected));
-      Integer actualInt = Integer.parseInt(String.valueOf(actual));
-      return _delta(expectedInt, actualInt);
-    } catch (Exception e) {
-      return null;
+  public Long delta(Object expected, Object actual) {
+    if (expected instanceof Number && actual instanceof Number) {
+      Long expectedL = ((Number) expected).longValue();
+      Long actualL = ((Number) actual).longValue();
+      return _delta(expectedL, actualL);
+    } else {
+      return 0l;
     }
+
   }
 
-  protected int _delta(int expected, int actual) {
+  protected long _delta(long expected, long actual) {
     return 0;
   }
 }

@@ -181,6 +181,12 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
         }
         return new ConstantScoreScorer(this, score(), iterator);
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
+      }
+
     };
   }
 

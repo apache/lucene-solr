@@ -50,16 +50,16 @@ public class DFISimilarity extends SimilarityBase {
   }
 
   @Override
-  protected float score(BasicStats stats, float freq, float docLen) {
+  protected double score(BasicStats stats, double freq, double docLen) {
 
-    final float expected = (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
+    final double expected = (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
 
     // if the observed frequency is less than or equal to the expected value, then return zero.
     if (freq <= expected) return 0;
 
-    final float measure = independence.score(freq, expected);
+    final double measure = independence.score(freq, expected);
 
-    return stats.getBoost() * (float) log2(measure + 1);
+    return stats.getBoost() * log2(measure + 1);
   }
 
   /**

@@ -330,6 +330,12 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
             return scorer(weightOrBitSet.set);
           }
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return true;
+        }
+
       };
     }
 
@@ -623,6 +629,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
           return null;
         }
         return new ConstantScoreScorer(this, score(), readerSetIterator);
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
       }
     };
   }

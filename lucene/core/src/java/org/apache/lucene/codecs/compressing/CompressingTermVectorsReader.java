@@ -745,6 +745,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private static class TVTerms extends Terms {
 
     private final int numTerms, flags;
+    private final long totalTermFreq;
     private final int[] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;
     private final BytesRef termBytes, payloadBytes;
 
@@ -764,6 +765,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       this.payloadIndex = payloadIndex;
       this.payloadBytes = payloadBytes;
       this.termBytes = termBytes;
+      long ttf = 0;
+      for (int tf : termFreqs) {
+        ttf += tf;
+      }
+      this.totalTermFreq = ttf;
     }
 
     @Override
@@ -782,7 +788,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     @Override
     public long getSumTotalTermFreq() throws IOException {
-      return -1L;
+      return totalTermFreq;
     }
 
     @Override

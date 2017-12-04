@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
@@ -60,9 +61,11 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -84,6 +87,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -325,6 +329,19 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
     savedClassLogLevels.clear();
     StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
+  }
+  
+  /** Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if Java version is too new). */
+  public static void assumeWorkingMockito() {
+    // we use reflection here, because we do not have ByteBuddy/Mockito in all modules and the test framework!
+    try {
+      Class.forName("net.bytebuddy.ClassFileVersion").getMethod("ofThisVm").invoke(null);
+    } catch (InvocationTargetException e) {
+      RandomizedTest.assumeNoException("SOLR-11606: ByteBuddy used by Mockito is not working with this JVM version.",
+          e.getTargetException());
+    } catch (ReflectiveOperationException e) {
+      fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
+    }
   }
   
   /**
@@ -2210,59 +2227,31 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   /**
-   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize which nodes recieve updates 
-   * unless otherwise specified by the caller.
-   *
-   * @see #sendDirectUpdatesToAnyShardReplica
-   * @see #sendDirectUpdatesToShardLeadersOnly
+   * A variant of {@link  org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will randomize
+   * some internal settings.
    */
   public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
 
-    private boolean configuredDUTflag = false;
-
     public CloudSolrClientBuilder() {
-      super();
+      this.directUpdatesToLeadersOnly = random().nextBoolean();
+      this.shardLeadersOnly = random().nextBoolean();
+      this.parallelUpdates = random().nextBoolean();
     }
 
-    @Override
-    public CloudSolrClient.Builder sendDirectUpdatesToShardLeadersOnly() {
-      configuredDUTflag = true;
-      return super.sendDirectUpdatesToShardLeadersOnly();
-    }
-
-    @Override
-    public CloudSolrClient.Builder sendDirectUpdatesToAnyShardReplica() {
-      configuredDUTflag = true;
-      return super.sendDirectUpdatesToAnyShardReplica();
-    }
-
-    private void randomlyChooseDirectUpdatesToLeadersOnly() {
+    /** Randomly chooses the cluster state provider -- either ZK based or HTTP. */
+    public CloudSolrClient.Builder withCluster(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
-        sendDirectUpdatesToShardLeadersOnly();
+        return withZkHost(cluster.getZkServer().getZkAddress());
       } else {
-        sendDirectUpdatesToAnyShardReplica();
+        return withSolrUrl(cluster.getRandomJetty(random()).getBaseUrl().toString());
       }
     }
 
-    @Override
-    public CloudSolrClient build() {
-      if (configuredDUTflag == false) {
-        // flag value not explicity configured
-        if (random().nextBoolean()) {
-          // so randomly choose a value
-          randomlyChooseDirectUpdatesToLeadersOnly();
-        } else {
-          // or go with whatever the default value is
-          configuredDUTflag = true;
-        }
-      }
-      return super.build();
-    }
   }
 
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
-   * Tests that do not wish to have any randomized behavior should use the 
+   * Tests that do not wish to have any randomized behavior should use the
    * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */ 
   public static CloudSolrClient getCloudSolrClient(String zkHost) {
@@ -2270,7 +2259,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .withZkHost(zkHost)
         .build();
   }
-  
+
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
+   * Tests that do not wish to have any randomized behavior should use the
+   * {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */
+  public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
+    return new CloudSolrClientBuilder()
+        .withCluster(cluster)
+        .build();
+  }
+
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
    * Tests that do not wish to have any randomized behavior should use the 
@@ -2300,7 +2300,11 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
         .sendUpdatesToAllReplicasInShard()
         .build();
   }
-  
+
+  public static CloudSolrClientBuilder newCloudSolrClient(String zkHost) {
+    return (CloudSolrClientBuilder) new CloudSolrClientBuilder().withZkHost(zkHost);
+  }
+
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient.
    * Tests that do not wish to have any randomized behavior should use the 

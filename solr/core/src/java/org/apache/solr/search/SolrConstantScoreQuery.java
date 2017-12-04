@@ -104,6 +104,11 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
       return new ConstantScoreScorer(this, score(), iterator);
     }
 
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+
   }
 
   @Override

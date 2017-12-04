@@ -50,5 +50,9 @@ public interface DoubleValueStream extends AnalyticsValueStream {
     public void streamObjects(Consumer<Object> cons) {
       streamDoubles((double val) -> cons.accept(val));
     }
+    @Override
+    public AnalyticsValueStream convertToConstant() {
+      return this;
+    }
   }
 }

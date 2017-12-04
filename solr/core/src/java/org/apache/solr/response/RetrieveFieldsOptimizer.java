@@ -43,12 +43,12 @@ public class RetrieveFieldsOptimizer {
    * otherwise we prefer the stored value when we have a choice.
    */
   void optimize(SolrDocumentFetcher docFetcher) {
-    optimize(docFetcher.getAllSingleDV());
+    optimize(docFetcher.getDvsCanSubstituteStored());
   }
 
-  void optimize(Set<String> singleDVs) {
+  void optimize(Set<String> dvsCanSubstituteStored) {
     if (storedFields == null) return;
-    if (!singleDVs.containsAll(storedFields)) return;
+    if (!dvsCanSubstituteStored.containsAll(storedFields)) return;
     dvFields.addAll(storedFields);
     storedFields.clear();
   }

@@ -18,30 +18,22 @@ package org.apache.lucene.search.spans;
 
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -288,40 +280,6 @@ public class TestSpans extends LuceneTestCase {
     assertNext(spans, 11, 4, 5);
     assertNext(spans, 11, 5, 6);
     assertFinished(spans);
-  }
-
-  public void testSpanScorerZeroSloppyFreq() throws Exception {
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<LeafReaderContext> leaves = topReaderContext.leaves();
-    int subIndex = ReaderUtil.subIndex(11, leaves);
-    for (int i = 0, c = leaves.size(); i < c; i++) {
-      final LeafReaderContext ctx = leaves.get(i);
-     
-      final Similarity sim = new ClassicSimilarity() {
-        @Override
-        public float sloppyFreq(int distance) {
-          return 0.0f;
-        }
-      };
-  
-      final Similarity oldSim = searcher.getSimilarity(true);
-      Scorer spanScorer;
-      try {
-        searcher.setSimilarity(sim);
-        SpanQuery snq = spanNearOrderedQuery(field, 1, "t1", "t2");
-        spanScorer = searcher.createNormalizedWeight(snq, true).scorer(ctx);
-      } finally {
-        searcher.setSimilarity(oldSim);
-      }
-      if (i == subIndex) {
-        assertTrue("first doc", spanScorer.iterator().nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-        assertEquals("first doc number", spanScorer.docID() + ctx.docBase, 11);
-        float score = spanScorer.score();
-        assertTrue("first doc score should be zero, " + score, score == 0.0f);
-      } else {
-        assertTrue("no second doc", spanScorer == null || spanScorer.iterator().nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
-      }
-    }
   }
 
   // LUCENE-1404

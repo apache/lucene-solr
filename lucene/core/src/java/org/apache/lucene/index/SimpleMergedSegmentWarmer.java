@@ -26,9 +26,9 @@ import org.apache.lucene.util.InfoStream;
  * A very simple merged segment warmer that just ensures 
  * data structures are initialized.
  */
-public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
+public class SimpleMergedSegmentWarmer implements IndexReaderWarmer {
   private final InfoStream infoStream;
-  
+
   /**
    * Creates a new SimpleMergedSegmentWarmer
    * @param infoStream InfoStream to log statistics about warming.
@@ -53,7 +53,7 @@ public class SimpleMergedSegmentWarmer extends IndexReaderWarmer {
           normsCount++;
         }
       }
-      
+
       if (info.getDocValuesType() != DocValuesType.NONE) {
         switch(info.getDocValuesType()) {
           case NUMERIC:

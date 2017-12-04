@@ -17,6 +17,10 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,12 +34,17 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A {@link TaxonomyReader} which retrieves stored taxonomy information from a
@@ -49,11 +58,14 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  */
-public class DirectoryTaxonomyReader extends TaxonomyReader {
+public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountable {
 
   private static final Logger logger = Logger.getLogger(DirectoryTaxonomyReader.class.getName());
 
   private static final int DEFAULT_CACHE_VALUE = 4000;
+
+  // NOTE: very coarse estimate!
+  private static final int BYTES_PER_CACHE_ENTRY = 4 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 4 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 8 * RamUsageEstimator.NUM_BYTES_CHAR;
   
   private final DirectoryTaxonomyWriter taxoWriter;
   private final long taxoEpoch; // used in doOpenIfChanged 
@@ -325,7 +337,51 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     ensureOpen();
     return indexReader.numDocs();
   }
+
+  @Override
+  public synchronized long ramBytesUsed() {
+    ensureOpen();
+    long ramBytesUsed = 0;
+    for (LeafReaderContext ctx : indexReader.leaves()) {
+      ramBytesUsed += ((SegmentReader) ctx.reader()).ramBytesUsed();
+    }
+    if (taxoArrays != null) {
+      ramBytesUsed += taxoArrays.ramBytesUsed();
+    }
+    synchronized (categoryCache) {
+      ramBytesUsed += BYTES_PER_CACHE_ENTRY * categoryCache.size();
+    }    
+
+    synchronized (ordinalCache) {
+      ramBytesUsed += BYTES_PER_CACHE_ENTRY * ordinalCache.size();
+    }    
+
+    return ramBytesUsed;
+  }
   
+  @Override
+  public synchronized Collection<Accountable> getChildResources() {
+    final List<Accountable> resources = new ArrayList<>();
+    long ramBytesUsed = 0;
+    for (LeafReaderContext ctx : indexReader.leaves()) {
+      ramBytesUsed += ((SegmentReader) ctx.reader()).ramBytesUsed();
+    }
+    resources.add(Accountables.namedAccountable("indexReader", ramBytesUsed));
+    if (taxoArrays != null) {
+      resources.add(Accountables.namedAccountable("taxoArrays", taxoArrays));
+    }
+
+    synchronized (categoryCache) {
+      resources.add(Accountables.namedAccountable("categoryCache", BYTES_PER_CACHE_ENTRY * categoryCache.size()));
+    }    
+
+    synchronized (ordinalCache) {
+      resources.add(Accountables.namedAccountable("ordinalCache", BYTES_PER_CACHE_ENTRY * ordinalCache.size()));
+    }    
+    
+    return Collections.unmodifiableList(resources);
+  }
+
   /**
    * setCacheSize controls the maximum allowed size of each of the caches
    * used by {@link #getPath(int)} and {@link #getOrdinal(FacetLabel)}.

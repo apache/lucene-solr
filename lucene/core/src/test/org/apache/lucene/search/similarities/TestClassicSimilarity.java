@@ -19,6 +19,7 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -27,7 +28,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -39,11 +39,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.TFIDFSimilarity.IDFStats;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-public class TestClassicSimilarity extends LuceneTestCase {
+public class TestClassicSimilarity extends BaseSimilarityTestCase {
   private Directory directory;
   private IndexReader indexReader;
   private IndexSearcher indexSearcher;
@@ -158,7 +157,7 @@ public class TestClassicSimilarity extends LuceneTestCase {
   
   public void testSaneNormValues() throws IOException {
     ClassicSimilarity sim = new ClassicSimilarity();
-    TFIDFSimilarity.IDFStats stats = (IDFStats) sim.computeWeight(1f, new IndexSearcher(new MultiReader()).collectionStatistics("foo"));
+    TFIDFSimilarity.IDFStats stats = (IDFStats) sim.computeWeight(1f, indexSearcher.collectionStatistics("test"));
     for (int i = 0; i < 256; i++) {
       float boost = stats.normTable[i];
       assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);
@@ -184,5 +183,10 @@ public class TestClassicSimilarity extends LuceneTestCase {
           sim1.computeNorm(state),
           0f);
     }
+  }
+
+  @Override
+  protected Similarity getSimilarity(Random random) {
+    return new ClassicSimilarity();
   }
 }

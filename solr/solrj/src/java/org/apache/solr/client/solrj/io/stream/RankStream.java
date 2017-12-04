@@ -42,6 +42,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 /**
 *  Iterates over a TupleStream and Ranks the topN tuples based on a Comparator.
+* @since 5.1.0
 **/
 
 public class RankStream extends TupleStream implements Expressible {

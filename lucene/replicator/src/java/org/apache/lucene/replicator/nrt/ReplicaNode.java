@@ -352,7 +352,7 @@ public abstract class ReplicaNode extends Node {
     }
   }
 
-  void finishNRTCopy(CopyJob job, long startNS) throws IOException {
+  protected void finishNRTCopy(CopyJob job, long startNS) throws IOException {
     CopyState copyState = job.getCopyState();
     message("top: finishNRTCopy: version=" + copyState.version + (job.getFailed() ? " FAILED" : "") + " job=" + job);
 

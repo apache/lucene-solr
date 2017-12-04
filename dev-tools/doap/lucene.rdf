@@ -66,11 +66,33 @@
       </foaf:Person>
     </maintainer>
 
+    <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
+    <release>
+      <Version>
+        <name>lucene-7.1.0</name>
+        <created>2017-10-17</created>
+        <revision>7.1.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>lucene-7.0.1</name>
+        <created>2017-10-06</created>
+	      <revision>7.0.1</revision>
+      </Version>
+    </release>
     <release>
       <Version>
         <name>lucene-7.0.0</name>
         <created>2017-09-20</created>
 	      <revision>7.0.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>lucene-6.6.2</name>
+        <created>2017-10-18</created>
+        <revision>6.6.2</revision>
       </Version>
     </release>
     <release>
@@ -162,6 +184,13 @@
         <name>lucene-6.0.0</name>
         <created>2016-04-08</created>
         <revision>6.0.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
+        <name>lucene-5.5.5</name>
+        <created>2017-10-24</created>
+        <revision>5.5.5</revision>
       </Version>
     </release>
     <release>

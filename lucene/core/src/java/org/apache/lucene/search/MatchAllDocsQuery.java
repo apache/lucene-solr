@@ -39,6 +39,12 @@ public final class MatchAllDocsQuery extends Query {
       public Scorer scorer(LeafReaderContext context) throws IOException {
         return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
       }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
       @Override
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         final float score = score();

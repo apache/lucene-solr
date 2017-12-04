@@ -1,6 +1,4 @@
 = Faceting
-:page-shortname: faceting
-:page-permalink: faceting.html
 :page-children: blockjoin-faceting
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -66,6 +64,10 @@ The `facet.contains` parameter limits the terms on which to facet to those conta
 `facet.contains.ignoreCase`::
 
 If `facet.contains` is used, the `facet.contains.ignoreCase` parameter causes case to be ignored when matching the given substring against candidate facet terms.
+
+`facet.matches`::
+
+If you want to only return facet buckets for the terms that match a regular expression.
 
 `facet.sort`::
 This parameter determines the ordering of the facet field constraints.
@@ -610,7 +612,7 @@ The parameter setting above causes the field facet results for the "doctype" fie
 
 === Limiting Facet with Certain Terms
 
-To limit field facet with certain terms specify them comma separated with `terms` local parameter. Commas and quotes in terms can be escaped with backslash, as in `\,`. In this case facet is calculated on a way similar to `facet.method=enum` , but ignores `facet.enum.cache.minDf`. For example:
+To limit field facet with certain terms specify them comma separated with `terms` local parameter. Commas and quotes in terms can be escaped with backslash, as in `\,`. In this case facet is calculated on a way similar to `facet.method=enum`, but ignores `facet.enum.cache.minDf`. For example:
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
 

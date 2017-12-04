@@ -149,7 +149,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   public void test() throws IOException {
     SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term("field", "seventy")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -175,7 +175,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   
   public void testQuery() {
     SpanQuery boostingFuncTermQuery = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-        new MaxPayloadFunction());
+        new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     QueryUtils.check(boostingFuncTermQuery);
     
     SpanTermQuery spanTermQuery = new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"));
@@ -183,14 +183,14 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     assertTrue(boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
     
     SpanQuery boostingFuncTermQuery2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-        new AveragePayloadFunction());
+        new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     
     QueryUtils.checkUnequal(boostingFuncTermQuery, boostingFuncTermQuery2);
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
     SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -229,7 +229,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   public void testNoMatch() throws Exception {
     SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.FIELD, "junk")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 0, hits.totalHits == 0);
@@ -238,9 +238,9 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   public void testNoPayload() throws Exception {
     SpanQuery q1 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     SpanQuery q2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo")),
-            new MaxPayloadFunction());
+            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
     BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -256,23 +256,11 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   static class BoostingSimilarity extends ClassicSimilarity {
 
-    // TODO: Remove warning after API has been finalized
-    @Override
-    public float scorePayload(int docId, int start, int end, BytesRef payload) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload.bytes[payload.offset];
-    }
-
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override 
     public float lengthNorm(int length) {
-      return 1;
-    }
-
-    @Override
-    public float sloppyFreq(int distance) {
       return 1;
     }
 
@@ -284,13 +272,6 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     @Override
     public float tf(float freq) {
       return freq == 0 ? 0 : 1;
-    }
-  }
-
-  static class FullSimilarity extends ClassicSimilarity{
-    public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
-      //we know it is size 4 here, so ignore the offset/length
-      return payload[offset];
     }
   }
 

@@ -155,6 +155,11 @@ public class TestScorerPerf extends LuceneTestCase {
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return new ConstantScoreScorer(this, score(), new BitSetIterator(docs, docs.approximateCardinality()));
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
       };
     }
     

@@ -72,9 +72,6 @@ public abstract class CachingCollector extends FilterCollector {
       return doc;
     }
 
-    @Override
-    public final int freq() { throw new UnsupportedOperationException(); }
-
   }
 
   private static class NoScoreCachingCollector extends CachingCollector {

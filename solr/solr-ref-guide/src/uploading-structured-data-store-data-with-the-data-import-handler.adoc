@@ -1,6 +1,4 @@
 = Uploading Structured Data Store Data with the Data Import Handler
-:page-shortname: uploading-structured-data-store-data-with-the-data-import-handler
-:page-permalink: uploading-structured-data-store-data-with-the-data-import-handler.html
 :page-toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -79,9 +77,10 @@ This example shows how to extract fields from four tables defining a simple prod
 
 [source,xml]
 ----
-<dataConfig> --<1>
+<dataConfig>
 
-  <dataSource driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:./example-DIH/hsqldb/ex" user="sa" password="secret"/> --<2>
+  <dataSource driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:./example-DIH/hsqldb/ex" --<1>
+    user="sa" password="secret"/> --<2>
   <document> --<3>
     <entity name="item" query="select * from item"
             deltaQuery="select id from item where last_modified > '${dataimporter.last_index_time}'"> --<4>
@@ -109,8 +108,8 @@ This example shows how to extract fields from four tables defining a simple prod
   </document>
 </dataConfig>
 ----
-<1> The first element is the `dataSource`, in this case an HSQLDB database. The path to the JDBC driver and the JDBC URL and login credentials are all specified here. Other permissible attributes include whether or not to autocommit to Solr, the batchsize used in the JDBC connection, and a `readOnly` flag. The password attribute is optional if there is no password set for the DB.
-<2> Alternately the password can be encrypted as follows. This is the value obtained as a result of the command `openssl enc -aes-128-cbc -a -salt -in pwd.txt password="U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o="`. When the password is encrypted, you must provide an extra attribute `encryptKeyFile="/location/of/encryptionkey"`. This file should a text file with a single line containing the encrypt/decrypt password.
+<1> The first element is the `dataSource`, in this case an HSQLDB database. The path to the JDBC driver and the JDBC URL and login credentials are all specified here. Other permissible attributes include whether or not to autocommit to Solr, the batchsize used in the JDBC connection, and a `readOnly` flag.
+<2> The password attribute is optional if there is no password set for the DB. Alternately, the password can be encrypted; the section <<Encrypting a Database Password>> below describes how to do this.
 <3> A `document` element follows, containing multiple `entity` elements. Note that `entity` elements can be nested, and this allows the entity relationships in the sample database to be mirrored here, so that we can generate a denormalized Solr record which may include multiple features for one item, for instance.
 <4> The possible attributes for the `entity` element are described in later sections. Entity elements may contain one or more `field` elements, which map the data source field names to Solr fields, and optionally specify per-field transformations. This entity is the `root` entity.
 <5> This entity is nested and reflects the one-to-many relationship between an item and its multiple features. Note the use of variables; `${item.ID}` is the value of the column 'ID' for the current item (`item` referring to the entity name).
@@ -121,10 +120,7 @@ The entire configuration itself can be passed as a request parameter using the `
 
 A `reload-config` command is also supported, which is useful for validating a new configuration file, or if you want to specify a file, load it, and not have it reloaded again on import. If there is an `xml` mistake in the configuration a user-friendly message is returned in `xml` format. You can then fix the problem and do a `reload-config`.
 
-[TIP]
-====
-You can also view the DIH configuration in the Solr Admin UI from the <<dataimport-screen.adoc#dataimport-screen,Dataimport Screen>>. It includes an interface to import content.
-====
+TIP: You can also view the DIH configuration in the Solr Admin UI from the <<dataimport-screen.adoc#dataimport-screen,Dataimport Screen>>. It includes an interface to import content.
 
 ==== DIH Request Parameters
 
@@ -142,6 +138,24 @@ These parameters can then be passed to the `full-import` command or defined in t
 
 [source,bash]
 http://localhost:8983/solr/dih/dataimport?command=full-import&jdbcurl=jdbc:hsqldb:./example-DIH/hsqldb/ex&jdbcuser=sa&jdbcpassword=secret
+
+==== Encrypting a Database Password
+
+The database password can be encrypted if necessary to avoid plaintext passwords being exposed in unsecured files. To do this, follow these steps:
+
+. In a terminal window, run the command `openssl enc -aes-128-cbc -a -salt -in pwd.txt`.
+..This assumes the password is in a file named `pwd.txt`. If you don't have the password in this file yet, you can do `echo "mypassword" > pwd.txt`.
+.. The openssl session will ask for a password to use for the decryption. You will use this file with a `encryptKeyFile` parameter in `data-config.xml`.
+.. The output of the process will be a long string such as `U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=`. This will be the password you put in your `data-config.xml` file.
+. Save the password you used as the decryption password in the previous step to a file, and determine the location of the file on the Solr server. You could use a command such as `echo myencrypfilepwd > /location/of/encryptionkey`. Replace "myencrypfilepwd" with the password you used while generating the key.
+. If the file is not yet on the Solr server, move it there. Also make sure the encryption key file permissions do not allow it to be read by unauthorized users. The `chmod 0600` command should set the permissions sufficiently.
+. In your `data-config.xml`, you'll add the `password` and `encryptKeyFile` parameters to the `<datasource>` configuration, as in this example:
++
+[source,xml]
+<dataSource driver="org.hsqldb.jdbcDriver"
+    url="jdbc:hsqldb:./example-DIH/hsqldb/ex"
+    user="sa" password="U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o="
+    encryptKeyFile="/location/of/encryptionkey />
 
 == DataImportHandler Commands
 
@@ -286,13 +300,11 @@ driver, url, user, password, encryptKeyFile::
 Usual JDBC connection properties.
 
 batchSize::
-
 Passed to `Statement#setFetchSize`, default value 500.
 +
 For MySQL driver, which doesn't honor fetchSize and pulls whole resultSet, which often lead to OutOfMemoryError.
 +
 In this case, set `batchSize=-1` that pass setFetchSize(Integer.MIN_VALUE), and switch result set to pull row by row
-
 
 All of them substitute properties via `${placeholders}`.
 
@@ -954,7 +966,7 @@ groupNames::
 A comma separated list of field column names, used where the regex contains groups and each group is to be saved to a different field. If some groups are not to be named leave a space between commas.
 
 replaceWith::
-Used along with regex . It is equivalent to the method `new String(<sourceColVal>).replaceAll(<regex>, <replaceWith>)`.
+Used along with regex. It is equivalent to the method `new String(<sourceColVal>).replaceAll(<regex>, <replaceWith>)`.
 
 Here is an example of configuring the regex transformer:
 

@@ -1,6 +1,4 @@
 = Streaming Expressions
-:page-shortname: streaming-expressions
-:page-permalink: streaming-expressions.html
 :page-children: stream-source-reference, stream-decorator-reference, stream-evaluator-reference, statistical-programming, graph-traversal
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

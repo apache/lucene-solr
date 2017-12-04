@@ -275,7 +275,12 @@ public class GraphQuery extends Query {
       // create a scrorer on the result set, if results from right query are empty, use empty iterator.
       return new GraphScorer(this, readerSet == null ? DocIdSetIterator.empty() : readerSet.iterator(), 1);
     }
-    
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+
     @Override
     public void extractTerms(Set<Term> terms) {
       // NoOp for now , not used.. / supported
@@ -310,11 +315,7 @@ public class GraphQuery extends Query {
       // current position of the doc iterator.
       return iter.docID();
     }
-    
-    @Override
-    public int freq() throws IOException {
-      return 1;
-    }
+
   }
   
   /**

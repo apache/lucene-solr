@@ -249,6 +249,11 @@ public class TestSortRandom extends LuceneTestCase {
 
           return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
         }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
       };
     }
 

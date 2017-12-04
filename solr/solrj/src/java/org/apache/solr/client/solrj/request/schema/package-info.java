@@ -18,6 +18,6 @@
 /**
  * Convenience classes for making Schema API requests.
  * <p>
- * See &lt;a href="https://cwiki.apache.org/confluence/display/solr/Schema+API"&gt;Schema API&lt;/a&gt;
+ * See &lt;a href="https://lucene.apache.org/solr/guide/schema-api.html"&gt;Schema API&lt;/a&gt;
  */
 package org.apache.solr.client.solrj.request.schema;

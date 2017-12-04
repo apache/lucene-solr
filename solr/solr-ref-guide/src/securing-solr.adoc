@@ -1,6 +1,4 @@
 = Securing Solr
-:page-shortname: securing-solr
-:page-permalink: securing-solr.html
 :page-children: authentication-and-authorization-plugins, enabling-ssl
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

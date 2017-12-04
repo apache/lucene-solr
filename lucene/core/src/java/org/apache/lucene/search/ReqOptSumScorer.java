@@ -86,13 +86,6 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public int freq() throws IOException {
-    // we might have deferred advance()
-    score();
-    return optIterator.docID() == reqScorer.docID() ? 2 : 1;
-  }
-
-  @Override
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>(2);
     children.add(new ChildScorer(reqScorer, "MUST"));

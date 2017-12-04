@@ -288,7 +288,13 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
 
     @Override
     public long getSumTotalTermFreq() throws IOException {
-      return -1;
+      // TODO: make it constant-time
+      long ttf = 0;
+      TermsEnum iterator = iterator();
+      for (BytesRef b = iterator.next(); b != null; b = iterator.next()) {
+        ttf += iterator.totalTermFreq();
+      }
+      return ttf;
     }
 
     @Override

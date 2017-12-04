@@ -24,6 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
 
 /**
  * Caches the doubleVal of another value source in a HashMap
@@ -79,8 +80,18 @@ public class CachingDoubleValueSource extends DoubleValuesSource {
   }
 
   @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return source.isCacheable(ctx);
+  }
+
+  @Override
   public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
     return source.explain(ctx, docId, scoreExplanation);
+  }
+
+  @Override
+  public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+    return new CachingDoubleValueSource(source.rewrite(searcher));
   }
 
   @Override

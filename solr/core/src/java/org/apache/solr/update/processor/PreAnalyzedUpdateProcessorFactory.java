@@ -99,6 +99,7 @@ import org.slf4j.LoggerFactory;
  *  &lt;/updateRequestProcessorChain&gt;
  *  </pre>
  *
+ * @since 4.3.0
  */
 public class PreAnalyzedUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   

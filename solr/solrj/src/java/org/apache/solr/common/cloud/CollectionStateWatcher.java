@@ -26,10 +26,11 @@ import java.util.Set;
 public interface CollectionStateWatcher {
 
   /**
-   * Called when the collection we are registered against has a change of state
+   * Called when the collection we are registered against has a change of state.
    *
    * Note that, due to the way Zookeeper watchers are implemented, a single call may be
-   * the result of several state changes
+   * the result of several state changes. Also, multiple calls to this method can be made
+   * with the same state, ie. without any new updates.
    *
    * @param liveNodes       the set of live nodes
    * @param collectionState the new collection state (may be null if the collection has been

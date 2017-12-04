@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+{% comment %}NOTE: page_id is also definied in page.html{% endcomment %}
+{% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 <head>
     {% include head.html %}
     <script>
@@ -31,7 +33,7 @@
 
     </script>
 </head>
-<body class="{{ site.solr-attributes.solr-guide-draft-status }}" id="{{ page.shortname }}">
+<body class="{{ site.solr-attributes.solr-guide-draft-status }}" id="{{ page_id }}">
 {% include topnav.html %}
 <!-- Page Content -->
 <div class="container">

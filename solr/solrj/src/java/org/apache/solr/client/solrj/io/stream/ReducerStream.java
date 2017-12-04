@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  *  Note: The ReducerStream requires that it's underlying stream be sorted and partitioned by the same
  *  fields as it's comparator.
  *
+ * @since 5.1.0
  **/
 
 public class ReducerStream extends TupleStream implements Expressible {

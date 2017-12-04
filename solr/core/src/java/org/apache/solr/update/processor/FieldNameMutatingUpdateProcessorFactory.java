@@ -42,6 +42,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
  *   &lt;str name="pattern "&gt;\s&lt;/str&gt;
  *   &lt;str name="replacement"&gt;_&lt;/str&gt;
  * &lt;/processor&gt;</pre>
+ * @since 5.0.0
  */
 
 public class FieldNameMutatingUpdateProcessorFactory  extends UpdateRequestProcessorFactory{

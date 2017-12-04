@@ -57,11 +57,6 @@ abstract class BaseGlobalOrdinalScorer extends Scorer {
     return createTwoPhaseIterator(approximation);
   }
 
-  @Override
-  public int freq() throws IOException {
-    return 1;
-  }
-
   protected abstract TwoPhaseIterator createTwoPhaseIterator(DocIdSetIterator approximation);
 
 }

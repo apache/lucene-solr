@@ -58,6 +58,9 @@ public class NodeMutator {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
           String rNodeName = replica.getNodeName();
+          if (rNodeName == null) {
+            throw new RuntimeException("Replica without node name! " + replica);
+          }
           if (rNodeName.equals(nodeName)) {
             log.debug("Update replica state for " + replica + " to " + Replica.State.DOWN.toString());
             Map<String, Object> props = replica.shallowCopy();

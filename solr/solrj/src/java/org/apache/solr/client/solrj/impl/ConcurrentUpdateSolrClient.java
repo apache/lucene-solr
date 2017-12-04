@@ -772,7 +772,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
-    protected int queueSize;
+    protected int queueSize = 10;
     protected int threadCount;
     protected ExecutorService executorService;
     protected boolean streamDeletes;
@@ -803,7 +803,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
     
     /**
-     * The number of documents to batch together before sending to Solr.
+     * The number of documents to batch together before sending to Solr. If not set, this defaults to 10.
      */
     public Builder withQueueSize(int queueSize) {
       if (queueSize <= 0) {

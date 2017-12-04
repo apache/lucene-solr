@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -44,7 +45,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
@@ -57,7 +57,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
  *
  * @since solr 4.5
  */
-public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport {
+public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport, MapWriter {
 
   protected final CollectionAction action;
 
@@ -86,14 +86,25 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return params;
   }
 
-  @Override
-  public Collection<ContentStream> getContentStreams() throws IOException {
-    return null;
-  }
-
   protected void addProperties(ModifiableSolrParams params, Properties props) {
     for (String propertyName : props.stringPropertyNames()) {
       params.set(PROPERTY_PREFIX + propertyName, props.getProperty(propertyName));
+    }
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("class", this.getClass().getName());
+    ew.put("method", getMethod().toString());
+    SolrParams params = getParams();
+    if (params != null) {
+      for (Iterator<String> it = params.getParameterNamesIterator(); it.hasNext(); ) {
+        final String name = it.next();
+        final String [] values = params.getParams(name);
+        for (String value : values) {
+          ew.put("params." + name, value);
+        }
+      }
     }
   }
 
@@ -101,6 +112,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * Base class for asynchronous collection admin requests
    */
   public abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
+
+    protected String asyncId = null;
+    protected boolean waitForFinalState = false;
 
     public AsyncCollectionAdminRequest(CollectionAction action) {
       super(action);
@@ -115,10 +129,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return UUID.randomUUID().toString();
     }
 
-    protected String asyncId = null;
-
     public String getAsyncId() {
       return asyncId;
+    }
+
+    public void setWaitForFinalState(boolean waitForFinalState) {
+      this.waitForFinalState = waitForFinalState;
+    }
+
+    public void setAsyncId(String asyncId) {
+      this.asyncId = asyncId;
     }
 
     /**
@@ -177,6 +197,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       if (asyncId != null) {
         params.set(CommonAdminParams.ASYNC, asyncId);
+      }
+      if (waitForFinalState) {
+        params.set(CommonAdminParams.WAIT_FOR_FINAL_STATE, waitForFinalState);
       }
       return params;
     }
@@ -573,6 +596,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(CollectionParams.TARGET_NODE, targetNode);
       if (parallel != null) params.set("parallel", parallel.toString());
       return params;
+    }
+
+  }
+  public static class UtilizeNode extends AsyncCollectionAdminRequest {
+    protected String node;
+
+    public UtilizeNode(String node) {
+      super(CollectionAction.UTILIZENODE);
+      this.node = node;
+    }
+    @Override
+    public SolrParams getParams() {
+      return ((ModifiableSolrParams) super.getParams()).set("node", node);
     }
 
   }
