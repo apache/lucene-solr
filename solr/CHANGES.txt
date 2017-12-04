@@ -223,6 +223,8 @@ Other Changes
 * SOLR-11291: Factor out abstract metrics/SolrCore[Container]Reporter classes.
   (Omar Abdelnabi, Christine Poerschke)
 
+* SOLR-11713: Fixed CdcrUpdateLogTest.testSubReader() failure which was a test bug (Varun Thacker, Amrit Sarkar)
+
 ==================  7.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
