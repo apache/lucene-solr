@@ -153,6 +153,12 @@ Bug Fixes
 * SOLR-11608: Correctly parse the new core-name in the V2 core rename API.
   (Jason Gerlowski via Anshum Gupta)
 
+* SOLR-11256: The queue size for ConcurrentUpdateSolrClient should default to 10 instead of throwing an
+  IllegalArgumentException. (Jason Gerlowski, Anshum Gupta)
+
+* SOLR-11616: Snapshot the segments more robustly such that segments created during a backup does does not fail the
+  operation (Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-11285: Refactor autoscaling framework to avoid direct references to Zookeeper and Solr
@@ -216,6 +222,8 @@ Other Changes
 
 * SOLR-11291: Factor out abstract metrics/SolrCore[Container]Reporter classes.
   (Omar Abdelnabi, Christine Poerschke)
+
+* SOLR-11713: Fixed CdcrUpdateLogTest.testSubReader() failure which was a test bug (Varun Thacker, Amrit Sarkar)
 
 ==================  7.1.0 ==================
 

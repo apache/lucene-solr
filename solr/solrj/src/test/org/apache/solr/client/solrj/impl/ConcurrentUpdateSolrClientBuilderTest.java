@@ -30,4 +30,12 @@ public class ConcurrentUpdateSolrClientBuilderTest extends LuceneTestCase {
   public void testRejectsMissingBaseSolrUrl() {
     new Builder(null).build();
   }
+
+  @Test
+  public void testMissingQueueSize() {
+    try (ConcurrentUpdateSolrClient client = new Builder("someurl").build()){
+      // Do nothing as we just need to test that the only mandatory parameter for building the client
+      // is the baseSolrUrl
+    }
+  }
 }

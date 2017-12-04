@@ -94,6 +94,9 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8076: Normalize Vincenti distance calculation for planet models that aren't normalized.
+  (Ignacio Vera)
+
 * LUCENE-8057: Exact circle bounds computation was incorrect.
   (Ignacio Vera)
 
@@ -123,6 +126,9 @@ Bug Fixes
 
 * LUCENE-8034: Use subtraction instead of addition to sidestep int
   overflow in SpanNotQuery.  (Hari Menon via Mike McCandless)
+
+* LUCENE-8078: The query cache should not cache instances of
+  MatchNoDocsQuery. (Jon Harper via Adrien Grand)
 
 Optimizations
 
