@@ -68,7 +68,7 @@ public class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy {
     // For the below queries, it's cheap to notice they cannot match any docs so
     // we do not bother caching them.
     if (query instanceof MatchNoDocsQuery) {
-      return false;
+      return true;
     }
 
     if (query instanceof BooleanQuery) {
