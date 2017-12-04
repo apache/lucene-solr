@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -85,7 +84,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
   even while readers are using the index. The old readers will 
   continue to search the "point in time" snapshot they had opened, 
   and won't see the newly created index until they re-open. If 
-  {@link OpenMode#CREATE_OR_APPEND} is used IndexWriter will create a 
+  {@link OpenMode#CREATE_OR_APPEND} is used IndexWriter will create a
   new index if there is not already an index at the provided path
   and otherwise open the existing index.</p>
 
