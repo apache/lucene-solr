@@ -127,6 +127,9 @@ Bug Fixes
 * LUCENE-8034: Use subtraction instead of addition to sidestep int
   overflow in SpanNotQuery.  (Hari Menon via Mike McCandless)
 
+* LUCENE-8078: The query cache should not cache instances of
+  MatchNoDocsQuery. (Jon Harper via Adrien Grand)
+
 Optimizations
 
 * LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
