@@ -380,7 +380,15 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
                 + CheckHits.topdocsString(top1,0,0)
                 + CheckHits.topdocsString(top2,0,0)
                 + "for query:" + q.toString(),
-                score, otherScore, 0d);
+                score, otherScore,
+                // If there is at least one MUST/FILTER clause and if
+                // minShouldMatch is equal to the number of SHOULD clauses,
+                // then a query that was previously executed with
+                // ReqOptSumScorer is now executed with ConjunctionScorer.
+                // We need to introduce some leniency because ReqOptSumScorer
+                // casts intermediate values to floats before summing up again
+                // which hurts accuracy.
+                Math.ulp(score));
           }
         }
 
